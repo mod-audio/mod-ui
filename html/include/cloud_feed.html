@@ -1,0 +1,68 @@
+<div class="box bottom left top row-fluid">
+    <!-- FEED -->
+    <ul class="feeds span12">
+        {{#pedalboards}}
+        <li class="feed clearfix">
+            <a href="cloud-user-profile.html" class="avatar"><img src="http://gravatar.com/avatar/{{author.gravatar}}?s=64"/></a>
+            <div class="content alignleft span10">
+                <p><a href="user/{{author.username}}">{{author.name}}</a> published pedalboard <b>{{title}}</b>:</p>
+                <p class="screenshot">
+                    <a id="pedalboard-{{_id}}">
+                        <img src="{{cloud}}/pedalboard/screenshot/{{_id}}.png" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
+                    </a>
+                </p>
+                <div class="techspecs clearfix">
+                    <div class="spec clearfix">
+                        <img src="img/cloud/icn-techspecs-input.png"/>
+                        <div class="number">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.audio_inputs}}</span>
+                        </div>
+                    </div>
+                    <div class="spec clearfix">
+                        <img src="img/cloud/icn-techspecs-output.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.audio_outputs}}</span>
+                        </div>
+                    </div>
+                    <div class="spec clearfix">
+                        <img src="img/cloud/icn-techspecs-rotary.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.rotary_addressings}}</span>
+                        </div>
+                    </div>
+                    <div class="spec clearfix">
+                        <img src="img/cloud/icn-techspecs-footswitch.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.footswitch_addressings}}</span>
+                        </div>
+                    </div>
+                    <div class="spec clearfix">
+                        <img src="img/cloud/icn-techspecs-pedal.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.pedal_addressings}}</span>
+                        </div>
+                    </div>
+                    <div class="spec clearfix">
+                        <img src="img/cloud/icn-techspecs-midiin.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.midi_inputs}}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="description">{{description}}</div>
+                <div class="actions">
+                  <!-- <a href="">Like</a> • <a href="">Comment</a> -->
+                </div>
+                <div class="js-template" data-template-name="comments"></div>
+            </div>
+        </li>
+        {{/pedalboards}}
+    </ul>
+    <!-- END FEED -->
+</div>

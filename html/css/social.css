@@ -1,0 +1,705 @@
+/* = MOD SOCIAL NETWORK
+================================================ */
+#mod-social-network {
+    background:#292929;
+    bottom:46px;
+    color:#fff;
+    left:0;
+    overflow:auto;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:3;
+}
+
+/* Top Menu */
+#mod-social-network-header { 
+    background-color:#1b1b1b;
+    background-image:-moz-linear-gradient(top, #222222, #111111);
+    background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#222222), to(#111111));
+    background-image:-webkit-linear-gradient(top, #222222, #111111);
+    background-image:-o-linear-gradient(top, #222222, #111111);
+    background-image:linear-gradient(to bottom, #222222, #111111);
+    background-repeat:repeat-x;
+    border-bottom:1px solid #252525;
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff222222', endColorstr='#ff111111', GradientType=0);
+    box-shadow:0 1px 10px rgba(0,0,0,0.1);
+    color:#fff;
+    height:38px;
+    min-width:1024px;
+    padding:0 5%;
+    position:absolute;
+    width:90%;
+    z-index:3;
+}
+#mod-social-network-header .profile {
+    float:left;
+    width:40%;
+}
+#mod-social-network-header .avatar {
+    background:#fff;
+    display:inline-block;
+    float:left;
+    height:38px;
+    width:38px;
+}
+#mod-social-network-header .name {
+    color:#fff;
+    display:inline-block;
+    font-size:12px;
+    font-weight:bold;
+    padding:8px 10px;
+}
+#mod-social-network-header .menu {
+    float:left;
+    width:60%;
+}
+#mod-social-network-header .menu ul {
+    float:right;
+    list-style:none;
+    margin:0;
+    padding:0;
+    text-align:right;
+}
+#mod-social-network-header .menu ul li {
+    display:inline-block;
+    float:left;
+    padding:8px 8px 9px 8px;
+}
+#mod-social-network-header .menu ul li:hover, #mod-social-network-header .menu ul li.selected {
+    background:rgba(255,255,255,.2);
+}
+#mod-social-network-header .menu ul li:first-child {
+    border-left:1px solid #222;
+}
+#mod-social-network-header .menu ul li.search {
+    border-left:1px solid #222;
+}
+#mod-social-network-header .menu ul li.logout {
+    border-left:1px solid #222;
+    border-right:1px solid #222;
+}
+#mod-social-network-header .menu a {
+    color:#fff;
+    font-size:11px;
+    font-weight:bold;
+    text-decoration:none;
+    text-shadow:0 -1px 0 #000;
+    text-transform:uppercase;
+}
+#mod-social-network-header .menu form {
+    position:relative;
+}
+#mod-social-network-header .menu input[type="search"] {
+    border:none;
+    border-radius:0;
+    font-size:12px;
+}
+#mod-social-network-header .menu button {
+    background:url(../img/icn-search.png);
+    border:none;
+    display:block;
+    height:18px;
+    position:absolute;
+    right:2px;
+    top:2px;
+    width:18px;
+}
+
+/* Content Wrapper  */
+#mod-social-network .content-wrapper {
+    margin:63px 5% 0 5%;
+    position:relative;
+    width:90%;
+}
+
+/* Sidebar */
+#mod-social-network #social-aside {
+/*    position:absolute;*/
+/*    width:210px;*/
+    word-break:break-word;
+}
+#mod-social-network #social-aside.leftcolumn {
+/*    left:0;*/
+}
+#mod-social-network #social-aside.rightcolumn {
+/*    right:0;*/
+}
+#mod-social-network #social-aside table.users-list td {
+    padding-bottom:4px;
+}
+#mod-social-network #social-aside table.users-list td.avatar {
+    width:32px;
+}
+#mod-social-network #social-aside table.users-list td.avatar > .img {
+    background:#222;
+    display:block;
+    height:32px;
+    width:32px;
+}
+#mod-social-network #social-aside table.users-list td.user-info {
+    padding-left:10px;
+}
+#mod-social-network #social-aside table.users-list td.user-info a {
+    color:#fff;
+    font-size:13px;
+    font-weight:bold;
+    word-break:break-word;
+}
+
+/* Main Content */
+#mod-social-network #social-main {
+    min-height:600px;
+/*    position:absolute;*/
+/*    top:0;*/
+    word-break:break-word;
+}
+#mod-social-network #social-main.leftcolumn {
+    border-right:1px solid #222;
+/*    left:0;*/
+/*    right:220px;*/
+}
+#mod-social-network #social-main.rightcolumn {
+    border-left:1px solid #222;
+/*    left:220px;*/
+/*    right:0;*/
+}
+
+/* User Profile */
+#mod-social-network #user-profile .avatar {
+    height:64px;
+    margin:2px 10px 18px 0;
+    width:64px;
+    background:#ddd;
+}
+#mod-social-network #user-profile .user-info h1.username {
+    font-size:18px;
+    line-height:1;
+}
+#mod-social-network #user-profile .user-info ul {
+    list-style:none;
+}
+
+/* Pedalboard */
+#mod-social-network .pedalboard h2 {
+    font-size:27px;
+    line-height:2;
+}
+#mod-social-network .pedalboard h3 {
+    font-size:14px;
+    text-transform:uppercase;
+}
+
+/* Rating */
+#mod-social-network .pedalboard .rating-label {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+    line-height:0;
+}
+#mod-social-network .pedalboard .rating {
+    background:url(../img/icn-rating.png) no-repeat center top;
+    display:inline-block;
+    height:16px;
+    width:74px;
+}
+#mod-social-network .pedalboard .rating.one {
+    background:url(../img/icn-rating.png) no-repeat center -15px;
+}
+#mod-social-network .pedalboard .rating.two {
+    background:url(../img/icn-rating.png) no-repeat center -30px;
+}
+#mod-social-network .pedalboard .rating.three {
+    background:url(../img/icn-rating.png) no-repeat center -45px;
+}
+#mod-social-network .pedalboard .rating.four {
+    background:url(../img/icn-rating.png) no-repeat center -60px;
+}
+#mod-social-network .pedalboard .rating.five {
+    background:url(../img/icn-rating.png) no-repeat center -75px;
+}
+
+/* Download */
+#mod-social-network .pedalboard .downloads-label {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+#mod-social-network .pedalboard .downloads {
+    display:inline-block;
+    font-size:14px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+/* TechSpec */
+#mod-social-network .pedalboard div.techspecs {
+    margin-bottom:9px;
+}
+#mod-social-network .pedalboard div.techspecs div.spec {
+    float:left;
+    margin-right:18px;
+}
+#mod-social-network .pedalboard div.techspecs div.spec > * {
+    float:left;
+}
+#mod-social-network .pedalboard div.techspecs div.spec div.number {
+    background:#fff;
+    border-radius:4px;
+    color:#292929;
+    font-weight:bold;
+    margin:6px 0 0 9px;
+    padding:0 1px 0 0;
+    min-width:27px;
+    text-align:center;
+}
+#mod-social-network .pedalboard div.techspecs div.spec div.number .arrow-left {
+    border-bottom:6px solid transparent;
+    border-right:6px solid #fff;
+    border-top:6px solid transparent;
+    float:left;
+    height:0;
+    margin:4px 0 0 -5px;
+    width:0;
+}
+/* Plugins */
+#mod-social-network .pedalboard ul.plugins li {
+    display:inline-block;
+}
+#mod-social-network .pedalboard ul.plugins li:after {
+    content:", ";
+}
+#mod-social-network .pedalboard ul.plugins li:first-child:after {
+    content:"";
+}
+#mod-social-network .pedalboard ul.plugins li:last-child:after {
+    content:"";
+} 
+/* Reviews */
+#mod-social-network .pedalboard ul.reviews {
+    border-top:1px solid #222;
+    list-style:none;
+    margin-right:20%;
+    width:80%;
+}
+#mod-social-network .pedalboard li.review {
+    margin-bottom:18px;
+}
+#mod-social-network .pedalboard li.review .avatar {
+    margin-top:5px;
+}
+#mod-social-network .pedalboard li.review .username {
+    font-size:14px;
+    font-weight:bold;
+}
+#mod-social-network .pedalboard li.review .date {
+    font-size:12px;
+    font-style:italic;
+    line-height:1;
+}
+#mod-social-network .pedalboard li.review .content {
+    font-size:12px;
+    line-height:1;
+}
+#mod-social-network .pedalboard .review-form {
+    margin-bottom:36px;
+}
+#mod-social-network .pedalboard .review-form textarea {
+    height:120px;
+    margin-bottom:9px;
+}
+
+/* More Pedalboards - Related */
+#mod-social-network .more-pedalboards {
+    border-top:1px solid #222;
+    height:260px;
+    overflow:hidden;
+    padding-top:18px;
+    position:relative;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard {
+    color:#fff;
+    float:left;
+    margin:0 1% 27px;
+    position:relative;
+    width:18%;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .img {
+    background:#2b2b2b;
+    display:block;
+    float:left;
+    height:100px;
+    margin-bottom:9px;
+    width:100%;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .title {
+    display:block;
+    font-size:14px;
+    font-weight:bold;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .more-info {
+    font-size:11px;
+    text-transform:uppercase;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .more-info:before {
+    content:" – ";
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .description {
+    display:block;
+    font-size:12px;
+    line-height:1.5;
+    margin-bottom:9px;
+    max-height:54px;
+    overflow:hidden;
+    position:relative;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating-label     {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+    line-height:0;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating           {
+    background:url(../img/icn-rating.png) no-repeat center top;
+    display:inline-block;
+    height:16px;
+    width:74px;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating.one       {
+    background:url(../img/icn-rating.png) no-repeat center -15px;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating.two       {
+    background:url(../img/icn-rating.png) no-repeat center -30px;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating.three     {
+    background:url(../img/icn-rating.png) no-repeat center -45px;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating.four      {
+    background:url(../img/icn-rating.png) no-repeat center -60px;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .rating.five      {
+    background:url(../img/icn-rating.png) no-repeat center -75px;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .downloads-label  {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+#mod-social-network .more-pedalboards .grid-mode .pedalboard .downloads        {
+    display:inline-block;
+    font-size:14px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+/* Pedalboards */
+#mod-social-network .pedalboards h2 {
+    font-size:18px;
+    line-height:1;
+    margin-bottom:27px;
+}
+#mod-social-network .pedalboards .mode {
+    border:none;
+    cursor:pointer;
+    margin-top:10px;
+}
+#mod-social-network .pedalboards .grid {
+    background:url(../img/icn-grid-list.png) no-repeat left bottom;
+    display:inline-block;
+    height:14px;
+    width:14px;
+}
+#mod-social-network .pedalboards .grid.selected {
+    background-position:left top;
+}
+#mod-social-network .pedalboards .list {
+    background:url(../img/icn-grid-list.png) no-repeat right bottom;
+    display:inline-block;
+    height:14px;
+    width:14px;
+}
+#mod-social-network .pedalboards .list.selected {
+    background-position:right top;
+}
+
+/* Pedalboards - List Mode */
+#mod-social-network .pedalboards .list-mode .pedalboard {
+    color:#fff;
+    margin:0 1% 27px;
+    position:relative;
+    width:98%;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .img {
+    background:#2b2b2b;
+    display:block;
+    float:left;
+    height:130px;
+    margin-top:3px;
+    width:200px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .info {
+    left:220px;
+    position:absolute;
+    right:18px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .title {
+    display:block;
+    font-size:18px;
+    font-weight:bold;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .more-info {
+    font-size:11px;
+    text-transform:uppercase;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .more-info:before {
+    content:" – ";
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .description {
+    display:block;
+    font-size:12px;
+    line-height:1.5;
+    margin-bottom:9px;
+    max-height:54px;
+    overflow:hidden;
+    position:relative;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating-label   {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+    line-height:0;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating         {
+    background:url(../img/icn-rating.png) no-repeat center top;
+    display:inline-block;
+    height:16px;
+    width:74px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating.one     {
+    background:url(../img/icn-rating.png) no-repeat center -15px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating.two     {
+    background:url(../img/icn-rating.png) no-repeat center -30px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating.three   {
+    background:url(../img/icn-rating.png) no-repeat center -45px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating.four    {
+    background:url(../img/icn-rating.png) no-repeat center -60px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .rating.five    {
+    background:url(../img/icn-rating.png) no-repeat center -75px;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .downloads-label   {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+#mod-social-network .pedalboards .list-mode .pedalboard .downloads   {
+    display:inline-block;
+    font-size:14px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+/* Pedalboards - Grid Mode */
+#mod-social-network .pedalboards .grid-mode .pedalboard {
+    color:#fff;
+    float:left;
+    margin:0 1% 27px 1% !important;
+    position:relative;
+    width:200px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard a {
+    color:#fff;
+    text-decoration:none;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .img {
+    background:#2b2b2b;
+    display:block;
+    float:left;
+    height:130px;
+    margin-bottom:9px;
+    width:100%;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .title {
+    display:block;
+    font-size:16px;
+    margin-bottom:3px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .more-info {
+    font-size:11px;
+    text-transform:uppercase;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .more-info:before {
+    content:" – ";
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .description {
+    display:block;
+    font-size:12px;
+    line-height:1.5;
+    margin-bottom:9px;
+    max-height:54px;
+    overflow:hidden;
+    position:relative;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating-label     {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+    line-height:0;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating           {
+    background:url(../img/icn-rating.png) no-repeat center top;
+    display:inline-block;
+    height:16px;
+    width:74px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating.one       {
+    background:url(../img/icn-rating.png) no-repeat center -15px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating.two       {
+    background:url(../img/icn-rating.png) no-repeat center -30px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating.three     {
+    background:url(../img/icn-rating.png) no-repeat center -45px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating.four      {
+    background:url(../img/icn-rating.png) no-repeat center -60px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .rating.five      {
+    background:url(../img/icn-rating.png) no-repeat center -75px;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .downloads-label  {
+    display:inline-block;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+#mod-social-network .pedalboards .grid-mode .pedalboard .downloads        {
+    display:inline-block;
+    font-size:14px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+/* Pedalboards - Search */
+#mod-social-network .filter .control-group {
+    margin-bottom:9px;
+}
+#mod-social-network .filter .control-group.submit {
+    margin-top:18px;
+}
+#mod-social-network .filter label {
+    font-size:11px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+#mod-social-network .filter input[type=text] {
+    width:196px;
+}
+#mod-social-network .filter select {
+    width:210px;
+}
+
+/* Feed */
+.feed {
+    border-left:5px solid transparent;
+    border-right:1px solid #222;
+    border-top:1px solid #222;
+    padding:18px;
+}
+.feed:hover {
+    background:#2a2a2a;
+    border-left:5px solid #222;
+}
+/* Info - User, description */
+.feed .avatar {
+    display:block;
+    float:left;
+    margin:4px 0 0 0;
+}
+.feed .content {
+    float:left;
+}
+.feed .description {
+    font-size:13px;
+}
+/* TechSpec */
+.feed div.techspecs {
+    margin-bottom:9px;
+}
+.feed div.techspecs div.spec {
+    float:left;
+    margin-right:18px;
+}
+.feed div.techspecs div.spec > * {
+    float:left;
+}
+.feed div.techspecs div.spec div.number {
+    background:#fff;
+    border-radius:4px;
+    color:#292929;
+    font-weight:bold;
+    height:20px;
+    margin:6px 0 0 9px;
+    padding:0 1px 0 0;
+    min-width:27px;
+    text-align:center;
+}
+.feed div.techspecs div.spec div.number .arrow-left {
+    border-bottom:6px solid transparent;
+    border-right:6px solid #fff;
+    border-top:6px solid transparent;
+    float:left;
+    height:0;
+    margin:4px 0 0 -5px;
+    width:0;
+}
+/* Comments */
+.feed .comments {
+    margin:18px 0 9px 0;
+    position:relative;
+}
+.feed .comments form {
+    background:#222;
+    display:inline-block;
+    margin-bottom:0;
+    padding:6px !important;
+}
+.feed .comments form input[type="text"] {
+    border-radius:0;
+}
+.feed .comments form img {
+    height:30px;
+    width:auto;
+}
+.feed .comments .arrow-top {
+    border-color:transparent transparent #222 transparent;
+    border-style:solid;
+    border-width:6px 6px 6px 6px;
+    height:0;
+    left:16px;
+    position:absolute;
+    top:-12px;
+    width:0;
+}
+.comments-list .comment {
+    background:#222;
+    margin-top:1px;
+    padding:3px 6px !important;
+}
+.comments-list .comment .avatar {
+    float:left;
+    margin:3px 0 0 0 !important;
+}
+.comments-list .comment .content {
+    float:left;
+    font-size:13px;
+}

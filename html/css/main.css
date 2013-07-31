@@ -1,0 +1,1218 @@
+body {
+    background:#292929;
+    font-family:Helvetica,Arial,Sans-serif;
+    min-width:1024px;
+}
+
+#wrapper {
+    bottom:0;
+    left:0;
+    min-width:980px;
+    overflow:auto;
+    position:absolute;
+    right:0;
+    top:0;
+}
+
+/* = NOTIFICATIONS
+================================================ */
+#notifications {
+    position:absolute;
+    top:0;
+    width:100%;
+    z-index:1000;
+}
+
+#notifications > section {
+    border-radius:0;
+}
+
+#notifications .progressbar {
+    border:1px solid rgba(0,0,0,0.3);
+    height: 18px;
+    overflow: hidden;
+    position: absolute;
+    right: 40px;
+    top: 10px;
+    width: 250px;
+}
+
+#notifications .progressbar .progressbar-value {
+    background-color:rgba(0,0,0,0.3);
+    height:90%;
+    margin:1px;
+}   
+
+/* = MAIN MENU (FOOTER)
+================================================ */
+#main-menu {
+    background:#111;
+    bottom:0;
+    color:#fff;
+    height:45px;
+    left:0;
+    position:absolute;
+    right:0;
+    z-index:10;
+}
+
+#main-menu > div {
+    cursor:pointer;
+    float:left;
+}
+
+#main-menu > div.icon {
+    border-right:1px solid #2b2b2b;
+    height:45px;
+    width:45px;
+}
+
+#main-menu > div.icon > img {
+    margin:5px 0 0 6px;
+}
+
+#main-menu > div.icon.selected {
+    background:#000;
+    border-right:1px solid black;
+} 
+
+#main-menu > div.icon > a {
+    display:block;
+    height:45px;
+    width:45px;
+}
+
+/* MOD - The Social Cloud */
+#main-menu #mod-social {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:0 bottom;
+    background-repeat:no-repeat;
+}
+#main-menu #mod-social:hover,
+#main-menu #mod-social.selected {
+    background-color:#000;
+    background-position:0 top;
+}
+
+/* Effects */
+#main-menu #mod-plugins {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:-45px bottom;
+    background-repeat:no-repeat;
+}
+#main-menu #mod-plugins:hover,
+#main-menu #mod-plugins.selected {
+    background-color:#000;
+    background-position:-45px top;
+}
+
+/* Pedalboards */
+#main-menu #mod-pedalboard {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:-90px bottom;
+    background-repeat:no-repeat;
+}
+#main-menu #mod-pedalboard:hover,
+#main-menu #mod-pedalboard.selected {
+    background-color:#000;
+    background-position:-90px top;
+}
+
+/* Banks */
+#main-menu #mod-bank {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:-135px bottom;
+    background-repeat:no-repeat;
+}
+#main-menu #mod-bank:hover,
+#main-menu #mod-bank.selected {
+    background-color:#000;
+    background-position:-135px top;
+}
+
+/* MOD - Settings */
+#main-menu #mod-settings {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:-180px bottom;
+    background-repeat:no-repeat;
+    border-color:#2b2b2b;
+    border-style:solid;
+    border-width:0 0 0 1px;
+    float:right;
+}
+#main-menu #mod-settings:hover,
+#main-menu #mod-settings.selected {
+    background-color:#000;
+    background-position:-180px top;
+}
+
+/* MOD - Disconnect */
+#main-menu #mod-disconnect {
+    border-color:#2b2b2b;
+    border-style:solid;
+    border-width:0 0 0 1px;
+    color:rgb(47,47,47);
+    float:right;
+    font-size:11px;
+    font-weight:bold;
+    line-height:4.5;
+    text-align:center;
+    text-transform:uppercase;
+    width:100px;
+}
+#main-menu #mod-disconnect:hover,
+#main-menu #mod-disconnect.selected {
+    background-color:#000;
+    color:#fff;
+}
+
+
+/* MOD - Bluetooth */
+#main-menu #mod-bluetooth {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:-225px bottom;
+    background-repeat:no-repeat;
+    border-color:#2b2b2b;
+    border-style:solid;
+    border-width:0 0 0 1px;
+    float:right;
+}
+#main-menu #mod-bluetooth:hover,
+#main-menu #mod-bluetooth.selected {
+    background-color:#000;
+    background-position:-225px top;
+}
+
+/* MOD - Cloud */
+#main-menu #mod-cloud {
+    background-image:url(../img/menu-icons-sprite.png);
+    background-position:-270px bottom;
+    background-repeat:no-repeat;
+    border-color:#2b2b2b;
+    border-style:solid;
+    border-width:0 0 0 1px;
+    float:right;
+}
+#main-menu #mod-cloud:hover,
+#main-menu #mod-cloud.selected {
+    background-color:#000;
+    background-position:-270px top;
+}
+
+
+
+/* = PLUGINS LIBRARY
+================================================ */
+#plugins-library {
+    bottom:56px;
+    height:166px;
+    left:0;
+    position:absolute;
+    right:0;
+}
+
+/* Fold/Unfold */
+#plugins-library.folded {
+    height:26px;
+}
+#plugins-library .fold,
+#plugins-library .folded { 
+    cursor:pointer;
+    display:block;
+    float:right;
+    height:36px;
+    position:absolute;
+    top:0;
+    right:0;
+    width:36px;
+}
+#plugins-library .fold {
+    background-color:#000;
+    background-image:url(../img/nav-bottom.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
+#plugins-library.folded .fold {
+    background-color:#000;
+    background-image:url(../img/nav-top.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    display:block !important;
+}
+
+/* Effects Filter Settings */
+#plugins-library .settings {
+    background-image:url(../img/icn-search-white.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    cursor:pointer;
+    display:block;
+    height:36px;
+    position:absolute;
+    right:37px;
+    top:0;
+    width:36px;
+}
+#plugins-library .settings.selected {
+    background-color:#000;
+}
+#plugins-library #plugins-library-settings-window {
+    background:#000;
+    bottom:167px;
+    color:#fff;
+    position:absolute;
+    right:0;
+}
+#plugins-library.folded #plugins-library-settings-window {
+    bottom:27px;
+}
+#plugins-library #plugins-library-settings-window h1 {
+    font-size:14px;
+    font-weight:bold;
+    line-height:1;
+    margin:0 0 10px;
+    padding:0;
+    text-transform:uppercase;
+}
+#plugins-library #plugins-library-settings-window form {
+    margin-bottom:0;
+}
+#plugins-library #plugins-library-settings-window label {
+    margin-right:10px;
+}
+#plugins-library #plugins-library-settings-window label.checkbox:last-child {
+    margin-right:0;
+}
+#plugins-library #plugins-library-settings-window .control-group {
+    position:relative;
+}
+#plugins-library #plugins-library-settings-window .input-clean {
+    background:#333;
+    border-radius:12px;
+    color:#fff;
+    cursor:pointer;
+    font-size:8px;
+    height:18px;
+    left:auto !important;
+    position:absolute;
+    right:13px !important;
+    text-align:center;
+    text-transform:uppercase;
+    top:31px !important;
+    width:18px;
+}
+
+/* Effects Categories */
+#plugins-library ul {
+    height:26px;
+    list-style:none;
+    margin:0 73px 0 0;
+    overflow:hidden;
+    padding:10px 0 0 0;
+    position:relative;
+    width:100%;
+}
+#plugins-library ul li {
+    background:#1b1b1b;
+    color:#fff;
+    cursor:pointer;
+    display:inline-block;
+    float:left;
+    font-size:11px;
+    margin:0 1px 0 0;
+    padding:3px 11px;
+    text-shadow:1px 1px 0 #000;
+    text-transform:uppercase;
+}
+#plugins-library ul li.selected {
+    background:#000;
+    border-radius:4px 4px 0 0;
+    font-weight:bold;
+    margin-top:-6px;
+    padding:6px 11px;
+}
+
+/* Effects List */
+#plugins-library #plugins-list {
+    background:#000;
+    height:140px;
+    overflow:hidden;
+    position:relative;
+    width:100%;
+}
+#plugins-library #plugins-list .nav {
+    cursor:pointer;
+    position:absolute;
+    top:50px;
+}
+#plugins-library #plugins-list .nav-left {
+    left:10px;
+}
+#plugins-library #plugins-list .nav-right {
+    right:10px;
+}
+
+#plugins-library #plugins-list #plugins-results {
+    bottom:0;
+    left:50px;
+    position:absolute;
+    overflow:hidden;
+    right:50px;
+    top:0;
+}
+
+#plugins-library #plugins-list .plugins-wrapper {
+    position:relative;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin {
+    color:#fff;
+    float:left;
+    font-size:11px;
+    font-weight:bold;
+    height:108px;
+    padding:14px 12px 10px;
+    position:relative;
+    text-align:center;
+}
+/* Effect Thumbnail and Status*/
+#plugins-library #plugins-list .plugins-wrapper .plugin .thumb {
+    height:67px;
+    position:relative;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .thumb img {
+    height:auto;
+    margin:0 auto 3px;
+    width:auto;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .status {
+    display:block;
+    height:16px;
+    margin:0 auto;
+    width:16px;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .status.installed {
+    background-image:url(../img/icn-installed.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .status.outdated {
+    background-image:url(../img/icn-outdated.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .status.blocked {
+    background-image:url(../img/icn-blocked.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
+/* Effect Author */
+#plugins-library #plugins-list .plugins-wrapper .plugin .author {
+    display:block;
+    line-height:1.5;
+}
+/* Effect Title */
+#plugins-library #plugins-list .plugins-wrapper .plugin .title {
+    display:block;
+    line-height:1.25;
+}
+/* Effect Rating */
+#plugins-library #plugins-list .plugins-wrapper .plugin .rating { 
+    background-image:url(../img/icn-rating.png);
+    background-position:center top;
+    background-repeat:no-repeat;
+    display:block;
+    height:16px;
+    width:132px;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .rating.one {
+    background-position:center -15px;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .rating.two {
+    background-position:center -30px;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .rating.three {
+    background-position:center -45px;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .rating.four {
+    background-position:center -60px;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .rating.five {
+    background-position:center -75px;
+}
+/* Effect's Downloads Status */
+#plugins-library #plugins-list .plugins-wrapper .plugin .downloads {
+    display:block;
+}
+
+/* = PLUGIN INFO
+================================================ */
+.plugin-info {
+    background-color:rgba(20,20,20,.9);
+    bottom:0;
+    color:#ccc;
+    left:0;
+    overflow-y:scroll;
+    position:fixed;
+    right:0;
+    top:0px;
+    z-index:40;
+}
+
+.plugin-info .box {
+    background-color:#000;
+    border-radius:18px;
+    margin:27px auto;
+    width:90%;
+}
+
+.plugin-info .close {
+    color:#fff;
+    font-size:12px;
+    font-weight:bold;
+    opacity:1;
+    position:absolute;
+    right:10px;
+    text-shadow:none;
+    text-transform:uppercase;
+    top:10px;
+}
+
+.plugin-info .screenshot {
+    padding:18px 0 0;
+}
+
+.plugin-info header {
+    padding:18px 0 0;
+}
+
+.plugin-info header h1 {
+    color:#fff;
+    font-size:21px;
+    line-height:1;
+    margin:0;
+    padding:0;
+}
+
+.plugin-info header h1 span {
+    font-size:16px;
+    line-height:1;
+    margin:0;
+    padding:0;
+}
+
+.plugin-info .version {
+    color:#ccc;
+    font-size:12px;
+    font-weight:bold;
+    margin-bottom:18px;
+    padding-bottom:18px;
+    text-transform:uppercase;
+}
+
+.plugin-info .version span.bold {
+    color:#fff;
+    font-size:14px;
+}
+
+.plugin-info .version button {
+    font-weight:bold;
+    margin-top:6px;
+    text-transform:uppercase;
+}
+
+.plugin-info .rating {
+    background:url(../img/icn-rating.png) no-repeat center top;
+    display:inline-block;
+    height:14px;
+    width:74px;
+}
+.plugin-info .rating-label {
+    color:#fff;
+    font-size:12px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+.plugin-info .rating.one {
+    background:url(../img/icn-rating.png) no-repeat center -15px;
+}
+.plugin-info .rating.two {
+    background:url(../img/icn-rating.png) no-repeat center -30px;
+}
+.plugin-info .rating.three {
+    background:url(../img/icn-rating.png) no-repeat center -45px;
+}
+.plugin-info .rating.four {
+    background:url(../img/icn-rating.png) no-repeat center -60px;
+}
+.plugin-info .rating.five {
+    background:url(../img/icn-rating.png) no-repeat center -75px;
+}
+
+.plugin-info .plugin-specs {
+    text-align:center;
+    width:100%;
+}
+
+.plugin-info .plugin-specs th {
+    background:#333;
+    color:#fff;
+}
+.plugin-info .plugin-specs th:first-child{
+    border-radius:4px 0 0 0;
+}
+
+.plugin-info .plugin-specs th:last-child{
+    border-radius:0 4px 0 0;
+}
+.plugin-info .plugin-specs {
+    border-color:#333;
+}
+.plugin-info .plugin-specs th,
+.plugin-info .plugin-specs td {
+    border-color:#333;
+}
+
+.plugin-info .comments-reviews {
+    border-top:1px solid #333;
+    margin-top:10px;
+    padding-top:10px;
+}
+.plugin-info .comments-reviews h1 {
+    color:#fff;
+    font-size:21px;
+    line-height:2;
+    margin:0;
+    padding:0;
+}
+
+.plugin-info .reviews {
+    border-bottom:1px solid #333;
+    margin:9px 0 18px 0;
+    padding:9px 0 18px 0;
+}
+
+.plugin-info article.review {
+    margin:18px 0;
+}
+
+.plugin-info article.review h1 {
+    color:#fff;
+    font-size:14px;
+}
+
+.plugin-info article.review h1 .rating {
+    margin-left:6px;
+}
+
+.plugin-info article.review h1 .rating-label {
+    color:#ccc;
+    display:inline;
+    font-size:12px;
+    font-weight:normal;
+    margin-left:6px;
+}
+
+.plugin-info article.review .bar {
+    background:#333;
+    display:block;
+    height:12px;
+    margin:2px 6px 0;
+    position:relative;
+    width:100px;
+}
+
+.plugin-info article.review .progress-bar {
+    background:#444;
+    bottom:0;
+    display:block;
+    height:10px;
+    left:0;
+    margin:1px;
+    position:absolute;
+    right:0;
+    top:0;
+    width:50%;
+}
+
+.plugin-info article.review .rating-number {
+    display:block;
+    font-size:12px;
+    margin-top:-1px;
+}
+
+.plugin-info .comments {
+    margin:18px 0;
+    padding:18px 0;
+}
+
+.plugin-info .comments button {
+    margin-top:18px;
+}
+
+.plugin-info article.comment {
+    border-top:1px solid #333;
+    margin:18px 0 0;
+    padding:18px 0 0;
+}
+
+.plugin-info article.comment h1 {
+    color:#fff;
+    font-size:16px;
+    line-height:1;
+}
+
+.plugin-info article.comment h1 .date {
+    color:#ccc;
+    font-size:12px;
+    font-weight:normal;
+    margin-left:6px;
+}
+
+.plugin-info form.comment-form {
+    border-top:1px solid #333;
+    margin:18px 0;
+    padding:18px 0;
+}
+
+.plugin-info form.comment-form label {
+    font-size:12px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+.plugin-info form.comment-form textarea {
+    height:180px;
+}
+
+/* = PEDALBOARDS LIBRARY
+================================================ */
+#pedalboards-library {
+    background:#000;
+    bottom:46px;
+    left:0;
+    overflow:auto;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:2;
+}
+#pedalboards-library h1 {
+    color:#fff;
+    display:inline-block;
+    font-size:24px;
+    margin:0 0 18px 0;
+    padding:0;
+}
+#pedalboards-library header {
+    background-image:url(../img/header-pattern.png);
+    background-position:bottom center;
+    background-repeat:no-repeat;
+    display:block;
+    left:0;
+    padding:10px 10px 18px 10px;
+    position:fixed;
+    right:0;
+    top:0;
+    z-index:2;
+}
+#pedalboards-library header .help {
+    background-image:url(../img/icn-help-16x16.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    display:inline-block;
+    height:21px;
+    width:21px;
+}
+#pedalboards-library header .close {
+    opacity:1;
+    position:absolute;
+    right:10px;
+    top:16px;
+}
+#pedalboards-library .filter {
+    border-color:#111;
+    border-style:dotted;
+    border-width:0 1px 0 0;
+    bottom:45px;
+    left:10px;
+    padding-top:18px;
+    position:fixed;
+    right:0;
+    top:68px;
+    width:240px;
+}
+#pedalboards-library .filter .control-group {
+    float:left;
+    margin-right:9px;
+}
+#pedalboards-library .filter .control-group label {
+    color:#fff;
+    display:inline-block;
+    font-size:12px;
+    font-weight:bold;
+    width:165px;
+}
+#pedalboards-library .filter .control-group select {
+    width:50px;
+}
+#pedalboards-library .pedalboards {
+    left:252px;
+    position:absolute;
+    right:10px;
+    top:100px;
+}
+#pedalboards-library .pedalboards .pedalboard {
+    color:#fff;
+    float:left;
+    margin:0 0 20px 16px;
+    width:31%;
+}
+#pedalboards-library .pedalboards .pedalboard .img {
+    background:#2b2b2b;
+    border-radius:4px;
+    display:block;
+    height:154px;
+    margin-bottom:9px;
+    width:100%;
+}
+#pedalboards-library .pedalboards .pedalboard .img img {
+    cursor: pointer;
+    height:auto;
+    width:100%;
+}
+#pedalboards-library .pedalboards .pedalboard .title {
+    display:block;
+    height:18px;
+    font-weight:bold;
+    overflow:hidden;
+    position:relative;
+}
+#pedalboards-library .pedalboards .pedalboard .description {
+    display:block;
+    font-size:12px;
+    height:36px;
+    line-height:1.5;
+    overflow:hidden;
+}
+#pedalboards-library .pedalboards .pedalboard .actions {
+    font-size:11px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+#pedalboards-library .pedalboards .pedalboard .actions > span {
+    cursor:pointer;
+}
+
+#pedalboards-library .pedalboards .pedalboard .actions > span:hover {
+    text-decoration:underline;
+}
+
+#pedalboards-library .pedalboards .pedalboard .actions span.duplicate {
+    margin:0 6px;
+}
+
+/* Bank Library */
+#bank-library {
+    background:#000;
+    bottom:46px;
+    left:0;
+    overflow:auto;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:2;
+}
+#bank-library h1 {
+    color:#fff;
+    display:inline-block;
+    font-size:24px;
+    margin:0 0 18px 0;
+    padding:0;
+}
+#bank-library header {
+    background-image:url(../img/header-pattern.png);
+    background-position:bottom center;
+    background-repeat:no-repeat;
+    display:block;
+    left:0;
+    padding:10px 10px 18px 10px;
+    position:fixed;
+    right:0;
+    top:0;
+    z-index:2;
+}
+#bank-library header .help {
+    background-image:url(../img/icn-help-16x16.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    display:inline-block;
+    height:21px;
+    width:21px;
+}
+#bank-library header .close {
+    opacity:1;
+    position:absolute;
+    right:10px;
+    top:16px;
+}
+
+/* Banks List */
+#bank-list {
+    bottom:0;
+    left:0;
+    list-style:none;
+    margin:0;
+    padding:0;
+    position:absolute;
+    top:68px;
+    width:20%;
+}
+#bank-list div {
+    background:#222;
+    color:#888;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:bold;
+    height:20px;
+    margin:0 0 1px 0;
+    padding:10px 5px;
+    position:relative;
+}
+#bank-list div.selected {
+    background:#333;
+    color:#fff;
+}
+
+/* Bank List - Add Bank */
+#bank-list > div.add-bank {
+    color:#fff;
+    cursor:pointer;
+    padding-left:35px;
+}
+
+/* Bank List - Move bank position */
+#bank-list span.move {
+    background-image:url(../img/move.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    display:block;
+    float:left;
+    height:22px;
+    left:0;
+    margin:-1px 6px 0 0;
+    position:absolute;
+    width:24px;
+}
+#bank-list > div.selected span.move {
+    background-position:right center;
+}
+
+/* Bank List - Remove bank */
+#bank-list span.remove {
+    background-image:url(../img/icn-remove-bank.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    display:block;
+    float:right;
+    height:22px;
+    margin:-1px 6px 0 0;
+    position:absolute;
+    right:0;
+    width:24px;
+}
+#bank-list > div.selected span.remove {
+    background-position:right center;
+}
+
+/* Bank List - Title */
+#bank-list span.title  {
+    height:22px;
+    left:26px;
+    overflow:hidden;
+    position:absolute;
+    right:26px;
+}
+
+/* Pedalboards in a bank */
+#bank-pedalboards-mode {
+    background:#333;
+    left:30%;
+    height:30px;
+    margin:0;
+    padding:20px 0 0 0;
+    position:absolute;
+    text-align:center;
+    top:68px;
+    width:45%;
+}
+#bank-pedalboards {
+    background:#333;
+    bottom:46px;
+    left:20%;
+    list-style:none;
+    margin:0;
+    overflow:auto;
+    padding:0 0 200px 0;
+    position:fixed;
+    top:68px;
+    width:45%;
+}
+#bank-pedalboards > div {
+    margin:10px 10px 0 10px;
+    padding:10px 10px 0 10px;
+}
+#bank-pedalboards .pedalboard {
+    border-bottom:1px dotted #111;
+    color:#fff;
+    cursor:move;
+    padding-bottom:10px;
+    width:100%;
+}
+#bank-pedalboards .pedalboard .info {
+    margin-bottom:3px;
+}
+#bank-pedalboards .pedalboard .title {
+    display:block;
+    font-weight:bold;
+    margin-bottom:3px;
+    overflow:hidden;
+    position:relative;
+}
+#bank-pedalboards .pedalboard .img {
+    background:#2b2b2b;
+    border-radius:4px;
+    display:inline-block;
+    float:left;
+    height:auto;
+    margin:0 9px 0 0;
+    text-align:center;
+    width:100%;
+}
+
+#bank-pedalboards .mode {
+    border:none;
+    margin:22px 0 18px 0;
+    text-align:center;
+}
+#bank-pedalboards-mode .grid {
+    background:url(../img/icn-grid-list.png) no-repeat left bottom;
+    display:inline-block;
+    height:14px;
+    width:14px;
+}
+#bank-pedalboards-mode .grid.selected {
+    background-position:left top;
+}
+#bank-pedalboards-mode .list {
+    background:url(../img/icn-grid-list.png) no-repeat right bottom;
+    display:inline-block;
+    height:14px;
+    width:14px;
+}
+#bank-pedalboards-mode .list.selected {
+    background-position:right top;
+}
+
+/* Pedalboards search*/
+#bank-pedalboards-search {
+    bottom:46px;
+    left:65%;
+    overflow:auto;
+    position:fixed;
+    top:68px;
+    width:35%;
+}
+#bank-pedalboards-search label {
+    color:#fff;
+    font-size:11px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+#bank-pedalboards-search .control-group {
+    margin-bottom:10px;
+    padding:0 2%;
+    position:relative;
+    width:29.3%;
+}
+#bank-pedalboards-search input[type="search"] {
+    margin:auto 0;
+    padding-left:0;
+    padding-right:0;
+    width:100%;
+}
+#bank-pedalboards-search select {
+    width:100%;
+}
+#bank-pedalboards-search .input-clean {
+    background:#333;
+    border-radius:12px;
+    color:#fff;
+    cursor:pointer;
+    font-size:8px;
+    height:18px;
+    left:auto !important;
+    position:absolute;
+    right:8px !important;
+    text-align:center;
+    text-transform:uppercase;
+    top:31px !important;
+    width:18px;
+}
+
+/* Pedalboards search results - pedalboard */
+#bank-pedalboards-result .pedalboard {
+    border-top:1px dotted #444;
+    color:#fff;
+    cursor:move;
+    float:left;
+    margin:10px 2.5% 0;
+    padding:10px 0;
+    width:95%;
+}
+#bank-pedalboards-result .pedalboard .img {
+    background:#2b2b2b;
+    border-radius:4px;
+    display:block;
+    height:auto;
+    margin:0 auto;
+    text-align:center;
+    width:100%;
+}
+#bank-pedalboards-result .pedalboard .title {
+    display:block;
+    height:18px;
+    font-size:12px;
+    font-weight:bold;
+    margin-bottom:10px;
+    overflow:hidden;
+    position:relative;
+}
+#bank-pedalboards-result .pedalboard .description {
+    display:block;
+    font-size:11px;
+    height:27px;
+    line-height:1.5;
+    overflow:hidden;
+}
+
+
+/* = Clearfix
+================================================ */
+.clearfix:after, .container:after {
+    content:"\0020";
+    display:block;
+    height:0;
+    clear:both;
+    visibility:hidden;
+    overflow:hidden;
+}
+.clearfix, .container {
+    display:block;
+}
+.clear {
+    clear:both;
+}
+
+.box {
+    padding:10px;
+}
+
+.alignleft {
+    float:left;
+}
+.alignright {
+    float:right;
+}
+
+.textcenter {
+    text-align:center;
+}
+.textright  {
+    text-align:right;
+}
+
+.bottom {
+    margin-bottom:0 !important;
+    padding-bottom:0 !important;
+}
+.left {
+    margin-left:0 !important;
+    padding-left:0 !important;
+}
+.right {
+    margin-right:0 !important;
+    padding-right:0 !important;
+}
+.top {
+    margin-top:0 !important;
+    padding-top:0 !important;
+}
+
+.nobullets {
+    list-style:none;
+}
+
+.hidden {
+    display:none;
+}
+
+::selection {
+    background:transparent;
+}
+
+.mod-box {
+    background:white;
+    border-radius:9px;
+    left:50%;
+    margin:-150px -168px;
+    padding:18px;
+    position:absolute;
+    top:50%;
+    width:300px;
+}
+
+.mod-box label {
+    display:inline-block;
+    float:left;
+    line-height:2;
+    width:96px;
+}
+
+.mod-box .mod-controls {
+    float:left;
+}
+
+.mod-box input[type="text"],
+.mod-box input[type="password"] {
+    width:190px;
+}
+
+
+/* = NOTIFICATIONS
+================================================ */
+.screen-disconnected {
+    background-color: black;
+    color: white;
+    font-size: 80px;
+    text-align: center;
+    padding-top: 150px;
+    opacity: 0.5;
+    z-index: 10;
+}
+
+/* coisas que estão sendo reimplementadas */
+.drag-handle {
+    bottom:0;
+    cursor:move;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:20;
+}
+
+.actions {
+    z-index:20;
+}
+

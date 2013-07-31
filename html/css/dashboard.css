@@ -1,0 +1,599 @@
+/* = DASHBOARD
+================================================ */
+#pedalboard {
+    bottom:0;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0;
+}
+
+#pedalboard-dashboard {
+    position: absolute;
+    top: 35px;
+    left: 0;
+    bottom: 75px;
+    right: 0;
+}
+
+#pedalboard-actions { 
+    background-color:#1b1b1b;
+    background-image:-moz-linear-gradient(top, #222222, #111111);
+    background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#222222), to(#111111));
+    background-image:-webkit-linear-gradient(top, #222222, #111111);
+    background-image:-o-linear-gradient(top, #222222, #111111);
+    background-image:linear-gradient(to bottom, #222222, #111111);
+    background-repeat:repeat-x;
+    border-bottom:1px solid #252525;
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff222222', endColorstr='#ff111111', GradientType=0);
+    box-shadow:0 1px 10px rgba(0,0,0,0.1);
+    height:36px; left:0; position:absolute; right:0; top:0;
+    z-index:5;
+}
+
+#zoom-controllers {
+    color:white;
+    font-size:11px;
+    line-height:1;
+    position:absolute;
+    right:12px;
+    text-transform:uppercase;
+    top:49px;
+    z-index:10;
+}
+#zoom-controllers > span {
+    background:#1b1b1b;
+    cursor:pointer;
+    display:block;
+    float:left;
+    height:27px;
+    width:27px;
+}
+#zoom-controllers > span:hover {
+    background:#333;
+}
+#zoom-controllers > span:active {
+    background:#222;
+}
+#zoom-controllers > span:first-child {
+    background-image:url(../img/icn-zoom-out.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:18px;
+    border-radius:4px 0 0 4px;
+    border-right:1px solid #292929;
+}
+#zoom-controllers > span:last-child {
+    background-image:url(../img/icn-zoom-in.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:18px;
+    border-left:1px solid #292929;
+    border-radius:0 4px 4px 0;
+}
+
+
+/* Pedalboard Info - Header */
+#pedalboard-info { 
+    height:35px;
+    left:0;
+    margin:0;
+    padding:0 10px;
+    position:absolute;
+    right:71px;
+    z-index:2;
+}
+
+#pedalboard-info .title {
+    color:#fff;
+    cursor:pointer;
+    display:block;
+    float:left;
+    height:36px;
+    font-size:18px;
+    font-weight:bold;
+    line-height:2;
+    margin-right:10px;
+    overflow:hidden;
+    position:relative;
+}
+
+
+#pedalboard-info .favorite {
+    background:url(../img/icn-favorite-off.png) no-repeat center center;
+    cursor:pointer;
+    float:left;
+    height:36px;
+    width:36px;
+}
+
+#pedalboard-info .favorite.selected {
+    background:url(../img/icn-favorite-on.png) no-repeat center center;
+}
+
+#pedalboard-info .settings {
+    background:url(../img/icn-settings.png) no-repeat center center;
+    cursor:pointer;
+    float:left;
+    height:36px;
+    width:36px;
+}
+
+#pedalboard-info .settings.selected {
+    background-color:#444;
+}
+
+#pedalboard-info .settings a,
+#pedalboard-info .favorite a {
+    display:block;
+    height:36px;
+    text-align:center;
+    width:36px;
+}
+
+#pedalboard-info .actions {
+    font-weight:bold;
+    position:absolute;
+    right:0;
+    top:0;
+}
+
+#pedalboard-info .actions > button {
+    margin-top:-25px;
+}
+
+#pedalboard-info .actions .separator {
+    border-left:1px dotted #444;
+    display:inline-block;
+    height:35px;
+    margin:0 6px;
+}
+
+/* Pedalboard Settings Window */
+#pedalboard-settings {
+    background:#444;
+    bottom:46px;
+    left:0;
+    padding:10px;
+    position:absolute;
+    right:0;
+    top:36px;
+    z-index:2;
+}
+
+#pedalboard-settings h1 {
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    text-shadow0 1px 3px #000;
+}
+
+/* Share Pedalboard */
+#pedalboard-sharing {
+    height:36px;
+    position:absolute;
+    right:0;
+    top:0;
+}
+
+#pedalboard-sharing .button {
+    background:#222 url(../img/icn-share.png) no-repeat center center;
+    cursor:pointer;
+    height:36px;
+    width:64px;
+}
+
+#pedalboard-sharing .button:hover, #pedalboard-sharing .button.selected {
+    background-color:#444;
+}
+
+#pedalboard-sharing-popup {
+    background:#444;
+    bottom:0;
+    padding:10px;
+    position:absolute;
+    left:0;
+    right:0;
+    top:36px;
+    z-index:3;
+}
+
+#pedalboard-sharing-popup h1 {
+    color:#fff;
+    font-size:18px;
+    margin:0 0 10px 0;
+    padding:0;
+    text-shadow:0 1px 0 #000;
+}
+
+#pedalboard-sharing-popup label {
+    color:#fff;
+    float:left;
+    font-size:11px;
+    font-weight:bold;
+    height:30px;
+    line-height:2.9;
+    margin-bottom:10px;
+    text-align:left;
+    text-shadow:0 1px 2px #000;
+    text-transform:uppercase;
+    width:85px;
+}
+
+#pedalboard-sharing-popup textarea {
+    height:150px;
+    margin-bottom:10px;
+}
+
+#pedalboard-sharing-popup .item-list {
+    color:#fff;
+    font-size:11px;
+    font-weight:bold;
+    list-style:none;
+    margin:6px 0 10px 84px;
+    padding:0;
+}
+
+#pedalboard-sharing-popup .item-list .item {
+    background:#2b2b2b;
+    border-radius:6px;
+    display:block;
+    float:left;
+    height:18px;
+    padding:3px 9px;
+}
+
+#pedalboard-sharing-popup .submit {
+    text-align:right;
+}
+
+
+/* = JACK - HARDWARE AND PEDAL
+================================================ */
+/*
+.input .jack-connected { background:url(../../img/jack-p10.png) no-repeat center left; }
+.output .jack-connected { background:url(../../img/jack-p10.png) no-repeat center right; }
+*/
+
+
+/* = HARDWARE - OUTPUT
+================================================ */
+.hardware-output {
+    height:18px;
+    left:0px;
+    position:absolute;
+    width:0;
+    z-index:90;
+}
+
+.hardware-output .mod-output-jack {
+    background-image:url(../img/jack-p10.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:auto 56px;
+    cursor:pointer;
+    height:18px;
+    position:absolute;
+    width:87px;
+}
+
+
+/* = HARDWARE - INPUT
+================================================ */
+.hardware-input {
+    background-image:url(../img/input.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:auto 56px;
+    height:56px;
+    position:absolute;
+    width:56px;
+    z-index:100;
+}
+
+.mod-input.input-connecting {
+    background-image:url(../img/input-connecting.png) !important;
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:auto 56px;
+    height:56px;
+    width:56px;
+    z-index:100;
+}
+
+.hardware-input .jack-connecting {
+    background-image:url(../img/jack-p10.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:auto 56px;
+    cursor:pointer;
+    height:18px;
+    position:absolute;
+    width:129px;
+    z-index:100;
+}
+
+.hardware-input.input-connected {
+    background-image:url(../img/input-connected.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:auto 56px;
+}
+
+/* = PEDAL - dragging dummy icon
+================================================ */
+.pedal.dummy {
+    padding-top: 16px;
+}
+
+/* = PEDAL - JACK
+================================================ */
+.pedal .jack-connected {
+    height:20px;
+    position:absolute;
+    width:100px;
+    z-index:-1;
+}
+
+.pedal .pedal-input .mod-input .jack-connected {
+    left:0 !important;
+    position:absolute;
+    top:4px !important;
+}
+
+
+/* = CABLE
+================================================ */
+svg .shadow { fill:none; stroke:#000; stroke-width:10; z-index:0; }
+svg .cable { fill:none; stroke:#222; stroke-width:8; z-index:0; }
+svg .light { fill:none; stroke:#444; stroke-width:1; z-index:0; -webkit-transform: translateY(2px)}
+svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
+svg .connecting-cable { fill: none; stroke: #0AA; stroke-width: 8; z-index: 1000; }
+svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000; -webkit-transform: translateY(2px) }
+
+
+/* = PEDALBOARD - ADDRESSING
+================================================ */
+.pedalboard-addressing {
+    background:#444;
+    bottom:0px;
+    color:white;
+    left:0;
+    overflow:hidden;
+    position:absolute;
+    right:0;
+    top:36px;
+    z-index:1000;
+}
+
+.pedalboard-addressing header {
+    margin:0 0 9px 0;
+}
+
+.pedalboard-addressing h1 {
+    color:#fff;
+    display:inline-block;
+    font-size:24px;
+}
+
+.pedalboard-addressing .actuators {
+    bottom:47px;
+    left:0;
+    overflow:auto;
+    position:fixed;
+    top:37px;
+    width:200px;
+}
+
+.pedalboard-addressing .actuators a {
+    color:white;
+    display:block;
+    padding:3px 9px;
+    text-decoration:none;
+}
+
+.pedalboard-addressing .actuators ul {
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
+.pedalboard-addressing .actuators ul li.title {
+    background:#222;
+    font-weight:bold;
+    padding:3px 9px;
+    text-transform:uppercase;
+}
+
+.pedalboard-addressing .actuators ul li {
+    background:#333;
+    cursor:pointer;
+    line-height:2;
+    margin-bottom:1px;
+    padding:0;
+}
+
+.pedalboard-addressing .actuators ul li.selected {
+    background:#444;
+}
+
+.pedalboard-addressing .parameters {
+    background:#444;
+    bottom:0;
+    left:200px;
+    overflow:auto;
+    position:absolute;
+    right:0;
+    top:1px;
+}
+
+.pedalboard-addressing .parameters .actuator {
+    border-color:#333;
+    border-style:solid;
+    border-width:0 0 2px 0;
+    margin-bottom:27px;
+}
+
+.pedalboard-addressing .parameters .save {
+    margin-bottom:310px;
+}
+
+.pedalboard-addressing .parameters th {
+    font-size:11px;
+    text-transform:uppercase;
+}
+
+.pedalboard-addressing .parameters th,
+.pedalboard-addressing .parameters td {
+    border-color:#333;
+    padding:6px 27px;
+}
+
+.pedalboard-addressing .parameters th.order,
+.pedalboard-addressing .parameters td.order {
+    padding:6px;
+    text-align:center;
+    width:30px;
+}
+
+.pedalboard-addressing .parameters th.parameter,
+.pedalboard-addressing .parameters td.parameter {
+    width:100%;
+}
+
+.pedalboard-addressing .parameters th.move,
+.pedalboard-addressing .parameters td.move {
+    padding:6px 0;
+    text-align:right;
+    width:24px;
+}
+
+.pedalboard-addressing .parameters th.remove,
+.pedalboard-addressing .parameters td.remove {
+    padding:6px 0;
+    text-align:right;
+    width:24px;
+}
+
+.pedalboard-addressing .parameters td.move span {
+    background-image:url(../img/move.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    cursor:pointer;
+    display:block;
+    height:22px;
+    margin:-1px 6px 0 0;
+    width:24px;
+}
+
+.pedalboard-addressing .parameters td.remove:hover span {
+    background-position:right center;
+}
+
+.pedalboard-addressing .parameters td.remove span {
+    background-image:url(../img/icn-remove-bank.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    cursor:pointer;
+    display:block;
+    height:22px;
+    margin:-1px 6px 0 0;
+    width:24px;
+}
+
+.pedalboard-addressing .parameters td.move:hover span {
+    background-position:right center;
+}
+
+
+/* SAVE POP-UP */
+.save-popup {
+    background:rgba(0,0,0,.75);
+    bottom:0;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:1000;
+}
+
+.save-popup .box {
+    background:white;
+    border-radius:9px;
+    left:50%;
+    margin:-150px -168px;
+    padding:18px;
+    position:absolute;
+    top:50%;
+    width:300px;
+}
+
+.save-popup h1 {
+    font-size:18px;
+    line-height:1;
+    margin:0 0 18px 0;
+    padding:0;
+    text-transform:uppercase;
+}
+
+.save-popup .actions {
+    border-color:#ddd;
+    border-style:solid;
+    border-width:1px 0 0 0;
+    margin:9px 0 0 0;
+    padding:18px 0 0 0;
+    text-align:right;
+}
+
+.save-popup label {
+    display:inline-block;
+    float:left;
+    line-height:2;
+    width:96px;
+}
+
+.save-popup input[type="text"] {
+    width:190px;
+}
+
+/* SHARE WINDOW */
+#share-window .box {
+    margin-left: -300px;
+    top: 200px;
+    width: 600px;
+}
+
+#share-window .image {
+    /* width and height set by javascript */
+}
+
+#share-window img.loading {
+    height: 66px;
+    left: 50%;
+    margin: -33px 0 0 -33px;
+    position: relative;
+    top: 50%;
+}
+
+#share-window img.screenshot {
+    background-color: #292929;
+    border-radius: 5px;
+}
+
+#share-window textarea {
+    height: auto;
+    min-height: 60px;
+    margin-top: 10px;
+    padding: 5px;
+    width: 590px;
+}
+
+#share-window input {
+    border: 1px solid #lightgrey;
+    border-radius: 4px;
+    font-size: 20px;
+    height: 26px;
+    margin-bottom: 10px;
+    padding: 0 5px;
+    width: 588px;
+}

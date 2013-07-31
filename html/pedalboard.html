@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MOD</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
+    <!-- <link rel="stylesheet" type="text/css" href="css/main.old.css"/> -->
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+
+    <!-- PEDALS -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/pedals.css"/>
+
+    <!-- DEFAULT -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/default.css"/>
+
+    <!-- JAPANESE -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/japanese/japanese.css"/>
+    <link rel="stylesheet" type="text/css" href="resources/knobs/japanese/japanese.css"/>
+    
+    <!-- BOXY -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/boxy/boxy.css"/>
+    <link rel="stylesheet" type="text/css" href="resources/knobs/boxy/boxy.css"/>
+    
+    <!-- LATA -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/lata/lata.css"/>
+    <link rel="stylesheet" type="text/css" href="resources/knobs/lata/lata.css"/>
+
+    <!-- BRITISH -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/british/british.css"/>
+    <link rel="stylesheet" type="text/css" href="resources/knobs/british/british.css"/>
+    
+    <!-- HEAD MODEL 001 -->
+    <link rel="stylesheet" type="text/css" href="resources/heads/model-001/model-001.css"/>
+
+    <!-- COMBO MODEL 001 -->
+    <link rel="stylesheet" type="text/css" href="resources/combos/model-001/model-001.css"/>
+
+    <!-- RACK MODEL 001 -->
+    <link rel="stylesheet" type="text/css" href="resources/racks/model-001/model-001.css"/>
+
+    <!-- SLIDER -->
+    <link rel="stylesheet" type="text/css" href="resources/sliders/slider01/slider.css"/>
+
+    <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
+    <script type="text/javascript" src="js/lib/mustache.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.svg.js"></script>
+    <script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
+
+    <script type="text/javascript">
+
+      {% autoescape None %}
+      var TEMPLATES = {}
+      SITEURL = '{{cloud_url}}'
+      var HARDWARE_PROFILE = JSON.parse('{{hardware_profile}}')
+      var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
+      var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
+      var PEDALBOARD_DATA = JSON.parse('{{pedalboard}}')
+
+      $('document').ready(function() {
+          var el = $('#pedalboard-dashboard').pedalboard({
+             baseScale: 1,
+             getPluginsData: function(urls, callback) {
+                 $.ajax({
+                     url: '/effect/bulk/',
+                     type: 'POST',
+                     contentType: 'application/json',
+                     data: JSON.stringify(urls),
+                     success: callback,
+                     dataType: 'json'
+                 })
+             }
+          })
+          // Add hardware ports
+          var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
+          var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
+          var outputM = $('<div class="hardware-output" title="Hardware MIDI Input">')
+          var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
+          var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
+
+          el.pedalboard('addHardwareOutput', outputL, 'capture_1', 'audio')
+          el.pedalboard('addHardwareOutput', outputR, 'capture_2', 'audio')
+          el.pedalboard('addHardwareOutput', outputM, 'capture_3', 'midi')
+          el.pedalboard('addHardwareInput', inputL, 'playback_1', 'audio')
+          el.pedalboard('addHardwareInput', inputR, 'playback_2', 'audio')
+
+          el.pedalboard('positionHardwarePorts')
+
+	  el.pedalboard('unserialize', PEDALBOARD_DATA)
+
+          /*
+          new Desktop({
+              titleBox: $('#pedalboard-info .title'),
+              pedalboard: $('#pedalboard-dashboard'),
+              saveBox: $('#save-pedalboard'),
+              saveButton: $('#pedalboard-info .js-save'),
+              saveAsButton: $('#pedalboard-info .js-save-as'),
+              resetButton:  $('#pedalboard-info .js-reset'),
+              effectBox: $('#effects-library'),
+              pedalboardBox: $('#pedalboards-library'),
+              pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
+          })
+          */
+      })
+
+    </script>
+
+    <script type="text/javascript" src="js/templates.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript" src="js/file_transfer.js"></script>
+    <script type="text/javascript" src="js/window.js"></script>
+    <script type="text/javascript" src="js/tags.js"></script>
+    <script type="text/javascript" src="js/modgui.js"></script>
+    <script type="text/javascript" src="js/notification.js"></script>
+    <script type="text/javascript" src="js/installation.js"></script>
+    <script type="text/javascript" src="js/desktop.js"></script>
+    <script type="text/javascript" src="js/pedalboard.js"></script>
+    <script type="text/javascript" src="js/pedalboards.js"></script>
+    <script type="text/javascript" src="js/effects.js"></script>
+    <script type="text/javascript" src="js/login.js"></script>
+    <script type="text/javascript" src="js/hardware.js"></script>
+    <script type="text/javascript" src="js/xrun.js"></script>
+
+    <style type="text/css" media="screen">
+    body { background:transparent !important;}
+    </style>
+
+</head>
+<body>
+    <!-- WRAPPER -->
+    <div id="wrapper">
+
+        <!-- PEDALBOARD-SETTINGS-WINDOW -->
+        <div id="pedalboard-settings" class="hidden">
+            <h1>Settings</h1>
+	    <div class="js-canvas"></div>
+        </div>
+        <!-- END PEDALBOARD-SETTINGS-WINDOW -->
+
+	<!-- NOTIFICATIONS -->
+	<div id="notifications">
+	</div>
+	<!-- END NOTIFICATIONS -->
+
+        <!-- PEDALBOARD -->
+        <div id="pedalboard">
+            
+            <!-- PEDALBOARD-DASHBOARD -->
+            <div id="pedalboard-dashboard">
+            </div>
+            <!-- END PEDALBOARD-DASHBOARD -->
+        
+        </div>
+        <!-- END PEDALBOARD -->
+    </div>
+    
+</body>
+</html>

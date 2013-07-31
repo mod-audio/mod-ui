@@ -1,0 +1,50 @@
+<div class="plugin-info">
+    <div class="container-fluid box">
+        <span class="js-close alignright btn btn-mini btn-danger">Close</span>
+        <div class="row-fluid clearfix">
+            <div class="span10 offset1 clearfix">
+                <div class="span3 screenshot">
+                    <img src="{{source}}/effect/image/screenshot.png?url={{urle}}">
+                </div>
+                
+                <div class="span9">
+                    <header>
+                        <h1>{{title}}{{#subtitle}} - <span>{{subtitle}}</span>{{/subtitle}}</h1>
+                        <p><a href="{{url}}">{{url}}</a></p>
+                        <p><span class="rating-label">Rating:</span> <span class="rating five"></span></p>
+                        <p class="version">
+                            <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span></span>
+                            <br/>
+                            <span class="js-installed-version">Installed Version: <span class="bold">{{installed_version}}</span></span>
+                            <br/>
+                            <button class="js-install btn btn-info btn-mini hidden">Install</button>
+                            <button class="js-upgrade btn btn-info btn-mini hidden">Upgrade</button>
+                            <button class="js-remove btn btn-danger btn-mini hidden">Remove</button>
+                        </p>
+                    </header>
+                    <section class="content clearfix">
+		      {{description}}
+                      <table class="plugin-specs table table-bordered">
+                        <tr>
+                          <th>control</th>
+                          <th>default</th>
+                          <th>min</th>
+                          <th>max</th>
+                        </tr>
+			{{#ports.control.input}}
+                        <tr>
+                          <td>{{name}}</td>
+                          <td>{{default}}</td>
+                          <td>{{minimum}}</td>
+                          <td>{{maximum}}</td>
+                        </tr>
+			{{/ports.control.input}}
+                      </table>
+                    </section>
+                </div>
+                <section class="comments-reviews clear">
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
