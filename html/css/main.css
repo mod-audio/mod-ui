@@ -201,16 +201,32 @@ body {
 }
 
 .tooltip {
-    z-index: 20000;
-    border: 3px solid red;
-    color: orange;
-    background-color: white;
-    position: absolute;
-    bottom: 40px;
-    right: 200px;
+    background-color: #bbbbbb;
+    border: 1px solid #666666;
+    border-radius: 3px;
+    bottom: 45px;
+    color: black;
     font-size: 14px;
-    height: 200px;
-    width: 300px;
+    position: absolute;
+    right: 192px;
+}
+
+.tooltip .text {
+    font-weight: bold;
+    color: #222222;
+    margin-top: 2px;
+}
+
+.tooltip .arrow {
+    border-bottom:12px solid transparent;
+    border-left:12px solid transparent;
+    border-right:12px solid transparent;
+    border-top:12px solid #bbbbbb;
+    height:0; 
+    position:absolute;
+    bottom:-20px;
+    right:10px;
+    width:0; 
 }
 
 

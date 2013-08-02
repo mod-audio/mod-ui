@@ -63,10 +63,11 @@ function Desktop(elements) {
     this.userSession = new UserSession({
 	loginWindow: elements.loginWindow,
         online: function() {
+	    self.netStatus.networkStatus('status', 'online')
             elements.socialTrigger.addClass('selected')
-	    
         },
         offline: function() {
+	    self.netStatus.networkStatus('status', 'offline')
             elements.socialTrigger.removeClass('selected')
         },
 	login: function() {
@@ -76,14 +77,13 @@ function Desktop(elements) {
 	    })
 	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
 	    self.feedManager.start(self.userSession.sid)
+	    self.netStatus.networkStatus('status', 'logged')
 	},
 	logout: function() {
 	    elements.userName.hide()
 	    elements.userAvatar.hide()
-	    
 	},
 	notify: function(message) {
-	    console.log(message)
 	    self.netStatus.networkStatus('message', message)
 	}
     });
@@ -721,33 +721,47 @@ JqueryClass('saveBox', {
 JqueryClass('networkStatus', {
     init: function() {
 	var self = $(this)
-	self.data('tooltip', $('<div class="tooltip">').appendTo($('body')).hide())
+	var tooltip = $('<div class="tooltip top">').appendTo($('body'))
+	$('<div class="arrow">').appendTo(tooltip)
+	$('<div class="text">').appendTo(tooltip)
+	tooltip.hide()
+	self.data('tooltip', tooltip)
 	self.bind('mouseover', function() { self.networkStatus('showTooltip') })
-	self.bind('mouseout', function() { self.data('tooltip').hide() })
+	self.bind('mouseout', function() { 
+	    tooltip.stop().animate({ opacity: 0 }, 200,
+				   function() { 
+				       $(this).hide() 
+				   }) 
+	})
 	return self
     },
 
     status: function(status) {
 	var self = $(this)
+	console.log(status)
 	if (self.data('status'))
 	    self.removeClass(self.data('status'))
 	self.data('status', status)
+	self.addClass(status)
     },
 
     message: function(message) {
 	var self = $(this)
 	self.data('message', message)
-	self.networkStatus('showTooltip', 200000)
+	self.networkStatus('showTooltip', 1500)
     },
 
     showTooltip: function(timeout) {
 	var self = $(this)
 	if (!self.data('message'))
 	    return
-	self.data('tooltip').html(self.data('message')).show()
+	var tooltip = self.data('tooltip')
+	tooltip.find('.text').html(self.data('message'))
+	tooltip.show().stop().animate({ opacity: 1 }, 200)
 	if (timeout)
 	    setTimeout(function() { 
-		self.data('tooltip').hide()
+		tooltip.stop().animate({ opacity: 0 }, 200,
+				       function() { $(this).hide() })
 	    }, timeout)
     }
     
