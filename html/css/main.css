@@ -193,10 +193,24 @@ body {
     border-width:0 0 0 1px;
     float:right;
 }
-#main-menu #mod-cloud:hover,
-#main-menu #mod-cloud.selected {
+
+#main-menu #mod-cloud.logged,
+#main-menu #mod-cloud.online {
     background-color:#000;
     background-position:-270px top;
+}
+
+.tooltip {
+    z-index: 20000;
+    border: 3px solid red;
+    color: orange;
+    background-color: white;
+    position: absolute;
+    bottom: 40px;
+    right: 200px;
+    font-size: 14px;
+    height: 200px;
+    width: 300px;
 }
 
 

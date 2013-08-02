@@ -47,6 +47,7 @@ function Desktop(elements) {
 	xRunNotifier: $('<div>'),
 	userName: $('<div>'),
 	userAvatar: $('<div>'),
+	networkIcon: $('<div>'),
 	logout: $('<div>')
     }, elements)
 
@@ -58,6 +59,7 @@ function Desktop(elements) {
 	    alert(event.message)
 	}
     });
+    this.netStatus = elements.networkIcon.networkStatus()
     this.userSession = new UserSession({
 	loginWindow: elements.loginWindow,
         online: function() {
@@ -79,6 +81,10 @@ function Desktop(elements) {
 	    elements.userName.hide()
 	    elements.userAvatar.hide()
 	    
+	},
+	notify: function(message) {
+	    console.log(message)
+	    self.netStatus.networkStatus('message', message)
 	}
     });
     elements.logout.click(function() {
@@ -711,3 +717,39 @@ JqueryClass('saveBox', {
     }
 
 })
+
+JqueryClass('networkStatus', {
+    init: function() {
+	var self = $(this)
+	self.data('tooltip', $('<div class="tooltip">').appendTo($('body')).hide())
+	self.bind('mouseover', function() { self.networkStatus('showTooltip') })
+	self.bind('mouseout', function() { self.data('tooltip').hide() })
+	return self
+    },
+
+    status: function(status) {
+	var self = $(this)
+	if (self.data('status'))
+	    self.removeClass(self.data('status'))
+	self.data('status', status)
+    },
+
+    message: function(message) {
+	var self = $(this)
+	self.data('message', message)
+	self.networkStatus('showTooltip', 200000)
+    },
+
+    showTooltip: function(timeout) {
+	var self = $(this)
+	if (!self.data('message'))
+	    return
+	self.data('tooltip').html(self.data('message')).show()
+	if (timeout)
+	    setTimeout(function() { 
+		self.data('tooltip').hide()
+	    }, timeout)
+    }
+    
+})
+

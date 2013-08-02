@@ -36,15 +36,21 @@
  * Now the session id can be used to identify this user + device pair.
  */
 
- function UserSession(options) {
+function UserSession(options) {
     var self = this
-
-    var OFFLINE = 0
-    var CONNECTING = 1
-    var ONLINE = 2
-    var LOGGED = 3
+    
+    var OFFLINE = 0 // Cloud haven't been reached yet, maybe no network
+    var CONNECTING = 1 // Trying to reach cloud and get a session id
+    var ONLINE = 2 // Device has been identified
+    var LOGGED = 3 // User has been identified and is logged at this device
+    var DISCONNECTED = 4 // Device was not recognized by Cloud, communiction suspended
+     
 
     this.status = OFFLINE
+    this.minRetryTimeout = 5
+    this.maxRetryTimeout = 320
+
+    this.retryTimeout = this.minRetryTimeout
 
     options = $.extend({
         offline: function() {},
@@ -52,6 +58,10 @@
         online: function() {},
         login: function() {},
         logout: function() {},
+	disconnected: function() {},
+	notify: function(message) {
+	    new Notification('error', message)
+	},
 	loginWindow: $('<div>')
     }, options)
 
@@ -62,13 +72,23 @@
             type: 'GET',
             success: function(sid) {
                 self.sid = sid
+		self.retryTimeout = self.minRetryTimeout
                 self.signSession()
             },
             error: function(e) {
                 self.setStatus(OFFLINE)
+		self.retry()
             },
             dataType: 'json'
         })
+    }
+
+    this.retry = function() {
+	timeout = self.retryTimeout
+	self.retryTimeout = Math.max(self.maxRetryTimeout, timeout * 2)
+	setTimeout(function() {
+	    self.getSessionId()
+	}, timeout)
     }
 
     this.signSession = function() {
@@ -76,8 +96,9 @@
            success: function(signature) {
                self.identifyDevice(signature)
            },
-           error: function() {
-               new Notification('error', 'Could not start authentication')
+           error: function(e) {
+	       console.log(e)
+               self.notify('Could not start authentication')
            },
            dataType: 'json'
        })
@@ -91,7 +112,7 @@
             success: function(status) {
                 if (!status.device_auth) {
                     self.setStatus(OFFLINE)
-                    return new Notification('error', 'This device cannot be identified, please contact support')
+                    return self.notify('This device cannot be identified, please contact support')
                 }
                 if (status.user_auth)
                     self.identifyUser(status.user, status.signature, new Function())
@@ -109,7 +130,7 @@
         if (self.status === LOGGED) {
             return callback()
         } else if (self.status < ONLINE) {
-            return new Notification('error', 'Device is offline')
+            return self.notify('Device is offline')
         }
 	options.loginWindow.window('open')
 	self.loginCallback = callback
@@ -135,12 +156,12 @@
 				  self.loginCallback = null
 			      }
 			  } else {
-			      new Notification('error', 'Security error: server sent invalid data')
+			      self.notify('Security error: server sent invalid data')
 			  }
 		      })
 		  },
 		  error: function(resp) {
-		      return new Notification('error', "Error authenticating")
+		      return self.notify("Error authenticating")
 		  },
 		  dataType: 'json'
 		})
@@ -168,7 +189,7 @@
 		     }
 		 },
 		 error: function(resp) {
-		     new Notification('error', "Could not verify authentication data received from server")
+		     self.notify("Could not verify authentication data received from server")
 		 },
 		 dataType: 'json'
 	       })
@@ -182,7 +203,7 @@
 		self.getSessionId()
             },
             error: function() {
-                return new Notification('error', 'Could not logout')
+                return self.notify('Could not logout')
             }
         })
     }
@@ -200,6 +221,8 @@
             options.online(); break;
             case LOGGED:
             options.login()
+            case DISCONNECTED:
+	    options.disconnected()
         }
     }
 
@@ -213,4 +236,5 @@
 	 return user
      }
 
+    this.notify = options.notify
 }
