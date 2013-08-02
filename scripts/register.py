@@ -1,21 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, sys, urllib2, json
+import os, sys, urllib2, json, argparse
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+from mod.register import DeviceRegisterer
 
-from mod.device.register import DeviceRegisterer
+parser = argparse.ArgumentParser(description='Register device at Cloud')
+parser.add_argument('--serial', metavar='Serial Nº', type=str,
+                    help='The serial number for this device')
+parser.add_argument('--cloud', metavar="Cloud address", default='http://cloud.portalmod.com',
+                    type=str, help="The URL where cloud can be found")
+parser.add_argument('--device', metavar="Device address", default='http://192.168.1.50',
+                    type=str, help="The URL where device can be found")
 
-try:
-    serial = sys.argv[-1].upper()
-except IndexError:
+args = parser.parse_args()
+
+if not args.serial:
     print "Qual o nº de série deste MOD?"
     serial = sys.stdin.readline().strip().upper()
+else:
+    serial = args.serial
 
 assert serial
-
-device_address = sys.argv[1] if len(sys.argv) > 2 else 'http://192.168.1.50'
-cloud_address = sys.argv[2] if len(sys.argv) > 3 else 'http://cloud.portalmod.com'
 
 def urlify(url):
     if not url.startswith('http://') and not url.startswith('https://'):
@@ -24,8 +30,8 @@ def urlify(url):
         url = url[:-1]
     return url
 
-device_address = urlify(device_address)
-cloud_address = urlify(cloud_address)
+device_address = urlify(args.device)
+cloud_address = urlify(args.cloud)
 
 registration_package = urllib2.urlopen('%s/register/start/%s' % (device_address, serial)).read()
 
