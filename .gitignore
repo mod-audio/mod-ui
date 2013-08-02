@@ -1,35 +1,38 @@
-*.py[cod]
-
-# C extensions
+.DS_Store
+*~
+*.o
 *.so
-
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
+*.pyc
+*.swp
+*.tar.xz
+/mod-env
+host/modd/modd
+host/modd/tests/test_effects
+host/modman/modman
+host/modman/tests/modman_client
+host/dados/plugins
+host/old/mod
+host/old/dados/*
+*.crf
+*.axf
+*.hex
+*.d
+*.plg
+*.tra
+*.htm
+*.__i
+*.bak
+*.uvgui.*
+*.dep
+webserver/html/mesh
+webserver/dados/
+webserver/keys/
+mod-python/
+.DS_Store
+*/.DS_Store
+"Icon\r"
+webserver/dados/
+webserver/keys/device_key.pem
+webserver/keys/device_key.pub
+webserver/keys/model
+webserver/keys/serial
