@@ -133,7 +133,6 @@ function Desktop(elements) {
 	    context = $.extend({ 
 		plugin: self.pedalboard.pedalboard('getGui', instanceId).effect
 	    }, port)
-	    console.log(context)
 	    if (port.symbol == ':bypass')
 		return Mustache.render(TEMPLATES.bypass_addressing, context)
 	    else
@@ -229,7 +228,6 @@ function Desktop(elements) {
 	getFeed: function(callback) { 
 	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid,
 		     success: function(pedalboards) {
-			 console.log(pedalboards)
 			 callback(pedalboards)
 		     },
 		     error: function() {
@@ -738,7 +736,6 @@ JqueryClass('networkStatus', {
 
     status: function(status) {
 	var self = $(this)
-	console.log(status)
 	if (self.data('status'))
 	    self.removeClass(self.data('status'))
 	self.data('status', status)
@@ -764,6 +761,5 @@ JqueryClass('networkStatus', {
 				       function() { $(this).hide() })
 	    }, timeout)
     }
-    
 })
 

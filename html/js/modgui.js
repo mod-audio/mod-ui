@@ -146,7 +146,6 @@ function GUI(effect, options) {
 	var element = $('<div class="mod-settings">')
 	element.html(Mustache.render(template || effect.gui.settingsTemplate || options.defaultSettingsTemplate,
 				     self.getTemplateData(effect)))
-	console.log('SETTINGS')
 	self.assignControlFunctionality(element)
 	return element
     }
@@ -195,7 +194,6 @@ function GUI(effect, options) {
 			scalePointsIndex[sprintf(format, port.scalePoints[i].value)] = port.scalePoints[i]
 		    }
 		}
-		console.log(symbol)
 		control.controlWidget({ port: port,
 					change: function(e, value) {
 					    // When value is changed, let's use format and scalePoints to properly display
@@ -307,7 +305,6 @@ function JqueryClass() {
 	    'custom-select': 'customSelect'
 	}
 	var name = self.attr('mod-widget') || 'film'
-	console.log(name)
 	name = widgets[name]
 	$.fn[name].apply(this, arguments)
     }
