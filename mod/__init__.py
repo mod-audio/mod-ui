@@ -41,7 +41,8 @@ def ensure_index_sync(index, dirname):
                 continue
             if _json_or_remove(path):
                 index.find(id=obj_id).next()
-    except (AssertionError, StopIteration) as e:
+    except:
+        # This is usually AssertionError, StopIteration or AttributeError, but let's just capture anything
         index.reindex()
 
 def check_environment(callback):
