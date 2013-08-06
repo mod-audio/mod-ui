@@ -478,6 +478,9 @@ JqueryClass('film', baseWidget, {
 	    bgImg.css('max-width', '999999999px')
 	    bgImg.hide();
 	    bgImg.bind('load', function() {
+		if (bgImg.width() == 0) {
+		    new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
+		}
 		if (!height)
 		    height = bgImg.height()
 		self.data('filmSteps', height * bgImg.width() / (self.width() * bgImg.height()))
