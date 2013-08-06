@@ -32,10 +32,10 @@ function Bluetooth(options) {
 	var msg
 	if (online) {
 	    msg = sprintf('Bluetooth: %dms Controls: %dms', bluetooth, ihm)
-	    options.status('online')
+	    options.status(true)
 	} else {
 	    msg = 'OFFLINE'
-	    options.status('offline')
+	    options.status(false)
 	}
 
 	options.notify(msg)
