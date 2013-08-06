@@ -77,6 +77,8 @@ function UserSession(options) {
             },
             error: function(e) {
                 self.setStatus(OFFLINE)
+		if (self.retryTimeout == self.minRetryTimeout)
+		    self.notify("Could not contact cloud")
 		self.retry()
             },
             dataType: 'json'
