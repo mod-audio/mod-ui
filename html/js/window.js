@@ -70,7 +70,7 @@ function WindowManager() {
 	    })
 
 	    if (trigger) {
-		trigger.removeClass('current')
+		trigger.removeClass('selected')
 
 		trigger.click(function() {
 		    self.window('toggle')
@@ -78,6 +78,9 @@ function WindowManager() {
 	    }
 
 	    //self.click(function() { return false })
+
+	    // TODO this shouldn't be too hardcoded
+	    self.data('defaultIcon', $('#mod-plugins'))
 
 	    return self
 	},
@@ -96,10 +99,12 @@ function WindowManager() {
 
 	    var trigger = self.data('trigger')
 	    if (trigger)
-		trigger.addClass('current')
+		trigger.addClass('selected')
 	    self.css('z-index', 100)
 	    self.show()
 	    self.trigger('windowopen')
+
+	    self.data('defaultIcon').removeClass('selected')
 	},
 	    
 	close: function(closure) {
@@ -113,9 +118,10 @@ function WindowManager() {
 
 	    var trigger = self.data('trigger')
 	    if (trigger)
-		trigger.removeClass('current')
+		trigger.removeClass('selected')
 	    self.hide()
 	    self.trigger('windowclose')
+	    self.data('defaultIcon').addClass('selected')
 	},
 
 	toggle: function() {

@@ -244,10 +244,9 @@ function Desktop(elements) {
 					       self.windowManager.closeWindows()
 					   }, false)
 	    }, true)
-	}
-    })
-    elements.socialTrigger.click(function() {
-    	self.userSession.login(function() { self.socialWindow.socialWindow('open') })
+	},
+	trigger: elements.socialTrigger,
+	open: function() { self.socialWindow.socialWindow('open') }
     })
 
     this.saveBox = elements.saveBox.saveBox({

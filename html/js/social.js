@@ -22,6 +22,7 @@ JqueryClass('socialWindow', {
 	    getFeed: function(callback) { callback([]) },
 	    loadPedalboard: function(pedalboard) {},
 	}, options)
+
 	self.data(options)
 	self.window(options)
 
