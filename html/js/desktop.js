@@ -48,6 +48,7 @@ function Desktop(elements) {
 	userName: $('<div>'),
 	userAvatar: $('<div>'),
 	networkIcon: $('<div>'),
+	bluetoothIcon: $('<div>'),
 	logout: $('<div>')
     }, elements)
 
@@ -59,15 +60,15 @@ function Desktop(elements) {
 	    alert(event.message)
 	}
     });
-    this.netStatus = elements.networkIcon.networkStatus()
+    this.netStatus = elements.networkIcon.statusTooltip()
     this.userSession = new UserSession({
 	loginWindow: elements.loginWindow,
         online: function() {
-	    self.netStatus.networkStatus('status', 'online')
+	    self.netStatus.statusTooltip('status', 'online')
             elements.socialTrigger.addClass('selected')
         },
         offline: function() {
-	    self.netStatus.networkStatus('status', 'offline')
+	    self.netStatus.statusTooltip('status', 'offline')
             elements.socialTrigger.removeClass('selected')
         },
 	login: function() {
@@ -77,14 +78,16 @@ function Desktop(elements) {
 	    })
 	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
 	    self.feedManager.start(self.userSession.sid)
-	    self.netStatus.networkStatus('status', 'logged')
+	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.username))
+	    console.log('aqui')
+	    self.netStatus.statusTooltip('status', 'logged')
 	},
 	logout: function() {
 	    elements.userName.hide()
 	    elements.userAvatar.hide()
 	},
 	notify: function(message) {
-	    self.netStatus.networkStatus('message', message)
+	    self.netStatus.statusTooltip('message', message)
 	}
     });
     elements.logout.click(function() {
@@ -328,6 +331,22 @@ function Desktop(elements) {
 		     dataType: 'json'
 		   })
 	},
+    })
+
+    elements.bluetoothIcon.statusTooltip()
+    var status = false
+    new Bluetooth({ 
+	icon: elements.bluetoothIcon,
+	status: function(online) {
+	    if (online)
+		elements.bluetoothIcon.addClass('online')
+	    else
+		elements.bluetoothIcon.removeClass('online')
+	    status = online
+	},
+	notify: function(msg) {
+	    elements.bluetoothIcon.statusTooltip('message', msg, status)
+	}
     })
 
     $(document).bind('ajaxSend', function() {
@@ -715,7 +734,7 @@ JqueryClass('saveBox', {
 
 })
 
-JqueryClass('networkStatus', {
+JqueryClass('statusTooltip', {
     init: function() {
 	var self = $(this)
 	var tooltip = $('<div class="tooltip top">').appendTo($('body'))
@@ -723,13 +742,15 @@ JqueryClass('networkStatus', {
 	$('<div class="text">').appendTo(tooltip)
 	tooltip.hide()
 	self.data('tooltip', tooltip)
-	self.bind('mouseover', function() { self.networkStatus('showTooltip') })
+	self.bind('mouseover', function() { self.statusTooltip('showTooltip') })
 	self.bind('mouseout', function() { 
 	    tooltip.stop().animate({ opacity: 0 }, 200,
 				   function() { 
 				       $(this).hide() 
 				   }) 
 	})
+	console.log('aqui')
+	tooltip.css('right', $(window).width() - self.position().left - self.width())
 	return self
     },
 
@@ -741,10 +762,12 @@ JqueryClass('networkStatus', {
 	self.addClass(status)
     },
 
-    message: function(message) {
+    message: function(message, silent) {
 	var self = $(this)
+	var oldMsg = self.data('message')
 	self.data('message', message)
-	self.networkStatus('showTooltip', 1500)
+	if (!silent && oldMsg != message)
+	    self.statusTooltip('showTooltip', 1500)
     },
 
     showTooltip: function(timeout) {

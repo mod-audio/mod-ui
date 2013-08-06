@@ -177,8 +177,7 @@ body {
     border-width:0 0 0 1px;
     float:right;
 }
-#main-menu #mod-bluetooth:hover,
-#main-menu #mod-bluetooth.selected {
+#main-menu #mod-bluetooth.online {
     background-color:#000;
     background-position:-225px top;
 }
@@ -208,7 +207,6 @@ body {
     color: black;
     font-size: 14px;
     position: absolute;
-    right: 192px;
 }
 
 .tooltip .text {

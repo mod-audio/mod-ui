@@ -23,6 +23,7 @@ import tornado.options
 import tornado.escape
 import jack
 import StringIO
+import time
 try:
     import Image
 except ImportError:
@@ -751,7 +752,12 @@ class Ping(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        res = yield gen.Task(SESSION.ping)
+        start = time.time()
+        ihm = yield gen.Task(SESSION.ping)
+        res = {
+            'ihm_online': ihm,
+            'ihm_time': int((time.time() - start) * 1000),
+            }
         self.write(json.dumps(res))
         self.finish()
 
