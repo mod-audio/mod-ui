@@ -21,7 +21,6 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import jack
 import StringIO
 import time
 try:
@@ -788,11 +787,7 @@ class JackXRun(web.RequestHandler):
 
     @classmethod
     def connect(cls):
-        cls.client = jack.client_open("modwebserver", 
-                                      jack.JackNoStartServer,
-                                      None)
-        jack.set_xrun_callback(cls.client, cls.xrun, None)
-        jack.activate(cls.client)
+        pass
 
     @classmethod
     def xrun(cls, *args):
