@@ -274,7 +274,11 @@ class Session(object):
             logging.warning("[serial] unexpected response received from reader process")
             ioloop.IOLoop.instance().add_callback(self._serial_checker)
         else:
-            resp = msg[5:] # removes the resp prefix
+            if msg.startswith("not found"):
+                resp = "-1"
+                datatype = 'boolean'
+            else:
+                resp = msg[5:] # removes the resp prefix
 
             resp = self._check_resp(resp, datatype)
             callback(resp)
@@ -338,7 +342,7 @@ class Session(object):
             _error("command not found")
 
     def _serial_process_msg(self, msg):
-        if msg.startswith('resp'):
+        if msg.startswith('resp') or msg.startswith('not found'):
             self._serial_process_response(msg)
         else:
             self._serial_process_command(msg)
