@@ -11,11 +11,10 @@ setup(name = 'mod',
       packages = find_packages(),
       entry_points = {
           'console_scripts': [
-              'mod-webserver = mod.device.webserver:run',
+              'mod-webserver = mod.webserver:run',
               ]
           },
       scripts = [
-          'scripts/device_register.py',
       ],
       install_requires = ['tornado', 'whoosh'],
       classifiers = [

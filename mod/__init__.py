@@ -47,15 +47,15 @@ def ensure_index_sync(index, dirname):
 
 def check_environment(callback):
     from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR, FAVORITES_DIR,
-                              PEDALBOARD_BINARY_DIR, HARDWARE_DIR, INDEX_PATH,
+                              HARDWARE_DIR, INDEX_PATH,
                               PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
                               DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE)
     from mod import indexing
-    from mod.pedalboard import save_pedalboard, generate_pedalboard_binary
+    from mod.pedalboard import save_pedalboard
     from mod.session import SESSION
 
     for dirname in (EFFECT_DIR, PEDALBOARD_DIR, FAVORITES_DIR,
-                    PEDALBOARD_BINARY_DIR, HARDWARE_DIR, DOWNLOAD_TMP_DIR,
+                    HARDWARE_DIR, DOWNLOAD_TMP_DIR,
                     PLUGIN_LIBRARY_DIR):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -83,7 +83,7 @@ def check_environment(callback):
 
     def ping_callback(ok):
         if ok:
-            SESSION.banks_binary(callback)
+            pass
         else:
             # calls ping again every one second
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
