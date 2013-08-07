@@ -14,7 +14,7 @@ The following packages will be required::
 
 Start by cloning the repository::
 
-    $ git clone https://github.com/portalmod/mod-ui.git
+    $ git clone --recursive https://github.com/portalmod/mod-ui.git
     $ cd mod-ui
 
 Create a python virtualenv::
