@@ -35,3 +35,4 @@ keys/model
 keys/serial
 phantomjs-*
 html/pedalboards/*.png
+modui-env/
