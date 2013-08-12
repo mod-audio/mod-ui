@@ -29,12 +29,12 @@ body {
 
 #notifications .progressbar {
     border:1px solid rgba(0,0,0,0.3);
-    height: 18px;
-    overflow: hidden;
-    position: absolute;
-    right: 40px;
-    top: 10px;
-    width: 250px;
+    height:18px;
+    overflow:hidden;
+    position:absolute;
+    right:40px;
+    top:10px;
+    width:250px;
 }
 
 #notifications .progressbar .progressbar-value {
@@ -200,30 +200,29 @@ body {
 }
 
 .tooltip {
-    background-color: #bbbbbb;
-    border: 1px solid #666666;
-    border-radius: 3px;
-    bottom: 45px;
-    color: black;
-    font-size: 14px;
-    position: absolute;
+    background:white;
+    border-radius:3px;
+    bottom:45px;
+    height:auto;
+    padding:7px;
+    position:absolute;
 }
 
 .tooltip .text {
-    font-weight: bold;
-    color: #222222;
-    margin-top: 2px;
+    font-weight:bold;
+    color:#222222;
+    line-height:1;
 }
 
 .tooltip .arrow {
-    border-bottom:12px solid transparent;
-    border-left:12px solid transparent;
-    border-right:12px solid transparent;
-    border-top:12px solid #bbbbbb;
+    border-bottom:9px solid transparent;
+    border-left:9px solid transparent;
+    border-right:9px solid transparent;
+    border-top:9px solid white;
     height:0; 
     position:absolute;
-    bottom:-20px;
-    right:10px;
+    bottom:-18px;
+    right:14px;
     width:0; 
 }
 
@@ -804,7 +803,7 @@ body {
     width:100%;
 }
 #pedalboards-library .pedalboards .pedalboard .img img {
-    cursor: pointer;
+    cursor:pointer;
     height:auto;
     width:100%;
 }
@@ -1220,13 +1219,13 @@ body {
 /* = NOTIFICATIONS
 ================================================ */
 .screen-disconnected {
-    background-color: black;
-    color: white;
-    font-size: 80px;
-    text-align: center;
-    padding-top: 150px;
-    opacity: 0.5;
-    z-index: 10;
+    background-color:black;
+    color:white;
+    font-size:80px;
+    text-align:center;
+    padding-top:150px;
+    opacity:0.5;
+    z-index:10;
 }
 
 /* coisas que estão sendo reimplementadas */

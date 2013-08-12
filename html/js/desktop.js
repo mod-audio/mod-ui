@@ -737,7 +737,7 @@ JqueryClass('saveBox', {
 JqueryClass('statusTooltip', {
     init: function() {
 	var self = $(this)
-	var tooltip = $('<div class="tooltip top">').appendTo($('body'))
+	var tooltip = $('<div class="tooltip">').appendTo($('body'))
 	$('<div class="arrow">').appendTo(tooltip)
 	$('<div class="text">').appendTo(tooltip)
 	tooltip.hide()
