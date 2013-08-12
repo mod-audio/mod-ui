@@ -202,16 +202,17 @@ body {
 .tooltip {
     background:white;
     border-radius:3px;
-    bottom:45px;
+    bottom:50px;
     height:auto;
     padding:7px;
     position:absolute;
 }
 
 .tooltip .text {
-    font-weight:bold;
     color:#222222;
+    font-weight:bold;
     line-height:1;
+    text-align:center;
 }
 
 .tooltip .arrow {
@@ -226,6 +227,24 @@ body {
     width:0; 
 }
 
+
+
+/* = MOD UPGRADE SYSTEM
+================================================ */
+#mod-upgrade {
+    background:white;
+    border-radius:9px;
+    color:black;
+    font-size:12px;
+    max-height:350px;
+    max-width:450px;
+    min-width:350px;
+    overflow:auto;
+    position:absolute;
+    right:10px;
+    bottom:50px;
+    z-index:10;
+}
 
 
 /* = PLUGINS LIBRARY
