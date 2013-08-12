@@ -1,3 +1,7 @@
+html, body {
+    height:100%;
+}
+
 body {
     background:#393939;
     font-family:Helvetica,Arial,Sans-serif;
@@ -1220,10 +1224,16 @@ body {
 .screen-disconnected {
     background:rgba(0,0,0,.9);
     color:white;
+    display:table;
     font-size:72px;
-    padding-top:150px;
+    height:100% !important;
     text-align:center;
     z-index:10;
+}
+
+.screen-disconnected p {
+    display:table-cell;
+    vertical-align:middle;
 }
 
 /* coisas que estão sendo reimplementadas */

@@ -205,7 +205,7 @@ function Desktop(elements) {
 			     return new Notification('error', 
 						     "Couldn't disconnect")
 			 var block = $('<div class="screen-disconnected">')
-			 block.html('Disconnected')
+			 block.html('<p>Disconnected</p>')
 			 $('body').append(block).css('overflow', 'hidden')
 			 block.width($(window).width() * 5)
 			 block.height($(window).height() * 5)
