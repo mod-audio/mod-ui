@@ -1,5 +1,5 @@
 body {
-    background:#292929;
+    background:#393939;
     font-family:Helvetica,Arial,Sans-serif;
     min-width:1024px;
 }
@@ -73,7 +73,6 @@ body {
 
 #main-menu > div.icon.selected {
     background:#000;
-    border-right:1px solid black;
 } 
 
 #main-menu > div.icon > a {
@@ -1219,12 +1218,11 @@ body {
 /* = NOTIFICATIONS
 ================================================ */
 .screen-disconnected {
-    background-color:black;
+    background:rgba(0,0,0,.9);
     color:white;
-    font-size:80px;
-    text-align:center;
+    font-size:72px;
     padding-top:150px;
-    opacity:0.5;
+    text-align:center;
     z-index:10;
 }
 
