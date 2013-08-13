@@ -1,5 +1,9 @@
+html, body {
+    height:100%;
+}
+
 body {
-    background:#292929;
+    background:#393939;
     font-family:Helvetica,Arial,Sans-serif;
     min-width:1024px;
 }
@@ -29,12 +33,12 @@ body {
 
 #notifications .progressbar {
     border:1px solid rgba(0,0,0,0.3);
-    height: 18px;
-    overflow: hidden;
-    position: absolute;
-    right: 40px;
-    top: 10px;
-    width: 250px;
+    height:18px;
+    overflow:hidden;
+    position:absolute;
+    right:40px;
+    top:10px;
+    width:250px;
 }
 
 #notifications .progressbar .progressbar-value {
@@ -73,7 +77,6 @@ body {
 
 #main-menu > div.icon.selected {
     background:#000;
-    border-right:1px solid black;
 } 
 
 #main-menu > div.icon > a {
@@ -140,8 +143,7 @@ body {
     border-width:0 0 0 1px;
     float:right;
 }
-#main-menu #mod-settings:hover,
-#main-menu #mod-settings.selected {
+#main-menu #mod-settings.uptodate {
     background-color:#000;
     background-position:-180px top;
 }
@@ -200,33 +202,63 @@ body {
 }
 
 .tooltip {
-    background-color: #bbbbbb;
-    border: 1px solid #666666;
-    border-radius: 3px;
-    bottom: 45px;
-    color: black;
-    font-size: 14px;
-    position: absolute;
+    background:white;
+    border-radius:3px;
+    bottom:50px;
+    height:auto;
+    padding:7px;
+    position:absolute;
 }
 
 .tooltip .text {
-    font-weight: bold;
-    color: #222222;
-    margin-top: 2px;
+    color:#222222;
+    font-weight:bold;
+    line-height:1;
+    text-align:center;
 }
 
 .tooltip .arrow {
-    border-bottom:12px solid transparent;
-    border-left:12px solid transparent;
-    border-right:12px solid transparent;
-    border-top:12px solid #bbbbbb;
+    border-bottom:9px solid transparent;
+    border-left:9px solid transparent;
+    border-right:9px solid transparent;
+    border-top:9px solid white;
     height:0; 
     position:absolute;
-    bottom:-20px;
-    right:10px;
+    bottom:-18px;
+    right:14px;
     width:0; 
 }
 
+
+
+/* = MOD UPGRADE SYSTEM
+================================================ */
+#mod-upgrade {
+    background:white;
+    border-radius:9px;
+    color:black;
+    font-size:12px;
+    max-height:350px;
+    max-width:450px;
+    min-width:350px;
+    overflow:auto;
+    position:absolute;
+    right:10px;
+    bottom:50px;
+    z-index:10;
+}
+
+#mod-upgrade .progressbar-wrapper {
+    border: 1px solid #444444;
+    border-radius: 3px;
+    height: 20px;
+    width: 330px;
+}
+
+#mod-upgrade .progressbar {
+    background-color: #8888ff;
+    height: 20px;
+}
 
 
 /* = PLUGINS LIBRARY
@@ -804,7 +836,7 @@ body {
     width:100%;
 }
 #pedalboards-library .pedalboards .pedalboard .img img {
-    cursor: pointer;
+    cursor:pointer;
     height:auto;
     width:100%;
 }
@@ -1220,13 +1252,18 @@ body {
 /* = NOTIFICATIONS
 ================================================ */
 .screen-disconnected {
-    background-color: black;
-    color: white;
-    font-size: 80px;
-    text-align: center;
-    padding-top: 150px;
-    opacity: 0.5;
-    z-index: 10;
+    background:rgba(0,0,0,.9);
+    color:white;
+    display:table;
+    font-size:72px;
+    height:100% !important;
+    text-align:center;
+    z-index:10;
+}
+
+.screen-disconnected p {
+    display:table-cell;
+    vertical-align:middle;
 }
 
 /* coisas que estão sendo reimplementadas */

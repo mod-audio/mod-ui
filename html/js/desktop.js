@@ -49,6 +49,8 @@ function Desktop(elements) {
 	userAvatar: $('<div>'),
 	networkIcon: $('<div>'),
 	bluetoothIcon: $('<div>'),
+	upgradeIcon: $('<div>'),
+	upgradeWindow: $('<div>'),
 	logout: $('<div>')
     }, elements)
 
@@ -78,8 +80,7 @@ function Desktop(elements) {
 	    })
 	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
 	    self.feedManager.start(self.userSession.sid)
-	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.username))
-	    console.log('aqui')
+	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.username), true)
 	    self.netStatus.statusTooltip('status', 'logged')
 	},
 	logout: function() {
@@ -205,7 +206,7 @@ function Desktop(elements) {
 			     return new Notification('error', 
 						     "Couldn't disconnect")
 			 var block = $('<div class="screen-disconnected">')
-			 block.html('Disconnected')
+			 block.html('<p>Disconnected</p>')
 			 $('body').append(block).css('overflow', 'hidden')
 			 block.width($(window).width() * 5)
 			 block.height($(window).height() * 5)
@@ -334,7 +335,7 @@ function Desktop(elements) {
     })
 
     elements.bluetoothIcon.statusTooltip()
-    var status = false
+    var blueStatus = false
     new Bluetooth({ 
 	icon: elements.bluetoothIcon,
 	status: function(online) {
@@ -342,11 +343,16 @@ function Desktop(elements) {
 		elements.bluetoothIcon.addClass('online')
 	    else
 		elements.bluetoothIcon.removeClass('online')
-	    status = online
+	    blueStatus = online
 	},
 	notify: function(msg) {
-	    elements.bluetoothIcon.statusTooltip('message', msg, status)
+	    elements.bluetoothIcon.statusTooltip('message', msg, blueStatus)
 	}
+    })
+
+    elements.upgradeWindow.upgradeWindow({
+	icon: elements.upgradeIcon,
+	windowManager: self.windowManager,
     })
 
     $(document).bind('ajaxSend', function() {
@@ -737,7 +743,7 @@ JqueryClass('saveBox', {
 JqueryClass('statusTooltip', {
     init: function() {
 	var self = $(this)
-	var tooltip = $('<div class="tooltip top">').appendTo($('body'))
+	var tooltip = $('<div class="tooltip">').appendTo($('body'))
 	$('<div class="arrow">').appendTo(tooltip)
 	$('<div class="text">').appendTo(tooltip)
 	tooltip.hide()
@@ -749,7 +755,6 @@ JqueryClass('statusTooltip', {
 				       $(this).hide() 
 				   }) 
 	})
-	console.log('aqui')
 	tooltip.css('right', $(window).width() - self.position().left - self.width())
 	return self
     },
