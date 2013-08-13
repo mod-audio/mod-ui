@@ -59,6 +59,15 @@
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var MAX_SCREENSHOT_WIDTH = 600
       var MAX_SCREENSHOT_HEIGHT = 600
+      var PACKAGE_SERVER_ADDRESS = ('{{package_server_address}}' ||
+                                     document.location.origin.replace(/(https?:\/\/[^/:]+).+/, 
+                                                                      function(m, first) {
+                                                                          return first + ':' + {{default_package_server_port}}
+                                                                      })
+                                   ).replace(/\/$/, '')
+      var PACKAGE_REPOSITORY = '{{package_repository}}'
+
+      $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
       $('document').ready(function() {
           new Desktop({
@@ -87,6 +96,8 @@
               userAvatar: $('#user-avatar'),
               networkIcon: $('#mod-cloud'),
               bluetoothIcon: $('#mod-bluetooth'),
+	      upgradeWindow: $('#mod-upgrade'),
+	      upgradeIcon: $('#mod-settings'),
               logout: $('#logout')
           })
       })
@@ -111,7 +122,7 @@
     <script type="text/javascript" src="js/hardware.js"></script>
     <script type="text/javascript" src="js/share.js"></script>
     <script type="text/javascript" src="js/bluetooth.js"></script>
-    <script type="text/javascript" src="js/system.js"></script>
+    <script type="text/javascript" src="js/upgrade.js"></script>
     <script type="text/javascript" src="js/xrun.js"></script>
 
 </head>
@@ -565,29 +576,24 @@
     <!-- END MOD UPDATE/UPGRADE TOOLTIP -->
     
     <!-- MOD UPDATE/UPGRADE BOX -->
-    <div id="mod-upgrade" class="">
+    <div id="mod-upgrade" class="hidden">
         <div class="box">
-            <div class="mod-upgrade-packages-list ">
-                <p>The following packages need upgrade:</p>
-                <ul>
-                    <li>Package #1</li>
-                    <li>Package #2</li>
-                    <li>Package #3</li>
-                    <li>Package #4</li>
-                    <li>Package #5</li>
-                    <li>Package #6</li>
-                    <li>Package #7</li>
-                    <li>Package #8</li>
-                    <li>Package #9</li>
-                    <li>Package #10</li>
-                </ul>
+            <div class="mod-upgrade-packages-list">
+                <p>The following software updates are available:</p>
+                <ul></ul>
                 <p class="textright">
                     <button class="btn btn-mini btn-info">Upgrade</button>
                 </p>
             </div>
-            <div class="mod-upgrading textcenter hidden">
-                <p>Start downloading...</p>
-            </div>
+	    <div class="download-progress hidden">
+	      <div class="download-info">
+		<div class="downloading-file">Downloading <span class="filename"></span> (<span class="file-number"></span>/<span class="total-files"></span>)</div>
+	      </div>
+	      <div class="download-start">Starting download...</div>
+	      <div class="download-installing">Installing packages... (may take a while)</div>
+	      <div class="installation-checking">Verifying installation...</div>
+	      <div class="progressbar-wrapper"><div class="progressbar"></div></div>
+	    </div>
         </div>
     </div>
     <!-- END MOD UPDATE/UPGRADE BOX -->
