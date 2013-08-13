@@ -136,9 +136,15 @@ function HardwareManager(options) {
 		select.val(i)
 	    }
 	}
+	console.log(options.getGui(instanceId))
+	var gui = options.getGui(instanceId)
+	var pluginName = gui.effect.label || gui.effect.name
+	var portName = pluginName
+	if (port.symbol != ':bypass') portName += ' - ' + port.name
+
 	var min = form.find('input[name=min]').val(currentAddressing.minimum || port.minimum)
 	var max = form.find('input[name=max]').val(currentAddressing.maximum || port.maximum)
-	var label = form.find('input[name=label]').val(currentAddressing.label || port.name)
+	var label = form.find('input[name=label]').val(currentAddressing.label || portName)
 	form.find('.js-save').click(function() {
 	    actuator = {}
 	    if (select.val() >= 0)
