@@ -29,8 +29,6 @@ function HardwareManager(options) {
 	
     }, options)
 
-    // All units that can be addressed as tap tempo
-    var taptempoUnits = [ 'bpm', 'hz', 'ms', 's' ]
     // All control types
     var controlTypes = [ 'switch', 'range', 'tap_tempo' ]
     
@@ -83,7 +81,7 @@ function HardwareManager(options) {
 	    types.push('switch')
 	else {
 	    types.push('range')
-	    if (port.unit && port.unit.symbol && taptempoUnits.indexOf(port.unit.symbol) >= 0)
+	    if (port.tap_tempo)
 		types.push('tap_tempo')
 	}
 	return types
@@ -136,9 +134,15 @@ function HardwareManager(options) {
 		select.val(i)
 	    }
 	}
+	console.log(options.getGui(instanceId))
+	var gui = options.getGui(instanceId)
+	var pluginName = gui.effect.label || gui.effect.name
+	var portName = pluginName
+	if (port.symbol != ':bypass') portName += ' - ' + port.name
+
 	var min = form.find('input[name=min]').val(currentAddressing.minimum || port.minimum)
 	var max = form.find('input[name=max]').val(currentAddressing.maximum || port.maximum)
-	var label = form.find('input[name=label]').val(currentAddressing.label || port.name)
+	var label = form.find('input[name=label]').val(currentAddressing.label || portName)
 	form.find('.js-save').click(function() {
 	    actuator = {}
 	    if (select.val() >= 0)
@@ -196,7 +200,7 @@ function HardwareManager(options) {
 	    // Looks like this tap tempo addressing structure is obsolete, so
 	    // is the field type_options
 	    addressing.type = 5
-	    addressing.type_options = taptempoUnits.indexOf(self.data('unit').symbol) + 1
+	    addressing.type_options = [ 'bpm', 'hz', 'ms', 's' ].indexOf(self.data('unit').symbol) + 1
 	}
 	*/
     }
