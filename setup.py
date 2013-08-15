@@ -11,7 +11,7 @@ setup(name = 'mod',
       packages = find_packages(),
       entry_points = {
           'console_scripts': [
-              'mod-webserver = mod.webserver:run',
+              'mod-ui = mod.webserver:run',
               ]
           },
       scripts = [
