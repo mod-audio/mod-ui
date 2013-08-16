@@ -42,7 +42,10 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
+                          PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
+                          PACKAGE_REPOSITORY,
                           )
+
 
 from modcommon.communication import fileserver, crypto
 from modcommon import json_handler
@@ -490,17 +493,10 @@ class EffectParameterAddress(web.RequestHandler):
         except:
             ctype = 0
 
-        # TODO what does unit do? It's not being passed in any situation
-        try:
-            unit = self.get_argument('unit')
-        except:
-            unit = "none"
-        if not unit:
-            unit = "none"
-
         value = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
+        unit = data.get('unit', 'none') or 'none'
 
         options = data.get('options', [])
 
@@ -712,6 +708,9 @@ class TemplateHandler(web.RequestHandler):
             'hardware_profile': json.dumps(get_hardware()),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
+            'package_server_address': PACKAGE_SERVER_ADDRESS or '',
+            'default_package_server_port': DEFAULT_PACKAGE_SERVER_PORT,
+            'package_repository': PACKAGE_REPOSITORY,
             }
         return context
 
