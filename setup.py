@@ -2,16 +2,16 @@ from setuptools import setup, find_packages
 import os
 
 setup(name = 'mod',
-      version = '0.1',
+      version = '0.9',
       description = 'MOD',
-      long_description = 'MOD - Musician Operated Device - python libraries',
+      long_description = 'MOD - Musician Operated Device - User Interface server and libraries',
       author = "Hacklab and AGR",
       author_email = "lhfagundes@hacklab.com.br",
-      license = "Proprietary, hopefully not for long",
+      license = "GPLv3",
       packages = find_packages(),
       entry_points = {
           'console_scripts': [
-              'mod-webserver = mod.webserver:run',
+              'mod-ui = mod.webserver:run',
               ]
           },
       scripts = [
