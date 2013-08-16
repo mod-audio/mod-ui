@@ -148,13 +148,13 @@ function HardwareManager(options) {
 		actuator = actuators[select.val()]
 
 	    // Here the addressing structure is created
-	    var addressing = { actuator: actuator.address,
-			       addressing_type: actuator.type,
+	    var addressing = { actuator: actuator.address, // the actuator used
+			       addressing_type: actuator.type, // one of controlTypes
 			       label: label.val() || port.name,
 			       minimum: min.val() || port.minimum,
 			       maximum: max.val() || port.maximum,
 			       value: currentValue,
-			       unit: port.unit ? port.unit.symbol : null
+			       options: [] // the available options in case this is enumerated (no interface for that now)
 			     }
 
 	    self.setAddressing(instanceId, port.symbol, addressing,
@@ -177,25 +177,25 @@ function HardwareManager(options) {
      */
     this.setIHMParameters = function(instanceId, symbol, addressing) {
 	addressing.type = 0
-	addressing.type_options = 0
 	addressing.options = []
 	if (!addressing.actuator)
 	    return
 	var port = options.getGui(instanceId).controls[symbol]
+	addressing.unit = port.unit ? port.unit.symbol : null
 	if (port.logarithmic)
 	    addressing.type = 1
 	else if (port.enumeration) {
 	    addressing.type = 2
-	    addressing.options = port.scalePoints.map(function(point) { 
-		return [ point.value, point.label ]
-	    })
+	    if (!addressing.options || addressing.options.length == 0)
+		addressing.options = port.scalePoints.map(function(point) { 
+		    return [ point.value, point.label ]
+		})
 	} else if (port.trigger)
 	    addressing.type = 4
 	else if (port.toggled)
 	    addressing.type = 3
-	else if (addressing.addressing_type == 'tap_tempo') {
+	else if (addressing.addressing_type == 'tap_tempo')
 	    addressing.type = 5
-	}
     }
 
     // Does the addressing
