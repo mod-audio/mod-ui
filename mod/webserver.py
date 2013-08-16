@@ -494,17 +494,10 @@ class EffectParameterAddress(web.RequestHandler):
         except:
             ctype = 0
 
-        # TODO what does unit do? It's not being passed in any situation
-        try:
-            unit = self.get_argument('unit')
-        except:
-            unit = "none"
-        if not unit:
-            unit = "none"
-
         value = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
+        unit = data.get('unit', 'none') or 'none'
 
         options = data.get('options', [])
 

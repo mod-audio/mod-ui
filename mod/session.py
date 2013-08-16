@@ -443,7 +443,7 @@ class Session(object):
                                    symbol,
                                    addressing.get('label', '---'),
                                    int(addressing.get('type', 0)),
-                                   addressing.get('unit', 'none'), #TODO units are not yet being addressed
+                                   addressing.get('unit', 'none'),
                                    float(addressing['value']),
                                    float(addressing['maximum']),
                                    float(addressing['minimum']),

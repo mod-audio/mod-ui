@@ -134,7 +134,6 @@ function HardwareManager(options) {
 		select.val(i)
 	    }
 	}
-	console.log(options.getGui(instanceId))
 	var gui = options.getGui(instanceId)
 	var pluginName = gui.effect.label || gui.effect.name
 	var portName = pluginName
@@ -154,12 +153,13 @@ function HardwareManager(options) {
 			       label: label.val() || port.name,
 			       minimum: min.val() || port.minimum,
 			       maximum: max.val() || port.maximum,
-			       value: currentValue
+			       value: currentValue,
+			       unit: port.unit ? port.unit.symbol : null
 			     }
 
 	    self.setAddressing(instanceId, port.symbol, addressing,
 			       function() {
-				   form.window('close')
+				   form.remove()
 			       })
 	})
 	form.find('.js-close').click(function() {
@@ -179,7 +179,6 @@ function HardwareManager(options) {
 	addressing.type = 0
 	addressing.type_options = 0
 	addressing.options = []
-	// TODO addressing.unit
 	if (!addressing.actuator)
 	    return
 	var port = options.getGui(instanceId).controls[symbol]
@@ -194,15 +193,9 @@ function HardwareManager(options) {
 	    addressing.type = 4
 	else if (port.toggled)
 	    addressing.type = 3
-	/*
-	else if (addressingType == 'tap_tempo') {
-	    // TODO
-	    // Looks like this tap tempo addressing structure is obsolete, so
-	    // is the field type_options
+	else if (addressing.addressing_type == 'tap_tempo') {
 	    addressing.type = 5
-	    addressing.type_options = [ 'bpm', 'hz', 'ms', 's' ].indexOf(self.data('unit').symbol) + 1
 	}
-	*/
     }
 
     // Does the addressing
