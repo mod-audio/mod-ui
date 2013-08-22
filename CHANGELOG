@@ -1,3 +1,9 @@
+0.10.4
+======
+
+  - NEW: auto detects the controller tty 
+  - FIX: pedalboard keep state
+
 0.10.3
 ======
 
