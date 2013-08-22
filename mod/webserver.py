@@ -21,7 +21,6 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import jack
 import StringIO
 import time
 try:
@@ -576,7 +575,6 @@ class PedalboardSave(web.RequestHandler):
         
         # make sure title is unicode
         pedalboard['metadata']['title'] = unicode(title)
-        #yield gen.Task(SESSION.pedalboard_binary, pedalboard['_id'])
         save_pedalboard(pedalboard)
         THUMB_GENERATOR.schedule_thumbnail(pedalboard['_id'])
 
@@ -674,7 +672,6 @@ class BankSave(web.RequestHandler):
     def post(self):
         banks = json.loads(self.request.body)
         save_banks(banks)
-        res = yield gen.Task(SESSION.banks_binary)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
         self.finish()
@@ -787,11 +784,7 @@ class JackXRun(web.RequestHandler):
 
     @classmethod
     def connect(cls):
-        cls.client = jack.client_open("modwebserver", 
-                                      jack.JackNoStartServer,
-                                      None)
-        jack.set_xrun_callback(cls.client, cls.xrun, None)
-        jack.activate(cls.client)
+        pass
 
     @classmethod
     def xrun(cls, *args):
@@ -933,7 +926,6 @@ def run():
 
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
-    #tornado.ioloop.IOLoop.instance().add_callback(lambda: SESSION.banks_binary(lambda r: True))
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
     
     tornado.ioloop.IOLoop.instance().start()

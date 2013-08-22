@@ -27,7 +27,7 @@ class ReaderProcess(multiprocessing.Process):
         self.serial_data = ""
 
     def process_msg(self):
-        if self.serial_data.startswith('resp'):
+        if self.serial_data.startswith('resp') or self.serial_data.startswith('not found'):
             try:
                 self.lock.release()
             except:

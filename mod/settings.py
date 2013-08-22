@@ -53,8 +53,8 @@ DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/ef
 
 UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', join(ROOT, '../units.ttl'))
 
-CONTROLLER_SERIAL_PORT = os.environ.get('MOD_CONTROLLER_SERIAL_PORT', '/dev/ttyS0')
-CONTROLLER_BAUD_RATE = os.environ.get('MOD_CONTROLLER_BAUD_RATE', 115200)
+CONTROLLER_SERIAL_PORT = os.environ.get('MOD_CONTROLLER_SERIAL_PORT', '/dev/ttyACM0')
+CONTROLLER_BAUD_RATE = os.environ.get('MOD_CONTROLLER_BAUD_RATE', 10000000)
 MANAGER_PORT = 5555
 
 EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))
