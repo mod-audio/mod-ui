@@ -53,8 +53,21 @@ DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/ef
 
 UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', join(ROOT, '../units.ttl'))
 
-CONTROLLER_SERIAL_PORT = os.environ.get('MOD_CONTROLLER_SERIAL_PORT', '/dev/ttyACM0')
 CONTROLLER_BAUD_RATE = os.environ.get('MOD_CONTROLLER_BAUD_RATE', 10000000)
+
+def get_tty_acm():
+    import glob, serial
+    for tty in glob.glob("/dev/ttyACM*"):
+        try:
+            s = serial.Serial(tty, CONTROLLER_BAUD_RATE)
+        except serial.serialutil.SerialException:
+            next
+        else:
+            s.close()
+            return tty
+    return  "/dev/ttyACM0"
+
+CONTROLLER_SERIAL_PORT = os.environ.get('MOD_CONTROLLER_SERIAL_PORT', get_tty_acm())
 MANAGER_PORT = 5555
 
 EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))
