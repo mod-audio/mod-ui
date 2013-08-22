@@ -1007,18 +1007,21 @@ body {
     width:45%;
 }
 #bank-addressings {
-    background:blue;
+    background:#333;
     left:20%;
-    height:30px;
+    height:37px;
     margin:0;
     padding:0;
     position:absolute;
     text-align:center;
-    top:68px;
+    top:69px;
     width:45%;
 }
 #bank-addressings select {
-    width: 24%;
+    display: block;
+    float: left;
+    margin: 5px 2.5%;
+    width: 20%;
 }
 #bank-pedalboards {
     background:#333;
@@ -1029,7 +1032,7 @@ body {
     overflow:auto;
     padding:0 0 200px 0;
     position:fixed;
-    top:98px;
+    top:105px;
     width:45%;
 }
 #bank-pedalboards > div {
@@ -1069,14 +1072,13 @@ body {
 }
 
 .pedalboard .addressings .footswitch {
-    /* porque tá quebrando linha? de onde vem essa borda? - asa*/
-    background-color: green;
-    display: inline-block; 
+    background: #2b2b2b url(../img/footswitch-free.png) no-repeat center center;
+    float: left;
     height: 20px;
     width: 25%;
 }
 .pedalboard .addressings .footswitch.addressed {
-    background-color: red;
+    background: #2b2b2b url(../img/footswitch-addressed.png) no-repeat center center;
 }
 
 #bank-pedalboards .mode {
@@ -1161,7 +1163,6 @@ body {
 }
 #bank-pedalboards-result .pedalboard .img {
     background:#2b2b2b;
-    border-radius:4px;
     display:block;
     height:auto;
     margin:0 auto;
