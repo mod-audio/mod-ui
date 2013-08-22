@@ -1064,18 +1064,18 @@ body {
     width:100%;
 }
 
-#bank-pedalboards .pedalboard .addressings {
+.pedalboard .addressings {
     width: 100%;
 }
 
-#bank-pedalboards .pedalboard .addressings .footswitch {
+.pedalboard .addressings .footswitch {
     /* porque tá quebrando linha? de onde vem essa borda? - asa*/
     background-color: green;
     display: inline-block; 
     height: 20px;
     width: 25%;
 }
-#bank-pedalboards .pedalboard .addressings .footswitch.addressed {
+.pedalboard .addressings .footswitch.addressed {
     background-color: red;
 }
 

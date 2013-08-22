@@ -660,8 +660,7 @@ class BankLoad(web.RequestHandler):
                     # This is a bug. There's a pedalboard without ID. Let's recover from it
                     continue
                 full_pedalboard = json.loads(full_pedalboard)
-                pedalboard.update(full_pedalboard['metadata'])
-                pedalboards.append(pedalboard)
+                pedalboards.append(full_pedalboard)
             bank['pedalboards'] = pedalboards
 
         self.write(json.dumps(banks))

@@ -90,6 +90,7 @@ class Actuator(object):
 
 # Known actuators
 class FootSwitch(Actuator):
+    # Attention: this type is hardcoded in pedalboards.js
     ACT_TYP = 1
     
     def __init__(self, name="Foot", addressing_type=['switch', 'tap_tempo'], exclusive=True):

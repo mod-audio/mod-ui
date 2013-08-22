@@ -225,8 +225,8 @@ JqueryClass('bankBox', {
 	    //searchbutton: self.find('button.search'),
 	    mode: 'installed',
 	    render: function(pedalboard, url) {
-		$.extend(pedalboard.metadata, { 'id': pedalboard['_id'] })
-	    	var rendered = self.bankBox('renderPedalboard', pedalboard.metadata)
+		var pedalboardData = self.bankBox('extractPedalboardData', pedalboard)
+	    	var rendered = self.bankBox('renderPedalboard', pedalboardData)
 		rendered.draggable({ revert: 'invalid',
 				     connectToSortable: options.pedalboardCanvas,
 				     helper: function() {
@@ -286,6 +286,28 @@ JqueryClass('bankBox', {
 	self.window(options)
     },
 
+    extractPedalboardData: function(pedalboard) {
+	var data = $.extend({ 'id': pedalboard['_id'] }, pedalboard.metadata)
+	data.footswitches = [0, 0, 0, 0]
+	if (!pedalboard.instances)
+	    return data
+	var instance, actuator, i, symbol
+	for (i in pedalboard.instances) {
+	    instance = pedalboard.instances[i]
+	    if (!instance.addressing)
+		continue
+	    for (symbol in instance.addressing) {
+		actuator = instance.addressing[symbol].actuator
+		if (actuator[2] == 1) { 
+		    // This means actuator is a footswitch
+		    // Attention: the above hardcoded value 1 comes from mod/hardware.py
+		    data.footswitches[actuator[3]] = true
+		}
+	    }
+	}
+	return data
+    },
+
     load: function() {
 	var self = $(this)
 	self.data('load')(function(banks) {
@@ -307,7 +329,6 @@ JqueryClass('bankBox', {
 			      )
 	    var pedalboardData = []
 	    pedalboards.children().each(function() { 
-		console.log($(this))
 		pedalboardData.push({
 		    id: $(this).data('pedalboardId'),
 		    title: $(this).find('.js-title').text()
@@ -338,8 +359,10 @@ JqueryClass('bankBox', {
 	bank.data('selected', false)
 	bank.data('pedalboards', $('<div>'))
 
+	var pedalboardData, rendered
 	for (var i=0; i<bankData.pedalboards.length; i++) {
-	    rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i])
+	    pedalboardData = self.bankBox('extractPedalboardData', bankData.pedalboards[i])
+	    rendered = self.bankBox('renderPedalboard', pedalboardData)
 	    rendered.find('.js-remove').show()
 	    rendered.appendTo(bank.data('pedalboards'))
 	}
