@@ -1,3 +1,8 @@
+0.10.1
+======
+
+  - FIX: last digit of PACKAGE_SERVER_ADDRESS was being removed
+
 0.10
 ====
 
