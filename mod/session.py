@@ -296,7 +296,7 @@ class Session(object):
             _callback(False)
 
         def _check_values(types):
-            for i,value in enumerate(cmd[2:]):
+            for i,value in enumerate(cmd[1:]):
                 try:
                     types[i](value)
                 except ValueError:
