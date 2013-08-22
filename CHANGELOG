@@ -1,3 +1,9 @@
+0.10.2
+======
+
+  - FIX: check_value now updated for new controller protocol
+  - NEW: pedalboard keeps it's state when changed via controller
+
 0.10.1
 ======
 
