@@ -1,3 +1,9 @@
+0.10.3
+======
+
+  - FIX: after software installation, page reload waits one second.
+  - FIX: message typo
+	
 0.10.2
 ======
 
