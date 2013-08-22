@@ -665,6 +665,23 @@ class Session(object):
                     ),
                   callback, datatype='boolean')
 
+    def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, 
+                     function, callback):
+        """
+        Function is an integer, meaning:
+         - 0: Nothing (unaddress)
+         - 1: True bypass
+         - 2: Pedalboard up
+         - 3: Pedalboard down
+        """
+        self.serial_send('bank_config %d %d %d %d %d' %
+                         (hardware_type,
+                          hardware_id,
+                          actuator_type,
+                          actuator_id,
+                          function),
+                         callback, datatype='boolean')
+
     def ping(self, callback):
         self.serial_send('ping', callback, datatype='boolean')
 
