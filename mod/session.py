@@ -16,24 +16,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import socket, os, serial, multiprocessing, time, logging
+import socket, os, serial, multiprocessing, time, logging, os.path
 
 from datetime import timedelta
 from tornado import iostream, ioloop
 from Queue import Empty
 
-from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, PEDALBOARD_BINARY_DIR, PEDALBOARD_DIR, CONTROLLER_INSTALLED,
+from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, PEDALBOARD_DIR, CONTROLLER_INSTALLED,
                         CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
                         CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
                         CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
-                        PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
-from mod.pedalboard import calculate_binaries_checksum, generate_bank_binary, generate_pedalboard_binary, load_pedalboard
+                        PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
+from mod.pedalboard import load_pedalboard, list_pedalboards, list_banks
 from mod.controller import WriterProcess, ReaderProcess
 
 NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 _freqs4 = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.0, 415.3, 440.0, 466.16, 493.88]
 FREQS = reduce(lambda l1, l2: l1+l2, ([ freq/2**i for freq in _freqs4 ] for i in range(4, -4, -1)))
+
+def find_freqnotecents(f):
+    freq = min(FREQS, key=lambda i: abs(i-f))
+    idx = FREQS.index(freq)
+    octave = idx / 12
+    note = NOTES[FREQS.index(freq/2**octave)]
+    d = 1 if f >= freq else -1
+    next_f = FREQS[idx+d]
+    cents =  int(100 * (f - freq) / (next_f - freq)) * d
+    return freq, "%s%d" % (note, octave), cents
 
 def _serial_check():
     """
@@ -46,16 +56,6 @@ def _serial_check():
 
 def _serial_check_init(queue):
     _serial_check.queue = queue
-
-def find_freqnotecents(f):
-    freq = min(FREQS, key=lambda i: abs(i-f))
-    idx = FREQS.index(freq)
-    octave = idx / 12
-    note = NOTES[FREQS.index(freq/2**octave)]
-    d = 1 if f >= freq else -1
-    next_f = FREQS[idx+d]
-    cents =  int(100 * (f - freq) / (next_f - freq)) * d
-    return freq, "%s%d" % (note, octave), cents
 
 class Session(object):
 
@@ -226,9 +226,9 @@ class Session(object):
         self.serial_queue.append((msg, callback, datatype))
 
     def serial_send_resp(self, resp):
-        logging.info("[serial] -> resp %d" % resp)
+        logging.info("[serial] -> resp %s" % resp)
         # no worries as our queue is never full
-        self.writer_queue.put_nowait("resp %d" % resp) # non-blocking put()
+        self.writer_queue.put_nowait("resp %s" % resp) # non-blocking put()
 
     def _serial_checker(self):
         def _callback(result):
@@ -274,15 +274,22 @@ class Session(object):
             logging.warning("[serial] unexpected response received from reader process")
             ioloop.IOLoop.instance().add_callback(self._serial_checker)
         else:
-            resp = msg[5:] # removes the resp prefix
+            if msg.startswith("not found"):
+                resp = "-1"
+                datatype = 'boolean'
+            else:
+                resp = msg[5:] # removes the resp prefix
 
             resp = self._check_resp(resp, datatype)
             callback(resp)
 
     def _serial_process_command(self, msg):
         cmd = msg.split()
-        def _callback(resp):
-            self.serial_send_resp(0 if resp else -1)
+        def _callback(resp, resp_args=None):
+            if resp_args is None:
+                self.serial_send_resp(0 if resp else -1)
+            else:
+                self.serial_send_resp("%d %s" % (0 if resp else -1, resp_args))
 
         def _error(e):
             logging.error("[serial] error for '%s': %s" % (msg, e))
@@ -297,15 +304,13 @@ class Session(object):
                     return False
             return True
 
-        if msg.startswith("efeitos -p") and len(cmd) == 5:
+        # TODO: more documentation 
+        if msg.startswith("control_set") and len(cmd) == 4:
             if _check_values([int, str, float]):
-                self.parameter_set(int(cmd[2]), cmd[3], float(cmd[4]), _callback)
-        elif msg.startswith("efeitos -b") and len(cmd) == 4: 
-            if _check_values([int, int]):
-                self.bypass(int(cmd[2]), int(cmd[3]), _callback)
-        elif msg.startswith("pilhas -s") and len(cmd) == 3: 
+                self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback)
+        elif msg.startswith("pedalboard ") and len(cmd) == 2: 
             if _check_values([str]):
-                self.load_pedalboard(cmd[2], _callback)
+                self.load_pedalboard(cmd[1], _callback)
         elif msg.startswith("ping") and len(cmd) == 1:
             _callback(True)
         elif msg.startswith("tuner ") and len(cmd) == 2:
@@ -322,11 +327,22 @@ class Session(object):
                 self.peakmeter_off(_callback)
             else:
                 _error("invalid argument")
+        elif msg.startswith("hw_con") and len(cmd) == 3:
+            if _check_values([int, int]):
+                self.hardware_connected(cmd[1], cmd[2], _callback)
+        elif msg.startswith("hw_dis") and len(cmd) == 3:
+            if _check_values([int, int]):
+                self.hardware_disconnected(cmd[1], cmd[2], _callback)
+        elif msg.startswith("banks") and len(cmd) == 1:
+            self.list_banks(_callback)
+        elif msg.startswith("pedalboards") and len(cmd) == 2:
+            if _check_values([int]):
+                self.list_pedalboards(int(cmd[1]), _callback)
         else:
             _error("command not found")
 
     def _serial_process_msg(self, msg):
-        if msg.startswith('resp'):
+        if msg.startswith('resp') or msg.startswith('not found'):
             self._serial_process_response(msg)
         else:
             self._serial_process_command(msg)
@@ -465,6 +481,15 @@ class Session(object):
 
         self.remove(-1, add_effects)
 
+    def hardware_connected(self, hwtyp, hwid, callback): 
+        open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
+        callback(True)
+
+    def hardware_disconnected(self, hwtype, hwid):
+        if os.path.exist():
+            os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
+        callback(True)
+
     # host commands
 
     def add(self, objid, instance_id, callback):
@@ -473,7 +498,7 @@ class Session(object):
     def remove(self, instance_id, callback):
         def _callback(ok):
             if ok:
-                self.serial_send("efeitos -r %d" % instance_id, callback, datatype='boolean')
+                self.serial_send("control_rm %d :all" % instance_id, callback, datatype='boolean')
             else:
                 callback(ok)
 
@@ -549,7 +574,10 @@ class Session(object):
 
 
     def parameter_set(self, instance_id, port_id, value, callback):
-        self.socket_send('param_set %d %s %f' % (instance_id,
+        if port_id == ":bypass":
+            self.bypass(instance_id, value, callback)
+        else:
+            self.socket_send('param_set %d %s %f' % (instance_id,
                                            port_id,
                                            value),
                   callback, datatype='boolean')
@@ -566,6 +594,7 @@ class Session(object):
                   callback, datatype='boolean')
     # END host commands
 
+    # controller commands
     def start_session(self, callback=None):
         self.socket_queue = []
         self.serial_queue = []
@@ -578,19 +607,19 @@ class Session(object):
             else:
                 assert resp
         self.remove(-1, lambda r: None)
-        self.serial_send('sessao -i webserver', verify,
+        self.serial_send('ui_con', verify,
                   datatype='boolean')
 
     def end_session(self, callback):
         self.socket_queue = []
         self.serial_queue = []
-        self.serial_send('sessao -f webserver', callback,
+        self.serial_send('ui_dis', callback,
                   datatype='boolean')
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, callback):
-        self.serial_send('efeitos -y %d %d %d %d %d %d %s' % (instance_id, hardware_type, hardware_id, actuator_type, actuator_id,
-                                                        value, label.replace(" ", "_")), callback,
-                  datatype='boolean')
+        self.parameter_address(instance_id, ":bypass", label, 6, "none", value, 
+                               1, 0, hardware_type, hardware_id, actuator_type, 
+                               actuator_id, [], callback)
 
     def parameter_address(self, instance_id, port_id, label, ctype,
                           unit, current_value, maximum, minimum,
@@ -601,7 +630,7 @@ class Session(object):
         instance_id: effect instance
         port_id: control port
         label: lcd display label
-        ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo
+        ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
         unit: string representing the parameter unit (hz, bpm, seconds, etc)
         hardware_type: the hardware model
         hardware_id: the id of the hardware where we find this actuator
@@ -618,7 +647,7 @@ class Session(object):
         options = "%d %s" % (length, " ".join(options))
         options = options.strip()
 
-        self.serial_send('efeitos -h %d %s %s %d %s %f %f %f %d %d %d %d %s' %
+        self.serial_send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
                   ( instance_id,
                     port_id,
                     label,
@@ -627,6 +656,7 @@ class Session(object):
                     current_value,
                     maximum,
                     minimum,
+                    33, # step
                     hardware_type,
                     hardware_id,
                     actuator_type,
@@ -635,44 +665,20 @@ class Session(object):
                     ),
                   callback, datatype='boolean')
 
-    def pedalboard_binary(self, pedalboard_id, callback):
-        path = generate_pedalboard_binary(str(pedalboard_id))
-        self._serial_send_file(path, 0, callback)
-
     def ping(self, callback):
         self.serial_send('ping', callback, datatype='boolean')
 
-    def banks_binary(self, callback):
-        self._serial_send_file(generate_bank_binary(), 1, callback)
-
-    def binaries_checksum(self, callback):
-        def checksum_ok(ok):
-            if ok:
-                callback(True)
-            else:
-                queue = []
-                for pedalboard in os.listdir(PEDALBOARD_DIR):
-                    if not os.path.isdir(os.path.join(PEDALBOARD_DIR, pedalboard)):
-                        path = generate_pedalboard_binary(pedalboard)
-                        queue.append([path, 0])
-                queue.append([generate_bank_binary(), 1])
-
-                def resend_all(ok):
-                    if ok:
-                        if len(queue) > 0:
-                            e = queue.pop(0)
-                            e.append(resend_all)
-                            self._serial_send_file(*e)
-                        else:
-                            # Everything rebuilt
-                            callback(True)
-                    if not ok:
-                        callback(False)
-
-                self.serial_send('binaries -r', resend_all, datatype='boolean')
-
-        checksum = calculate_binaries_checksum()
-        self.serial_send('binaries -c %s' % checksum, checksum_ok, datatype='boolean')
+    def list_banks(self, callback):
+        banks = " ".join('"%s" %d' % (bank, i) for i,bank in enumerate(list_banks()))
+        callback(True, banks)
+    
+    def list_pedalboards(self, bank_id, callback):
+        pedalboards = list_pedalboards(bank_id)
+        if pedalboards != False:
+            pedalboards = " ".join('"%s" %s' % (pedalboard, pedalboard_id) for pedalboard,pedalboard_id in pedalboards)
+            callback(True, pedalboards)
+            return
+        callback(pedalboards)
 
     def clipmeter(self, pos, value, callback=None):
         cb = callback
