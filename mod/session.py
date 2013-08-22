@@ -72,6 +72,8 @@ class Session(object):
 
         self.monitor_server = None
 
+        self._pedalboard = None
+        self._pedalboards = {}
         self.serial_init()
 
     def serial_init(self):
@@ -307,10 +309,10 @@ class Session(object):
         # TODO: more documentation 
         if msg.startswith("control_set") and len(cmd) == 4:
             if _check_values([int, str, float]):
-                self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback)
+                self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback, controller=True)
         elif msg.startswith("pedalboard ") and len(cmd) == 2: 
             if _check_values([str]):
-                self.load_pedalboard(cmd[1], _callback)
+                self.load_pedalboard(cmd[1], _callback, load_from_dict=True)
         elif msg.startswith("ping") and len(cmd) == 1:
             _callback(True)
         elif msg.startswith("tuner ") and len(cmd) == 2:
@@ -377,9 +379,15 @@ class Session(object):
         self.latest_callback = check_response
 
 
-    def load_pedalboard(self, pedalboard_id, callback):
+    def load_pedalboard(self, pedalboard_id, callback, load_from_dict=False):
         # loads the pedalboard json
-        pedalboard = load_pedalboard(pedalboard_id)
+        self._pedalboard = pedalboard_id
+
+        if self._pedalboards.get(pedalboard_id, None) is None or not load_from_dict:
+            pedalboard = load_pedalboard(pedalboard_id)
+            self._pedalboards[pedalboard_id] = pedalboard
+        else:
+            pedalboard = self._pedalboards[pedalboard_id]
 
         # let's copy the data
         effects = pedalboard['instances'][:]
@@ -505,9 +513,22 @@ class Session(object):
         self.socket_send('remove %d' % instance_id, _callback,
                   datatype='boolean')
 
-    def bypass(self, instance_id, value, callback):
+    def bypass(self, instance_id, value, callback, controller=False):
         value = 1 if int(value) > 0 else 0
-        self.socket_send('bypass %d %d' % (instance_id, value), callback,
+
+        if controller:
+            def _callback(r):
+                if r:
+                    if self._pedalboard is not None:
+                        for i, instance in enumerate(self._pedalboards[self._pedalboard]["instances"]):
+                            if instance["instanceId"] == instance_id:
+                                break
+                        self._pedalboards[self._pedalboard]["instances"][i]['bypassed'] = bool(value)
+                callback(r)
+        else:
+            _callback = callback
+
+        self.socket_send('bypass %d %d' % (instance_id, value), _callback,
                   datatype='boolean')
 
     def connect(self, port_from, port_to,
@@ -573,14 +594,26 @@ class Session(object):
                 callback, datatype='boolean')
 
 
-    def parameter_set(self, instance_id, port_id, value, callback):
+    def parameter_set(self, instance_id, port_id, value, callback, controller=False):
         if port_id == ":bypass":
-            self.bypass(instance_id, value, callback)
+            self.bypass(instance_id, value, callback, controller)
+            return
+
+        if controller:
+            def _callback(r):
+                if r:
+                    if self._pedalboard is not None:
+                        for i, instance in enumerate(self._pedalboards[self._pedalboard]["instances"]):
+                            if instance["instanceId"] == instance_id:
+                                break
+                        self._pedalboards[self._pedalboard]["instances"][i]["preset"]["port_id"] = value
+                callback(r)
         else:
-            self.socket_send('param_set %d %s %f' % (instance_id,
+            _callback = callback
+        self.socket_send('param_set %d %s %f' % (instance_id,
                                            port_id,
                                            value),
-                  callback, datatype='boolean')
+                  _callback, datatype='boolean')
 
     def parameter_get(self, instance_id, port_id, callback):
         self.socket_send('param_get %d %s' % (instance_id, port_id),
@@ -725,6 +758,8 @@ class FakeSession(FakeControllerSession):
     def __init__(self):
         self._peakmeter = False
         self._tuner = False
+        self._pedalboard = None
+        self._pedalboards = {}
         pass
 
     def add(self, objid, instance_id, callback):
