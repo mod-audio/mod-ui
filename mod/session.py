@@ -313,6 +313,10 @@ class Session(object):
         elif msg.startswith("pedalboard ") and len(cmd) == 2: 
             if _check_values([str]):
                 self.load_pedalboard(cmd[1], _callback, load_from_dict=True)
+        elif msg.startswith("pedalboard_save") and len(cmd) == 1:
+            self.save_pedalboard(self._pedalboards[self._pedalboard])
+        elif msg.startswith("pedalboard_reset") and len(cmd) == 1:
+            self.load_pedalboard(self._pedalboard, _callback, load_from_dict=False)
         elif msg.startswith("ping") and len(cmd) == 1:
             _callback(True)
         elif msg.startswith("tuner ") and len(cmd) == 2:
