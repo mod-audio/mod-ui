@@ -307,6 +307,7 @@ JqueryClass('bankBox', {
 			      )
 	    var pedalboardData = []
 	    pedalboards.children().each(function() { 
+		console.log($(this))
 		pedalboardData.push({
 		    id: $(this).data('pedalboardId'),
 		    title: $(this).find('.js-title').text()
@@ -336,7 +337,7 @@ JqueryClass('bankBox', {
 	self.data('bankCanvas').append(bank)
 	bank.data('selected', false)
 	bank.data('pedalboards', $('<div>'))
-	
+
 	for (var i=0; i<bankData.pedalboards.length; i++) {
 	    rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i])
 	    rendered.find('.js-remove').show()
