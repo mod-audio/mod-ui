@@ -298,7 +298,7 @@ class Session(object):
             _callback(False)
 
         def _check_values(types):
-            for i,value in enumerate(cmd[2:]):
+            for i,value in enumerate(cmd[1:]):
                 try:
                     types[i](value)
                 except ValueError:
@@ -467,7 +467,7 @@ class Session(object):
                                    symbol,
                                    addressing.get('label', '---'),
                                    int(addressing.get('type', 0)),
-                                   addressing.get('unit', 'none'),
+                                   addressing.get('unit', 'none') or 'none',
                                    float(addressing['value']),
                                    float(addressing['maximum']),
                                    float(addressing['minimum']),

@@ -26,6 +26,8 @@ function Notification(type, message, timeout) {
 
 
     this.open = function() {
+	if (!NOTIFICATIONS_ENABLED)
+	    return
 	if (self.rendered)
 	    self.rendered.remove()
 	self.rendered = $(Mustache.render(TEMPLATES['notification'],
