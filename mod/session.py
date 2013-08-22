@@ -383,15 +383,16 @@ class Session(object):
         # loads the pedalboard json
         self._pedalboard = pedalboard_id
 
+        import copy
         if self._pedalboards.get(pedalboard_id, None) is None or not load_from_dict:
             pedalboard = load_pedalboard(pedalboard_id)
-            self._pedalboards[pedalboard_id] = pedalboard
+            self._pedalboards[pedalboard_id] = copy.deepcopy(pedalboard)
         else:
             pedalboard = self._pedalboards[pedalboard_id]
 
         # let's copy the data
-        effects = pedalboard['instances'][:]
-        connections = pedalboard['connections'][:]
+        effects = copy.deepcopy(pedalboard['instances'])
+        connections = copy.deepcopy(pedalboard['connections'])
 
         # How it works:
         # remove -1  (remove all effects)
@@ -606,7 +607,8 @@ class Session(object):
                         for i, instance in enumerate(self._pedalboards[self._pedalboard]["instances"]):
                             if instance["instanceId"] == instance_id:
                                 break
-                        self._pedalboards[self._pedalboard]["instances"][i]["preset"]["port_id"] = value
+                        self._pedalboards[self._pedalboard]["instances"][i]["preset"][port_id] = value
+                        self._pedalboards[self._pedalboard]["instances"][i]["addressing"][port_id]["value"] = value
                 callback(r)
         else:
             _callback = callback
