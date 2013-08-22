@@ -200,6 +200,7 @@ JqueryClass('bankBox', {
 	    searchBox: self.find('input[type=search]'),
 	    resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
 	    resultCanvasMode: self.find('#bank-pedalboards-result .js-mode'),
+	    bankAddressing: self.find('#bank-addressings'),
 	    list: function(callback) { callback([]) },
 	    search: function(local, query, callback) { callback([]) },
 	    load: function(callback) { callback([]) },
@@ -283,6 +284,20 @@ JqueryClass('bankBox', {
 	    return false
 	}
 
+	var addressFactory = function(i) {
+	    return function() {
+		var current = self.data('currentBank')
+		if (!current)
+		    return
+		var value = $(this).val()
+		current.data('addressing')[i] = value
+		self.bankBox('save')
+	    }
+	}
+	for (i=0; i<4; i++) {
+	    self.find('select[name=foot-'+i+']').change(addressFactory(i))
+	}
+
 	self.window(options)
     },
 
@@ -337,6 +352,7 @@ JqueryClass('bankBox', {
 
 	    serialized.push({
 		title: bank.find('.js-bank-title').text(),
+		addressing: bank.data('addressing') || [0, 0, 0, 0],
 		pedalboards: pedalboardData
 	    })
 	});
@@ -355,17 +371,22 @@ JqueryClass('bankBox', {
     renderBank: function(bankData) {
 	var self = $(this)
 	var bank = $(Mustache.render(TEMPLATES.bank_item, bankData))
+	var addressing = bankData.addressing || [0, 0, 0, 0]
 	self.data('bankCanvas').append(bank)
 	bank.data('selected', false)
 	bank.data('pedalboards', $('<div>'))
+	bank.data('addressing', addressing)
 
-	var pedalboardData, rendered
-	for (var i=0; i<bankData.pedalboards.length; i++) {
+	var i, pedalboardData, rendered
+	for (i=0; i<bankData.pedalboards.length; i++) {
 	    pedalboardData = self.bankBox('extractPedalboardData', bankData.pedalboards[i])
 	    rendered = self.bankBox('renderPedalboard', pedalboardData)
 	    rendered.find('.js-remove').show()
 	    rendered.appendTo(bank.data('pedalboards'))
 	}
+
+	for (i=0; i<4; i++)
+	    self.find('select[name=foot-'+i+']').val(addressing[i])
 
 	bank.click(function() {
 	    if (bank.hasClass('selected'))
@@ -392,9 +413,14 @@ JqueryClass('bankBox', {
 	    // Save the pedalboards of the current bank
 	    current.data('pedalboards').append(canvas.children())
 	    current.data('selected', false)
+	    // addressing is already saved, every time select is changed
 	}
 
 	canvas.append(bank.data('pedalboards').children())
+
+	var addressing = bank.data('addressing')
+	for (i=0; i<4; i++)
+	    self.find('select[name=foot-'+i+']').val(addressing[i])
 
 	// Show everything
 	canvas.show()
@@ -408,6 +434,9 @@ JqueryClass('bankBox', {
 	bank.data('selected', true)
 	self.data('bankCanvas').children().removeClass('selected')
 	bank.addClass('selected')
+
+	// Show addressing bar
+	self.data('bankAddressing').show()
     },
 
     editBank: function(bank) {
@@ -447,6 +476,7 @@ JqueryClass('bankBox', {
 	    self.data('searchForm').hide()
 	    self.data('resultCanvas').hide()
 	    self.data('resultCanvasMode').hide()
+	    self.data('bankAddressing').hide()
 	}
 	bank.animate({ opacity: 0, height: 0 }, function() { bank.remove() })
 	self.bankBox('save')
