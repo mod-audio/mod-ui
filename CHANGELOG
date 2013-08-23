@@ -1,3 +1,8 @@
+0.11.6
+======
+
+  - FIX: some method parameters in session.py
+
 0.11.5
 ======
 
@@ -6,7 +11,7 @@
 0.11.4
 ======
 
-  - FIX: stupid invalid syntax 
+  - FIX: stupid invalid syntax
 
 0.11.3
 ======
