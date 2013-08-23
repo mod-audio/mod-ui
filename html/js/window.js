@@ -15,15 +15,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var WINDOWMANAGER = null;
+
 function WindowManager() {
     var self = this
+
+    WINDOWMANAGER = self
 
     this.windows = []
 
     this.register = function(window) {
 	self.windows.push(window)
 
-	window.window('open', function(f) {
+	window.bind('windowopen', function() {
 	    self.closeWindows(window)
 	})
 
@@ -52,16 +56,20 @@ function WindowManager() {
     var methods = {
 	init: function(options) {
 	    var self = $(this)
+
 	    if (!options)
-		options = {}
+		options = { windowManager: WINDOWMANAGER }
 	    var trigger = options.trigger
 	    self.data('trigger', trigger)
 
 	    if (options.open) self.bind('windowopen', options.open)
 	    if (options.close) self.bind('windowclose', options.close)
+	    if (options.preopen) 
+		self.data('preopen', options.preopen)
 
 	    self.hide()
 
+	    self.data('initialized', true)
 	    options.windowManager.register(self)
 
 	    self.find('.js-close').click(function() {
@@ -85,8 +93,19 @@ function WindowManager() {
 	    return self
 	},
 
-	open: function(closure) {
+	open: function(closure, force) {
 	    var self = $(this)
+
+	    if (!force && self.data('preopen')) {
+		self.data('preopen')(function() { 
+		    self.window('open', closure, true)
+		})
+		return
+	    }
+
+	    if (!self.data('initialized'))
+		self.window()
+
 	    if (closure) {
 		self.bind('windowopen', closure)
 		return
@@ -97,13 +116,13 @@ function WindowManager() {
 	    if (self.is(':visible'))
 		return
 
-	    var trigger = self.data('trigger')
-	    if (trigger)
-		trigger.addClass('selected')
 	    self.css('z-index', 100)
 	    self.show()
 	    self.trigger('windowopen')
 
+	    var trigger = self.data('trigger')
+	    if (trigger)
+		trigger.addClass('selected')
 	    self.data('defaultIcon').removeClass('selected')
 	},
 	    
@@ -116,11 +135,12 @@ function WindowManager() {
 	    if (!self.is(':visible'))
 		return
 
+	    self.hide()
+	    self.trigger('windowclose')
+
 	    var trigger = self.data('trigger')
 	    if (trigger)
 		trigger.removeClass('selected')
-	    self.hide()
-	    self.trigger('windowclose')
 	    self.data('defaultIcon').addClass('selected')
 	},
 

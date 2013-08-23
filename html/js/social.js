@@ -19,12 +19,21 @@ JqueryClass('socialWindow', {
     init: function(options) {
 	var self = $(this)
 	options = $.extend({
+	    userSession: null, //must be passed
 	    getFeed: function(callback) { callback([]) },
 	    loadPedalboard: function(pedalboard) {},
+	    trigger: $('<div>')
 	}, options)
 
 	self.data(options)
-	self.window(options)
+	self.window($.extend({
+	    preopen: function(callback) {
+		options.userSession.login(callback)
+	    },
+	    open: function() {
+		self.socialWindow('showFeed')
+	    }
+	}, options))
 
 	self.find('#cloud-feed').click(function() {
 	    self.socialWindow('renderFeed')
@@ -33,10 +42,6 @@ JqueryClass('socialWindow', {
 	    self.socialWindow('showSearch')
 	})
 	return self
-    },
-
-    open: function() {
-	$(this).socialWindow('showFeed')
     },
 
     showFeed: function() {

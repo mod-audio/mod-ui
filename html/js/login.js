@@ -220,7 +220,6 @@ function UserSession(options) {
             case CONNECTING:
             options.connecting(); break;
             case ONLINE:
-	    console.log('online')
             options.online(); break;
             case LOGGED:
             options.login()

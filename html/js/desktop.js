@@ -229,6 +229,7 @@ function Desktop(elements) {
     */
     this.socialWindow = elements.socialWindow.socialWindow({
 	windowManager: self.windowManager,
+	userSession: self.userSession,
 	getFeed: function(callback) { 
 	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid,
 		     success: function(pedalboards) {
@@ -250,7 +251,6 @@ function Desktop(elements) {
 	    }, true)
 	},
 	trigger: elements.socialTrigger,
-	open: function() { self.socialWindow.socialWindow('open') }
     })
 
     this.saveBox = elements.saveBox.saveBox({
@@ -546,6 +546,7 @@ Desktop.prototype.makePedalboard = function(el) {
     el.bind('dragStart', function() {
 	self.windowManager.closeWindows()
     })
+
     el.bind('pluginDragStart', function() {
 	self.effectBox.window('fade')
     })
