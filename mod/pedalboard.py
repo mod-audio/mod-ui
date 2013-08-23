@@ -30,12 +30,29 @@ def save_pedalboard(pedalboard):
     metadata = pedalboard['metadata']
     metadata['_id'] = pedalboard['_id']
     index.add(metadata)
+    save_last_pedalboard(pedalboard['_id'])
 
 def load_pedalboard(pedalboard_id):
     fh = open(os.path.join(PEDALBOARD_DIR, str(pedalboard_id)))
     j = json.load(fh)
     fh.close()
     return j
+
+def save_last_pedalboard(pedalboard_id):
+    fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'w')
+    fh.write(json.dumps({'pedalboard':pedalboard_id, 'bank':None}))
+    fh.close()
+
+def get_last_pedalboard():
+    try:
+        fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'r')
+    except IOError:
+        pid = ""
+    else:
+        j = json.load(fh)
+        fh.close()
+        pid = j['pedalboard']
+    return pid.strip()
 
 def list_pedalboards(bank_id):
     fh = open(BANKS_JSON_FILE, 'r')

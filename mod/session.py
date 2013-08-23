@@ -27,7 +27,8 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, PEDALBOARD_DIR, CONTROL
                         CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
                         CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
                         PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
-from mod.pedalboard import load_pedalboard, list_pedalboards, list_banks
+from mod.pedalboard import (load_pedalboard, list_pedalboards, list_banks, save_last_pedalboard, 
+                           save_pedalboard, get_last_pedalboard)
 from mod.controller import WriterProcess, ReaderProcess
 
 NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -68,15 +69,15 @@ class Session(object):
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
-        self._peakmeter = True
+        self._peakmeter = False
 
         self.monitor_server = None
 
         self._pedalboard = None
         self._pedalboards = {}
-        self.serial_init()
+        self.serial_init(lambda: self.load_pedalboard(get_last_pedalboard(), lambda r: r))
 
-    def serial_init(self):
+    def serial_init(self, callback):
         # serial blocking communication runs in other processes
         self.serial_queue = []
         sp = serial.Serial(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE)
@@ -103,6 +104,7 @@ class Session(object):
         self.workers = multiprocessing.Pool(2, _serial_check_init, [self.reader_queue])
 
         ioloop.IOLoop.instance().add_callback(self._serial_checker)
+        ioloop.IOLoop.instance().add_callback(callback)
 
     def open_connection(self, first=False):
         self.socket_idle = False
@@ -314,7 +316,7 @@ class Session(object):
             if _check_values([str]):
                 self.load_pedalboard(cmd[1], _callback, load_from_dict=True)
         elif msg.startswith("pedalboard_save") and len(cmd) == 1:
-            self.save_pedalboard(self._pedalboards[self._pedalboard])
+            save_pedalboard(self._pedalboards[self._pedalboard])
         elif msg.startswith("pedalboard_reset") and len(cmd) == 1:
             self.load_pedalboard(self._pedalboard, _callback, load_from_dict=False)
         elif msg.startswith("ping") and len(cmd) == 1:
@@ -485,6 +487,7 @@ class Session(object):
 
         def add_connections():
             if not connections:
+                save_last_pedalboard(pedalboard_id)
                 ioloop.IOLoop.instance().add_callback(lambda: callback(True))
                 return
             connection = connections.pop(0)
@@ -749,8 +752,8 @@ class Session(object):
 # for development purposes
 class FakeControllerSession(Session):
 
-    def serial_init(self):
-        pass
+    def serial_init(self, callback):
+        ioloop.IOLoop.instance().add_callback(callback)
 
     def serial_send(self, msg, callback, datatype=None):
         logging.info(msg)
@@ -762,10 +765,13 @@ class FakeControllerSession(Session):
 # for development purposes
 class FakeSession(FakeControllerSession):
     def __init__(self):
+        self._playback_1_connected_ports = []
+        self._playback_2_connected_ports = []
         self._peakmeter = False
         self._tuner = False
         self._pedalboard = None
         self._pedalboards = {}
+        self.serial_init(lambda: self.load_pedalboard(get_last_pedalboard(), lambda r: r))
         pass
 
     def add(self, objid, instance_id, callback):
