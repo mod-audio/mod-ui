@@ -289,7 +289,7 @@ JqueryClass('bankBox', {
 		var current = self.data('currentBank')
 		if (!current)
 		    return
-		var value = $(this).val()
+		var value = parseInt($(this).val())
 		current.data('addressing')[i] = value
 		self.bankBox('save')
 	    }

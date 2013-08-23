@@ -588,7 +588,7 @@ class PedalboardLoad(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
+        res = yield gen.Task(SESSION.load_pedalboard, None, pedalboard_id)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(res, default=json_handler))
         self.finish()

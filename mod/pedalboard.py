@@ -80,7 +80,7 @@ def list_banks():
     fh = open(BANKS_JSON_FILE, 'r')
     banks = json.load(fh)
     fh.close()
-    return (bank['title'] for bank in banks)
+    return banks
 
 def get_port_index(effect):
     index = indexing.EffectIndex()

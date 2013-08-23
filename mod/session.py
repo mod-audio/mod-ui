@@ -22,7 +22,7 @@ from datetime import timedelta
 from tornado import iostream, ioloop
 from Queue import Empty
 
-from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, PEDALBOARD_DIR, CONTROLLER_INSTALLED,
+from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, CONTROLLER_INSTALLED,
                         CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
                         CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
                         CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
@@ -71,6 +71,8 @@ class Session(object):
         self._peakmeter = True
 
         self.monitor_server = None
+
+        self.current_bank = None
 
         self.serial_init()
 
@@ -308,9 +310,9 @@ class Session(object):
         if msg.startswith("control_set") and len(cmd) == 4:
             if _check_values([int, str, float]):
                 self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback)
-        elif msg.startswith("pedalboard ") and len(cmd) == 2: 
-            if _check_values([str]):
-                self.load_pedalboard(cmd[1], _callback)
+        elif msg.startswith("pedalboard ") and len(cmd) == 3: 
+            if _check_values([int, str]):
+                self.load_pedalboard(int(cmd[1]), cmd[2], _callback)
         elif msg.startswith("ping") and len(cmd) == 1:
             _callback(True)
         elif msg.startswith("tuner ") and len(cmd) == 2:
@@ -377,7 +379,7 @@ class Session(object):
         self.latest_callback = check_response
 
 
-    def load_pedalboard(self, pedalboard_id, callback):
+    def load_pedalboard(self, bank_id, pedalboard_id, callback):
         # loads the pedalboard json
         pedalboard = load_pedalboard(pedalboard_id)
 
@@ -400,7 +402,7 @@ class Session(object):
         # Consumes a queue of effects, in each one goes through bypass, bypass addressing,
         # control port values and control port addressings, before processing next effect
         # in queue. Then proceed to connections
-        def add_effects(result):
+        def add_effects():
             if not effects:
                 ioloop.IOLoop.instance().add_callback(add_connections)
                 return
@@ -425,7 +427,7 @@ class Session(object):
         # Sets bypass addressing of one effect. 
         def set_bypass_addr(effect):
             if not effect.get('addressing', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
+                ioloop.IOLoop.instance().add_callback(lambda: add_effects())
                 return
 
             symbol = ":bypass"
@@ -444,7 +446,7 @@ class Session(object):
         def set_ports_addr(effect):
             # addressing['actuator'] can be [-1] or [hwtyp, hwid, acttyp, actid]
             if not effect.get('addressing', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
+                ioloop.IOLoop.instance().add_callback(lambda: add_effects())
                 return
 
             symbol = effect['addressing'].keys()[0]
@@ -480,7 +482,29 @@ class Session(object):
             dest = '%s:%s' % (str(connection[2]), connection[3])
             self.connect(orig, dest, lambda result: add_connections())
 
-        self.remove(-1, add_effects)
+        def load(result):
+            add_effects()
+            if not bank_id == self.current_bank and bank_id is not None:
+                self.current_bank = bank_id
+                self.load_bank(bank_id)
+
+        self.remove(-1, load)
+
+    def load_bank(self, bank_id):
+        bank = list_banks()[bank_id]
+        addressing = bank.get('addressing', [0, 0, 0, 0])
+        queue = []
+
+        def consume() :
+            if queue.length == 0:
+                return
+            param = queue.pop(0)
+            self.bank_address(*param)
+
+        for actuator, function in enumerate(addressing):
+            queue.append([0, 0, 1, actuator, function, consume])
+
+        consume()
 
     def hardware_connected(self, hwtyp, hwid, callback): 
         open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
@@ -687,7 +711,7 @@ class Session(object):
         self.serial_send('ping', callback, datatype='boolean')
 
     def list_banks(self, callback):
-        banks = " ".join('"%s" %d' % (bank, i) for i,bank in enumerate(list_banks()))
+        banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(list_banks()))
         callback(True, banks)
     
     def list_pedalboards(self, bank_id, callback):
@@ -743,6 +767,7 @@ class FakeSession(FakeControllerSession):
     def __init__(self):
         self._peakmeter = False
         self._tuner = False
+        self.current_bank = None
         pass
 
     def add(self, objid, instance_id, callback):
