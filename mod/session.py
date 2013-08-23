@@ -773,7 +773,7 @@ class Session(object):
         cb = callback
         if not cb:
             cb = lambda r: r
-        self.serial_send("clipmeter %d %f" % (pos, value), cb)
+        self.serial_send("clipmeter %d" % (pos), cb)
 
     def peakmeter(self, pos, value, callback=None):
         cb = callback
