@@ -516,8 +516,8 @@ class Session(object):
         addressing = bank.get('addressing', [0, 0, 0, 0])
         queue = []
 
-        def consume() :
-            if queue.length == 0:
+        def consume(result=None) :
+            if len(queue) == 0:
                 return
             param = queue.pop(0)
             self.bank_address(*param)
