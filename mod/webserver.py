@@ -496,6 +496,7 @@ class EffectParameterAddress(web.RequestHandler):
         value = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
+        steps = int(data.get('steps', 33))
         unit = data.get('unit', 'none') or 'none'
 
         options = data.get('options', [])
@@ -509,6 +510,7 @@ class EffectParameterAddress(web.RequestHandler):
                                       value,
                                       maximum,
                                       minimum,
+                                      steps,
                                       actuator[0],
                                       actuator[1],
                                       actuator[2],

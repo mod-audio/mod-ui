@@ -463,6 +463,7 @@ class Session(object):
                                    float(addressing['value']),
                                    float(addressing['maximum']),
                                    float(addressing['minimum']),
+                                   int(addressing.get('steps', 33)),
                                    hwtyp,
                                    hwid,
                                    acttyp,
@@ -618,11 +619,11 @@ class Session(object):
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, callback):
         self.parameter_address(instance_id, ":bypass", label, 6, "none", value, 
-                               1, 0, hardware_type, hardware_id, actuator_type, 
+                               1, 0, 0, hardware_type, hardware_id, actuator_type, 
                                actuator_id, [], callback)
 
     def parameter_address(self, instance_id, port_id, label, ctype,
-                          unit, current_value, maximum, minimum,
+                          unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
                           options, callback):
         # TODO the IHM parameters set by hardware.js should be here!
@@ -656,7 +657,7 @@ class Session(object):
                     current_value,
                     maximum,
                     minimum,
-                    33, # step
+                    steps,
                     hardware_type,
                     hardware_id,
                     actuator_type,

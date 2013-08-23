@@ -115,6 +115,7 @@ function HardwareManager(options) {
 
     // Opens an addressing window to address this a port
     this.open = function(instanceId, port, currentValue) {
+	console.log('open')
 	var currentAddressing = {}
 	if (self.controls[instanceId])
 	    currentAddressing = self.controls[instanceId][port.symbol] || {}
@@ -123,15 +124,15 @@ function HardwareManager(options) {
 	var form = $(options.renderForm(instanceId, port))
 
 	var actuators = self.availableActuators(instanceId, port)
-	var select = form.find('select[name=actuator]')
-	$('<option value="-1">').text('Select').appendTo(select)
+	var actuatorSelect = form.find('select[name=actuator]')
+	$('<option value="-1">').text('Select').appendTo(actuatorSelect)
 	var i, value, actuator, opt
 	for (i=0; i<actuators.length; i++) {
-	    opt = $('<option>').attr('value', i).text(actuators[i].label).appendTo(select)
+	    opt = $('<option>').attr('value', i).text(actuators[i].label).appendTo(actuatorSelect)
 	    if (currentAddressing.actuator
 		&& currentAddressing.actuator.join(',') == actuators[i].address.join(','))
 	    {
-		select.val(i)
+		actuatorSelect.val(i)
 	    }
 	}
 	var gui = options.getGui(instanceId)
@@ -142,10 +143,14 @@ function HardwareManager(options) {
 	var min = form.find('input[name=min]').val(currentAddressing.minimum || port.minimum)
 	var max = form.find('input[name=max]').val(currentAddressing.maximum || port.maximum)
 	var label = form.find('input[name=label]').val(currentAddressing.label || portName)
+
+	var sensibility = form.find('select[name=steps]')
+	self.buildSensibilityOptions(sensibility, port)
+
 	form.find('.js-save').click(function() {
 	    actuator = {}
-	    if (select.val() >= 0)
-		actuator = actuators[select.val()]
+	    if (actuatorSelect.val() >= 0)
+		actuator = actuators[actuatorSelect.val()]
 
 	    // Here the addressing structure is created
 	    var addressing = { actuator: actuator.address, // the actuator used
@@ -154,6 +159,7 @@ function HardwareManager(options) {
 			       minimum: min.val() || port.minimum,
 			       maximum: max.val() || port.maximum,
 			       value: currentValue,
+			       steps: sensibility.val(),
 			       options: [] // the available options in case this is enumerated (no interface for that now)
 			     }
 
@@ -166,6 +172,43 @@ function HardwareManager(options) {
 	    form.remove()
 	})
 	form.appendTo($('body'))
+    }
+
+    this.buildSensibilityOptions = function(select, port) {
+	select.children().remove()
+
+	if (port.integer) {
+	    // If port is integer, step is always 1
+	    $('<option value=0>').appendTo(select)
+	    select.val(0)
+	    select.hide()
+	    return
+	}
+
+	var options = {  17: 'Low',
+			 33: 'Medium',
+			 65: 'High'
+		      }
+	var def = 33
+	var steps, i, label
+	if (port.rangeSteps) {
+	    if (!(options[port.rangeSteps]))
+		options[port.rangeSteps] = 'Default'
+	    def = port.rangeSteps
+	    for (steps in options) {
+		if (steps > port.rangeSteps) {
+		    delete options[steps]
+		}
+	    }
+	}
+	var keys = Object.keys(options).sort()
+	for (i in keys) {
+	    steps = keys[i]
+	    label = options[steps]
+	    label += ' (' + steps + ' steps)'
+	    $('<option>').attr('value', steps).html(label).appendTo(select)
+	}
+	select.val(def)
     }
     
     /* Based on port data and addressingType chosen, creates the addressing data
@@ -196,6 +239,8 @@ function HardwareManager(options) {
 	    addressing.type = 3
 	else if (addressing.addressing_type == 'tap_tempo')
 	    addressing.type = 5
+	else if (port.integer)
+	    addressing.type == 7
     }
 
     // Does the addressing
@@ -277,5 +322,4 @@ function HardwareManager(options) {
 	}
 	delete self.controls[instanceId]
     }
-
 }

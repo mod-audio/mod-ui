@@ -355,12 +355,15 @@ function Desktop(elements) {
 	windowManager: self.windowManager,
     })
 
+    /*
+     * when putting this function, we must remember to remove it from /ping call
     $(document).bind('ajaxSend', function() {
 	$('body').css('cursor', 'wait')
     })
     $(document).bind('ajaxComplete', function() {
 	$('body').css('cursor', 'default')
     })
+    */
 }
 
 Desktop.prototype.makePedalboard = function(el) {
