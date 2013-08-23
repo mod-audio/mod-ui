@@ -1,3 +1,9 @@
+0.11.1
+======
+
+  - FIX: new bank + pedalboard saving and loading
+  - NEW: env variable to disable logging
+
 0.11
 ====
 
