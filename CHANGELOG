@@ -1,7 +1,45 @@
+0.10.5
+======
+
+  - fixing tags
+
+0.10.4
+======
+
+  - NEW: auto detects the controller tty 
+  - FIX: pedalboard keep state
+
+0.10.3
+======
+
+  - FIX: after software installation, page reload waits one second.
+  - FIX: message typo
+	
+0.10.2
+======
+
+  - FIX: check_value now updated for new controller protocol
+  - NEW: pedalboard keeps it's state when changed via controller
+
+0.10.1
+======
+
+  - FIX: last digit of PACKAGE_SERVER_ADDRESS was being removed
+
 0.10
 ====
 
   - Integration with new controller
+
+0.9.1.2
+=======
+
+  - Nothing new, just testing the release system
+
+0.9.1
+=====
+
+  - No news. It's just a demonstration on how to make a release
 
 0.9
 ===

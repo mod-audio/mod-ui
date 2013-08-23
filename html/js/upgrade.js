@@ -32,7 +32,7 @@ JqueryClass('upgradeWindow', {
 	})
 
 	self.find('button').click(function() {
-	    if (!confirm("The MOD softare will be upgraded. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
+	    if (!confirm("The MOD software will be upgraded. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
 		return
 	    var installer = new Installer({ 
 		repository: PACKAGE_REPOSITORY,
@@ -124,7 +124,9 @@ JqueryClass('upgradeWindow', {
 
     downloadEnd: function() {
 	var self = $(this)
-	document.location.reload()
+	setTimeout(function() {
+	    document.location.reload()
+	}, 1000)
     },
 
     block: function() {

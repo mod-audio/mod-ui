@@ -27,7 +27,8 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, CONTROLLER_INSTALLED,
                         CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
                         CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
                         PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
-from mod.pedalboard import load_pedalboard, list_pedalboards, list_banks
+from mod.pedalboard import (load_pedalboard, list_pedalboards, list_banks, save_last_pedalboard, 
+                           save_pedalboard, get_last_pedalboard)
 from mod.controller import WriterProcess, ReaderProcess
 
 NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -68,15 +69,18 @@ class Session(object):
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
-        self._peakmeter = True
+        self._peakmeter = False
 
         self.monitor_server = None
 
         self.current_bank = None
 
         self.serial_init()
+        self._pedalboard = None
+        self._pedalboards = {}
+        self.serial_init(lambda: self.load_pedalboard(get_last_pedalboard(), lambda r: r))
 
-    def serial_init(self):
+    def serial_init(self, callback):
         # serial blocking communication runs in other processes
         self.serial_queue = []
         sp = serial.Serial(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE)
@@ -103,6 +107,7 @@ class Session(object):
         self.workers = multiprocessing.Pool(2, _serial_check_init, [self.reader_queue])
 
         ioloop.IOLoop.instance().add_callback(self._serial_checker)
+        ioloop.IOLoop.instance().add_callback(callback)
 
     def open_connection(self, first=False):
         self.socket_idle = False
@@ -298,7 +303,7 @@ class Session(object):
             _callback(False)
 
         def _check_values(types):
-            for i,value in enumerate(cmd[2:]):
+            for i,value in enumerate(cmd[1:]):
                 try:
                     types[i](value)
                 except ValueError:
@@ -309,10 +314,14 @@ class Session(object):
         # TODO: more documentation 
         if msg.startswith("control_set") and len(cmd) == 4:
             if _check_values([int, str, float]):
-                self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback)
+                self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback, controller=True)
         elif msg.startswith("pedalboard ") and len(cmd) == 3: 
             if _check_values([int, str]):
-                self.load_pedalboard(int(cmd[1]), cmd[2], _callback)
+                self.load_pedalboard(int(cmd[1]), cmd[2], _callback, load_from_dict=True)
+        elif msg.startswith("pedalboard_save") and len(cmd) == 1:
+            save_pedalboard(self._pedalboards[self._pedalboard])
+        elif msg.startswith("pedalboard_reset") and len(cmd) == 1:
+            self.load_pedalboard(self._pedalboard, _callback, load_from_dict=False)
         elif msg.startswith("ping") and len(cmd) == 1:
             _callback(True)
         elif msg.startswith("tuner ") and len(cmd) == 2:
@@ -379,13 +388,20 @@ class Session(object):
         self.latest_callback = check_response
 
 
-    def load_pedalboard(self, bank_id, pedalboard_id, callback):
+    def load_pedalboard(self, bank_id, pedalboard_id, callback, load_from_dict=False):
         # loads the pedalboard json
-        pedalboard = load_pedalboard(pedalboard_id)
+        self._pedalboard = pedalboard_id
+
+        import copy
+        if self._pedalboards.get(pedalboard_id, None) is None or not load_from_dict:
+            pedalboard = load_pedalboard(pedalboard_id)
+            self._pedalboards[pedalboard_id] = copy.deepcopy(pedalboard)
+        else:
+            pedalboard = self._pedalboards[pedalboard_id]
 
         # let's copy the data
-        effects = pedalboard['instances'][:]
-        connections = pedalboard['connections'][:]
+        effects = copy.deepcopy(pedalboard['instances'])
+        connections = copy.deepcopy(pedalboard['connections'])
 
         # How it works:
         # remove -1  (remove all effects)
@@ -475,6 +491,7 @@ class Session(object):
 
         def add_connections():
             if not connections:
+                save_last_pedalboard(pedalboard_id)
                 ioloop.IOLoop.instance().add_callback(lambda: callback(True))
                 return
             connection = connections.pop(0)
@@ -530,9 +547,22 @@ class Session(object):
         self.socket_send('remove %d' % instance_id, _callback,
                   datatype='boolean')
 
-    def bypass(self, instance_id, value, callback):
+    def bypass(self, instance_id, value, callback, controller=False):
         value = 1 if int(value) > 0 else 0
-        self.socket_send('bypass %d %d' % (instance_id, value), callback,
+
+        if controller:
+            def _callback(r):
+                if r:
+                    if self._pedalboard is not None:
+                        for i, instance in enumerate(self._pedalboards[self._pedalboard]["instances"]):
+                            if instance["instanceId"] == instance_id:
+                                break
+                        self._pedalboards[self._pedalboard]["instances"][i]['bypassed'] = bool(value)
+                callback(r)
+        else:
+            _callback = callback
+
+        self.socket_send('bypass %d %d' % (instance_id, value), _callback,
                   datatype='boolean')
 
     def connect(self, port_from, port_to,
@@ -598,14 +628,27 @@ class Session(object):
                 callback, datatype='boolean')
 
 
-    def parameter_set(self, instance_id, port_id, value, callback):
+    def parameter_set(self, instance_id, port_id, value, callback, controller=False):
         if port_id == ":bypass":
-            self.bypass(instance_id, value, callback)
+            self.bypass(instance_id, value, callback, controller)
+            return
+
+        if controller:
+            def _callback(r):
+                if r:
+                    if self._pedalboard is not None:
+                        for i, instance in enumerate(self._pedalboards[self._pedalboard]["instances"]):
+                            if instance["instanceId"] == instance_id:
+                                break
+                        self._pedalboards[self._pedalboard]["instances"][i]["preset"][port_id] = value
+                        self._pedalboards[self._pedalboard]["instances"][i]["addressing"][port_id]["value"] = value
+                callback(r)
         else:
-            self.socket_send('param_set %d %s %f' % (instance_id,
+            _callback = callback
+        self.socket_send('param_set %d %s %f' % (instance_id,
                                            port_id,
                                            value),
-                  callback, datatype='boolean')
+                  _callback, datatype='boolean')
 
     def parameter_get(self, instance_id, port_id, callback):
         self.socket_send('param_get %d %s' % (instance_id, port_id),
@@ -752,8 +795,8 @@ class Session(object):
 # for development purposes
 class FakeControllerSession(Session):
 
-    def serial_init(self):
-        pass
+    def serial_init(self, callback):
+        ioloop.IOLoop.instance().add_callback(callback)
 
     def serial_send(self, msg, callback, datatype=None):
         logging.info(msg)
@@ -765,10 +808,14 @@ class FakeControllerSession(Session):
 # for development purposes
 class FakeSession(FakeControllerSession):
     def __init__(self):
+        self._playback_1_connected_ports = []
+        self._playback_2_connected_ports = []
         self._peakmeter = False
         self._tuner = False
         self.current_bank = None
-        pass
+        self._pedalboard = None
+        self._pedalboards = {}
+        self.serial_init(lambda: self.load_pedalboard(get_last_pedalboard(), lambda r: r))
 
     def add(self, objid, instance_id, callback):
         logging.info("adding instance %d" % instance_id)
