@@ -22,7 +22,7 @@ from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
 from modcommon import json_handler
 from mod import indexing
 
-def save_pedalboard(pedalboard):
+def save_pedalboard(bank_id, pedalboard):
     fh = open(os.path.join(PEDALBOARD_DIR, str(pedalboard['_id'])), 'w')
     fh.write(json.dumps(pedalboard, default=json_handler))
     fh.close()
@@ -30,7 +30,7 @@ def save_pedalboard(pedalboard):
     metadata = pedalboard['metadata']
     metadata['_id'] = pedalboard['_id']
     index.add(metadata)
-    save_last_pedalboard(pedalboard['_id'])
+    save_last_pedalboard(bank_id, pedalboard['_id'])
 
 def load_pedalboard(pedalboard_id):
     fh = open(os.path.join(PEDALBOARD_DIR, str(pedalboard_id)))
@@ -38,9 +38,9 @@ def load_pedalboard(pedalboard_id):
     fh.close()
     return j
 
-def save_last_pedalboard(pedalboard_id):
+def save_last_pedalboard(bank_id, pedalboard_id):
     fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'w')
-    fh.write(json.dumps({'pedalboard':pedalboard_id, 'bank':None}))
+    fh.write(json.dumps({'pedalboard':pedalboard_id, 'bank':bank_id}))
     fh.close()
 
 def get_last_pedalboard():
@@ -52,7 +52,8 @@ def get_last_pedalboard():
         j = json.load(fh)
         fh.close()
         pid = j['pedalboard']
-    return pid.strip()
+        bid = j['bank']
+    return (bid, pid)
 
 def list_pedalboards(bank_id):
     fh = open(BANKS_JSON_FILE, 'r')

@@ -78,7 +78,12 @@ class Session(object):
         self.serial_init()
         self._pedalboard = None
         self._pedalboards = {}
-        self.serial_init(lambda: self.load_pedalboard(get_last_pedalboard(), lambda r: r))
+
+        def set_last_pedalboard():
+            last_bank, last_pedalboard = get_last_pedalboard()
+            self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+
+        self.serial_init(set_last_pedalboard)
 
     def serial_init(self, callback):
         # serial blocking communication runs in other processes
@@ -319,9 +324,9 @@ class Session(object):
             if _check_values([int, str]):
                 self.load_pedalboard(int(cmd[1]), cmd[2], _callback, load_from_dict=True)
         elif msg.startswith("pedalboard_save") and len(cmd) == 1:
-            save_pedalboard(self._pedalboards[self._pedalboard])
+            save_pedalboard(self.current_bank, self._pedalboards[self._pedalboard])
         elif msg.startswith("pedalboard_reset") and len(cmd) == 1:
-            self.load_pedalboard(self._pedalboard, _callback, load_from_dict=False)
+            self.load_pedalboard(self.current_bank, self._pedalboard, _callback, load_from_dict=False)
         elif msg.startswith("ping") and len(cmd) == 1:
             _callback(True)
         elif msg.startswith("tuner ") and len(cmd) == 2:
@@ -491,7 +496,7 @@ class Session(object):
 
         def add_connections():
             if not connections:
-                save_last_pedalboard(pedalboard_id)
+                save_last_pedalboard(bank_id, pedalboard_id)
                 ioloop.IOLoop.instance().add_callback(lambda: callback(True))
                 return
             connection = connections.pop(0)
@@ -815,7 +820,11 @@ class FakeSession(FakeControllerSession):
         self.current_bank = None
         self._pedalboard = None
         self._pedalboards = {}
-        self.serial_init(lambda: self.load_pedalboard(get_last_pedalboard(), lambda r: r))
+
+        def set_last_pedalboard():
+            last_bank, last_pedalboard = get_last_pedalboard()
+            self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+        self.serial_init(set_last_pedalboard)
 
     def add(self, objid, instance_id, callback):
         logging.info("adding instance %d" % instance_id)

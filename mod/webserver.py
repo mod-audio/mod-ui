@@ -43,7 +43,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY,
+                          PACKAGE_REPOSITORY, LOG,
                           )
 
 
@@ -577,7 +577,7 @@ class PedalboardSave(web.RequestHandler):
         
         # make sure title is unicode
         pedalboard['metadata']['title'] = unicode(title)
-        save_pedalboard(pedalboard)
+        save_pedalboard(None, pedalboard)
         THUMB_GENERATOR.schedule_thumbnail(pedalboard['_id'])
 
         self.set_header('Content-Type', 'application/json')
@@ -847,6 +847,8 @@ class RegistrationFinish(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(ok))        
 
+settings = {'log_function': lambda handler: None} if not LOG else {}
+
 application = web.Application(
         UpgradeSync.urls('system/upgrade/sync') + 
         UpgradePackage.urls('system/upgrade/package') + 
@@ -913,13 +915,13 @@ application = web.Application(
             
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
-            debug=True)
+            debug=LOG, **settings)
 
 def run():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-        tornado.options.parse_command_line()
-
+        if LOG:
+            tornado.options.parse_command_line()
         JackXRun.connect()
 
     def check():

@@ -21,6 +21,7 @@ from os.path import join
 
 DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
 CONTROLLER_INSTALLED = bool(int(os.environ.get('MOD_CONTROLLER_INSTALLED', True)))
+LOG = bool(int(os.environ.get('MOD_LOG', True)))
 
 if DEV_ENVIRONMENT:
     ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
