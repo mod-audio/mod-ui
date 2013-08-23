@@ -30,7 +30,7 @@ def save_pedalboard(bank_id, pedalboard):
     metadata = pedalboard['metadata']
     metadata['_id'] = pedalboard['_id']
     index.add(metadata)
-    save_last_pedalboard(bank_id, pedalboard['_id'])
+    save_last_pedalboard(bank_id, str(pedalboard['_id']))
 
 def load_pedalboard(pedalboard_id):
     fh = open(os.path.join(PEDALBOARD_DIR, str(pedalboard_id)))
