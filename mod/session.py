@@ -75,7 +75,6 @@ class Session(object):
 
         self.current_bank = None
 
-        self.serial_init()
         self._pedalboard = None
         self._pedalboards = {}
 

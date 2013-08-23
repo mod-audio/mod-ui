@@ -47,7 +47,8 @@ def get_last_pedalboard():
     try:
         fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'r')
     except IOError:
-        pid = ""
+        pid = None
+        bid = None
     else:
         j = json.load(fh)
         fh.close()
