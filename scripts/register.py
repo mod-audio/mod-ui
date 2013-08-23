@@ -3,7 +3,6 @@
 
 import os, sys, urllib2, json, argparse
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from mod.register import DeviceRegisterer
 
 parser = argparse.ArgumentParser(description='Register device at Cloud')
 parser.add_argument('--serial', metavar='Serial Nº', type=str,
