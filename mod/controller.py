@@ -30,7 +30,7 @@ class ReaderProcess(multiprocessing.Process):
         if (self.serial_data.startswith('resp') or 
             self.serial_data.startswith('not found') or 
             self.serial_data.startswith('few ') or 
-            self.serial_data.startswith('many '):
+            self.serial_data.startswith('many ')):
             try:
                 self.lock.release()
             except:
