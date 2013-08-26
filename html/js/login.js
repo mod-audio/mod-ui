@@ -148,7 +148,7 @@ function UserSession(options) {
 		  data: data,
 		  success: function(resp) {
 		      if (!resp.ok) {
-			  options.loginWindow.find('.error').text('Invalid password').show()
+			  options.loginWindow.find('.error').text('Invalid username or password').show()
 			  return
 		      }
 		      self.identifyUser(resp.user, resp.signature, function(ok) {

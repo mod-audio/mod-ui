@@ -176,6 +176,8 @@
             <div id="login-window" class="save-popup hidden">
                 <div class="mod-box">
                     <h1>Login</h1>
+		    <!-- The div below will hold error message. It must have class "error" -->
+		    <div class="error"></div>
                     <form class="bottom">
                         <div class="control-group">
                             <label>MOD ID</label>
@@ -190,7 +192,7 @@
                             </div>
                         </div>
                         <div class="textright">
-                            <a href="{{cloud_url}}/accounts/register" target="_blank">Register</a>
+                            <a href="{{cloud_url}}accounts/register" target="_blank">Register</a>
                             <input type="submit" class="btn btn-info"/>
                         </div>
                     </form>
