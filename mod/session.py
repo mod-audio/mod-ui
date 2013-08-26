@@ -80,7 +80,8 @@ class Session(object):
 
         def set_last_pedalboard():
             last_bank, last_pedalboard = get_last_pedalboard()
-            self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+            if last_bank and last_pedalboard:
+                self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
 
         self.serial_init(set_last_pedalboard)
 
@@ -822,7 +823,8 @@ class FakeSession(FakeControllerSession):
 
         def set_last_pedalboard():
             last_bank, last_pedalboard = get_last_pedalboard()
-            self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+            if last_bank and last_pedalboard:
+                self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
         self.serial_init(set_last_pedalboard)
 
     def add(self, objid, instance_id, callback):
