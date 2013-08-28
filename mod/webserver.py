@@ -835,7 +835,7 @@ class RegistrationStart(web.RequestHandler):
         try:
             package = register.DeviceRegisterer().generate_registration_package(serial_number)
         except register.DeviceAlreadyRegistered:
-            raise web.HTTPError(404)
+            raise web.HTTPError(403)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(package))
@@ -900,7 +900,7 @@ application = web.Application(
             (r"/sdk/install/?", SDKEffectInstaller),
             (r"/sdk/get_config_script/?", SDKEffectScript),
 
-            (r"/register/start/([A-Z0-9]+)/?", RegistrationStart),
+            (r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
             (r"/register/finish/?", RegistrationFinish),
             
             #(r"/sysmon/ps", SysMonProcessList),
