@@ -67,11 +67,9 @@ function Desktop(elements) {
 	loginWindow: elements.loginWindow,
         online: function() {
 	    self.netStatus.statusTooltip('status', 'online')
-            elements.socialTrigger.addClass('selected')
         },
         offline: function() {
 	    self.netStatus.statusTooltip('status', 'offline')
-            elements.socialTrigger.removeClass('selected')
         },
 	login: function() {
 	    elements.userName.show().html(self.userSession.user.name).click(function() {

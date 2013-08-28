@@ -1,8 +1,18 @@
+0.11.9
+======
+
+  - FIX: social icon was always on
+
+0.11.8
+======
+
+  - FIX: clipmeter only sends msg if value > 1
+
 0.11.7
 ======
 
   - FIX: accept hiphen in serial number during registration
-	
+
 0.11.6
 ======
 
