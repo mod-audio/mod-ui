@@ -637,6 +637,11 @@ JqueryClass('customSelect', baseWidget, {
 		}
 	    })
 	});
+	var hidden = self.find('[mod-widget-property=hidden]')
+	self.click(function() {
+	    hidden.toggle()
+	})
+
 	return self
     },
 
