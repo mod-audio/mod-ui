@@ -49,10 +49,9 @@ PEDALBOARD_BINARY_DIR = join(PEDALBOARD_DIR, 'binary')
 PEDALBOARD_INDEX_PATH = os.environ.get('MOD_PEDALBOARD_INDEX_PATH', join(DATA_DIR, 'pedalboards.index'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
-FAVORITES_DIR = os.environ.get('MOD_FAVORITES_DIR', join(DATA_DIR, 'favorites'))
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/effects'))
 
-UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', join(ROOT, '../units.ttl'))
+UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', '/usr/lib/lv2/units.lv2/units.ttl')
 
 CONTROLLER_BAUD_RATE = os.environ.get('MOD_CONTROLLER_BAUD_RATE', 10000000)
 

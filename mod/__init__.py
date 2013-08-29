@@ -46,7 +46,7 @@ def ensure_index_sync(index, dirname):
         index.reindex()
 
 def check_environment(callback):
-    from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR, FAVORITES_DIR,
+    from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR,
                               HARDWARE_DIR, INDEX_PATH,
                               PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
                               DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE)
@@ -54,7 +54,7 @@ def check_environment(callback):
     from mod.pedalboard import save_pedalboard
     from mod.session import SESSION
 
-    for dirname in (EFFECT_DIR, PEDALBOARD_DIR, FAVORITES_DIR,
+    for dirname in (EFFECT_DIR, PEDALBOARD_DIR,
                     HARDWARE_DIR, DOWNLOAD_TMP_DIR,
                     PLUGIN_LIBRARY_DIR):
         if not os.path.exists(dirname):
@@ -88,3 +88,24 @@ def check_environment(callback):
             # calls ping again every one second
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
     SESSION.ping(ping_callback)
+
+def rebuild_database():
+    """
+    This will:
+      - Remove effect json files and parse TTL files again
+      - Rebuild effect and pedalboard indexes
+    """
+    from mod.settings import (EFFECT_DIR, PLUGIN_LIBRARY_DIR, UNITS_TTL_PATH)
+    from mod.effect import extract_effects_from_bundle
+    from mod.indexing import EffectIndex, PedalboardIndex
+    from modcommon.lv2 import Bundle
+
+    for bundle_name in os.listdir(PLUGIN_LIBRARY_DIR):
+        path = os.path.join(PLUGIN_LIBRARY_DIR, bundle_name)
+        bundle = Bundle(path, units_file=UNITS_TTL_PATH)
+        extract_effects_from_bundle(bundle)
+
+    EffectIndex().reindex()
+    PedalboardIndex().reindex()
+    
+        

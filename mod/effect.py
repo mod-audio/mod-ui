@@ -20,7 +20,7 @@ import json, os, subprocess, shutil, select
 from sha import sha
 from os.path import exists, join
 from tornado.ioloop import IOLoop
-from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE, FAVORITES_DIR, 
+from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,
                           PLUGIN_LIBRARY_DIR, PLUGIN_INSTALLATION_TMP_DIR,
                           UNITS_TTL_PATH)
 from modcommon import json_handler, lv2
@@ -61,19 +61,21 @@ def install_all_bundles():
             uninstall_bundle(package)
         shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
         bundle = lv2.Bundle(bundle_path, units_file=UNITS_TTL_PATH)
-        for data in bundle.data['plugins'].values():
-            favorite = join(FAVORITES_DIR, sha(data['url']).hexdigest())
-            if os.path.exists(favorite):
-                data['score'] = json.loads(open(favorite).read())
-            remove_old_version(data['url'])
-            indexing.EffectIndex().add(data)
-            effect_path = join(EFFECT_DIR, data['_id'])
-            open(effect_path, 'w').write(json.dumps(data))
-            effects.append(data['_id'])
+        effects += extract_effects_from_bundle(bundle)
         
-    #build_effect_database()
-
     return effects
+
+def extract_effects_from_bundle(bundle):
+    index = indexing.EffectIndex()
+    effects = []
+    for data in bundle.data['plugins'].values():
+        remove_old_version(data['url'])
+        index.add(data)
+        effect_path = join(EFFECT_DIR, data['_id'])
+        open(effect_path, 'w').write(json.dumps(data))
+        effects.append(data['_id'])
+    return effects
+        
 
 def remove_old_version(url):
     """
@@ -84,7 +86,11 @@ def remove_old_version(url):
     index = indexing.EffectIndex()
     for effect in index.find(url=url):
         if index.delete(effect['id']):
-            os.remove(join(EFFECT_DIR, effect['id']))
+            path = join(EFFECT_DIR, effect['id'])
+            # File is supposed to always be there,
+            # but in case it's not, let's have a recoverable state
+            if os.path.exists(path):
+                os.remove(path)
 
 def uninstall_bundle(package):
     """
@@ -108,40 +114,3 @@ def uninstall_bundle(package):
 
     return True
     
-def build_effect_database():
-    """
-    Builds the effect database for the IHM
-    TODO this is obsolete, probably just remove
-    """
-    effects = []
-    index = indexing.EffectIndex(INDEX_PATH)
-    for entry in index.every():
-        effect_id = entry['id']
-        serialized = open(join(EFFECT_DIR, effect_id)).read()
-        data = json.loads(serialized)
-        effect = { "name": data['name'], 
-                   "ports": data['ports'],
-                   "uid": data['url'],
-                }
-        effects.append(effect)
- 
-    fh = open(EFFECT_DB_FILE, 'w')
-    fh.write(json.dumps({ 'effects': effects }, default=json_handler))
-    fh.close()
-    
-def rebuild_index():
-    """
-    Rebuild all index
-    """
-    index = indexing.EffectIndex(INDEX_PATH+'.new')
-
-    for objid in os.listdir(EFFECT_DIR):
-        obj = json.loads(open(os.path.join(EFFECT_DIR, objid)).read())
-        index.add(obj)
-
-    if os.path.exists(INDEX_PATH):
-        shutil.move(INDEX_PATH, INDEX_PATH+'.old')
-        shutil.move(INDEX_PATH+'.new', INDEX_PATH)
-        shutil.rmtree(INDEX_PATH+'.old')
-    else:
-        shutil.move(INDEX_PATH+'.new', INDEX_PATH)
