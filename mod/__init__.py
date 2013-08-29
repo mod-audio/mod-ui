@@ -20,13 +20,11 @@ import os, re, json, logging
 
 def _json_or_remove(path):
     try:
-        serialized = open(path).read()
-        json.loads(open(path).read())
+        return json.loads(open(path).read())
     except ValueError:
         logging.warning("not JSON, removing: %s", path)
         os.remove(path)
-        return False
-    return True
+        return None
 
 # Check that all objects in index are in filesystem and vice-versa
 def ensure_index_sync(index, dirname):
@@ -39,10 +37,12 @@ def ensure_index_sync(index, dirname):
             path = os.path.join(dirname, obj_id)
             if os.path.isdir(path):
                 continue
-            if _json_or_remove(path):
+            obj = _json_or_remove(path)
+            if obj and index.indexable(obj):
                 index.find(id=obj_id).next()
-    except:
-        # This is usually AssertionError, StopIteration or AttributeError, but let's just capture anything
+    except Exception as e:
+        # This is supposed to be AssertionError, StopIteration or AttributeError, 
+        # but let's just capture anything
         index.reindex()
 
 def check_environment(callback):

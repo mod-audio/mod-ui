@@ -67,8 +67,12 @@ class Index(object):
         except Exception as e:
             self.reindex()
             self.index.searcher()
+    
+    def indexable(self, obj):
+        return True
 
     def reindex(self):
+        #print "Reindexing " + self.__class__.__name__
         if self.data_source and os.path.exists(self.data_source):
             shutil.rmtree(self.index_path)
             os.mkdir(self.index_path)
@@ -111,6 +115,8 @@ class Index(object):
                 yield entry.fields()
 
     def add(self, obj):
+        if not self.indexable(obj):
+            return
         data = self.schemed_data(obj)
 
         writer = self.index.writer()
@@ -144,23 +150,24 @@ class EffectIndex(Index):
                     pedalLabel=TEXT(stored=True),
                     smallLabel=STORED(),
                     brand=ID(stored=True),
-                    score=NUMERIC(stored=True),
                     )
 
     term_fields = ['label', 'name', 'category', 'author', 'description']
 
     def add(self, effect):
-        effect['score'] = effect.get('score', 0)
+        if not self.indexable(effect):
+            return
         effect_data = self.schemed_data(effect)
             
         effect_data['input_ports'] = len(effect['ports']['audio']['input'])
         effect_data['output_ports'] = len(effect['ports']['audio']['output'])
 
-        effect_data['score'] = effect_data.get('score', 0)
-
         writer = self.index.writer()
         writer.update_document(**effect_data)
         writer.commit()
+
+    def indexable(self, obj):
+        return not obj.get('hidden')
 
 class PedalboardIndex(Index):
     index_path = PEDALBOARD_INDEX_PATH
@@ -175,6 +182,8 @@ class PedalboardIndex(Index):
     term_fields = ['title_words', 'description']
 
     def add(self, pedalboard):
+        if not self.indexable(pedalboard):
+            return
         data = self.schemed_data(pedalboard)
         data['title_words'] = data['title']
 
