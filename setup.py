@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import os
 
 setup(name = 'mod',
-      version = '0.12',
+      version = '0.13',
       description = 'MOD',
       long_description = 'MOD - Musician Operated Device - User Interface server and libraries',
       author = "Hacklab and AGR",
@@ -12,6 +12,7 @@ setup(name = 'mod',
       entry_points = {
           'console_scripts': [
               'mod-ui = mod.webserver:run',
+              'mod-rebuild-database = mod:rebuild_database',
               ]
           },
       scripts = [
