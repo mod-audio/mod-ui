@@ -124,9 +124,18 @@ JqueryClass('upgradeWindow', {
 
     downloadEnd: function() {
 	var self = $(this)
-	setTimeout(function() {
-	    document.location.reload()
-	}, 1000)
+	var ping = function() {
+	    $.ajax({ url: '/ping', 
+		     success: function(result) {
+			 document.location.reload()
+		     },
+		     error: function() {
+			 setTimeout(ping, 1000)
+		     },
+		     dataType: 'json'
+		   })
+	}
+	setTimeout(ping, 1000)
     },
 
     block: function() {
