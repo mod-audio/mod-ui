@@ -774,6 +774,9 @@ class Session(object):
         cb = callback
         if not cb:
             cb = lambda r: r
+        # TODO re-enable clipmeter
+        return cb() 
+
         if value > 0:
             self.serial_send("clipmeter %d" % (pos), cb)
 

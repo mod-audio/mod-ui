@@ -1,3 +1,8 @@
+0.14.1
+======
+
+  - Temporarily inhibit clipmeter to avoid IO overflow
+
 0.14
 ====
 
