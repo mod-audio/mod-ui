@@ -76,6 +76,8 @@ default_port = 8888 if DEV_ENVIRONMENT else 80
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', default_port))
 
 CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', 'http://cloud.portalmod.com/')
+if not CLOUD_HTTP_ADDRESS.endswith('/'):
+    CLOUD_HTTP_ADDRESS += '/'
 
 if DEV_ENVIRONMENT:
     default_html = os.path.join(ROOT, 'html')
