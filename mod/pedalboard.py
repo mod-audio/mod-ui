@@ -27,9 +27,7 @@ def save_pedalboard(bank_id, pedalboard):
     fh.write(json.dumps(pedalboard, default=json_handler))
     fh.close()
     index = indexing.PedalboardIndex()
-    metadata = pedalboard['metadata']
-    metadata['_id'] = pedalboard['_id']
-    index.add(metadata)
+    index.add(pedalboard)
     save_last_pedalboard(bank_id, str(pedalboard['_id']))
 
 def load_pedalboard(pedalboard_id):

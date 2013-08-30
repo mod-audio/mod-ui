@@ -72,7 +72,6 @@ class Index(object):
         return True
 
     def reindex(self):
-        #print "Reindexing " + self.__class__.__name__
         if self.data_source and os.path.exists(self.data_source):
             shutil.rmtree(self.index_path)
             os.mkdir(self.index_path)
@@ -184,7 +183,9 @@ class PedalboardIndex(Index):
     def add(self, pedalboard):
         if not self.indexable(pedalboard):
             return
-        data = self.schemed_data(pedalboard)
+        data = pedalboard['metadata']
+        data['_id'] = pedalboard['_id']
+        data = self.schemed_data(data)
         data['title_words'] = data['title']
 
         writer = self.index.writer()
