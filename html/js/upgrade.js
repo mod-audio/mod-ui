@@ -24,6 +24,7 @@ JqueryClass('upgradeWindow', {
 	self.data('icon', icon)
 	self.data('windowManager', options.windowManager)
 	self.data('uptodate', true)
+	self.data('warn', $('<p>'))
 
 	icon.statusTooltip()
 
@@ -124,6 +125,9 @@ JqueryClass('upgradeWindow', {
 
     downloadEnd: function() {
 	var self = $(this)
+	self.find('.download-installing').hide()
+	self.find('.installation-checking').show()
+	self.data('warn').remove()
 	var ping = function() {
 	    $.ajax({ url: '/ping', 
 		     success: function(result) {
@@ -142,10 +146,12 @@ JqueryClass('upgradeWindow', {
 	var self = $(this)
 	self.data('windowManager').closeWindows()
 	var block = $('<div class="screen-disconnected">')
+	var warn = $('<p>').html('Do not turn off (might brick your MOD)').appendTo(block)
 	$('body').append(block).css('overflow', 'hidden')
 	block.width($(window).width() * 5)
 	block.height($(window).height() * 5)
 	block.css('margin-left', -$(window).width() * 2)
 	$('#wrapper').css('z-index', -1)
+	self.data('warn', warn)
     }
 })
