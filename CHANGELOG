@@ -1,3 +1,8 @@
+0.14.2
+======
+
+  - FIX: pedalboard reindexation was removing all data from index, leaving only one titleless pedalboard
+
 0.14.1
 ======
 
