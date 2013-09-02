@@ -720,6 +720,13 @@ class Session(object):
         options = "%d %s" % (length, " ".join(options))
         options = options.strip()
 
+        if (hardware_type == -1 and
+            hardware_id == -1 and
+            actuator_type == -1 and
+            actuator_id == -1):
+            self.serial_send('control_rm %d %s' % (instance_id, port_id))
+            return
+
         self.serial_send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
                   ( instance_id,
                     port_id,
