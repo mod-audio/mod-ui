@@ -25,9 +25,15 @@ function Transference(from, to, filename) {
     var self = this
 
     this.start = function() {
-	var req = $.get(self.origin + self.file,
-			self.registerUpload,
-			'json')
+	self.resetStatus()
+	var req = $.ajax({ type: 'GET',
+			   url: self.origin + self.file,
+			   success: self.registerUpload,
+			   dataType: 'json',
+			   error: function(resp) {
+			       self.abort(resp.statusText)
+			   }
+			 })
 	self.requests.push(req)
     }
     
@@ -37,7 +43,7 @@ function Transference(from, to, filename) {
 			   'data': JSON.stringify(torrent),
 			   'success': self.queueChunks,
 			   'dataType': 'json',
-			   'error': function(resp) { 
+			   'error': function(resp) {
 			       self.abort(resp.statusText)
 			   }
 			 })
@@ -55,15 +61,43 @@ function Transference(from, to, filename) {
 
 	// If download is finished, upload.result will hold result
 	self.result = upload.result
-
+	
 	for (var i in upload.status) {
 	    if (!upload.status[i]) 
 		self.queue.push(i)
 	    self.errors[i] = 0
 	}
 
+	self.reportInitialStatus(upload)
+
 	self.downloadNext()
 	self.verifyStatus()
+    }
+
+    this.resetStatus = function() {
+	self.reportStatus({
+	    complete: false,
+	    ok: true,
+	    percent: 0,
+	    result: false
+	})
+    }
+
+    this.reportInitialStatus = function(upload) {
+	var status = {
+	    complete: true,
+	    ok: upload.ok,
+	    percent: 0,
+	    result: upload.result,
+	    torrent_id: upload.id
+	}
+	for (var i in upload.status) {
+	    if (upload.status[i])
+		status.percent += 100 / upload.status.length
+	    else
+		status.complete = false
+	}
+	self.reportStatus(status)	
     }
 
     this.downloadNext = function() {
