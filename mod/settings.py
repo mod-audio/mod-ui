@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import os, sys
 from os.path import join
 
@@ -23,16 +22,11 @@ DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
 CONTROLLER_INSTALLED = bool(int(os.environ.get('MOD_CONTROLLER_INSTALLED', True)))
 LOG = bool(int(os.environ.get('MOD_LOG', True)))
 
-if DEV_ENVIRONMENT:
-    ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-else:
-    ROOT = os.getcwd()
+DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 
-DATA_DIR = os.environ.get('MOD_DATA_DIR', os.path.join(ROOT, 'dados'))
+HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware'))
 
-HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', os.path.join(DATA_DIR, 'hardware'))
-
-KEYPATH = os.environ.get('MOD_KEY_PATH', join(ROOT, 'keys'))
+KEYPATH = os.environ.get('MOD_KEY_PATH', '/root/keys')
 
 CLOUD_PUB = os.environ.get('MOD_CLOUD_PUB', join(KEYPATH, 'cloud_key.pub'))
 DEVICE_KEY = os.environ.get('MOD_DEVICE_KEY', join(KEYPATH, 'device_key.pem'))
@@ -40,7 +34,7 @@ DEVICE_PUB = os.environ.get('MOD_DEVICE_PUB', join(KEYPATH, 'device_key.pub'))
 DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL =  os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
-PLUGIN_LIBRARY_DIR = os.environ.get('MOD_PLUGIN_LIBRARY_DIR', join(DATA_DIR, 'lib'))
+PLUGIN_LIBRARY_DIR = os.environ.get('MOD_PLUGIN_LIBRARY_DIR', '/dados/plugins')
 PLUGIN_INSTALLATION_TMP_DIR = os.environ.get('MOD_PLUGIN_INSTALLATION_DIR', join(DATA_DIR, 'lib_tmp'))
 INDEX_PATH = os.environ.get('MOD_INDEX_PATH', join(DATA_DIR, 'effects.index'))
 EFFECT_DIR = os.environ.get('MOD_EFFECT_DIR', join(DATA_DIR, 'effects'))
@@ -72,33 +66,26 @@ MANAGER_PORT = 5555
 
 EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))
 
-default_port = 8888 if DEV_ENVIRONMENT else 80
-DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', default_port))
+DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
 CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', 'http://cloud.portalmod.com/')
 if not CLOUD_HTTP_ADDRESS.endswith('/'):
     CLOUD_HTTP_ADDRESS += '/'
 
-if DEV_ENVIRONMENT:
-    default_html = os.path.join(ROOT, 'html')
-else:
-    default_html = os.path.join(sys.prefix, 'share', 'html')
+HTML_DIR = os.environ.get('MOD_HTML_DIR', '/usr/share/mod-ui/html/')
 
-HTML_DIR = os.environ.get('MOD_HTML_DIR', default_html)
-
-DEFAULT_ICON_TEMPLATE = os.path.join(HTML_DIR, 'resources/templates/pedal-default.html')
-DEFAULT_SETTINGS_TEMPLATE = os.path.join(HTML_DIR, 'resources/settings.html')
-DEFAULT_ICON_IMAGE = { 'thumbnail': os.path.join(HTML_DIR, 'resources/pedals/default-thumbnail.png'),
-                       'screenshot': os.path.join(HTML_DIR, 'resources/pedals/default-screenshot.png')
+DEFAULT_ICON_TEMPLATE = join(HTML_DIR, 'resources/templates/pedal-default.html')
+DEFAULT_SETTINGS_TEMPLATE = join(HTML_DIR, 'resources/settings.html')
+DEFAULT_ICON_IMAGE = { 'thumbnail': join(HTML_DIR, 'resources/pedals/default-thumbnail.png'),
+                       'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
                        }
 
 LOCAL_REPOSITORY_DIR = os.environ.get('MOD_LOCAL_REPOSITORY_DIR', '/pkgs')
 BLUETOOTH_PIN = os.environ.get('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pin'))
 
-PHANTOM_BINARY = os.path.join(ROOT, 'phantomjs-1.9.0-linux-x86_64/bin/phantomjs')
-PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', PHANTOM_BINARY)
+PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(ROOT, 'screenshot.js'))
+SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', '/usr/lib/mod-ui/screenshot.js')
 
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350

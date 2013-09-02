@@ -22,7 +22,7 @@ except ImportError:
     from PIL import Image
 
 from tornado import ioloop
-from mod.settings import (ROOT, HTML_DIR, DEVICE_WEBSERVER_PORT,
+from mod.settings import (HTML_DIR, DEVICE_WEBSERVER_PORT,
                           PEDALBOARD_DIR, PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
 
