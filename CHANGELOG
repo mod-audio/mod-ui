@@ -1,3 +1,9 @@
+0.15
+====
+
+  - Enhancements to upgrade interface, including making use of recent features of package manager
+  - FIX: control couldn't be unaddressed
+
 0.14.3
 ======
 
