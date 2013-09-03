@@ -724,7 +724,8 @@ class Session(object):
             hardware_id == -1 and
             actuator_type == -1 and
             actuator_id == -1):
-            self.serial_send('control_rm %d %s' % (instance_id, port_id))
+            self.serial_send('control_rm %d %s' % (instance_id, port_id),
+                             callback, datatype='boolean')
             return
 
         self.serial_send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
