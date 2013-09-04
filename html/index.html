@@ -61,11 +61,11 @@
       var MAX_SCREENSHOT_WIDTH = 600
       var MAX_SCREENSHOT_HEIGHT = 600
       var PACKAGE_SERVER_ADDRESS = ('{{package_server_address}}' ||
-                                     document.location.origin.replace(/(https?:\/\/[^/:]+).*/,
+                                     document.location.origin.replace(/(https?:\/\/[^/:]+).*,
                                                                       function(m, first) {
                                                                           return first + ':' + {{default_package_server_port}}
                                                                       })
-                                   ).replace(/\/$/, '')
+                                   )
       var PACKAGE_REPOSITORY = '{{package_repository}}'
 
       $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
