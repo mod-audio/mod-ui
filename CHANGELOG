@@ -1,3 +1,9 @@
+0.16
+====
+
+  - Concurrent connections in plugins download and upgrade
+  - FIX: upgrade serupgrade server wouldn't be properly detected if a / was missing in url
+
 0.15
 ====
 
