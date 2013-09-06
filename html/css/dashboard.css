@@ -568,6 +568,14 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 #registration-form.mod-box select {
     width:204px;
 }
+#registration-form .error {
+    background:#f2dede;
+    border:1px solid #eed3d7;
+    border-radius:4px;
+    color:#b94a48;
+    margin-bottom:18px;
+    padding:9px;
+}
 
 /* SHARE WINDOW */
 #share-window .box {
