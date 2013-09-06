@@ -91,6 +91,7 @@
               socialTrigger: $('#mod-social'),
               socialWindow: $('#mod-social-network'),
               loginWindow: $('#login-window'),
+              registrationWindow: $('#registration-window'),
               shareButton: $('#pedalboard-sharing .button'),
               shareWindow: $('#share-window'),
               userName: $('#user-name'),
@@ -118,6 +119,7 @@
     <script type="text/javascript" src="js/pedalboards.js"></script>
     <script type="text/javascript" src="js/effects.js"></script>
     <script type="text/javascript" src="js/login.js"></script>
+    <script type="text/javascript" src="js/register.js"></script>
     <script type="text/javascript" src="js/feed.js"></script>
     <script type="text/javascript" src="js/social.js"></script>
     <script type="text/javascript" src="js/hardware.js"></script>
@@ -192,13 +194,66 @@
                             </div>
                         </div>
                         <div class="textright">
-                            <a href="{{cloud_url}}accounts/register" target="_blank">Register</a>
+                            <a id="register">Register</a>
                             <input type="submit" class="btn btn-info"/>
                         </div>
                     </form>
                 </div>
             </div>
             <!-- END LOGIN WINDOW -->
+
+            <!-- REGISTRATION WINDOW -->
+            <div id="registration-window" class="save-popup hidden">
+                <div id="registration-form" class="mod-box">
+                    <h1>Register</h1>
+		    <div class="js-close">x</div>
+		    <!-- The div below will hold error message. It must have class "error" -->
+		    <div class="error"></div>
+                    <form class="bottom">
+		      <input type="hidden" name="sid" value="by javascript"/>
+                        <div class="control-group">
+                            <label>E-mail</label>
+                            <div class="mod-controls">
+                                <input type="text" name="email"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Name</label>
+                            <div class="mod-controls">
+                                <input type="text" name="name"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Country</label>
+                            <div class="mod-controls">
+			      <select name="country">
+                                {% include country_list.html %}
+			      </select>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Password</label>
+                            <div class="mod-controls">
+                                <input type="password" name="password"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Password (again)</label>
+                            <div class="mod-controls">
+                                <input type="password" name="password2"/>
+                            </div>
+                        </div>
+                        <div class="textright">
+                            <input type="submit" class="btn btn-info"/>
+                        </div>
+                    </form>
+                </div>
+		<div id="registration-result" class="mod-box hidden">
+		  <div class="js-close">x</div>
+		  <p></p>
+		</div>
+            </div>
+            <!-- END REGISTRATION WINDOW -->
 
             <!-- PEDALBOARD SHARE WINDOW -->
             <div id="share-window" class="save-popup hidden">
