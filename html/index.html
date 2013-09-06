@@ -65,7 +65,7 @@
                                                                       function(m, first) {
                                                                           return first + ':' + {{default_package_server_port}}
                                                                       })
-                                   ).replace(/\/$/, '')
+                                   )
       var PACKAGE_REPOSITORY = '{{package_repository}}'
 
       $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))

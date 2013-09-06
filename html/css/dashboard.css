@@ -320,6 +320,53 @@
     background-size:auto 56px;
 }
 
+/* = MIDI Input/Output
+================================================ */
+.hardware-output.mod-midi-output .mod-output-jack {
+    background-image:url(../img/midi-output.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:81px 31px;
+    cursor:pointer;
+    height:31px;
+    position:absolute;
+    width:81px;
+}
+
+.mod-pedal .mod-midi-input .mod-pedal-input-image {
+    background-image:url(../img/midi-input.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:9px 45px;
+    height:45px;
+    position:absolute;
+    width:9px;
+    z-index:100;
+}
+
+.mod-pedal .mod-midi-input.input-connecting .mod-pedal-input-image {
+    background-image:url(../img/midi-input-connecting.png) !important;
+    background-position:center right !important;
+    background-repeat:no-repeat !important;
+    background-size:14px 31x !important;
+    height:45px !important;
+    position:absolute !important;
+    width:45px !important;
+    z-index:100 !important;
+}
+
+.mod-pedal .mod-midi-input.input-connected .mod-pedal-input-image {
+    background-image:url(../img/midi-input-connected.png) !important;
+    background-position:center right !important;
+    background-repeat:no-repeat !important;
+    background-size:auto 31px !important;
+    height:31px !important;
+    position:absolute !important;
+    width:65px !important;
+    z-index:100 !important;
+}
+
+
 /* = PEDAL - dragging dummy icon
 ================================================ */
 .pedal.dummy {

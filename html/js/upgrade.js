@@ -38,7 +38,8 @@ JqueryClass('upgradeWindow', {
 	    var installer = new Installer({ 
 		repository: PACKAGE_REPOSITORY,
 		localServer: PACKAGE_SERVER_ADDRESS,
-		reportStatus: function(status) { self.upgradeWindow('reportInstallationStatus', status) }
+		reportStatus: function(status) { self.upgradeWindow('reportInstallationStatus', status) },
+		reportError: function(error) { }
 	    })
 	    self.upgradeWindow('downloadStart')
 	    installer.upgrade(function() { self.upgradeWindow('downloadEnd') })

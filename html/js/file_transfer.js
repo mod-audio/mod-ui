@@ -51,6 +51,8 @@ function Transference(from, to, filename) {
 
     }
 
+    this.maxConnections = 6 // can be overriden
+
     this.queueChunks = function(upload) {
 	if (!upload.ok)
 	    return self.reportError(upload.reason)
@@ -69,8 +71,18 @@ function Transference(from, to, filename) {
 	}
 
 	self.reportInitialStatus(upload)
+	self.startTime = new Date().getTime()
 
-	self.downloadNext()
+	var maxConnections = self.maxConnections
+
+	var consume = function() {
+	    if (self.queue && self.queue.length > 0 && maxConnections > 0) {
+		self.downloadNext()
+		maxConnections--;
+		setTimeout(consume, 0)
+	    }
+	}
+	consume()
 	self.verifyStatus()
     }
 
@@ -148,19 +160,18 @@ function Transference(from, to, filename) {
     }
 
     this.verifyStatus = function() {
-	if (self.active.length == 0 && self.queue.length == 0)
+	if (self.active.length == 0 && self.queue.length == 0) {
+	    var delay = (new Date().getTime() - self.startTime) / 1000
+	    if (delay > 0 && false) // change to true to log download time
+		console.log(self.maxConnections + '\t' +
+			    self.file.replace(/\D/g, '') + '\t' +
+			    delay + '\t')
 	    self.finish()
+	}
     }
 
     this.finish = function() {
 	self.reportFinished(self.result)
-	
-	/*
-	var req = $.post(self.destination + self.upload_id + '/finish', 
-			 '',
-			 self.reportFinished)
-	self.requests.push(req)
-	*/
 	self.release()
     }
 

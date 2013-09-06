@@ -1,3 +1,25 @@
+0.16.2
+======
+
+  - FIX: removed error alert
+
+0.16.1
+======
+
+  - FIX: syntax bug
+
+0.16
+====
+
+  - Concurrent connections in plugins download and upgrade
+  - FIX: upgrade serupgrade server wouldn't be properly detected if a / was missing in url
+
+0.15
+====
+
+  - Enhancements to upgrade interface, including making use of recent features of package manager
+  - FIX: control couldn't be unaddressed
+
 0.14.3
 ======
 

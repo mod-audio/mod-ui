@@ -96,7 +96,14 @@ DEFAULT_PACKAGE_SERVER_PORT = 8889
 # If environment variable is not set, then the address will be built by javascript,
 # using current host and default port above
 PACKAGE_SERVER_ADDRESS = os.environ.get('MOD_PACKAGE_SERVER_ADDRESS')
-PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', 'http://packages.portalmod.com/api')
+
+if os.path.exists("/root/repository"):
+    fh = open("/root/repository")
+    default_repo = fh.read().strip()
+    fh.close()
+else:
+    default_repo = 'http://packages.portalmod.com/api'
+PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
 
 CLIPMETER_URI = "http://portalmod.com/plugins/MOD/clipmeter"
 CLIPMETER_IN = 9990
