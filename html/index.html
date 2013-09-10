@@ -61,74 +61,76 @@
       var MAX_SCREENSHOT_WIDTH = 600
       var MAX_SCREENSHOT_HEIGHT = 600
       var PACKAGE_SERVER_ADDRESS = ('{{package_server_address}}' ||
-                                     document.location.origin.replace(/(https?:\/\/[^/:]+).*/,
-                                                                      function(m, first) {
-                                                                          return first + ':' + {{default_package_server_port}}
-                                                                      })
-                                   )
-      var PACKAGE_REPOSITORY = '{{package_repository}}'
-
-      $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
-
-      $('document').ready(function() {
-          new Desktop({
-              titleBox: $('#pedalboard-info .title'),
-              pedalboard: $('#pedalboard-dashboard'),
-              zoomIn: $('.zoom-in'),
-              zoomOut: $('.zoom-out'),
-              saveBox: $('#save-pedalboard'),
-              saveButton: $('#pedalboard-info .js-save'),
-              saveAsButton: $('#pedalboard-info .js-save-as'),
-              resetButton:  $('#pedalboard-info .js-reset'),
-              disconnectButton:  $('#mod-disconnect'),
-              effectBox: $('#plugins-library'),
-              pedalboardTrigger: $('#main-menu #mod-plugins'),
-              pedalboardBox: $('#pedalboards-library'),
-              pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
-              bankBox: $('#bank-library'),
-              bankBoxTrigger: $('#main-menu #mod-bank'),
-              bankList: $('#bank-list'),
-              socialTrigger: $('#mod-social'),
-              socialWindow: $('#mod-social-network'),
-              loginWindow: $('#login-window'),
-              shareButton: $('#pedalboard-sharing .button'),
-              shareWindow: $('#share-window'),
-              userName: $('#user-name'),
-              userAvatar: $('#user-avatar'),
-              networkIcon: $('#mod-cloud'),
-              bluetoothIcon: $('#mod-bluetooth'),
-	      upgradeWindow: $('#mod-upgrade'),
-	      upgradeIcon: $('#mod-settings'),
-              logout: $('#logout')
+       document.location.origin.replace(/(https?:\/\/[^/:]+).*/,
+          function(m, first) {
+              return first + ':' + {{default_package_server_port}}
           })
-      })
+      )
+var PACKAGE_REPOSITORY = '{{package_repository}}'
 
-    </script>
+$('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
-    <script type="text/javascript" src="js/templates.js"></script>
-    <script type="text/javascript" src="js/common.js"></script>
-    <script type="text/javascript" src="js/file_transfer.js"></script>
-    <script type="text/javascript" src="js/window.js"></script>
-    <script type="text/javascript" src="js/tags.js"></script>
-    <script type="text/javascript" src="js/modgui.js"></script>
-    <script type="text/javascript" src="js/notification.js"></script>
-    <script type="text/javascript" src="js/installation.js"></script>
-    <script type="text/javascript" src="js/desktop.js"></script>
-    <script type="text/javascript" src="js/pedalboard.js"></script>
-    <script type="text/javascript" src="js/pedalboards.js"></script>
-    <script type="text/javascript" src="js/effects.js"></script>
-    <script type="text/javascript" src="js/login.js"></script>
-    <script type="text/javascript" src="js/feed.js"></script>
-    <script type="text/javascript" src="js/social.js"></script>
-    <script type="text/javascript" src="js/hardware.js"></script>
-    <script type="text/javascript" src="js/share.js"></script>
-    <script type="text/javascript" src="js/bluetooth.js"></script>
-    <script type="text/javascript" src="js/upgrade.js"></script>
-    <script type="text/javascript" src="js/xrun.js"></script>
+$('document').ready(function() {
+  new Desktop({
+      titleBox: $('#pedalboard-info .title'),
+      pedalboard: $('#pedalboard-dashboard'),
+      zoomIn: $('.zoom-in'),
+      zoomOut: $('.zoom-out'),
+      saveBox: $('#save-pedalboard'),
+      saveButton: $('#pedalboard-info .js-save'),
+      saveAsButton: $('#pedalboard-info .js-save-as'),
+      resetButton:  $('#pedalboard-info .js-reset'),
+      disconnectButton:  $('#mod-disconnect'),
+      effectBox: $('#plugins-library'),
+      pedalboardTrigger: $('#main-menu #mod-plugins'),
+      pedalboardBox: $('#pedalboards-library'),
+      pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
+      bankBox: $('#bank-library'),
+      bankBoxTrigger: $('#main-menu #mod-bank'),
+      bankList: $('#bank-list'),
+      socialTrigger: $('#mod-social'),
+      socialWindow: $('#mod-social-network'),
+      loginWindow: $('#login-window'),
+      registrationWindow: $('#registration-window'),
+      shareButton: $('#pedalboard-sharing .button'),
+      shareWindow: $('#share-window'),
+      userName: $('#user-name'),
+      userAvatar: $('#user-avatar'),
+      networkIcon: $('#mod-cloud'),
+      bluetoothIcon: $('#mod-bluetooth'),
+      upgradeWindow: $('#mod-upgrade'),
+      upgradeIcon: $('#mod-settings'),
+      logout: $('#logout')
+  })
+})
+
+</script>
+
+<script type="text/javascript" src="js/templates.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/file_transfer.js"></script>
+<script type="text/javascript" src="js/window.js"></script>
+<script type="text/javascript" src="js/tags.js"></script>
+<script type="text/javascript" src="js/modgui.js"></script>
+<script type="text/javascript" src="js/notification.js"></script>
+<script type="text/javascript" src="js/installation.js"></script>
+<script type="text/javascript" src="js/desktop.js"></script>
+<script type="text/javascript" src="js/pedalboard.js"></script>
+<script type="text/javascript" src="js/pedalboards.js"></script>
+<script type="text/javascript" src="js/effects.js"></script>
+<script type="text/javascript" src="js/login.js"></script>
+<script type="text/javascript" src="js/register.js"></script>
+<script type="text/javascript" src="js/feed.js"></script>
+<script type="text/javascript" src="js/social.js"></script>
+<script type="text/javascript" src="js/hardware.js"></script>
+<script type="text/javascript" src="js/share.js"></script>
+<script type="text/javascript" src="js/bluetooth.js"></script>
+<script type="text/javascript" src="js/upgrade.js"></script>
+<script type="text/javascript" src="js/xrun.js"></script>
 
 </head>
 <body>
-    
+
     <!-- WRAPPER -->
     <div id="wrapper">
 
@@ -176,8 +178,8 @@
             <div id="login-window" class="save-popup hidden">
                 <div class="mod-box">
                     <h1>Login</h1>
-		    <!-- The div below will hold error message. It must have class "error" -->
-		    <div class="error"></div>
+                    <!-- The div below will hold error message. It must have class "error" -->
+                    <div class="error hidden"></div>
                     <form class="bottom">
                         <div class="control-group">
                             <label>MOD ID</label>
@@ -192,7 +194,7 @@
                             </div>
                         </div>
                         <div class="textright">
-                            <a href="{{cloud_url}}accounts/register" target="_blank">Register</a>
+                            <a id="register">Register</a>
                             <input type="submit" class="btn btn-info"/>
                         </div>
                     </form>
@@ -200,124 +202,177 @@
             </div>
             <!-- END LOGIN WINDOW -->
 
-            <!-- PEDALBOARD SHARE WINDOW -->
-            <div id="share-window" class="save-popup hidden">
-                <div class="box">
-                    <h1>SHARE</h1>
-                    <input type="text" id="pedalboard-share-title" />
-                    <div class="image">
-                        <img class="loading" src="/img/loading-pedalboard.gif" />
-                        <img class="screenshot hidden" />
+            <!-- REGISTRATION WINDOW -->
+            <div id="registration-window" class="save-popup hidden">
+                <div id="registration-form" class="mod-box">
+                    <h1>Register</h1>
+                    <!-- The div below will hold error message. It must have class "error" -->
+                    <div class="error hidden"></div>
+                    <form class="bottom form-horizontal">
+                        <input type="hidden" name="sid" value="by javascript"/>
+                        <div class="control-group">
+                            <label>E-mail</label>
+                            <div class="mod-controls">
+                                <input type="text" name="email"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Name</label>
+                            <div class="mod-controls">
+                                <input type="text" name="name"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Country</label>
+                            <div class="mod-controls">
+                               <select name="country">
+                                {% include country_list.html %}
+                            </select>
+                        </div>
                     </div>
-                    <textarea id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
+                    <div class="control-group">
+                        <label>Password</label>
+                        <div class="mod-controls">
+                            <input type="password" name="password"/>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Password (again)</label>
+                        <div class="mod-controls">
+                            <input type="password" name="password2"/>
+                        </div>
+                    </div>
                     <div class="textright">
-                        <button class="js-close btn btn-danger">Cancel</button>
-                        <button class="js-share btn btn-success">Share</button>
-                    </div>
-                </div>
-            </div>
-            <!-- END PEDALBOARD SHARE WINDOW -->
-
-            <!-- PEDALBOARD-ACTIONS -->
-            <div id="pedalboard-actions">
-
-                <!-- PEDALBOARD-SETTINGS -->
-                <div id="pedalboard-info">
-                    <div class="title">Untitled</div>
-                    <!-- <div class="favorite"></div> -->
-                    <div class="settings"></div>
-                    <div class="actions">
-                        <button class="js-save btn btn-mini btn-warning">Save</button>
-                        <button class="js-save-as btn btn-mini btn-warning">Save as</button>
-                        <span class="separator"></span>
-                        <button class="js-reset btn btn-mini btn-success">New Pedalboard</button>
-                    </div>
-                </div>
-                <!-- END PEDALBOARD-SETTINGS -->
-
-                <!-- PEDALBOARD-SHARING -->
-                <div id="pedalboard-sharing">
-                    <div class="button"></div>
-                </div>
-                <!-- END PEDALBOARD-SHARING -->
-            
-            </div>
-            <!-- END PEDALBOARD-ACTIONS -->
-
-
-            <!-- PEDALBOARD-DASHBOARD -->
-            <div id="pedalboard-dashboard">
-            </div>
-            <!-- END PEDALBOARD-DASHBOARD -->
-        
-        </div>
-        <!-- END PEDALBOARD -->
-        
-
-        <!-- MAIN MENU-->
-        <div id="main-menu">
-            <div id="mod-social" class="icon"></div>
-            <div id="mod-plugins" class="icon selected"></div>
-            <div id="mod-pedalboard" class="icon"></div>
-            <div id="mod-bank" class="icon"></div>
-            <div id="mod-disconnect" class="icon">Disconnect</div>
-            <div id="mod-settings" class="icon"></div>
-            <div id="mod-bluetooth" class="icon"></div>
-            <div id="mod-cloud" class="icon"></div>
-        </div>
-        <!-- END MAIN MENU-->
-        
-
-        <!-- plugins-library -->
-        <div id="plugins-library" class="js-main-library">
-            <!-- EFFECTS MENU ITEMS -->
-            <ul class="clearfix js-category-tabs">
-                <li id="effect-tab-All">All</li>
-                <li id="effect-tab-Delay">Delay</li>
-                <li id="effect-tab-Distortion">Distortion</li>
-                <li id="effect-tab-Dynamics">Dynamics</li>
-                <li id="effect-tab-Filter">Filter</li>
-                <li id="effect-tab-Generator">Generator</li>
-                <li id="effect-tab-Modulator">Modulator</li>
-                <li id="effect-tab-Reverb">Reverb</li>
-                <li id="effect-tab-Simulator">Simulator</li>
-                <li id="effect-tab-Spatial">Spatial</li>
-                <li id="effect-tab-Spectral">Spectral</li>
-                <li id="effect-tab-Utility">Utility</li>
-            </ul>
-            <span class="js-settings-trigger settings selected"></span>
-            <span class="js-effects-fold fold"></span>
-            <!-- END EFFECTS MENU ITEMS -->
-
-            <!-- EFFECTS LIBRARY SETTINGS WINDOW -->
-            <div id="plugins-library-settings-window">
-                <form class="box form-inline">
-                    <h1>Plugin's Search Filters</h1>
-                    <div class="control-group">
-                        <label class="radio">
-                            <input type="radio" name="mode" value="all"> All
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="mode" value="installed" checked> Installed
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="mode" value="not-installed"> Not Installed
-                        </label>
-                    </div>
-                    <div class="control-group">
-                        <label>Keywords</label>
-                        <br/>
-                        <input type="search"/>
+                        <a class="js-close">Cancel</a>
+                        <input type="submit" class="btn btn-info"/>
                     </div>
                 </form>
             </div>
-            <!-- END EFFECTS LIBRARY SETTINGS WINDOW -->
+            <div id="registration-result" class="mod-box hidden">
+                <div class="js-close">x</div>
+                <p></p>
+            </div>
+        </div>
+        <!-- END REGISTRATION WINDOW -->
 
-            <!-- EFFECTS OF A CATEGORY -->
-            <div id="plugins-list" class="js-effects-list">
-                <div class="nav nav-left"><img src="img/nav-left.png"/></div>
-                <div id="plugins-results">
-		  <div id="plugin-results-wrapper">
+        <!-- PEDALBOARD SHARE WINDOW -->
+        <div id="share-window" class="save-popup hidden">
+            <div class="box">
+                <h1>SHARE</h1>
+                <input type="text" id="pedalboard-share-title" />
+                <div class="image">
+                    <img class="loading" src="/img/loading-pedalboard.gif" />
+                    <img class="screenshot hidden" />
+                </div>
+                <textarea id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
+                <div class="textright">
+                    <button class="js-close btn btn-danger">Cancel</button>
+                    <button class="js-share btn btn-success">Share</button>
+                </div>
+            </div>
+        </div>
+        <!-- END PEDALBOARD SHARE WINDOW -->
+
+        <!-- PEDALBOARD-ACTIONS -->
+        <div id="pedalboard-actions">
+
+            <!-- PEDALBOARD-SETTINGS -->
+            <div id="pedalboard-info">
+                <div class="title">Untitled</div>
+                <!-- <div class="favorite"></div> -->
+                <div class="settings"></div>
+                <div class="actions">
+                    <button class="js-save btn btn-mini btn-warning">Save</button>
+                    <button class="js-save-as btn btn-mini btn-warning">Save as</button>
+                    <span class="separator"></span>
+                    <button class="js-reset btn btn-mini btn-success">New Pedalboard</button>
+                </div>
+            </div>
+            <!-- END PEDALBOARD-SETTINGS -->
+
+            <!-- PEDALBOARD-SHARING -->
+            <div id="pedalboard-sharing">
+                <div class="button"></div>
+            </div>
+            <!-- END PEDALBOARD-SHARING -->
+            
+        </div>
+        <!-- END PEDALBOARD-ACTIONS -->
+
+
+        <!-- PEDALBOARD-DASHBOARD -->
+        <div id="pedalboard-dashboard">
+        </div>
+        <!-- END PEDALBOARD-DASHBOARD -->
+        
+    </div>
+    <!-- END PEDALBOARD -->
+
+
+    <!-- MAIN MENU-->
+    <div id="main-menu">
+        <div id="mod-social" class="icon"></div>
+        <div id="mod-plugins" class="icon selected"></div>
+        <div id="mod-pedalboard" class="icon"></div>
+        <div id="mod-bank" class="icon"></div>
+        <div id="mod-disconnect" class="icon">Disconnect</div>
+        <div id="mod-settings" class="icon"></div>
+        <div id="mod-bluetooth" class="icon"></div>
+        <div id="mod-cloud" class="icon"></div>
+    </div>
+    <!-- END MAIN MENU-->
+
+
+    <!-- plugins-library -->
+    <div id="plugins-library" class="js-main-library">
+        <!-- EFFECTS MENU ITEMS -->
+        <ul class="clearfix js-category-tabs">
+            <li id="effect-tab-All">All</li>
+            <li id="effect-tab-Delay">Delay</li>
+            <li id="effect-tab-Distortion">Distortion</li>
+            <li id="effect-tab-Dynamics">Dynamics</li>
+            <li id="effect-tab-Filter">Filter</li>
+            <li id="effect-tab-Generator">Generator</li>
+            <li id="effect-tab-Modulator">Modulator</li>
+            <li id="effect-tab-Reverb">Reverb</li>
+            <li id="effect-tab-Simulator">Simulator</li>
+            <li id="effect-tab-Spatial">Spatial</li>
+            <li id="effect-tab-Spectral">Spectral</li>
+            <li id="effect-tab-Utility">Utility</li>
+        </ul>
+        <span class="js-settings-trigger settings selected"></span>
+        <span class="js-effects-fold fold"></span>
+        <!-- END EFFECTS MENU ITEMS -->
+
+        <!-- EFFECTS LIBRARY SETTINGS WINDOW -->
+        <div id="plugins-library-settings-window">
+            <form class="box form-inline">
+                <h1>Plugin's Search Filters</h1>
+                <div class="control-group">
+                    <label class="radio">
+                        <input type="radio" name="mode" value="all"> All
+                    </label>
+                    <label class="radio">
+                        <input type="radio" name="mode" value="installed" checked> Installed
+                    </label>
+                    <label class="radio">
+                        <input type="radio" name="mode" value="not-installed"> Not Installed
+                    </label>
+                </div>
+                <div class="control-group">
+                    <label>Keywords</label>
+                    <br/>
+                    <input type="search"/>
+                </div>
+            </form>
+        </div>
+        <!-- END EFFECTS LIBRARY SETTINGS WINDOW -->
+
+        <!-- EFFECTS OF A CATEGORY -->
+        <div id="plugins-list" class="js-effects-list">
+            <div class="nav nav-left"><img src="img/nav-left.png"/></div>
+            <div id="plugins-results">
+                <div id="plugin-results-wrapper">
                     <div id="effect-content-All" class="plugins-wrapper"></div>
                     <div id="effect-content-Delay" class="plugins-wrapper"></div>
                     <div id="effect-content-Distortion" class="plugins-wrapper"></div>
@@ -330,238 +385,238 @@
                     <div id="effect-content-Spatial" class="plugins-wrapper"></div>
                     <div id="effect-content-Spectral" class="plugins-wrapper"></div>
                     <div id="effect-content-Utility" class="plugins-wrapper"></div>
-		  </div>
-              </div>
-              <div class="nav nav-right"><img src="img/nav-right.png"/></div>
-          </div>
-          <!-- END EFFECTS OF A CATEGORY -->
-      </div>
-      <!-- END plugins-library -->
-
-
-        <!-- PEDALBOARDS LIBRARY -->
-        <div id="pedalboards-library" class="hidden">
-            <div class="box clearfix">
-                <header>
-                    <h1 class="bottom top">
-                        Pedalboards Library
-                        <!-- <span class="help"></span> -->
-                    </h1>
-                    <!-- <span class="close btn btn-danger js-close">Close</span> -->
-                </header>
-                <div class="form-horizontal filter clearfix">
-                    <div class="control-group">
-                        <label>Keywords</label><br/>
-                        <input type="search"/>
-                    </div>
-                    <div class="control-group">
-                        <label>Expression Pedal</label>
-                        <select>
-                            <option>Select</option>
-                            <option>0</option>
-                            <option>1</option>
-                            <option>2</option>
-                            <option>3</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label>Inputs</label>
-                        <select>
-                            <option>Select</option>
-                            <option>1</option>
-                            <option>2</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label>Outputs</label>
-                        <select>
-                            <option>Select</option>
-                            <option>1</option>
-                            <option>2</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label>Addressed Encoders</label>
-                        <select>
-                            <option>Select</option>
-                            <option>0</option>
-                            <option>1</option>
-                            <option>2</option>
-                            <option>3</option>
-                            <option>4</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label>Addressed Footswitch</label>
-                        <select>
-                            <option>Select</option>
-                            <option>0</option>
-                            <option>1</option>
-                            <option>2</option>
-                            <option>3</option>
-                            <option>4</option>
-                        </select>
-                    </div>
                 </div>
-                <div class="pedalboards clearfix js-pedalboards"></div>
             </div>
+            <div class="nav nav-right"><img src="img/nav-right.png"/></div>
         </div>
-        <!-- PEDALBOARDS LIBRARY -->
+        <!-- END EFFECTS OF A CATEGORY -->
+    </div>
+    <!-- END plugins-library -->
 
-        <!-- BANK LIBRARY -->
-        <div id="bank-library" class="hidden">
-            <!-- END BOX -->
-            <div class="box">
 
-                 <header>
-                    <h1 class="bottom top">
-                        Banks
-                        <!-- <span class="help"></span> -->
-                    </h1>
-                    <!-- <span class="close btn btn-danger">Close</span> -->
-                </header>
-                
-                <!-- BANK-LIST -->
-                <div id="bank-list">
-                    <div class="add-bank" id="js-add-bank">Add Bank</div>
-                    <span class="js-canvas"></span>
+    <!-- PEDALBOARDS LIBRARY -->
+    <div id="pedalboards-library" class="hidden">
+        <div class="box clearfix">
+            <header>
+                <h1 class="bottom top">
+                    Pedalboards Library
+                    <!-- <span class="help"></span> -->
+                </h1>
+                <!-- <span class="close btn btn-danger js-close">Close</span> -->
+            </header>
+            <div class="form-horizontal filter clearfix">
+                <div class="control-group">
+                    <label>Keywords</label><br/>
+                    <input type="search"/>
                 </div>
-                <!-- END BANK-LIST -->
+                <div class="control-group">
+                    <label>Expression Pedal</label>
+                    <select>
+                        <option>Select</option>
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Inputs</label>
+                    <select>
+                        <option>Select</option>
+                        <option>1</option>
+                        <option>2</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Outputs</label>
+                    <select>
+                        <option>Select</option>
+                        <option>1</option>
+                        <option>2</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Addressed Encoders</label>
+                    <select>
+                        <option>Select</option>
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Addressed Footswitch</label>
+                    <select>
+                        <option>Select</option>
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                    </select>
+                </div>
+            </div>
+            <div class="pedalboards clearfix js-pedalboards"></div>
+        </div>
+    </div>
+    <!-- PEDALBOARDS LIBRARY -->
 
-                <!-- BANK-PEDALBOARDS -->
+    <!-- BANK LIBRARY -->
+    <div id="bank-library" class="hidden">
+        <!-- END BOX -->
+        <div class="box">
+
+           <header>
+            <h1 class="bottom top">
+                Banks
+                <!-- <span class="help"></span> -->
+            </h1>
+            <!-- <span class="close btn btn-danger">Close</span> -->
+        </header>
+
+        <!-- BANK-LIST -->
+        <div id="bank-list">
+            <div class="add-bank" id="js-add-bank">Add Bank</div>
+            <span class="js-canvas"></span>
+        </div>
+        <!-- END BANK-LIST -->
+
+        <!-- BANK-PEDALBOARDS -->
                 <!--
                 <div id="bank-pedalboards-mode" class="mode clearfix">
                   <span class="grid selected"></span>
                   <span class="list"></span>
                 </div>
-                -->
-		<div id="bank-addressings" class="hidden">
-		  <select name="foot-0">
-		    <option value="0">Free</option>
-		    <option value="1">True bypass</option>
-		    <option value="2">Next pedalboard</option>
-		    <option value="3">Previous pedalboard</option>
-		  </select>
-		  <select name="foot-1">
-		    <option value="0">Free</option>
-		    <option value="1">True bypass</option>
-		    <option value="2">Next pedalboard</option>
-		    <option value="3">Previous pedalboard</option>
-		  </select>
-		  <select name="foot-2">
-		    <option value="0">Free</option>
-		    <option value="1">True bypass</option>
-		    <option value="2">Next pedalboard</option>
-		    <option value="3">Previous pedalboard</option>
-		  </select>
-		  <select name="foot-3">
-		    <option value="0">Free</option>
-		    <option value="1">True bypass</option>
-		    <option value="2">Next pedalboard</option>
-		    <option value="3">Previous pedalboard</option>
-		  </select>
-		</div>
-                <div id="bank-pedalboards" class="grid-selected">
-                </div>
-                <!-- END BANK-PEDALBOARDS -->
+            -->
+            <div id="bank-addressings" class="hidden">
+                <select name="foot-0">
+                  <option value="0">Free</option>
+                  <option value="1">True bypass</option>
+                  <option value="2">Next pedalboard</option>
+                  <option value="3">Previous pedalboard</option>
+              </select>
+              <select name="foot-1">
+                  <option value="0">Free</option>
+                  <option value="1">True bypass</option>
+                  <option value="2">Next pedalboard</option>
+                  <option value="3">Previous pedalboard</option>
+              </select>
+              <select name="foot-2">
+                  <option value="0">Free</option>
+                  <option value="1">True bypass</option>
+                  <option value="2">Next pedalboard</option>
+                  <option value="3">Previous pedalboard</option>
+              </select>
+              <select name="foot-3">
+                  <option value="0">Free</option>
+                  <option value="1">True bypass</option>
+                  <option value="2">Next pedalboard</option>
+                  <option value="3">Previous pedalboard</option>
+              </select>
+          </div>
+          <div id="bank-pedalboards" class="grid-selected">
+          </div>
+          <!-- END BANK-PEDALBOARDS -->
 
-                <!-- BANK-PEDALBOARDS-SEARCH -->
-                <div id="bank-pedalboards-search">
-                    <!-- BOX -->
-                    <div class="box">
-                        <!-- FORM HORIZONTAL -->
-                        <div class="form-horizontal filter clearfix">
-                            <div class="clearfix">
-                                <div class="control-group alignleft">
-                                    <label>Keywords</label>
-                                    <input type="search"/>
-                                </div>
-                                <div class="control-group alignleft">
-                                    <label>Exp. Pedals</label>
-                                    <select>
-                                        <option>Select</option>
-                                        <option>0</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                        <option>3</option>
-                                    </select>
-                                </div>
-                                <div class="control-group alignleft">
-                                    <label>Footswitches</label>
-                                    <select>
-                                        <option>Select</option>
-                                        <option>0</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                        <option>3</option>
-                                        <option>4</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="clearfix">
-                                <div class="control-group alignleft bottom">
-                                    <label>Inputs</label>
-                                    <select>
-                                        <option>Select</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                    </select>
-                                </div>
-                                <div class="control-group alignleft bottom">
-                                    <label>Outputs</label>
-                                    <select>
-                                        <option>Select</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                    </select>
-                                </div>
-                                <div class="control-group alignleft bottom">
-                                    <label>Rot. Buttons</label>
-                                    <select>
-                                        <option>Select</option>
-                                        <option>0</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                        <option>3</option>
-                                        <option>4</option>
-                                    </select>
-                                </div>
-                            </div>
+          <!-- BANK-PEDALBOARDS-SEARCH -->
+          <div id="bank-pedalboards-search">
+            <!-- BOX -->
+            <div class="box">
+                <!-- FORM HORIZONTAL -->
+                <div class="form-horizontal filter clearfix">
+                    <div class="clearfix">
+                        <div class="control-group alignleft">
+                            <label>Keywords</label>
+                            <input type="search"/>
                         </div>
-                        <!-- END FORM-HORIZONTAL -->
-
-                        <!-- BANK-PEDALBOARDS-RESULT -->
-                        <div id="bank-pedalboards-result">
-                            <div class="js-canvas grid-selected">
-                            </div>
+                        <div class="control-group alignleft">
+                            <label>Exp. Pedals</label>
+                            <select>
+                                <option>Select</option>
+                                <option>0</option>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                            </select>
                         </div>
-                        <!-- END BANK-PEDALBOARDS-RESULT -->
-
+                        <div class="control-group alignleft">
+                            <label>Footswitches</label>
+                            <select>
+                                <option>Select</option>
+                                <option>0</option>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                            </select>
+                        </div>
                     </div>
-                    <!-- END BOX -->
+                    <div class="clearfix">
+                        <div class="control-group alignleft bottom">
+                            <label>Inputs</label>
+                            <select>
+                                <option>Select</option>
+                                <option>1</option>
+                                <option>2</option>
+                            </select>
+                        </div>
+                        <div class="control-group alignleft bottom">
+                            <label>Outputs</label>
+                            <select>
+                                <option>Select</option>
+                                <option>1</option>
+                                <option>2</option>
+                            </select>
+                        </div>
+                        <div class="control-group alignleft bottom">
+                            <label>Rot. Buttons</label>
+                            <select>
+                                <option>Select</option>
+                                <option>0</option>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <!-- END BANK-PEDALBOARDS-SEARCH -->
+                <!-- END FORM-HORIZONTAL -->
+
+                <!-- BANK-PEDALBOARDS-RESULT -->
+                <div id="bank-pedalboards-result">
+                    <div class="js-canvas grid-selected">
+                    </div>
+                </div>
+                <!-- END BANK-PEDALBOARDS-RESULT -->
+
             </div>
             <!-- END BOX -->
         </div>
-        <!-- END BANK LIBRARY -->
+        <!-- END BANK-PEDALBOARDS-SEARCH -->
+    </div>
+    <!-- END BOX -->
+</div>
+<!-- END BANK LIBRARY -->
 
 
-        <!-- MOD SOCIAL NETWORK -->
-        <div id="mod-social-network" class="clearfix hidden">
-            
-            <!-- HEADER -->
-            <div id="mod-social-network-header" class="clearfix">
-                <div class="profile">
-                    <div class="avatar">
-                        <img id="user-avatar">
-                    </div>
-                    <a id="user-name" href="cloud-user-profile.html" class="name"></a>
-                </div>
-                <div class="menu clearfix">
-                    <ul class="clearfix">
-                        <li><a id="cloud-feed" href="#cloud-feed">Feed</a></li>
-                        <li><a id="cloud-pedalboards" href="#cloud-pedalboards">Pedalboards</a></li>
+<!-- MOD SOCIAL NETWORK -->
+<div id="mod-social-network" class="clearfix hidden">
+
+    <!-- HEADER -->
+    <div id="mod-social-network-header" class="clearfix">
+        <div class="profile">
+            <div class="avatar">
+                <img id="user-avatar">
+            </div>
+            <a id="user-name" href="cloud-user-profile.html" class="name"></a>
+        </div>
+        <div class="menu clearfix">
+            <ul class="clearfix">
+                <li><a id="cloud-feed" href="#cloud-feed">Feed</a></li>
+                <li><a id="cloud-pedalboards" href="#cloud-pedalboards">Pedalboards</a></li>
                         <!-- <li><a href="cloud-people.html">People</a></li>
                         <li class="search">
                             <form class="form-inline bottom top">
@@ -614,18 +669,18 @@
                     <button class="btn btn-mini btn-info">Upgrade</button>
                 </p>
             </div>
-	    <div class="download-progress hidden">
-	      <div class="download-info">
-		<div class="downloading-file">Downloading <span class="filename"></span> (<span class="file-number"></span>/<span class="total-files"></span>)</div>
-	      </div>
-	      <div class="download-start">Starting download...</div>
-	      <div class="download-installing">Installing packages... (may take a while)</div>
-	      <div class="installation-checking">Installation complete! Reloading...</div>
-	      <div class="progressbar-wrapper"><div class="progressbar"></div></div>
-	    </div>
-        </div>
-    </div>
-    <!-- END MOD UPDATE/UPGRADE BOX -->
+            <div class="download-progress hidden">
+             <div class="download-info">
+              <div class="downloading-file">Downloading <span class="filename"></span> (<span class="file-number"></span>/<span class="total-files"></span>)</div>
+          </div>
+          <div class="download-start">Starting download...</div>
+          <div class="download-installing">Installing packages... (may take a while)</div>
+          <div class="installation-checking">Installation complete! Reloading...</div>
+          <div class="progressbar-wrapper"><div class="progressbar"></div></div>
+      </div>
+  </div>
+</div>
+<!-- END MOD UPDATE/UPGRADE BOX -->
 
 
 

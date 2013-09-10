@@ -16,6 +16,7 @@ os.environ['MOD_HTML_DIR'] = join(ROOT, 'html')
 os.environ['MOD_DEVICE_WEBSERVER_PORT'] = '8888'
 os.environ['MOD_PHANTOM_BINARY'] = join(ROOT, 'phantomjs-1.9.0-linux-x86_64/bin/phantomjs')
 os.environ['MOD_SCREENSHOT_JS'] = join(ROOT, 'screenshot.js')
+os.environ['MOD_UNITS_TTL_PATH'] = '/Users/andersonorui/Devel/mod-python/units.ttl'
 
 sys.path = [ os.path.dirname(os.path.realpath(__file__)) ] + sys.path
 

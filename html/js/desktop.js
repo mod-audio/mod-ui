@@ -42,6 +42,7 @@ function Desktop(elements) {
 	socialTrigger: $('<div>'),
 	socialWindow: $('<div>'),
 	loginWindow: $('<div>'),
+	registrationWindow: $('<div>'),
 	shareButton: $('<div>'),
 	shareWindow: $('<div>'),
 	xRunNotifier: $('<div>'),
@@ -63,8 +64,14 @@ function Desktop(elements) {
 	}
     });
     this.netStatus = elements.networkIcon.statusTooltip()
+
+    this.registration = new RegistrationWindow({
+	registrationWindow: elements.registrationWindow,
+	getUserSession: function() { return self.userSession.sid }
+    })
     this.userSession = new UserSession({
 	loginWindow: elements.loginWindow,
+	registration: self.registration,
         online: function() {
 	    self.netStatus.statusTooltip('status', 'online')
         },
@@ -78,7 +85,7 @@ function Desktop(elements) {
 	    })
 	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
 	    self.feedManager.start(self.userSession.sid)
-	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.username), true)
+	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.name), true)
 	    self.netStatus.statusTooltip('status', 'logged')
 	},
 	logout: function() {
@@ -791,4 +798,3 @@ JqueryClass('statusTooltip', {
 	    }, timeout)
     }
 })
-
