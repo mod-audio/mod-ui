@@ -1084,16 +1084,16 @@ JqueryClass('pedalboard', {
     
     // Removes all plugins and restore pedalboard initial state, so that a new pedalboard
     // can be created
-    reset: function(callback, bypassApplication) {
+    reset: function(callback) {
 	var self = $(this)
 
-	self.data('bypassApplication', !!bypassApplication)
+	self.data('bypassApplication', false)
 
 	self.data('reset')(function(ok) {
 	    if (!ok) {
-		self.data('bypassApplication', false)
 		return
 	    }
+	    self.data('bypassApplication', true)
 
 	    for (instanceId in self.data('plugins'))
 		self.pedalboard('removePlugin', instanceId)
