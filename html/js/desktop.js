@@ -87,6 +87,8 @@ function Desktop(elements) {
 	logout: function() {
 	    elements.userName.hide()
 	    elements.userAvatar.hide()
+	    self.netStatus.statusTooltip('message', 'Logged out', true)
+	    self.netStatus.statusTooltip('status', 'online')
 	},
 	notify: function(message) {
 	    self.netStatus.statusTooltip('message', message)
