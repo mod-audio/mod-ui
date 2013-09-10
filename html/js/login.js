@@ -43,7 +43,7 @@ function UserSession(options) {
     var CONNECTING = 1 // Trying to reach cloud and get a session id
     var ONLINE = 2 // Device has been identified
     var LOGGED = 3 // User has been identified and is logged at this device
-    var DISCONNECTED = 4 // Device was not recognized by Cloud, communiction suspended
+    var DISCONNECTED = 4 // Device was not recognized by Cloud, communication suspended
      
 
     this.status = OFFLINE
@@ -118,8 +118,10 @@ function UserSession(options) {
                 }
                 if (status.user_auth)
                     self.identifyUser(status.user, status.signature, new Function())
-                else
+                else {
                     self.setStatus(ONLINE)
+		    self.notify()
+		}
             },
             error: function() {
                 self.setStatus(OFFLINE)
@@ -175,6 +177,22 @@ function UserSession(options) {
 	 options.loginWindow.find('input[type=password]').val('')
 	 options.loginWindow.window('close')
      })
+
+    options.loginWindow.find('#register').click(function() {
+	options.loginWindow.hide()
+	options.registration.start(function(resp) {
+	    self.identifyUser(resp.user, resp.signature, function(ok) {
+		if (ok) {
+		    if (self.loginCallback) {
+			self.loginCallback()
+			self.loginCallback = null
+		    }
+		} else {
+		    self.notify('Security error: server sent invalid data')
+		}
+	    })
+	})
+    })
      
      this.identifyUser = function(user, signature, callback) {
 	$.ajax({ url: '/login/authenticate',
@@ -229,12 +247,7 @@ function UserSession(options) {
     }
 
      this.treatUserData = function(user) {
-	 if (user.first_name) {
-	     user.name = user.first_name
-	     if (user.last_name)
-		 user.name += ' ' + user.last_name
-	 } else
-	     user.name = user.username
+	 // This method is here as a hook to treat user data. It might be unnecessary legacy
 	 return user
      }
 

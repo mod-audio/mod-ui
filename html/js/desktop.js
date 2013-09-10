@@ -42,6 +42,7 @@ function Desktop(elements) {
 	socialTrigger: $('<div>'),
 	socialWindow: $('<div>'),
 	loginWindow: $('<div>'),
+	registrationWindow: $('<div>'),
 	shareButton: $('<div>'),
 	shareWindow: $('<div>'),
 	xRunNotifier: $('<div>'),
@@ -56,15 +57,17 @@ function Desktop(elements) {
 
     this.installationQueue = new InstallationQueue()
     this.windowManager = new WindowManager();
-    this.feedManager = new FeedManager({
-	// just for testing
-	alert: function(event) {
-	    alert(event.message)
-	}
-    });
+    this.feedManager = new FeedManager({})
+
     this.netStatus = elements.networkIcon.statusTooltip()
+
+    this.registration = new RegistrationWindow({
+	registrationWindow: elements.registrationWindow,
+	getUserSession: function() { return self.userSession.sid }
+    })
     this.userSession = new UserSession({
 	loginWindow: elements.loginWindow,
+	registration: self.registration,
         online: function() {
 	    self.netStatus.statusTooltip('status', 'online')
         },
@@ -73,17 +76,19 @@ function Desktop(elements) {
         },
 	login: function() {
 	    elements.userName.show().html(self.userSession.user.name).click(function() {
-		alert('user profile')
+		console.log('user profile')
 		return false
 	    })
 	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
 	    self.feedManager.start(self.userSession.sid)
-	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.username), true)
+	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.name), true)
 	    self.netStatus.statusTooltip('status', 'logged')
 	},
 	logout: function() {
 	    elements.userName.hide()
 	    elements.userAvatar.hide()
+	    self.netStatus.statusTooltip('message', 'Logged out', true)
+	    self.netStatus.statusTooltip('status', 'online')
 	},
 	notify: function(message) {
 	    self.netStatus.statusTooltip('message', message)
@@ -436,11 +441,11 @@ Desktop.prototype.makePedalboard = function(el) {
 	    $.ajax({ url: '/effect/bypass/' + instanceId + ',' + value,
 		     success: function(resp) {
 			 if (!resp)
-			     alert('erro')
+			     console.log('erro')
 			 callback(!!resp)
 		     },
 		     error: function() {
-			 alert('erro no request')
+			 console.log('erro no request')
 		     },
 		     dataType: 'json'
 		   })
@@ -452,7 +457,7 @@ Desktop.prototype.makePedalboard = function(el) {
 		     success: function(resp) {
 			 callback(resp)
 			 if (!resp) {
-			     alert('erro')
+			     console.log('erro')
 			 }
 		     },
 		     dataType: 'json'
@@ -791,4 +796,3 @@ JqueryClass('statusTooltip', {
 	    }, timeout)
     }
 })
-

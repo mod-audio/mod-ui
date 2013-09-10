@@ -21,7 +21,7 @@ function Bluetooth(options) {
 	icon: null, // jquery dom element
 	frequency: 5000,
 	status: function(status) {},
-	notify: function(msg) { alert(msg) },
+	notify: function(msg) { console.log(msg) },
     }, options)
 
     var icon = options.icon 
