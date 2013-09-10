@@ -510,6 +510,10 @@ class Session(object):
                 self.current_bank = bank_id
                 self.load_bank(bank_id)
 
+        self.bank_address(0, 0, 1, 0, 0, lambda r: None)
+        self.bank_address(0, 0, 1, 1, 0, lambda r: None)
+        self.bank_address(0, 0, 1, 2, 0, lambda r: None)
+        self.bank_address(0, 0, 1, 3, 0, lambda r: None)
         self.remove(-1, load)
 
     def load_bank(self, bank_id):
@@ -679,6 +683,10 @@ class Session(object):
                 callback(resp)
             else:
                 assert resp
+        self.bank_address(0, 0, 1, 0, 0, lambda r: None)
+        self.bank_address(0, 0, 1, 1, 0, lambda r: None)
+        self.bank_address(0, 0, 1, 2, 0, lambda r: None)
+        self.bank_address(0, 0, 1, 3, 0, lambda r: None)
         self.remove(-1, lambda r: None)
         self.serial_send('ui_con', verify,
                   datatype='boolean')
