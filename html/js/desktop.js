@@ -57,12 +57,8 @@ function Desktop(elements) {
 
     this.installationQueue = new InstallationQueue()
     this.windowManager = new WindowManager();
-    this.feedManager = new FeedManager({
-	// just for testing
-	alert: function(event) {
-	    alert(event.message)
-	}
-    });
+    this.feedManager = new FeedManager({})
+
     this.netStatus = elements.networkIcon.statusTooltip()
 
     this.registration = new RegistrationWindow({
@@ -80,7 +76,7 @@ function Desktop(elements) {
         },
 	login: function() {
 	    elements.userName.show().html(self.userSession.user.name).click(function() {
-		alert('user profile')
+		console.log('user profile')
 		return false
 	    })
 	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
@@ -443,11 +439,11 @@ Desktop.prototype.makePedalboard = function(el) {
 	    $.ajax({ url: '/effect/bypass/' + instanceId + ',' + value,
 		     success: function(resp) {
 			 if (!resp)
-			     alert('erro')
+			     console.log('erro')
 			 callback(!!resp)
 		     },
 		     error: function() {
-			 alert('erro no request')
+			 console.log('erro no request')
 		     },
 		     dataType: 'json'
 		   })
@@ -459,7 +455,7 @@ Desktop.prototype.makePedalboard = function(el) {
 		     success: function(resp) {
 			 callback(resp)
 			 if (!resp) {
-			     alert('erro')
+			     console.log('erro')
 			 }
 		     },
 		     dataType: 'json'
