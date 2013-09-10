@@ -24,7 +24,7 @@ function RegistrationWindow(options) {
     }, options)
 
     options.registrationWindow.find('.js-close').click(function() {
-	options.registrationWindow.hide()
+	self.close()
     })
 
     this.registrationCallback = function() {};
@@ -34,9 +34,15 @@ function RegistrationWindow(options) {
 	options.registrationWindow.show()	
     }
 
+    this.close = function() {
+	self.form[0].reset()
+	options.registrationWindow.hide()
+    }
+
     this.form = options.registrationWindow.find('form')
     this.form.submit(function(event) {
 	event.preventDefault()
+	options.registrationWindow.find('.error').hide()
 	$(this).find('input[name=sid]').val(options.getUserSession())
 	var pass1 = $(this).find('input[name=password]').val()
 	var pass2 = $(this).find('input[name=password2]').val()
@@ -56,6 +62,7 @@ function RegistrationWindow(options) {
 		    self.error(result.error)
 		    return
 		}
+		self.close()
 		self.registrationCallback(result)
 	    },
 	    error: function(error) {
@@ -94,8 +101,7 @@ function RegistrationWindow(options) {
     }
 
     this.error = function(message) {
-	console.log('aqui')
-	options.registrationWindow.find('.error').html(message)
+	options.registrationWindow.find('.error').show().html(message)
 	return false
     }
 }
