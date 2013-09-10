@@ -345,10 +345,10 @@ class Session(object):
                 _error("invalid argument")
         elif msg.startswith("hw_con") and len(cmd) == 3:
             if _check_values([int, int]):
-                self.hardware_connected(cmd[1], cmd[2], _callback)
+                self.hardware_connected(int(cmd[1]), int(cmd[2]), _callback)
         elif msg.startswith("hw_dis") and len(cmd) == 3:
             if _check_values([int, int]):
-                self.hardware_disconnected(cmd[1], cmd[2], _callback)
+                self.hardware_disconnected(int(cmd[1]), int(cmd[2]), _callback)
         elif msg.startswith("banks") and len(cmd) == 1:
             self.list_banks(_callback)
         elif msg.startswith("pedalboards") and len(cmd) == 2:
@@ -533,13 +533,15 @@ class Session(object):
         consume()
 
     def hardware_connected(self, hwtyp, hwid, callback): 
-        open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
         callback(True)
+        #open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
+        #callback(True)
 
-    def hardware_disconnected(self, hwtype, hwid):
-        if os.path.exist():
-            os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
+    def hardware_disconnected(self, hwtype, hwid, callback):
         callback(True)
+        #if os.path.exist():
+        #    os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
+        #callback(True)
 
     # host commands
 
