@@ -1,3 +1,9 @@
+0.17.4
+======
+
+  - FIX: remove bank addressing when session is reset
+  - FIX: loading pedalboard over existing effects
+
 0.17.2
 ======
 

@@ -251,7 +251,7 @@ function Desktop(elements) {
 					       self.pedalboardModified = true
 					       self.windowManager.closeWindows()
 					   }, false)
-	    }, true)
+	    })
 	},
 	trigger: elements.socialTrigger,
     })
@@ -594,7 +594,7 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 						       self.pedalboardModified = false
 						       callback()
 						   }, true)
-		    }, true)
+		    })
 		},
 		error: function() {
 		    new Bug("Couldn't load pedalboard")
@@ -638,14 +638,14 @@ Desktop.prototype.makeBankBox = function(el, trigger) {
     })
 }
 
-Desktop.prototype.reset = function(callback, bypassApplication) {
+Desktop.prototype.reset = function(callback) {
     if (this.pedalboardModified)
 	if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
 	    return
     this.pedalboardId = null
     this.metadata = {}
     this.pedalboardModified = false
-    this.pedalboard.pedalboard('reset', callback, bypassApplication)
+    this.pedalboard.pedalboard('reset', callback)
 }
 
 Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {
