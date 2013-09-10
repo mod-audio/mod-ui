@@ -148,7 +148,8 @@ JqueryClass('pedalboardBox', {
     render: function(pedalboard, canvas) {
 	var self = $(this)
 	var template = TEMPLATES.pedalboard
-	var rendered = $(Mustache.render(template, pedalboard.metadata))
+	var context = $.extend({}, pedalboard, pedalboard.metadata)	
+	var rendered = $(Mustache.render(template, context))
 	
 	var load = function() {
 	    self.data('load')(pedalboard._id, function() {

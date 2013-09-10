@@ -208,7 +208,8 @@ class Searcher(tornado.web.RequestHandler):
         for entry in self.index.term_search(self.request.arguments):
             obj = self.get_object(entry['id'])
             if obj is None:
-                # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
+                # This means there's garbage left in index, should never happen on a consistent environment,
+                # but sometimes during development we have this scenario, let's just skip this result
                 continue 
             entry.update(obj)
             result.append(entry)

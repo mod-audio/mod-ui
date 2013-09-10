@@ -24,7 +24,7 @@ from whoosh.qparser import MultifieldParser
 from whoosh import sorting
 
 from modcommon import json_handler
-
+from modcommon.pedalboard import hardware_connections
 from mod.settings import INDEX_PATH, EFFECT_DIR, PEDALBOARD_INDEX_PATH, PEDALBOARD_DIR
 
 class Index(object):
@@ -176,6 +176,13 @@ class PedalboardIndex(Index):
                     title=ID(unique=True, stored=True),
                     title_words=NGRAMWORDS(minsize=3, maxsize=5, stored=True),
                     description=TEXT,
+                    audio_inputs=NUMERIC(stored=True),
+                    audio_outputs=NUMERIC(stored=True),
+                    midi_inputs=NUMERIC(stored=True),
+                    midi_outputs=NUMERIC(stored=True),
+                    rotary_addressings=NUMERIC(stored=True),
+                    footswitch_addressings=NUMERIC(stored=True),
+                    pedal_addressings=NUMERIC(stored=True),
                     )
 
     term_fields = ['title_words', 'description']
@@ -187,6 +194,7 @@ class PedalboardIndex(Index):
         data['_id'] = pedalboard['_id']
         data = self.schemed_data(data)
         data['title_words'] = data['title']
+        data.update(hardware_connections(pedalboard))
 
         writer = self.index.writer()
         writer.update_document(**data)
