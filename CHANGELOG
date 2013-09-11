@@ -1,3 +1,8 @@
+0.17.5
+======
+
+  - FIX: integer controller were not being properly addressed
+
 0.17.4
 ======
 
