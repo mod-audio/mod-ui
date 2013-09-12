@@ -272,6 +272,35 @@ function GUI(effect, options) {
 							     })
 							 }
 						       }).attr('mod-widget', 'switch')
+	
+	// Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
+	// Following events will be forwarded to proper widget
+	element[0].addEventListener('gesturestart', function(ev) {
+	    ev.preventDefault()
+	    element.find('[mod-role=input-control-port]').each(function() {
+		var widget = $(this)
+		var top = widget.offset().top
+		var left = widget.offset().left
+		var right = left + widget.width()
+		var bottom = top + widget.height()
+		if (ev.pageX >= left && ev.pageX <= right && ev.pageY >= top && ev.pageY <= bottom) {
+		    element.data('gestureWidget', widget)
+		    widget.controlWidget('gestureStart')
+		}
+	    });
+	})
+	element[0].addEventListener('gestureend', function(ev) {
+	    ev.preventDefault()
+	    element.data('gestureWidget').controlWidget('gestureEnd', ev.scale)
+	    element.data('gestureWidget', null)
+	})
+	element[0].addEventListener('gesturechange',function(ev) {
+	    ev.preventDefault()
+	    var widget = element.data('gestureWidget')
+	    if (!widget)
+		return
+	    widget.controlWidget('gestureChange', ev.scale)
+	})
     }
 
     this.getTemplateData = function(options) {
@@ -384,6 +413,12 @@ var baseWidget = {
     setValue: function() {
 	alert('not implemented')
     },
+
+    // For tablets: these methods can be used to implement gestures.
+    // It will receive gesture events a scale from a gesture centered on this widget
+    gestureStart: function() {},
+    gestureChange: function(scale) {},
+    gestureEnd: function(scale) {},
 
     disable: function() { $(this).addClass('disabled').data('enabled', false)  },
     enable: function() { $(this).removeClass('disabled').data('enabled', true)  },
@@ -565,6 +600,22 @@ JqueryClass('film', baseWidget, {
 	self.film('setRotation', position)
 	var value = self.film('valueFromSteps', position)
 	self.trigger('valuechange', value)
+    },
+
+    gestureStart: function() {},
+    gestureChange: function(scale) {
+	var self = $(this)
+	var diff = parseInt(Math.log(scale) * 30)
+	var position = self.data('position')
+	position += diff
+	self.film('setRotation', position)
+	self.data('lastPosition', position)
+	var value = self.film('valueFromSteps', position)
+	self.trigger('valuechange', value)
+    },
+    gestureEnd: function() {
+	var self = $(this)
+	self.data('position', self.data('lastPosition'))
     },
 
     setRotation: function(steps) {
