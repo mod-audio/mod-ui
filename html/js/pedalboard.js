@@ -1056,6 +1056,8 @@ JqueryClass('pedalboard', {
 	if (!highlight) {
 	    self.find('[mod-role=input-audio-port]').removeClass('input-connecting')
 	    self.find('[mod-role=input-midi-port]').removeClass('input-connecting')
+	    self.find('[mod-role=input-audio-port]').removeClass('input-connecting-highlight')
+	    self.find('[mod-role=input-midi-port]').removeClass('input-connecting-highlight')
 	    return
 	}
 
@@ -1135,12 +1137,15 @@ JqueryClass('pedalboard', {
 				var jack = ui.draggable
 
 				self.pedalboard('connect', jack, element)
+				element.removeClass('input-connecting-highlight')
 			    },
 			    over: function(event, ui) { 
 				self.data('background').droppable('disable');
+				element.addClass('input-connecting-highlight')
 			    },
 			    out: function(event, ui) { 
 				self.data('background').droppable('enable');
+				element.removeClass('input-connecting-highlight')
 			    },
 			    greedy: true,
 			  })
