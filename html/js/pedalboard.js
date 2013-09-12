@@ -899,9 +899,12 @@ JqueryClass('pedalboard', {
 		// clicking in input means expand
 		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=input-audio-port]')))
 		    return
-		// clicking in output means connecting
+		// clicking in output or output jack means connecting
 		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-audio-port]')))
 		    return
+		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-jack]')))
+		    return
+
 
 		// setTimeout avoids cable drawing bug
 		setTimeout(function() { self.pedalboard('focusPlugin', plugin) }, 0)
