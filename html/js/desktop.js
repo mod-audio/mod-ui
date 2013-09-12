@@ -152,7 +152,7 @@ function Desktop(elements) {
     // Indicates that pedalboard is in an unsaved state
     this.pedalboardModified = false
 
-    this.pedalboard = self.makePedalboard(elements.pedalboard)
+    this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function() { self.pedalboard.pedalboard('zoomIn') })
     elements.zoomOut.click(function() { self.pedalboard.pedalboard('zoomOut') })
 
@@ -369,11 +369,12 @@ function Desktop(elements) {
     */
 }
 
-Desktop.prototype.makePedalboard = function(el) {
+Desktop.prototype.makePedalboard = function(el, effectBox) {
     var self = this
     el.pedalboard({
 	windowManager: self.windowManager,
 	hardwareManager: self.hardwareManager,
+	bottomMargin: effectBox.height(),
 	pluginLoad: function(url, instanceId, callback) {
 	    var firstTry = true
 	    var add = function() {

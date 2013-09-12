@@ -194,19 +194,50 @@ function GUI(effect, options) {
 			scalePointsIndex[sprintf(format, port.scalePoints[i].value)] = port.scalePoints[i]
 		    }
 		}
+		var valueField = element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']')
+		var setValue = function(value) {
+		    // When value is changed, let's use format and scalePoints to properly display
+		    // its value
+		    var label = sprintf(format, value)
+		    if (port.scalePoints && scalePointsIndex[label])
+			label = scalePointsIndex[label].label
+		    valueField.data('value', value)
+		    valueField.text(label)
+		    
+		    self.setPortValue(symbol, value, control)
+		}
 		control.controlWidget({ port: port,
 					change: function(e, value) {
-					    // When value is changed, let's use format and scalePoints to properly display
-					    // its value
-					    var label = sprintf(format, value)
-					    if (port.scalePoints && scalePointsIndex[label])
-						label = scalePointsIndex[label].label
-
-					    element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']').text(label)
-					    
-					    self.setPortValue(symbol, value, control)
+					    setValue(value)
 					}
 				      })
+		valueField.attr('contenteditable', true)
+		valueField.focus(function() {
+		    valueField.text(valueField.data('value'))
+ 		})
+		valueField.keydown(function(e) {
+		    if (e.keyCode == 13) {
+			valueField.blur()
+			return false
+		    }
+		    return true			
+		})
+		valueField.blur(function() {
+		    var value = parseFloat(valueField.text())
+		    setValue(value)
+		    control.controlWidget('setValue', value)
+		})
+		valueField.keydown(function(e) {
+		    return true
+		    console.log(e.keyCode)
+		    if (e.keyCode >= 48 && e.keyCode <= 57)
+			// It's a number
+			return true
+		    if (e.keyCode == 13) {
+		    }
+		    return (e.keyCode == 46 || 
+			    e.keyCode == 9)
+		})
 		port.widgets.push(control)
 	    } else {
 		control.text('No such symbol: '+symbol)
@@ -248,6 +279,35 @@ function GUI(effect, options) {
 							     })
 							 }
 						       }).attr('mod-widget', 'switch')
+	
+	// Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
+	// Following events will be forwarded to proper widget
+	element[0].addEventListener('gesturestart', function(ev) {
+	    ev.preventDefault()
+	    element.find('[mod-role=input-control-port]').each(function() {
+		var widget = $(this)
+		var top = widget.offset().top
+		var left = widget.offset().left
+		var right = left + widget.width()
+		var bottom = top + widget.height()
+		if (ev.pageX >= left && ev.pageX <= right && ev.pageY >= top && ev.pageY <= bottom) {
+		    element.data('gestureWidget', widget)
+		    widget.controlWidget('gestureStart')
+		}
+	    });
+	})
+	element[0].addEventListener('gestureend', function(ev) {
+	    ev.preventDefault()
+	    element.data('gestureWidget').controlWidget('gestureEnd', ev.scale)
+	    element.data('gestureWidget', null)
+	})
+	element[0].addEventListener('gesturechange',function(ev) {
+	    ev.preventDefault()
+	    var widget = element.data('gestureWidget')
+	    if (!widget)
+		return
+	    widget.controlWidget('gestureChange', ev.scale)
+	})
     }
 
     this.getTemplateData = function(options) {
@@ -360,6 +420,12 @@ var baseWidget = {
     setValue: function() {
 	alert('not implemented')
     },
+
+    // For tablets: these methods can be used to implement gestures.
+    // It will receive gesture events a scale from a gesture centered on this widget
+    gestureStart: function() {},
+    gestureChange: function(scale) {},
+    gestureEnd: function(scale) {},
 
     disable: function() { $(this).addClass('disabled').data('enabled', false)  },
     enable: function() { $(this).removeClass('disabled').data('enabled', true)  },
@@ -541,6 +607,22 @@ JqueryClass('film', baseWidget, {
 	self.film('setRotation', position)
 	var value = self.film('valueFromSteps', position)
 	self.trigger('valuechange', value)
+    },
+
+    gestureStart: function() {},
+    gestureChange: function(scale) {
+	var self = $(this)
+	var diff = parseInt(Math.log(scale) * 30)
+	var position = self.data('position')
+	position += diff
+	self.film('setRotation', position)
+	self.data('lastPosition', position)
+	var value = self.film('valueFromSteps', position)
+	self.trigger('valuechange', value)
+    },
+    gestureEnd: function() {
+	var self = $(this)
+	self.data('position', self.data('lastPosition'))
     },
 
     setRotation: function(steps) {

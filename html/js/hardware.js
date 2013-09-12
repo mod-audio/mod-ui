@@ -240,7 +240,7 @@ function HardwareManager(options) {
 	else if (addressing.addressing_type == 'tap_tempo')
 	    addressing.type = 5
 	else if (port.integer)
-	    addressing.type == 7
+	    addressing.type = 7
     }
 
     // Does the addressing

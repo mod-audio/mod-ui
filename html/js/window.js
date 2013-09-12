@@ -136,12 +136,13 @@ function WindowManager() {
 		return
 
 	    self.hide()
-	    self.trigger('windowclose')
 
 	    var trigger = self.data('trigger')
 	    if (trigger)
 		trigger.removeClass('selected')
 	    self.data('defaultIcon').addClass('selected')
+
+	    self.trigger('windowclose')
 	},
 
 	toggle: function() {

@@ -75,6 +75,7 @@ function InstallationQueue() {
 	var callback = callbacks[0]
 	
 	var finish = function() {
+	    $('[mod-role=available-plugin][mod-plugin-id='+effect._id+'] .status').addClass('installed')
 	    queue.shift()
 	    callbacks.shift()
 	    if (queue.length > 0) {
