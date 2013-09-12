@@ -194,19 +194,43 @@ function GUI(effect, options) {
 			scalePointsIndex[sprintf(format, port.scalePoints[i].value)] = port.scalePoints[i]
 		    }
 		}
+		var valueField = element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']')
+		var setValue = function(value) {
+		    // When value is changed, let's use format and scalePoints to properly display
+		    // its value
+		    var label = sprintf(format, value)
+		    if (port.scalePoints && scalePointsIndex[label])
+			label = scalePointsIndex[label].label
+		    valueField.data('value', value)
+		    valueField.text(label)
+		    
+		    self.setPortValue(symbol, value, control)
+		}
 		control.controlWidget({ port: port,
 					change: function(e, value) {
-					    // When value is changed, let's use format and scalePoints to properly display
-					    // its value
-					    var label = sprintf(format, value)
-					    if (port.scalePoints && scalePointsIndex[label])
-						label = scalePointsIndex[label].label
-
-					    element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']').text(label)
-					    
-					    self.setPortValue(symbol, value, control)
+					    setValue(value)
 					}
 				      })
+		valueField.attr('contenteditable', true)
+		valueField.focus(function() {
+		    valueField.text(valueField.data('value'))
+ 		})
+		valueField.blur(function() {
+		    var value = parseFloat(valueField.text())
+		    setValue(value)
+		    control.controlWidget('setValue', value)
+		})
+		valueField.keydown(function(e) {
+		    return true
+		    console.log(e.keyCode)
+		    if (e.keyCode >= 48 && e.keyCode <= 57)
+			// It's a number
+			return true
+		    if (e.keyCode == 13) {
+		    }
+		    return (e.keyCode == 46 || 
+			    e.keyCode == 9)
+		})
 		port.widgets.push(control)
 	    } else {
 		control.text('No such symbol: '+symbol)
