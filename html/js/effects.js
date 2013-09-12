@@ -42,6 +42,9 @@ JqueryClass('effectBox', {
 
 	self.data(options)
 
+	var mode = getCookie('searchMode', 'installed')
+	self.find('input[name=mode][value='+mode+']').prop('checked', true)
+
 	self.find('input[type=radio]').change(function() {
 		self.effectBox('search')
 	})
@@ -156,6 +159,8 @@ JqueryClass('effectBox', {
 	var self = $(this)
 	var searchbox = self.data('searchbox')
 	var mode = self.find('input[name=mode]:checked').val() || 'installed'
+
+	setCookie('searchMode', mode)
 
 	var term = searchbox.val()
     
