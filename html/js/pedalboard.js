@@ -465,7 +465,6 @@ JqueryClass('pedalboard', {
     registerAvailablePlugin: function(element, pluginData, draggableOptions) {
 	var self = $(this)
 
-	element.attr('mod-role', 'available-plugin')
 	element.bind('pluginAdded', function(e, position) { 
 	    var instanceId = self.pedalboard('generateInstanceId')
 	    var pluginLoad = self.data('pluginLoad')
