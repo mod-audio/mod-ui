@@ -1,3 +1,17 @@
+0.18
+====
+
+  - Input is highlighted in cyan when jack is over it
+  - Hardware ports positioning considers plugins library box height
+  - Zoom by mousewheel disabled
+  - Last search mode is saved and applied when page is reloaded
+  - Plugins listed in alphabetical order
+  - Javascript error on closing plugin info window    
+  - Exact value can be specified for control port
+  - Plugin is marked as installed (green check icon) after successfull installation
+  - Gestures for rotating knobs
+  - Clicking in output jack does not zoom anymore
+
 0.17.5
 ======
 
