@@ -30,6 +30,9 @@ JqueryClass('pedalboard', {
 	    hardwareManager: null,
 	    // InstallationQueue instance
 	    installationQueue: new InstallationQueue(),
+	    // This is a margin, in pixels, that will be disconsidered from pedalboard height when calculating
+	    // hardware ports positioning
+	    bottomMargin: 0,
 
 	    // Below are functions that application uses to integrate functionality to pedalboard.
 	    // They all receive a callback as last parameter, which must be called with a true value
@@ -805,7 +808,7 @@ JqueryClass('pedalboard', {
     positionHardwarePorts: function() {
 	var self = $(this)
 
-	var height = self.height()
+	var height = self.height() - self.data('bottomMargin')
 
 	var adjust = function(elements, css) {
 	    var top = height / (elements.length+1)
