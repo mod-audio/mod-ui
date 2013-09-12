@@ -215,6 +215,13 @@ function GUI(effect, options) {
 		valueField.focus(function() {
 		    valueField.text(valueField.data('value'))
  		})
+		valueField.keydown(function(e) {
+		    if (e.keyCode == 13) {
+			valueField.blur()
+			return false
+		    }
+		    return true			
+		})
 		valueField.blur(function() {
 		    var value = parseFloat(valueField.text())
 		    setValue(value)
