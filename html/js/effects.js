@@ -307,7 +307,7 @@ JqueryClass('effectBox', {
 	    return 0
 	})
 	self.data('plugins', plugins)
-	console.log(plugins)
+
 	var count = { 'All': 0 }
 	//plugin.category_path = plugin.category.join(', ')
 	var category
@@ -420,6 +420,7 @@ JqueryClass('effectBox', {
 			info.remove()
 			self.effectBox('showPlugins', plugins)
 			self.effectBox('showPluginInfo', index)
+
 		    }
 		})
 	    })
