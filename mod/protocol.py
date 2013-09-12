@@ -34,6 +34,7 @@ class ProtocolError(Exception):
         "wrong arg type": "ERR_INVALID_ARGUMENTS",
         "few arguments": "ERR_FEW_ARGUMENTS",
         "many arguments": "ERR_MANY_ARGUMENTS",
+        "finish": "ERR_FINISH",
     }
     def __init__(self, err=""):
         self.err = err
@@ -123,7 +124,7 @@ class Protocol(object):
             return
 
         cmd = self.msg.split()
-        if cmd[0] not in self.COMMANDS.keys():
+        if not cmd or cmd[0] not in self.COMMANDS.keys():
             raise ProtocolError("not found") # Command not found
 
         try:

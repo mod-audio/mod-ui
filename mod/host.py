@@ -48,7 +48,7 @@ class Host(object):
         if (self.latest_callback):
             # There's a connection waiting, let's just send an error
             # for it to finish properly
-            self.latest_callback('-1002\0')
+            self.latest_callback('finish\0')
 
         self.latest_callback = None
 
