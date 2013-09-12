@@ -32,17 +32,17 @@ from tornado import iostream, ioloop
 
 from mod.protocol import ProtocolError, process_resp
 
-import socket
+import socket, logging
 
 class Host(object):
-    def __init__(self, port, address="localhost"):
+    def __init__(self, port, address="localhost", callback=lambda:None):
         self.port = port
         self.address = address
-        self.latest_callback = None
-        self.open_connection()
         self.queue = []
+        self.latest_callback = None
+        self.open_connection(callback)
 
-    def open_connection(self):
+    def open_connection(self, callback=None):
         self.socket_idle = False
 
         if (self.latest_callback):
@@ -53,6 +53,8 @@ class Host(object):
         self.latest_callback = None
 
         def check_response():
+            if callback is not None:
+                callback()
             if len(self.queue):
                 self.process_queue()
             else:
@@ -78,6 +80,7 @@ class Host(object):
             return
 
         def check_response(resp):
+            logging.info("[host] received <- %s" % repr(resp))
             if not resp.startswith("resp"): 
                 raise ProtocolError(resp)
             
@@ -86,7 +89,8 @@ class Host(object):
             self.process_queue()
 
         self.socket_idle = False
-
+        logging.info("[host] sending -> %s" % msg)
+    
         self.s.write('%s\0' % str(msg))
         self.s.read_until('\0', check_response)
 
@@ -96,25 +100,25 @@ class Host(object):
         self.send("add %s %d" % (uri, instance_id), callback)
 
     def remove(self, instance_id, callback=lambda result: None):
-        self.send("remove %d" % instance_id, callback)  
+        self.send("remove %d" % instance_id, callback, datatype='boolean')  
 
     def connect(self, origin_port, destination_port, callback=lambda result: None):
-        self.send("connect %s %s" % (origin_port, destination_port), callback)
+        self.send("connect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
 
     def disconnect(self, origin_port, destination_port, callback=lambda result: None):
-        self.send("disconnect %s %s" % (origin_port, destination_port), callback)
+        self.send("disconnect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
 
     def param_set(self, instance_id, symbol, value, callback=lambda result: None):
-        self.send("param_set %d %s %f" % (instance_id, symbol, value), callback)
+        self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
     def param_get(self, instance_id, symbol, callback=lambda result: None):
-        self.send("param_get %d %s" % (instance_id, symbol), callback)
+        self.send("param_get %d %s" % (instance_id, symbol), callback, datatype='float_structure')
 
     def param_monitor(self, instance_id, symbol, op, value, callback=lambda result: None):
-        self.send("param_monitor %d %s %s %f" % (instance_id, symbol, op, value), callback)
+        self.send("param_monitor %d %s %s %f" % (instance_id, symbol, op, value), callback, datatype='boolean')
 
     def monitor(self, addr, port, status, callback=lambda result: None):
-        self.send("monitor %s %d %d" % (addr, port, status), callback)
+        self.send("monitor %s %d %d" % (addr, port, status), callback, datatype='boolean')
 
     def bypass(self, instance_id, value, callback=lambda result: None):
-        self.send("bypass %d %d" % (instance_id, value), callback)
+        self.send("bypass %d %d" % (instance_id, value), callback, datatype='boolean')

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import socket, os, serial, multiprocessing, time, logging, os.path
+import os, time
 
 from datetime import timedelta
 from tornado import iostream, ioloop
@@ -29,43 +29,16 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, CONTROLLER_INSTALLED,
                         PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
 from mod.pedalboard import (load_pedalboard, list_pedalboards, list_banks, save_last_pedalboard, 
                            save_pedalboard, get_last_pedalboard)
-from mod.controller import WriterProcess, ReaderProcess
-
-NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-
-_freqs4 = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.0, 415.3, 440.0, 466.16, 493.88]
-FREQS = reduce(lambda l1, l2: l1+l2, ([ freq/2**i for freq in _freqs4 ] for i in range(4, -4, -1)))
-
-def find_freqnotecents(f):
-    freq = min(FREQS, key=lambda i: abs(i-f))
-    idx = FREQS.index(freq)
-    octave = idx / 12
-    note = NOTES[FREQS.index(freq/2**octave)]
-    d = 1 if f >= freq else -1
-    next_f = FREQS[idx+d]
-    cents =  int(100 * (f - freq) / (next_f - freq)) * d
-    return freq, "%s%d" % (note, octave), cents
-
-def _serial_check():
-    """
-    blocking function to check the reader queue
-
-    the queue is set as a function attribute by the function
-    below when we initialize the workers Pool
-    """
-    return _serial_check.queue.get() # blocks until there's something
-
-def _serial_check_init(queue):
-    _serial_check.queue = queue
+from mod.controller import HMI
+from mod.host import Host
+from mod.protocol import Protocol
+from tuner import NOTES, FREQS, find_freqnotecents
 
 class Session(object):
 
     def __init__(self):
-        self.s = None
-        self.socket_idle = False
-        self.latest_callback = None
-        self.socket_queue = []
-        self.open_connection(True)
+        self.host = Host(MANAGER_PORT, "localhost", self.setup_monitor)
+        self.hmi = HMI(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE)
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
@@ -77,80 +50,29 @@ class Session(object):
 
         self._pedalboard = None
         self._pedalboards = {}
+        Protocol.register_cmd_callback("banks", self.list_banks)
+        Protocol.register_cmd_callback("pedalboards", self.list_pedalboards)
+        Protocol.register_cmd_callback("pedalboard", self.load_pedalboard)
+        Protocol.register_cmd_callback("hw_con", self.hardware_connected)
+        Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
+        Protocol.register_cmd_callback("control_set", self.parameter_set)
+        Protocol.register_cmd_callback("control_get", self.parameter_get)
+        Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
+        Protocol.register_cmd_callback("tuner", self.tuner_set)
+        Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
 
         def set_last_pedalboard():
             last_bank, last_pedalboard = get_last_pedalboard()
             if last_bank and last_pedalboard:
                 self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
 
-        self.serial_init(set_last_pedalboard)
-
-    def serial_init(self, callback):
-        # serial blocking communication runs in other processes
-        self.serial_queue = []
-        sp = serial.Serial(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE)
-        sp.setRTS(False)
-        sp.setDTR(False)
-        time.sleep(0.2) # black magic 
-        sp.flushInput()
-        sp.flushOutput()
-
-        lock = multiprocessing.Lock()
-
-        self.writer_queue = multiprocessing.Queue()
-        self.reader_queue = multiprocessing.Queue()
-
-        self.writer = WriterProcess(sp, self.writer_queue, lock, self.reader_queue)
-        self.reader = ReaderProcess(sp, self.reader_queue, lock)
-
-        self.writer.daemon = True
-        self.reader.daemon = True
-
-        self.writer.start()
-        self.reader.start()
-
-        self.workers = multiprocessing.Pool(2, _serial_check_init, [self.reader_queue])
-
-        ioloop.IOLoop.instance().add_callback(self._serial_checker)
-        ioloop.IOLoop.instance().add_callback(callback)
-
-    def open_connection(self, first=False):
-        self.socket_idle = False
-
-        if (self.latest_callback):
-            # There's a connection waiting, let's just send an error
-            # for it to finish properly
-            self.latest_callback('-1\0')
-
-        self.latest_callback = None
-
-        def check_response():
-            if len(self.socket_queue):
-                self._socket_process_next()
-            else:
-                self.socket_idle = True
-            self.setup_monitor()
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s = iostream.IOStream(s)
-        self.s.set_close_callback(self.open_connection)
-
-        def connect():
-            self.s.connect(('127.0.0.1', MANAGER_PORT), check_response)
-
-        if first:
-            connect()
-        else:
-           # avoid consuming too much cpu
-            ioloop.IOLoop.instance().add_callback(connect)
-    
     def setup_monitor(self):
         if self.monitor_server is None:
             from mod.monitor import MonitorServer
             self.monitor_server = MonitorServer()
             self.monitor_server.listen(12345)
 
-            self.set_monitor("localhost", 12345, self.add_tools)
+            self.set_monitor("localhost", 12345, 1, self.add_tools)
 
     def add_tools(self, resp):
         if resp:
@@ -169,6 +91,17 @@ class Session(object):
             self.parameter_monitor(CLIPMETER_OUT, CLIPMETER_MON_L, ">=", 0, lambda r:None)
             self.parameter_monitor(CLIPMETER_OUT, CLIPMETER_MON_R, ">=", 0, lambda r:None)
 
+
+    def tuner_set_input(self, input, callback):
+        # TODO: implement
+        callback(1)
+
+    def tuner_set(self, status, callback):
+        if "on" in status:
+            self.tuner_on(callback)
+        elif "off" in status:
+            self.tuner_off(callback)
+
     def tuner_on(self, cb):
         def mon_tuner(ok):
             if ok:
@@ -184,6 +117,12 @@ class Session(object):
     def tuner_off(self, cb):
         self.remove(TUNER, cb)
         self._tuner = False
+
+    def peakmeter_set(self, status, callback):
+        if "on" in status:
+            self.peakmeter_on(callback)
+        elif "off" in status:
+            self.peakmeter_off(callback)
 
     def peakmeter_on(self, cb):
         
@@ -224,174 +163,8 @@ class Session(object):
         self.remove(PEAKMETER_OUT, lambda r: None)
         self._tuner = False
 
-    def socket_send(self, msg, callback, datatype='int'):
-        logging.info("[socket] scheduling %s" % msg)
-        self.socket_queue.append((msg, callback, datatype))
-        if self.socket_idle:
-            self._socket_process_next()
-
-    def serial_send(self, msg, callback, datatype='int'):
-        logging.info("[serial] scheduling %s" % msg)
-
-        # no worries as our queue is never full
-        self.writer_queue.put_nowait(msg) # non-blocking put()
-        self.serial_queue.append((msg, callback, datatype))
-
-    def serial_send_resp(self, resp):
-        logging.info("[serial] -> resp %s" % resp)
-        # no worries as our queue is never full
-        self.writer_queue.put_nowait("resp %s" % resp) # non-blocking put()
-
-    def _serial_checker(self):
-        def _callback(result):
-            ioloop.IOLoop.instance().add_callback(lambda: self._serial_process_msg(result))
-
-        self.workers.apply_async(_serial_check, callback=_callback)
-
-    def _serial_send_file(self, filename, typ, callback):
-        f = open(filename, 'rb')
-        content = f.read()
-        fsize = len(content)
-
-        def _callback(result):
-            assert result, "dados -x failed"
-            self.serial_send("dados -y %s" % content, callback, 'boolean')
-
-        self.serial_send("dados -x %d %d" % (fsize, typ), _callback, 'boolean')
-
-    def _check_resp(self, resp, datatype):
-        if datatype == 'float_structure':
-            # resp is first an int representing status
-            # then the float
-            resps = resp.split()
-            resp = { 'ok': int(resps[0]) >= 0 }
-            try:
-                resp['value'] = float(resps[1])
-            except IndexError:
-                resp['ok'] = False
-        else:
-            try:
-                resp = int(resp)
-            except:
-                resp = -1003
-
-            if datatype == 'boolean':
-                resp = resp >= 0
-        return resp
-
-    def _serial_process_response(self, msg):
-        try:
-            req, callback, datatype = self.serial_queue.pop(0)
-        except IndexError:
-            logging.warning("[serial] unexpected response received from reader process")
-            ioloop.IOLoop.instance().add_callback(self._serial_checker)
-        else:
-            if msg.startswith("not found"):
-                resp = "-1"
-                datatype = 'boolean'
-            else:
-                resp = msg[5:] # removes the resp prefix
-
-            resp = self._check_resp(resp, datatype)
-            callback(resp)
-
-    def _serial_process_command(self, msg):
-        cmd = msg.split()
-        def _callback(resp, resp_args=None):
-            if resp_args is None:
-                self.serial_send_resp(0 if resp else -1)
-            else:
-                self.serial_send_resp("%d %s" % (0 if resp else -1, resp_args))
-
-        def _error(e):
-            logging.error("[serial] error for '%s': %s" % (msg, e))
-            _callback(False)
-
-        def _check_values(types):
-            for i,value in enumerate(cmd[1:]):
-                try:
-                    types[i](value)
-                except ValueError:
-                    _error("parameter '%s' is not a %s" % (value, repr(types[i])))
-                    return False
-            return True
-
-        # TODO: more documentation 
-        if msg.startswith("control_set") and len(cmd) == 4:
-            if _check_values([int, str, float]):
-                self.parameter_set(int(cmd[1]), cmd[2], float(cmd[3]), _callback, controller=True)
-        elif msg.startswith("pedalboard ") and len(cmd) == 3: 
-            if _check_values([int, str]):
-                self.load_pedalboard(int(cmd[1]), cmd[2], _callback, load_from_dict=True)
-        elif msg.startswith("pedalboard_save") and len(cmd) == 1:
-            save_pedalboard(self.current_bank, self._pedalboards[self._pedalboard])
-        elif msg.startswith("pedalboard_reset") and len(cmd) == 1:
-            self.load_pedalboard(self.current_bank, self._pedalboard, _callback, load_from_dict=False)
-        elif msg.startswith("ping") and len(cmd) == 1:
-            _callback(True)
-        elif msg.startswith("tuner ") and len(cmd) == 2:
-            if cmd[1] == "on":
-                self.tuner_on(_callback)
-            elif cmd[1] == "off":
-                self.tuner_off(_callback)
-            else:
-                _error("invalid argument")
-        elif msg.startswith("peakmeter ") and len(cmd) == 2:
-            if cmd[1] == "on":
-                self.peakmeter_on(_callback)
-            elif cmd[1] == "off":
-                self.peakmeter_off(_callback)
-            else:
-                _error("invalid argument")
-        elif msg.startswith("hw_con") and len(cmd) == 3:
-            if _check_values([int, int]):
-                self.hardware_connected(int(cmd[1]), int(cmd[2]), _callback)
-        elif msg.startswith("hw_dis") and len(cmd) == 3:
-            if _check_values([int, int]):
-                self.hardware_disconnected(int(cmd[1]), int(cmd[2]), _callback)
-        elif msg.startswith("banks") and len(cmd) == 1:
-            self.list_banks(_callback)
-        elif msg.startswith("pedalboards") and len(cmd) == 2:
-            if _check_values([int]):
-                self.list_pedalboards(int(cmd[1]), _callback)
-        else:
-            _error("command not found")
-
-    def _serial_process_msg(self, msg):
-        if msg.startswith('resp') or msg.startswith('not found'):
-            self._serial_process_response(msg)
-        else:
-            self._serial_process_command(msg)
-        
-        # always schedule to check again
-        ioloop.IOLoop.instance().add_callback(self._serial_checker)
-
-    def _socket_process_next(self):
-        try:
-            msg, callback, datatype = self.socket_queue.pop(0)
-        except IndexError:
-            self.socket_idle = True
-            return
-
-        def check_response(resp):
-            logging.info("[socket] <- %s" % (resp))
-            try:
-                resp = resp.split('resp ')[1] # responses now have the prefix resp
-                resp = resp.split('\0')[0]
-            except:
-                resp = -1002
-
-            resp = self._check_resp(resp, datatype)
-            callback(resp)
-            self._socket_process_next()
-
-        self.socket_idle = False
-
-        self.s.write('%s\0' % str(msg))
-        self.s.read_until('\0', check_response)
-
-        self.latest_callback = check_response
-
+    def load_pedalboard_controller(self, bank_id, pedalboard_id, callback):
+        self.load_pedalboard(bank_id, pedalboard_id, load_from_dict=True)
 
     def load_pedalboard(self, bank_id, pedalboard_id, callback, load_from_dict=False):
         # loads the pedalboard json
@@ -546,17 +319,16 @@ class Session(object):
     # host commands
 
     def add(self, objid, instance_id, callback):
-        return self.socket_send('add %s %d' % (objid, instance_id), callback)
+        return self.host.add(objid, instance_id, callback)
 
     def remove(self, instance_id, callback):
         def _callback(ok):
             if ok:
-                self.serial_send("control_rm %d :all" % instance_id, callback, datatype='boolean')
+                self.hmi.control_rm(instance_id, ":all", callback)
             else:
                 callback(ok)
 
-        self.socket_send('remove %d' % instance_id, _callback,
-                  datatype='boolean')
+        self.host.remove(instance_id, _callback)
 
     def bypass(self, instance_id, value, callback, controller=False):
         value = 1 if int(value) > 0 else 0
@@ -573,71 +345,66 @@ class Session(object):
         else:
             _callback = callback
 
-        self.socket_send('bypass %d %d' % (instance_id, value), _callback,
-                  datatype='boolean')
+        self.host.bypass(instance_id, value, _callback)
 
-    def connect(self, port_from, port_to,
-                callback):
+    def connect(self, port_from, port_to, callback):
         if not 'system' in port_from and not 'effect' in port_from:
             port_from = "effect_%s" % port_from
         if not 'system' in port_to and not 'effect' in port_to:
             port_to = "effect_%s" % port_to
         
-        def cb(result):
-            if result:
-                if port_to == "system:playback_1":
-                    self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r)
-                    self._playback_1_connected_ports.append(port_from)
-                    if self._peakmeter:
-                        self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r)
-                elif port_to == "system:playback_2":
-                    self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r)
-                    self._playback_2_connected_ports.append(port_from)
-                    if self._peakmeter:
-                        self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r)
-            callback(result)
-
         if "system" in port_to:
-            self.socket_send('connect %s %s' % (port_from, port_to),
-                cb, datatype='boolean')
+            def cb(result):
+                if result:
+                    if port_to == "system:playback_1":
+                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r)
+                        self._playback_1_connected_ports.append(port_from)
+                        if self._peakmeter:
+                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r)
+                    elif port_to == "system:playback_2":
+                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r)
+                        self._playback_2_connected_ports.append(port_from)
+                        if self._peakmeter:
+                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r)
+                callback(result)
         else:
-            self.socket_send('connect %s %s' % (port_from, port_to),
-                callback, datatype='boolean')
+            cb = callback
 
-    def disconnect(self, port_from, port_to,
-                   callback):
+        self.host.connect(port_from, port_to, cb)
+
+    def disconnect(self, port_from, port_to, callback):
         if not 'system' in port_from and not 'effect' in port_from:
             port_from = "effect_%s" % port_from
         if not 'system' in port_to and not 'effect' in port_to:
             port_to = "effect_%s" % port_to
-        
-        def cb(result):
-            if result:
-                if port_to == "system:playback_1":
-                    self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r)
-                    if self._peakmeter:
-                        self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r)
-                    try:
-                        self._playback_1_connected_ports.remove(port_from)
-                    except ValueError:
-                        pass
-                elif port_to == "system:playback_2":
-                    self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r)
-                    if self._peakmeter:
-                        self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r)
-                    try:
-                        self._playback_2_connected_ports.remove(port_from)
-                    except ValueError:
-                        pass
-            callback(result)
-
-        if "system" in port_to:
-            self.socket_send('disconnect %s %s' % (port_from, port_to),
-                cb, datatype='boolean')
+       
+        if "system" in port_to: 
+            def cb(result):
+                if result:
+                    if port_to == "system:playback_1":
+                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r)
+                        if self._peakmeter:
+                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r)
+                        try:
+                            self._playback_1_connected_ports.remove(port_from)
+                        except ValueError:
+                            pass
+                    elif port_to == "system:playback_2":
+                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r)
+                        if self._peakmeter:
+                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r)
+                        try:
+                            self._playback_2_connected_ports.remove(port_from)
+                        except ValueError:
+                            pass
+                callback(result)
         else:
-            self.socket_send('disconnect %s %s' % (port_from, port_to),
-                callback, datatype='boolean')
+            cb = callback
 
+        self.host.disconnect(port_from, port_to, cb)
+
+    def control_set(self, insance_id, port_id, value, callback):
+        self.parameter_set(instance_id, port_id, value, callback, controller=True)
 
     def parameter_set(self, instance_id, port_id, value, callback, controller=False):
         if port_id == ":bypass":
@@ -656,27 +423,20 @@ class Session(object):
                 callback(r)
         else:
             _callback = callback
-        self.socket_send('param_set %d %s %f' % (instance_id,
-                                           port_id,
-                                           value),
-                  _callback, datatype='boolean')
+        self.host.param_set(instance_id, port_id, value, callback)
 
     def parameter_get(self, instance_id, port_id, callback):
-        self.socket_send('param_get %d %s' % (instance_id, port_id),
-                  callback, datatype='float_structure')
+        self.host.param_get(instance_id, port_id, callback)
 
-    def set_monitor(self, addr, port, callback):
-        self.socket_send('monitor %s %d 1' % (addr, port), callback, datatype='boolean')
+    def set_monitor(self, addr, port, status, callback):
+        self.host.monitor(addr, port, status, callback)
 
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
-        self.socket_send("param_monitor %d %s %s %f" % (instance_id, port_id, op, value), 
-                  callback, datatype='boolean')
+        self.host.param_monitor(instance_id, port_id, op, value, callback)
     # END host commands
 
     # controller commands
     def start_session(self, callback=None):
-        self.socket_queue = []
-        self.serial_queue = []
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
 
@@ -689,15 +449,11 @@ class Session(object):
         self.bank_address(0, 0, 1, 1, 0, lambda r: None)
         self.bank_address(0, 0, 1, 2, 0, lambda r: None)
         self.bank_address(0, 0, 1, 3, 0, lambda r: None)
-        self.remove(-1, lambda r: None)
-        self.serial_send('ui_con', verify,
-                  datatype='boolean')
+        self.remove(-1, lambda r:r)
+        self.hmi.ui_con(verify)
 
     def end_session(self, callback):
-        self.socket_queue = []
-        self.serial_queue = []
-        self.serial_send('ui_dis', callback,
-                  datatype='boolean')
+        self.hmi.ui_dis(callback)
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, callback):
         self.parameter_address(instance_id, ":bypass", label, 6, "none", value, 
@@ -734,12 +490,10 @@ class Session(object):
             hardware_id == -1 and
             actuator_type == -1 and
             actuator_id == -1):
-            self.serial_send('control_rm %d %s' % (instance_id, port_id),
-                             callback, datatype='boolean')
+            self.hmi.control_rm(instance_id, port_id, callback)
             return
 
-        self.serial_send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
-                  ( instance_id,
+        self.hmi.control_add(instance_id,
                     port_id,
                     label,
                     ctype,
@@ -753,11 +507,9 @@ class Session(object):
                     actuator_type,
                     actuator_id,
                     options,
-                    ),
-                  callback, datatype='boolean')
+                    callback)
 
-    def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, 
-                     function, callback):
+    def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
         Function is an integer, meaning:
          - 0: Nothing (unaddress)
@@ -765,16 +517,10 @@ class Session(object):
          - 2: Pedalboard up
          - 3: Pedalboard down
         """
-        self.serial_send('bank_config %d %d %d %d %d' %
-                         (hardware_type,
-                          hardware_id,
-                          actuator_type,
-                          actuator_id,
-                          function),
-                         callback, datatype='boolean')
+        self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
     def ping(self, callback):
-        self.serial_send('ping', callback, datatype='boolean')
+        self.hmi.ping(callback)
 
     def list_banks(self, callback):
         banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(list_banks()))
@@ -794,13 +540,13 @@ class Session(object):
             cb = lambda r: r
 
         if value > 0:
-            self.serial_send("clipmeter %d" % (pos), cb)
+            self.hmi.clipmeter(pos, cb)
 
     def peakmeter(self, pos, value, callback=None):
         cb = callback
         if not cb:
             cb = lambda r: r
-        self.serial_send("peakmeter %d %f" % (pos, value), cb)
+        self.hmi.peakmeter(pos, value, cb)
 
     def tuner(self, value, callback=None):
         cb = callback
@@ -808,13 +554,13 @@ class Session(object):
             cb = lambda r: r
         
         freq, note, cents = find_freqnotecents(value)
-        self.serial_send("tuner %f %s %d" % (freq, note, cents), cb)
+        self.hmi.tuner(freq, note, cents, cb)
 
     def xrun(self, callback=None):
         cb = callback
         if not cb:
             cb = lambda r: r
-        self.serial_send('xrun -x', cb)
+        self.hmi.xrun(cb)
 
 
 # for development purposes
@@ -848,7 +594,6 @@ class FakeSession(FakeControllerSession):
         self.serial_init(set_last_pedalboard)
 
     def add(self, objid, instance_id, callback):
-        logging.info("adding instance %d" % instance_id)
         super(FakeSession, self).add(objid, instance_id, lambda x: None)
         callback(instance_id)
 
@@ -856,15 +601,7 @@ class FakeSession(FakeControllerSession):
         pass
 
     def parameter_get(self, instance_id, port_id, callback):
-        logging.info("getting parameter %d %s" % (instance_id, port_id))
         callback({ 'ok': True, 'value': 17.0 })
-
-    def socket_send(self, msg, callback, datatype=None):
-        logging.info(msg)
-        if datatype == 'boolean':
-            callback(True)
-        else:
-            callback(0)
 
 
 if DEV_ENVIRONMENT:

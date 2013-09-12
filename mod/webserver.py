@@ -428,7 +428,9 @@ class EffectBypassAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        res = yield gen.Task(SESSION.bypass_address, int(instance), int(hwtype), int(hwid), int(actype), int(acid), int(value), label)
+        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", label, 6, "none", 
+                            int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
+        
         # TODO: get value when unaddressing
         self.write(json.dumps({ 'ok': res, 'value': False }))
         self.finish()

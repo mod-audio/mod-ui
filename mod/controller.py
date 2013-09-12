@@ -16,58 +16,172 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import multiprocessing
+from tornado.iostream import BaseIOStream
+from tornado import ioloop
 
-class ReaderProcess(multiprocessing.Process):
-    def __init__(self, sp, queue, lock):
-        super(ReaderProcess, self).__init__()
+from mod.protocol import Protocol, ProtocolError
+
+import serial, logging
+import time
+
+class SerialIOStream(BaseIOStream):
+    def __init__(self, sp):
         self.sp = sp
-        self.queue = queue
-        self.lock = lock
-        self.serial_data = ""
+        super(SerialIOStream, self).__init__()
 
-    def process_msg(self):
-        if (self.serial_data.startswith('resp') or 
-            self.serial_data.startswith('not found') or 
-            self.serial_data.startswith('few ') or 
-            self.serial_data.startswith('many ')):
+    def fileno(self):
+        return self.sp.fileno()
+
+    def close_fd(self):
+        return self.sp.close()
+
+    def write_to_fd(self, data):
+        try:
+            return self.sp.write(data)
+        except serial.SerialTimeoutException:
+            return 0
+
+    def read_from_fd(self):
+        r = self.sp.read(self.read_chunk_size)
+        if r == '':
+            return None
+        return r
+
+class HMI(object):
+    def __init__(self, port, baud_rate):
+        # serial blocking communication runs in other processes
+        self.port = port
+        self.baud_rate = baud_rate
+        self.queue = []
+        
+        sp = serial.Serial(port, baud_rate, timeout=0, writeTimeout=0)
+        sp.flushInput()
+        sp.flushOutput()
+
+        self.sp = SerialIOStream(sp)
+        self.ioloop = ioloop.IOLoop.instance()
+
+        self.ioloop.add_callback(self.checker)
+
+    def checker(self, data=None):
+        if data is not None:
+            logging.info('[hmi] received <- %s' % repr(data))
             try:
-                self.lock.release()
-            except:
-                # if the lock was already released, this means something is really wrong
-                self.serial_data = ""
-                return
-        self.queue.put(self.serial_data)
-        self.serial_data = ""
-
-    def run(self):
-        while True:
-            # blocks on read()
-            data = self.sp.read()
-            if data:
-                if data == "\0":
-                    self.process_msg()
-                else:
-                    self.serial_data += data
-
-
-class WriterProcess(multiprocessing.Process):
-    def __init__(self, sp, queue, lock, responses):
-        super(WriterProcess, self).__init__()
-        self.sp = sp
-        self.queue = queue
-        self.lock = lock
-        self.responses = responses
-
-    def run(self):
-        while True:
-            msg = self.queue.get()
-            if msg.startswith('resp'):
-                # don't need to wait for lock to be released
-                self.sp.write(msg+ "\0")
+                msg = Protocol(data)
+            except ProtocolError, e:
+                self.reply_protocol_error(e.error_code())
             else:
-                self.lock.acquire()
-                self.sp.write(msg+"\0")
-                if not self.lock.acquire(True, timeout=1): # waiting for response, 1 second timeout
-                    self.responses.put("resp -1")
-                self.lock.release()
+                if msg.is_resp():
+                    try:
+                        original_msg, callback, datatype = self.queue.pop(0)
+                    except IndexError:
+                        # something is wrong / not synced!!
+                        logging.error("[hmi] NOT SYNCED")
+                    else:
+                        if callback is not None:
+                            callback(msg.process_resp(datatype))
+                else:
+                    def _callback(resp, resp_args=None):
+                        if resp_args is None:
+                            self.send("resp %d" % (0 if resp else -1))
+                        else:
+                            self.send("resp %d %s" % (0 if resp else -1, resp_args))
+
+                    msg.run_cmd(_callback)
+        self.sp.read_until('\0', self.checker)
+
+
+    def reply_protocol_error(self, error):
+        self.send(error)
+
+    def send(self, msg, callback=None, datatype='int'):
+        if msg not in Protocol.RESPONSES:
+            self.queue.append((msg, callback, datatype))
+        logging.info("[hmi] sending -> %s" % str(msg))
+        self.sp.write("%s\0" % str(msg))
+
+    def ui_con(self, callback=lambda result: None):
+        self.send("ui_con", callback, datatype='boolean')
+
+    def ui_dis(self, callback=lambda result: None):
+        self.send("ui_dis", callback, datatype='boolean')
+
+    def control_add(self, instance_id, symbol, label, var_type, unit, value, max, 
+                    min, steps, hw_type, hw_id, actuator_type, actuator_id, 
+                    scale_points=[], callback=lambda result: None):
+        """
+        addresses a new control
+        var_type is one of the following:
+            0 linear
+            1 log
+            2 enumeration
+            3 toggled
+            4 trigger
+            5 tap tempo
+            6 bypass
+        """
+        self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
+                  ( instance_id,
+                    symbol,
+                    label,
+                    var_type,
+                    unit,
+                    value,
+                    max,
+                    min,
+                    steps,
+                    hw_type,
+                    hw_id,
+                    actuator_type,
+                    actuator_id,
+                    scale_points,
+                  ),
+                  callback, datatype='boolean')
+
+    def control_rm(self, instance_id, symbol, callback=lambda result: None):
+        """
+        removes an addressing
+
+        if instance_id is -1 will remove all addressings
+        if symbol == ":all" will remove every addressing for the instance_id
+        """
+        self.send('control_rm %d %s' % (instance_id, symbol), callback, datatype='boolean')
+
+    def ping(self, callback=lambda result: None):
+        self.send('ping', callback, datatype='boolean')
+
+    def clipmeter(self, position, callback=lambda result: None):
+        self.send('clipmeter %d' % position, callback)
+
+    def peakmeter(self, position, value, callback=lambda result: None):
+        self.send('peakmeter %d %f' % (position, value), callback)
+
+    def tuner(self, freq, note, cents, callback=lambda result: None):
+        self.send('tuner %f %s %f' % (freq, note, cents), callback)
+
+    def xrun(self, callback=lambda result: None):
+        self.send('xrun', callback)
+
+    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback=lambda result: None):
+        """
+        configures bank addressings
+
+        action is one of the following:
+            0: None (usado para des-endereçar)
+            1: True Bypass
+            2: Pedalboard UP
+            3: Pedalboard DOWN
+        """
+        self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
+
+def p(x):
+    print x
+
+if __name__ == "__main__":
+    h = HMI("/dev/ttyUSB0", 115200)
+
+    h.send('teste', lambda r: p("primeiro teste: " + str(time.time()) + str(r)))
+    h.send('teste', lambda r: p("2 teste: " + str(time.time()) + str(r)))
+    h.send('teste', lambda r: p("3 imeiro teste: " + str(time.time()) + str(r)))
+    h.send('teste', lambda r: p("4 rimeiro teste: " + str(time.time()) + str(r)))
+    ioloop.IOLoop.instance().start()
