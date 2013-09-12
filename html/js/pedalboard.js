@@ -145,6 +145,10 @@ JqueryClass('pedalboard', {
 	self.mousedown(function(e) { self.pedalboard('drag', e) })
 	// The mouse wheel is used to zoom in and out
  	self.bind('mousewheel', function(e) {
+	    // Zoom by mousewheel has been desactivated.
+	    // Let's keep the code here so that maybe later this can be a user option
+	    return
+
 	    var ev = e.originalEvent
 
 	    // check if mouse is not over a control button
