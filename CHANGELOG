@@ -1,3 +1,8 @@
+0.18.1
+======
+
+  - Direct editing values should not be enabled for enumeration fields
+
 0.18
 ====
 
