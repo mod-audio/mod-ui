@@ -222,6 +222,7 @@ JqueryClass('pedalboard', {
 	    var screenY = ev.pageY - self.parent().offset().top
 
 	    self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
+	    ev.preventDefault()
 	})
     },
 

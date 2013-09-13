@@ -358,6 +358,12 @@ function Desktop(elements) {
 	windowManager: self.windowManager,
     })
 
+    var prevent = function(ev) { ev.preventDefault() }
+    $('body')[0].addEventListener('gesturestart', prevent)
+    $('body')[0].addEventListener('gesturechange', prevent)
+    $('body')[0].addEventListener('touchmove', prevent)
+    
+
     /*
      * when putting this function, we must remember to remove it from /ping call
     $(document).bind('ajaxSend', function() {
