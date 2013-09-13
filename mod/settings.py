@@ -23,6 +23,7 @@ CONTROLLER_INSTALLED = bool(int(os.environ.get('MOD_CONTROLLER_INSTALLED', True)
 LOG = bool(int(os.environ.get('MOD_LOG', True)))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
+DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
 
 HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware'))
 
