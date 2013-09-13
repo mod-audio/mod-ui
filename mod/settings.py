@@ -54,7 +54,8 @@ def get_tty_acm():
     for tty in glob.glob("/dev/ttyACM*"):
         try:
             s = serial.Serial(tty, CONTROLLER_BAUD_RATE)
-        except serial.serialutil.SerialException:
+            # TODO: Gola, why is this happening in settings??
+        except (serial.serialutil.SerialException, ValueError):
             next
         else:
             s.close()
