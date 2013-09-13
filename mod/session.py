@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, time
+import os, time, logging
 
 from datetime import timedelta
 from tornado import iostream, ioloop
@@ -38,7 +38,7 @@ class Session(object):
 
     def __init__(self):
         self.host = Host(MANAGER_PORT, "localhost", self.setup_monitor)
-        self.hmi = HMI(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE)
+        self.hmi = HMI(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE, lambda: self.ping(self.set_last_pedalboard))
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
@@ -60,11 +60,23 @@ class Session(object):
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
+    
+    def ping_callback(self, ok):
+        if ok:
+            pass
+        else:
+            # calls ping again every one second
+            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
 
-        def set_last_pedalboard():
-            last_bank, last_pedalboard = get_last_pedalboard()
-            if last_bank and last_pedalboard:
-                self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+    def set_last_pedalboard(self, ok):
+        if not ok:
+            self.ping(self.set_last_pedalboard)
+            return
+        self.hmi.control_rm(-1, ":all", self.ping(self.ping_callback))
+        last_bank, last_pedalboard = get_last_pedalboard()
+        if last_bank and last_pedalboard:
+            self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+        
 
     def setup_monitor(self):
         if self.monitor_server is None:
@@ -279,8 +291,8 @@ class Session(object):
 
         def load(result):
             add_effects()
-            if not bank_id == self.current_bank and bank_id is not None:
-                self.current_bank = bank_id
+            self.current_bank = bank_id
+            if bank_id is not None:
                 self.load_bank(bank_id)
 
         self.bank_address(0, 0, 1, 0, 0, lambda r: None)

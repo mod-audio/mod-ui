@@ -82,7 +82,7 @@ class Host(object):
         def check_response(resp):
             logging.info("[host] received <- %s" % repr(resp))
             if not resp.startswith("resp"): 
-                raise ProtocolError(resp)
+                logging.info(ProtocolError(resp)) # TODO: proper error handling
             
             r = resp.replace("resp ", "").replace("\0", "").strip() 
             callback(process_resp(r, datatype))

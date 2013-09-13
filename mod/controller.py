@@ -48,7 +48,7 @@ class SerialIOStream(BaseIOStream):
         return r
 
 class HMI(object):
-    def __init__(self, port, baud_rate):
+    def __init__(self, port, baud_rate, callback=lambda:None):
         # serial blocking communication runs in other processes
         self.port = port
         self.baud_rate = baud_rate
@@ -60,7 +60,7 @@ class HMI(object):
 
         self.sp = SerialIOStream(sp)
         self.ioloop = ioloop.IOLoop.instance()
-
+        self.ioloop.add_callback(callback)
         self.ioloop.add_callback(self.checker)
 
     def checker(self, data=None):
@@ -88,14 +88,17 @@ class HMI(object):
                             self.send("resp %d %s" % (0 if resp else -1, resp_args))
 
                     msg.run_cmd(_callback)
-        self.sp.read_until('\0', self.checker)
+        try:
+            self.sp.read_until('\0', self.checker)
+        except serial.SerialException, e:
+            logging.info("[hmi] error while reading %s" % e)
 
 
     def reply_protocol_error(self, error):
         self.send(error)
 
     def send(self, msg, callback=None, datatype='int'):
-        if msg not in Protocol.RESPONSES:
+        if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
         logging.info("[hmi] sending -> %s" % str(msg))
         self.sp.write("%s\0" % str(msg))
