@@ -299,11 +299,13 @@ function GUI(effect, options) {
 		    widget.controlWidget('gestureStart')
 		}
 	    });
+	    ev.handled = true
 	})
 	element[0].addEventListener('gestureend', function(ev) {
 	    ev.preventDefault()
 	    element.data('gestureWidget').controlWidget('gestureEnd', ev.scale)
 	    element.data('gestureWidget', null)
+	    ev.handled = true
 	})
 	element[0].addEventListener('gesturechange',function(ev) {
 	    ev.preventDefault()
@@ -311,6 +313,7 @@ function GUI(effect, options) {
 	    if (!widget)
 		return
 	    widget.controlWidget('gestureChange', ev.scale)
+	    ev.handled = true
 	})
     }
 

@@ -203,12 +203,14 @@ JqueryClass('pedalboard', {
 	// Gestures for tablets
 	var startScale, canvasX, canvasY
 	self[0].addEventListener('gesturestart', function(ev) {
+	    if (ev.handled) return
 	    startScale = self.data('scale')
 	    canvasX = (ev.pageX - self.offset().left) / startScale
 	    canvasY = (ev.pageY - self.offset().top) / startScale
 	    ev.preventDefault()
 	})
 	self[0].addEventListener('gesturechange', function(ev) {
+	    if (ev.handled) return
 	    var maxS = self.data('maxScale')
 	    var minS = self.data('minScale')
 	    var scale = self.data('scale')
