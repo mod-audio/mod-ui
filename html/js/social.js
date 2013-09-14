@@ -62,9 +62,12 @@ JqueryClass('socialWindow', {
 		pb.author.name = pb.author.first_name
 		if (pb.author.last_name)
 		    pb.author.name += ' ' + pb.author.last_name
-	    } else
+	    } else {
 		pb.author.name = pb.author.username
+	    }
+	    pb.created = renderTime(new Date(pb.created * 1000))
 	}
+	
 	var context = { 
 	    pedalboards: pedalboards,
 	    cloud: SITEURL,

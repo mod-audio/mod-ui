@@ -113,3 +113,23 @@ function getCookie(c_name, defaultValue) {
 	return defaultValue
     return "";
 }
+
+function renderTime(time) {
+    var months = ['Jan',
+		  'Feb',
+		  'Mar',
+		  'Apr',
+		  'May',
+		  'Jun',
+		  'Jul',
+		  'Aug',
+		  'Sep',
+		  'Oct',
+		  'Nov',
+		  'Dec']
+    return sprintf('%s %02d %02d:%02d', 
+		   months[time.getMonth()],
+		   time.getDate(),
+		   time.getHours(),
+		   time.getMinutes())		   
+}
