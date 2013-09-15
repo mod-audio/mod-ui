@@ -1,3 +1,8 @@
+0.18.3
+======
+
+  - Avatar server can be overrided
+
 0.18.2
 ======
 
@@ -17,7 +22,7 @@
   - Zoom by mousewheel disabled
   - Last search mode is saved and applied when page is reloaded
   - Plugins listed in alphabetical order
-  - Javascript error on closing plugin info window    
+  - Javascript error on closing plugin info window
   - Exact value can be specified for control port
   - Plugin is marked as installed (green check icon) after successfull installation
   - Gestures for rotating knobs
