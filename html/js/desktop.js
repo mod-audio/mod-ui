@@ -79,7 +79,7 @@ function Desktop(elements) {
 		console.log('user profile')
 		return false
 	    })
-	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
+	    elements.userAvatar.show().attr('src', AVATAR_URL + '/' + self.userSession.user.gravatar + '.png')
 	    self.feedManager.start(self.userSession.sid)
 	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.name), true)
 	    self.netStatus.statusTooltip('status', 'logged')

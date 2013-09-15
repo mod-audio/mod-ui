@@ -43,7 +43,8 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR
+                          PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
+                          AVATAR_URL,
                           )
 
 
@@ -712,6 +713,7 @@ class TemplateHandler(web.RequestHandler):
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
             'default_package_server_port': DEFAULT_PACKAGE_SERVER_PORT,
             'package_repository': PACKAGE_REPOSITORY,
+            'avatar_url': AVATAR_URL,
             }
         return context
 

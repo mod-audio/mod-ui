@@ -71,6 +71,7 @@ JqueryClass('socialWindow', {
 	var context = { 
 	    pedalboards: pedalboards,
 	    cloud: SITEURL,
+	    avatar_url: AVATAR_URL
 	}
 	var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
 	content.find('div.spec').each(function() {

@@ -114,6 +114,14 @@ else:
     default_repo = 'http://packages.portalmod.com/api'
 PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
 
+if os.path.exists("/root/avatar"):
+    fh = open("/root/avatar")
+    default_avatar_url = fh.read().strip()
+    fh.close()
+else:    
+    default_avatar_url = 'http://gravatar.com/avatar'
+AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
+
 CLIPMETER_URI = "http://portalmod.com/plugins/MOD/clipmeter"
 CLIPMETER_IN = 9990
 CLIPMETER_OUT = 9991
