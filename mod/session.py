@@ -679,6 +679,7 @@ class Session(object):
         self.serial_queue = []
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
+        self._pedalboard = None
 
         def verify(resp):
             if callback:
