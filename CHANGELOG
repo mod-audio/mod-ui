@@ -1,3 +1,9 @@
+0.18.4
+======
+
+  - Brand searchable with minimum length of 2
+  - FIX: Actual pedalboard is reset to None on the start_session
+
 0.18.3
 ======
 
