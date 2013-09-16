@@ -48,7 +48,10 @@ class Host(object):
         if (self.latest_callback):
             # There's a connection waiting, let's just send an error
             # for it to finish properly
-            self.latest_callback('finish\0')
+            try:
+                self.latest_callback('finish\0')
+            except Exception, e:
+                logging.warn("[host] latest callback failed: %s" % str(e))
 
         self.latest_callback = None
 
@@ -75,6 +78,7 @@ class Host(object):
     def process_queue(self):
         try:
             msg, callback, datatype = self.queue.pop(0)
+            logging.info("[host] popped from queue: %s" % msg)
         except IndexError:
             self.socket_idle = True
             return
@@ -82,7 +86,7 @@ class Host(object):
         def check_response(resp):
             logging.info("[host] received <- %s" % repr(resp))
             if not resp.startswith("resp"): 
-                logging.info(ProtocolError(resp)) # TODO: proper error handling
+                logging.error("[host] protocol error: %s" % ProtocolError(resp)) # TODO: proper error handling
             
             r = resp.replace("resp ", "").replace("\0", "").strip() 
             callback(process_resp(r, datatype))

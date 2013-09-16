@@ -69,6 +69,7 @@ class HMI(object):
             try:
                 msg = Protocol(data)
             except ProtocolError, e:
+                logging.error('[hmi] error parsing msg %s' % repr(data))
                 self.reply_protocol_error(e.error_code())
             else:
                 if msg.is_resp():
@@ -79,6 +80,7 @@ class HMI(object):
                         logging.error("[hmi] NOT SYNCED")
                     else:
                         if callback is not None:
+                            logging.info("[hmi] calling callback for %s" % original_msg)
                             callback(msg.process_resp(datatype))
                 else:
                     def _callback(resp, resp_args=None):
@@ -91,11 +93,12 @@ class HMI(object):
         try:
             self.sp.read_until('\0', self.checker)
         except serial.SerialException, e:
-            logging.info("[hmi] error while reading %s" % e)
+            logging.error("[hmi] error while reading %s" % e)
 
 
     def reply_protocol_error(self, error):
-        self.send(error)
+        #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
+        self.send("resp -1")
 
     def send(self, msg, callback=None, datatype='int'):
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
@@ -177,14 +180,3 @@ class HMI(object):
         """
         self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
 
-def p(x):
-    print x
-
-if __name__ == "__main__":
-    h = HMI("/dev/ttyUSB0", 115200)
-
-    h.send('teste', lambda r: p("primeiro teste: " + str(time.time()) + str(r)))
-    h.send('teste', lambda r: p("2 teste: " + str(time.time()) + str(r)))
-    h.send('teste', lambda r: p("3 imeiro teste: " + str(time.time()) + str(r)))
-    h.send('teste', lambda r: p("4 rimeiro teste: " + str(time.time()) + str(r)))
-    ioloop.IOLoop.instance().start()

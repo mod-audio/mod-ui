@@ -52,10 +52,10 @@ class Session(object):
         self._pedalboards = {}
         Protocol.register_cmd_callback("banks", self.list_banks)
         Protocol.register_cmd_callback("pedalboards", self.list_pedalboards)
-        Protocol.register_cmd_callback("pedalboard", self.load_pedalboard)
+        Protocol.register_cmd_callback("pedalboard", self.load_pedalboard_controller)
         Protocol.register_cmd_callback("hw_con", self.hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
-        Protocol.register_cmd_callback("control_set", self.parameter_set)
+        Protocol.register_cmd_callback("control_set", self.control_set)
         Protocol.register_cmd_callback("control_get", self.parameter_get)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
         Protocol.register_cmd_callback("tuner", self.tuner_set)
@@ -295,11 +295,12 @@ class Session(object):
             if bank_id is not None:
                 self.load_bank(bank_id)
 
-        self.bank_address(0, 0, 1, 0, 0, lambda r: None)
-        self.bank_address(0, 0, 1, 1, 0, lambda r: None)
-        self.bank_address(0, 0, 1, 2, 0, lambda r: None)
-        self.bank_address(0, 0, 1, 3, 0, lambda r: None)
-        self.remove(-1, load)
+        self.bank_address(0, 0, 1, 0, 0, 
+            lambda r: self.bank_address(0, 0, 1, 1, 0, 
+                lambda r: self.bank_address(0, 0, 1, 2, 0, 
+                    lambda r: self.bank_address(0, 0, 1, 3, 0, 
+                        lambda r: self.remove(-1, load)))))
+        #self.remove(-1, load)
 
     def load_bank(self, bank_id):
         bank = list_banks()[bank_id]

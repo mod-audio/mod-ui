@@ -38,7 +38,7 @@ class ProtocolError(Exception):
     }
     def __init__(self, err=""):
         self.err = err
-        super(ProtocolError, self).__init__(self.ERRORS.get(err.replace("\0", "")), "ERR_UNKNOWN")
+        super(ProtocolError, self).__init__(self.ERRORS.get(err.replace("\0", ""), "ERR_UNKNOWN"))
 
     def error_code(self):
         try:
@@ -122,7 +122,7 @@ class Protocol(object):
     def parse(self):
         if self.is_resp():
             return
-
+        
         cmd = self.msg.split()
         if not cmd or cmd[0] not in self.COMMANDS.keys():
             raise ProtocolError("not found") # Command not found
@@ -130,5 +130,7 @@ class Protocol(object):
         try:
             self.cmd = cmd[0]
             self.args = [ typ(arg) for typ, arg in zip(self.COMMANDS[self.cmd], cmd[1:]) ]
+            if not all(str(a) for a in self.args):
+                raise ValueError
         except ValueError:
-            raise ProtocolError("wrong arg type")
+            raise ProtocolError("wrong arg type for: %s %s" % (self.cmd, self.args))
