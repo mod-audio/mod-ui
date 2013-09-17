@@ -1,3 +1,10 @@
+0.19.2
+======
+
+  - FIX: adds 0.5 delay before erasing hmi screens 
+  - FIX: fixes addressing with quotes / space
+  - NEW: close button in upgrade window
+
 0.19.1
 ======
 
