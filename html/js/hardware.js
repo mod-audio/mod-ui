@@ -77,9 +77,12 @@ function HardwareManager(options) {
     // Get all addressing types that can be used for a port
     this.availableAddressingTypes = function(port) {
 	var types = []
-	if (port.toggled)
+	if (port.toggled) {
 	    types.push('switch')
-	else {
+	} else if (port.enumeration) {
+	    types.push('switch')
+	    types.push('range')
+	} else {
 	    types.push('range')
 	    if (port.tap_tempo)
 		types.push('tap_tempo')
