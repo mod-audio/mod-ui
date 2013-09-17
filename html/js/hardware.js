@@ -149,6 +149,8 @@ function HardwareManager(options) {
 
 	var sensibility = form.find('select[name=steps]')
 	self.buildSensibilityOptions(sensibility, port)
+	if (currentAddressing.steps)
+	    sensibility.val(currentAddressing.steps)
 
 	form.find('.js-save').click(function() {
 	    actuator = {}
