@@ -858,6 +858,10 @@ class DemoRestore(web.RequestHandler):
         if not DEMO_DATA_DIR or not os.path.exists(DEMO_DATA_DIR):
             self.write("Demo mode disabled")
             return
+        btn = 'bluetooth.name'
+        if os.path.exists(os.path.join(DATA_DIR, btn)):
+            shutil.copy(os.path.join(DATA_DIR, btn),
+                        os.path.join(DEMO_DATA_DIR, btn))
         shutil.rmtree(DATA_DIR)
         shutil.copytree(DEMO_DATA_DIR, DATA_DIR, symlinks=True)
 
