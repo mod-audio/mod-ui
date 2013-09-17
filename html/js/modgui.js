@@ -421,7 +421,8 @@ var baseWidget = {
 	}
 
 	self.data('portSteps', portSteps)
-	self.data('dragPrecision', Math.ceil(100/portSteps))
+	self.data('dragPrecisionVertical', Math.ceil(100/portSteps))
+	self.data('dragPrecisionHorizontal', Math.ceil(portSteps/10))
     },
 
     setValue: function() {
@@ -569,6 +570,7 @@ JqueryClass('film', baseWidget, {
     mouseDown: function(e) {
 	var self = $(this)
 	self.data('lastY', e.pageY)
+	self.data('lastX', e.pageX)
     },
 
     mouseUp: function(e) {
@@ -577,14 +579,21 @@ JqueryClass('film', baseWidget, {
 
     mouseMove: function(e) {
 	var self = $(this)
-	var diff = self.data('lastY') - e.pageY
-	diff = parseInt(diff / self.data('dragPrecision'))
+	var vdiff = self.data('lastY') - e.pageY
+	vdiff = parseInt(vdiff / self.data('dragPrecisionVertical'))
+	var hdiff = e.pageX - self.data('lastX')
+	hdiff = parseInt(hdiff / self.data('dragPrecisionHorizontal'))
+
+	if (Math.abs(vdiff) > 0)
+	    self.data('lastY', e.pageY)
+	if (Math.abs(hdiff) > 0)
+	    self.data('lastX', e.pageX)
+
 	var position = self.data('position')
 
-	position += diff
+	position += vdiff + hdiff
 	self.data('position', position)
-	if (Math.abs(diff) > 0)
-	    self.data('lastY', e.pageY)
+
 	self.film('setRotation', position)
 	var value = self.film('valueFromSteps', position)
 	self.trigger('valuechange', value)

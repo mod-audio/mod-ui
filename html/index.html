@@ -494,6 +494,7 @@ $('document').ready(function() {
                   <span class="list"></span>
                 </div>
             -->
+		<!--
             <div id="bank-addressings" class="hidden">
                 <select name="foot-0">
                   <option value="0">Free</option>
@@ -519,8 +520,10 @@ $('document').ready(function() {
                   <option value="2">Next pedalboard</option>
                   <option value="3">Previous pedalboard</option>
               </select>
+	      -->
           </div>
-          <div id="bank-pedalboards" class="grid-selected">
+	  <!-- TODO the style below will be removed when addressings above are uncommented -->
+          <div id="bank-pedalboards" class="grid-selected" style="top: 68px">
           </div>
           <!-- END BANK-PEDALBOARDS -->
 
@@ -675,7 +678,8 @@ $('document').ready(function() {
                 <p>The following software updates are available:</p>
                 <ul></ul>
                 <p class="textright">
-                    <button class="btn btn-mini btn-info">Upgrade</button>
+		    <button class="js-close btn btn-mini btn-danger">Cancel</button>
+                    <button class="js-upgrade btn btn-mini btn-info">Upgrade</button>
                 </p>
             </div>
             <div class="download-progress hidden">
