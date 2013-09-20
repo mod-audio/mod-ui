@@ -20,7 +20,7 @@ JqueryClass('socialWindow', {
 	var self = $(this)
 	options = $.extend({
 	    userSession: null, //must be passed
-	    getFeed: function(callback) { callback([]) },
+	    getFeed: function(page, callback) { callback([]) },
 	    loadPedalboard: function(pedalboard) {},
 	    trigger: $('<div>')
 	}, options)
@@ -31,31 +31,54 @@ JqueryClass('socialWindow', {
 		options.userSession.login(callback)
 	    },
 	    open: function() {
-		self.socialWindow('showFeed')
+		self.data('page', 0)
+		self.socialWindow('showFeed', 0)
 	    }
 	}, options))
 
+	self.find('button').click(function() {
+	    self.socialWindow('nextPage')
+	})
+
+	/*
 	self.find('#cloud-feed').click(function() {
 	    self.socialWindow('renderFeed')
 	})
 	self.find('#cloud-pedalboards').click(function() {
 	    self.socialWindow('showSearch')
 	})
+	*/
 	return self
     },
 
-    showFeed: function() {
+    showFeed: function(page) {
 	var self = $(this)
-	self.data('getFeed')(function(pedalboards) {
-	    var content = self.socialWindow('renderFeed', pedalboards)
-	    self.find('#social-main').html('').append(content)
+	self.data('getFeed')(page, function(pedalboards) {
+	    var canvas = self.find('#social-main')
+	    if (page == 0)
+		canvas.find('li.feed').remove()
+	    var content = self.socialWindow('renderFeed', pedalboards, canvas)
+	    canvas.find('li.more').appendTo(canvas) // always last item
+	    self.find('button').show()
 	    self.window('open')
 	})
     },
-
-    renderFeed: function(pedalboards) {
+    
+    nextPage: function() {
 	var self = $(this)
-	var pb, i;
+	page = self.data('page') + 1
+	self.data('page', page)
+	self.socialWindow('showFeed', page)
+    },
+
+    renderFeed: function(pedalboards, canvas) {
+	var self = $(this)
+	var pb, i, context, content;
+	var pbFactory = function(pedalboard) {
+	    return function() {
+		self.data('loadPedalboard')(pedalboard)
+	    }
+	}
 	for (i=0; i<pedalboards.length; i++) {
 	    pb = pedalboards[i]
 	    if (pb.author.first_name) {
@@ -66,29 +89,21 @@ JqueryClass('socialWindow', {
 		pb.author.name = pb.author.username
 	    }
 	    pb.created = renderTime(new Date(pb.created * 1000))
-	}
-	
-	var context = { 
-	    pedalboards: pedalboards,
-	    cloud: SITEURL,
-	    avatar_url: AVATAR_URL
-	}
-	var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
-	content.find('div.spec').each(function() {
-	    var spec = $(this)
-	    if (parseInt(spec.find('span').html()) == 0) {
-		spec.addClass('none')
+	    context = { 
+		cloud: SITEURL,
+		avatar_url: AVATAR_URL
 	    }
-	})
-	for (i=0; i<pedalboards.length; i++) {
-	    var pbFactory = function(pedalboard) {
-		return function() {
-		    self.data('loadPedalboard')(pedalboard)
+	    $.extend(context, pb)
+	    content = $(Mustache.render(TEMPLATES.cloud_feed, context))	    
+	    content.find('#pedalboard-'+pedalboards[i]['_id']).click(pbFactory(pb))
+	    content.find('div.spec').each(function() {
+		var spec = $(this)
+		if (parseInt(spec.find('span').html()) == 0) {
+		    spec.addClass('none')
 		}
-	    }
-	    content.find('#pedalboard-'+pedalboards[i]['_id']).click(pbFactory(pedalboards[i]))
-	}
-	return content
+	    });
+	    content.appendTo(canvas)
+	}	
     },
 
     showSearch: function() {

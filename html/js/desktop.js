@@ -233,8 +233,8 @@ function Desktop(elements) {
     this.socialWindow = elements.socialWindow.socialWindow({
 	windowManager: self.windowManager,
 	userSession: self.userSession,
-	getFeed: function(callback) { 
-	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid,
+	getFeed: function(page, callback) { 
+	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid + '/' + page,
 		     success: function(pedalboards) {
 			 callback(pedalboards)
 		     },
