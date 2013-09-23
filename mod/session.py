@@ -723,7 +723,7 @@ class Session(object):
         options: array of options, each one being a tuple (value, label)
         """
         label = '"%s"' % label.upper().replace('"', "")
-        unit = '"%s"' % unit.replace('"', '').upper()
+        unit = '"%s"' % unit.replace('"', '')
         length = len(options)
         if options:
             options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
