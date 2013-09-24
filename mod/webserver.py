@@ -30,7 +30,6 @@ except ImportError:
 from sha import sha
 from base64 import b64decode, b64encode
 from tornado import gen, web, iostream
-from bson import ObjectId
 import subprocess
 from glob import glob
 
@@ -53,7 +52,8 @@ from modcommon import json_handler
 from mod import indexing
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
-from mod.pedalboard import save_pedalboard, remove_pedalboard, save_banks
+from mod.pedalboard import Pedalboard, remove_pedalboard
+from mod.bank import save_banks
 from mod.hardware import get_hardware
 from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list, 
@@ -554,44 +554,27 @@ class PedalboardSave(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        pedalboard = json.loads(self.request.body)
-        if not pedalboard.get('_id'):
-            pedalboard['_id'] = ObjectId()
+        title = self.get_argument('title')
+        as_new = self.get_argument('as_new')
 
         try:
-            metadata = pedalboard.get('metadata', {})
-            title = metadata.get('title', '')
-            assert bool(title)
-        except AssertionError:
-            self.write(json.dumps({ 'ok': False, 'error': 'Title cannot be empty' }))
+            uid = SESSION.save_pedalboard(title, as_new)
+        except Pedalboard.ValidationError as e:
+            self.write(json.dumps({ 'ok': False, 'error': str(e) }))
             self.finish()
             raise StopIteration
         
-        index = indexing.PedalboardIndex()
-        try:
-            existing = index.find(title=title).next()
-            assert existing['id'] == unicode(pedalboard['_id'])
-        except StopIteration:
-            pass
-        except AssertionError:
-            self.write(json.dumps({ 'ok': False, 'error': 'Pedalboard "%s" already exists' % title }))
-            self.finish()
-            raise StopIteration
-        
-        # make sure title is unicode
-        pedalboard['metadata']['title'] = unicode(title)
-        save_pedalboard(None, pedalboard)
-        THUMB_GENERATOR.schedule_thumbnail(pedalboard['_id'])
+        THUMB_GENERATOR.schedule_thumbnail(uid)
 
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True, 'uid': pedalboard['_id'] }, default=json_handler))
+        self.write(json.dumps({ 'ok': True, 'uid': uid }, default=json_handler))
         self.finish()
 
 class PedalboardLoad(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, None, pedalboard_id)
+        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(res, default=json_handler))
         self.finish()
