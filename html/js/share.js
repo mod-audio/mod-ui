@@ -29,8 +29,12 @@ JqueryClass('shareBox', {
 
 	self.data(options)
 	self.data('pedalboard', {})
+	self.data('screenshotGenerated', false)
 
-	self.find('.js-share').click(function() { self.shareBox('share') })
+	self.find('.js-share').click(function() {
+	    if (self.data('screenshotGenerated'))
+		self.shareBox('share')
+	})
 	self.find('.js-close').click(function() { self.hide() })
 	$('body').keydown(function(e) {
 	    if (e.keyCode == 27)
@@ -62,6 +66,8 @@ JqueryClass('shareBox', {
 	self.find('input[type=text]').val(title)
 	var text = self.find('textarea')
 	text.val('').focus()
+	self.data('screenshotGenerated', false)
+	self.find('.js-share').addClass('disabled')
 	self.data('takeScreenshot')(uid, function(result) {
 	    self.data('screenshot', result.screenshot)
 	    self.data('thumbnail', result.thumbnail)
@@ -70,6 +76,8 @@ JqueryClass('shareBox', {
 		self.find('.image').width(img.width()).height(img.height())
 	    }, 0)
 	    self.find('img.loading').hide()
+	    self.find('.js-share').removeClass('disabled')
+	    self.data('screenshotGenerated', true)
 	})
 	self.shareBox('calculateDimensions')
 	self.find('img.loading').show()

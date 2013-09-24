@@ -203,12 +203,14 @@ JqueryClass('pedalboard', {
 	// Gestures for tablets
 	var startScale, canvasX, canvasY
 	self[0].addEventListener('gesturestart', function(ev) {
+	    if (ev.handled) return
 	    startScale = self.data('scale')
 	    canvasX = (ev.pageX - self.offset().left) / startScale
 	    canvasY = (ev.pageY - self.offset().top) / startScale
 	    ev.preventDefault()
 	})
 	self[0].addEventListener('gesturechange', function(ev) {
+	    if (ev.handled) return
 	    var maxS = self.data('maxScale')
 	    var minS = self.data('minScale')
 	    var scale = self.data('scale')
@@ -220,6 +222,7 @@ JqueryClass('pedalboard', {
 	    var screenY = ev.pageY - self.parent().offset().top
 
 	    self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
+	    ev.preventDefault()
 	})
     },
 
@@ -348,6 +351,19 @@ JqueryClass('pedalboard', {
 					if (!ok)
 					    return
 					self.data('instanceCounter', Math.max(plugin.instanceId, self.data('instanceCounter')))
+					var value
+					for (var symbol in plugin.preset) {
+					    value = plugin.preset[symbol]
+					    self.data('pluginParameterChange')(plugin.instanceId,
+									       symbol,
+									       value,
+									       function(ok){
+										   if (!ok) {
+										       new Notification('error', sprintf("Can't set parameter for %s", symbol))
+										   }
+									       })
+					}
+
 					// Queue action to add plugin to pedalboard
 					finalActions.push(function() {
 					    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, 

@@ -302,6 +302,7 @@ body {
 
 /* Effects Filter Settings */
 #plugins-library .settings {
+    background-color:black;
     background-image:url(../img/icn-search-white.png);
     background-position:center center;
     background-repeat:no-repeat;
@@ -312,9 +313,6 @@ body {
     right:37px;
     top:0;
     width:36px;
-}
-#plugins-library .settings.selected {
-    background-color:#000;
 }
 #plugins-library #plugins-library-settings-window {
     background:#000;

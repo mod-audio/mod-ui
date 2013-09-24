@@ -134,7 +134,8 @@ class EffectIndex(Index):
     
     schema = Schema(id=ID(unique=True, stored=True),
                     url=ID(stored=True),
-                    name=NGRAMWORDS(minsize=3, maxsize=5, stored=True),
+                    name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
+                    brand=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
                     label=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
                     author=TEXT(stored=True),
                     package=ID(stored=True),
@@ -148,16 +149,23 @@ class EffectIndex(Index):
                     pedalColor=STORED(),
                     pedalLabel=TEXT(stored=True),
                     smallLabel=STORED(),
-                    brand=ID(stored=True),
                     )
 
-    term_fields = ['label', 'name', 'category', 'author', 'description']
+    term_fields = ['label', 'name', 'category', 'author', 'description', 'brand']
 
     def add(self, effect):
         if not self.indexable(effect):
             return
+        try:
+            effect['label'] = effect['gui']['templateData']['label']
+        except KeyError:
+            pass
+        try:
+            effect['brand'] = effect['gui']['templateData']['author']
+        except KeyError:
+            pass
         effect_data = self.schemed_data(effect)
-            
+
         effect_data['input_ports'] = len(effect['ports']['audio']['input'])
         effect_data['output_ports'] = len(effect['ports']['audio']['output'])
 

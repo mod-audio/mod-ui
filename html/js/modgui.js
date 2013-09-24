@@ -211,33 +211,37 @@ function GUI(effect, options) {
 					    setValue(value)
 					}
 				      })
-		valueField.attr('contenteditable', true)
-		valueField.focus(function() {
-		    valueField.text(valueField.data('value'))
- 		})
-		valueField.keydown(function(e) {
-		    if (e.keyCode == 13) {
-			valueField.blur()
-			return false
-		    }
-		    return true			
-		})
-		valueField.blur(function() {
-		    var value = parseFloat(valueField.text())
-		    setValue(value)
-		    control.controlWidget('setValue', value)
-		})
-		valueField.keydown(function(e) {
-		    return true
-		    console.log(e.keyCode)
-		    if (e.keyCode >= 48 && e.keyCode <= 57)
-			// It's a number
+		if (!port.enumeration) {
+		    // For ports that are not enumerated, we allow
+		    // editing the value directly
+		    valueField.attr('contenteditable', true)
+		    valueField.focus(function() {
+			valueField.text(valueField.data('value'))
+ 		    })
+		    valueField.keydown(function(e) {
+			if (e.keyCode == 13) {
+			    valueField.blur()
+			    return false
+			}
+			return true			
+		    })
+		    valueField.blur(function() {
+			var value = parseFloat(valueField.text())
+			setValue(value)
+			control.controlWidget('setValue', value)
+		    })
+		    valueField.keydown(function(e) {
 			return true
-		    if (e.keyCode == 13) {
-		    }
-		    return (e.keyCode == 46 || 
-			    e.keyCode == 9)
-		})
+			console.log(e.keyCode)
+			if (e.keyCode >= 48 && e.keyCode <= 57)
+			    // It's a number
+			    return true
+			if (e.keyCode == 13) {
+			}
+			return (e.keyCode == 46 || 
+				e.keyCode == 9)
+		    })
+		}
 		port.widgets.push(control)
 	    } else {
 		control.text('No such symbol: '+symbol)
@@ -295,11 +299,13 @@ function GUI(effect, options) {
 		    widget.controlWidget('gestureStart')
 		}
 	    });
+	    ev.handled = true
 	})
 	element[0].addEventListener('gestureend', function(ev) {
 	    ev.preventDefault()
 	    element.data('gestureWidget').controlWidget('gestureEnd', ev.scale)
 	    element.data('gestureWidget', null)
+	    ev.handled = true
 	})
 	element[0].addEventListener('gesturechange',function(ev) {
 	    ev.preventDefault()
@@ -307,6 +313,7 @@ function GUI(effect, options) {
 	    if (!widget)
 		return
 	    widget.controlWidget('gestureChange', ev.scale)
+	    ev.handled = true
 	})
     }
 
@@ -414,7 +421,8 @@ var baseWidget = {
 	}
 
 	self.data('portSteps', portSteps)
-	self.data('dragPrecision', Math.ceil(100/portSteps))
+	self.data('dragPrecisionVertical', Math.ceil(100/portSteps))
+	self.data('dragPrecisionHorizontal', Math.ceil(portSteps/10))
     },
 
     setValue: function() {
@@ -562,6 +570,7 @@ JqueryClass('film', baseWidget, {
     mouseDown: function(e) {
 	var self = $(this)
 	self.data('lastY', e.pageY)
+	self.data('lastX', e.pageX)
     },
 
     mouseUp: function(e) {
@@ -570,14 +579,21 @@ JqueryClass('film', baseWidget, {
 
     mouseMove: function(e) {
 	var self = $(this)
-	var diff = self.data('lastY') - e.pageY
-	diff = parseInt(diff / self.data('dragPrecision'))
+	var vdiff = self.data('lastY') - e.pageY
+	vdiff = parseInt(vdiff / self.data('dragPrecisionVertical'))
+	var hdiff = e.pageX - self.data('lastX')
+	hdiff = parseInt(hdiff / self.data('dragPrecisionHorizontal'))
+
+	if (Math.abs(vdiff) > 0)
+	    self.data('lastY', e.pageY)
+	if (Math.abs(hdiff) > 0)
+	    self.data('lastX', e.pageX)
+
 	var position = self.data('position')
 
-	position += diff
+	position += vdiff + hdiff
 	self.data('position', position)
-	if (Math.abs(diff) > 0)
-	    self.data('lastY', e.pageY)
+
 	self.film('setRotation', position)
 	var value = self.film('valueFromSteps', position)
 	self.trigger('valuechange', value)

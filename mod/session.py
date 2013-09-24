@@ -22,23 +22,30 @@ from datetime import timedelta
 from tornado import iostream, ioloop
 from Queue import Empty
 
-from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, CONTROLLER_INSTALLED,
-                        CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
+from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
+                        HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
                         CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
                         CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
                         PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
+from mod.development import FakeHost, FakeHMI
 from mod.pedalboard import (load_pedalboard, list_pedalboards, list_banks, save_last_pedalboard, 
                            save_pedalboard, get_last_pedalboard)
-from mod.controller import HMI
+from mod.hmi import HMI
 from mod.host import Host
 from mod.protocol import Protocol
 from tuner import NOTES, FREQS, find_freqnotecents
 
+def factory(realClass, fakeClass, fake, *args, **kwargs):
+    if fake:
+        return fakeClass(*args, **kwargs)
+    return realClass(*args, **kwargs)
+
 class Session(object):
 
     def __init__(self):
-        self.host = Host(MANAGER_PORT, "localhost", self.setup_monitor)
-        self.hmi = HMI(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE, lambda: self.ping(self.set_last_pedalboard))
+        self.hmi_initialized = False
+        self.host_initialized = False
+
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
@@ -50,33 +57,40 @@ class Session(object):
 
         self._pedalboard = None
         self._pedalboards = {}
+
         Protocol.register_cmd_callback("banks", self.list_banks)
         Protocol.register_cmd_callback("pedalboards", self.list_pedalboards)
-        Protocol.register_cmd_callback("pedalboard", self.load_pedalboard_controller)
+        Protocol.register_cmd_callback("pedalboard", self.hmi_load_pedalboard)
         Protocol.register_cmd_callback("hw_con", self.hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
-        Protocol.register_cmd_callback("control_set", self.control_set)
+        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
         Protocol.register_cmd_callback("control_get", self.parameter_get)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
     
-    def ping_callback(self, ok):
-        if ok:
-            pass
-        else:
-            # calls ping again every one second
-            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
+        self.host = factory(Host, FakeHost, DEV_HOST, 
+                            MANAGER_PORT, "localhost", self.host_callback)
+        self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
+                           HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
 
-    def set_last_pedalboard(self, ok):
-        if not ok:
-            self.ping(self.set_last_pedalboard)
-            return
-        self.hmi.control_rm(-1, ":all", self.ping(self.ping_callback))
+    def host_callback(self):
+        if self.hmi_initialized:
+            self.set_last_pedalboard()
+        logging.info("host initialized")
+        self.host_initialized = True
+        ioloop.IOLoop.instance().add_callback(self.setup_monitor)
+
+    def hmi_callback(self):
+        if self.host_initialized:
+            self.set_last_pedalboard()
+        logging.info("hmi initialized")
+        self.hmi_initialized = True
+
+    def set_last_pedalboard(self):
         last_bank, last_pedalboard = get_last_pedalboard()
         if last_bank and last_pedalboard:
             self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
-        
 
     def setup_monitor(self):
         if self.monitor_server is None:
@@ -175,15 +189,15 @@ class Session(object):
         self.remove(PEAKMETER_OUT, lambda r: None)
         self._tuner = False
 
-    def load_pedalboard_controller(self, bank_id, pedalboard_id, callback):
-        self.load_pedalboard(bank_id, pedalboard_id, load_from_dict=True)
+    def hmi_load_pedalboard(self, bank_id, pedalboard_id, callback):
+        self.load_pedalboard(bank_id, pedalboard_id, callback, hmi=True)
 
-    def load_pedalboard(self, bank_id, pedalboard_id, callback, load_from_dict=False):
+    def load_pedalboard(self, bank_id, pedalboard_id, callback, hmi=False):
         # loads the pedalboard json
         self._pedalboard = pedalboard_id
 
         import copy
-        if self._pedalboards.get(pedalboard_id, None) is None or not load_from_dict:
+        if self._pedalboards.get(pedalboard_id, None) is None or not hmi:
             pedalboard = load_pedalboard(pedalboard_id)
             self._pedalboards[pedalboard_id] = copy.deepcopy(pedalboard)
         else:
@@ -343,10 +357,10 @@ class Session(object):
 
         self.host.remove(instance_id, _callback)
 
-    def bypass(self, instance_id, value, callback, controller=False):
+    def bypass(self, instance_id, value, callback, hmi=False):
         value = 1 if int(value) > 0 else 0
 
-        if controller:
+        if hmi:
             def _callback(r):
                 if r:
                     if self._pedalboard is not None:
@@ -416,15 +430,15 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
-    def control_set(self, insance_id, port_id, value, callback):
-        self.parameter_set(instance_id, port_id, value, callback, controller=True)
+    def hmi_parameter_set(self, insance_id, port_id, value, callback):
+        self.parameter_set(instance_id, port_id, value, callback, hmi=True)
 
-    def parameter_set(self, instance_id, port_id, value, callback, controller=False):
+    def parameter_set(self, instance_id, port_id, value, callback, hmi=False):
         if port_id == ":bypass":
-            self.bypass(instance_id, value, callback, controller)
+            self.bypass(instance_id, value, callback, hmi)
             return
 
-        if controller:
+        if hmi:
             def _callback(r):
                 if r:
                     if self._pedalboard is not None:
@@ -448,10 +462,11 @@ class Session(object):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
     # END host commands
 
-    # controller commands
+    # hmi commands
     def start_session(self, callback=None):
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
+        self._pedalboard = None
 
         def verify(resp):
             if callback:
@@ -490,11 +505,11 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        label = label.replace(' ', '_')
-        unit = unit.replace(' ', '_')
+        label = '"%s"' % label.upper().replace('"', "")
+        unit = '"%s"' % unit.replace('"', '')
         length = len(options)
         if options:
-            options = [ "%s %f" % (o[1].replace(' ', '_'), float(o[0]))
+            options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
                         for o in options ]
         options = "%d %s" % (length, " ".join(options))
         options = options.strip()
@@ -575,54 +590,4 @@ class Session(object):
             cb = lambda r: r
         self.hmi.xrun(cb)
 
-
-# for development purposes
-class FakeControllerSession(Session):
-
-    def serial_init(self, callback):
-        ioloop.IOLoop.instance().add_callback(callback)
-
-    def serial_send(self, msg, callback, datatype=None):
-        logging.info(msg)
-        if datatype == 'boolean':
-            callback(True)
-        else:
-            callback(0)
-
-# for development purposes
-class FakeSession(FakeControllerSession):
-    def __init__(self):
-        self._playback_1_connected_ports = []
-        self._playback_2_connected_ports = []
-        self._peakmeter = False
-        self._tuner = False
-        self.current_bank = None
-        self._pedalboard = None
-        self._pedalboards = {}
-
-        def set_last_pedalboard():
-            last_bank, last_pedalboard = get_last_pedalboard()
-            if last_bank and last_pedalboard:
-                self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
-        self.serial_init(set_last_pedalboard)
-
-    def add(self, objid, instance_id, callback):
-        super(FakeSession, self).add(objid, instance_id, lambda x: None)
-        callback(instance_id)
-
-    def open(self, callback=None):
-        pass
-
-    def parameter_get(self, instance_id, port_id, callback):
-        callback({ 'ok': True, 'value': 17.0 })
-
-
-if DEV_ENVIRONMENT:
-    _cls = FakeSession
-elif CONTROLLER_INSTALLED == False:
-    _cls = FakeControllerSession
-else:
-    _cls = Session 
-
-SESSION = _cls()
-
+SESSION = Session()

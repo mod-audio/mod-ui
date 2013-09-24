@@ -79,7 +79,7 @@ function Desktop(elements) {
 		console.log('user profile')
 		return false
 	    })
-	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
+	    elements.userAvatar.show().attr('src', AVATAR_URL + '/' + self.userSession.user.gravatar + '.png')
 	    self.feedManager.start(self.userSession.sid)
 	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.name), true)
 	    self.netStatus.statusTooltip('status', 'logged')
@@ -233,8 +233,8 @@ function Desktop(elements) {
     this.socialWindow = elements.socialWindow.socialWindow({
 	windowManager: self.windowManager,
 	userSession: self.userSession,
-	getFeed: function(callback) { 
-	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid,
+	getFeed: function(page, callback) { 
+	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid + '/' + page,
 		     success: function(pedalboards) {
 			 callback(pedalboards)
 		     },
@@ -357,6 +357,12 @@ function Desktop(elements) {
 	icon: elements.upgradeIcon,
 	windowManager: self.windowManager,
     })
+
+    var prevent = function(ev) { ev.preventDefault() }
+    $('body')[0].addEventListener('gesturestart', prevent)
+    $('body')[0].addEventListener('gesturechange', prevent)
+    $('body')[0].addEventListener('touchmove', prevent)
+    
 
     /*
      * when putting this function, we must remember to remove it from /ping call

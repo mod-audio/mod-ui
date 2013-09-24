@@ -66,7 +66,8 @@
               return first + ':' + {{default_package_server_port}}
           })
       )
-var PACKAGE_REPOSITORY = '{{package_repository}}'
+      var PACKAGE_REPOSITORY = '{{package_repository}}'
+      var AVATAR_URL = '{{avatar_url}}'
 
 $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
@@ -409,6 +410,8 @@ $('document').ready(function() {
                     <label>Keywords</label><br/>
                     <input type="search"/>
                 </div>
+		<!-- TODO make this work (branch pedalboard_filter) -->
+		<!--
                 <div class="control-group">
                     <label>Expression Pedal</label>
                     <select>
@@ -457,6 +460,7 @@ $('document').ready(function() {
                         <option>4</option>
                     </select>
                 </div>
+		-->
             </div>
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
@@ -490,6 +494,7 @@ $('document').ready(function() {
                   <span class="list"></span>
                 </div>
             -->
+		<!--
             <div id="bank-addressings" class="hidden">
                 <select name="foot-0">
                   <option value="0">Free</option>
@@ -515,8 +520,10 @@ $('document').ready(function() {
                   <option value="2">Next pedalboard</option>
                   <option value="3">Previous pedalboard</option>
               </select>
+	      -->
           </div>
-          <div id="bank-pedalboards" class="grid-selected">
+	  <!-- TODO the style below will be removed when addressings above are uncommented -->
+          <div id="bank-pedalboards" class="grid-selected" style="top: 68px">
           </div>
           <!-- END BANK-PEDALBOARDS -->
 
@@ -531,6 +538,8 @@ $('document').ready(function() {
                             <label>Keywords</label>
                             <input type="search"/>
                         </div>
+			<!-- TODO make this work (branch pedalboard_filter) -->
+			<!--
                         <div class="control-group alignleft">
                             <label>Exp. Pedals</label>
                             <select>
@@ -581,6 +590,7 @@ $('document').ready(function() {
                                 <option>4</option>
                             </select>
                         </div>
+			-->
                     </div>
                 </div>
                 <!-- END FORM-HORIZONTAL -->
@@ -615,27 +625,35 @@ $('document').ready(function() {
         </div>
         <div class="menu clearfix">
             <ul class="clearfix">
+	      <!--
                 <li><a id="cloud-feed" href="#cloud-feed">Feed</a></li>
                 <li><a id="cloud-pedalboards" href="#cloud-pedalboards">Pedalboards</a></li>
-                        <!-- <li><a href="cloud-people.html">People</a></li>
-                        <li class="search">
-                            <form class="form-inline bottom top">
-                                <input type="search" placeholder="Search pedalboard" class="bottom top"/>
-                                <button type="submit" class="bottom top"></button>
-                            </form>
-                        </li> -->
-                        <li class="logout"><a id="logout">Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-            <!-- END HEADER -->
+              <li><a href="cloud-people.html">People</a></li>
+              <li class="search">
+                <form class="form-inline bottom top">
+                  <input type="search" placeholder="Search pedalboard" class="bottom top"/>
+                  <button type="submit" class="bottom top"></button>
+                </form>
+              </li> 
+	      -->
+              <li class="logout"><a id="logout">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- END HEADER -->
 
             <!-- CONTENT -->
             <div class="content-wrapper clearfix">
                 <div class="container">
                     <div class="row">
                         <!-- MAIN -->
-                        <div id="social-main" class="span9"></div>
+                        <div id="social-main" class="span9">
+			  <div class="box bottom left top row-fluid">
+			    <!-- FEED -->
+			    <ul class="feeds span12">
+			      <li class="more"><button class="hidden">More...</button></li>
+			    </ul>
+			</div>
                         <!-- END MAIN -->
 
                         <!-- ASIDE -->
@@ -666,7 +684,8 @@ $('document').ready(function() {
                 <p>The following software updates are available:</p>
                 <ul></ul>
                 <p class="textright">
-                    <button class="btn btn-mini btn-info">Upgrade</button>
+		    <button class="js-close btn btn-mini btn-danger">Cancel</button>
+                    <button class="js-upgrade btn btn-mini btn-info">Upgrade</button>
                 </p>
             </div>
             <div class="download-progress hidden">

@@ -1,3 +1,55 @@
+0.20
+====
+
+  - Load more pedalboards from cloud
+
+0.19.3
+======
+
+  - Bluetooth name preserved when restoring demo data
+
+0.19.2
+======
+
+  - FIX: adds 0.5 delay before erasing hmi screens 
+  - FIX: fixes addressing with quotes / space
+  - NEW: close button in upgrade window
+
+0.19.1
+======
+
+  - FIX: Addressing sensibility initialized with proper value
+
+0.19
+====
+
+  - Spaces shown in addressings, instead of underscores
+  - Enumeration can be addressed to footswitch
+  - Plugin controls may be modified by horizontal mouse drag too
+  - Bank addressings hidden from interface
+
+0.18.4
+======
+
+  - Brand searchable with minimum length of 2
+  - FIX: Actual pedalboard is reset to None on the start_session
+
+0.18.3
+======
+
+  - Avatar server can be overrided
+
+0.18.2
+======
+
+  - Removed links and filter options that were not working
+  - Date and time in pedalboards feed
+
+0.18.1
+======
+
+  - Direct editing values should not be enabled for enumeration fields
+
 0.18
 ====
 
@@ -6,7 +58,7 @@
   - Zoom by mousewheel disabled
   - Last search mode is saved and applied when page is reloaded
   - Plugins listed in alphabetical order
-  - Javascript error on closing plugin info window    
+  - Javascript error on closing plugin info window
   - Exact value can be specified for control port
   - Plugin is marked as installed (green check icon) after successfull installation
   - Gestures for rotating knobs

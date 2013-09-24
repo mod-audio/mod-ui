@@ -81,6 +81,13 @@ def check_environment(callback):
         model = re.search('^[A-Z]+').group()
         open(DEVICE_MODEL, 'w').write(model)
 
+    def ping_callback(ok):
+        if ok:
+            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), lambda: SESSION.remove(-1, lambda r:None))
+        else:
+            # calls ping again every one second
+            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
+    SESSION.ping(ping_callback)
 
 def rebuild_database():
     """

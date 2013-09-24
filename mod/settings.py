@@ -19,10 +19,13 @@ import os, sys
 from os.path import join
 
 DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
-CONTROLLER_INSTALLED = bool(int(os.environ.get('MOD_CONTROLLER_INSTALLED', True)))
+DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
+DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
+
 LOG = bool(int(os.environ.get('MOD_LOG', True)))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
+DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
 
 HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware'))
 
@@ -47,21 +50,23 @@ DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/ef
 
 UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', '/usr/lib/lv2/units.lv2/units.ttl')
 
-CONTROLLER_BAUD_RATE = os.environ.get('MOD_CONTROLLER_BAUD_RATE', 10000000)
+HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 
 def get_tty_acm():
+    if DEV_HMI:
+        return # doesn't matter, connection won't ever be made
     import glob, serial
     for tty in glob.glob("/dev/ttyACM*"):
         try:
-            s = serial.Serial(tty, CONTROLLER_BAUD_RATE)
-        except serial.serialutil.SerialException:
+            s = serial.Serial(tty, HMI_BAUD_RATE)
+        except (serial.serialutil.SerialException, ValueError) as e:
             next
         else:
             s.close()
             return tty
     return  "/dev/ttyACM0"
 
-CONTROLLER_SERIAL_PORT = os.environ.get('MOD_CONTROLLER_SERIAL_PORT', get_tty_acm())
+HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', get_tty_acm())
 MANAGER_PORT = 5555
 
 EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))
@@ -111,6 +116,14 @@ if os.path.exists("/root/repository"):
 else:
     default_repo = 'http://packages.portalmod.com/api'
 PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
+
+if os.path.exists("/root/avatar"):
+    fh = open("/root/avatar")
+    default_avatar_url = fh.read().strip()
+    fh.close()
+else:    
+    default_avatar_url = 'http://gravatar.com/avatar'
+AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
 
 CLIPMETER_URI = "http://portalmod.com/plugins/MOD/clipmeter"
 CLIPMETER_IN = 9990
