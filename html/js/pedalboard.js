@@ -351,6 +351,19 @@ JqueryClass('pedalboard', {
 					if (!ok)
 					    return
 					self.data('instanceCounter', Math.max(plugin.instanceId, self.data('instanceCounter')))
+					var value
+					for (var symbol in plugin.preset) {
+					    value = plugin.preset[symbol]
+					    self.data('pluginParameterChange')(plugin.instanceId,
+									       symbol,
+									       value,
+									       function(ok){
+										   if (!ok) {
+										       new Notification('error', sprintf("Can't set parameter for %s", symbol))
+										   }
+									       })
+					}
+
 					// Queue action to add plugin to pedalboard
 					finalActions.push(function() {
 					    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, 
