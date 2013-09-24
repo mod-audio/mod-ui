@@ -19,7 +19,9 @@ import os, sys
 from os.path import join
 
 DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
-CONTROLLER_INSTALLED = bool(int(os.environ.get('MOD_CONTROLLER_INSTALLED', True)))
+DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
+DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
+
 LOG = bool(int(os.environ.get('MOD_LOG', True)))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
@@ -48,22 +50,23 @@ DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/ef
 
 UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', '/usr/lib/lv2/units.lv2/units.ttl')
 
-CONTROLLER_BAUD_RATE = os.environ.get('MOD_CONTROLLER_BAUD_RATE', 10000000)
+HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 
 def get_tty_acm():
+    if DEV_HMI:
+        return # doesn't matter, connection won't ever be made
     import glob, serial
     for tty in glob.glob("/dev/ttyACM*"):
         try:
-            s = serial.Serial(tty, CONTROLLER_BAUD_RATE)
-            # TODO: Gola, why is this happening in settings??
-        except (serial.serialutil.SerialException, ValueError):
+            s = serial.Serial(tty, HMI_BAUD_RATE)
+        except (serial.serialutil.SerialException, ValueError) as e:
             next
         else:
             s.close()
             return tty
     return  "/dev/ttyACM0"
 
-CONTROLLER_SERIAL_PORT = os.environ.get('MOD_CONTROLLER_SERIAL_PORT', get_tty_acm())
+HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', get_tty_acm())
 MANAGER_PORT = 5555
 
 EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))

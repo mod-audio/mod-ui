@@ -30,11 +30,11 @@ from mod.settings import (CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R,
                           CLIPMETER_MON_L, CLIPMETER_MON_R, PEAKMETER_MON_L, PEAKMETER_MON_R,
                           TUNER)
 
-from mod.session import SESSION
-
 class MonitorServer(TCPServer):
     
     def _process_msg(self, msg):
+        from mod.session import SESSION
+
         try:
             cmd, instance, port, value =  msg.replace("\x00", "").split()
             assert cmd == "monitor"

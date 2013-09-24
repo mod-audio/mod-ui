@@ -52,22 +52,20 @@ class HMI(object):
         self.port = port
         self.baud_rate = baud_rate
         self.queue = []
-        self.setup_callback = callback
         
+        self.sp = self.open_connection(callback)
+
+        self.ioloop = ioloop.IOLoop.instance()
+
+    def open_connection(self, callback):
         sp = serial.Serial(port, baud_rate, timeout=0, writeTimeout=0)
         sp.flushInput()
         sp.flushOutput()
 
-        self.sp = SerialIOStream(sp)
-        self.ioloop = ioloop.IOLoop.instance()
-
-        self.ioloop.add_callback(self.ready)
-
-    def ready(self):
         self.ioloop.add_callback(self.checker)
-        if self.setup_callback:
-            self.setup_callback()
-            self.setup_callback = None
+        self.ioloop.add_callback(callback)
+
+        return SerialIOStream(sp)
 
     def checker(self, data=None):
         if data is not None:
@@ -180,14 +178,3 @@ class HMI(object):
         """
         self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
 
-def p(x):
-    print x
-
-if __name__ == "__main__":
-    h = HMI("/dev/ttyUSB0", 115200)
-
-    h.send('teste', lambda r: p("primeiro teste: " + str(time.time()) + str(r)))
-    h.send('teste', lambda r: p("2 teste: " + str(time.time()) + str(r)))
-    h.send('teste', lambda r: p("3 imeiro teste: " + str(time.time()) + str(r)))
-    h.send('teste', lambda r: p("4 rimeiro teste: " + str(time.time()) + str(r)))
-    ioloop.IOLoop.instance().start()
