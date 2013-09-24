@@ -37,8 +37,12 @@ from tuner import NOTES, FREQS, find_freqnotecents
 class Session(object):
 
     def __init__(self):
-        self.host = Host(MANAGER_PORT, "localhost", self.setup_monitor)
-        self.hmi = HMI(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE)
+        self.host = Host(MANAGER_PORT, "localhost", self.host_callback)
+        self.hmi = HMI(CONTROLLER_SERIAL_PORT, CONTROLLER_BAUD_RATE, self.hmi_callback)
+
+        self.hmi_initialized = False
+        self.host_initialized = False
+
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
@@ -61,10 +65,23 @@ class Session(object):
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
 
-        def set_last_pedalboard():
-            last_bank, last_pedalboard = get_last_pedalboard()
-            if last_bank and last_pedalboard:
-                self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
+    def host_callback(self):
+        if hmi_initialized:
+            self.set_last_pedalboard()
+        logging.debug("host initialized")
+        self.host_initialized = True
+        self.setup_monitor()
+
+    def hmi_callback(self):
+        if host_initialized:
+            self.set_last_pedalboard()
+        logging.debug("hmi initialized")
+        self.hmi_initialized = True
+
+    def set_last_pedalboard(self):
+        last_bank, last_pedalboard = get_last_pedalboard()
+        if last_bank and last_pedalboard:
+            self.load_pedalboard(last_bank, last_pedalboard, lambda r:r)
 
     def setup_monitor(self):
         if self.monitor_server is None:
