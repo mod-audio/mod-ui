@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from mod.controller import HMI
+from mod.hmi import HMI
 from mod.host import Host
 
 class FakeCommunicator(object):
