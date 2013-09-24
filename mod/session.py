@@ -439,6 +439,7 @@ class Session(object):
     def start_session(self, callback=None):
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
+        self._pedalboard = None
 
         def verify(resp):
             if callback:
@@ -477,11 +478,11 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        label = label.replace(' ', '_')
-        unit = unit.replace(' ', '_')
+        label = '"%s"' % label.upper().replace('"', "")
+        unit = '"%s"' % unit.replace('"', '')
         length = len(options)
         if options:
-            options = [ "%s %f" % (o[1].replace(' ', '_'), float(o[0]))
+            options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
                         for o in options ]
         options = "%d %s" % (length, " ".join(options))
         options = options.strip()

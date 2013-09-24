@@ -32,7 +32,14 @@ JqueryClass('upgradeWindow', {
 	    self.upgradeWindow('open')
 	})
 
-	self.find('button').click(function() {
+	$('body').keydown(function(e) {
+	    if (e.keyCode == 27)
+		self.upgradeWindow('close')
+	})
+
+	self.find('.js-close').click(function() { self.upgradeWindow('close') })
+
+	self.find('button.js-upgrade').click(function() {
 	    if (!confirm("The MOD software will be upgraded. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
 		return
 	    var installer = new Installer({ 
@@ -54,6 +61,8 @@ JqueryClass('upgradeWindow', {
 	if (!self.data('uptodate'))
 	    self.show()
     },
+
+    close: function() { $(this).hide() },
 
     check: function() {
 	var self = $(this)

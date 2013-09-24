@@ -301,6 +301,10 @@
     z-index:100;
 }
 
+.mod-input.input-connecting-highlight {
+    background-image:url(../img/input-connecting-highlight.png) !important;
+}
+
 .hardware-input .jack-connecting {
     background-image:url(../img/jack-p10.png);
     background-position:center right;
@@ -353,6 +357,10 @@
     position:absolute !important;
     width:45px !important;
     z-index:100 !important;
+}
+
+.mod-pedal .mod-midi-input.input-connecting-highlight .mod-pedal-input-image {
+    background-image:url(../img/midi-input-connecting-highlight.png) !important;
 }
 
 .mod-pedal .mod-midi-input.input-connected .mod-pedal-input-image {

@@ -30,6 +30,9 @@ JqueryClass('pedalboard', {
 	    hardwareManager: null,
 	    // InstallationQueue instance
 	    installationQueue: new InstallationQueue(),
+	    // This is a margin, in pixels, that will be disconsidered from pedalboard height when calculating
+	    // hardware ports positioning
+	    bottomMargin: 0,
 
 	    // Below are functions that application uses to integrate functionality to pedalboard.
 	    // They all receive a callback as last parameter, which must be called with a true value
@@ -142,6 +145,10 @@ JqueryClass('pedalboard', {
 	self.mousedown(function(e) { self.pedalboard('drag', e) })
 	// The mouse wheel is used to zoom in and out
  	self.bind('mousewheel', function(e) {
+	    // Zoom by mousewheel has been desactivated.
+	    // Let's keep the code here so that maybe later this can be a user option
+	    return
+
 	    var ev = e.originalEvent
 
 	    // check if mouse is not over a control button
@@ -196,12 +203,14 @@ JqueryClass('pedalboard', {
 	// Gestures for tablets
 	var startScale, canvasX, canvasY
 	self[0].addEventListener('gesturestart', function(ev) {
+	    if (ev.handled) return
 	    startScale = self.data('scale')
 	    canvasX = (ev.pageX - self.offset().left) / startScale
 	    canvasY = (ev.pageY - self.offset().top) / startScale
 	    ev.preventDefault()
 	})
 	self[0].addEventListener('gesturechange', function(ev) {
+	    if (ev.handled) return
 	    var maxS = self.data('maxScale')
 	    var minS = self.data('minScale')
 	    var scale = self.data('scale')
@@ -213,6 +222,7 @@ JqueryClass('pedalboard', {
 	    var screenY = ev.pageY - self.parent().offset().top
 
 	    self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
+	    ev.preventDefault()
 	})
     },
 
@@ -341,6 +351,19 @@ JqueryClass('pedalboard', {
 					if (!ok)
 					    return
 					self.data('instanceCounter', Math.max(plugin.instanceId, self.data('instanceCounter')))
+					var value
+					for (var symbol in plugin.preset) {
+					    value = plugin.preset[symbol]
+					    self.data('pluginParameterChange')(plugin.instanceId,
+									       symbol,
+									       value,
+									       function(ok){
+										   if (!ok) {
+										       new Notification('error', sprintf("Can't set parameter for %s", symbol))
+										   }
+									       })
+					}
+
 					// Queue action to add plugin to pedalboard
 					finalActions.push(function() {
 					    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, 
@@ -458,7 +481,6 @@ JqueryClass('pedalboard', {
     registerAvailablePlugin: function(element, pluginData, draggableOptions) {
 	var self = $(this)
 
-	element.attr('mod-role', 'available-plugin')
 	element.bind('pluginAdded', function(e, position) { 
 	    var instanceId = self.pedalboard('generateInstanceId')
 	    var pluginLoad = self.data('pluginLoad')
@@ -805,7 +827,7 @@ JqueryClass('pedalboard', {
     positionHardwarePorts: function() {
 	var self = $(this)
 
-	var height = self.height()
+	var height = self.height() - self.data('bottomMargin')
 
 	var adjust = function(elements, css) {
 	    var top = height / (elements.length+1)
@@ -893,9 +915,12 @@ JqueryClass('pedalboard', {
 		// clicking in input means expand
 		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=input-audio-port]')))
 		    return
-		// clicking in output means connecting
+		// clicking in output or output jack means connecting
 		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-audio-port]')))
 		    return
+		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-jack]')))
+		    return
+
 
 		// setTimeout avoids cable drawing bug
 		setTimeout(function() { self.pedalboard('focusPlugin', plugin) }, 0)
@@ -1056,6 +1081,8 @@ JqueryClass('pedalboard', {
 	if (!highlight) {
 	    self.find('[mod-role=input-audio-port]').removeClass('input-connecting')
 	    self.find('[mod-role=input-midi-port]').removeClass('input-connecting')
+	    self.find('[mod-role=input-audio-port]').removeClass('input-connecting-highlight')
+	    self.find('[mod-role=input-midi-port]').removeClass('input-connecting-highlight')
 	    return
 	}
 
@@ -1135,12 +1162,15 @@ JqueryClass('pedalboard', {
 				var jack = ui.draggable
 
 				self.pedalboard('connect', jack, element)
+				element.removeClass('input-connecting-highlight')
 			    },
 			    over: function(event, ui) { 
 				self.data('background').droppable('disable');
+				element.addClass('input-connecting-highlight')
 			    },
 			    out: function(event, ui) { 
 				self.data('background').droppable('enable');
+				element.removeClass('input-connecting-highlight')
 			    },
 			    greedy: true,
 			  })

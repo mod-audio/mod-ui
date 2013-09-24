@@ -23,6 +23,7 @@ CONTROLLER_INSTALLED = bool(int(os.environ.get('MOD_CONTROLLER_INSTALLED', True)
 LOG = bool(int(os.environ.get('MOD_LOG', True)))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
+DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
 
 HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware'))
 
@@ -54,7 +55,8 @@ def get_tty_acm():
     for tty in glob.glob("/dev/ttyACM*"):
         try:
             s = serial.Serial(tty, CONTROLLER_BAUD_RATE)
-        except serial.serialutil.SerialException:
+            # TODO: Gola, why is this happening in settings??
+        except (serial.serialutil.SerialException, ValueError):
             next
         else:
             s.close()
@@ -111,6 +113,14 @@ if os.path.exists("/root/repository"):
 else:
     default_repo = 'http://packages.portalmod.com/api'
 PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
+
+if os.path.exists("/root/avatar"):
+    fh = open("/root/avatar")
+    default_avatar_url = fh.read().strip()
+    fh.close()
+else:    
+    default_avatar_url = 'http://gravatar.com/avatar'
+AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
 
 CLIPMETER_URI = "http://portalmod.com/plugins/MOD/clipmeter"
 CLIPMETER_IN = 9990

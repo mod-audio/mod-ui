@@ -42,6 +42,9 @@ JqueryClass('effectBox', {
 
 	self.data(options)
 
+	var mode = getCookie('searchMode', 'installed')
+	self.find('input[name=mode][value='+mode+']').prop('checked', true)
+
 	self.find('input[type=radio]').change(function() {
 		self.effectBox('search')
 	})
@@ -156,6 +159,8 @@ JqueryClass('effectBox', {
 	var self = $(this)
 	var searchbox = self.data('searchbox')
 	var mode = self.find('input[name=mode]:checked').val() || 'installed'
+
+	setCookie('searchMode', mode)
 
 	var term = searchbox.val()
     
@@ -292,12 +297,21 @@ JqueryClass('effectBox', {
     showPlugins: function(plugins) {
 	var self = $(this)
 	self.effectBox('cleanResults')
+	for (var i in plugins)
+	    self.effectBox('getLabelAndAuthor', plugins[i])
+	plugins.sort(function(a, b) {
+	    if (a.label > b.label)
+		return 1
+	    if (a.label < b.label)
+		return -1
+	    return 0
+	})
 	self.data('plugins', plugins)
 
 	var count = { 'All': 0 }
 	//plugin.category_path = plugin.category.join(', ')
 	var category
-	for (var i in plugins) {
+	for (i in plugins) {
 	    category = plugins[i].category[0]
 	    if (count[category] == null)
 		count[category] = 1
@@ -328,18 +342,21 @@ JqueryClass('effectBox', {
 	*/
     },
 
-    renderPlugin: function(index, container) {
-	var self = $(this)
-	if (container.length == 0)
-	    return
-	var plugin = self.data('plugins')[index]
-	plugin.urle = escape(plugin.url)
+    getLabelAndAuthor: function(plugin) {
 	// TODO Very dirty, temporary GAMBI
 	if (plugin.gui && plugin.gui.templateData) {
 	    plugin.label = plugin.gui.templateData.label
 	    plugin.author = plugin.gui.templateData.author
 	}
 	plugin.label = plugin.label || plugin.name.split(/\s*-\s*/)[0]
+    },
+
+    renderPlugin: function(index, container) {
+	var self = $(this)
+	if (container.length == 0)
+	    return
+	var plugin = self.data('plugins')[index]
+	plugin.urle = escape(plugin.url)
 
 	var rendered = $(Mustache.render(TEMPLATES.plugin, plugin))
 
@@ -403,6 +420,7 @@ JqueryClass('effectBox', {
 			info.remove()
 			self.effectBox('showPlugins', plugins)
 			self.effectBox('showPluginInfo', index)
+
 		    }
 		})
 	    })

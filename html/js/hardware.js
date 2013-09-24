@@ -77,9 +77,12 @@ function HardwareManager(options) {
     // Get all addressing types that can be used for a port
     this.availableAddressingTypes = function(port) {
 	var types = []
-	if (port.toggled)
+	if (port.toggled) {
 	    types.push('switch')
-	else {
+	} else if (port.enumeration) {
+	    types.push('switch')
+	    types.push('range')
+	} else {
 	    types.push('range')
 	    if (port.tap_tempo)
 		types.push('tap_tempo')
@@ -146,6 +149,8 @@ function HardwareManager(options) {
 
 	var sensibility = form.find('select[name=steps]')
 	self.buildSensibilityOptions(sensibility, port)
+	if (currentAddressing.steps)
+	    sensibility.val(currentAddressing.steps)
 
 	form.find('.js-save').click(function() {
 	    actuator = {}
@@ -240,7 +245,7 @@ function HardwareManager(options) {
 	else if (addressing.addressing_type == 'tap_tempo')
 	    addressing.type = 5
 	else if (port.integer)
-	    addressing.type == 7
+	    addressing.type = 7
     }
 
     // Does the addressing

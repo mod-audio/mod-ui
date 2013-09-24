@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, re
+import os, re, shutil, sys
 import json, socket
 import tornado.ioloop
 import tornado.options
@@ -43,7 +43,8 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, LOG,
+                          PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
+                          AVATAR_URL,
                           )
 
 
@@ -714,6 +715,7 @@ class TemplateHandler(web.RequestHandler):
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
             'default_package_server_port': DEFAULT_PACKAGE_SERVER_PORT,
             'package_repository': PACKAGE_REPOSITORY,
+            'avatar_url': AVATAR_URL,
             }
         return context
 
@@ -849,6 +851,28 @@ class RegistrationFinish(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(ok))        
 
+class DemoRestore(web.RequestHandler):
+    """
+    This is used for demo mode. It restores a state of installed plugins
+    and saved pedalboards
+    """
+    def get(self):
+        if not DEMO_DATA_DIR or not os.path.exists(DEMO_DATA_DIR):
+            self.write("Demo mode disabled")
+            return
+        btn = 'bluetooth.name'
+        if os.path.exists(os.path.join(DATA_DIR, btn)):
+            shutil.copy(os.path.join(DATA_DIR, btn),
+                        os.path.join(DEMO_DATA_DIR, btn))
+        shutil.rmtree(DATA_DIR)
+        shutil.copytree(DEMO_DATA_DIR, DATA_DIR, symlinks=True)
+
+        loader = tornado.template.Loader(HTML_DIR)
+        ctx = { 'cloud_url': CLOUD_HTTP_ADDRESS }
+        self.write(loader.load('demo_restore.html').generate(**ctx))
+
+        #tornado.ioloop.IOLoop.instance().add_callback(lambda: sys.exit(0))        
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -914,6 +938,8 @@ application = web.Application(
             (r"/([a-z]+\.html)$", TemplateHandler),
             (r"/load_template/([a-z_]+\.html)$", TemplateLoader),
             (r"/js/templates.js$", BulkTemplateLoader),
+
+            (r"/demo/restore/?$", DemoRestore),
             
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],

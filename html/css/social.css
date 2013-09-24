@@ -608,6 +608,14 @@
     width:210px;
 }
 
+#social-main li.more {
+    list-style:none;
+}
+#social-main li.more button {
+    width: 780px;
+    margin-left: 45px;
+}
+
 /* Feed */
 .feed {
     border-left:5px solid transparent;

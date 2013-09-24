@@ -1,11 +1,7 @@
-<div class="box bottom left top row-fluid">
-    <!-- FEED -->
-    <ul class="feeds span12">
-        {{#pedalboards}}
         <li class="feed clearfix">
-            <a href="cloud-user-profile.html" class="avatar"><img src="http://gravatar.com/avatar/{{author.gravatar}}?s=64"/></a>
+            <a class="avatar"><img src="{{avatar_url}}/{{author.gravatar}}.png?s=64"/></a>
             <div class="content alignleft span10">
-                <p><a href="user/{{author.username}}">{{author.name}}</a> published pedalboard <b>{{title}}</b>:</p>
+                <p>On {{created}} <a>{{author.name}}</a> published <b>{{title}}</b>:</p>
                 <p class="screenshot">
                     <a id="pedalboard-{{_id}}">
                         <img src="{{cloud}}/pedalboard/screenshot/{{_id}}.png" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
@@ -62,7 +58,3 @@
                 <div class="js-template" data-template-name="comments"></div>
             </div>
         </li>
-        {{/pedalboards}}
-    </ul>
-    <!-- END FEED -->
-</div>

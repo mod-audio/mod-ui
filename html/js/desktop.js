@@ -79,7 +79,7 @@ function Desktop(elements) {
 		console.log('user profile')
 		return false
 	    })
-	    elements.userAvatar.show().attr('src', 'http://gravatar.com/avatar/' + self.userSession.user.gravatar)
+	    elements.userAvatar.show().attr('src', AVATAR_URL + '/' + self.userSession.user.gravatar + '.png')
 	    self.feedManager.start(self.userSession.sid)
 	    self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.name), true)
 	    self.netStatus.statusTooltip('status', 'logged')
@@ -152,7 +152,7 @@ function Desktop(elements) {
     // Indicates that pedalboard is in an unsaved state
     this.pedalboardModified = false
 
-    this.pedalboard = self.makePedalboard(elements.pedalboard)
+    this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function() { self.pedalboard.pedalboard('zoomIn') })
     elements.zoomOut.click(function() { self.pedalboard.pedalboard('zoomOut') })
 
@@ -233,8 +233,8 @@ function Desktop(elements) {
     this.socialWindow = elements.socialWindow.socialWindow({
 	windowManager: self.windowManager,
 	userSession: self.userSession,
-	getFeed: function(callback) { 
-	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid,
+	getFeed: function(page, callback) { 
+	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid + '/' + page,
 		     success: function(pedalboards) {
 			 callback(pedalboards)
 		     },
@@ -358,6 +358,12 @@ function Desktop(elements) {
 	windowManager: self.windowManager,
     })
 
+    var prevent = function(ev) { ev.preventDefault() }
+    $('body')[0].addEventListener('gesturestart', prevent)
+    $('body')[0].addEventListener('gesturechange', prevent)
+    $('body')[0].addEventListener('touchmove', prevent)
+    
+
     /*
      * when putting this function, we must remember to remove it from /ping call
     $(document).bind('ajaxSend', function() {
@@ -369,11 +375,12 @@ function Desktop(elements) {
     */
 }
 
-Desktop.prototype.makePedalboard = function(el) {
+Desktop.prototype.makePedalboard = function(el, effectBox) {
     var self = this
     el.pedalboard({
 	windowManager: self.windowManager,
 	hardwareManager: self.hardwareManager,
+	bottomMargin: effectBox.height(),
 	pluginLoad: function(url, instanceId, callback) {
 	    var firstTry = true
 	    var add = function() {
