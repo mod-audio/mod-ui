@@ -430,7 +430,7 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
-    def hmi_parameter_set(self, insance_id, port_id, value, callback):
+    def hmi_parameter_set(self, instance_id, port_id, value, callback):
         self.parameter_set(instance_id, port_id, value, callback, hmi=True)
 
     def parameter_set(self, instance_id, port_id, value, callback, hmi=False):
