@@ -124,6 +124,7 @@ class Pedalboard(object):
                                                 'x': x,
                                                 'y': y,
                                                 'preset': {},
+                                                'addressing': {},
                                                 }
         return instance_id
 
@@ -163,6 +164,35 @@ class Pedalboard(object):
             return True
         except KeyError:
             logging.error('[pedalboard] Cannot set parameter %s of unknown instance %d' % (port_id, instance_id))
+
+    def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
+                          unit, current_value, maximum, minimum, steps,
+                          hardware_type, hardware_id, actuator_type, actuator_id,
+                          options):
+        addressing = { 'actuator': [ hardware_type, hardware_id, actuator_type, actuator_id ],
+                       'addressing_type': addressing_type,
+                       'type': ctype,
+                       'unit': unit,
+                       'label': label,
+                       'minimum': minimum,
+                       'maximum': maximum,
+                       'value': current_value,
+                       'steps': steps,
+                       'options': options,
+                       }
+        self.data['instances'][instance_id][port_id] = addressing
+
+    def parameter_unaddress(self, instance_id, port_id):
+        try:
+            instance = self.data[instance_id]
+        except KeyError:
+            logging.error('[pedalboard] Cannot find instance %d to unaddress parameter %s' %
+                          (instance_id, port_id))
+        try:
+            instance.pop(port_id)
+        except KeyError:
+            logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
+                          (port_id, instance_id))
 
     def set_title(self, title):
         self.data['metadata']['title'] = unicode(title)

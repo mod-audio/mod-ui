@@ -316,6 +316,7 @@ class Session(object):
             hwtyp, hwid, acttyp, actid = map(int, addressing['actuator'])
             self.parameter_address(effect['instanceId'],
                                    symbol,
+                                   addressing['addressing_type'],
                                    addressing.get('label', '---'),
                                    int(addressing.get('type', 0)),
                                    addressing.get('unit', 'none') or 'none',
@@ -497,18 +498,20 @@ class Session(object):
         self.hmi.ui_dis(callback)
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, callback):
-        self.parameter_address(instance_id, ":bypass", label, 6, "none", value, 
+        self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value, 
                                1, 0, 0, hardware_type, hardware_id, actuator_type, 
                                actuator_id, [], callback)
 
-    def parameter_address(self, instance_id, port_id, label, ctype,
+    def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
                           options, callback):
         # TODO the IHM parameters set by hardware.js should be here!
+        # The problem is that we need port data, and getting it now is expensive
         """
         instance_id: effect instance
         port_id: control port
+        addressing_type: 'range', 'switch' or 'tap_tempo'
         label: lcd display label
         ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
         unit: string representing the parameter unit (hz, bpm, seconds, etc)
@@ -531,9 +534,24 @@ class Session(object):
             hardware_id == -1 and
             actuator_type == -1 and
             actuator_id == -1):
+            self._pedalboard.parameter_unaddress(instance_id, port_id)
             self.hmi.control_rm(instance_id, port_id, callback)
             return
 
+        self._pedalboard.parameter_address(instance_id, port_id,
+                                           addressing_type,
+                                           label,
+                                           ctype,
+                                           unit,
+                                           current_value,
+                                           maximum,
+                                           minimum,
+                                           steps,
+                                           hardware_type,
+                                           hardware_id,
+                                           actuator_type,
+                                           actuator_id,
+                                           options)
         self.hmi.control_add(instance_id,
                     port_id,
                     label,
