@@ -147,7 +147,7 @@ function Desktop(elements) {
 	}
     })
 
-    this.metadata = {}
+    this.title = ''
 
     // Indicates that pedalboard is in an unsaved state
     this.pedalboardModified = false
@@ -257,11 +257,13 @@ function Desktop(elements) {
     })
 
     this.saveBox = elements.saveBox.saveBox({
-	save: function(pedalboard, callback) {    
+	save: function(title, asNew, callback) {
 	    $.ajax({
 		url: '/pedalboard/save',
 		type: 'POST',
-		data: JSON.stringify(pedalboard),
+		data: { title: title, 
+			asNew: asNew ? 1 : 0
+		      },
 		success: function(result) {
 		    if (result.ok)
 			callback(result.uid)
@@ -297,8 +299,8 @@ function Desktop(elements) {
 		self.pedalboard.pedalboard('serialize', 
 					   function(pedalboard) {
 					       if (!self.pedalboardId)
-						   return new Notification('warn', 'Nothing to share')
-					       elements.shareWindow.shareBox('open', self.pedalboardId, self.titleBox.text(), pedalboard)
+						   return new Notification('warn', 'Nothing to share', 1500)
+					       elements.shareWindow.shareBox('open', self.pedalboardId, self.title, pedalboard)
 					   })
 	    })
 	}
@@ -596,8 +598,8 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 			self.pedalboard.pedalboard('unserialize', pedalboard, 
 						   function() {
 						       self.pedalboardId = pedalboard._id
-						       self.metadata = pedalboard.metadata
-						       self.titleBox.text(pedalboard.metadata.title)
+						       self.title = pedalboard.metadata.title
+						       self.titleBox.text(self.title)
 						       self.pedalboardModified = false
 						       callback()
 						   }, true)
@@ -650,7 +652,7 @@ Desktop.prototype.reset = function(callback) {
 	if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
 	    return
     this.pedalboardId = null
-    this.metadata = {}
+    this.title = ''
     this.pedalboardModified = false
     this.pedalboard.pedalboard('reset', callback)
 }
@@ -659,17 +661,12 @@ Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {
     var self = this
     self.pedalboard.pedalboard('serialize', 
 			       function(pedalboard) {
-				   if (!asNew)
-				       pedalboard._id = self.pedalboardId
-				   pedalboard.metadata = self.metadata
-				   pedalboard.metadata.tstamp = new Date().getTime()
-				   self.saveBox.saveBox('save', pedalboard,
-							function(pedalboard) {
-							    self.pedalboardId = pedalboard._id
-							    self.metadata = pedalboard.metadata
-							    self.pedalboardModified = false
-							    var title = pedalboard.metadata.title
+				   self.saveBox.saveBox('save', self.title, asNew,
+							function(uid, title) {
+							    self.pedalboardId = uid
+							    self.title = title
 							    self.titleBox.text(title)
+							    self.pedalboardModified = false
 							    new Notification("info", 
 									     sprintf('Pedalboard "%s" saved', title),
 									     2000)
@@ -684,14 +681,12 @@ JqueryClass('saveBox', {
 	var self = $(this)
 
 	options = $.extend({
-	    save: function(data, callback) { callback(true) }
+	    save: function(title, asNew, callback) { callback(true) }
 	}, options)
 
 	self.data(options)
 
 	var save = function() {
-	    var pedalboard = self.data('pedalboard')
-	    pedalboard.metadata.title = self.find('input').val()
 	    self.saveBox('send')
 	    return false
 	}
@@ -713,14 +708,12 @@ JqueryClass('saveBox', {
 	return self
     },
 
-    save: function(pedalboard, callback) {
+    save: function(title, asNew, callback) {
 	var self = $(this)
-	pedalboard.metadata = $.extend({
-	    title: ''
-	}, pedalboard.metadata)
-	self.data('pedalboard', pedalboard)
+	self.find('input').val(title)
+	self.data('asNew', asNew)
 	self.data('callback', callback)
-	if (pedalboard._id)
+	if (title && !asNew)
 	    self.saveBox('send')
 	else
 	    self.saveBox('edit')
@@ -728,20 +721,20 @@ JqueryClass('saveBox', {
 
     edit: function() {
 	var self = $(this)
-	var metadata = self.data('pedalboard').metadata
-	self.find('input').val(metadata.title).focus()
+	self.find('input').focus()
 	self.show()
     },
 
     send: function() {
 	var self = $(this)
-	var pedalboard = self.data('pedalboard')
-	self.data('save')(pedalboard,
+	var title = self.find('input').val()
+	var asNew = self.data('asNew')
+
+	self.data('save')(title, asNew,
 			  function(id, error) {
 			      if (id) {
 				  self.hide()
-				  pedalboard._id = id
-				  self.data('callback')(pedalboard)
+				  self.data('callback')(id, title)
 			      }
 			      else {
 				  // TODO error handling here, the Notification does not work well

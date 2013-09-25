@@ -556,7 +556,7 @@ class PedalboardSave(web.RequestHandler):
     @gen.engine
     def post(self):
         title = self.get_argument('title')
-        as_new = self.get_argument('as_new')
+        as_new = bool(int(self.get_argument('asNew')))
 
         try:
             uid = SESSION.save_pedalboard(title, as_new)

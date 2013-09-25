@@ -24,10 +24,10 @@ from modcommon import json_handler
 from mod.bank import remove_pedalboard_from_banks
 from mod import indexing
 
-class ValidationError(Exception):
-    pass
-
 class Pedalboard(object):
+    class ValidationError(Exception):
+        pass
+
     def __init__(self, uid=None):
         self.data = None
         self.clear()
@@ -108,6 +108,8 @@ class Pedalboard(object):
 
     def _port_to_list(self, port):
         port = port.split(':')
+        if port[0].startswith('effect_'):
+            port[0] = port[len('effect_'):]
         try:
             port[0] = int(port[0])
         except ValueError:
