@@ -532,6 +532,30 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		success: callback,
 		dataType: 'json'
             })
+	},
+
+	pluginMove: function(instanceId, x, y) {
+	    $.ajax({
+		url: '/effect/position/'+instanceId,
+		type: 'GET',
+		data: { x: x, y: y },
+		success: function() {},
+		error: function(e) {
+		    new Notification('error', "Can't save plugin position")
+		}
+	    })
+	},
+
+	windowSize: function(width, height) {
+	    $.ajax({
+		url: '/pedalboard/size',
+		type: 'GET',
+		data: { width: width, height: height },
+		success: function() {},
+		error: function(e) {
+		    new Notification('error', "Can't save window size")
+		}
+	    })
 	}
 
     });

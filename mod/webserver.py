@@ -482,10 +482,9 @@ class EffectParameterAddress(web.RequestHandler):
                                     int(instance),
                                     parameter)
 
-            if not result['ok']:
-                self.write(json.dumps(result))
-                self.finish()
-                return
+            self.write(json.dumps(result))
+            self.finish()
+            return
         else:
             result = {}
         
@@ -506,8 +505,8 @@ class EffectParameterAddress(web.RequestHandler):
 
         result['ok'] = yield gen.Task(SESSION.parameter_address,
                                       int(instance),
-                                      data['addressing_type'],
                                       parameter,
+                                      data['addressing_type'],
                                       label,
                                       ctype,
                                       unit,
@@ -534,6 +533,23 @@ class EffectParameterGet(web.RequestHandler):
                                   parameter)
         self.write(json.dumps(response))
         self.finish()
+
+class EffectPosition(web.RequestHandler):
+    def get(self, instance):
+        instance = int(instance)
+        x = int(float(self.get_argument('x')))
+        y = int(float(self.get_argument('y')))
+        SESSION.effect_position(instance, x, y)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
+class PedalboardSize(web.RequestHandler):
+    def get(self):
+        width = int(self.get_argument('width'))
+        height = int(self.get_argument('height'))
+        SESSION.pedalboard_size(width, height)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
 
 class PackageEffectList(web.RequestHandler):
     def get(self, package):
@@ -886,6 +902,7 @@ application = web.Application(
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
+            (r"/effect/position/(\d+)/?", EffectPosition),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
@@ -894,6 +911,7 @@ application = web.Application(
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
             (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),
+            (r"/pedalboard/size/?", PedalboardSize),
 
             (r"/banks/?", BankLoad),
             (r"/banks/save/?", BankSave),

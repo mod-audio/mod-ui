@@ -118,7 +118,7 @@ class HMI(object):
 
     def control_add(self, instance_id, symbol, label, var_type, unit, value, max, 
                     min, steps, hw_type, hw_id, actuator_type, actuator_id, 
-                    scale_points=[], callback=lambda result: None):
+                    options=[], callback=lambda result: None):
         """
         addresses a new control
         var_type is one of the following:
@@ -130,6 +130,15 @@ class HMI(object):
             5 tap tempo
             6 bypass
         """
+        label = '"%s"' % label.upper().replace('"', "")
+        unit = '"%s"' % unit.replace('"', '')
+        length = len(options)
+        if options:
+            options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
+                        for o in options ]
+        options = "%d %s" % (length, " ".join(options))
+        options = options.strip()
+
         self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
                   ( instance_id,
                     symbol,
@@ -144,7 +153,7 @@ class HMI(object):
                     hw_id,
                     actuator_type,
                     actuator_id,
-                    scale_points,
+                    options,
                   ),
                   callback, datatype='boolean')
 

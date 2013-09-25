@@ -233,15 +233,11 @@ class Session(object):
 
     def load_pedalboard(self, pedalboard_id, callback):
         self._pedalboard = Pedalboard(pedalboard_id)
-        self.load_current_pedalboard(None, callback)
+        self.load_current_pedalboard(callback)
 
-    def save_pedalboard(self, title, as_new):
-        return self._pedalboard.save(title, as_new)
-        
-    def load_current_pedalboard(self, bank_id, callback):
-
+    def load_current_pedalboard(self, callback):
         # let's copy the data
-        effects = copy.deepcopy(self._pedalboard.data['instances'])
+        effects = copy.deepcopy(self._pedalboard.data['instances'].values())
         connections = copy.deepcopy(self._pedalboard.data['connections'])
 
         # How it works:
@@ -264,12 +260,15 @@ class Session(object):
                 ioloop.IOLoop.instance().add_callback(add_connections)
                 return
             effect = effects.pop(0)
+
             self.add(effect['url'], effect['instanceId'],
-                    lambda result: set_bypass(effect))
+                     lambda result: set_bypass(effect), 
+                     True)
         
         # Set bypass state of one effect, then goes to bypass addressing
         def set_bypass(effect):
-            self.bypass(effect['instanceId'], effect['bypassed'], lambda result: set_ports(effect))
+            self.bypass(effect['instanceId'], effect['bypassed'], lambda result: set_ports(effect),
+                        True)
 
         # Set the value of one port of an effect, consumes it and schedules next one
         # After queue is empty, goes to control addressings
@@ -279,7 +278,8 @@ class Session(object):
                 return
             symbol = effect['preset'].keys()[0]
             value = effect['preset'].pop(symbol)
-            self.parameter_set(effect['instanceId'], symbol, value, lambda result: set_ports(effect))
+            self.parameter_set(effect['instanceId'], symbol, value, lambda result: set_ports(effect),
+                               True)
 
         # Sets bypass addressing of one effect. 
         def set_bypass_addr(effect):
@@ -297,7 +297,8 @@ class Session(object):
             hwtyp, hwid, acttyp, actid = addressing['actuator']
             self.bypass_address(effect['instanceId'], hwtyp, hwid, acttyp, actid,
                                 effect['bypassed'], addressing['label'],
-                                lambda result: set_ports_addr(effect))
+                                lambda result: set_ports_addr(effect),
+                                True)
 
         # Consumes a queue of control addressing, then goes to next effect
         def set_ports_addr(effect):
@@ -329,7 +330,8 @@ class Session(object):
                                    acttyp,
                                    actid,
                                    addressing.get('options', []),
-                                   lambda result: set_ports_addr(effect))
+                                   lambda result: set_ports_addr(effect),
+                                   True)
 
         def add_connections():
             if not connections:
@@ -338,10 +340,14 @@ class Session(object):
             connection = connections.pop(0)
             orig = '%s:%s' % (str(connection[0]), connection[1])
             dest = '%s:%s' % (str(connection[2]), connection[3])
-            self.connect(orig, dest, lambda result: add_connections())
+            self.connect(orig, dest, lambda result: add_connections(),
+                         True)
 
-        self.remove(-1, add_effects)
+        self.remove(-1, add_effects, True)
 
+    def save_pedalboard(self, title, as_new):
+        return self._pedalboard.save(title, as_new)
+        
     def load_bank(self, bank_id):
         bank = self._banks[bank_id]
         addressing = bank.get('addressing', [0, 0, 0, 0])
@@ -371,13 +377,15 @@ class Session(object):
 
     # host commands
 
-    def add(self, objid, instance_id, callback):
-        instance_id = self._pedalboard.add_instance(objid, instance_id)
+    def add(self, objid, instance_id, callback, loaded=False):
+        if not loaded:
+            instance_id = self._pedalboard.add_instance(objid, instance_id)
         self.host.add(objid, instance_id, callback)
         return instance_id
 
-    def remove(self, instance_id, callback):
-        self._pedalboard.remove_instance(instance_id)
+    def remove(self, instance_id, callback, loaded=False):
+        if not loaded:
+            self._pedalboard.remove_instance(instance_id)
         def _callback(ok):
             if ok:
                 self.hmi.control_rm(instance_id, ":all", callback)
@@ -386,14 +394,16 @@ class Session(object):
 
         self.host.remove(instance_id, _callback)
 
-    def bypass(self, instance_id, value, callback):
+    def bypass(self, instance_id, value, callback, loaded=False):
         value = 1 if int(value) > 0 else 0
-        self._pedalboard.bypass(instance_id, value)
+        if not loaded:
+            self._pedalboard.bypass(instance_id, value)
 
         self.host.bypass(instance_id, value, callback)
 
-    def connect(self, port_from, port_to, callback):
-        self._pedalboard.connect(port_from, port_to)
+    def connect(self, port_from, port_to, callback, loaded=False):
+        if not loaded:
+            self._pedalboard.connect(port_from, port_to)
         
         # Cases below happen because we just save instance ID in pedalboard connection structure, not whole string
         if not 'system' in port_from and not 'effect' in port_from:
@@ -453,17 +463,17 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
-    def parameter_set(self, instance_id, port_id, value, callback):
+    def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
         if port_id == ":bypass":
             self.bypass(instance_id, value, callback)
             return
 
-        self._pedalboard.parameter_set(instance_id, port_id, value)
+        if not loaded:
+            self._pedalboard.parameter_set(instance_id, port_id, value)
 
         self.host.param_set(instance_id, port_id, value, callback)
 
     def parameter_get(self, instance_id, port_id, callback):
-        #TODO: why not just get from pedalboard?
         self.host.param_get(instance_id, port_id, callback)
 
     def set_monitor(self, addr, port, status, callback):
@@ -497,15 +507,16 @@ class Session(object):
         self._banks = list_banks()
         self.hmi.ui_dis(callback)
 
-    def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, callback):
+    def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, 
+                       callback, loaded=False):
         self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value, 
                                1, 0, 0, hardware_type, hardware_id, actuator_type, 
-                               actuator_id, [], callback)
+                               actuator_id, [], callback, loaded)
 
     def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
-                          options, callback):
+                          options, callback, loaded=False):
         # TODO the IHM parameters set by hardware.js should be here!
         # The problem is that we need port data, and getting it now is expensive
         """
@@ -521,52 +532,45 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        label = '"%s"' % label.upper().replace('"', "")
-        unit = '"%s"' % unit.replace('"', '')
-        length = len(options)
-        if options:
-            options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                        for o in options ]
-        options = "%d %s" % (length, " ".join(options))
-        options = options.strip()
-
         if (hardware_type == -1 and
             hardware_id == -1 and
             actuator_type == -1 and
             actuator_id == -1):
-            self._pedalboard.parameter_unaddress(instance_id, port_id)
+            if not loaded:
+                self._pedalboard.parameter_unaddress(instance_id, port_id)
             self.hmi.control_rm(instance_id, port_id, callback)
             return
 
-        self._pedalboard.parameter_address(instance_id, port_id,
-                                           addressing_type,
-                                           label,
-                                           ctype,
-                                           unit,
-                                           current_value,
-                                           maximum,
-                                           minimum,
-                                           steps,
-                                           hardware_type,
-                                           hardware_id,
-                                           actuator_type,
-                                           actuator_id,
-                                           options)
+        if not loaded:
+            self._pedalboard.parameter_address(instance_id, port_id,
+                                               addressing_type,
+                                               label,
+                                               ctype,
+                                               unit,
+                                               current_value,
+                                               maximum,
+                                               minimum,
+                                               steps,
+                                               hardware_type,
+                                               hardware_id,
+                                               actuator_type,
+                                               actuator_id,
+                                               options)
         self.hmi.control_add(instance_id,
-                    port_id,
-                    label,
-                    ctype,
-                    unit,
-                    current_value,
-                    maximum,
-                    minimum,
-                    steps,
-                    hardware_type,
-                    hardware_id,
-                    actuator_type,
-                    actuator_id,
-                    options,
-                    callback)
+                             port_id,
+                             label,
+                             ctype,
+                             unit,
+                             current_value,
+                             maximum,
+                             minimum,
+                             steps,
+                             hardware_type,
+                             hardware_id,
+                             actuator_type,
+                             actuator_id,
+                             options,
+                             callback)
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
@@ -593,6 +597,12 @@ class Session(object):
 
         pedalboards = " ".join('"%s" %s' % (pedalboard['title'], pedalboard['id']) for pedalboard in pedalboards)
         callback(True, pedalboards)
+
+    def effect_position(self, instance, x, y):
+        self._pedalboard.set_position(instance, x, y)
+
+    def pedalboard_size(self, width, height):
+        self._pedalboard.set_size(width, height)
 
     def clipmeter(self, pos, value, callback=None):
         cb = callback

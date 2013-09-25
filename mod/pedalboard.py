@@ -84,7 +84,7 @@ class Pedalboard(object):
         title = self.data['metadata']['title']
 
         if not title:
-            raise ValidationError("Title cannot be empty")
+            raise self.ValidationError("Title cannot be empty")
 
         index = indexing.PedalboardIndex()
         try:
@@ -93,7 +93,7 @@ class Pedalboard(object):
         except StopIteration:
             pass
         except AssertionError:
-            raise ValidationError('Pedalboard "%s" already exists' % title)
+            raise self.ValidationError('Pedalboard "%s" already exists' % title)
         
         fh = open(os.path.join(PEDALBOARD_DIR, str(self.data['_id'])), 'w')
         self.data['metadata']['tstamp'] = datetime.now()
@@ -109,7 +109,7 @@ class Pedalboard(object):
     def _port_to_list(self, port):
         port = port.split(':')
         if port[0].startswith('effect_'):
-            port[0] = port[len('effect_'):]
+            port[0] = port[0][len('effect_'):]
         try:
             port[0] = int(port[0])
         except ValueError:
@@ -131,11 +131,22 @@ class Pedalboard(object):
         return instance_id
 
     def remove_instance(self, instance_id):
+        if instance_id < 0:
+            # remove all effects
+            return self.clear()
         try:
             self.data['instances'].pop(instance_id)
-            return True
         except KeyError:
             logging.error('[pedalboard] Cannot remove unknown instance %d' % instance_id)
+        i = 0
+        while i < len(self.data['connections']):
+            connection = self.data['connections'][i]
+            if connection[0] == instance_id or connection[2] == instance_id:
+                self.data['connections'].pop(i)
+            else:
+                i += 1
+        return True
+
 
     def bypass(self, instance_id, value):
         try:
@@ -147,6 +158,14 @@ class Pedalboard(object):
     def connect(self, port_from, port_to):
         port_from = self._port_to_list(port_from)
         port_to = self._port_to_list(port_to)
+        for port in (port_from, port_to):
+            try:
+                instance_id = int(port[0])
+            except ValueError:
+                continue
+            if not self.data['instances'].get(instance_id):
+                # happens with clipmeter and probably with other internal plugins
+                return
         self.data['connections'].append([port_from[0], port_from[1], port_to[0], port_to[1]])
 
     def disconnect(self, port_from, port_to):
@@ -182,7 +201,7 @@ class Pedalboard(object):
                        'steps': steps,
                        'options': options,
                        }
-        self.data['instances'][instance_id][port_id] = addressing
+        self.data['instances'][instance_id]['addressing'][port_id] = addressing
 
     def parameter_unaddress(self, instance_id, port_id):
         try:
@@ -200,6 +219,7 @@ class Pedalboard(object):
         self.data['metadata']['title'] = unicode(title)
 
     def set_size(self, width, height):
+        logging.debug("[pedalboard] setting window size %dx%d" % (width, height))
         self.data['width'] = width
         self.data['height'] = height
 
@@ -207,6 +227,8 @@ class Pedalboard(object):
         try:
             self.data['instances'][instance_id]['x'] = x
             self.data['instances'][instance_id]['y'] = y
+            logging.debug('[pedalboard] Setting position of instance %d at (%d,%d)' %
+                          (instance_id, x, y))
             return True
         except KeyError:
             logging.error('[pedalboard] Cannot set position of unknown instance %d' % instance_id)
