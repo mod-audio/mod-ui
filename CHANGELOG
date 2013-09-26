@@ -1,3 +1,11 @@
+0.21
+====
+
+  - NEW: refactor, host and hmi classes for better code organization
+  - FIX: setting proper environment variables in development effect removal script
+  - FIX: parameters were not being properly set when loading pedalboard
+  - FIX: don't upper() unit string
+
 0.20
 ====
 
