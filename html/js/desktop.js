@@ -364,6 +364,9 @@ function Desktop(elements) {
     $('body')[0].addEventListener('gesturestart', prevent)
     $('body')[0].addEventListener('gesturechange', prevent)
     $('body')[0].addEventListener('touchmove', prevent)
+
+    self.pedalboard.pedalboard('unserialize', CURRENT_PEDALBOARD,
+			       function() {}, false, true)
     
 
     /*

@@ -311,7 +311,7 @@ JqueryClass('pedalboard', {
 	callback(data)
     },
 
-    unserialize: function(data, callback, loadPedalboardAtOnce) {
+    unserialize: function(data, callback, loadPedalboardAtOnce, bypassApplication) {
 	var self = $(this)
 
 	/*
@@ -326,8 +326,11 @@ JqueryClass('pedalboard', {
 	// Let's avoid modifying original data
 	data = $.extend({}, data)
 
+	if (bypassApplication === null)
+	    bypassApplication = !!loadPedalboardAtOnce
+
 	// We might want to bypass application
-	self.data('bypassApplication', !!loadPedalboardAtOnce)
+	self.data('bypassApplication', bypassApplication)
 
 	// Queue closures to all actions needed after everything is loaded
 	var finalActions = []

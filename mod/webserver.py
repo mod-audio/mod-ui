@@ -710,6 +710,7 @@ class TemplateHandler(web.RequestHandler):
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'hardware_profile': json.dumps(get_hardware()),
+            'current_pedalboard': json.dumps(SESSION.serialize_pedalboard()),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
