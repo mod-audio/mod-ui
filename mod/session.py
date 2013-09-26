@@ -487,9 +487,6 @@ class Session(object):
     def start_session(self, callback=None):
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
-        # TODO here we'll not reset the pedalboard
-        # instead let's serialize it and send to browser
-        #self._pedalboard = Pedalboard()
 
         def verify(resp):
             if callback:
@@ -500,7 +497,7 @@ class Session(object):
         self.bank_address(0, 0, 1, 1, 0, lambda r: None)
         self.bank_address(0, 0, 1, 2, 0, lambda r: None)
         self.bank_address(0, 0, 1, 3, 0, lambda r: None)
-        #self.remove(-1, lambda r:r)
+
         self.hmi.ui_con(verify)
 
     def end_session(self, callback):
