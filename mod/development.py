@@ -34,4 +34,6 @@ class FakeHMI(FakeCommunicator, HMI):
     pass
 
 class FakeHost(FakeCommunicator, Host):
-    pass
+    def param_get(self, instance_id, symbol, callback=lambda result: None):
+        callback({'ok': True, 'value': 17})
+

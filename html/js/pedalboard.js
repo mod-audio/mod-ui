@@ -68,7 +68,13 @@ JqueryClass('pedalboard', {
 
 	    // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
 	    // indexed by URL
-	    getPluginsData: function(plugins, callback) { callback({}) }
+	    getPluginsData: function(plugins, callback) { callback({}) },
+
+	    // Marks the position of a plugin
+	    pluginMove: function(instanceId, x, y) {},
+
+	    // Sets the size of the pedalboard
+	    windowSize: function(width, height) {}
 
 	}, options)
 
@@ -305,7 +311,7 @@ JqueryClass('pedalboard', {
 	callback(data)
     },
 
-    unserialize: function(data, callback, loadPedalboardAtOnce) {
+    unserialize: function(data, callback, loadPedalboardAtOnce, bypassApplication) {
 	var self = $(this)
 
 	/*
@@ -320,8 +326,11 @@ JqueryClass('pedalboard', {
 	// Let's avoid modifying original data
 	data = $.extend({}, data)
 
+	if (bypassApplication === null)
+	    bypassApplication = !!loadPedalboardAtOnce
+
 	// We might want to bypass application
-	self.data('bypassApplication', !!loadPedalboardAtOnce)
+	self.data('bypassApplication', bypassApplication)
 
 	// Queue closures to all actions needed after everything is loaded
 	var finalActions = []
@@ -545,7 +554,9 @@ JqueryClass('pedalboard', {
 	zoom.screenX = zoom.screenX * self.width() / old.width
 	zoom.screenY = zoom.screenY * self.height() / old.height
 
-	self.pedalboard('zoom', zoom.scale, zoom.canvasX, zoom.canvasY, zoom.screenX, zoom.screenY, 0)	
+	self.pedalboard('zoom', zoom.scale, zoom.canvasX, zoom.canvasY, zoom.screenX, zoom.screenY, 0)
+
+	self.data('windowSize')(self.width(), self.height())
     },
 
     // Prevents dragging of whole dashboard when dragging of effect or jack starts      
@@ -709,7 +720,7 @@ JqueryClass('pedalboard', {
 	var self = $(this)
 	// First, get the minmum bounding rectangle,
 	// given by minX, maxX, minY and maxY
-	var minX, maxX, minY, maxY, w, h
+	var minX, maxX, minY, maxY, w, h, x, y, plugin, pos
 	//var pedals = self.find('.js-effect')
 	var plugins = self.data('plugins')
 	var scale = self.data('scale')
@@ -719,12 +730,12 @@ JqueryClass('pedalboard', {
 	maxY = self.height()
 	var instanceId
 	for (instanceId in plugins) {
-	    var plugin = plugins[instanceId]
-	    var pos = plugin.position()
+	    plugin = plugins[instanceId]
+	    pos = plugin.position()
 	    w = plugin.width()
 	    h = plugin.height()
-	    var x = pos.left / scale
-	    var y = pos.top / scale
+	    x = pos.left / scale
+	    y = pos.top / scale
 
 	    minX = Math.min(minX, x)
 	    maxX = Math.max(maxX, x + w)
@@ -779,12 +790,15 @@ JqueryClass('pedalboard', {
 	if (left > 0 || top > 0) {
 	    for (instanceId in plugins) {
 		plugin = plugins[instanceId]
+		x = parseInt(plugin.css('left')) + left
+		y = parseInt(plugin.css('top')) + top
 		plugin.animate({
-		    top: parseInt(plugin.css('top')) + top,
-		    left: parseInt(plugin.css('left')) + left
+		    left: x,
+		    top: y
 		}, time, 'swing', function() {
 		    self.pedalboard('drawPluginJacks', plugin)
 		})
+		self.data('pluginMove')(instanceId, x, y)
 	    }
 	}
 	
@@ -862,6 +876,7 @@ JqueryClass('pedalboard', {
 	self.data('minScale', scale)
 
 	self.pedalboard('zoomAt', scale, w/2, h/2, 0)
+	self.data('windowSize')(self.width(), self.height())
     },
 
     /*********
@@ -898,11 +913,12 @@ JqueryClass('pedalboard', {
 		self.trigger('modified')
 		self.pedalboard('drawPluginJacks', plugin)
 	    },
-	    dragStop: function() { 
+	    dragStop: function(e, ui) { 
 		self.trigger('pluginDragStop') 
 		self.trigger('modified')
 		self.pedalboard('drawPluginJacks', plugin)
 		plugin.removeClass('dragging')
+		self.data('pluginMove')(instanceId, ui.position.left, ui.position.top)
 		self.pedalboard('adapt')
 	    },
 	    click: function(event) {
@@ -958,7 +974,7 @@ JqueryClass('pedalboard', {
 
 	var hardware = self.data('hardwareManager')
 	if (addressing && hardware)
-	    hardware.unserializeInstance(instanceId, addressing)
+	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'))
 	
 	var i, symbol, port
 	if (hardware) {
@@ -1027,6 +1043,7 @@ JqueryClass('pedalboard', {
 
 	settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
 	plugin.css({ position: 'absolute', left: x, top: y }).appendTo(self)
+	self.data('pluginMove')(instanceId, x, y)
     },
 
     getGui: function(instanceId) {

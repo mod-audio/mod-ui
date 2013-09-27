@@ -30,7 +30,6 @@ except ImportError:
 from sha import sha
 from base64 import b64decode, b64encode
 from tornado import gen, web, iostream
-from bson import ObjectId
 import subprocess
 from glob import glob
 
@@ -53,7 +52,8 @@ from modcommon import json_handler
 from mod import indexing
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
-from mod.pedalboard import save_pedalboard, remove_pedalboard, save_banks
+from mod.pedalboard import Pedalboard, remove_pedalboard
+from mod.bank import save_banks
 from mod.hardware import get_hardware
 from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list, 
@@ -429,7 +429,7 @@ class EffectBypassAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", label, 6, "none", 
+        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", 'switch', label, 6, "none", 
                             int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
         
         # TODO: get value when unaddressing
@@ -482,10 +482,9 @@ class EffectParameterAddress(web.RequestHandler):
                                     int(instance),
                                     parameter)
 
-            if not result['ok']:
-                self.write(json.dumps(result))
-                self.finish()
-                return
+            self.write(json.dumps(result))
+            self.finish()
+            return
         else:
             result = {}
         
@@ -507,6 +506,7 @@ class EffectParameterAddress(web.RequestHandler):
         result['ok'] = yield gen.Task(SESSION.parameter_address,
                                       int(instance),
                                       parameter,
+                                      data['addressing_type'],
                                       label,
                                       ctype,
                                       unit,
@@ -534,6 +534,23 @@ class EffectParameterGet(web.RequestHandler):
         self.write(json.dumps(response))
         self.finish()
 
+class EffectPosition(web.RequestHandler):
+    def get(self, instance):
+        instance = int(instance)
+        x = int(float(self.get_argument('x')))
+        y = int(float(self.get_argument('y')))
+        SESSION.effect_position(instance, x, y)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
+class PedalboardSize(web.RequestHandler):
+    def get(self):
+        width = int(self.get_argument('width'))
+        height = int(self.get_argument('height'))
+        SESSION.pedalboard_size(width, height)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
 class PackageEffectList(web.RequestHandler):
     def get(self, package):
         index = indexing.EffectIndex()
@@ -554,44 +571,27 @@ class PedalboardSave(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        pedalboard = json.loads(self.request.body)
-        if not pedalboard.get('_id'):
-            pedalboard['_id'] = ObjectId()
+        title = self.get_argument('title')
+        as_new = bool(int(self.get_argument('asNew')))
 
         try:
-            metadata = pedalboard.get('metadata', {})
-            title = metadata.get('title', '')
-            assert bool(title)
-        except AssertionError:
-            self.write(json.dumps({ 'ok': False, 'error': 'Title cannot be empty' }))
+            uid = SESSION.save_pedalboard(title, as_new)
+        except Pedalboard.ValidationError as e:
+            self.write(json.dumps({ 'ok': False, 'error': str(e) }))
             self.finish()
             raise StopIteration
         
-        index = indexing.PedalboardIndex()
-        try:
-            existing = index.find(title=title).next()
-            assert existing['id'] == unicode(pedalboard['_id'])
-        except StopIteration:
-            pass
-        except AssertionError:
-            self.write(json.dumps({ 'ok': False, 'error': 'Pedalboard "%s" already exists' % title }))
-            self.finish()
-            raise StopIteration
-        
-        # make sure title is unicode
-        pedalboard['metadata']['title'] = unicode(title)
-        save_pedalboard(None, pedalboard)
-        THUMB_GENERATOR.schedule_thumbnail(pedalboard['_id'])
+        THUMB_GENERATOR.schedule_thumbnail(uid)
 
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True, 'uid': pedalboard['_id'] }, default=json_handler))
+        self.write(json.dumps({ 'ok': True, 'uid': uid }, default=json_handler))
         self.finish()
 
 class PedalboardLoad(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, None, pedalboard_id)
+        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(res, default=json_handler))
         self.finish()
@@ -627,7 +627,7 @@ class PedalboardScreenshot(web.RequestHandler):
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
     def get(self):
-        SESSION.start_session(self.result)
+        SESSION.remove(-1, self.result)
     def result(self, resp):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
@@ -710,6 +710,7 @@ class TemplateHandler(web.RequestHandler):
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'hardware_profile': json.dumps(get_hardware()),
+            'current_pedalboard': json.dumps(SESSION.serialize_pedalboard(), default=json_handler),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
@@ -902,6 +903,7 @@ application = web.Application(
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
+            (r"/effect/position/(\d+)/?", EffectPosition),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
@@ -910,6 +912,7 @@ application = web.Application(
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
             (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),
+            (r"/pedalboard/size/?", PedalboardSize),
 
             (r"/banks/?", BankLoad),
             (r"/banks/save/?", BankSave),

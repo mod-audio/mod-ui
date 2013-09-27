@@ -51,7 +51,6 @@ def check_environment(callback):
                               PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
                               DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE)
     from mod import indexing
-    from mod.pedalboard import save_pedalboard
     from mod.session import SESSION
 
     for dirname in (EFFECT_DIR, PEDALBOARD_DIR,

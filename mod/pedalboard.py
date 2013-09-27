@@ -14,53 +14,225 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, json, struct
-from binascii import crc32
+import os, json, logging, copy
+from datetime import datetime
+from bson import ObjectId
 from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
                           INDEX_PATH, EFFECT_DIR, BANKS_JSON_FILE)
 
 from modcommon import json_handler
+from mod.bank import remove_pedalboard_from_banks
 from mod import indexing
 
-def save_pedalboard(bank_id, pedalboard):
-    fh = open(os.path.join(PEDALBOARD_DIR, str(pedalboard['_id'])), 'w')
-    fh.write(json.dumps(pedalboard, default=json_handler))
-    fh.close()
-    index = indexing.PedalboardIndex()
-    index.add(pedalboard)
-    save_last_pedalboard(bank_id, str(pedalboard['_id']))
+class Pedalboard(object):
+    class ValidationError(Exception):
+        pass
 
-def load_pedalboard(pedalboard_id):
-    fh = open(os.path.join(PEDALBOARD_DIR, str(pedalboard_id)))
-    j = json.load(fh)
-    fh.close()
-    return j
+    def __init__(self, uid=None):
+        self.data = None
+        self.clear()
+        if uid:
+            self.load(uid)
 
-def save_last_pedalboard(bank_id, pedalboard_id):
-    fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'w')
-    fh.write(json.dumps({'pedalboard':pedalboard_id, 'bank':bank_id}))
-    fh.close()
+    def clear(self):
+        self.max_instance_id = -1
+        if self.data:
+            width = self.data['width']
+            height = self.data['height']
+        else:
+            width = 0
+            height = 0
+        self.data = {
+            '_id': None,
+            'metadata': {
+                'title': '',
+                'tstamp': None,
+                },
+            'width': width,
+            'height': height,
+            'instances': {},
+            'connections': [],
+            }
 
-def get_last_pedalboard():
-    try:
-        fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'r')
-    except IOError:
-        pid = None
-        bid = None
-    else:
-        j = json.load(fh)
+    def serialize(self):
+        serialized = copy.deepcopy(self.data)
+        serialized['instances'] = serialized['instances'].values()
+        return serialized
+
+    def unserialize(self, data):
+        instances = data.pop('instances')
+        data['instances'] = {}
+        for instance in instances:
+            data['instances'][instance['instanceId']] = instance
+        self.data = data
+
+    def load(self, uid):
+        try:
+            fh = open(os.path.join(PEDALBOARD_DIR, str(uid)))
+        except IOError:
+            logging.error('[pedalboard] Unknown pedalboard %s' % uid)
+            return self.clear()
+        self.unserialize(json.load(fh))
         fh.close()
-        pid = j['pedalboard']
-        bid = j['bank']
-    return (bid, pid)
 
-def list_pedalboards(bank_id):
-    fh = open(BANKS_JSON_FILE, 'r')
-    banks = json.load(fh)
-    fh.close()
-    if bank_id < len(banks):
-        return ((pedalboard['title'],pedalboard['id']) for pedalboard in banks[bank_id]['pedalboards'])
-    return False
+    def save(self, title=None, as_new=False):
+        if as_new or not self.data['_id']:
+            self.data['_id'] = ObjectId()
+        if title is not None:
+            self.set_title(title)
+        
+        title = self.data['metadata']['title']
+
+        if not title:
+            raise self.ValidationError("Title cannot be empty")
+
+        index = indexing.PedalboardIndex()
+        try:
+            existing = index.find(title=title).next()
+            assert existing['id'] == unicode(self.data['_id'])
+        except StopIteration:
+            pass
+        except AssertionError:
+            raise self.ValidationError('Pedalboard "%s" already exists' % title)
+        
+        fh = open(os.path.join(PEDALBOARD_DIR, str(self.data['_id'])), 'w')
+        self.data['metadata']['tstamp'] = datetime.now()
+        serialized = self.serialize()
+        fh.write(json.dumps(serialized, default=json_handler))
+        fh.close()
+
+        index = indexing.PedalboardIndex()
+        index.add(self.data)
+
+        return self.data['_id']
+
+    def _port_to_list(self, port):
+        port = port.split(':')
+        if port[0].startswith('effect_'):
+            port[0] = port[0][len('effect_'):]
+        try:
+            port[0] = int(port[0])
+        except ValueError:
+            pass
+        return port
+
+    def add_instance(self, url, instance_id=None, bypassed=False, x=0, y=0):
+        if instance_id is None:
+            instance_id = self.max_instance_id + 1
+            self.max_instance_id = instance_id
+        self.data['instances'][instance_id] = { 'url': url,
+                                                'instanceId': instance_id,
+                                                'bypassed': bool(bypassed),
+                                                'x': x,
+                                                'y': y,
+                                                'preset': {},
+                                                'addressing': {},
+                                                }
+        return instance_id
+
+    def remove_instance(self, instance_id):
+        if instance_id < 0:
+            # remove all effects
+            return self.clear()
+        try:
+            self.data['instances'].pop(instance_id)
+        except KeyError:
+            logging.error('[pedalboard] Cannot remove unknown instance %d' % instance_id)
+        i = 0
+        while i < len(self.data['connections']):
+            connection = self.data['connections'][i]
+            if connection[0] == instance_id or connection[2] == instance_id:
+                self.data['connections'].pop(i)
+            else:
+                i += 1
+        return True
+
+
+    def bypass(self, instance_id, value):
+        try:
+            self.data['instances'][instance_id]['bypassed'] = bool(value)
+            return True
+        except KeyError:
+            logging.error('[pedalboard] Cannot bypass unknown instance %d' % instance_id)
+
+    def connect(self, port_from, port_to):
+        port_from = self._port_to_list(port_from)
+        port_to = self._port_to_list(port_to)
+        for port in (port_from, port_to):
+            try:
+                instance_id = int(port[0])
+            except ValueError:
+                continue
+            if not self.data['instances'].get(instance_id):
+                # happens with clipmeter and probably with other internal plugins
+                return
+        self.data['connections'].append([port_from[0], port_from[1], port_to[0], port_to[1]])
+
+    def disconnect(self, port_from, port_to):
+        pf = self._port_to_list(port_from)
+        pt = self._port_to_list(port_to)
+        # This is O(N). It will hardly be a problem, since it's only called when user is connected
+        # and manually disconnects two ports, and number of connections is expected to be relatively small.
+        # Anyway, if you're greping TODO, check if optimizing this is one ;-)
+        for i, c in enumerate(self.data['connections']):
+            if c[0] == pf[0] and c[1] == pf[1] and c[2] == pt[0] and c[3] == pt[1]:
+                self.data['connections'].pop(i)
+                return True
+
+    def parameter_set(self, instance_id, port_id, value):
+        try:
+            self.data['instances'][instance_id]['preset'][port_id] = value
+            return True
+        except KeyError:
+            logging.error('[pedalboard] Cannot set parameter %s of unknown instance %d' % (port_id, instance_id))
+
+    def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
+                          unit, current_value, maximum, minimum, steps,
+                          hardware_type, hardware_id, actuator_type, actuator_id,
+                          options):
+        addressing = { 'actuator': [ hardware_type, hardware_id, actuator_type, actuator_id ],
+                       'addressing_type': addressing_type,
+                       'type': ctype,
+                       'unit': unit,
+                       'label': label,
+                       'minimum': minimum,
+                       'maximum': maximum,
+                       'value': current_value,
+                       'steps': steps,
+                       'options': options,
+                       }
+        self.data['instances'][instance_id]['addressing'][port_id] = addressing
+
+    def parameter_unaddress(self, instance_id, port_id):
+        try:
+            instance = self.data[instance_id]
+        except KeyError:
+            logging.error('[pedalboard] Cannot find instance %d to unaddress parameter %s' %
+                          (instance_id, port_id))
+        try:
+            instance.pop(port_id)
+        except KeyError:
+            logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
+                          (port_id, instance_id))
+
+    def set_title(self, title):
+        self.data['metadata']['title'] = unicode(title)
+
+    def set_size(self, width, height):
+        logging.debug("[pedalboard] setting window size %dx%d" % (width, height))
+        self.data['width'] = width
+        self.data['height'] = height
+
+    def set_position(self, instance_id, x, y):
+        try:
+            self.data['instances'][instance_id]['x'] = x
+            self.data['instances'][instance_id]['y'] = y
+            logging.debug('[pedalboard] Setting position of instance %d at (%d,%d)' %
+                          (instance_id, x, y))
+            return True
+        except KeyError:
+            logging.error('[pedalboard] Cannot set position of unknown instance %d' % instance_id)
+            
 
 def remove_pedalboard(uid):
     # Delete pedalboard file
@@ -73,43 +245,4 @@ def remove_pedalboard(uid):
     index = indexing.PedalboardIndex()
     index.delete(uid)
 
-    # Remove from banks, and remove empty banks afterwards
-    banks = json.loads(open(BANKS_JSON_FILE).read())
-    newbanks = []
-    for bank in banks:
-        pedalboards = []
-        for pb in bank['pedalboards']:
-            if not pb['id'] == uid:
-                pedalboards.append(pb)
-        if len(pedalboards) == 0:
-            continue
-        bank['pedalboards'] = pedalboards
-        newbanks.append(bank)
-    save_banks(newbanks)
-    return True
-
-def save_banks(banks):
-    fh = open(BANKS_JSON_FILE, 'w')
-    fh.write(json.dumps(banks))
-    fh.close()
-
-def list_banks():
-    fh = open(BANKS_JSON_FILE, 'r')
-    banks = json.load(fh)
-    fh.close()
-    return banks
-
-def get_port_index(effect):
-    index = indexing.EffectIndex()
-    effect_data = index.find(url=effect['url']).next()
-    effect_data = json.loads(open(os.path.join(EFFECT_DIR, effect_data['id'])).read())
-    port_index = {}
-    for port in effect_data['ports']['control']['input']:
-        port_index[port['symbol']] = port
-    return port_index
-
-def get_default_options(port):
-    options = []
-    for option in sorted(port['scalePoints'], key=lambda x: x['value']):
-        options.append([ option['value'], option['label'] ])
-    return options
+    return remove_pedalboard_from_banks(uid)
