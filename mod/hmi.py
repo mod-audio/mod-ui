@@ -52,13 +52,13 @@ class HMI(object):
         self.port = port
         self.baud_rate = baud_rate
         self.queue = []
+        self.ioloop = ioloop.IOLoop.instance()
         
         self.sp = self.open_connection(callback)
 
-        self.ioloop = ioloop.IOLoop.instance()
 
     def open_connection(self, callback):
-        sp = serial.Serial(port, baud_rate, timeout=0, writeTimeout=0)
+        sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
         sp.flushInput()
         sp.flushOutput()
 

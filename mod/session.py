@@ -463,7 +463,8 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
-    def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
+
+    def parameter_set(self, instance_id, port_id, value, callback, hmi=False):
         if port_id == ":bypass":
             self.bypass(instance_id, value, callback)
             return
