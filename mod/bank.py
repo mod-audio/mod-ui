@@ -18,14 +18,6 @@
 import os, json
 from mod.settings import PEDALBOARD_DIR, BANKS_JSON_FILE
 
-def list_pedalboards(bank_id):
-    fh = open(BANKS_JSON_FILE, 'r')
-    banks = json.load(fh)
-    fh.close()
-    if bank_id < len(banks):
-        return ((pedalboard['title'],pedalboard['id']) for pedalboard in banks[bank_id]['pedalboards'])
-    return False
-
 def save_banks(banks):
     fh = open(BANKS_JSON_FILE, 'w')
     fh.write(json.dumps(banks))

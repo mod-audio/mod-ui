@@ -27,7 +27,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                         CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
                         PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
 from mod.development import FakeHost, FakeHMI
-from mod.bank import list_pedalboards, list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
+from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 from mod.host import Host
@@ -202,7 +202,7 @@ class Session(object):
             return None
 
     def load_bank_pedalboard(self, bank_id, pedalboard_number, callback):
-        pedalboard_id = self._get_pedalboard_id(bank_id, pedalboard_number)
+        pedalboard_id = self._get_pedalboard_id(bank_id, int(pedalboard_number))
 
         if self._pedalboards.get(pedalboard_id, None) is None:
             self._pedalboard = Pedalboard(pedalboard_id)
@@ -218,11 +218,11 @@ class Session(object):
 
             callback(*args)
 
-        def load():
+        def load(result):
             self.load_current_pedalboard(_callback)
 
         if bank_id == self.current_bank:
-            load()
+            load(0)
         else:
             self.bank_address(0, 0, 1, 0, 0, 
                 lambda r: self.bank_address(0, 0, 1, 1, 0, 
@@ -593,7 +593,7 @@ class Session(object):
         except (IndexError, KeyError):
             return callback(False)
 
-        pedalboards = " ".join('"%s" %s' % (pedalboard['title'], pedalboard['id']) for pedalboard in pedalboards)
+        pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
         callback(True, pedalboards)
 
     def effect_position(self, instance, x, y):
