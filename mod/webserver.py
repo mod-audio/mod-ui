@@ -627,7 +627,7 @@ class PedalboardScreenshot(web.RequestHandler):
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
     def get(self):
-        SESSION.start_session(self.result)
+        SESSION.remove(-1, self.result)
     def result(self, resp):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
