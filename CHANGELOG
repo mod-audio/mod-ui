@@ -1,3 +1,8 @@
+0.22
+====
+
+  - NEW: pedalboard state is now in webserver, so that you can always load ui and see the current state
+
 0.21
 ====
 
