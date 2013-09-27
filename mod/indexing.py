@@ -158,11 +158,11 @@ class EffectIndex(Index):
             return
         try:
             effect['label'] = effect['gui']['templateData']['label']
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         try:
             effect['brand'] = effect['gui']['templateData']['author']
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         effect_data = self.schemed_data(effect)
 
