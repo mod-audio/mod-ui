@@ -48,6 +48,7 @@ class Session(object):
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
         self._tuner = False
+        self._tuner_port = 1
         self._peakmeter = False
 
         self.monitor_server = None
@@ -120,7 +121,9 @@ class Session(object):
 
     def tuner_set_input(self, input, callback):
         # TODO: implement
-        callback(1)
+        self.disconnect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), lambda r:r)
+        self._tuner_port = input
+        self.connect("system:capture_%s" % input, "effect_%d:%s" % (TUNER, TUNER_PORT), callback)
 
     def tuner_set(self, status, callback):
         if "on" in status:
@@ -136,7 +139,7 @@ class Session(object):
         def setup_tuner(ok):
             if ok:
                 self._tuner = True
-                self.connect("system:capture_1", "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner)
+                self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner)
         
         self.add(TUNER_URI, TUNER, setup_tuner)
 
