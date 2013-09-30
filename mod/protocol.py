@@ -75,6 +75,7 @@ class Protocol(object):
         "hw_dis": [int, int],
         "control_set": [int, str, float],
         "control_get": [int, str],
+        "control_next": [int, int, int, int],
         "peakmeter": [str],
         "tuner": [str],
         "tuner_input": [int],

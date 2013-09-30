@@ -66,6 +66,7 @@ class Session(object):
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
         Protocol.register_cmd_callback("control_set", self.parameter_set)
         Protocol.register_cmd_callback("control_get", self.parameter_get)
+        Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
@@ -514,6 +515,22 @@ class Session(object):
                                1, 0, 0, hardware_type, hardware_id, actuator_type, 
                                actuator_id, [], callback, loaded)
 
+    def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
+        addr = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
+        if len(addr) > 0:
+            last = addr.pop(0)
+            addr.append(last)
+            addressing = addr[0]
+            callback(True)
+
+            self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
+                            addressing['type'], addressing['unit'], addressing['value'],
+                            addressing['maximum'], addressing['minimum'], addressing['steps'], 
+                            addressing['actuator'][0], addressing['actuator'][1], 
+                            addressing['actuator'][2], addressing['actuator'][3], len(addr), len(addr))
+            return
+        callback(True)
+
     def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
@@ -570,6 +587,8 @@ class Session(object):
                              hardware_id,
                              actuator_type,
                              actuator_id,
+                             1,
+                             1,
                              options,
                              callback)
 

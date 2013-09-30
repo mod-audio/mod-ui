@@ -22,7 +22,9 @@ from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
 
 from modcommon import json_handler
 from mod.bank import remove_pedalboard_from_banks
+from mod.hardware import get_hardware
 from mod import indexing
+
 
 class Pedalboard(object):
     class ValidationError(Exception):
@@ -31,6 +33,11 @@ class Pedalboard(object):
     def __init__(self, uid=None):
         self.data = None
         self.clear()
+
+        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist  ])
+
+        self.addressings = dict( (k, []) for k in hw )
+
         if uid:
             self.load(uid)
 
@@ -74,6 +81,13 @@ class Pedalboard(object):
             return self.clear()
         self.unserialize(json.load(fh))
         fh.close()
+        self.load_addressings()
+
+    def load_addressings(self):
+        for instance_id, instance in self.data['instances'].items():
+            for port_id, addressing in instance['addressing'].items():
+                self.addressings[tuple(addressing['actuator'])].append({'instance_id': instance_id, 'port_id': port_id})
+                self.addressings[tuple(addressing['actuator'])][-1].update(addressing)
 
     def save(self, title=None, as_new=False):
         if as_new or not self.data['_id']:
@@ -202,6 +216,8 @@ class Pedalboard(object):
                        'options': options,
                        }
         self.data['instances'][instance_id]['addressing'][port_id] = addressing
+        self.addressings[tuple(addressing['actuator'])].append({'instance_id': instance_id, 'port_id': port_id})
+        self.addressings[tuple(addressing['actuator'])][-1].update(addressing)
 
     def parameter_unaddress(self, instance_id, port_id):
         try:

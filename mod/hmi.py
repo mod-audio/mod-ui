@@ -117,7 +117,7 @@ class HMI(object):
         self.send("ui_dis", callback, datatype='boolean')
 
     def control_add(self, instance_id, symbol, label, var_type, unit, value, max, 
-                    min, steps, hw_type, hw_id, actuator_type, actuator_id, 
+                    min, steps, hw_type, hw_id, actuator_type, actuator_id, n_controllers, index,
                     options=[], callback=lambda result: None):
         """
         addresses a new control
@@ -139,7 +139,7 @@ class HMI(object):
         options = "%d %s" % (length, " ".join(options))
         options = options.strip()
 
-        self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %s' %
+        self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
                   ( instance_id,
                     symbol,
                     label,
@@ -153,6 +153,8 @@ class HMI(object):
                     hw_id,
                     actuator_type,
                     actuator_id,
+                    n_controllers,
+                    index,
                     options,
                   ),
                   callback, datatype='boolean')
