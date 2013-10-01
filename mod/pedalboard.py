@@ -86,6 +86,7 @@ class Pedalboard(object):
         self.load_addressings()
 
     def load_addressings(self):
+        self.init_addressings()
         for instance_id, instance in self.data['instances'].items():
             for port_id, addressing in instance['addressing'].items():
                 if not addressing.get("instance_id", False):
