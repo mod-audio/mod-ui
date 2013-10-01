@@ -119,7 +119,7 @@ class Pedalboard(object):
     def add_instance(self, url, instance_id=None, bypassed=False, x=0, y=0):
         if instance_id is None:
             instance_id = self.max_instance_id + 1
-            self.max_instance_id = instance_id
+        self.max_instance_id = max(self.max_instance_id, instance_id)
         self.data['instances'][instance_id] = { 'url': url,
                                                 'instanceId': instance_id,
                                                 'bypassed': bool(bypassed),
@@ -205,10 +205,11 @@ class Pedalboard(object):
 
     def parameter_unaddress(self, instance_id, port_id):
         try:
-            instance = self.data[instance_id]
+            instance = self.data['instances'][instance_id]
         except KeyError:
             logging.error('[pedalboard] Cannot find instance %d to unaddress parameter %s' %
                           (instance_id, port_id))
+            return
         try:
             instance.pop(port_id)
         except KeyError:
