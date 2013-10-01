@@ -231,16 +231,25 @@ class Pedalboard(object):
 
     def parameter_unaddress(self, instance_id, port_id):
         try:
-            instance = self.data[instance_id]
+            instance = self.data['instances'][instance_id]
         except KeyError:
             logging.error('[pedalboard] Cannot find instance %d to unaddress parameter %s' %
                           (instance_id, port_id))
-        try:
-            addressing = instance['addressing'].pop(port_id)
-            self.addressings.pop(tuple(addressing['actuator']))
-        except KeyError:
-            logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
+        else:
+            try:
+                addressing = instance['addressing'].pop(port_id)
+                addrs = self.addressings[tuple(addressing['actuator'])]['addrs']
+                addrs_idx = self.addressings[tuple(addressing['actuator'])]['idx']
+                idx = addrs.index(addressing)
+                addrs.pop(idx)
+                if idx <= addrs_idx:
+                    self.addressings[tuple(addressing['actuator'])]['idx'] = addrs_idx - 1
+            except KeyError:
+                logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
                           (port_id, instance_id))
+            else:
+                return addressing['actuator']
+        return tuple()
 
     def set_title(self, title):
         self.data['metadata']['title'] = unicode(title)

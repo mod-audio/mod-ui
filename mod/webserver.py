@@ -506,7 +506,7 @@ class EffectParameterAddress(web.RequestHandler):
         result['ok'] = yield gen.Task(SESSION.parameter_address,
                                       int(instance),
                                       parameter,
-                                      data['addressing_type'],
+                                      data.get('addressing_type', None),
                                       label,
                                       ctype,
                                       unit,
