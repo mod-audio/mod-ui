@@ -516,18 +516,16 @@ class Session(object):
                                actuator_id, [], callback, loaded)
 
     def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
-        addr = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
-        if len(addr) > 0:
-            last = addr.pop(0)
-            addr.append(last)
-            addressing = addr[0]
+        addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
+        if len(addrs['addrs']) > 1:
+            addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
+            addressing = addrs['addrs'][addrs['idx']] 
             callback(True)
-
             self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
                             addressing['type'], addressing['unit'], addressing['value'],
                             addressing['maximum'], addressing['minimum'], addressing['steps'], 
                             addressing['actuator'][0], addressing['actuator'][1], 
-                            addressing['actuator'][2], addressing['actuator'][3], len(addr), len(addr))
+                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1)
             return
         callback(True)
 
@@ -587,8 +585,8 @@ class Session(object):
                              hardware_id,
                              actuator_type,
                              actuator_id,
-                             1,
-                             1,
+                             len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                             len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
                              options,
                              callback)
 

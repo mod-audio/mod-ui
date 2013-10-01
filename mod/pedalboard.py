@@ -34,12 +34,14 @@ class Pedalboard(object):
         self.data = None
         self.clear()
 
-        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist  ])
-
-        self.addressings = dict( (k, []) for k in hw )
+        self.init_addressings()
 
         if uid:
             self.load(uid)
+
+    def init_addressings(self):
+        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist  ])
+        self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
 
     def clear(self):
         self.max_instance_id = -1
@@ -86,8 +88,9 @@ class Pedalboard(object):
     def load_addressings(self):
         for instance_id, instance in self.data['instances'].items():
             for port_id, addressing in instance['addressing'].items():
-                self.addressings[tuple(addressing['actuator'])].append({'instance_id': instance_id, 'port_id': port_id})
-                self.addressings[tuple(addressing['actuator'])][-1].update(addressing)
+                if not addressing.get("instance_id", False):
+                    addressing.update({'instance_id': instance_id, 'port_id': port_id})
+                self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
 
     def save(self, title=None, as_new=False):
         if as_new or not self.data['_id']:
@@ -196,6 +199,10 @@ class Pedalboard(object):
     def parameter_set(self, instance_id, port_id, value):
         try:
             self.data['instances'][instance_id]['preset'][port_id] = value
+            if len(self.data['instances'][instance_id].get('addressing', [])) > 0:
+                addr = self.data['instances'][instance_id]['addressing'].get(port_id, {})
+                if addr:
+                    addr['value'] = value
             return True
         except KeyError:
             logging.error('[pedalboard] Cannot set parameter %s of unknown instance %d' % (port_id, instance_id))
@@ -213,11 +220,13 @@ class Pedalboard(object):
                        'maximum': maximum,
                        'value': current_value,
                        'steps': steps,
+                       'instance_id': instance_id,
+                       'port_id': port_id,
                        'options': options,
                        }
         self.data['instances'][instance_id]['addressing'][port_id] = addressing
-        self.addressings[tuple(addressing['actuator'])].append({'instance_id': instance_id, 'port_id': port_id})
-        self.addressings[tuple(addressing['actuator'])][-1].update(addressing)
+        self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
+        self.addressings[tuple(addressing['actuator'])]['idx'] = len(self.addressings[tuple(addressing['actuator'])]['addrs']) -1
 
     def parameter_unaddress(self, instance_id, port_id):
         try:
@@ -226,7 +235,8 @@ class Pedalboard(object):
             logging.error('[pedalboard] Cannot find instance %d to unaddress parameter %s' %
                           (instance_id, port_id))
         try:
-            instance.pop(port_id)
+            addressing = instance['addressing'].pop(port_id)
+            self.addressings.pop(tuple(addressing['actuator']))
         except KeyError:
             logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
                           (port_id, instance_id))
