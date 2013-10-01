@@ -366,8 +366,11 @@ function Desktop(elements) {
     $('body')[0].addEventListener('touchmove', prevent)
 
     self.pedalboard.pedalboard('unserialize', CURRENT_PEDALBOARD,
-			       function() {}, false, true)
-    
+			       function() {
+				   self.pedalboardId = CURRENT_PEDALBOARD._id
+				   self.title = CURRENT_PEDALBOARD.metadata.title || ''
+				   self.titleBox.text(self.title)
+			       }, false, true)
 
     /*
      * when putting this function, we must remember to remove it from /ping call
