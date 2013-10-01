@@ -368,7 +368,7 @@ function Desktop(elements) {
     self.pedalboard.pedalboard('unserialize', CURRENT_PEDALBOARD,
 			       function() {
 				   self.pedalboardId = CURRENT_PEDALBOARD._id
-				   self.title = CURRENT_PEDALBOARD.metadata.title || ''
+				   self.title = CURRENT_PEDALBOARD.metadata.title || 'Untitled'
 				   self.titleBox.text(self.title)
 			       }, false, true)
 
@@ -538,6 +538,15 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		success: callback,
 		dataType: 'json'
             })
+	},
+
+	getParameterFeed: function(callback) {
+	    $.ajax({
+		url: '/effect/parameter/feed',
+		type: 'GET',
+		success: callback,
+		dataType: 'json'
+	    })
 	},
 
 	pluginMove: function(instanceId, x, y) {

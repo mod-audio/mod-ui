@@ -31,6 +31,7 @@ from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalbo
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 from mod.host import Host
+from mod.browser import BrowserControls
 from mod.protocol import Protocol
 from tuner import NOTES, FREQS, find_freqnotecents
 
@@ -64,7 +65,7 @@ class Session(object):
         Protocol.register_cmd_callback("pedalboard", self.load_bank_pedalboard)
         Protocol.register_cmd_callback("hw_con", self.hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
-        Protocol.register_cmd_callback("control_set", self.parameter_set)
+        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
         Protocol.register_cmd_callback("control_get", self.parameter_get)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
         Protocol.register_cmd_callback("tuner", self.tuner_set)
@@ -74,6 +75,7 @@ class Session(object):
                             MANAGER_PORT, "localhost", self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+        self.browser = BrowserControls()
 
     def host_callback(self):
         if self.hmi_initialized:
@@ -466,6 +468,9 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
+    def hmi_parameter_set(self, instance_id, port_id, value, callback):
+        self.browser.send(instance_id, port_id, value)
+        self.parameter_set(instance_id, port_id, value, callback)
 
     def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
         if port_id == ":bypass":
@@ -502,10 +507,13 @@ class Session(object):
         self.bank_address(0, 0, 1, 2, 0, lambda r: None)
         self.bank_address(0, 0, 1, 3, 0, lambda r: None)
 
+        self.browser.start()
+
         self.hmi.ui_con(verify)
 
     def end_session(self, callback):
         self._banks = list_banks()
+        self.browser.end()
         self.hmi.ui_dis(callback)
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, 

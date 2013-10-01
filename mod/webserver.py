@@ -531,6 +531,16 @@ class EffectParameterGet(web.RequestHandler):
         response = yield gen.Task(SESSION.parameter_get,
                                   int(instance),
                                   parameter)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
+        self.finish()
+
+class EffectParameterFeed(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        response = yield gen.Task(SESSION.browser.wait)
+        self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
         self.finish()
 
@@ -899,6 +909,7 @@ application = web.Application(
             (r"/effect/disconnect/([A-Za-z0-9_:]+),([A-Za-z0-9_:]+)", EffectDisconnect),
             (r"/effect/parameter/set/(\d+),([A-Za-z0-9_]+)", EffectParameterSet),
             (r"/effect/parameter/get/(\d+),([A-Za-z0-9_]+)", EffectParameterGet),
+            (r"/effect/parameter/feed/?", EffectParameterFeed),
             (r"/effect/parameter/address/(\d+),([A-Za-z0-9_]+)", EffectParameterAddress),
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),

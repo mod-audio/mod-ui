@@ -91,12 +91,17 @@ function GUI(effect, options) {
 	    return
 	}
 	port.value = value
+	self.setPortWidgetsValue(symbol, value, source)
+	options.change(symbol, value)
+    }
+
+    this.setPortWidgetsValue = function(symbol, value, source) {
+	var port = self.controls[symbol]
 	for (var i in port.widgets) {
 	    if (port.widgets[i] == source)
 		continue
 	    port.widgets[i].controlWidget('setValue', value)
 	}
-	options.change(symbol, value)
     }
 
     this.getPortValue = function(symbol) {

@@ -70,6 +70,10 @@ JqueryClass('pedalboard', {
 	    // indexed by URL
 	    getPluginsData: function(plugins, callback) { callback({}) },
 
+	    // This is used to long poll server for parameter updates.
+	    // Once callback is called, getParameterFeed will immediately be called again
+	    getParameterFeed: function(callback) { setTimeout(function() { callback([]) }, 60000) },
+
 	    // Marks the position of a plugin
 	    pluginMove: function(instanceId, x, y) {},
 
@@ -199,9 +203,32 @@ JqueryClass('pedalboard', {
 	    }
 	})
 
+	self.pedalboard('startFeed')
+
 	self.disableSelection()
 	
 	return self
+    },
+
+    startFeed: function() {
+	var self = $(this)
+	var callback = function(result) {
+	    self.pedalboard('parameterFeed', result)
+	    self.data('getParameterFeed')(callback)
+	}
+	self.data('getParameterFeed')(callback)
+    },
+
+    parameterFeed: function(result) {
+	var self = $(this)
+	var i, instanceId, symbol, value, gui
+	for (i=0; i<result.length; i++) {
+	    instanceId = result[i][0]
+	    symbol = result[i][1]
+	    value = result[i][2]
+	    gui = self.pedalboard('getGui', instanceId)
+	    gui.setPortWidgetsValue(symbol, value)
+	}
     },
 
     initGestures: function() {
