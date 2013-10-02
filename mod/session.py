@@ -216,8 +216,12 @@ class Session(object):
         else:
             self._pedalboard = self._pedalboards[pedalboard_id]
 
+        # TODO the if True and if False below are checkings that have been
+        # temporarily removed. Theorically we don't need to re-address banks,
+        # but since this is a bit bugged, let's test and stabilize it before
+        # making this optimization
         def _callback(*args):
-            if not bank_id == self.current_bank:
+            if True or not bank_id == self.current_bank:
                 self.current_bank = bank_id
                 self.load_bank(bank_id)
             save_last_pedalboard(bank_id, pedalboard_number)
@@ -227,7 +231,7 @@ class Session(object):
         def load(result):
             self.load_current_pedalboard(_callback)
 
-        if bank_id == self.current_bank:
+        if False and bank_id == self.current_bank:
             load(0)
         else:
             self.bank_address(0, 0, 1, 0, 0, 
