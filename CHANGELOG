@@ -1,3 +1,12 @@
+0.23
+====
+
+  - NEW: addressed controls are changed in browser when hardware knob is rotated
+  - FIX: pedalboard id and title are loaded with page
+  - FIX: addressing couldn't be undone
+  - FIX: memory overflow with too many addressings (now deep layers of addressing are in webserver's memory)
+  - bank addressing re-enabled, but probably bugged
+
 0.22
 ====
 
