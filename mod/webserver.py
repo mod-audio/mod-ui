@@ -481,10 +481,10 @@ class EffectParameterAddress(web.RequestHandler):
             result = yield gen.Task(SESSION.parameter_get,
                                     int(instance),
                                     parameter)
-
-            self.write(json.dumps(result))
-            self.finish()
-            return
+            if not result['ok']:
+                self.write(json.dumps(result))
+                self.finish()
+                return
         else:
             result = {}
         
@@ -506,7 +506,7 @@ class EffectParameterAddress(web.RequestHandler):
         result['ok'] = yield gen.Task(SESSION.parameter_address,
                                       int(instance),
                                       parameter,
-                                      data['addressing_type'],
+                                      data.get('addressing_type', None),
                                       label,
                                       ctype,
                                       unit,

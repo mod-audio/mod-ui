@@ -67,6 +67,7 @@ class Session(object):
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
         Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
         Protocol.register_cmd_callback("control_get", self.parameter_get)
+        Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
@@ -522,6 +523,23 @@ class Session(object):
                                1, 0, 0, hardware_type, hardware_id, actuator_type, 
                                actuator_id, [], callback, loaded)
 
+    def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback, go_to_next=True):
+        addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
+        if len(addrs['addrs']) > 0:
+            addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
+            addressing = addrs['addrs'][addrs['idx']] 
+            callback(True)
+            self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
+                            addressing['type'], addressing['unit'], addressing['value'],
+                            addressing['maximum'], addressing['minimum'], addressing['steps'], 
+                            addressing['actuator'][0], addressing['actuator'][1], 
+                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1)
+            return True
+        #elif len(addrs['addrs']) <= 0:
+        #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
+        callback(True)
+        return False
+
     def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
@@ -546,8 +564,14 @@ class Session(object):
             actuator_type == -1 and
             actuator_id == -1):
             if not loaded:
-                self._pedalboard.parameter_unaddress(instance_id, port_id)
-            self.hmi.control_rm(instance_id, port_id, callback)
+                a = self._pedalboard.parameter_unaddress(instance_id, port_id)
+                if a:
+                    if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
+                        self.hmi.control_rm(instance_id, port_id, lambda r:None)
+                else:
+                    callback(True)
+            else:
+                self.hmi.control_rm(instance_id, port_id, callback)
             return
 
         if not loaded:
@@ -578,6 +602,8 @@ class Session(object):
                              hardware_id,
                              actuator_type,
                              actuator_id,
+                             len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                             len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
                              options,
                              callback)
 

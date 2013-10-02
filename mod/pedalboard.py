@@ -22,7 +22,9 @@ from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
 
 from modcommon import json_handler
 from mod.bank import remove_pedalboard_from_banks
+from mod.hardware import get_hardware
 from mod import indexing
+
 
 class Pedalboard(object):
     class ValidationError(Exception):
@@ -31,8 +33,15 @@ class Pedalboard(object):
     def __init__(self, uid=None):
         self.data = None
         self.clear()
+
+        self.init_addressings()
+
         if uid:
             self.load(uid)
+
+    def init_addressings(self):
+        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist  ])
+        self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
 
     def clear(self):
         self.max_instance_id = -1
@@ -74,6 +83,15 @@ class Pedalboard(object):
             return self.clear()
         self.unserialize(json.load(fh))
         fh.close()
+        self.load_addressings()
+
+    def load_addressings(self):
+        self.init_addressings()
+        for instance_id, instance in self.data['instances'].items():
+            for port_id, addressing in instance['addressing'].items():
+                if not addressing.get("instance_id", False):
+                    addressing.update({'instance_id': instance_id, 'port_id': port_id})
+                self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
 
     def save(self, title=None, as_new=False):
         if as_new or not self.data['_id']:
@@ -182,6 +200,10 @@ class Pedalboard(object):
     def parameter_set(self, instance_id, port_id, value):
         try:
             self.data['instances'][instance_id]['preset'][port_id] = value
+            if len(self.data['instances'][instance_id].get('addressing', [])) > 0:
+                addr = self.data['instances'][instance_id]['addressing'].get(port_id, {})
+                if addr:
+                    addr['value'] = value
             return True
         except KeyError:
             logging.error('[pedalboard] Cannot set parameter %s of unknown instance %d' % (port_id, instance_id))
@@ -199,9 +221,13 @@ class Pedalboard(object):
                        'maximum': maximum,
                        'value': current_value,
                        'steps': steps,
+                       'instance_id': instance_id,
+                       'port_id': port_id,
                        'options': options,
                        }
         self.data['instances'][instance_id]['addressing'][port_id] = addressing
+        self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
+        self.addressings[tuple(addressing['actuator'])]['idx'] = len(self.addressings[tuple(addressing['actuator'])]['addrs']) -1
 
     def parameter_unaddress(self, instance_id, port_id):
         try:
@@ -209,12 +235,21 @@ class Pedalboard(object):
         except KeyError:
             logging.error('[pedalboard] Cannot find instance %d to unaddress parameter %s' %
                           (instance_id, port_id))
-            return
-        try:
-            instance.pop(port_id)
-        except KeyError:
-            logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
-                          (port_id, instance_id))
+        else:
+            try:
+                addressing = instance['addressing'].pop(port_id)
+                addrs = self.addressings[tuple(addressing['actuator'])]['addrs']
+                addrs_idx = self.addressings[tuple(addressing['actuator'])]['idx']
+                idx = addrs.index(addressing)
+                addrs.pop(idx)
+                if idx <= addrs_idx:
+                    self.addressings[tuple(addressing['actuator'])]['idx'] = addrs_idx - 1
+            except KeyError:
+                logging.error("[pedalboard] Trying to unaddress parameter %s in instance %d, but it's not addressed" %
+                              (port_id, instance_id))
+            else:
+                return addressing['actuator']
+        return tuple()
 
     def set_title(self, title):
         self.data['metadata']['title'] = unicode(title)
