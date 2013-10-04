@@ -31,6 +31,7 @@ from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalbo
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 from mod.host import Host
+from mod.clipmeter import Clipmeter
 from mod.browser import BrowserControls
 from mod.protocol import Protocol
 from tuner import NOTES, FREQS, find_freqnotecents
@@ -76,6 +77,7 @@ class Session(object):
                             MANAGER_PORT, "localhost", self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+        self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
 
     def host_callback(self):
@@ -643,13 +645,8 @@ class Session(object):
     def pedalboard_size(self, width, height):
         self._pedalboard.set_size(width, height)
 
-    def clipmeter(self, pos, value, callback=None):
-        cb = callback
-        if not cb:
-            cb = lambda r: r
-
-        if value > 0:
-            self.hmi.clipmeter(pos, cb)
+    def clipmeter(self, pos, value):
+        self._clipmeter.set(pos, value)
 
     def peakmeter(self, pos, value, callback=None):
         cb = callback
