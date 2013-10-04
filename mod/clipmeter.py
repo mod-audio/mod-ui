@@ -1,4 +1,4 @@
-import time, tornado
+import tornado
 
 PERIOD = 1/20.0 # 50ms
 
@@ -19,7 +19,7 @@ class Clipmeter(object):
         ioloop = tornado.ioloop.IOLoop.instance()
         if self.timeout:
             ioloop.remove_timeout(self.timeout)
-        self.timeout = ioloop.add_timeout(time.time()+PERIOD, self.flush)
+        self.timeout = ioloop.add_timeout(ioloop.time()+PERIOD, self.flush)
             
             
 
