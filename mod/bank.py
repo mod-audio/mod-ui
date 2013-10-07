@@ -30,9 +30,10 @@ def list_banks():
     return banks
 
 def save_last_pedalboard(bank_id, pedalboard_number):
-    fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'w')
-    fh.write(json.dumps({'pedalboard':pedalboard_number, 'bank':bank_id}))
-    fh.close()
+    if bank_id is not None:
+        fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'w')
+        fh.write(json.dumps({'pedalboard':pedalboard_number, 'bank':bank_id}))
+        fh.close()
 
 def get_last_bank_and_pedalboard():
     try:
