@@ -212,6 +212,8 @@ class Pedalboard(object):
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
                           options):
+        if self.data['instances'][instance_id]['addressing'].get(port_id, False):
+            self.parameter_unaddress(instance_id, port_id)
         addressing = { 'actuator': [ hardware_type, hardware_id, actuator_type, actuator_id ],
                        'addressing_type': addressing_type,
                        'type': ctype,
