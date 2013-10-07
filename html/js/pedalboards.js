@@ -478,8 +478,7 @@ JqueryClass('bankBox', {
 	    self.data('resultCanvasMode').hide()
 	    self.data('bankAddressing').hide()
 	}
-	bank.animate({ opacity: 0, height: 0 }, function() { bank.remove() })
-	self.bankBox('save')
+	bank.animate({ opacity: 0, height: 0 }, function() { bank.remove(); self.bankBox('save') })
     },
 
     renderPedalboard: function(pedalboardData) {
