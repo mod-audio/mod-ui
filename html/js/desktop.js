@@ -549,12 +549,15 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 	    })
 	},
 
-	pluginMove: function(instanceId, x, y) {
+	pluginMove: function(instanceId, x, y, callback) {
+        if (callback == null) {
+            callback = function(r) {}
+        }
 	    $.ajax({
 		url: '/effect/position/'+instanceId,
 		type: 'GET',
 		data: { x: x, y: y },
-		success: function() {},
+		success: callback,
 		error: function(e) {
 		    new Notification('error', "Can't save plugin position")
 		}

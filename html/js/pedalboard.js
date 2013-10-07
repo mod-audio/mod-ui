@@ -75,7 +75,7 @@ JqueryClass('pedalboard', {
 	    getParameterFeed: function(callback) { setTimeout(function() { callback([]) }, 60000) },
 
 	    // Marks the position of a plugin
-	    pluginMove: function(instanceId, x, y) {},
+	    pluginMove: function(instanceId, x, y, callback) { callback(true) },
 
 	    // Sets the size of the pedalboard
 	    windowSize: function(width, height) {}
@@ -84,7 +84,7 @@ JqueryClass('pedalboard', {
 
 	self.pedalboard('wrapApplicationFunctions', options,
 			[ 'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginBypass',
-			  'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad' ])
+			  'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad', 'pluginMove' ])
 	
 	self.data(options)
 
@@ -353,12 +353,11 @@ JqueryClass('pedalboard', {
 	// Let's avoid modifying original data
 	data = $.extend({}, data)
 
-	if (bypassApplication === null)
+	if (bypassApplication == null)
 	    bypassApplication = !!loadPedalboardAtOnce
 
 	// We might want to bypass application
 	self.data('bypassApplication', bypassApplication)
-
 	// Queue closures to all actions needed after everything is loaded
 	var finalActions = []
 	var finish = function() {
@@ -825,7 +824,7 @@ JqueryClass('pedalboard', {
 		}, time, 'swing', function() {
 		    self.pedalboard('drawPluginJacks', plugin)
 		})
-		self.data('pluginMove')(instanceId, x, y)
+		self.data('pluginMove')(instanceId, x, y, function(r){})
 	    }
 	}
 	
@@ -945,7 +944,7 @@ JqueryClass('pedalboard', {
 		self.trigger('modified')
 		self.pedalboard('drawPluginJacks', plugin)
 		plugin.removeClass('dragging')
-		self.data('pluginMove')(instanceId, ui.position.left, ui.position.top)
+		self.data('pluginMove')(instanceId, ui.position.left, ui.position.top, function(r){})
 		self.pedalboard('adapt')
 	    },
 	    click: function(event) {
@@ -1070,7 +1069,7 @@ JqueryClass('pedalboard', {
 
 	settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
 	plugin.css({ position: 'absolute', left: x, top: y }).appendTo(self)
-	self.data('pluginMove')(instanceId, x, y)
+	self.data('pluginMove')(instanceId, x, y, function(r){})
     },
 
     getGui: function(instanceId) {
