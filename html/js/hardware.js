@@ -263,6 +263,12 @@ function HardwareManager(options) {
 		var gui = options.getGui(instanceId)
 		if (actuator[0] >= 0) {
 		    // We're addressing
+		    try {
+			var currentAddressing = self.controls[instanceId][symbol]
+			delete self.addressings[currentAddressing.actuator.join(',')]
+		    } catch(e) {
+			// TypeError when self.controls[instanceId] is null, that's ok
+		    }
 		    self.addressings[actuatorKey].push(portKey)
 		    self.controls[instanceId] = self.controls[instanceId] || {}
 		    self.controls[instanceId][symbol] = addressing
