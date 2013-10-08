@@ -30,6 +30,10 @@ JqueryClass('pedalboard', {
 	    hardwareManager: null,
 	    // InstallationQueue instance
 	    installationQueue: new InstallationQueue(),
+
+	    // Wait object, used to show waiting message to user
+	    wait: new WaitMessage(),
+
 	    // This is a margin, in pixels, that will be disconsidered from pedalboard height when calculating
 	    // hardware ports positioning
 	    bottomMargin: 0,
@@ -358,6 +362,14 @@ JqueryClass('pedalboard', {
 
 	// We might want to bypass application
 	self.data('bypassApplication', bypassApplication)
+
+	self.data('wait').start('Loading pedalboard...')
+	var ourCallback = function() {
+	    self.data('wait').stop()
+	    if (callback)
+		callback()
+	}
+
 	// Queue closures to all actions needed after everything is loaded
 	var finalActions = []
 	var finish = function() {
@@ -365,9 +377,9 @@ JqueryClass('pedalboard', {
 		finalActions[i]()
 	    self.data('bypassApplication', false)
 	    if (loadPedalboardAtOnce)
-		self.data('pedalboardLoad')(data._id, callback)
-	    else if (callback)
-		callback()
+		self.data('pedalboardLoad')(data._id, ourCallback)
+	    else
+		ourCallback()
 	}
 
 	var loadPlugin, connect
@@ -1001,7 +1013,7 @@ JqueryClass('pedalboard', {
 	var hardware = self.data('hardwareManager')
 	if (addressing && hardware)
 	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'))
-	
+
 	var i, symbol, port
 	if (hardware) {
 	    var addressFactory = function(port) {
