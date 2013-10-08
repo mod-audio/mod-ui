@@ -539,7 +539,8 @@ class Session(object):
                             addressing['type'], addressing['unit'], addressing['value'],
                             addressing['maximum'], addressing['minimum'], addressing['steps'], 
                             addressing['actuator'][0], addressing['actuator'][1], 
-                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1)
+                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1,
+                            addressing.get('options', []))
             return True
         #elif len(addrs['addrs']) <= 0:
         #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
