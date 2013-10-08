@@ -73,9 +73,12 @@ function InstallationQueue() {
     this.installNext =  function() {
 	var effect = queue[0]
 	var callback = callbacks[0]
-	
 	var finish = function() {
-	    $('[mod-role=available-plugin][mod-plugin-id='+effect._id+'] .status').addClass('installed')
+	    var status = $('[mod-role=available-plugin][mod-plugin-id='+effect._id+'] .status')
+	    status.removeClass('installed')
+	    status.removeClass('outdated')
+	    status.removeClass('blocked')
+	    status.addClass('installed')
 	    queue.shift()
 	    callbacks.shift()
 	    if (queue.length > 0) {

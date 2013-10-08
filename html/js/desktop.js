@@ -368,8 +368,8 @@ function Desktop(elements) {
     self.pedalboard.pedalboard('unserialize', CURRENT_PEDALBOARD,
 			       function() {
 				   self.pedalboardId = CURRENT_PEDALBOARD._id
-				   self.title = CURRENT_PEDALBOARD.metadata.title || 'Untitled'
-				   self.titleBox.text(self.title)
+				   self.title = CURRENT_PEDALBOARD.metadata.title
+				   self.titleBox.text(self.title || 'Untitled')
 			       }, false, true)
 
     /*

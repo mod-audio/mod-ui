@@ -24,7 +24,10 @@ def save_banks(banks):
     fh.close()
 
 def list_banks():
-    fh = open(BANKS_JSON_FILE, 'r')
+    try:
+        fh = open(BANKS_JSON_FILE, 'r')
+    except IOError:
+        return []
     banks = json.load(fh)
     fh.close()
     return banks

@@ -108,8 +108,8 @@ class Session(object):
 
     def add_tools(self, resp):
         if resp:
-            self.add(CLIPMETER_URI, CLIPMETER_IN, self.setup_clipmeter_in)
-            self.add(CLIPMETER_URI, CLIPMETER_OUT, self.setup_clipmeter_out)
+            self.add(CLIPMETER_URI, CLIPMETER_IN, self.setup_clipmeter_in, True)
+            self.add(CLIPMETER_URI, CLIPMETER_OUT, self.setup_clipmeter_out, True)
 
     def setup_clipmeter_in(self, resp):
         if resp:
@@ -146,7 +146,7 @@ class Session(object):
                 self._tuner = True
                 self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner)
         
-        self.add(TUNER_URI, TUNER, setup_tuner)
+        self.add(TUNER_URI, TUNER, setup_tuner, True)
 
     def tuner_off(self, cb):
         self.remove(TUNER, cb)
@@ -189,8 +189,8 @@ class Session(object):
                 for port in self._playback_2_connected_ports:
                     self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_r)
 
-        self.add(PEAKMETER_URI, PEAKMETER_IN, setup_peak_in)
-        self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out) 
+        self.add(PEAKMETER_URI, PEAKMETER_IN, setup_peak_in, True)
+        self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out, True) 
 
     def peakmeter_off(self, cb):
         self.remove(PEAKMETER_IN, cb)

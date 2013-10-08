@@ -182,8 +182,10 @@ JqueryClass('effectBox', {
 		'url': url,
 		'data': query,
 		'success': function(plugins) {
-		    for (var i=0; i<plugins.length; i++)
+		    for (var i=0; i<plugins.length; i++) {
 			plugins[i].installedVersion = [ plugins[i].minorVersion, plugins[i].microVersion ]
+			plugins[i].status = 'installed'
+		    }
 		    self.effectBox('showPlugins', plugins)
 		},
 		'dataType': 'json'
@@ -210,11 +212,19 @@ JqueryClass('effectBox', {
 						 results.local[plugin.url].microVersion ]
 		    delete results.local[plugin.url]
 		}
+		if (plugin.installedVersion == null) {
+		    plugin.status = 'blocked'
+		} else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
+		    plugin.status = 'installed'
+		} else {
+		    plugin.status = 'outdated'
+		}
 		plugins.push(plugin)
 	    }
 	    for (url in results.local) {
 		plugin = results.local[url]
 		plugin.installedVersion = [ plugin.minorVersion, plugin.microVersion ]
+		plugin.status = 'installed'
 		plugins.push(plugin)
 	    }
 	    self.effectBox('showPlugins', plugins)
@@ -260,6 +270,7 @@ JqueryClass('effectBox', {
 	    for (i in results.cloud) {
 		plugin = results.cloud[i]
 		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion ]
+		plugin.status = 'blocked'
 		plugin.source = SITEURL
 		if (!results.local[plugin.url])
 		    plugins.push(plugin)
@@ -427,7 +438,7 @@ JqueryClass('effectBox', {
 	}
 
 	var checkVersion = function() {
-	    if (plugin.latestVersion > plugin.installedVersion) {
+	    if (compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
 		info.find('.js-upgrade').click(function() {
 		    // Do the upgrade
 		    self.data('upgradePlugin')(plugin, function(plugin) {
@@ -543,7 +554,25 @@ JqueryClass('effectBox', {
 	}
 	wrapper.animate({ left: -newShift }, 500)
     }
-	
-
 })
+
+// Compares two version arrays. They are both known to have two non-negative integers.
+function compareVersions(a, b) {
+    if (!a && !b)
+	return 0
+    if (!b)
+	return 1
+    if (!a)
+	return -1
+    if (a[0] > b[0])
+	return 1
+    if (a[0] < b[0])
+	return -1
+    if (a[1] > b[1])
+	return 1
+    if (a[1] < b[1])
+	return -1
+    return 0
+}
+
 
