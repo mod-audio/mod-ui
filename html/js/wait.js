@@ -1,5 +1,8 @@
-function WaitMessage() {
+function WaitMessage(canvas) {
     var self = this
+
+    this.plugins = {}
+
     self.block = $('<div class="screen-disconnected">')
     self.block.hide()
     $('body').append(self.block).css('overflow', 'hidden')
@@ -17,5 +20,22 @@ function WaitMessage() {
     this.stop = function() {
 	self.block.hide()
 	$('#wrapper').css('z-index', 'auto')
+    }
+
+    this.startPlugin = function(instanceId, position) {
+	var div = $('<div class="plugin-wait">')
+	div.width(position.width).height(position.height)
+	div.css({
+	    position: 'absolute',
+	    top: position.y,
+	    left: position.x
+	})
+	canvas.append(div)
+	self.plugins[instanceId] = div
+    }
+
+    this.stopPlugin = function(instanceId) {
+	self.plugins[instanceId].remove()
+	delete self.plugins[instanceId]
     }
 }

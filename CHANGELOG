@@ -1,3 +1,13 @@
+0.25.1
+======
+
+  - FIX: sends the options arg when changing the addressing from hmi
+
+0.25
+====
+
+  - NEW: Effect loading interface
+
 0.24.1
 ======
 

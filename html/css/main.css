@@ -1294,6 +1294,12 @@ body {
     vertical-align:middle;
 }
 
+.plugin-wait {
+    background:url(../img/loading-effect.gif) no-repeat center center;
+    border: 1px solid #CCCCCC;
+    border-radius: 3px;
+}
+
 /* coisas que estão sendo reimplementadas */
 .drag-handle {
     bottom:0;
