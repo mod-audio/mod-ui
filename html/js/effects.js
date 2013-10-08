@@ -558,6 +558,12 @@ JqueryClass('effectBox', {
 
 // Compares two version arrays. They are both known to have two non-negative integers.
 function compareVersions(a, b) {
+    if (!a && !b)
+	return 0
+    if (!b)
+	return 1
+    if (!a)
+	return -1
     if (a[0] > b[0])
 	return 1
     if (a[0] < b[0])
