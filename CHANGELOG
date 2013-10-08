@@ -1,3 +1,9 @@
+0.24.1
+======
+
+  - FIX: avoid clipmeter, tuner and peakmeter in pedalboard
+  - FIX: info window of uninstalled plugin couldn't be opened
+
 0.24
 ====
 
