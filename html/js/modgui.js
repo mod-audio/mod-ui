@@ -385,7 +385,11 @@ function JqueryClass() {
 var baseWidget = {
     config: function(options) {
 	var self = $(this)
-	self.data('enabled', true)
+	// Very quick bugfix. When pedalboard is unserialized, the disable() of addressed knobs
+	// are called before config. Right thing would probably be to change this behaviour, but
+	// while that is not done, this check will avoid the bug. TODO
+	if (!(self.data('enabled') === false))
+	    self.data('enabled', true)
 	self.bind('valuechange', options.change)
 	
 	var port = options.port
