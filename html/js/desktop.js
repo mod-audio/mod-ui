@@ -369,7 +369,7 @@ function Desktop(elements) {
 			       function() {
 				   self.pedalboardId = CURRENT_PEDALBOARD._id
 				   self.title = CURRENT_PEDALBOARD.metadata.title
-				   self.titleBox.text(self.title)
+				   self.titleBox.text(self.title || 'Untitled')
 			       }, false, true)
 
     /*
