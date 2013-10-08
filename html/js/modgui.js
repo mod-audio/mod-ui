@@ -520,7 +520,7 @@ JqueryClass('film', baseWidget, {
 	}
 	
 	self.mousedown(function(e) {
-	    if (!self.data('enabled')) return
+	    if (!self.data('enabled')) return self.film('prevent', e)
 	    if (e.which == 1) { // left button
 		self.film('mouseDown', e)
 		$(document).bind('mouseup', upHandler)
@@ -534,7 +534,7 @@ JqueryClass('film', baseWidget, {
 	})
 
 	self.click(function(e) {
-	    if (!self.data('enabled')) return
+	    if (!self.data('enabled')) return self.film('prevent', e)
 	    self.film('mouseClick', e)
 	})
 
@@ -670,6 +670,25 @@ JqueryClass('film', baseWidget, {
 	bgShift += 'px 0px'
 	self.css('background-position', bgShift)
     },
+
+    prevent: function(e) {
+	var self = $(this)
+	if (self.data('prevent'))
+	    return
+	self.data('prevent', true)
+	var img = $('<img>').attr('src', 'img/icn-blocked.png')
+	$('body').append(img)
+	img.css({
+	    position: 'absolute',
+	    top: e.pageY - img.height()/2,
+	    left: e.pageX - img.width()/2,
+	    zIndex: 99999
+	})
+	setTimeout(function() {
+	    img.remove()
+	    self.data('prevent', false)
+	}, 500)
+    }
 
 })
 
