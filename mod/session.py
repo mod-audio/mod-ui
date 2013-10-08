@@ -113,10 +113,10 @@ class Session(object):
 
     def setup_clipmeter_in(self, resp):
         if resp:
-            self.connect("system:capture_1", "effect_%d:%s" % (CLIPMETER_IN, CLIPMETER_L), lambda r:None)
-            self.connect("system:capture_2", "effect_%d:%s" % (CLIPMETER_IN, CLIPMETER_R), lambda r:None)
-            self.parameter_monitor(CLIPMETER_IN, CLIPMETER_MON_L, ">=", 0, lambda r:None)
-            self.parameter_monitor(CLIPMETER_IN, CLIPMETER_MON_R, ">=", 0, lambda r:None)
+            self.host.connect("system:capture_1", "effect_%d:%s" % (CLIPMETER_IN, CLIPMETER_L), lambda r:None, True)
+            self.host.connect("system:capture_2", "effect_%d:%s" % (CLIPMETER_IN, CLIPMETER_R), lambda r:None, True)
+            self.host.parameter_monitor(CLIPMETER_IN, CLIPMETER_MON_L, ">=", 0, lambda r:None)
+            self.host.parameter_monitor(CLIPMETER_IN, CLIPMETER_MON_R, ">=", 0, lambda r:None)
 
     def setup_clipmeter_out(self, resp):
         if resp:
@@ -126,9 +126,9 @@ class Session(object):
 
     def tuner_set_input(self, input, callback):
         # TODO: implement
-        self.disconnect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), lambda r:r)
+        self.disconnect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), lambda r:r, True)
         self._tuner_port = input
-        self.connect("system:capture_%s" % input, "effect_%d:%s" % (TUNER, TUNER_PORT), callback)
+        self.connect("system:capture_%s" % input, "effect_%d:%s" % (TUNER, TUNER_PORT), callback, True)
 
     def tuner_set(self, status, callback):
         if "on" in status:
@@ -144,12 +144,12 @@ class Session(object):
         def setup_tuner(ok):
             if ok:
                 self._tuner = True
-                self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner)
+                self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
         
         self.add(TUNER_URI, TUNER, setup_tuner, True)
 
     def tuner_off(self, cb):
-        self.remove(TUNER, cb)
+        self.remove(TUNER, cb, True)
         self._tuner = False
 
     def peakmeter_set(self, status, callback):
@@ -178,23 +178,23 @@ class Session(object):
 
         def setup_peak_in(ok):
             if ok:
-                self.connect("system:capture_1", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_L), mon_peak_in_l)
-                self.connect("system:capture_2", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_R), mon_peak_in_r)
+                self.connect("system:capture_1", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_L), mon_peak_in_l, True)
+                self.connect("system:capture_2", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_R), mon_peak_in_r, True)
 
         def setup_peak_out(ok):
             if ok:
                 self._peakmeter = True
                 for port in self._playback_1_connected_ports:
-                    self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_l)
+                    self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_l, True)
                 for port in self._playback_2_connected_ports:
-                    self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_r)
+                    self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_r, True)
 
         self.add(PEAKMETER_URI, PEAKMETER_IN, setup_peak_in, True)
         self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out, True) 
 
     def peakmeter_off(self, cb):
-        self.remove(PEAKMETER_IN, cb)
-        self.remove(PEAKMETER_OUT, lambda r: None)
+        self.remove(PEAKMETER_IN, cb, True)
+        self.remove(PEAKMETER_OUT, lambda r: None, True)
         self._tuner = False
 
     def _get_pedalboard_id(self, bank_id, pedalboard_number):
@@ -427,23 +427,24 @@ class Session(object):
             def cb(result):
                 if result:
                     if port_to == "system:playback_1":
-                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r)
+                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r, True)
                         self._playback_1_connected_ports.append(port_from)
                         if self._peakmeter:
-                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r)
+                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r, True)
                     elif port_to == "system:playback_2":
-                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r)
+                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r, True)
                         self._playback_2_connected_ports.append(port_from)
                         if self._peakmeter:
-                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r)
+                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r, True)
                 callback(result)
         else:
             cb = callback
 
         self.host.connect(port_from, port_to, cb)
 
-    def disconnect(self, port_from, port_to, callback):
-        self._pedalboard.disconnect(port_from, port_to)
+    def disconnect(self, port_from, port_to, callback, loaded=False):
+        if not loaded:
+            self._pedalboard.disconnect(port_from, port_to)
 
         if not 'system' in port_from and not 'effect' in port_from:
             port_from = "effect_%s" % port_from
@@ -454,17 +455,17 @@ class Session(object):
             def cb(result):
                 if result:
                     if port_to == "system:playback_1":
-                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r)
+                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r, True)
                         if self._peakmeter:
-                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r)
+                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r, True)
                         try:
                             self._playback_1_connected_ports.remove(port_from)
                         except ValueError:
                             pass
                     elif port_to == "system:playback_2":
-                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r)
+                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r, True)
                         if self._peakmeter:
-                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r)
+                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r, True)
                         try:
                             self._playback_2_connected_ports.remove(port_from)
                         except ValueError:
@@ -539,8 +540,7 @@ class Session(object):
                             addressing['type'], addressing['unit'], addressing['value'],
                             addressing['maximum'], addressing['minimum'], addressing['steps'], 
                             addressing['actuator'][0], addressing['actuator'][1], 
-                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1,
-                            addressing.get('options', []))
+                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1)
             return True
         #elif len(addrs['addrs']) <= 0:
         #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
