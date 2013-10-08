@@ -533,7 +533,10 @@ JqueryClass('film', baseWidget, {
 	    self.film('mouseWheel', e)
 	})
 
-	self.click(function(e) { self.film('mouseClick', e) })
+	self.click(function(e) {
+	    if (!self.data('enabled')) return
+	    self.film('mouseClick', e)
+	})
 
 	return self
     },
