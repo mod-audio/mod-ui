@@ -32,7 +32,7 @@ JqueryClass('pedalboard', {
 	    installationQueue: new InstallationQueue(),
 
 	    // Wait object, used to show waiting message to user
-	    wait: new WaitMessage(),
+	    wait: new WaitMessage(self),
 
 	    // This is a margin, in pixels, that will be disconsidered from pedalboard height when calculating
 	    // hardware ports positioning
@@ -198,11 +198,12 @@ JqueryClass('pedalboard', {
 	    drop: function( event, ui ) {
 		if (ui.helper.consumed)
 		    return // TODO Check if this really necessary
-
 		var scale = self.data('scale')
 		ui.draggable.trigger('pluginAdded', { 
 		    x: (ui.helper.offset().left - self.offset().left) / scale, 
-		    y: (ui.helper.offset().top  - self.offset().top)  / scale
+		    y: (ui.helper.offset().top  - self.offset().top)  / scale,
+		    width: ui.helper.children().width(),
+		    height: ui.helper.children().height()
 		})
 	    }
 	})
@@ -529,10 +530,15 @@ JqueryClass('pedalboard', {
 	var self = $(this)
 
 	element.bind('pluginAdded', function(e, position) { 
+	    var waiter = self.data('wait')
 	    var instanceId = self.pedalboard('generateInstanceId')
+	    waiter.startPlugin(instanceId, position)
 	    var pluginLoad = self.data('pluginLoad')
 	    pluginLoad(pluginData.url, instanceId,
-		       function() { self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y) })
+		       function() {
+			   self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y)
+			   waiter.stopPlugin(instanceId)
+		       })
 	})
 
 	var options = { defaultIconTemplate: DEFAULT_ICON_TEMPLATE }
