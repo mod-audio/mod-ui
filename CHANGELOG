@@ -1,3 +1,22 @@
+0.24
+====
+
+  - NEW: pedalboard loading message
+  - NEW: "blocked" icon when trying to set addressed parameter
+  - NEW: status icon in effects plugin now indicates plugin is either "not installed", "installed" or "outdated"
+  - FIX: clipmeter state was being lost in HM
+  - FIX: when addressing, checks if instance_id,port_id holds an old addressing and unaddress
+  - FIX: saving banks when removing a bank was saving before actually removing the bank
+  - FIX: pedalboard was being loaded twice
+  - FIX: mouseclick on knob widget is also prevented when parameter is addressed
+  - FIX: knobs were not being properly disable when pedalboard was unserialized
+  - FIX: pedalboard was being saved with title 'Untitled'
+  - FIX: parameter were not being unaddressed in internal structure, so exclusive actuators were never released
+  - FIX: avoid error when banks.json does not exist
+  - More precise timing of periodic clipmeter messages
+  - Logging disabled by default, to save storage space and extend lifetime
+  - Only saves last_pedalboard if there's a bank_id
+
 0.23
 ====
 
