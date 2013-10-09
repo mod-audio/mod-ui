@@ -444,7 +444,7 @@ JqueryClass('effectBox', {
 	}
 
 	var checkVersion = function() {
-	    if (compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
+	    if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
 		info.find('.js-upgrade').click(function() {
 		    // Do the upgrade
 		    self.data('upgradePlugin')(plugin, function(plugin) {
