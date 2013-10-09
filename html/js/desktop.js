@@ -390,7 +390,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 	windowManager: self.windowManager,
 	hardwareManager: self.hardwareManager,
 	bottomMargin: effectBox.height(),
-	pluginLoad: function(url, instanceId, callback) {
+	pluginLoad: function(url, instanceId, callback, errorCallback) {
 	    var firstTry = true
 	    var add = function() {
 		$.ajax({ url: '/effect/add/'+instanceId+'?url='+escape(url),
@@ -406,7 +406,9 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 				 firstTry = false
 				 self.installationQueue.install(url, add)
 			     } else {
-				 new Bug('Error adding effect')
+				 new Notification('error', 'Error adding effect. Probably a connection problem.')
+				 if (errorCallback)
+				     errorCallback()
 			     }
 			 },
 			 'dataType': 'json'

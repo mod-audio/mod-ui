@@ -538,6 +538,8 @@ JqueryClass('pedalboard', {
 		       function() {
 			   self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y)
 			   waiter.stopPlugin(instanceId)
+		       }, function() {
+			   waiter.stopPlugin(instanceId)
 		       })
 	})
 
