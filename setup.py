@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import os
 
 setup(name = 'mod',
-      version = '0.25.2',
+      version = '0.26',
       description = 'MOD',
       long_description = 'MOD - Musician Operated Device - User Interface server and libraries',
       author = "Hacklab and AGR",

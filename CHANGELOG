@@ -1,7 +1,16 @@
+0.26
+====
+
+  - NEW: Plugin comments and ratings
+  - Better communication betwen ui and hmi, ui waits for resp before sending a new command
+  - Calling the right methods for connecting and monitoring the clipmeter
+  - FIX: upgrade button should not appear when plugin is not installed
+  - FIX: plugin loading box now disappears in case of error
+
 0.25.2
 ======
 
-  - FIX: hidden plugins won't go to mem pedalboard anymore 
+  - FIX: hidden plugins won't go to mem pedalboard anymore
 
 0.25.1
 ======
