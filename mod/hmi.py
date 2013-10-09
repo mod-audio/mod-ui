@@ -52,6 +52,7 @@ class HMI(object):
         self.port = port
         self.baud_rate = baud_rate
         self.queue = []
+        self.queue_idle = True
         self.ioloop = ioloop.IOLoop.instance()
         
         self.sp = self.open_connection(callback)
@@ -86,6 +87,7 @@ class HMI(object):
                         if callback is not None:
                             logging.info("[hmi] calling callback for %s" % original_msg)
                             callback(msg.process_resp(datatype))
+                        self.process_queue()
                 else:
                     def _callback(resp, resp_args=None):
                         if resp_args is None:
@@ -99,6 +101,16 @@ class HMI(object):
         except serial.SerialException, e:
             logging.error("[hmi] error while reading %s" % e)
 
+    def process_queue(self):
+        try:
+            msg = self.queue[0][0] # fist msg on the queue
+            logging.info("[hmi] popped from queue: %s" % msg)
+            self.sp.write("%s\0" % str(msg))
+            logging.info("[hmi] sending -> %s" % msg)
+            self.queue_idle = False
+        except IndexError:
+            logging.info("[hmi] queue is empty, nothing to do")
+            self.queue_idle = True
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
@@ -107,7 +119,11 @@ class HMI(object):
     def send(self, msg, callback=None, datatype='int'):
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
-        logging.info("[hmi] sending -> %s" % str(msg))
+            logging.info("[hmi] scheduling -> %s" % str(msg))
+            if self.queue_idle:
+                self.process_queue()
+            return
+        # is resp, just send
         self.sp.write("%s\0" % str(msg))
 
     def ui_con(self, callback=lambda result: None):
