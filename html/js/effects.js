@@ -35,6 +35,7 @@ JqueryClass('effectBox', {
 	options = $.extend({
 	    pedalboard: $('<div>'),
 	    windowManager: null,
+	    userSession: null,
 	    removePlugin: function(plugin, callback) { callback(true) },
 	    installPlugin: function(plugin, callback) { callback(plugin) },
 	    upgradePlugin: function(plugin, callback) { callback(plugin) }
@@ -453,6 +454,47 @@ JqueryClass('effectBox', {
 		    })
 		}).show()
 	    }
+
+	    self.effectBox('getReviews', plugin.url, info, function() {
+
+		var title = info.find('input[name=title]')
+		var comment = info.find('textarea[name=comment]')
+
+		if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0) {
+		    info.find('.js-comment').click(function() {
+			var userSession = self.data('userSession')
+			userSession.login(function() {
+			    $.ajax({ url: SITEURL+'/effect/comment/'+userSession.sid,
+				     method: 'POST',
+				     data: JSON.stringify({ 'title': title.val(),
+					     'comment': comment.val(),
+					     'url': plugin.url,
+					     'version': plugin.latestVersion.join('.')
+					   }),
+				     success: function(res) {
+					 if (res.ok) {
+					     title.val('')
+					     comment.val('')
+					     self.effectBox('getReviews', plugin.url, info)
+					 } else {
+					     alert(res.error)
+					 }
+				     },
+				     error: function() {
+					 new Notification('error', "Couldn't post comment")
+				     },
+				     dataType: 'json'
+				   })
+			})
+			return false
+		    })
+		} else {
+		    title.attr('placeholder', 'Please install and test latest version before commenting')
+		    title.attr('disabled', true)
+		    comment.attr('disabled', true)
+		    info.find('.js-comment').attr('disabled', true)
+		}
+	    })
 	}
 
 	if (plugin.latestVersion)
@@ -469,8 +511,6 @@ JqueryClass('effectBox', {
 		   })
 	}
 
-	self.effectBox('getReviews', info)
-
 	info.window({
 	    windowManager: self.data('windowManager'),
 	    close: function() {
@@ -483,10 +523,22 @@ JqueryClass('effectBox', {
 	self.data('info', info)
     },
 
-    getReviews: function(info) {
+    getReviews: function(url, info, callback) {
 	var self = $(this)
-	var reviews = $(Mustache.render(TEMPLATES.plugin_reviews))
-	info.find('section.comments-reviews').html('').append(reviews)
+	$.ajax({ url: SITEURL+'/effect/reviews/',
+		 data: { url: url },
+		 success: function(comments) {
+		     for (var i in comments)
+			 comments[i].created = renderTime(new Date(comments[i].created * 1000))
+		     var reviews = $(Mustache.render(TEMPLATES.plugin_reviews,
+						     { comments: comments }
+						    ))
+		     info.find('section.comments-reviews').html('').append(reviews)
+		     if (callback)
+			 callback()
+		 },
+		 dataType: 'json'
+	       })
     },
 
     cleanResults: function() {

@@ -163,6 +163,7 @@ function Desktop(elements) {
     this.titleBox = elements.titleBox
     this.effectBox = elements.effectBox.effectBox({
 	windowManager: this.windowManager,
+	userSession: this.userSession,
 	pedalboard: this.pedalboard,
 	removePlugin: function(plugin, callback) {
 	    if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))

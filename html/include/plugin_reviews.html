@@ -71,36 +71,19 @@
   <div class="clearfix">
     <div class="filter alignleft">
       <h1>Comments</h1>
-      <a href="">Current Version (26)</a> | <a href="">All Versions (126)</a>
+      <!-- <a href="">Current Version (26)</a> | <a href="">All Versions (126)</a> -->
     </div>
     <div class="comment alignright">
       <a href="#commentform" class="btn">Write a comment</a>
     </div>
   </div>
-<!--
+  {{#comments}}
   <article class="comment">
-    <h1><span class="rating five"></span> Título do comentário <span class="date">20/06/2013</span></h1>
-    <p class="author">by <a href="">Usuário</a> - Version 3.0</p>
-    <p>Dolor sed nisi dapibus, ridiculus arcu pid amet elementum, sed tristique habitasse urna nascetur. Nec? Sit nascetur penatibus nisi diam, montes. Porttitor vel elementum vel! Magnis porta, pulvinar aliquam turpis dolor et aliquet? Risus ac ac adipiscing elit urna dolor! Odio vel, sed scelerisque lorem! Pellentesque ultrices odio! Non! Urna ac dolor, velit a, lectus sed? Lacus pellentesque natoque rhoncus purus dolor augue vel duis platea? Risus et augue dolor ut nunc. Nisi porttitor et velit amet, urna porttitor lundium, adipiscing nec cursus lacus turpis sit nisi purus dapibus natoque nascetur hac! Velit duis dignissim nunc? Nunc eu vut, pulvinar. Risus duis, dictumst platea pulvinar cursus et purus, nec nascetur, auctor dapibus dolor natoque! Odio dis pellentesque aliquet a, odio.</p>
-    <p>Risus placerat, sit porttitor, mus adipiscing phasellus eros dolor pellentesque duis? Dictumst, in urna, elementum auctor turpis cum vel? Sit purus, magnis sociis lundium amet ultrices. Aliquet enim a penatibus magnis in elementum! A lectus. Nisi ultrices, phasellus, in? Enim? Amet, mid pid nisi cursus risus ac! Proin amet augue duis et ac, turpis dictumst lorem phasellus dis tortor porttitor ridiculus mattis! Sociis dictumst ultrices tortor dignissim rhoncus, massa nascetur, in, dis montes risus dis lundium amet auctor, hac rhoncus, magna augue montes ultricies non vel amet enim, amet, etiam rhoncus pulvinar rhoncus mid? Ut. Risus arcu turpis in. A magna rhoncus. Diam magna, est scelerisque cras, pulvinar magnis pulvinar! A? Integer natoque porttitor lectus, augue porta, aliquet dictumst.</p>
-    <p>Cursus sed lacus duis amet egestas montes risus ut dignissim in ultrices urna urna augue turpis a pid dapibus, et hac integer lectus, ultrices! Enim? Dictumst ultricies cras lorem. Cras tristique ridiculus vel sociis platea, turpis ultricies in vel, integer scelerisque ut est quis elit! Etiam odio, diam pulvinar lundium lundium pid, vel a et, in? Lectus. Aliquam massa. Est ac pellentesque dignissim risus tortor? Rhoncus purus ac tortor, mus in duis eu montes, sagittis duis ac dolor cum? Pulvinar turpis dignissim mid urna vel pellentesque lundium? Mauris dictumst, sit sit, penatibus placerat, tortor porttitor! Lectus nisi nisi tempor! Tincidunt adipiscing! Cum lorem enim. Dignissim nunc odio! In egestas dis dolor et aliquet diam pulvinar cum vel enim nunc.</p>
+    <h1><span class="rating five"></span>{{title}}<span class="date">{{created}}</span></h1>
+    <p class="author">by <a href="">{{author.name}}</a> - Version {{version}}</p>
+    <p>{{comment}}</p>
   </article>
--->
-  <article class="comment">
-    <h1><span class="rating five"></span> Título do comentário <span class="date">20/06/2013</span></h1>
-    <p class="author">by <a href="">Usuário</a> - Version 3.0</p>
-    <p>Dolor sed nisi dapibus, ridiculus arcu pid amet elementum, sed tristique habitasse urna nascetur. Nec? Sit nascetur penatibus nisi diam, montes. Porttitor vel elementum vel! Magnis porta, pulvinar aliquam turpis dolor et aliquet? Risus ac ac adipiscing elit urna dolor! Odio vel, sed scelerisque lorem! Pellentesque ultrices odio! Non! Urna ac dolor, velit a, lectus sed? Lacus pellentesque natoque rhoncus purus dolor augue vel duis platea? Risus et augue dolor ut nunc. Nisi porttitor et velit amet, urna porttitor lundium, adipiscing nec cursus lacus turpis sit nisi purus dapibus natoque nascetur hac! Velit duis dignissim nunc? Nunc eu vut, pulvinar. Risus duis, dictumst platea pulvinar cursus et purus, nec nascetur, auctor dapibus dolor natoque! Odio dis pellentesque aliquet a, odio.</p>
-  </article>
-  <article class="comment">
-    <h1><span class="rating five"></span> Título do comentário <span class="date">20/06/2013</span></h1>
-    <p class="author">by <a href="">Usuário</a> - Version 3.0</p>
-    <p>Risus placerat, sit porttitor, mus adipiscing phasellus eros dolor pellentesque duis? Dictumst, in urna, elementum auctor turpis cum vel? Sit purus, magnis sociis lundium amet ultrices. Aliquet enim a penatibus magnis in elementum! A lectus. Nisi ultrices, phasellus, in? Enim? Amet, mid pid nisi cursus risus ac! Proin amet augue duis et ac, turpis dictumst lorem phasellus dis tortor porttitor ridiculus mattis! Sociis dictumst ultrices tortor dignissim rhoncus, massa nascetur, in, dis montes risus dis lundium amet auctor, hac rhoncus, magna augue montes ultricies non vel amet enim, amet, etiam rhoncus pulvinar rhoncus mid? Ut. Risus arcu turpis in. A magna rhoncus. Diam magna, est scelerisque cras, pulvinar magnis pulvinar! A? Integer natoque porttitor lectus, augue porta, aliquet dictumst.</p>
-  </article>
-  <article class="comment">
-    <h1><span class="rating five"></span> Título do comentário <span class="date">20/06/2013</span></h1>
-    <p class="author">by <a href="">Usuário</a> - Version 3.0</p>
-    <p>Cursus sed lacus duis amet egestas montes risus ut dignissim in ultrices urna urna augue turpis a pid dapibus, et hac integer lectus, ultrices! Enim? Dictumst ultricies cras lorem. Cras tristique ridiculus vel sociis platea, turpis ultricies in vel, integer scelerisque ut est quis elit! Etiam odio, diam pulvinar lundium lundium pid, vel a et, in? Lectus. Aliquam massa. Est ac pellentesque dignissim risus tortor? Rhoncus purus ac tortor, mus in duis eu montes, sagittis duis ac dolor cum? Pulvinar turpis dignissim mid urna vel pellentesque lundium? Mauris dictumst, sit sit, penatibus placerat, tortor porttitor! Lectus nisi nisi tempor! Tincidunt adipiscing! Cum lorem enim. Dignissim nunc odio! In egestas dis dolor et aliquet diam pulvinar cum vel enim nunc.</p>
-  </article>
+  {{/comments}}
   
   <nav class="comments-nav">
     
@@ -110,14 +93,14 @@
     <h1>What do you have to tell about this plugin?</h1>
     <div class="control-group">
       <label>Title</label>
-      <input type="text" class="span12"/>
+      <input type="text" name="title" class="span12"/>
     </div>
     <div class="control-group bottom">
       <label>Comment</label>
-      <textarea class="span12"></textarea>
+      <textarea class="span12" name="comment"></textarea>
     </div>
     <div class="control-group textright">
-      <button class="btn btn-success">Comment</button>
+      <button class="js-comment btn btn-success">Comment</button>
     </div>
   </form>
 </section>
