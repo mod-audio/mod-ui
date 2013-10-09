@@ -309,8 +309,9 @@ JqueryClass('effectBox', {
     showPlugins: function(plugins) {
 	var self = $(this)
 	self.effectBox('cleanResults')
-	for (var i in plugins)
+	for (var i in plugins) {
 	    self.effectBox('getLabelAndAuthor', plugins[i])
+	}
 	plugins.sort(function(a, b) {
 	    if (a.label > b.label)
 		return 1
@@ -352,6 +353,7 @@ JqueryClass('effectBox', {
 	    self.effectBox('setCategory', currentCategory)
 	}
 	*/
+
     },
 
     getLabelAndAuthor: function(plugin) {
@@ -410,6 +412,9 @@ JqueryClass('effectBox', {
 
 	var info = $(Mustache.render(TEMPLATES.plugin_info, plugin))
 
+	if (plugin.rating)
+	    $(info.find('.rating')[0]).addClass(['', 'one', 'two', 'three', 'four', 'five'][Math.round(plugin.rating)])
+
 	// The remove button will remove the plugin, close window and re-render the plugins
 	// without the removed one
 	if (plugin.installedVersion) {
@@ -454,6 +459,9 @@ JqueryClass('effectBox', {
 		    })
 		}).show()
 	    }
+
+	    if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
+		self.effectBox('getRating', plugin, info.find('.js-rate'))
 
 	    self.effectBox('getReviews', plugin.url, info, function() {
 
@@ -528,12 +536,71 @@ JqueryClass('effectBox', {
 	$.ajax({ url: SITEURL+'/effect/reviews/',
 		 data: { url: url },
 		 success: function(comments) {
-		     for (var i in comments)
+		     var classes = ['', 'one', 'two', 'three', 'four', 'five']
+		     for (var i in comments) {
 			 comments[i].created = renderTime(new Date(comments[i].created * 1000))
+			 if (comments[i].rating)
+			     comments[i].rating = classes[comments[i].rating]
+		     }
 		     var reviews = $(Mustache.render(TEMPLATES.plugin_reviews,
 						     { comments: comments }
 						    ))
-		     info.find('section.comments-reviews').html('').append(reviews)
+		     info.find('section.comments').html('').append(reviews)
+		     if (callback)
+			 callback()
+		 },
+		 dataType: 'json'
+	       })
+    },
+
+    getRating: function(plugin, widget, callback) {
+	var self = $(this)
+	var userSession = self.data('userSession')
+	var classes = [ '---', 'one', 'two', 'three', 'four', 'five' ]
+	var setRate = function(rating) {
+	    for (var i in classes)
+		widget.removeClass(classes[i])
+	    if (rating)
+		widget.addClass(classes[rating])
+	}
+	var rate = function(element) {
+	    var rating
+	    for (var i in classes) {
+		if (element.hasClass(classes[i]))
+		    rating = i
+	    }
+	    setRate(rating)
+	    $.ajax({ url: SITEURL+'/effect/rate/'+userSession.sid,
+		     data: JSON.stringify({ url: plugin.url,
+					    version: plugin.latestVersion,
+					    rating: rating
+					  }),
+		     method: 'POST',
+		     success: function(result) {
+			 if (result.ok)
+			     setRate(result.rating)
+			 else
+			     alert(result.error)
+		     },
+		     dataType: 'json'
+		   })
+	}
+	if (!userSession.sid) {
+	    widget.children().click(function() {
+		var element = $(this)
+		userSession.login(function() { rate(element) })
+	    })
+	    if (callback)
+		callback()
+	    return
+	}
+	$.ajax({ url: SITEURL+'/effect/rate/'+userSession.sid+'/mine',
+		 data: { url: plugin.url },
+		 success: function(rating) {
+		     setRate(rating)
+		     widget.children().click(function() {
+			 rate($(this))
+		     })
 		     if (callback)
 			 callback()
 		 },

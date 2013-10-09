@@ -482,6 +482,7 @@ body {
     height:16px;
     width:132px;
 }
+
 #plugins-library #plugins-list .plugins-wrapper .plugin .rating.one {
     background-position:center -15px;
 }
@@ -579,10 +580,10 @@ body {
 }
 
 .plugin-info .rating {
-    background:url(../img/icn-rating.png) no-repeat center top;
+    background:url(../img/icn-rating.png) no-repeat -12px top;
     display:inline-block;
     height:14px;
-    width:74px;
+    width:84px;
 }
 .plugin-info .rating-label {
     color:#fff;
@@ -591,19 +592,27 @@ body {
     text-transform:uppercase;
 }
 .plugin-info .rating.one {
-    background:url(../img/icn-rating.png) no-repeat center -15px;
+    background:url(../img/icn-rating.png) no-repeat -12px -15px;
 }
 .plugin-info .rating.two {
-    background:url(../img/icn-rating.png) no-repeat center -30px;
+    background:url(../img/icn-rating.png) no-repeat -12px -30px;
 }
 .plugin-info .rating.three {
-    background:url(../img/icn-rating.png) no-repeat center -45px;
+    background:url(../img/icn-rating.png) no-repeat -12px -45px;
 }
 .plugin-info .rating.four {
-    background:url(../img/icn-rating.png) no-repeat center -60px;
+    background:url(../img/icn-rating.png) no-repeat -12px -60px;
 }
 .plugin-info .rating.five {
-    background:url(../img/icn-rating.png) no-repeat center -75px;
+    background:url(../img/icn-rating.png) no-repeat -12px -75px;
+}
+.plugin-info .my-rate {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    padding: 0;
+    float: left;
+    cursor: pointer;
 }
 
 .plugin-info .plugin-specs {

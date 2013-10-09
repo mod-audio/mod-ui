@@ -1,73 +1,3 @@
-<section class="reviews">
-  <h1>Reviews</h1>
-  <article class="review">
-    <h1>Rate this plugin: <span class="rating"></span></h1>
-  </article>
-  <!-- 
-  <article class="review current-version">
-    <h1>Average rating for the current version: <span class="rating five"></span> <span class="rating-label">26 Ratings</span></h1>
-    <div class="detailed">
-      <div class="detail clearfix">
-        <span class="alignleft rating five"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">26</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating four"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating three"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating two"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating one"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-    </div>
-  </article>
-  <article class="review">
-    <h1>Average rating for all versions: <span class="rating four"></span> <span class="rating-label">126 Ratings</span></h1>
-    <div class="detailed">
-      <div class="detail clearfix">
-        <span class="alignleft rating five"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">26</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating four"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating three"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating two"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-      <div class="detail clearfix">
-        <span class="alignleft rating one"></span>
-        <span class="alignleft bar"><span class="alignleft progress-bar"></span></span>
-        <span class="alignleft rating-number">0</span>
-      </div>
-    </div>
-  </article>
-  -->
-</section>
-
-<section class="comments">
   <div class="clearfix">
     <div class="filter alignleft">
       <h1>Comments</h1>
@@ -79,7 +9,7 @@
   </div>
   {{#comments}}
   <article class="comment">
-    <h1><span class="rating five"></span>{{title}}<span class="date">{{created}}</span></h1>
+    <h1><span class="rating js-comment-rating {{rating}}"> </span> {{title}} <span class="date"> {{created}} </span></h1>
     <p class="author">by <a href="">{{author.name}}</a> - Version {{version}}</p>
     <p>{{comment}}</p>
   </article>
@@ -103,4 +33,3 @@
       <button class="js-comment btn btn-success">Comment</button>
     </div>
   </form>
-</section>
