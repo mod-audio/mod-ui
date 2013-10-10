@@ -1016,7 +1016,7 @@ body {
 #bank-addressings {
     background:#333;
     left:20%;
-    height:37px;
+    height:75px;
     margin:0;
     padding:0;
     position:absolute;
@@ -1024,11 +1024,28 @@ body {
     top:69px;
     width:45%;
 }
+#bank-addressings h2 {
+    margin: 4px 0 0 14px;
+    display: block;
+    color: white;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: left;
+}
+#bank-addressings small {
+    font-size: 10px;
+    color: #BBBBBB;
+    text-align: left;
+    display: block;
+    margin-left: 14px;
+}
 #bank-addressings select {
     display: block;
     float: left;
+    height: 22px;
     margin: 5px 2.5%;
     width: 20%;
+    font-size: 10px;
 }
 #bank-pedalboards {
     background:#333;
@@ -1039,7 +1056,7 @@ body {
     overflow:auto;
     padding:0 0 200px 0;
     position:fixed;
-    top:105px;
+    top:144px;
     width:45%;
 }
 #bank-pedalboards > div {
@@ -1047,10 +1064,10 @@ body {
     padding:10px 10px 0 10px;
 }
 #bank-pedalboards .pedalboard {
-    border-bottom:1px dotted #111;
+    border-top:1px dotted #111;
     color:#fff;
     cursor:move;
-    padding-bottom:10px;
+    padding-top:10px;
     width:100%;
 }
 #bank-pedalboards .pedalboard .info {
@@ -1079,13 +1096,13 @@ body {
 }
 
 .pedalboard .addressings .footswitch {
-    background: #2b2b2b url(../img/footswitch-free.png) no-repeat center center;
+    background: #2b2b2b url(../img/footswitch-free.png) no-repeat center top;
     float: left;
     height: 20px;
     width: 25%;
 }
 .pedalboard .addressings .footswitch.addressed {
-    background: #2b2b2b url(../img/footswitch-addressed.png) no-repeat center center;
+    background: #2b2b2b url(../img/footswitch-addressed.png) no-repeat center top;
 }
 
 #bank-pedalboards .mode {
