@@ -832,20 +832,26 @@ JqueryClass('pedalboard', {
 	// Move animate everything: move plugins, scale and position
 	// canvas
 
-	// move plugins
-	if (left > 0 || top > 0) {
-	    for (instanceId in plugins) {
-		plugin = plugins[instanceId]
-		x = parseInt(plugin.css('left')) + left
-		y = parseInt(plugin.css('top')) + top
-		plugin.animate({
-		    left: x,
-		    top: y
-		}, time, 'swing', function() {
-		    self.pedalboard('drawPluginJacks', plugin)
-		})
-		self.data('pluginMove')(instanceId, x, y, function(r){})
+	var drawFactory = function(plugin) {
+	    return function() {
+		self.pedalboard('drawPluginJacks', plugin)
 	    }
+	}
+
+	// move plugins
+	for (instanceId in plugins) {
+	    plugin = plugins[instanceId]
+	    x = parseInt(plugin.css('left')) + left
+	    y = parseInt(plugin.css('top')) + top
+	    plugin.animate({
+		left: x,
+		top: y
+	    }, {
+		duration: time,
+		step: drawFactory(plugin),
+		complete: drawFactory(plugin)
+	    })
+	    self.data('pluginMove')(instanceId, x, y, function(r){})
 	}
 	
 	var viewWidth = self.parent().width()
@@ -857,7 +863,7 @@ JqueryClass('pedalboard', {
 	self.animate({ 
 	    scale: newScale,
 	}, {
-	    duration: 400,
+	    duration: time,
 	    step: function(scale, prop) {
 		if (prop.prop != 'scale')
 		    return
@@ -902,7 +908,7 @@ JqueryClass('pedalboard', {
 	adjust(self.data('hwOutputs'), { left: 0 })
 
 	// Redraw all cables that connect to or from hardware ports
-	self.data('connectionManager').iterateInstance(-1, function(jack) {
+	self.data('connectionManager').iterateInstance('system', function(jack) {
 	    self.pedalboard('drawJack', jack)
 	})
     },
