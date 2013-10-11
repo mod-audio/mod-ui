@@ -28,6 +28,7 @@ try:
 except ImportError:
     from PIL import Image
 from sha import sha
+from hashlib import md5
 from base64 import b64decode, b64encode
 from tornado import gen, web, iostream
 import subprocess
@@ -43,7 +44,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
-                          AVATAR_URL,
+                          AVATAR_URL, DEV_ENVIRONMENT
                           )
 
 
@@ -700,6 +701,19 @@ class TemplateHandler(web.RequestHandler):
     def get(self, path):
         if not path:
             path = 'index.html'
+        # Caching strategy. If we don't have a version parameter,
+        # let's redirect to one
+        try:
+            version = self.get_argument('v')
+        except web.MissingArgumentError:
+            uri = self.request.uri
+            if self.request.query:
+                uri += '&'
+            else:
+                uri += '?'
+            uri += 'v=%s' % self.get_version()
+            self.redirect(uri)
+            return
         loader = tornado.template.Loader(HTML_DIR)
         section = path.split('.')[0]
         try:
@@ -708,6 +722,22 @@ class TemplateHandler(web.RequestHandler):
             context = {}
         context['cloud_url'] = CLOUD_HTTP_ADDRESS
         self.write(loader.load(path).generate(**context))
+
+    def get_version(self):
+        if DEV_ENVIRONMENT:
+            return str(int(time.time()))
+        try:
+            proc = subprocess.Popen(['pacman', '-Q'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=open('/dev/null', 'w')
+                                    )
+            proc.wait()
+            if proc.poll() == 0:
+                return md5(proc.stdout.read()).hexdigest()
+        except OSError:
+            pass
+
+        return str(int(time.time()))
 
     def index(self):
         context = {}
@@ -727,6 +757,7 @@ class TemplateHandler(web.RequestHandler):
             'default_package_server_port': DEFAULT_PACKAGE_SERVER_PORT,
             'package_repository': PACKAGE_REPOSITORY,
             'avatar_url': AVATAR_URL,
+            'version': self.get_argument('v'),
             }
         return context
 
