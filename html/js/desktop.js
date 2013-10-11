@@ -116,6 +116,7 @@ function Desktop(elements) {
 			     new Bug("Couldn't address bypass")
 			     callback(false)
 			 },
+			 cache: false,
 			 dataType: 'json'
 		       })
 	    } else {
@@ -129,6 +130,7 @@ function Desktop(elements) {
 			     new Bug("Couldn't address parameter")
 			     callback(false)
 			 },
+			 cache: false,
 			 dataType: 'json'
 		       })
 	    }
@@ -174,6 +176,7 @@ function Desktop(elements) {
 		     error: function() {
 			 new Notification('error', "Could not uninstall " + plugin.package)
 		     },
+		     cache: false,
 		     dataType: 'json'
 		   })
 	},
@@ -219,7 +222,8 @@ function Desktop(elements) {
 		     },
 		     error: function() {
 			 new Bug("Couldn't disconnect")
-		     }
+		     },
+		     cache: false
 		   })
 	}
 
@@ -242,6 +246,7 @@ function Desktop(elements) {
 		     error: function() {
 			 new Notification('error', 'Cannot contact cloud')
 		     },
+		     cache: false,
 		     dataType: 'json'
 		   })
 	},
@@ -322,6 +327,7 @@ function Desktop(elements) {
 		     error: function() {
 			 new Bug("Can't generate screenshot")
 		     },
+		     cache: false,
 		     dataType: 'json'
 		   })
 	},
@@ -411,6 +417,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 				     errorCallback()
 			     }
 			 },
+			 cache: false,
 			 'dataType': 'json'
 		       })
 	    }
@@ -425,6 +432,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 			 else
 			     new Notification("error", "Couldn't remove effect")
 		     },
+		     cache: false,
 		     'dataType': 'json'
 		   })
 	},
@@ -450,6 +458,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 			   alert('erro no request (6)')
 			 */
 		     },
+		     cache: false,
 		     'dataType': 'json'
 		   })
 	},
@@ -465,6 +474,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		     error: function() {
 			 console.log('erro no request')
 		     },
+		     cache: false,
 		     dataType: 'json'
 		   })
 	},
@@ -478,6 +488,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 			     console.log('erro')
 			 }
 		     },
+		     cache: false,
 		     dataType: 'json'
 		   })
 	},
@@ -488,6 +499,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		     success: function() {
 			 callback(true)
 		     },
+		     cache: false,
 		     dataType: 'json'
 		   })
 	},
@@ -513,7 +525,8 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		     },
 		     error: function() {
 			 new Bug("Couldn't reset pedalboard")
-		     }
+		     },
+		     cache: false
 		   })
 	},
 
@@ -528,6 +541,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
                     }
                     callback(!!result);
                 },
+		cache: false,
                 dataType: 'json'
             });
         },
@@ -548,7 +562,8 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		url: '/effect/parameter/feed',
 		type: 'GET',
 		success: callback,
-		dataType: 'json'
+		dataType: 'json',
+		cache: false
 	    })
 	},
 
@@ -561,9 +576,11 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		type: 'GET',
 		data: { x: x, y: y },
 		success: callback,
+		cache: false,
 		error: function(e) {
 		    new Notification('error', "Can't save plugin position")
-		}
+		},
+		dataType: 'json'
 	    })
 	},
 
@@ -575,7 +592,8 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		success: function() {},
 		error: function(e) {
 		    new Notification('error', "Can't save window size")
-		}
+		},
+		cache: false
 	    })
 	}
 
@@ -631,7 +649,8 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 		     },
 		     error: function() {
 			 new Bug("Couldn't remove pedalboard")
-		     }
+		     },
+		     cache: false
 		   })
 	},
 	load: function(pedalboardId, callback) {
@@ -653,6 +672,7 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 		error: function() {
 		    new Bug("Couldn't load pedalboard")
 		},
+		cache: false,
 		dataType: 'json'
 	    })
 	},
@@ -677,6 +697,7 @@ Desktop.prototype.makeBankBox = function(el, trigger) {
 		     error: function() {
 			 new Bug("Couldn't load banks")
 		     },
+		     cache: false,
 		     dataType: 'json',
 		   })
 	},
