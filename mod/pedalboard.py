@@ -87,8 +87,8 @@ class Pedalboard(object):
 
     def load_addressings(self):
         self.init_addressings()
-        for instance_id, instance in self.data['instances'].items():
-            for port_id, addressing in instance['addressing'].items():
+        for instance_id, instance in self.data.get('instances', {}).items():
+            for port_id, addressing in instance.get('addressing', {}).items():
                 if not addressing.get("instance_id", False):
                     addressing.update({'instance_id': instance_id, 'port_id': port_id})
                 self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
