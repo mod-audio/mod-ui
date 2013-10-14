@@ -141,7 +141,10 @@ JqueryClass('upgradeWindow', {
 	var ping = function() {
 	    $.ajax({ url: '/ping', 
 		     success: function(result) {
-			 document.location.reload()
+			 // we must remove the v=CHECKSUM parameter from url, so page can get
+			 // a new parameter according to new software checksum.
+			 var url = document.location.href.replace(/v=[^&]+&?/, '').replace(/[?&]$/, '')
+			 document.location.href = url
 		     },
 		     error: function() {
 			 setTimeout(ping, 1000)
