@@ -1,3 +1,9 @@
+0.26.3
+======
+
+  - after installation, page reload removes the v=CHECKSUM parameter and receives a new one by server
+  - fix: error when loading pedalboard with data structure that has no addressing key in some instance
+
 0.26.2
 ======
 
