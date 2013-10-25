@@ -1,3 +1,9 @@
+0.26.4
+======
+
+  - Plugin info page modified: link to wiki instead of showing raw url; category
+  - fix: pedalboard screenshots are now stored in data dir
+
 0.26.3
 ======
 
