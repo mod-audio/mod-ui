@@ -49,16 +49,18 @@ def check_environment(callback):
     from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR,
                               HARDWARE_DIR, INDEX_PATH,
                               PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
-                              DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE)
+                              DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE,
+                              PEDALBOARD_SCREENSHOT_DIR, HTML_DIR)
     from mod import indexing
     from mod.session import SESSION
 
     for dirname in (EFFECT_DIR, PEDALBOARD_DIR,
                     HARDWARE_DIR, DOWNLOAD_TMP_DIR,
-                    PLUGIN_LIBRARY_DIR):
+                    PLUGIN_LIBRARY_DIR,
+                    PEDALBOARD_SCREENSHOT_DIR):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-    
+
     if not os.path.exists(BANKS_JSON_FILE):
         fh = open(BANKS_JSON_FILE, 'w')
         fh.write("[]")
@@ -68,7 +70,16 @@ def check_environment(callback):
     effect_index = indexing.EffectIndex()
     pedal_index = indexing.PedalboardIndex()
 
-    # TODO check banks.json vs banks.bin
+    # Migration. Since we don't have a migration mechanism, let's do it here
+    # TODO Migration system where we'll have migration scripts that will be marked as
+    # already executed
+    old_screenshot_dir = os.path.join(HTML_DIR, 'pedalboards')
+    if os.path.exists(old_screenshot_dir) and os.path.isdir(old_screenshot_dir):
+        import shutil
+        for screenshot in os.listdir(old_screenshot_dir):
+            shutil.move(os.path.join(old_screenshot_dir, screenshot), PEDALBOARD_SCREENSHOT_DIR)
+        os.rmdir(old_screenshot_dir)
+    
     # TODO check if all pedalboards in banks database really exist, otherwise remove them from banks
 
     ensure_index_sync(effect_index, EFFECT_DIR)

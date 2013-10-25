@@ -88,6 +88,8 @@ PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
 SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', '/usr/lib/mod-ui/screenshot.js')
 
+PEDALBOARD_SCREENSHOT_DIR = os.environ.get('MOD_PEDALBOARD_SCREENSHOT_DIR', join(DATA_DIR, 'pedalboard_screenshots'))
+
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350
 MAX_SCREENSHOT_HEIGHT = 1024

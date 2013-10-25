@@ -44,7 +44,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
-                          AVATAR_URL, DEV_ENVIRONMENT
+                          PEDALBOARD_SCREENSHOT_DIR, AVATAR_URL, DEV_ENVIRONMENT
                           )
 
 
@@ -986,6 +986,7 @@ application = web.Application(
 
             (r"/demo/restore/?$", DemoRestore),
             
+            (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": PEDALBOARD_SCREENSHOT_DIR}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
             debug=LOG, **settings)

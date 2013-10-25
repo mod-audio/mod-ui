@@ -22,7 +22,7 @@ except ImportError:
     from PIL import Image
 
 from tornado import ioloop
-from mod.settings import (HTML_DIR, DEVICE_WEBSERVER_PORT,
+from mod.settings import (PEDALBOARD_SCREENSHOT_DIR, DEVICE_WEBSERVER_PORT,
                           PEDALBOARD_DIR, PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
 
@@ -113,10 +113,11 @@ class ThumbnailGenerator(object):
                 self.process_next()
                 return
 
-            thumbnail = 'pedalboards/%s.png' % uid
-            path = os.path.join(HTML_DIR, thumbnail)
+            
+            thumbnail = '%s.png' % uid
+            path = os.path.join(PEDALBOARD_SCREENSHOT_DIR, thumbnail)
             img.save(path)
-            self.save_pedalboard(uid, thumbnail)
+            self.save_pedalboard(uid, 'pedalboards/%s' % thumbnail)
             self.process_next()
 
         generate_screenshot(uid, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
