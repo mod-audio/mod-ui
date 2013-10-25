@@ -201,6 +201,7 @@ JqueryClass('bankBox', {
 	    resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
 	    resultCanvasMode: self.find('#bank-pedalboards-result .js-mode'),
 	    bankAddressing: self.find('#bank-addressings'),
+	    saving: $('#banks-saving'),
 	    list: function(callback) { callback([]) },
 	    search: function(local, query, callback) { callback([]) },
 	    load: function(callback) { callback([]) },
@@ -356,7 +357,23 @@ JqueryClass('bankBox', {
 		pedalboards: pedalboardData
 	    })
 	});
-	self.data('save')(serialized, function(ok) {})
+	self.data('saving').html('Auto saving banks...').show()
+	self.data('save')(serialized, function(ok) {
+	    if (ok)
+		self.data('saving').html('Auto saving banks... Done!').show()
+	    else {
+		self.data('saving').html('Auto saving banks... Error!').show()
+		new Notification('error', 'Error saving banks!')
+	    }
+	    if (self.data('savingTimeout')) {
+		clearTimeout(self.data('savingTimeout'))
+	    }
+	    var timeout = setTimeout(function() {
+		self.data('savingTimeout', null)
+		self.data('saving').hide()
+	    }, 500)
+	    self.data('savingTimeout', timeout)
+	})
     },
 
     create: function() {

@@ -705,6 +705,7 @@ Desktop.prototype.makeBankBox = function(el, trigger) {
 	    $.ajax({ type: 'POST',
 		     url: '/banks/save',
 		     data: JSON.stringify(data),
+		     success: callback,
 		     error: function() {
 			 new Bug("Couldn't save banks")
 		     },

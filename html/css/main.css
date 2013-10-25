@@ -133,6 +133,13 @@ body {
     background-position:-135px top;
 }
 
+#main-menu #banks-saving {
+    margin: 21px 0 0 6px;
+    font-size: 10px;
+    color: #666;
+    display: none;
+}
+
 /* MOD - Settings */
 #main-menu #mod-settings {
     background-image:url(../img/menu-icons-sprite.png);
