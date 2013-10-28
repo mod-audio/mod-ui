@@ -184,7 +184,9 @@ JqueryClass('effectBox', {
 		'data': query,
 		'success': function(plugins) {
 		    for (var i=0; i<plugins.length; i++) {
-			plugins[i].installedVersion = [ plugins[i].minorVersion, plugins[i].microVersion ]
+			plugins[i].installedVersion = [ plugins[i].minorVersion, 
+							plugins[i].microVersion, 
+							plugins[i].release || 0 ]
 			plugins[i].status = 'installed'
 		    }
 		    self.effectBox('showPlugins', plugins)
@@ -206,11 +208,13 @@ JqueryClass('effectBox', {
 	renderResults = function() {
 	    for (i in results.cloud) {
 		plugin = results.cloud[i]
-		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion ]
+		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion, plugin.release ]
 		plugin.source = SITEURL
 		if (results.local[plugin.url]) {
 		    plugin.installedVersion = [ results.local[plugin.url].minorVersion,
-						 results.local[plugin.url].microVersion ]
+						results.local[plugin.url].microVersion,
+						results.local[plugin.url].release || 0
+					      ]
 		    delete results.local[plugin.url]
 		}
 		if (plugin.installedVersion == null) {
@@ -224,7 +228,10 @@ JqueryClass('effectBox', {
 	    }
 	    for (url in results.local) {
 		plugin = results.local[url]
-		plugin.installedVersion = [ plugin.minorVersion, plugin.microVersion ]
+		plugin.installedVersion = [ plugin.minorVersion, 
+					    plugin.microVersion,
+					    plugin.release || 0
+					  ]
 		plugin.status = 'installed'
 		plugins.push(plugin)
 	    }
@@ -270,7 +277,7 @@ JqueryClass('effectBox', {
 	    var plugins = []
 	    for (i in results.cloud) {
 		plugin = results.cloud[i]
-		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion ]
+		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion, plugin.release ]
 		plugin.status = 'blocked'
 		plugin.source = SITEURL
 		if (!results.local[plugin.url])
@@ -407,8 +414,8 @@ JqueryClass('effectBox', {
 
 	plugin.title = plugin.name.split(/\s*-\s*/)[0]
 	plugin.subtitle = plugin.name.split(/\s*-\s*/)[1]
-	plugin.installed_version = (plugin.installedVersion || []).join('.')
-	plugin.latest_version = (plugin.latestVersion || []).join('.')
+	plugin.installed_version = version(plugin.installedVersion)
+	plugin.latest_version = version(plugin.latestVersion)
 	plugin.package_name = plugin.package.replace(/\.lv2$/, '')
 
 	var info = $(Mustache.render(TEMPLATES.plugin_info, plugin))
@@ -478,7 +485,7 @@ JqueryClass('effectBox', {
 				     data: JSON.stringify({ 'title': title.val(),
 					     'comment': comment.val(),
 					     'url': plugin.url,
-					     'version': plugin.latestVersion.join('.')
+					     'version': version(plugin.latestVersion)
 					   }),
 				     success: function(res) {
 					 if (res.ok) {
@@ -512,8 +519,10 @@ JqueryClass('effectBox', {
 	    $.ajax({ url: SITEURL+'/effect/get/',
 		     data: { url: plugin.url },
 		     success: function(pluginData) {
-			 plugin.latestVersion = [ pluginData.minorVersion, pluginData.microVersion ]
-			 info.find('.js-latest-version span').html(plugin.latestVersion.join('.'))
+			 plugin.latestVersion = [ pluginData.minorVersion, 
+						  pluginData.microVersion, 
+						  pluginData.release ]
+			 info.find('.js-latest-version span').html(version(plugin.latestVersion))
 			 checkVersion()
 		     },
 		     dataType: 'json'
@@ -684,15 +693,27 @@ function compareVersions(a, b) {
 	return 1
     if (!a)
 	return -1
-    if (a[0] > b[0])
-	return 1
-    if (a[0] < b[0])
-	return -1
-    if (a[1] > b[1])
-	return 1
-    if (a[1] < b[1])
-	return -1
+    for (var i=0; i<3; i++) {
+	if (a[i] > b[i])
+	    return 1
+	if (a[i] < b[i])
+	    return -1
+    }
     return 0
 }
+
+function version(v) {
+    if (!v || !v.length)
+	return '0'
+    var version = v[0]
+    if (v.length < 2)
+	return version
+    version += '.' + v[1]
+    if (v.length < 3)
+	return version
+    return version + '-' + v[2]
+}
+    
+	
 
 
