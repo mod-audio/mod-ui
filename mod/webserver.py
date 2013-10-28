@@ -35,7 +35,7 @@ import subprocess
 from glob import glob
 
 from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
-                          DOWNLOAD_TMP_DIR, EFFECT_DIR, DEVICE_WEBSERVER_PORT,
+                          DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
                           PEDALBOARD_DIR, CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           PLUGIN_INSTALLATION_TMP_DIR, DEFAULT_ICON_TEMPLATE,
@@ -171,7 +171,12 @@ class Searcher(tornado.web.RequestHandler):
         raise NotImplemented
 
     def get_object(self, objid):
-        return json.loads(open(os.path.join(self.index.data_source, objid)).read())
+        path = os.path.join(self.index.data_source, objid)
+        md_path = path + '.metadata'
+        obj = json.loads(open(path).read())
+        if os.path.exists(md_path):
+            obj.update(json.loads(open(md_path).read()))
+        return obj
 
     def get(self, action, objid=None):
         try:

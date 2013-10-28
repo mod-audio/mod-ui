@@ -78,15 +78,24 @@ class Index(object):
             self.index = create_in(self.index_path, self.schema)
             for filename in os.listdir(self.data_source):
                 filename = os.path.join(self.data_source, filename)
+                if filename.endswith('.metadata'):
+                    continue
                 if os.path.isdir(filename):
                     continue
                 try:
                     data = json.loads(open(filename).read())
-                    self.add(data)
                 except ValueError:
                     # Not json valid
-                    # TODO log warning
-                    pass
+                    continue
+                metadata_file = filename + '.metadata'
+                if os.path.exists(metadata_file):
+                    try:
+                        metadata = json.loads(open(filename).read())
+                        data.update(metadata)
+                    except ValueError:
+                        # Not json valid, just ignore metadata file
+                        pass
+                self.add(data)
 
     def find(self, **kwargs):
         terms = []

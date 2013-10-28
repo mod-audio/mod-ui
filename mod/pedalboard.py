@@ -18,7 +18,7 @@ import os, json, logging, copy
 from datetime import datetime
 from bson import ObjectId
 from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
-                          INDEX_PATH, EFFECT_DIR, BANKS_JSON_FILE)
+                          INDEX_PATH, BANKS_JSON_FILE)
 
 from modcommon import json_handler
 from mod.bank import remove_pedalboard_from_banks
