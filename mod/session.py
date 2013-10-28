@@ -398,6 +398,7 @@ class Session(object):
     def remove(self, instance_id, callback, loaded=False):
         if not loaded:
             self._pedalboard.remove_instance(instance_id)
+
         def _callback(ok):
             if ok:
                 self.hmi.control_rm(instance_id, ":all", callback)

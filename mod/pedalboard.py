@@ -62,6 +62,7 @@ class Pedalboard(object):
             'instances': {},
             'connections': [],
             }
+        self.init_addressings()
 
     def serialize(self):
         serialized = copy.deepcopy(self.data)
