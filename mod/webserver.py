@@ -125,6 +125,14 @@ class EffectInstaller(fileserver.FileReceiver):
             callback()
         install_bundle(data['_id'], on_finish)
 
+class EffectSetLocalVariable(web.RequestHandler):
+    def post(self, var):
+        url = self.get_argument('url')
+        value = self.get_argument(var)
+        index = indexing.EffectIndex()
+        objid = index.find(url=url).next()['id']
+        index.save_local_variable(objid, var, value)
+
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -951,6 +959,7 @@ application = web.Application(
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/position/(\d+)/?", EffectPosition),
+            (r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),

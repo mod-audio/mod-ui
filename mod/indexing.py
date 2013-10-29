@@ -97,6 +97,15 @@ class Index(object):
                         pass
                 self.add(data)
 
+    def save_local_variable(self, objid, var, value):
+        path = os.path.join(self.data_source, '%s.metadata' % objid)
+        if os.path.exists(path):
+            data = json.loads(open(path).read())
+        else:
+            data = {}
+        data[var] = value
+        open(path, 'w').write(json.dumps(data))
+
     def find(self, **kwargs):
         terms = []
         for key, value in kwargs.items():

@@ -120,6 +120,7 @@ function InstallationQueue() {
 	    notification.type('success')
 	    for (var i=0; i<result.length; i++) {
 		results[result[i]] = true
+		self.setRelease(result[i])
 	    }
 	    finish()
 	}
@@ -127,6 +128,31 @@ function InstallationQueue() {
 	trans.reportError = abort
 	
 	trans.start()
-	
+    }
+
+    this.setRelease = function(effectId) {
+	var saveRelease = function(url, release) {
+	    $.ajax({ url: '/effect/set/release/',
+		     data: { url: url,
+			     release: release
+			   },
+		     method: 'POST'
+		   })
+	}
+	var getRelease = function(url) {
+	    $.ajax({ url: SITEURL+'/effect/get/',
+		     data: { url: url },
+		     success: function(effect) {
+			 saveRelease(effect['url'], effect['release'])
+		     },
+		     dataType: 'json'
+		   })
+	}
+	$.ajax({ url: '/effect/get/' + effectId,
+		 success: function(effect) {
+		     getRelease(effect['url'])
+		 },
+		 dataType: 'json'
+	       })
     }
 }
