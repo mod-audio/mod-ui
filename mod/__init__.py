@@ -70,7 +70,7 @@ def check_environment(callback):
     effect_index = indexing.EffectIndex()
     pedal_index = indexing.PedalboardIndex()
 
-    # Migration. Since we don't have a migration mechanism, let's do it here
+    # Migrations. Since we don't have a migration mechanism, let's do it here
     # TODO Migration system where we'll have migration scripts that will be marked as
     # already executed
     old_screenshot_dir = os.path.join(HTML_DIR, 'pedalboards')
@@ -79,6 +79,18 @@ def check_environment(callback):
         for screenshot in os.listdir(old_screenshot_dir):
             shutil.move(os.path.join(old_screenshot_dir, screenshot), PEDALBOARD_SCREENSHOT_DIR)
         os.rmdir(old_screenshot_dir)
+    for effect_id in os.listdir(EFFECT_DIR):
+        if effect_id.endswith('.metadata'):
+            continue
+        path = os.path.join(EFFECT_DIR, '%s.metadata' % effect_id)
+        metadata = {}
+        try:
+            if os.path.exists(path):
+                metadata = json.loads(open(path).read())
+        except:
+            pass
+        metadata['release'] = metadata.get('release', 1)
+        open(path, 'w').write(json.dumps(metadata))
     
     # TODO check if all pedalboards in banks database really exist, otherwise remove them from banks
 
