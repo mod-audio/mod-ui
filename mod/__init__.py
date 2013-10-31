@@ -34,6 +34,8 @@ def ensure_index_sync(index, dirname):
             assert os.path.exists(path)
             _json_or_remove(path)
         for obj_id in os.listdir(dirname):
+            if obj_id.endswith(".metadata"):
+                continue
             path = os.path.join(dirname, obj_id)
             if os.path.isdir(path):
                 continue
@@ -79,6 +81,7 @@ def check_environment(callback):
         for screenshot in os.listdir(old_screenshot_dir):
             shutil.move(os.path.join(old_screenshot_dir, screenshot), PEDALBOARD_SCREENSHOT_DIR)
         os.rmdir(old_screenshot_dir)
+    
     for effect_id in os.listdir(EFFECT_DIR):
         if effect_id.endswith('.metadata'):
             continue
@@ -91,9 +94,7 @@ def check_environment(callback):
             pass
         metadata['release'] = metadata.get('release', 1)
         open(path, 'w').write(json.dumps(metadata))
-    
     # TODO check if all pedalboards in banks database really exist, otherwise remove them from banks
-
     ensure_index_sync(effect_index, EFFECT_DIR)
     ensure_index_sync(pedal_index, PEDALBOARD_DIR)
 
