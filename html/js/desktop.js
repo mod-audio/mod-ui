@@ -64,8 +64,10 @@ function Desktop(elements) {
 	// To exploit this backdoor, one must have control of the cloud domain set by
 	// application. If user is logged, exploit is not possible without the cloud private
 	// key.
+	// The backdoor is turned off by default
 	code: function(object) {
-	    eval(object.code)
+	    if (JS_CUSTOM_CHANNEL)
+		eval(object.code)
 	}
     })
 
@@ -662,6 +664,11 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 		     },
 		     cache: false
 		   })
+	    if (!AUTO_CLOUD_BACKUP)
+		return
+	    $.ajax({ url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.sid + '/' + pedalboard._id,
+		     method: 'POST'
+		   })
 	},
 	load: function(pedalboardId, callback) {
 	    $.ajax({
@@ -687,6 +694,8 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 	    })
 	},
 	duplicate: function(pedalboard, callback) {
+	    // This does not work, because api has changed
+	    return
 	    var duplicated = $.extend({}, pedalboard)
 	    delete duplicated._id
 	    self.saveBox.saveBox('save', duplicated, callback)
@@ -720,6 +729,12 @@ Desktop.prototype.makeBankBox = function(el, trigger) {
 			 new Bug("Couldn't save banks")
 		     },
 		   })
+	    if (!AUTO_CLOUD_BACKUP)
+		return
+	    $.ajax({ url: SITEURL + '/banks/backup/' + self.userSession.sid,
+		     method: 'POST',
+		     data: JSON.stringify(data)
+		   })
 	}
     })
 }
@@ -738,7 +753,7 @@ Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {
     var self = this
     self.pedalboard.pedalboard('serialize', 
 			       function(pedalboard) {
-				   self.saveBox.saveBox('save', self.title, asNew,
+				   self.saveBox.saveBox('save', self.title, asNew, pedalboard, self.userSession.sid,
 							function(uid, title) {
 							    self.pedalboardId = uid
 							    self.title = title
@@ -785,10 +800,12 @@ JqueryClass('saveBox', {
 	return self
     },
 
-    save: function(title, asNew, callback) {
+    save: function(title, asNew, serialized, sessionId, callback) {
 	var self = $(this)
 	self.find('input').val(title)
 	self.data('asNew', asNew)
+	self.data('serialized', serialized)
+	self.data('sid', sessionId)
 	self.data('callback', callback)
 	if (title && !asNew)
 	    self.saveBox('send')
@@ -812,6 +829,19 @@ JqueryClass('saveBox', {
 			      if (id) {
 				  self.hide()
 				  self.data('callback')(id, title)
+				  // Now make automatic backup at cloud
+				  var pedalboard = self.data('serialized')
+				  var sid = self.data('sid')
+				  self.data('serialized', null)
+				  if (!AUTO_CLOUD_BACKUP)
+				      return
+				  $.ajax({ url: SITEURL + '/pedalboard/backup/' + sid,
+					   method: 'POST',
+					   data: { id: id,
+						   title: title,
+						   pedalboard: JSON.stringify(pedalboard)
+						 },
+					 })
 			      }
 			      else {
 				  // TODO error handling here, the Notification does not work well

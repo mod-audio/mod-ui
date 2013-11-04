@@ -44,7 +44,8 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
-                          PEDALBOARD_SCREENSHOT_DIR, AVATAR_URL, DEV_ENVIRONMENT
+                          PEDALBOARD_SCREENSHOT_DIR, AVATAR_URL, DEV_ENVIRONMENT,
+                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP,
                           )
 
 
@@ -769,6 +770,8 @@ class TemplateHandler(web.RequestHandler):
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
             'default_package_server_port': DEFAULT_PACKAGE_SERVER_PORT,
             'package_repository': PACKAGE_REPOSITORY,
+            'js_custom_channel': 'true' if JS_CUSTOM_CHANNEL else 'false',
+            'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
             }
