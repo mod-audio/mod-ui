@@ -1,3 +1,9 @@
+0.28.2
+======
+
+ - the customer communication channel is now optional. desktop users have it turned off by default
+ - NEW: automatic cloud backup, optional, disabled by default
+
 0.28.1
 ======
 
