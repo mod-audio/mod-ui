@@ -95,7 +95,7 @@ class Session(object):
 
     def restore_last_pedalboard(self):
         last_bank, last_pedalboard = get_last_bank_and_pedalboard()
-        if last_bank and last_pedalboard:
+        if last_bank is not None and last_pedalboard is not None:
             self.load_bank_pedalboard(last_bank, last_pedalboard, lambda r:r)
 
     def setup_monitor(self):
