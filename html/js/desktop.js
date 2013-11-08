@@ -656,7 +656,7 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 		return
 	    $.ajax({ url: '/pedalboard/remove/' + pedalboard._id,
 		     success: function() {
-			 new Notification("info", sprintf('Pedalboard "%s" removed', pedalboard.title))
+			 new Notification("info", sprintf('Pedalboard "%s" removed', pedalboard.title), 1000)
 			 callback()
 		     },
 		     error: function() {
