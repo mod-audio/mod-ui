@@ -1325,6 +1325,7 @@ body {
 .screen-disconnected p {
     display:table-cell;
     vertical-align:middle;
+    line-height: 90px;
 }
 
 .plugin-wait {
