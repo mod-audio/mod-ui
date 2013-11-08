@@ -1,3 +1,10 @@
+0.28.3
+======
+
+ - fix: pedalboard remove message was sticky
+ - fix: last pedalboard was not being loaded if either bank or pedalboard was 0
+ - upgrade waiting message now has a line break, so to fit any screen
+
 0.28.2
 ======
 
