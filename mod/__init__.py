@@ -106,7 +106,7 @@ def check_environment(callback):
 
     def ping_callback(ok):
         if ok:
-            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), lambda: SESSION.remove(-1, lambda r:None))
+            pass
         else:
             # calls ping again every one second
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
