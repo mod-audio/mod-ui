@@ -94,9 +94,11 @@ class Session(object):
         self.hmi_initialized = True
 
     def restore_last_pedalboard(self):
-        last_bank, last_pedalboard = get_last_bank_and_pedalboard()
-        if last_bank is not None and last_pedalboard is not None:
-            self.load_bank_pedalboard(last_bank, last_pedalboard, lambda r:r)
+        def restore():
+            last_bank, last_pedalboard = get_last_bank_and_pedalboard()
+            if last_bank is not None and last_pedalboard is not None:
+                self.load_bank_pedalboard(last_bank, last_pedalboard, lambda r:r)
+        ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), restore)
 
     def setup_monitor(self):
         if self.monitor_server is None:
