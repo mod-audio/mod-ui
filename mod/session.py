@@ -271,7 +271,7 @@ class Session(object):
         # in queue. Then proceed to connections
         def add_effects(result):
             if not effects:
-                ioloop.IOLoop.instance().add_callback(add_connections)
+                ioloop.IOLoop.instance().add_callback(choose_ports_addr)
                 return
             effect = effects.pop(0)
 
@@ -314,6 +314,7 @@ class Session(object):
                                 lambda result: set_ports_addr(effect),
                                 True)
 
+        addressings = {}
         # Consumes a queue of control addressing, then goes to next effect
         def set_ports_addr(effect):
             # addressing['actuator'] can be [-1] or [hwtyp, hwid, acttyp, actid]
@@ -329,6 +330,7 @@ class Session(object):
                 return
 
             hwtyp, hwid, acttyp, actid = map(int, addressing['actuator'])
+            addressings[(hwtyp, hwid, acttyp, actid)] = 1
             self.parameter_address(effect['instanceId'],
                                    symbol,
                                    addressing['addressing_type'],
@@ -346,7 +348,17 @@ class Session(object):
                                    addressing.get('options', []),
                                    lambda result: set_ports_addr(effect),
                                    True)
-
+        def choose_ports_addr():
+            if len(addressings.keys()) == 0:
+                ioloop.IOLoop.instance().add_callback(lambda: add_connections())
+                return
+            key = addressings.keys()[0]
+            addressings.pop(key)
+            hwtyp, hwid, acttyp, actid = key
+            self.parameter_addressing_load(hwtyp, hwid, acttyp, actid, 0)
+            ioloop.IOLoop.instance().add_callback(choose_ports_addr)
+            
+            
         def add_connections():
             if not connections:
                 ioloop.IOLoop.instance().add_callback(lambda: callback(True))
@@ -533,23 +545,28 @@ class Session(object):
                                1, 0, 0, hardware_type, hardware_id, actuator_type, 
                                actuator_id, [], callback, loaded)
 
-    def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback, go_to_next=True):
+    def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
         if len(addrs['addrs']) > 0:
             addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
-            addressing = addrs['addrs'][addrs['idx']] 
             callback(True)
-            self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
-                            addressing['type'], addressing['unit'], addressing['value'],
-                            addressing['maximum'], addressing['minimum'], addressing['steps'], 
-                            addressing['actuator'][0], addressing['actuator'][1], 
-                            addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), addrs['idx']+1,
-                            addressing.get('options', []))
+            self.parameter_addressing_load(self, hardware_type, hardware_id, actuator_type, actuator_id,
+                                           addrs['idx'])
             return True
         #elif len(addrs['addrs']) <= 0:
         #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
         callback(True)
         return False
+    def parameter_addressing_load(self, hw_type, hw_id, act_type, act_id, idx):
+        addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
+        addressing = addrs['addrs'][idx]
+        self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
+                             addressing['type'], addressing['unit'], addressing['value'],
+                             addressing['maximum'], addressing['minimum'], addressing['steps'], 
+                             addressing['actuator'][0], addressing['actuator'][1], 
+                             addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
+                             addressing.get('options', []))
+
 
     def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
@@ -600,23 +617,27 @@ class Session(object):
                                                actuator_type,
                                                actuator_id,
                                                options)
-        self.hmi.control_add(instance_id,
-                             port_id,
-                             label,
-                             ctype,
-                             unit,
-                             current_value,
-                             maximum,
-                             minimum,
-                             steps,
-                             hardware_type,
-                             hardware_id,
-                             actuator_type,
-                             actuator_id,
-                             len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                             len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                             options,
-                             callback)
+
+            self.hmi.control_add(instance_id,
+                                 port_id,
+                                 label,
+                                 ctype,
+                                 unit,
+                                 current_value,
+                                 maximum,
+                                 minimum,
+                                 steps,
+                                 hardware_type,
+                                 hardware_id,
+                                 actuator_type,
+                                 actuator_id,
+                                 len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                                 len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                                 options,
+                                 callback)
+        else:
+            callback(True)
+            
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
