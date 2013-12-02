@@ -550,7 +550,7 @@ class Session(object):
         if len(addrs['addrs']) > 0:
             addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
             callback(True)
-            self.parameter_addressing_load(self, hardware_type, hardware_id, actuator_type, actuator_id,
+            self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
                                            addrs['idx'])
             return True
         #elif len(addrs['addrs']) <= 0:
