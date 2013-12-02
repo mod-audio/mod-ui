@@ -1,7 +1,12 @@
+0.28.7
+======
+
+  - fix: proper loop of addressings when loading pedalboard
+ 
 0.28.6
 ======
 
-    fix: ihm crashing when rotating enumeration controllers
+ - fix: ihm crashing when rotating enumeration controllers
 
 0.28.5
 ======
