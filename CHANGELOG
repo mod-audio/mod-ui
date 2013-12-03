@@ -1,3 +1,8 @@
+0.28.8
+======
+
+  - fix: after latest fix, bypass addressings were not being sent to IHM
+ 
 0.28.7
 ======
 
