@@ -295,6 +295,10 @@ class Session(object):
             self.parameter_set(effect['instanceId'], symbol, value, lambda result: set_ports(effect),
                                True)
 
+        # This dictionary holds in its keys all actuators that have some addressing, so after
+        # loading everything, the first parameter of each actuator will be sent to IHM
+        addressings = {}
+
         # Sets bypass addressing of one effect. 
         def set_bypass_addr(effect):
             if not effect.get('addressing', {}):
@@ -309,12 +313,12 @@ class Session(object):
                 return
 
             hwtyp, hwid, acttyp, actid = addressing['actuator']
+            addressings[(hwtyp, hwid, acttyp, actid)] = 1
             self.bypass_address(effect['instanceId'], hwtyp, hwid, acttyp, actid,
                                 effect['bypassed'], addressing['label'],
                                 lambda result: set_ports_addr(effect),
                                 True)
 
-        addressings = {}
         # Consumes a queue of control addressing, then goes to next effect
         def set_ports_addr(effect):
             # addressing['actuator'] can be [-1] or [hwtyp, hwid, acttyp, actid]
