@@ -46,6 +46,7 @@ class Session(object):
     def __init__(self):
         self.hmi_initialized = False
         self.host_initialized = False
+        self.pedalboard_initialized = False
 
         self._playback_1_connected_ports = []
         self._playback_2_connected_ports = []
@@ -94,10 +95,16 @@ class Session(object):
         self.hmi_initialized = True
 
     def restore_last_pedalboard(self):
+        def initialize(r):
+            self.pedalboard_initialized = True
+            return r
         def restore():
             last_bank, last_pedalboard = get_last_bank_and_pedalboard()
             if last_bank is not None and last_pedalboard is not None:
-                self.load_bank_pedalboard(last_bank, last_pedalboard, lambda r:r)
+                self.load_bank_pedalboard(last_bank, last_pedalboard, initialize)
+            else:
+                initialize(0)
+            
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), restore)
 
     def setup_monitor(self):
@@ -654,7 +661,19 @@ class Session(object):
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
     def ping(self, callback):
-        self.hmi.ping(callback)
+        if self.pedalboard_initialized:
+            self.hmi.ping(callback)
+        else:
+            self.ping_timeout = 5.0
+            step = 0.25
+            def ping():
+                if self.pedalboard_initialized:
+                    return self.hmi.ping(callback)
+                self.ping_timeout -= step
+                if self.ping_timeout <= 0:
+                    return callback(False)
+                ioloop.IOLoop.instance().add_timeout(timedelta(seconds=step), ping)
+            ping()
 
     def hmi_list_banks(self, callback):
         banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(self._banks))
