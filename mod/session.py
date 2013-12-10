@@ -620,20 +620,20 @@ class Session(object):
             return
 
         if not loaded:
-            self._pedalboard.parameter_address(instance_id, port_id,
-                                               addressing_type,
-                                               label,
-                                               ctype,
-                                               unit,
-                                               current_value,
-                                               maximum,
-                                               minimum,
-                                               steps,
-                                               hardware_type,
-                                               hardware_id,
-                                               actuator_type,
-                                               actuator_id,
-                                               options)
+            old = self._pedalboard.parameter_address(instance_id, port_id,
+                                                     addressing_type,
+                                                     label,
+                                                     ctype,
+                                                     unit,
+                                                     current_value,
+                                                     maximum,
+                                                     minimum,
+                                                     steps,
+                                                     hardware_type,
+                                                     hardware_id,
+                                                     actuator_type,
+                                                     actuator_id,
+                                                     options)
 
             self.hmi.control_add(instance_id,
                                  port_id,
@@ -652,6 +652,8 @@ class Session(object):
                                  len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
                                  options,
                                  callback)
+            if old:
+                self.parameter_addressing_load(*old)
         else:
             callback(True)
             

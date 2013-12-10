@@ -230,8 +230,9 @@ class Pedalboard(object):
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
                           options):
+        old_actuator = None
         if self.data['instances'][instance_id]['addressing'].get(port_id, False):
-            self.parameter_unaddress(instance_id, port_id)
+            old_actuator = self.parameter_unaddress(instance_id, port_id)
         addressing = { 'actuator': [ hardware_type, hardware_id, actuator_type, actuator_id ],
                        'addressing_type': addressing_type,
                        'type': ctype,
@@ -248,6 +249,8 @@ class Pedalboard(object):
         self.data['instances'][instance_id]['addressing'][port_id] = addressing
         self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
         self.addressings[tuple(addressing['actuator'])]['idx'] = len(self.addressings[tuple(addressing['actuator'])]['addrs']) -1
+        if old_actuator:
+            return list(old_actuator) + [self.addressings[tuple(old_actuator)]['idx']]
 
     def parameter_unaddress(self, instance_id, port_id):
         try:
