@@ -1,13 +1,18 @@
+0.28.9
+======
+
+  - fix: duplicate pedalboard results
+
 0.28.8
 ======
 
   - fix: after latest fix, bypass addressings were not being sent to IHM
- 
+
 0.28.7
 ======
 
   - fix: proper loop of addressings when loading pedalboard
- 
+
 0.28.6
 ======
 
