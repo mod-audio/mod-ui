@@ -34,8 +34,9 @@ function PedalboardSearcher(opt) {
 		 })
 		     
     }
-
+    this.lastKeyUp = null
     this.search = function() {
+	clearTimeout(self.lastKeyUp)
 	var query = self.searchbox.val()
 	var local = self.mode == 'installed'
 
@@ -46,6 +47,7 @@ function PedalboardSearcher(opt) {
 
 	opt.search(local, query,
 		   function(pedalboards, url) {
+		       self.cleanResults()
 		       for (var i in pedalboards)
 			   self.render(pedalboards[i], url)
 		   })
@@ -59,7 +61,12 @@ function PedalboardSearcher(opt) {
 	}	
     })
     this.searchbox.keyup(function(e) {
-	self.search()
+	if (e.keyCode == 13)
+	    return
+	clearTimeout(self.lastKeyUp)
+	lastKeyUp = setTimeout(function() {
+	    self.search()
+	}, 400);
     })
     if (this.searchbutton)
 	this.searchbutton.click(function() {
