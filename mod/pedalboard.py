@@ -149,14 +149,31 @@ class Pedalboard(object):
                                                 }
         return instance_id
 
+    # Remove an instance and returns a list of all affected actuators
     def remove_instance(self, instance_id):
         if instance_id < 0:
             # remove all effects
-            return self.clear()
+            self.clear()
+            return []
         try:
+            # Remove the instance
             self.data['instances'].pop(instance_id)
         except KeyError:
             logging.error('[pedalboard] Cannot remove unknown instance %d' % instance_id)
+        # Remove addressings of that instance
+        affected_actuators = {}
+        for actuator, addressing in self.addressings.items():
+            i = 0
+            while i < len(addressing['addrs']):
+                if addressing['addrs'][i].get('instance_id') == instance_id:
+                    addressing['addrs'].pop(i)
+                    if addressing['idx'] >= i:
+                        addressing['idx'] -= 1
+                    affected_actuators[actuator] = addressing['idx']
+                else:
+                    i += 1
+
+        # Remove all connections involving that instance
         i = 0
         while i < len(self.data['connections']):
             connection = self.data['connections'][i]
@@ -164,7 +181,7 @@ class Pedalboard(object):
                 self.data['connections'].pop(i)
             else:
                 i += 1
-        return True
+        return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
 
 
     def bypass(self, instance_id, value):

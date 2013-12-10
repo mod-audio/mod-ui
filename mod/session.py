@@ -421,12 +421,15 @@ class Session(object):
         return instance_id
 
     def remove(self, instance_id, callback, loaded=False):
+        affected_actuators = []
         if not loaded:
-            self._pedalboard.remove_instance(instance_id)
+            affected_actuators = self._pedalboard.remove_instance(instance_id)
 
         def _callback(ok):
             if ok:
                 self.hmi.control_rm(instance_id, ":all", callback)
+                for addr in affected_actuators:
+                    self.parameter_addressing_load(*addr)
             else:
                 callback(ok)
 
@@ -570,7 +573,10 @@ class Session(object):
         return False
     def parameter_addressing_load(self, hw_type, hw_id, act_type, act_id, idx):
         addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
-        addressing = addrs['addrs'][idx]
+        try:
+            addressing = addrs['addrs'][idx]
+        except IndexError:
+            return
         self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
                              addressing['type'], addressing['unit'], addressing['value'],
                              addressing['maximum'], addressing['minimum'], addressing['steps'], 
