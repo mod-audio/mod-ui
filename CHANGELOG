@@ -1,3 +1,8 @@
+0.28.11
+=======
+
+  - fix: when moving parameter addressings, old actuator was not properly adjusted if there are remaining addressings there
+
 0.28.10
 =======
 
