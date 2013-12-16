@@ -1,3 +1,8 @@
+0.28.12
+=======
+
+  - fix: bug introduced in v0.28.9 (the MOD message was not disappearing when device was just turned on)
+
 0.28.11
 =======
 
