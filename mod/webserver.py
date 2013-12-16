@@ -23,6 +23,7 @@ import tornado.options
 import tornado.escape
 import StringIO
 import time
+from datetime import timedelta
 try:
     import Image
 except ImportError:
@@ -811,15 +812,22 @@ class Ping(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        start = time.time()
-        ihm = yield gen.Task(SESSION.ping)
-        res = {
-            'ihm_online': ihm,
-            'ihm_time': int((time.time() - start) * 1000),
-            }
-        self.write(json.dumps(res))
-        self.finish()
+        def ping()
+            start = time.time()
+            ihm = yield gen.Task(SESSION.ping)
+            res = {
+                'ihm_online': ihm,
+                'ihm_time': int((time.time() - start) * 1000),
+                }
+            self.write(json.dumps(res))
+            self.finish()
 
+        def check_ping():
+            if SESSION.pedalboard_initialized:
+                ping()
+            else:
+                instance = tornado.ioloop.IOLoop.instance()
+                instance.add_timeout(timedelta(0.1), check_ping)
 
 class SysMonProcessList(web.RequestHandler):
     @web.asynchronous

@@ -669,19 +669,7 @@ class Session(object):
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
     def ping(self, callback):
-        if self.pedalboard_initialized:
-            self.hmi.ping(callback)
-        else:
-            self.ping_timeout = 5.0
-            step = 0.25
-            def ping():
-                if self.pedalboard_initialized:
-                    return self.hmi.ping(callback)
-                self.ping_timeout -= step
-                if self.ping_timeout <= 0:
-                    return callback(False)
-                ioloop.IOLoop.instance().add_timeout(timedelta(seconds=step), ping)
-            ping()
+        self.hmi.ping(callback)
 
     def hmi_list_banks(self, callback):
         banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(self._banks))
