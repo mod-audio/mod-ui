@@ -812,7 +812,7 @@ class Ping(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        def ping()
+        def ping():
             start = time.time()
             ihm = yield gen.Task(SESSION.ping)
             res = {
