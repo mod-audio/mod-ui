@@ -1,12 +1,20 @@
 #!/usr/bin/python
 
-import sys
+import sys, tornado, serial, time
+
 from mod.hmi import HMI
 from mod.protocol import Protocol
 from mod.settings import HMI_BAUD_RATE, HMI_SERIAL_PORT
 from tornado import web, options
-import tornado
-import serial
+
+# Just reset
+s = serial.Serial("/dev/ttyS0", 115200)
+s.setRTS(1)
+s.setDTR(1)
+s.setRTS(0)
+s.setDTR(0)
+
+time.sleep(5)
 
 fh = open(sys.argv[1])
 
