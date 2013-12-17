@@ -1,3 +1,8 @@
+0.28.14
+=======
+
+  - fix: error on saving control addressing if actuator is not changed
+
 0.28.13
 =======
 
