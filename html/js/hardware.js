@@ -265,7 +265,8 @@ function HardwareManager(options) {
 		    // We're addressing
 		    try {
 			var currentAddressing = self.controls[instanceId][symbol]
-			delete self.addressings[currentAddressing.actuator.join(',')]
+			remove_from_array(self.addressings[currentAddressing.actuator.join(',')],
+					  [instanceId, symbol].join(","))
 		    } catch(e) {
 			// TypeError when self.controls[instanceId] is null, that's ok
 		    }

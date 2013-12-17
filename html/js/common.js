@@ -133,3 +133,9 @@ function renderTime(time) {
 		   time.getHours(),
 		   time.getMinutes())		   
 }
+
+function remove_from_array(array, element) {
+    var index = array.indexOf(element)
+    if (index > -1)
+	array.splice(index, 1)
+}
