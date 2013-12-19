@@ -460,8 +460,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 			   self.widget('sync')
 			   }
 			 */
-			 if (!resp)
-			     alert('erro na parametrizacao: '+resp)
+			 callback(resp)
 		     },
 		     error: function() {
 			 /*

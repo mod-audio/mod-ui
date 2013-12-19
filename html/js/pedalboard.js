@@ -996,6 +996,8 @@ JqueryClass('pedalboard', {
 	    change: function(symbol, value) {
 		self.data('pluginParameterChange')(instanceId, symbol, value,
 						   function(ok) {
+						       console.log('aqui sim')
+						       console.log(pluginData)
 						       // TODO Handle this error
 						   })
 	    },

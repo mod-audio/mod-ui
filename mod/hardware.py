@@ -136,13 +136,13 @@ class ExprPedal(Hardware):
     HW_TYP = 1
     def __init__(self, id):
         actuators = [
-                    Pot("Pedal"),
-                    FootSwitch("PedalFoot"),
+                    Pot("Exp."),
+                    FootSwitch("Foot - Exp."),
                     ]
         super(ExprPedal, self).__init__(id, "Pedal", actuators)
 
     def get_label_for_actuator(self, actuator, addr_type):
-        return "%s %d" % (self.name, self.id + 1)
+        return "%s %d" % (actuator.name, self.id + 1)
 
 class Touch(Hardware):
     HW_TYP = 2
