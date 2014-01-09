@@ -268,22 +268,33 @@ function GUI(effect, options) {
 	    var format = self.controls[symbol].unit ? self.controls[symbol].unit.render : '%.2f'
 	    $(this).html(sprintf(format, self.controls[symbol].maximum))
 	});
-	element.find('[mod-role=bypass]').switchWidget({ port: self.controls[':bypass'],
-							 value: options.bypassed,
-							 change: function(e, value) {
-							     options.bypass(value)
-							     self.bypassed = value
-							     element.find('[mod-role=bypass-light]').each(function() {
-								 // NOTE
-								 // the element itself will get inverse class ("on" when light is "off"),
-								 // because of the switch widget.
-								 if (value == 1)
-								     $(this).addClass('off').removeClass('on')
-								 else
-								     $(this).addClass('on').removeClass('off')
-							     })
-							 }
-						       }).attr('mod-widget', 'switch')
+	element.find('[mod-role=bypass]').each(function() {
+	    var control = $(this)
+	    var port = self.controls[':bypass']
+	    port.widgets.push(control)
+	    control.switchWidget({ port: self.controls[':bypass'],
+				   value: options.bypassed,
+				   change: function(e, value) {
+				       options.bypass(value)
+				       self.bypassed = value
+				       console.log('aqui')
+				       self.setPortValue(':bypass', value, control)
+				       element.find('[mod-role=bypass-light]').each(function() {
+					   // NOTE
+					   // the element itself will get inverse class ("on" when light is "off"),
+					   // because of the switch widget.
+					   if (value == 1)
+					       $(this).addClass('off').removeClass('on')
+					   else
+					       $(this).addClass('on').removeClass('off')
+				       });
+				       if (value)
+					   control.addClass('on').removeClass('off')
+				       else
+					   control.addClass('off').removeClass('on')
+				   }
+				 }).attr('mod-widget', 'switch')
+	})
 	if (options.bypassed)
 	    element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
 	
