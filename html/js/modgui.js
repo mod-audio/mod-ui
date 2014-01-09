@@ -507,6 +507,25 @@ var baseWidget = {
 	    value = Math.round(value)
 
 	return parseInt((value - min) * (portSteps - 1) / (max - min))
+    },
+
+    prevent: function(e) {
+	var self = $(this)
+	if (self.data('prevent'))
+	    return
+	self.data('prevent', true)
+	var img = $('<img>').attr('src', 'img/icn-blocked.png')
+	$('body').append(img)
+	img.css({
+	    position: 'absolute',
+	    top: e.pageY - img.height()/2,
+	    left: e.pageX - img.width()/2,
+	    zIndex: 99999
+	})
+	setTimeout(function() {
+	    img.remove()
+	    self.data('prevent', false)
+	}, 500)
     }
 }
 
@@ -682,25 +701,6 @@ JqueryClass('film', baseWidget, {
 	var bgShift = rotation * -self.data('size')
 	bgShift += 'px 0px'
 	self.css('background-position', bgShift)
-    },
-
-    prevent: function(e) {
-	var self = $(this)
-	if (self.data('prevent'))
-	    return
-	self.data('prevent', true)
-	var img = $('<img>').attr('src', 'img/icn-blocked.png')
-	$('body').append(img)
-	img.css({
-	    position: 'absolute',
-	    top: e.pageY - img.height()/2,
-	    left: e.pageX - img.width()/2,
-	    zIndex: 99999
-	})
-	setTimeout(function() {
-	    img.remove()
-	    self.data('prevent', false)
-	}, 500)
     }
 
 })
@@ -740,9 +740,9 @@ JqueryClass('switchWidget', baseWidget, {
 	var self = $(this)
 	self.switchWidget('config', options)
 	self.data('value', options.value)
-	self.click(function() {
+	self.click(function(e) {
 	    if (!self.data('enabled'))
-		return
+		return self.switchWidget('prevent', e)
 	    var value = self.data('value')
 	    if (value == self.data('minimum')) {
 		self.switchWidget('setValue', self.data('maximum'))
