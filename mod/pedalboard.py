@@ -92,6 +92,8 @@ class Pedalboard(object):
             for port_id, addressing in instance.get('addressing', {}).items():
                 if not addressing.get("instance_id", False):
                     addressing.update({'instance_id': instance_id, 'port_id': port_id})
+                if port_id == ":bypass":
+                    addressing['value'] = int(instance['bypassed'])
                 self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
 
     def save(self, title=None, as_new=False):
