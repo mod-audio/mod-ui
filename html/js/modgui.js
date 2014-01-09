@@ -38,10 +38,6 @@ function GUI(effect, options) {
 
     self.bypassed = options.bypassed
 
-    // Report the initial bypass state.
-    // TODO is this necessary?
-    options.bypass(options.bypassed)
-
     this.makePortIndex = function() {
 	var ports = self.effect.ports.control.input
 	var index = {}
@@ -288,6 +284,8 @@ function GUI(effect, options) {
 							     })
 							 }
 						       }).attr('mod-widget', 'switch')
+	if (options.bypassed)
+	    element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
 	
 	// Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
 	// Following events will be forwarded to proper widget
@@ -743,6 +741,11 @@ JqueryClass('switchWidget', baseWidget, {
 		self.addClass('off').removeClass('on')
 	    }
 	})
+	if (options.value)
+	    self.addClass('on').removeClass('off')
+	else
+	    self.addClass('off').removeClass('on')
+
 	return self
     },
     setValue: function(value) {
