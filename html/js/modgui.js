@@ -776,9 +776,11 @@ JqueryClass('customSelect', baseWidget, {
 	self.find('[mod-role=enumeration-option]').each(function() {
 	    var opt = $(this)
 	    var value = opt.attr('mod-port-value')
-	    opt.click(function() {
+	    opt.click(function(e) {
 		if (self.data('enabled')) {
 		    self.customSelect('setValue', value)
+		} else {
+		    self.customSelect('prevent', e)
 		}
 	    })
 	});
