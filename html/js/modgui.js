@@ -297,6 +297,8 @@ function GUI(effect, options) {
 	})
 	if (options.bypassed)
 	    element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
+	else
+	    element.find('[mod-role=bypass-light]').addClass('on').removeClass('off')	    
 	
 	// Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
 	// Following events will be forwarded to proper widget
@@ -782,6 +784,7 @@ JqueryClass('customSelect', baseWidget, {
 	});
 	var hidden = self.find('[mod-widget-property=hidden]')
 	self.click(function() {
+	    console.log('clique')
 	    hidden.toggle()
 	})
 
