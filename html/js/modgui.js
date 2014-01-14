@@ -38,10 +38,6 @@ function GUI(effect, options) {
 
     self.bypassed = options.bypassed
 
-    // Report the initial bypass state.
-    // TODO is this necessary?
-    options.bypass(options.bypassed)
-
     this.makePortIndex = function() {
 	var ports = self.effect.ports.control.input
 	var index = {}
@@ -272,22 +268,37 @@ function GUI(effect, options) {
 	    var format = self.controls[symbol].unit ? self.controls[symbol].unit.render : '%.2f'
 	    $(this).html(sprintf(format, self.controls[symbol].maximum))
 	});
-	element.find('[mod-role=bypass]').switchWidget({ port: self.controls[':bypass'],
-							 value: options.bypassed,
-							 change: function(e, value) {
-							     options.bypass(value)
-							     self.bypassed = value
-							     element.find('[mod-role=bypass-light]').each(function() {
-								 // NOTE
-								 // the element itself will get inverse class ("on" when light is "off"),
-								 // because of the switch widget.
-								 if (value == 1)
-								     $(this).addClass('off').removeClass('on')
-								 else
-								     $(this).addClass('on').removeClass('off')
-							     })
-							 }
-						       }).attr('mod-widget', 'switch')
+	element.find('[mod-role=bypass]').each(function() {
+	    var control = $(this)
+	    var port = self.controls[':bypass']
+	    port.widgets.push(control)
+	    control.switchWidget({ port: self.controls[':bypass'],
+				   value: options.bypassed,
+				   change: function(e, value) {
+				       options.bypass(value)
+				       self.bypassed = value
+				       console.log('aqui')
+				       self.setPortValue(':bypass', value, control)
+				       element.find('[mod-role=bypass-light]').each(function() {
+					   // NOTE
+					   // the element itself will get inverse class ("on" when light is "off"),
+					   // because of the switch widget.
+					   if (value == 1)
+					       $(this).addClass('off').removeClass('on')
+					   else
+					       $(this).addClass('on').removeClass('off')
+				       });
+				       if (value)
+					   control.addClass('on').removeClass('off')
+				       else
+					   control.addClass('off').removeClass('on')
+				   }
+				 }).attr('mod-widget', 'switch')
+	})
+	if (options.bypassed)
+	    element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
+	else
+	    element.find('[mod-role=bypass-light]').addClass('on').removeClass('off')	    
 	
 	// Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
 	// Following events will be forwarded to proper widget
@@ -498,6 +509,25 @@ var baseWidget = {
 	    value = Math.round(value)
 
 	return parseInt((value - min) * (portSteps - 1) / (max - min))
+    },
+
+    prevent: function(e) {
+	var self = $(this)
+	if (self.data('prevent'))
+	    return
+	self.data('prevent', true)
+	var img = $('<img>').attr('src', 'img/icn-blocked.png')
+	$('body').append(img)
+	img.css({
+	    position: 'absolute',
+	    top: e.pageY - img.height()/2,
+	    left: e.pageX - img.width()/2,
+	    zIndex: 99999
+	})
+	setTimeout(function() {
+	    img.remove()
+	    self.data('prevent', false)
+	}, 500)
     }
 }
 
@@ -673,25 +703,6 @@ JqueryClass('film', baseWidget, {
 	var bgShift = rotation * -self.data('size')
 	bgShift += 'px 0px'
 	self.css('background-position', bgShift)
-    },
-
-    prevent: function(e) {
-	var self = $(this)
-	if (self.data('prevent'))
-	    return
-	self.data('prevent', true)
-	var img = $('<img>').attr('src', 'img/icn-blocked.png')
-	$('body').append(img)
-	img.css({
-	    position: 'absolute',
-	    top: e.pageY - img.height()/2,
-	    left: e.pageX - img.width()/2,
-	    zIndex: 99999
-	})
-	setTimeout(function() {
-	    img.remove()
-	    self.data('prevent', false)
-	}, 500)
     }
 
 })
@@ -731,9 +742,9 @@ JqueryClass('switchWidget', baseWidget, {
 	var self = $(this)
 	self.switchWidget('config', options)
 	self.data('value', options.value)
-	self.click(function() {
+	self.click(function(e) {
 	    if (!self.data('enabled'))
-		return
+		return self.switchWidget('prevent', e)
 	    var value = self.data('value')
 	    if (value == self.data('minimum')) {
 		self.switchWidget('setValue', self.data('maximum'))
@@ -743,6 +754,11 @@ JqueryClass('switchWidget', baseWidget, {
 		self.addClass('off').removeClass('on')
 	    }
 	})
+	if (options.value)
+	    self.addClass('on').removeClass('off')
+	else
+	    self.addClass('off').removeClass('on')
+
 	return self
     },
     setValue: function(value) {
@@ -760,14 +776,17 @@ JqueryClass('customSelect', baseWidget, {
 	self.find('[mod-role=enumeration-option]').each(function() {
 	    var opt = $(this)
 	    var value = opt.attr('mod-port-value')
-	    opt.click(function() {
+	    opt.click(function(e) {
 		if (self.data('enabled')) {
 		    self.customSelect('setValue', value)
+		} else {
+		    self.customSelect('prevent', e)
 		}
 	    })
 	});
 	var hidden = self.find('[mod-widget-property=hidden]')
 	self.click(function() {
+	    console.log('clique')
 	    hidden.toggle()
 	})
 
