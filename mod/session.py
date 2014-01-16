@@ -676,6 +676,8 @@ class Session(object):
         callback(True, banks)
     
     def hmi_list_pedalboards(self, bank_id, callback):
+        if bank_id == -1 and self.current_bank is not None:
+            bank_id = self.current_bank
         try:
             pedalboards = self._banks[bank_id]['pedalboards']
         except (IndexError, KeyError):
