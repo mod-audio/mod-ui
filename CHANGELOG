@@ -1,3 +1,15 @@
+0.28.17
+=======
+
+  - fix: when effect is bypassed its switch was not being proper initialized in browser
+  - fix: all bypass switches of an instance synchronized in interface
+  - disabled icon is displayed on bypass switch when it's addressed
+  - layout of plugin description in plugin info window
+  - fix: initialize bypass state as on, in case template's default is off
+  - disabled icon when user clicks addressed enumeration
+  - fix: error messages are shown even when the dashboard is disabled
+  - send list of pedalboards in current bank when ihm asks
+
 0.28.16
 =======
 
