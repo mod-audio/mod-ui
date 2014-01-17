@@ -18,7 +18,7 @@ import os, json, logging, copy
 from datetime import datetime
 from bson import ObjectId
 from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
-                          INDEX_PATH, BANKS_JSON_FILE)
+                          INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
 
 from modcommon import json_handler
 from mod.bank import remove_pedalboard_from_banks
@@ -293,6 +293,14 @@ class Pedalboard(object):
             return True
         except KeyError:
             logging.error('[pedalboard] Cannot set position of unknown instance %d' % instance_id)
+
+    def get_bufsize(self, minimum=DEFAULT_JACK_BUFSIZE):
+        bufsize = minimum
+        index = indexing.EffectIndex()
+        for instance in self.data['instances'].values():
+            effect = index.find(url=instance['url']).next()
+            bufsize = max(effect['bufsize'], minimum)
+        return bufsize
             
 
 def remove_pedalboard(uid):

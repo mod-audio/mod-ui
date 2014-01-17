@@ -167,6 +167,7 @@ class EffectIndex(Index):
                     pedalColor=STORED(),
                     pedalLabel=TEXT(stored=True),
                     smallLabel=STORED(),
+                    bufsize=NUMERIC(stored=True),
                     )
 
     term_fields = ['label', 'name', 'category', 'author', 'description', 'brand']

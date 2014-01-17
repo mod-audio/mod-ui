@@ -22,10 +22,11 @@ from tornado import iostream, ioloop
 from Queue import Empty
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                        HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
-                        CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
-                        CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
-                        PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR)
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
+                          CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
+                          CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
+                          PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
+                          DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
 from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
 from mod.pedalboard import Pedalboard
@@ -34,6 +35,8 @@ from mod.host import Host
 from mod.clipmeter import Clipmeter
 from mod.browser import BrowserControls
 from mod.protocol import Protocol
+from mod.jack import change_jack_bufsize
+from mod.indexing import EffectIndex
 from tuner import NOTES, FREQS, find_freqnotecents
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
@@ -57,6 +60,9 @@ class Session(object):
         self.monitor_server = None
 
         self.current_bank = None
+
+        self.jack_bufsize = DEFAULT_JACK_BUFSIZE
+        self.effect_index = EffectIndex()
 
         self._pedalboard = Pedalboard()
         self._pedalboards = {}
@@ -104,8 +110,16 @@ class Session(object):
                 self.load_bank_pedalboard(last_bank, last_pedalboard, initialize)
             else:
                 initialize(0)
+        def bufsize():
+            change_jack_bufsize(self.jack_bufsize, restore)
             
-        ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), restore)
+        ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), bufsize)
+
+    def reset(self, callback):
+        def remove():
+            self.remove(-1, callback)
+        self.jack_bufsize = DEFAULT_JACK_BUFSIZE
+        change_jack_bufsize(DEFAULT_JACK_BUFSIZE, remove)
 
     def setup_monitor(self):
         if self.monitor_server is None:
@@ -262,6 +276,7 @@ class Session(object):
         connections = copy.deepcopy(self._pedalboard.data['connections'])
 
         # How it works:
+        # check jack bufsize
         # remove -1  (remove all effects)
         # for each effect
         #   add effect
@@ -380,8 +395,21 @@ class Session(object):
             self.connect(orig, dest, lambda result: add_connections(),
                          True)
 
-        self.remove(-1, add_effects, True)
+        def remove(result=None):
+            self.remove(-1, add_effects, True)
 
+        self.change_bufsize(self._pedalboard.get_bufsize(DEFAULT_JACK_BUFSIZE), remove)
+
+    def change_bufsize(self, size, callback):
+        if size == self.jack_bufsize:
+            return callback(True)
+        self.jack_bufsize = size
+        def reload():
+            self.load_current_pedalboard(callback)
+        def change(result):
+            change_jack_bufsize(size, reload)
+        self.remove(-1, change, True)
+        
     def save_pedalboard(self, title, as_new):
         return self._pedalboard.save(title, as_new)
         
@@ -417,21 +445,29 @@ class Session(object):
     def add(self, objid, instance_id, callback, loaded=False):
         if not loaded:
             instance_id = self._pedalboard.add_instance(objid, instance_id)
-        self.host.add(objid, instance_id, callback)
-        return instance_id
+        def commit(result=None):
+            self.host.add(objid, instance_id, callback)
+        try:
+            effect_data = self.effect_index.find(url=objid).next()
+            self.change_bufsize(max(effect_data['bufsize'], self.jack_bufsize), commit)
+        except StopIteration:
+            commit(True)
 
     def remove(self, instance_id, callback, loaded=False):
         affected_actuators = []
         if not loaded:
             affected_actuators = self._pedalboard.remove_instance(instance_id)
 
+        def change_bufsize(ok):
+            self.change_bufsize(self._pedalboard.get_bufsize(), callback)
+
         def _callback(ok):
             if ok:
-                self.hmi.control_rm(instance_id, ":all", callback)
+                self.hmi.control_rm(instance_id, ":all", change_bufsize)
                 for addr in affected_actuators:
                     self.parameter_addressing_load(*addr)
             else:
-                callback(ok)
+                change_bufsize(ok)
 
         self.host.remove(instance_id, _callback)
 
