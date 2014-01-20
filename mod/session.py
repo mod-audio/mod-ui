@@ -101,19 +101,29 @@ class Session(object):
         self.hmi_initialized = True
 
     def restore_last_pedalboard(self):
+        last_bank, last_pedalboard = get_last_bank_and_pedalboard()
+
         def initialize(r):
             self.pedalboard_initialized = True
             return r
+
         def restore():
-            last_bank, last_pedalboard = get_last_bank_and_pedalboard()
             if last_bank is not None and last_pedalboard is not None:
                 self.load_bank_pedalboard(last_bank, last_pedalboard, initialize)
             else:
                 initialize(0)
-        def bufsize():
+
+        def bufsize(result):
             change_jack_bufsize(self.jack_bufsize, restore)
+
+        def initial_state():
+            if last_bank is None or last_pedalboard is None:
+                return bufsize()
+            banks = list_banks()
+            pedalboards = banks[last_bank]['pedalboards']
+            self.hmi.initial_state(last_bank, last_pedalboard, pedalboards, bufsize)
             
-        ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), bufsize)
+        ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
         def remove():
@@ -712,8 +722,6 @@ class Session(object):
         callback(True, banks)
     
     def hmi_list_pedalboards(self, bank_id, callback):
-        if bank_id == -1 and self.current_bank is not None:
-            bank_id = self.current_bank
         try:
             pedalboards = self._banks[bank_id]['pedalboards']
         except (IndexError, KeyError):

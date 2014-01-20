@@ -126,6 +126,13 @@ class HMI(object):
         # is resp, just send
         self.sp.write("%s\0" % str(msg))
 
+    def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
+        pedalboards = [ '"%s"' % p['title'] for p in pedalboards ]
+        self.send("initial_state %d %d %s" % (bank_id,
+                                              pedalboard_id,
+                                              " ".join(pedalboards)),
+                  callback)
+
     def ui_con(self, callback=lambda result: None):
         self.send("ui_con", callback, datatype='boolean')
 
