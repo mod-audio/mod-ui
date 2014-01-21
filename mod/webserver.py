@@ -939,6 +939,18 @@ class DemoRestore(web.RequestHandler):
 
         #tornado.ioloop.IOLoop.instance().add_callback(lambda: sys.exit(0))        
 
+class RecordingStart(web.RequestHandler):
+    def get(self):
+        SESSION.start_recording()
+        self.write(json.dumps(True))
+
+class RecordingStop(web.RequestHandler):
+    def get(self):
+        result = SESSION.stop_recording()
+        result['data'] = b64encode(result.pop('handle').read())
+        open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
+        self.write(json.dumps(True))
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -988,6 +1000,9 @@ application = web.Application(
 
             (r"/login/sign_session/(.+)", LoginSign),
             (r"/login/authenticate", LoginAuthenticate),
+
+            (r"/recording/start", RecordingStart),
+            (r"/recording/stop", RecordingStop),
 
             (r"/reset/?", DashboardClean),
             (r"/disconnect/?", DashboardDisconnect),

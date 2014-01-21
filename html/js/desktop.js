@@ -24,6 +24,7 @@ function Desktop(elements) {
 	pedalboard: $('<div>'),
 	zoomIn: $('<div>'),
 	zoomOut: $('<div>'),
+	rec: $('<div>'),
 	saveBox: $('<div>'),
 	saveButton: $('<div>'),
 	saveAsButton: $('<div>'),
@@ -169,6 +170,34 @@ function Desktop(elements) {
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function() { self.pedalboard.pedalboard('zoomIn') })
     elements.zoomOut.click(function() { self.pedalboard.pedalboard('zoomOut') })
+
+    var recording = false
+    elements.rec.click(function() {
+	if (!recording) {
+	    $.ajax({ url: '/recording/start',
+		     method: 'GET',
+		     success: function() {
+			 elements.rec.css('backgroundColor', 'red')
+			 recording = true
+			 console.log('ok')
+		     },
+		     error: function() {
+			 new Notification('error', "Couldn't rec")
+		     }
+		   })
+	} else {
+	    $.ajax({ url: '/recording/stop',
+		     method: 'GET',
+		     success: function() {
+			 elements.rec.css('backgroundColor', 'transparent')
+			 recording = false
+		     },
+		     error: function() {
+			 new Notification('error', "Couldn't stop")
+		     }
+		   })
+	}
+    })
 
     elements.pedalboardTrigger.click(function() { 
 	self.windowManager.closeWindows() 

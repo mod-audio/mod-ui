@@ -36,6 +36,7 @@ from mod.clipmeter import Clipmeter
 from mod.browser import BrowserControls
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
+from mod.recorder import Recorder
 from mod.indexing import EffectIndex
 from tuner import NOTES, FREQS, find_freqnotecents
 
@@ -84,6 +85,7 @@ class Session(object):
                             MANAGER_PORT, "localhost", self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+        self.recorder = Recorder()
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
 
@@ -485,7 +487,7 @@ class Session(object):
         value = 1 if int(value) > 0 else 0
         if not loaded:
             self._pedalboard.bypass(instance_id, value)
-
+        self.recorder.log_pedalboard_state(self._pedalboard)
         self.host.bypass(instance_id, value, callback)
 
     def connect(self, port_from, port_to, callback, loaded=False):
@@ -752,6 +754,12 @@ class Session(object):
         
         freq, note, cents = find_freqnotecents(value)
         self.hmi.tuner(freq, note, cents, cb)
+
+    def start_recording(self):
+        return self.recorder.start(self._pedalboard)
+
+    def stop_recording(self):
+        return self.recorder.stop()
 
     def serialize_pedalboard(self):
         return self._pedalboard.serialize()
