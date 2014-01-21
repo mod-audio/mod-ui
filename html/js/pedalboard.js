@@ -377,6 +377,7 @@ JqueryClass('pedalboard', {
 	    for (var i in finalActions)
 		finalActions[i]()
 	    self.data('bypassApplication', false)
+	    setTimeout(function() { self.pedalboard('adapt') }, 1)
 	    if (loadPedalboardAtOnce)
 		self.data('pedalboardLoad')(data._id, ourCallback)
 	    else
@@ -537,6 +538,7 @@ JqueryClass('pedalboard', {
 	    pluginLoad(pluginData.url, instanceId,
 		       function() {
 			   self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y)
+			   setTimeout(function() { self.pedalboard('adapt') }, 1)
 			   waiter.stopPlugin(instanceId)
 		       }, function() {
 			   waiter.stopPlugin(instanceId)
@@ -766,7 +768,7 @@ JqueryClass('pedalboard', {
 	var self = $(this)
 	// First, get the minmum bounding rectangle,
 	// given by minX, maxX, minY and maxY
-	var minX, maxX, minY, maxY, w, h, x, y, plugin, pos
+	var minX, maxX, minY, maxY, rightMargin, w, h, x, y, plugin, pos
 	//var pedals = self.find('.js-effect')
 	var plugins = self.data('plugins')
 	var scale = self.data('scale')
@@ -774,6 +776,7 @@ JqueryClass('pedalboard', {
 	maxX = self.width()
 	minY = 0
 	maxY = self.height()
+	rightMargin = 150
 	var instanceId
 	for (instanceId in plugins) {
 	    plugin = plugins[instanceId]
@@ -784,7 +787,7 @@ JqueryClass('pedalboard', {
 	    y = pos.top / scale
 
 	    minX = Math.min(minX, x)
-	    maxX = Math.max(maxX, x + w)
+	    maxX = Math.max(maxX, x + w + rightMargin)
 	    minY = Math.min(minY, y)
 	    maxY = Math.max(maxY, y + h)
 	}
@@ -1019,7 +1022,6 @@ JqueryClass('pedalboard', {
 	self.data('plugins')[instanceId] = plugin
 
 	self.trigger('modified')
-	self.pedalboard('adapt')
 
 	plugin.data('url', pluginData.url)
 	plugin.data('gui', pluginGui)
