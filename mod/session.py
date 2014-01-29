@@ -89,6 +89,7 @@ class Session(object):
         self.recorder = Recorder()
         self.player = Player()
         self.mute_state = True
+        self.recording = None
 
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
@@ -776,15 +777,23 @@ class Session(object):
         if self.recorder.recording:
             self.recording = self.recorder.stop()
         def stop():
-            self.mute(True, stop_callback)
+            self.unmute(stop_callback)
         def play():
             self.player.play(self.recording['handle'], stop)
-        self.mute(False, play)
+        self.mute(play)
 
     def stop_playing(self):
         self.player.stop()
 
-    def mute(self, state, callback):
+    def reset_recording(self):
+        self.recording = None
+
+    def mute(self, callback):
+        self.set_audio_state(False, callback)
+    def unmute(self, callback):
+        self.set_audio_state(True, callback)
+
+    def set_audio_state(self, state, callback):
         if self.mute_state == state:
             return callback()
         self.mute_state = state

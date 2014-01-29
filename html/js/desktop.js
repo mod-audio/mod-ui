@@ -381,9 +381,10 @@ function Desktop(elements) {
 	},
 	playStop: ajaxFactory('/recording/play/stop', "Can't stop playing. Probably a connection problem. Please try stopping again"),
 	recordDownload: ajaxFactory('/recording/download', "Can't download recording. Probably a connection problem."),
+	recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
 	share: function(data, callback) {
-	    $.ajax({ url: SITEURL + '/pedalboard/share/' + self.userSession.sid,
+	    $.ajax({ url: SITEURL + '/pedalboard/videoshare/' + self.userSession.sid,
 		     method: 'POST',
 		     data: JSON.stringify(data),
 		     success: function(resp) {

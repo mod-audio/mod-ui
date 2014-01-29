@@ -31,7 +31,8 @@ JqueryClass('shareBox', {
 	    recordStop: function(callback) { callback() },
 	    playStart: function(startCallback, stopCallback) { startCallback(); setTimeout(stopCallback, 3000) },
 	    playStop: function(callback) { callback() },
-	    recordDownload: function(callback) { callback() },
+	    recordDownload: function(callback) { callback({}) },
+	    recordReset: function(callback) { callback() },
 
 	    // Do the sharing in cloud
 	    share: function(data, callback) { callback(true) }
@@ -42,8 +43,7 @@ JqueryClass('shareBox', {
 	self.data('recordedData', null)
 
 	self.find('.js-share').click(function() {
-	    if (self.data('screenshotGenerated'))
-		self.shareBox('share')
+	    self.shareBox('share')
 	})
 	self.find('.js-close').click(function() { self.hide() })
 
@@ -93,6 +93,7 @@ JqueryClass('shareBox', {
 	if (status == STOPPED) {
 	    return
 	} else if (status == RECORDING) {
+	    self.find('.js-share').removeClass('disabled')
 	    self.data('recordStop')(function() {
 		self.find('#record-rec').removeClass('recording')
 		self.shareBox('announce')
@@ -149,11 +150,13 @@ JqueryClass('shareBox', {
 	    title: self.find('input[type=text]').val(),
 	    description: self.find('textarea').val()
 	}
-	self.data('audioDownload')(function(audioData) {
-	    data.recording = audioData
+	self.data('recordDownload')(function(audioData) {
+	    data = $.extend(data, audioData)
 	    self.data('share')(data, function(ok) {
 		if (ok) {
-		    self.hide()
+		    self.data('recordReset')(function(){
+			self.hide()
+		    })
 		} else {
 		    new Notification('error', "Couldn't share pedalboard")
 		}
