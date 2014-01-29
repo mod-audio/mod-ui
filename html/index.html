@@ -138,7 +138,7 @@ $('document').ready(function() {
 <body>
 
   <!-- NOTIFICATIONS -->
-  <div id="rec" style="position: absolute; top: 53px; right: 75px; color: white; cursor: pointer; z-index: 10000">REC</div>
+
   <div id="notifications"></div>
   <!-- END NOTIFICATIONS -->
     <!-- WRAPPER -->
@@ -264,10 +264,18 @@ $('document').ready(function() {
         <div id="share-window" class="save-popup hidden">
             <div class="box">
                 <h1>SHARE</h1>
-                <input type="text" id="pedalboard-share-title" />
-                <div class="image">
-                    <img class="loading" src="/img/loading-pedalboard.gif" />
-                    <img class="screenshot hidden" />
+		<p>Help other musicians understand your work!</p>
+		<ul>
+		  <li>Choose a relevant title</li>
+		  <li>Record a sample sound. It maybe just a few seconds or a complete song.</li>
+		  <li>Write a few words about this pedalboard</li>
+		</ul>
+                <input type="text" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
+                <div class="record">
+		  <div id="record-rec">rec</div>
+		  <div id="record-stop">stop</div>
+		  <div id="record-play">play</div>
+		  <div id="record-status"></div>
                 </div>
                 <textarea id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
                 <div class="textright">

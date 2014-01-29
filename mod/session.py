@@ -36,7 +36,7 @@ from mod.clipmeter import Clipmeter
 from mod.browser import BrowserControls
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
-from mod.recorder import Recorder
+from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
 from tuner import NOTES, FREQS, find_freqnotecents
 
@@ -86,6 +86,7 @@ class Session(object):
         self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
         self.recorder = Recorder()
+        self.player = Player()
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
 
@@ -756,11 +757,32 @@ class Session(object):
         self.hmi.tuner(freq, note, cents, cb)
 
     def start_recording(self):
-        return self.recorder.start(self._pedalboard)
+        if self.player.playing:
+            self.player.stop()
+        self.recorder.start(self._pedalboard)
 
     def stop_recording(self):
-        return self.recorder.stop()
+        if self.recorder.recording:
+            self.recording = self.recorder.stop()
+            return self.recording
 
+    def start_playing(self, stop_callback):
+        if self.recorder.recording:
+            self.recording = self.recorder.stop()
+        self.mute()
+        def stop():
+            self.unmute()
+            stop_callback()
+        self.player.play(self.recording['handle'], stop)
+
+    def stop_playing(self):
+        self.player.stop()
+
+    def mute(self):
+        pass
+    def unmute(self):
+        pass
+        
     def serialize_pedalboard(self):
         return self._pedalboard.serialize()
 

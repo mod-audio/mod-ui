@@ -639,9 +639,33 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     width: 600px;
 }
 
-#share-window .image {
-    /* width and height set by javascript */
+#share-window .record {
+    height: 40px;
 }
+
+#share-window .record #record-rec {
+    float: left;
+    margin: 0 15px; 
+}
+#share-window .record #record-rec.recording {
+    background-color: red
+}
+#share-window .record #record-stop {
+    float: left; 
+    margin: 0 15px; 
+}
+#share-window .record #record-play {
+    float: left;
+    margin: 0 15px; 
+}
+#share-window .record #record-play.playing {
+    background-color: green
+}
+#share-window .record #record-status {
+    float: left;
+    margin: 0 15px; 
+}
+
 
 #share-window img.loading {
     height: 66px;

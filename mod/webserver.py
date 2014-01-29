@@ -947,9 +947,37 @@ class RecordingStart(web.RequestHandler):
 class RecordingStop(web.RequestHandler):
     def get(self):
         result = SESSION.stop_recording()
-        result['data'] = b64encode(result.pop('handle').read())
-        open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
+        #result['data'] = b64encode(result.pop('handle').read())
+        #open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
         self.write(json.dumps(True))
+
+class RecordingPlay(web.RequestHandler):
+    waiting_request = None
+    @web.asynchronous    
+    def get(self, action):
+        if action == 'start':
+            self.playing = True
+            SESSION.start_playing(RecordingPlay.stop_callback)
+            self.write(json.dumps(True))
+            return self.finish()
+        if action == 'wait':
+            if RecordingPlay.waiting_request is not None:
+                RecordingPlay.stop_callback()
+            RecordingPlay.waiting_request = self
+            return
+        if action == 'stop':
+            SESSION.stop_playing()
+            self.write(json.dumps(True))
+            return self.finish()
+        self.write(json.dumps(True))
+
+    @classmethod
+    def stop_callback(kls):
+        if kls.waiting_request is None:
+            return
+        kls.waiting_request.write(json.dumps(True))
+        kls.waiting_request.finish()
+        kls.waiting_request = None
 
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
@@ -1003,6 +1031,7 @@ application = web.Application(
 
             (r"/recording/start", RecordingStart),
             (r"/recording/stop", RecordingStop),
+            (r"/recording/play/(start|wait|stop)", RecordingPlay),
 
             (r"/reset/?", DashboardClean),
             (r"/disconnect/?", DashboardDisconnect),

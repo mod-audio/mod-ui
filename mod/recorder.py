@@ -1,4 +1,5 @@
 import time, subprocess, random, os
+from tornado import ioloop
 from mod.settings import CAPTURE_PATH
 
 class Recorder(object):
@@ -53,4 +54,49 @@ class Recorder(object):
                 'tstamp': tstamp,
                 'data': pedalboard.serialize(),
                 })
+
+class Player(object):
+
+    def __init__(self):
+        self.proc = None
+        self.fh = None
+        self.stop_callback = None
+
+    @property
+    def playing(self):
+        return self.proc is not None
+
+    def play(self, fh, stop_callback):
+        if self.playing:
+            self.stop()
+        fh.seek(0)
+        self.proc = subprocess.Popen(['mplayer', '-ao', 'jack', '-'],
+                                     stdin=fh,
+                                     stdout=subprocess.PIPE)
+        self.fh = fh
+        self.stop_callback = stop_callback
+        ioloop.IOLoop().instance().add_handler(self.proc.stdout.fileno(), self.end_callback, 16)
+
+    def end_callback(self, fileno, event):
+        self.proc.stdout.read() # just to flush memory
+        if self.proc.poll() is None:
+            return
+        ioloop.IOLoop.instance().remove_handler(fileno)
+        self.fh.seek(0)
+        self.callback()
+
+    def stop(self):
+        ioloop.IOLoop.instance().remove_handler(self.proc.stdout.fileno())
+        if self.proc.poll() is None:
+            self.proc.kill()
+        self.fh.seek(0)
+        self.proc = None
+        self.callback()
+
+    def callback(self):
+        cb = self.stop_callback
+        if cb is not None:
+            self.stop_callback = None
+            cb()
         
+
