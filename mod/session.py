@@ -85,8 +85,11 @@ class Session(object):
                             MANAGER_PORT, "localhost", self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+
         self.recorder = Recorder()
         self.player = Player()
+        self.mute_state = True
+
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
 
@@ -520,14 +523,17 @@ class Session(object):
 
         self.host.connect(port_from, port_to, cb)
 
+    def format_port(self, port):
+        if not 'system' in port and not 'effect' in port:
+            port = "effect_%s" % port
+        return port
+        
     def disconnect(self, port_from, port_to, callback, loaded=False):
         if not loaded:
             self._pedalboard.disconnect(port_from, port_to)
 
-        if not 'system' in port_from and not 'effect' in port_from:
-            port_from = "effect_%s" % port_from
-        if not 'system' in port_to and not 'effect' in port_to:
-            port_to = "effect_%s" % port_to
+        port_from = self.format_port(port_from)
+        port_to = self.format_port(port_to)
        
         if "system" in port_to: 
             def cb(result):
@@ -769,19 +775,35 @@ class Session(object):
     def start_playing(self, stop_callback):
         if self.recorder.recording:
             self.recording = self.recorder.stop()
-        self.mute()
         def stop():
-            self.unmute()
-            stop_callback()
-        self.player.play(self.recording['handle'], stop)
+            self.mute(True, stop_callback)
+        def play():
+            self.player.play(self.recording['handle'], stop)
+        self.mute(False, play)
 
     def stop_playing(self):
         self.player.stop()
 
-    def mute(self):
-        pass
-    def unmute(self):
-        pass
+    def mute(self, state, callback):
+        if self.mute_state == state:
+            return callback()
+        self.mute_state = state
+        connections = self._pedalboard.data['connections']
+        queue = []
+        for connection in connections:
+            if connection[2] == 'system' and connection[3].startswith('playback'):
+                port_from = self.format_port(':'.join([str(x) for x in connection[:2]]))
+                port_to = self.format_port(':'.join([str(x) for x in connection[2:]]))
+                queue.append([port_from, port_to])
+        def consume(result=None):
+            if len(queue) == 0:
+                return callback()
+            nxt = queue.pop(0)
+            if state:
+                self.host.connect(nxt[0], nxt[1], consume)
+            else:
+                self.host.disconnect(nxt[0], nxt[1], consume)
+        consume()
         
     def serialize_pedalboard(self):
         return self._pedalboard.serialize()
