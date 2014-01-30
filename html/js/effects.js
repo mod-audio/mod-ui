@@ -417,7 +417,7 @@ JqueryClass('effectBox', {
 	plugin.installed_version = version(plugin.installedVersion)
 	plugin.latest_version = version(plugin.latestVersion)
 	plugin.package_name = plugin.package.replace(/\.lv2$/, '')
-	plugin.description = plugin.description.replace(/\n/g, '<br\>\n')
+	plugin.description = (plugin.description || '').replace(/\n/g, '<br\>\n')
 
 	var info = $(Mustache.render(TEMPLATES.plugin_info, plugin))
 
