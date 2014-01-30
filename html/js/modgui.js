@@ -277,7 +277,6 @@ function GUI(effect, options) {
 				   change: function(e, value) {
 				       options.bypass(value)
 				       self.bypassed = value
-				       console.log('aqui')
 				       self.setPortValue(':bypass', value, control)
 				       element.find('[mod-role=bypass-light]').each(function() {
 					   // NOTE
@@ -594,12 +593,14 @@ JqueryClass('film', baseWidget, {
 	    bgImg.css('max-width', '999999999px')
 	    bgImg.hide();
 	    bgImg.bind('load', function() {
-		if (bgImg.width() == 0) {
+		var h = bgImg[0].height || bgImg.height()
+		var w = bgImg[0].width || bgImg.width()
+		if (w == 0) {
 		    new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
 		}
 		if (!height)
-		    height = bgImg.height()
-		self.data('filmSteps', height * bgImg.width() / (self.width() * bgImg.height()))
+		    height = h
+		self.data('filmSteps', height * w / (self.width() * h))
 		self.data('size', self.width())
 		bgImg.remove()
 		callback()
