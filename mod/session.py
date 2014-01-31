@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -22,10 +22,10 @@ from tornado import iostream, ioloop
 from Queue import Empty
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, 
-                          CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT, 
-                          CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_L, PEAKMETER_MON_R, 
-                          PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
+                          CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
+                          CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
                           DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
 from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
@@ -76,13 +76,13 @@ class Session(object):
         Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
         Protocol.register_cmd_callback("control_get", self.parameter_get)
         Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
-        Protocol.register_cmd_callback("peakmeter", self.peakmeter_set) 
+        Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
-    
-        self.host = factory(Host, FakeHost, DEV_HOST, 
+
+        self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
-        self.hmi = factory(HMI, FakeHMI, DEV_HMI, 
+        self.hmi = factory(HMI, FakeHMI, DEV_HMI,
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
@@ -122,7 +122,7 @@ class Session(object):
             banks = list_banks()
             pedalboards = banks[last_bank]['pedalboards']
             self.hmi.initial_state(last_bank, last_pedalboard, pedalboards, bufsize)
-            
+
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
@@ -173,12 +173,12 @@ class Session(object):
         def mon_tuner(ok):
             if ok:
                 self.parameter_monitor(TUNER, TUNER_MON_PORT, ">=", 0, cb)
-        
+
         def setup_tuner(ok):
             if ok:
                 self._tuner = True
                 self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
-        
+
         self.add(TUNER_URI, TUNER, setup_tuner, True)
 
     def tuner_off(self, cb):
@@ -192,22 +192,26 @@ class Session(object):
             self.peakmeter_off(callback)
 
     def peakmeter_on(self, cb):
-        
+
         def mon_peak_in_l(ok):
             if ok:
-                self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_L, ">=", -30, cb)
-        
+                self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_VALUE_L, ">=", -30, cb)
+                self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_PEAK_L, ">=", -30, cb)
+
         def mon_peak_in_r(ok):
             if ok:
-                self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_R, ">=", -30, lambda r:None)
+                self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_VALUE_R, ">=", -30, lambda r:None)
+                self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_PEAK_R, ">=", -30, lambda r:None)
 
         def mon_peak_out_l(ok):
             if ok:
-                self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_L, ">=", -30, lambda r:None)
+                self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_VALUE_L, ">=", -30, lambda r:None)
+                self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_PEAK_L, ">=", -30, lambda r:None)
 
         def mon_peak_out_r(ok):
             if ok:
-                self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_R, ">=", -30, lambda r:None)
+                self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_VALUE_R, ">=", -30, lambda r:None)
+                self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_PEAK_R, ">=", -30, lambda r:None)
 
         def setup_peak_in(ok):
             if ok:
@@ -220,10 +224,10 @@ class Session(object):
                 for port in self._playback_1_connected_ports:
                     self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_l, True)
                 for port in self._playback_2_connected_ports:
-                    self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_r, True)
+                    self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), mon_peak_out_r, True)
 
         self.add(PEAKMETER_URI, PEAKMETER_IN, setup_peak_in, True)
-        self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out, True) 
+        self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out, True)
 
     def peakmeter_off(self, cb):
         self.remove(PEAKMETER_IN, cb, True)
@@ -269,10 +273,10 @@ class Session(object):
         if False and bank_id == self.current_bank:
             load(0)
         else:
-            self.bank_address(0, 0, 1, 0, 0, 
-                lambda r: self.bank_address(0, 0, 1, 1, 0, 
-                    lambda r: self.bank_address(0, 0, 1, 2, 0, 
-                        lambda r: self.bank_address(0, 0, 1, 3, 0, 
+            self.bank_address(0, 0, 1, 0, 0,
+                lambda r: self.bank_address(0, 0, 1, 1, 0,
+                    lambda r: self.bank_address(0, 0, 1, 2, 0,
+                        lambda r: self.bank_address(0, 0, 1, 3, 0,
                             load))))
 
 
@@ -308,9 +312,9 @@ class Session(object):
             effect = effects.pop(0)
 
             self.add(effect['url'], effect['instanceId'],
-                     lambda result: set_bypass(effect), 
+                     lambda result: set_bypass(effect),
                      True)
-        
+
         # Set bypass state of one effect, then goes to bypass addressing
         def set_bypass(effect):
             self.bypass(effect['instanceId'], effect['bypassed'], lambda result: set_ports(effect),
@@ -331,7 +335,7 @@ class Session(object):
         # loading everything, the first parameter of each actuator will be sent to IHM
         addressings = {}
 
-        # Sets bypass addressing of one effect. 
+        # Sets bypass addressing of one effect.
         def set_bypass_addr(effect):
             if not effect.get('addressing', {}):
                 ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
@@ -393,8 +397,8 @@ class Session(object):
             hwtyp, hwid, acttyp, actid = key
             self.parameter_addressing_load(hwtyp, hwid, acttyp, actid, 0)
             ioloop.IOLoop.instance().add_callback(choose_ports_addr)
-            
-            
+
+
         def add_connections():
             if not connections:
                 ioloop.IOLoop.instance().add_callback(lambda: callback(True))
@@ -419,10 +423,10 @@ class Session(object):
         def change(result):
             change_jack_bufsize(size, reload)
         self.remove(-1, change, True)
-        
+
     def save_pedalboard(self, title, as_new):
         return self._pedalboard.save(title, as_new)
-        
+
     def load_bank(self, bank_id):
         bank = self._banks[bank_id]
         addressing = bank.get('addressing', [0, 0, 0, 0])
@@ -439,7 +443,7 @@ class Session(object):
 
         consume()
 
-    def hardware_connected(self, hwtyp, hwid, callback): 
+    def hardware_connected(self, hwtyp, hwid, callback):
         callback(True)
         #open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
         #callback(True)
@@ -491,13 +495,13 @@ class Session(object):
     def connect(self, port_from, port_to, callback, loaded=False):
         if not loaded:
             self._pedalboard.connect(port_from, port_to)
-        
+
         # Cases below happen because we just save instance ID in pedalboard connection structure, not whole string
         if not 'system' in port_from and not 'effect' in port_from:
             port_from = "effect_%s" % port_from
         if not 'system' in port_to and not 'effect' in port_to:
             port_to = "effect_%s" % port_to
-        
+
         if "system" in port_to:
             def cb(result):
                 if result:
@@ -525,8 +529,8 @@ class Session(object):
             port_from = "effect_%s" % port_from
         if not 'system' in port_to and not 'effect' in port_to:
             port_to = "effect_%s" % port_to
-       
-        if "system" in port_to: 
+
+        if "system" in port_to:
             def cb(result):
                 if result:
                     if port_to == "system:playback_1":
@@ -599,10 +603,10 @@ class Session(object):
         self.browser.end()
         self.hmi.ui_dis(callback)
 
-    def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label, 
+    def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
                        callback, loaded=False):
-        self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value, 
-                               1, 0, 0, hardware_type, hardware_id, actuator_type, 
+        self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
+                               1, 0, 0, hardware_type, hardware_id, actuator_type,
                                actuator_id, [], callback, loaded)
 
     def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
@@ -623,10 +627,10 @@ class Session(object):
             addressing = addrs['addrs'][idx]
         except IndexError:
             return
-        self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'], 
+        self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'],
                              addressing['type'], addressing['unit'], addressing['value'],
-                             addressing['maximum'], addressing['minimum'], addressing['steps'], 
-                             addressing['actuator'][0], addressing['actuator'][1], 
+                             addressing['maximum'], addressing['minimum'], addressing['steps'],
+                             addressing['actuator'][0], addressing['actuator'][1],
                              addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
                              addressing.get('options', []))
 
@@ -702,7 +706,7 @@ class Session(object):
                 self.parameter_addressing_load(*old)
         else:
             callback(True)
-            
+
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
@@ -720,7 +724,7 @@ class Session(object):
     def hmi_list_banks(self, callback):
         banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(self._banks))
         callback(True, banks)
-    
+
     def hmi_list_pedalboards(self, bank_id, callback):
         try:
             pedalboards = self._banks[bank_id]['pedalboards']
@@ -739,17 +743,17 @@ class Session(object):
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)
 
-    def peakmeter(self, pos, value, callback=None):
+    def peakmeter(self, pos, value, peak, callback=None):
         cb = callback
         if not cb:
             cb = lambda r: r
-        self.hmi.peakmeter(pos, value, cb)
+        self.hmi.peakmeter(pos, value, peak, cb)
 
     def tuner(self, value, callback=None):
         cb = callback
         if not cb:
             cb = lambda r: r
-        
+
         freq, note, cents = find_freqnotecents(value)
         self.hmi.tuner(freq, note, cents, cb)
 

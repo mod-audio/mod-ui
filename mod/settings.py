@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -123,7 +123,7 @@ if os.path.exists("/root/avatar"):
     fh = open("/root/avatar")
     default_avatar_url = fh.read().strip()
     fh.close()
-else:    
+else:
     default_avatar_url = 'http://gravatar.com/avatar'
 AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
 
@@ -140,8 +140,10 @@ PEAKMETER_IN = 9992
 PEAKMETER_OUT = 9993
 PEAKMETER_L = "inl"
 PEAKMETER_R = "inr"
-PEAKMETER_MON_L = "meteroutl"
-PEAKMETER_MON_R = "meteroutr"
+PEAKMETER_MON_VALUE_L = "meteroutl"
+PEAKMETER_MON_VALUE_R = "meteroutr"
+PEAKMETER_MON_PEAK_L = "pkoutl"
+PEAKMETER_MON_PEAK_R = "pkoutr"
 
 TUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner"
 TUNER = 9994
