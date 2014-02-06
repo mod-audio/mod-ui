@@ -1,3 +1,13 @@
+0.29
+====
+
+    - new: bank and pedalboard navigation persistency in banks menu
+    - new: automatic jack buffer size configuration, depending on plugin requirements
+    - fix: proper handling of knobs and parameter values in screenshot and some browsers
+    - fix: plugin info window was not working if there were not description
+    - fix: pedalboard size adapt on initialization
+    - fix: peakmeter is now more consistent
+
 0.28.17
 =======
 
