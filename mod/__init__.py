@@ -16,7 +16,7 @@
 
 from datetime import timedelta
 from tornado import ioloop
-import os, re, json, logging
+import os, re, json, logging, shutil
 
 def _json_or_remove(path):
     try:
@@ -77,7 +77,6 @@ def check_environment(callback):
     # already executed
     old_screenshot_dir = os.path.join(HTML_DIR, 'pedalboards')
     if os.path.exists(old_screenshot_dir) and os.path.isdir(old_screenshot_dir):
-        import shutil
         for screenshot in os.listdir(old_screenshot_dir):
             shutil.move(os.path.join(old_screenshot_dir, screenshot), PEDALBOARD_SCREENSHOT_DIR)
         os.rmdir(old_screenshot_dir)
@@ -115,13 +114,18 @@ def check_environment(callback):
 def rebuild_database():
     """
     This will:
+      - Delete indexes
       - Remove effect json files and parse TTL files again
       - Rebuild effect and pedalboard indexes
     """
-    from mod.settings import (EFFECT_DIR, PLUGIN_LIBRARY_DIR, UNITS_TTL_PATH)
+    from mod.settings import (EFFECT_DIR, PLUGIN_LIBRARY_DIR, UNITS_TTL_PATH,
+                              INDEX_PATH, PEDALBOARD_INDEX_PATH)
     from mod.effect import extract_effects_from_bundle
     from mod.indexing import EffectIndex, PedalboardIndex
     from modcommon.lv2 import Bundle
+
+    shutil.rmtree(INDEX_PATH)
+    shutil.rmtree(PEDALBOARD_INDEX_PATH)
 
     for bundle_name in os.listdir(PLUGIN_LIBRARY_DIR):
         path = os.path.join(PLUGIN_LIBRARY_DIR, bundle_name)
