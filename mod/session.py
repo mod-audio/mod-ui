@@ -113,7 +113,7 @@ class Session(object):
             else:
                 initialize(0)
 
-        def bufsize(result):
+        def bufsize(result=None):
             change_jack_bufsize(self.jack_bufsize, restore)
 
         def initial_state():
