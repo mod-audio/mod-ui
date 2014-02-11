@@ -464,6 +464,8 @@ class Session(object):
         def commit(bufsize_changed):
             if not bufsize_changed:
                 self.host.add(objid, instance_id, callback)
+            else:
+                callback(True)
         try:
             effect_data = self.effect_index.find(url=objid).next()
             self.change_bufsize(max(effect_data['bufsize'], self.jack_bufsize), commit)
@@ -474,9 +476,10 @@ class Session(object):
         affected_actuators = []
         if not loaded:
             affected_actuators = self._pedalboard.remove_instance(instance_id)
-
+        def bufsize_callback(bufsize_changed):
+            callback(True)
         def change_bufsize(ok):
-            self.change_bufsize(self._pedalboard.get_bufsize(), callback)
+            self.change_bufsize(self._pedalboard.get_bufsize(), bufsize_callback)
 
         def _callback(ok):
             if ok:
