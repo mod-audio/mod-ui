@@ -492,7 +492,7 @@ class Session(object):
         value = 1 if int(value) > 0 else 0
         if not loaded:
             self._pedalboard.bypass(instance_id, value)
-        self.recorder.log_pedalboard_state(self._pedalboard)
+        self.recorder.bypass(instance_id, value)
         self.host.bypass(instance_id, value, callback)
 
     def connect(self, port_from, port_to, callback, loaded=False):
@@ -572,7 +572,8 @@ class Session(object):
 
         if not loaded:
             self._pedalboard.parameter_set(instance_id, port_id, value)
-
+        
+        self.recorder.parameter(instance_id, port_id, value)
         self.host.param_set(instance_id, port_id, value, callback)
 
     def parameter_get(self, instance_id, port_id, callback):

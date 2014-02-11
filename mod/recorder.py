@@ -14,6 +14,7 @@ class Recorder(object):
         if self.recording:
             self.stop()
         self.tstamp = time.time()
+        self.pedalboard = pedalboard
         self.events = []
         self.proc = subprocess.Popen(['jack_capture',
                                       '-f', 'ogg',
@@ -29,31 +30,27 @@ class Recorder(object):
         self.proc.kill()
         self.recording = False
         result = {
+            'pedalboard': self.pedalboard.serialize(),
             'handle': open(CAPTURE_PATH),
             'events': self.events,
             }
         os.remove(CAPTURE_PATH)
         return result
 
-    def log_actuator(self, hwtype, hwid, acttype, actid):
+    def event(self, event_type, *data):
         if not self.recording:
             return
         self.events.append({
-                'type': 'actuator',
+                'type': event_type,
                 'tstamp': time.time() - self.tstamp,
-                'data': [ hwtype, hwid, acttype, actid ],
+                'data': data,
                 })
 
-    def log_pedalboard_state(self, pedalboard, tstamp=None):
-        if not self.recording:
-            return
-        if tstamp is None:
-            tstamp = time.time() - self.tstamp
-        self.events.append({
-                'type': 'state',
-                'tstamp': tstamp,
-                'data': pedalboard.serialize(),
-                })
+    def bypass(self, instance_id, value):
+        self.event('bypass', instance_id, value)
+
+    def parameter(self, instance_id, port_id, value):
+        self.event('parameter', instance_id, port_id, value)
 
 class Player(object):
 
