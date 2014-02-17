@@ -2,16 +2,19 @@
 
 import subprocess, sys
 
+subprocess.Popen(['sudo', '/bin/true']).wait()
+
 def connect(mac):
     sys.stdout.write('Connecting to %s ' % mac)
     sys.stdout.flush()
     for i in range(10):
+        proc = subprocess.Popen(['sudo', 'pand', '-K']).wait()
         proc = subprocess.Popen(['sudo', 'pand', '--connect', mac, '-n'],
                                 stderr=subprocess.PIPE)
         proc.wait()
         output = proc.stderr.read()
         if 'bnep0' in output:
-            sys.stdout.write('\n')
+            sys.stdout.write('\nConnected\n')
             return True
         sys.stdout.write('.')
         sys.stdout.flush()
