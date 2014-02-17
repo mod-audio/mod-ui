@@ -639,28 +639,20 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     width: 600px;
 }
 
-
-
-#share-window  #record-rec {
-	border-radius: 50px !important;	
+#share-window .record {
+    height: 40px;
 }
-#share-window span.btn {
-	margin: auto;
-	text-align: center;
-	color: white;
-	font-size: 50px;
-	line-height: 50px;
-	padding-top: 25px;
-	margin-bottom: 25px;
-	display: block;
-	width: 75px;
-	height: 75px;
+
+#share-window .record #record-rec {
+    float: left;
+    margin: 0 15px; 
 }
 #share-window .record #record-rec.recording {
-    background-color: red;
-	border-radius: 50px !important;
+    background-color: red
 }
 #share-window .record #record-stop {
+    float: left; 
+    margin: 0 15px; 
 }
 #share-window .record #record-play {
     float: left;
@@ -673,27 +665,8 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     float: left;
     margin: 0 15px; 
 }
-#share-window-fb {
-	border-top: 1px solid #ddd;
-	background: url("../img/facebook-menu-sprite.png") no-repeat top right;
-	margin-top: 25px;
-	display: block;
-	overflow: hidden;
-	height: 36px;
-	line-height: 36px;
-	padding-right: 36px;
-	white-space: nowrap;
-}
-#share-window-fb label {
-	width: 400px;
-}
-#share-window-fb input {
-	display: inline !important;
-	margin: 0 !important;
-}
-#share-window-fb p {
-	display: inline !important;
-}
+
+
 #share-window img.loading {
     height: 66px;
     left: 50%;

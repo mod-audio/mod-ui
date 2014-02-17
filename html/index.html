@@ -261,76 +261,28 @@ $('document').ready(function() {
         <!-- END REGISTRATION WINDOW -->
 
         <!-- PEDALBOARD SHARE WINDOW -->
-        <div id="share-window" class="save-popup">
-		 <!-- PEDALBOARD SHARE WINDOW STAGE 1 -->
-            <div class="box hidden">
+        <div id="share-window" class="save-popup hidden">
+            <div class="box">
                 <h1>SHARE</h1>
+		<p>Help other musicians understand your work!</p>
+		<ul>
+		  <li>Choose a relevant title</li>
+		  <li>Record a sample sound. It maybe just a few seconds or a complete song.</li>
+		  <li>Write a few words about this pedalboard</li>
+		</ul>
                 <input type="text" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
-
+                <div class="record">
+		  <div id="record-rec">rec</div>
+		  <div id="record-stop">stop</div>
+		  <div id="record-play">play</div>
+		  <div id="record-status"></div>
+                </div>
                 <textarea id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
-				<button class="js-close btn btn-primary btn-lg">Record a sample</button>
-				<button class="js-close btn btn-default btn-lg">Just share</button>
-				<div id="share-window-fb" class="textright">
-					<a>Share also on Facebook</a>
-				</div>
+                <div class="textright">
+                    <button class="js-close btn btn-danger">Cancel</button>
+                    <button class="js-share btn btn-success">Share</button>
+                </div>
             </div>
-		 	<!-- PEDALBOARD SHARE WINDOW STAGE 2 -->
-            <div class="box hidden">
-                <h1>SHARE</h1>
-                <input type="text" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
-                <textarea id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
-				<button class="js-close btn btn-primary active btn-lg">Record a sample</button>
-				<button class="js-close btn btn-default btn-lg">Just share</button>
-                <div class="controls actions">
-					<h2 class="textcenter">Start recording </h2>
-					<span class="btn btn-danger" id="record-rec"></span>
-				</div>
-				<div id="share-window-fb" class="textright">
-					<a>Share also on Facebook</a>
-				</div>	
-			</div>	
-			<!-- PEDALBOARD SHARE WINDOW STAGE 3 -->
-            <div class="box hidden">
-                <h1>SHARE</h1>
-                <input disabled type="text" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
-                <textarea disabled id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
-                <div class="controls actions">
-				
-					<h2 class="textcenter">Start recording in</h2>
-					<span class="btn btn-danger" id="record-rec">5</span>
-				</div>
-				<div id="share-window-fb" class="textright">
-					<a>Share also on Facebook</a>
-				</div>
-            </div>
-			<!-- PEDALBOARD SHARE WINDOW STAGE 4 -->
-            <div class="box hidden">
-                <h1>SHARE</h1>
-                <input type="text" disabled id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
-                <textarea disabled id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
-                <div class="controls actions ">
-					<h2 class="textcenter">Recording</h2>
-					<span class="btn btn-primary" id="record-stop">15</span>
-					<p class="textcenter"><small>(click to stop earlier)</small><p>
-				</div>
-				<div id="share-window-fb" class="textright">
-					<a>Share also on Facebook</a>
-				</div>
-			</div>
-			<!-- PEDALBOARD SHARE WINDOW STAGE 5 -->		
-            <div class="box ">
-                <h1>SHARE</h1>
-				<form>
-                <input type="text" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
-                <textarea id="pedalboard-share-comment" placeholder="What's special about this pedalboard?"></textarea>
-				<button class="btn btn-info"><i class="icon-white icon-play"></i> Listen</button>
-				<button class="btn btn-danger"><i class="icon-white icon-repeat"></i> Record Again</button>
-				<button class="btn btn-success">Share</button>	
-				<div id="share-window-fb">
-					<label><input type="checkbox"> <p>Share also on Facebook</p></label>
-				</div>
-			</form>
-            </div>				
         </div>
         <!-- END PEDALBOARD SHARE WINDOW -->
 
