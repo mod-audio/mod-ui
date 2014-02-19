@@ -19,6 +19,9 @@ var STOPPED = 0
 var RECORDING = 1
 var PLAYING = 2
 
+var RECORD_COUNTDOWN = 1
+var RECORD_LENGTH = 15
+
 JqueryClass('shareBox', {
     init: function(options) {
 	var self = $(this)
@@ -42,29 +45,48 @@ JqueryClass('shareBox', {
 	self.data('pedalboard', {})
 	self.data('recordedData', null)
 
-	self.find('.js-share').click(function() {
-	    self.shareBox('share')
-	})
-	self.find('.js-close').click(function() { self.hide() })
-
-	self.find('#record-rec').click(function() { self.shareBox('recordStart') })
-	self.find('#record-stop').click(function() { self.shareBox('recordStop') })
-	self.find('#record-play').click(function() { self.shareBox('recordPlay') })
+	self.find('#record-rec').click(function() { self.shareBox('recordStartCountdown'); return false })
+	self.find('#record-stop').click(function() { self.shareBox('recordStop'); return false })
+	self.find('#record-play').click(function() { self.shareBox('recordPlay'); return false })
+	self.find('#record-play-stop').click(function() { self.shareBox('recordStop'); return false })
+	self.find('#record-again').click(function() { self.shareBox('recordStartCountdown'); return false })
+	self.find('#record-delete').click(function() { self.shareBox('recordDelete'); return false })
+	self.find('#record-cancel').click(function() { self.shareBox('close'); return false })
+	self.find('#record-share').click(function() { self.shareBox('share'); return false })
 
 	self.data('status', STOPPED)
 
 	$('body').keydown(function(e) {
 	    if (e.keyCode == 27)
-		self.hide()
+		self.shareBox('close')
 	})
     },
 
-    recordStart: function() {
+    showStep: function(step) {
+	for (var i=1; i<5; i++) {
+	    if (i == step)
+		$('#record-step-'+i).show()
+	    else
+		$('#record-step-'+i).hide()
+	}
+	var button = $('#record-share')
+	if (step == 1) {
+	    button.text('Just share').attr('disabled', false)
+	} else {
+	    button.text('Share')
+	    if (step == 4) 
+		button.attr('disabled', false)
+	    else
+		button.attr('disabled', true)
+	}	    
+    },
+
+    recordStartCountdown: function() {
 	var self = $(this)
 	var status = self.data('status')
 	var start = function() {
 	    self.data('recordedData', null)
-	    self.shareBox('recordCountdown', 1)
+	    self.shareBox('recordCountdown', RECORD_COUNTDOWN)
 	}
 	if (status == STOPPED) {
 	    start()
@@ -74,18 +96,30 @@ JqueryClass('shareBox', {
     },
     recordCountdown: function(secs) {
 	var self = $(this)
+	self.shareBox('showStep', 2)
 	if (secs == 0) {
-	    self.shareBox('announce', 'Recording!')
 	    self.data('status', RECORDING)
 	    self.data('recordStart')(function() {
-		self.find('#record-rec').addClass('recording')
+		self.shareBox('recordStopCountdown', RECORD_LENGTH)
 	    })
 	    return
 	}
-	self.shareBox('announce', 'Recording starts in ' + secs, 1000)
+	$('#record-countdown').text(secs)
 	setTimeout(function() {
 	    self.shareBox('recordCountdown', secs-1)
 	}, 1000)
+    },
+    recordStopCountdown: function(secs) {
+	var self = $(this)
+	self.data('stopTimeout', null)
+	if (secs == 0)
+	    return self.shareBox('recordStop')
+	self.shareBox('showStep', 3)
+	$('#record-stop').text(secs)
+	var timeout = setTimeout(function() {
+	    self.shareBox('recordStopCountdown', secs-1)
+	}, 1000)
+	self.data('stopTimeout', timeout)
     },
     recordStop: function(callback) {
 	var self = $(this)
@@ -93,17 +127,20 @@ JqueryClass('shareBox', {
 	if (status == STOPPED) {
 	    return
 	} else if (status == RECORDING) {
-	    self.find('.js-share').removeClass('disabled')
+	    var timeout = self.data('stopTimeout')
+	    if (timeout)
+		clearTimeout(timeout)
 	    self.data('recordStop')(function() {
-		self.find('#record-rec').removeClass('recording')
-		self.shareBox('announce')
+		self.shareBox('showStep', 4)
+		$('#record-play').show()
+		$('#record-play-stop').hide()
 		if (callback)
 		    callback()
 	    })
 	} else { // PLAYING
 	    self.data('playStop')(function() {
 		self.find('#record-play').removeClass('playing')
-		self.shareBox('announce')
+		//self.shareBox('announce')
 		if (callback)
 		    callback()
 	    })
@@ -113,13 +150,14 @@ JqueryClass('shareBox', {
 	var self = $(this)
 	var play = function() {
 	    self.data('playStart')(function() {
-		self.find('#record-play').addClass('playing')
+		$('#record-play').hide()
+		$('#record-play-stop').show()
 		self.data('status', PLAYING)
 	    }, function () {
-		self.find('#record-play').removeClass('playing')
+		$('#record-play').show()
+		$('#record-play-stop').hide()
 		self.data('status', STOPPED)
 	    })
-	    self.shareBox('announce', 'Playing')
 	}
 	var status = self.data('status')
 	if (status == STOPPED)
@@ -128,19 +166,11 @@ JqueryClass('shareBox', {
 	    self.shareBox('recordStop', play)
     },
 
-    announce: function(message, timeout) {
+    recordDelete: function() {
 	var self = $(this)
-	if (message == null)
-	    message = ''
-	if (timeout == null)
-	    timeout = 500
-	var statusBox = self.find('#record-status')
-	statusBox.text(message)
-	if (self.data('announceTimeout'))
-	    clearTimeout(self.data('announceTimeout'))
-	self.data('announceTimeout', setTimeout(function() {
-	    statusBox.text('')
-	}, timeout))
+	self.data('recordReset')(function(){
+	    self.shareBox('showStep', 1)
+	})
     },
 
     share: function() {
@@ -166,6 +196,8 @@ JqueryClass('shareBox', {
 
     open: function(uid, title, pedalboard) {
 	var self = $(this)
+	console.log(self.data('status'))
+	self.shareBox('showStep', 1)
 	self.data('pedalboard', pedalboard)
 	self.find('input[type=text]').val(title)
 	var text = self.find('textarea')
@@ -177,6 +209,12 @@ JqueryClass('shareBox', {
 	    maxHeight: $(window).height() - text.offset().top - 100
 	})
     },
+
+    close: function() {
+	var self = $(this)
+	// TODO check status
+	self.hide()
+    }
 
 })
 

@@ -22,7 +22,6 @@ class Recorder(object):
                                      stdout=open('/dev/null', 'w'),
                                      stderr=open('/dev/null', 'w'))
         self.recording = True
-        self.log_pedalboard_state(pedalboard, 0)
 
     def stop(self):
         if not self.recording:
