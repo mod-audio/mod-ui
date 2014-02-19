@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -54,7 +54,7 @@ class HMI(object):
         self.queue = []
         self.queue_idle = True
         self.ioloop = ioloop.IOLoop.instance()
-        
+
         self.sp = self.open_connection(callback)
 
 
@@ -142,7 +142,7 @@ class HMI(object):
     def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback=lambda result:None):
         self.send("control_clean %d %d %d %d" % (hw_type, hw_id, actuator_type, actuator_id), callback, datatype='boolean')
 
-    def control_add(self, instance_id, symbol, label, var_type, unit, value, max, 
+    def control_add(self, instance_id, symbol, label, var_type, unit, value, max,
                     min, steps, hw_type, hw_id, actuator_type, actuator_id, n_controllers, index,
                     options=[], callback=lambda result: None):
         """
@@ -200,8 +200,8 @@ class HMI(object):
     def clipmeter(self, position, callback=lambda result: None):
         self.send('clipmeter %d' % position, callback)
 
-    def peakmeter(self, position, value, callback=lambda result: None):
-        self.send('peakmeter %d %f' % (position, value), callback)
+    def peakmeter(self, position, value, peak, callback=lambda result: None):
+        self.send('peakmeter %d %f %f' % (position, value, peak), callback)
 
     def tuner(self, freq, note, cents, callback=lambda result: None):
         self.send('tuner %f %s %f' % (freq, note, cents), callback)
