@@ -272,7 +272,7 @@ $('document').ready(function() {
                 	<label for="pedalboard-share-comment"><textarea rows="4"id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea></label>
 				</div>
 
-				<div class="textcenter" id="record-step-1">
+				<div class="textcenter hidden" id="record-step-1">
 					<h2>Record a sample </h2>
 					<span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
 					<p><small>(optional)</small><p>
@@ -288,10 +288,11 @@ $('document').ready(function() {
 					<p><small>(click the square to stop)</small><p>
 				</div>
 				<div class="textcenter hidden" id="record-step-4">
+					<small>&nbsp;</small>
 					<button class="btn btn-info btn-large btn-block" id="record-play">
 					  <i class="icon-white icon-play"></i> Listen
 					</button>
-					<button class="btn btn-info btn-large btn-block active" id="record-play-stop">
+					<button class="btn btn-info btn-large btn-block hidden" id="record-play-stop">
 					  <i class="icon-white icon-stop"></i> Stop
 					</button>
 					<button class="btn btn-danger btn-large btn-block" id="record-again">
