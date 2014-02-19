@@ -644,7 +644,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     margin-left: -300px;
     top: 200px;
     width: 600px;
-	height: 427px;
 }
 
 #share-window form {
@@ -687,13 +686,13 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	width: 300px;
 	margin: auto;
 }
-
+#share-window-wrapper {
+	height: 360px;
+}
 #share-window-fb {
 	border-top: 1px solid #ddd;
 	display: block;
 	width: 600px;
-	position: absolute;
-	bottom: 18px;
 	height: 30px;
 	padding-top: 5px;
 }

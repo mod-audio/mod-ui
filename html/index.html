@@ -271,36 +271,36 @@ $('document').ready(function() {
            			<label for="pedalboard-share-title"><input type="text" class="form-control" id="pedalboard-share-title"  placeholder="How will you call this pedalboard?"/></label>
                 	<label for="pedalboard-share-comment"><textarea rows="4"id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea></label>
 				</div>
-
-				<div class="textcenter hidden" id="record-step-1">
-					<h2>Record a sample </h2>
-					<span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
-					<p><small>(optional)</small><p>
-				</div>
-				<div class="controls actions hidden" id="record-step-2">
-				
-					<h2 class="textcenter">Recording starts in</h2>
-					<span class="btn btn-danger" id="record-countdown">3</span>
-				</div>
-				<div class="textcenter hidden" id="record-step-3">
-					<h2>Recording</h2>
-					<span class="btn btn-primary" id="record-stop">15</span>
-					<p><small>(click the square to stop)</small><p>
-				</div>
-				<div class="textcenter hidden" id="record-step-4">
-					<small>&nbsp;</small>
-					<button class="btn btn-info btn-large btn-block" id="record-play">
-					  <i class="icon-white icon-play"></i> Listen
-					</button>
-					<button class="btn btn-info btn-large btn-block hidden" id="record-play-stop">
-					  <i class="icon-white icon-stop"></i> Stop
-					</button>
-					<button class="btn btn-danger btn-large btn-block" id="record-again">
-					  <i class="icon-white icon-repeat"></i> Record again
-					</button>
-					<button class="btn btn-inverse btn-large btn-block" id="record-delete">
-					  <i class="icon-white icon-remove"></i> Delete sample
-					</button>
+				<div id="share-window-wrapper">
+					<div class="textcenter " id="record-step-1">
+						<h2>Record a sample </h2>
+						<span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
+						<p><small>(optional)</small><p>
+					</div>
+					<div class="controls actions hidden" id="record-step-2">
+						<h2 class="textcenter">Recording starts in</h2>
+						<span class="btn btn-danger" id="record-countdown">3</span>
+					</div>
+					<div class="textcenter hidden" id="record-step-3">
+						<h2>Recording</h2>
+						<span class="btn btn-primary" id="record-stop">15</span>
+						<p><small>(click the square to stop)</small><p>
+					</div>
+					<div class="textcenter hidden" id="record-step-4">
+						<small>&nbsp;</small>
+						<button class="btn btn-info btn-large btn-block " id="record-play">
+						  <i class="icon-white icon-play"></i> Listen
+						</button>
+						<button class="btn btn-info btn-large btn-block active hidden" id="record-play-stop">
+						  <i class="icon-white icon-stop"></i> Stop
+						</button>
+						<button class="btn btn-danger btn-large btn-block" id="record-again">
+						  <i class="icon-white icon-repeat"></i> Record again
+						</button>
+						<button class="btn btn-inverse btn-large btn-block" id="record-delete">
+						  <i class="icon-white icon-remove"></i> Delete sample
+						</button>
+					</div>
 				</div>
 				<div id="share-window-fb">
 					<label for="pedalboard-share-fb"><input id="pedalboard-share-fb" type="checkbox" /> Share also on Facebook </label>
