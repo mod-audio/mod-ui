@@ -19,7 +19,7 @@ var STOPPED = 0
 var RECORDING = 1
 var PLAYING = 2
 
-var RECORD_COUNTDOWN = 1
+var RECORD_COUNTDOWN = 3
 var RECORD_LENGTH = 15
 
 JqueryClass('shareBox', {
@@ -124,8 +124,12 @@ JqueryClass('shareBox', {
     recordStop: function(callback) {
 	var self = $(this)
 	var status = self.data('status')
+	var _callback = function() {
+	    if (callback)
+		callback()
+	}
 	if (status == STOPPED) {
-	    return
+	    return _callback()
 	} else if (status == RECORDING) {
 	    var timeout = self.data('stopTimeout')
 	    if (timeout)
@@ -134,15 +138,13 @@ JqueryClass('shareBox', {
 		self.shareBox('showStep', 4)
 		$('#record-play').show()
 		$('#record-play-stop').hide()
-		if (callback)
-		    callback()
+		_callback()
 	    })
 	} else { // PLAYING
 	    self.data('playStop')(function() {
 		self.find('#record-play').removeClass('playing')
 		//self.shareBox('announce')
-		if (callback)
-		    callback()
+		_callback()
 	    })
 	}
     },
@@ -196,7 +198,6 @@ JqueryClass('shareBox', {
 
     open: function(uid, title, pedalboard) {
 	var self = $(this)
-	console.log(self.data('status'))
 	self.shareBox('showStep', 1)
 	self.data('pedalboard', pedalboard)
 	self.find('input[type=text]').val(title)
@@ -212,8 +213,13 @@ JqueryClass('shareBox', {
 
     close: function() {
 	var self = $(this)
-	// TODO check status
-	self.hide()
+	self.shareBox('recordStop', function() {
+	    console.log(self.data('recordReset'))
+	    self.data('recordReset')(function() {
+		console.log('reset')
+		self.hide()
+	    })
+	})
     }
 
 })
