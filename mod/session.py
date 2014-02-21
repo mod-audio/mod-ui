@@ -126,10 +126,7 @@ class Session(object):
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
-        def remove():
-            self.remove(-1, callback)
-        self.jack_bufsize = DEFAULT_JACK_BUFSIZE
-        change_jack_bufsize(DEFAULT_JACK_BUFSIZE, remove)
+        self.remove(-1, callback)
 
     def setup_monitor(self):
         if self.monitor_server is None:
