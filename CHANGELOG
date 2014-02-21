@@ -1,3 +1,8 @@
+0.29.3
+======
+
+  - fix: removed duplicated bufsize change that was causing infinite bufsize change loop
+
 0.29.2
 ======
 
