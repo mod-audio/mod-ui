@@ -1,4 +1,4 @@
-import time, subprocess, random, os
+import time, subprocess, random, os, copy, json
 from tornado import ioloop
 from mod.settings import CAPTURE_PATH
 
@@ -16,29 +16,40 @@ class Recorder(object):
         self.tstamp = time.time()
         self.pedalboard = pedalboard
         self.events = []
+        self.last_event = None
         self.proc = subprocess.Popen(['jack_capture',
                                       '-f', 'ogg',
+                                      '-V',
+                                      '-d', '15',
                                       CAPTURE_PATH],
-                                     stdout=open('/dev/null', 'w'),
-                                     stderr=open('/dev/null', 'w'))
+                                     stdout=open('/tmp/capture.err', 'w'),
+                                     stderr=open('/tmp/capture.out', 'w')
+                                     )
         self.recording = True
 
     def stop(self):
         if not self.recording:
             return
-        self.proc.kill()
+        self.proc.send_signal(2)
+        self.proc.wait()
         self.recording = False
         result = {
             'pedalboard': self.pedalboard.serialize(),
             'handle': open(CAPTURE_PATH),
-            'events': self.events,
+            'events': copy.deepcopy(self.events),
             }
         os.remove(CAPTURE_PATH)
+        self.events = []
+        self.last_event = None
         return result
 
     def event(self, event_type, *data):
         if not self.recording:
             return
+        fingerprint = json.dumps([event_type, data])
+        if self.last_event == fingerprint:
+            return
+        self.last_event = fingerprint
         self.events.append({
                 'type': event_type,
                 'tstamp': time.time() - self.tstamp,
@@ -66,8 +77,8 @@ class Player(object):
         if self.playing:
             self.stop()
         fh.seek(0)
-        self.proc = subprocess.Popen(['mplayer', '-ao', 'jack', '-'],
-                                     stdin=fh,
+        open('/tmp/recording.ogg', 'w').write(fh.read())
+        self.proc = subprocess.Popen(['sndfile-jackplay', '/tmp/recording.ogg'],
                                      stdout=subprocess.PIPE)
         self.fh = fh
         self.stop_callback = stop_callback

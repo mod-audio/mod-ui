@@ -135,6 +135,7 @@ JqueryClass('shareBox', {
 	    if (timeout)
 		clearTimeout(timeout)
 	    self.data('recordStop')(function() {
+		self.data('status', STOPPED)
 		self.shareBox('showStep', 4)
 		$('#record-play').show()
 		$('#record-play-stop').hide()
@@ -143,7 +144,7 @@ JqueryClass('shareBox', {
 	} else { // PLAYING
 	    self.data('playStop')(function() {
 		self.find('#record-play').removeClass('playing')
-		//self.shareBox('announce')
+		self.data('status', STOPPED)
 		_callback()
 	    })
 	}

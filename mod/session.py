@@ -483,7 +483,9 @@ class Session(object):
             affected_actuators = self._pedalboard.remove_instance(instance_id)
 
         def change_bufsize(ok):
-            self.change_bufsize(self._pedalboard.get_bufsize(), callback)
+            def final_callback(bufsize_changed):
+                callback(ok)
+            self.change_bufsize(self._pedalboard.get_bufsize(), final_callback)
 
         def _callback(ok):
             if ok:
@@ -787,8 +789,10 @@ class Session(object):
             self.recording = self.recorder.stop()
         def stop():
             self.unmute(stop_callback)
+        def schedule_stop():
+            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), stop)
         def play():
-            self.player.play(self.recording['handle'], stop)
+            self.player.play(self.recording['handle'], schedule_stop)
         self.mute(play)
 
     def stop_playing(self):
