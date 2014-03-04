@@ -55,6 +55,7 @@ JqueryClass('shareBox', {
 	self.find('#record-share').click(function() { self.shareBox('share'); return false })
 
 	self.data('status', STOPPED)
+	self.data('step', 0)
 
 	$('body').keydown(function(e) {
 	    if (e.keyCode == 27)
@@ -63,6 +64,8 @@ JqueryClass('shareBox', {
     },
 
     showStep: function(step) {
+	var self = $(this)
+	self.data('step', step)
 	for (var i=1; i<5; i++) {
 	    if (i == step)
 		$('#record-step-'+i).show()
@@ -78,7 +81,11 @@ JqueryClass('shareBox', {
 		button.attr('disabled', false)
 	    else
 		button.attr('disabled', true)
-	}	    
+	}
+	if (step == 4)
+	    $('#share-window-fb label').hide() // TODO facebook integration
+	else
+	    $('#share-window-fb label').hide()
     },
 
     recordStartCountdown: function() {
@@ -178,23 +185,39 @@ JqueryClass('shareBox', {
 
     share: function() {
 	var self = $(this)
+	var step = self.data('step')
 	var data = { 
 	    pedalboard: self.data('pedalboard'),
 	    title: self.find('input[type=text]').val(),
 	    description: self.find('textarea').val()
 	}
-	self.data('recordDownload')(function(audioData) {
-	    data = $.extend(data, audioData)
+	$('#record-share').attr('disabled', true)
+	if (step == 4) {
+	    // User has recorded some sound
+	    self.data('recordDownload')(function(audioData) {
+		data = $.extend(data, audioData)
+		self.data('share')(data, function(ok) {
+		    $('#record-share').attr('disabled', false)
+		    if (ok) {
+			self.data('recordReset')(function(){
+			    self.hide()
+			})
+		    } else {
+			new Notification('error', "Couldn't share pedalboard")
+		    }
+		})
+	    })
+	} else {
+	    // Just share without audio
 	    self.data('share')(data, function(ok) {
+		$('#record-share').attr('disabled', false)
 		if (ok) {
-		    self.data('recordReset')(function(){
-			self.hide()
-		    })
+		    self.hide()
 		} else {
 		    new Notification('error', "Couldn't share pedalboard")
 		}
 	    })
-	})
+	}
     },
 
     open: function(uid, title, pedalboard) {
@@ -207,9 +230,6 @@ JqueryClass('shareBox', {
 	self.data('screenshotGenerated', false)
 	self.find('.js-share').addClass('disabled')
 	self.show()
-	text.autoResize({
-	    maxHeight: $(window).height() - text.offset().top - 100
-	})
     },
 
     close: function() {

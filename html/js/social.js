@@ -95,7 +95,7 @@ JqueryClass('socialWindow', {
 	    }
 	    $.extend(context, pb)
 	    content = $(Mustache.render(TEMPLATES.cloud_feed, context))	    
-	    content.find('#pedalboard-'+pedalboards[i]['_id']).click(pbFactory(pb))
+	    content.find('.js-pedalboard-'+pedalboards[i]['_id']).click(pbFactory(pb))
 	    content.find('div.spec').each(function() {
 		var spec = $(this)
 		if (parseInt(spec.find('span').html()) == 0) {

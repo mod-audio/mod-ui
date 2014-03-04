@@ -3,9 +3,15 @@
             <div class="content alignleft span10">
                 <p>On {{created}} <a>{{author.name}}</a> published <b>{{title}}</b>:</p>
                 <p class="screenshot">
-                    <a id="pedalboard-{{_id}}">
+		  {{#video}}
+  		    <iframe src="//player.vimeo.com/video/{{id}}" width="780" height="440" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+		  {{/video}}
+                  {{^video}}
+                    <a class="js-pedalboard-{{_id}}">
                         <img src="{{cloud}}/pedalboard/screenshot/{{_id}}.png" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
                     </a>
+                  {{/video}}
+		    <a class="js-pedalboard-{{_id}}">Try</a>
                 </p>
                 <div class="techspecs clearfix">
                     <div class="spec clearfix">
