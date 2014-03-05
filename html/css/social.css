@@ -150,6 +150,7 @@
 /* Main Content */
 #mod-social-network #social-main {
     min-height:600px;
+    width: 850px;
 /*    position:absolute;*/
 /*    top:0;*/
     word-break:break-word;
