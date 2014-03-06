@@ -155,6 +155,7 @@
 /*    top:0;*/
     word-break:break-word;
 }
+
 #mod-social-network #social-main.leftcolumn {
     border-right:1px solid #222;
 /*    left:0;*/
@@ -165,7 +166,9 @@
 /*    left:220px;*/
 /*    right:0;*/
 }
-
+#mod-social-network #social-main .pedalboard-load {
+    float: right;
+}
 /* User Profile */
 #mod-social-network #user-profile .avatar {
     height:64px;
@@ -642,6 +645,7 @@
 }
 /* TechSpec */
 .feed div.techspecs {
+    float: left;
     margin-bottom:9px;
 }
 .feed div.techspecs div.spec {
