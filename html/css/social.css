@@ -642,6 +642,7 @@
 }
 .feed .description {
     font-size:13px;
+    float: left;
 }
 /* TechSpec */
 .feed div.techspecs {
