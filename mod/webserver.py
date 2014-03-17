@@ -939,6 +939,67 @@ class DemoRestore(web.RequestHandler):
 
         #tornado.ioloop.IOLoop.instance().add_callback(lambda: sys.exit(0))        
 
+class RecordingStart(web.RequestHandler):
+    def get(self):
+        SESSION.start_recording()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
+class RecordingStop(web.RequestHandler):
+    def get(self):
+        result = SESSION.stop_recording()
+        #result['data'] = b64encode(result.pop('handle').read())
+        #open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
+class RecordingPlay(web.RequestHandler):
+    waiting_request = None
+    @web.asynchronous    
+    def get(self, action):
+        if action == 'start':
+            self.playing = True
+            SESSION.start_playing(RecordingPlay.stop_callback)
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps(True))
+            return self.finish()
+        if action == 'wait':
+            if RecordingPlay.waiting_request is not None:
+                RecordingPlay.stop_callback()
+            RecordingPlay.waiting_request = self
+            return
+        if action == 'stop':
+            SESSION.stop_playing()
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps(True))
+            return self.finish()
+        raise web.HTTPError(404)        
+    @classmethod
+    def stop_callback(kls):
+        if kls.waiting_request is None:
+            return
+        kls.waiting_request.set_header('Content-Type', 'application/json')
+        kls.waiting_request.write(json.dumps(True))
+        kls.waiting_request.finish()
+        kls.waiting_request = None
+
+class RecordingDownload(web.RequestHandler):
+    def get(self):
+        recording = SESSION.recording
+        recording['handle'].seek(0)
+        data = {
+            'audio': b64encode(SESSION.recording['handle'].read()),
+            'events': recording['events'],
+            }
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(data, default=json_handler))
+
+class RecordingReset(web.RequestHandler):
+    def get(self):
+        SESSION.reset_recording()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -988,6 +1049,12 @@ application = web.Application(
 
             (r"/login/sign_session/(.+)", LoginSign),
             (r"/login/authenticate", LoginAuthenticate),
+
+            (r"/recording/start", RecordingStart),
+            (r"/recording/stop", RecordingStop),
+            (r"/recording/play/(start|wait|stop)", RecordingPlay),
+            (r"/recording/download", RecordingDownload),
+            (r"/recording/reset", RecordingReset),
 
             (r"/reset/?", DashboardClean),
             (r"/disconnect/?", DashboardDisconnect),

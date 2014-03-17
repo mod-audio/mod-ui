@@ -24,6 +24,7 @@ function Desktop(elements) {
 	pedalboard: $('<div>'),
 	zoomIn: $('<div>'),
 	zoomOut: $('<div>'),
+	rec: $('<div>'),
 	saveBox: $('<div>'),
 	saveButton: $('<div>'),
 	saveAsButton: $('<div>'),
@@ -169,6 +170,19 @@ function Desktop(elements) {
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function() { self.pedalboard.pedalboard('zoomIn') })
     elements.zoomOut.click(function() { self.pedalboard.pedalboard('zoomOut') })
+
+    var ajaxFactory = function(url, errorMessage) {
+	return function(callback) {
+	    $.ajax({ url: url,
+		     success: callback,
+		     error: function() {
+			 new Error(errorMessage)
+		     },
+		     cache: false,
+		     dataType: 'json'
+		   })
+	}
+    }
 
     elements.pedalboardTrigger.click(function() { 
 	self.windowManager.closeWindows() 
@@ -343,8 +357,34 @@ function Desktop(elements) {
 		     dataType: 'json'
 		   })
 	},
+	recordStart: ajaxFactory('/recording/start', "Can't record. Probably a connection problem."),
+	recordStop: ajaxFactory('/recording/stop', "Can't stop record. Probably a connection problem. Please try stopping again"),
+	playStart: function(startCallback, stopCallback) {
+	    $.ajax({ url: '/recording/play/start',
+		     success: function(resp) {
+			 $.ajax({ url: '/recording/play/wait',
+				  success: stopCallback,
+				  error: function() {
+				      new Error("Couln't check when sample playing has ended")
+				  },
+				  cache: false,
+				  dataType: 'json'
+				})
+			 startCallback(resp)
+		     },
+		     error: function() {
+			 new Error("Can't play. Probably a connection problem.")
+		     },
+		     cache: false,
+		     dataType: 'json'
+		   })
+	},
+	playStop: ajaxFactory('/recording/play/stop', "Can't stop playing. Probably a connection problem. Please try stopping again"),
+	recordDownload: ajaxFactory('/recording/download', "Can't download recording. Probably a connection problem."),
+	recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
+
 	share: function(data, callback) {
-	    $.ajax({ url: SITEURL + '/pedalboard/share/' + self.userSession.sid,
+	    $.ajax({ url: SITEURL + '/pedalboard/videoshare/' + self.userSession.sid,
 		     method: 'POST',
 		     data: JSON.stringify(data),
 		     success: function(resp) {

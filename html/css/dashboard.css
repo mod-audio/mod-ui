@@ -633,14 +633,80 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 /* SHARE WINDOW */
+.close-window {
+	position: absolute;
+	right: 15px;
+	top: 15px;
+	cursor: pointer;
+}
+
 #share-window .box {
     margin-left: -300px;
     top: 200px;
     width: 600px;
 }
 
-#share-window .image {
-    /* width and height set by javascript */
+#share-window form {
+	margin: 0 !important;
+}
+
+#share-window  #record-rec {
+	border-radius: 50px !important;	
+}
+#share-window span.btn {
+	text-align: center;
+	color: white;
+	font-size: 40px;
+	line-height: 50px;
+	padding-top: 25px;
+	margin: 10px auto;
+	display: block;
+	width: 75px;
+	height: 70px;
+}
+
+#share-window .form-control {
+	width: 585px;
+}
+
+#share-window .form-control input {
+	width 100%;
+}
+
+#share-window label {
+	width: 585px;
+}
+
+#share-window .record #record-rec.recording {
+    background-color: red;
+	border-radius: 50px !important;
+}
+
+#share-window .textcenter{
+	width: 300px;
+	margin: auto;
+}
+#share-window-wrapper {
+	height: 360px;
+}
+#share-window-fb {
+	border-top: 1px solid #ddd;
+	display: block;
+	width: 600px;
+	height: 30px;
+	padding-top: 5px;
+}
+
+#share-window-fb label {
+	background: url("../img/facebook-menu-sprite.png") no-repeat top right;
+	height: 36px;
+	width: 210px;
+	padding-top: 3px;
+	margin-bottom: -6px;
+}
+
+#share-window-fb input {
+	vertical-align: baseline;
 }
 
 #share-window img.loading {
@@ -656,20 +722,3 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     border-radius: 5px;
 }
 
-#share-window textarea {
-    height: auto;
-    min-height: 60px;
-    margin-top: 10px;
-    padding: 5px;
-    width: 590px;
-}
-
-#share-window input {
-    border: 1px solid #lightgrey;
-    border-radius: 4px;
-    font-size: 20px;
-    height: 26px;
-    margin-bottom: 10px;
-    padding: 0 5px;
-    width: 588px;
-}

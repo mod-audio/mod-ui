@@ -183,6 +183,7 @@ class EffectIndex(Index):
             effect['brand'] = effect['gui']['templateData']['author']
         except (KeyError, TypeError):
             pass
+
         effect_data = self.schemed_data(effect)
 
         effect_data['input_ports'] = len(effect['ports']['audio']['input'])
