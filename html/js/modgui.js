@@ -83,7 +83,9 @@ function GUI(effect, options) {
 	    // Report the new value and return the widget to old value
 	    options.change(symbol, value)
 	    if (source)
+		setTimeout(function() {
 		source.controlWidget('setValue', port.value)
+		}, 500)
 	    return
 	}
 	port.value = value
