@@ -64,9 +64,18 @@ JqueryClass('upgradeWindow', {
 
     close: function() { $(this).hide() },
 
-    check: function() {
+    check: function(count) {
 	var self = $(this)
 	var icon = self.data('icon')
+	if (count == null)
+	    count = 0
+	if (typeof(Installer) == "undefined" && count < 10) {
+	    count++;
+	    setTimeout(function() {
+		self.upgradeWindow('check', count)
+	    }, 1000)
+	    return
+	}
 	try {
 	    var installer = new Installer({ 
 		repository: PACKAGE_REPOSITORY,
