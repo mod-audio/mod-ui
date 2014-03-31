@@ -643,6 +643,7 @@
 .feed .description {
     font-size:13px;
     float: left;
+    width: 780px;
 }
 /* TechSpec */
 .feed div.techspecs {
