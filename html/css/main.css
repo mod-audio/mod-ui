@@ -252,7 +252,7 @@ body {
     position:absolute;
     right:10px;
     bottom:50px;
-    z-index:10;
+    z-index:100;
 }
 
 #mod-upgrade .progressbar-wrapper {
