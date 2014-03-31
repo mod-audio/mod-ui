@@ -1,3 +1,8 @@
+0.30.3
+======
+
+  - fix: "Local upgrade server is offline" eventual error
+
 0.30.2
 ======
 
