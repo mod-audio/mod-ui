@@ -126,13 +126,16 @@ def rebuild_database():
 
     shutil.rmtree(INDEX_PATH)
     shutil.rmtree(PEDALBOARD_INDEX_PATH)
+    shutil.rmtree(EFFECT_DIR)
+    os.mkdir(EFFECT_DIR)
 
     for bundle_name in os.listdir(PLUGIN_LIBRARY_DIR):
         path = os.path.join(PLUGIN_LIBRARY_DIR, bundle_name)
         bundle = Bundle(path, units_file=UNITS_TTL_PATH)
         extract_effects_from_bundle(bundle)
 
-    EffectIndex().reindex()
-    PedalboardIndex().reindex()
+    # The index will be rebuilt just by instantiating it
+    PedalboardIndex()
+    EffectIndex()
     
         
