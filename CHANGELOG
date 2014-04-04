@@ -1,3 +1,8 @@
+0.30.4
+======
+
+  - fix: Database rebuild would break in some situations
+
 0.30.3
 ======
 
