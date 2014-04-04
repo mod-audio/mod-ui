@@ -38,9 +38,9 @@ def get_mac():
         return result[0][0]
 
     for i, pair in enumerate(result):
-        print "%d.\t%s" % (i, pair[1])
+        print "%d.\t%s\t%s" % (i, pair[0], pair[1])
     print "\nChoose: "
-    return result[int(sys.stdin.read().strip())][0]
+    return result[int(sys.stdin.readline().strip())][0]
 
 def configure():
     subprocess.Popen(['sudo', 'ifconfig', 'bnep0', '192.168.50.2']).wait()
