@@ -5,12 +5,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,12 +24,12 @@ A Hardware can be a Known Hardware, meaning it is described
 by a class on ``hardware.py`` or a new hardware (still not working)
 
 An Actuator also can be described here, basically it is an
-Actuator Subclass. Actuator instances are grouped by it's 
+Actuator Subclass. Actuator instances are grouped by it's
 ACT_TYP attribute. This will change in the future as they can
-be grouped by the class, so the ACT_TYP and HW_TYP 
+be grouped by the class, so the ACT_TYP and HW_TYP
 attributes can disappear
 
-The actuator can be bound to a Hardware, this means that the 
+The actuator can be bound to a Hardware, this means that the
 actuator will have an id which is a way to identify it,
 together with it's class, inside the hardware
 
@@ -39,14 +39,14 @@ Known actuators and hardwares:
         Pedal
         Touch
         Accel
-    
+
     Actuator
-        Rotary
+        Knob
         FootSwitch
         Pot
 
 """
-           
+
 class Hardware(object):
     HW_TYP = -1
 
@@ -92,7 +92,7 @@ class Actuator(object):
 class FootSwitch(Actuator):
     # Attention: this type is hardcoded in pedalboards.js
     ACT_TYP = 1
-    
+
     def __init__(self, name="Foot", addressing_type=['switch', 'tap_tempo'], exclusive=True):
         super(FootSwitch, self).__init__(name, addressing_type, exclusive)
 
@@ -100,12 +100,12 @@ class FootSwitch(Actuator):
         if addr_type == "tap_tempo":
             return "%s (Tap Tempo)" % self.label
         return self.label
-        
-class Rotary(Actuator):
+
+class Knob(Actuator):
     ACT_TYP = 2
-    
-    def __init__(self, name="Rotary", addressing_type=['range', 'select'], exclusive=False):
-        super(Rotary, self).__init__(name, addressing_type, exclusive)
+
+    def __init__(self, name="Knob", addressing_type=['range', 'select'], exclusive=False):
+        super(Knob, self).__init__(name, addressing_type, exclusive)
 
 
 class Pot(Actuator):
@@ -121,10 +121,10 @@ class MQ(Hardware):
     HW_TYP = 0
     def __init__(self, id):
         actuators = [
-                    Rotary(),
-                    Rotary(),
-                    Rotary(),
-                    Rotary(),
+                    Knob(),
+                    Knob(),
+                    Knob(),
+                    Knob(),
                     FootSwitch(),
                     FootSwitch(),
                     FootSwitch(),
@@ -146,7 +146,7 @@ class ExprPedal(Hardware):
 
 class Touch(Hardware):
     HW_TYP = 2
-    
+
     def __init__(self, id):
         actuators = [
                 Pot("X"),
@@ -182,15 +182,15 @@ def add_hardware(hardware_type, hardware_id, hardware):
         return
 
     hw = hardware_cls(hardware_id)
-    
+
     for actuator in hw.actuators:
         for addr_type in actuator.addressing_type:
             hardware[addr_type] = hardware.get(addr_type, [])
-            hardware[addr_type].append([hw.HW_TYP, 
-                                        hw.id, 
-                                        actuator.ACT_TYP, 
-                                        actuator.id, 
-                                        actuator.exclusive, 
+            hardware[addr_type].append([hw.HW_TYP,
+                                        hw.id,
+                                        actuator.ACT_TYP,
+                                        actuator.id,
+                                        actuator.exclusive,
                                         hw.get_label_for_actuator(actuator, addr_type) ])
 
 def get_hardware():
