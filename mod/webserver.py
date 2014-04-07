@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -59,7 +59,7 @@ from mod.pedalboard import Pedalboard, remove_pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
 from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
-from mod.system import (sync_pacman_db, get_pacman_upgrade_list, 
+from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
@@ -90,7 +90,7 @@ class UpgradePackages(web.RequestHandler):
     @gen.engine
     def get(self):
         packages = yield gen.Task(get_pacman_upgrade_list)
-        
+
         self.write(json.dumps(packages))
         self.finish()
 
@@ -108,7 +108,7 @@ class BluetoothSetPin(web.RequestHandler):
     @gen.engine
     def post(self):
         pin = self.get_argument("pin", None)
-        
+
         if pin is None:
             self.write(json.dumps(False))
         else:
@@ -154,7 +154,7 @@ class SDKSysUpdate(web.RequestHandler):
             tornado.ioloop.IOLoop.instance().add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
 
         res = yield gen.Task(install_update, update_package)
-        proc = subprocess.Popen(['pacman', '-U'] + glob(os.path.join(dirname, '*')), 
+        proc = subprocess.Popen(['pacman', '-U'] + glob(os.path.join(dirname, '*')),
                                         cwd=DOWNLOAD_TMP_DIR,
                                         stdout=subprocess.PIPE)
         def end_pacman(fileno, event):
@@ -226,7 +226,7 @@ class Searcher(tornado.web.RequestHandler):
             obj = self.get_object(entry['id'])
             if obj is None:
                 # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
-                continue 
+                continue
             entry.update(obj)
             result.append(entry)
         return result
@@ -317,7 +317,7 @@ class SDKEffectScript(EffectSearcher):
     def get(self, objid=None):
         if objid is None:
             objid = self.get_by_url()
-            
+
         try:
             options = self.get_object(objid)
         except:
@@ -369,7 +369,7 @@ class EffectImage(EffectSearcher):
             options = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-        
+
         try:
             path = options['gui'][prop]
         except:
@@ -445,9 +445,9 @@ class EffectBypassAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", 'switch', label, 6, "none", 
+        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", 'switch', label, 6, "none",
                             int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
-        
+
         # TODO: get value when unaddressing
         self.write(json.dumps({ 'ok': res, 'value': False }))
         self.finish()
@@ -503,7 +503,7 @@ class EffectParameterAddress(web.RequestHandler):
                 return
         else:
             result = {}
-        
+
         label = data.get('label', '---')
 
         try:
@@ -606,7 +606,7 @@ class PedalboardSave(web.RequestHandler):
             self.write(json.dumps({ 'ok': False, 'error': str(e) }))
             self.finish()
             raise StopIteration
-        
+
         THUMB_GENERATOR.schedule_thumbnail(uid)
 
         self.set_header('Content-Type', 'application/json')
@@ -635,7 +635,7 @@ class PedalboardScreenshot(web.RequestHandler):
         output = StringIO.StringIO()
         img.save(output, format="PNG")
         screenshot_data = output.getvalue()
-        
+
         resize_image(img, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT)
         output = StringIO.StringIO()
         img.save(output, format="PNG")
@@ -645,7 +645,7 @@ class PedalboardScreenshot(web.RequestHandler):
             'screenshot': b64encode(screenshot_data),
             'thumbnail': b64encode(thumbnail_data),
             }
-                     
+
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
         self.finish()
@@ -803,7 +803,7 @@ class BulkTemplateLoader(web.RequestHandler):
             contents = open(os.path.join(basedir, template)).read()
             template = template[:-5]
             self.write("TEMPLATES['%s'] = '%s';\n\n"
-                       % (template, 
+                       % (template,
                           tornado.escape.squeeze(contents.replace("'", "\\'"))
                           )
                        )
@@ -812,22 +812,16 @@ class Ping(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        def ping():
-            start = time.time()
+        start = time.time()
+        ihm = 0
+        if SESSION.pedalboard_initialized:
             ihm = yield gen.Task(SESSION.ping)
-            res = {
-                'ihm_online': ihm,
-                'ihm_time': int((time.time() - start) * 1000),
-                }
-            self.write(json.dumps(res))
-            self.finish()
-
-        def check_ping():
-            if SESSION.pedalboard_initialized:
-                ping()
-            else:
-                instance = tornado.ioloop.IOLoop.instance()
-                instance.add_timeout(timedelta(0.1), check_ping)
+        res = {
+            'ihm_online': ihm,
+            'ihm_time': int((time.time() - start) * 1000),
+            }
+        self.write(json.dumps(res))
+        self.finish()
 
 class SysMonProcessList(web.RequestHandler):
     @web.asynchronous
@@ -840,7 +834,7 @@ class SysMonProcessList(web.RequestHandler):
     def get_ps_list(self, callback):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock = iostream.IOStream(s)
-        
+
         def recv_ps_list():
             def set_ps_list(v):
                 self.ps_list = v
@@ -897,7 +891,7 @@ class LoginAuthenticate(web.RequestHandler):
         if not sha(serialized_user).hexdigest() == checksum:
             return self.write(json.dumps({ 'ok': False}))
         user = json.loads(b64decode(serialized_user))
-        self.write(json.dumps({ 'ok': True, 
+        self.write(json.dumps({ 'ok': True,
                                 'user': user }))
 
 class RegistrationStart(web.RequestHandler):
@@ -915,7 +909,7 @@ class RegistrationFinish(web.RequestHandler):
         response = json.loads(self.request.body)
         ok = register.DeviceRegisterer().register(response)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(ok))        
+        self.write(json.dumps(ok))
 
 class DemoRestore(web.RequestHandler):
     """
@@ -937,7 +931,7 @@ class DemoRestore(web.RequestHandler):
         ctx = { 'cloud_url': CLOUD_HTTP_ADDRESS }
         self.write(loader.load('demo_restore.html').generate(**ctx))
 
-        #tornado.ioloop.IOLoop.instance().add_callback(lambda: sys.exit(0))        
+        #tornado.ioloop.IOLoop.instance().add_callback(lambda: sys.exit(0))
 
 class RecordingStart(web.RequestHandler):
     def get(self):
@@ -955,7 +949,7 @@ class RecordingStop(web.RequestHandler):
 
 class RecordingPlay(web.RequestHandler):
     waiting_request = None
-    @web.asynchronous    
+    @web.asynchronous
     def get(self, action):
         if action == 'start':
             self.playing = True
@@ -973,7 +967,7 @@ class RecordingPlay(web.RequestHandler):
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps(True))
             return self.finish()
-        raise web.HTTPError(404)        
+        raise web.HTTPError(404)
     @classmethod
     def stop_callback(kls):
         if kls.waiting_request is None:
@@ -1003,9 +997,9 @@ class RecordingReset(web.RequestHandler):
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
-        UpgradeSync.urls('system/upgrade/sync') + 
-        UpgradePackage.urls('system/upgrade/package') + 
-        EffectInstaller.urls('effect/install') + 
+        UpgradeSync.urls('system/upgrade/sync') +
+        UpgradePackage.urls('system/upgrade/package') +
+        EffectInstaller.urls('effect/install') +
         EffectSearcher.urls('effect') +
         PedalboardSearcher.urls('pedalboard') +
         [
@@ -1035,7 +1029,7 @@ application = web.Application(
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
-            
+
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
@@ -1065,7 +1059,7 @@ application = web.Application(
 
             (r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
             (r"/register/finish/?", RegistrationFinish),
-            
+
             #(r"/sysmon/ps", SysMonProcessList),
             (r"/sysmon/xrun/(\d+)?", JackXRun),
 
@@ -1077,7 +1071,7 @@ application = web.Application(
             (r"/js/templates.js$", BulkTemplateLoader),
 
             (r"/demo/restore/?$", DemoRestore),
-            
+
             (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": PEDALBOARD_SCREENSHOT_DIR}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
@@ -1096,7 +1090,7 @@ def run():
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
-    
+
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":
