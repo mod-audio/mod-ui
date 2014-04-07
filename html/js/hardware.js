@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,12 +26,12 @@ function HardwareManager(options) {
 	getGui: function(instanceId) { }
 
 	// Callback to enable or disable a control in GUI
-	
+
     }, options)
 
     // All control types
     var controlTypes = [ 'switch', 'range', 'tap_tempo' ]
-    
+
     this.reset = function() {
 	/* All adressings indexed by actuator
 	   key: "hardwareType,hardwareId,actuatorType,actuatorId"
@@ -48,7 +48,7 @@ function HardwareManager(options) {
 	// Initializes addressings
 	self.listActuators()
     }
-    
+
     // Lists all available actuators and initializes the addressing structure
     this.listActuators = function() {
 	var actuators = []
@@ -128,7 +128,7 @@ function HardwareManager(options) {
 
 	var actuators = self.availableActuators(instanceId, port)
 	var actuatorSelect = form.find('select[name=actuator]')
-	$('<option value="-1">').text('Select').appendTo(actuatorSelect)
+	$('<option value="-1">').text('None').appendTo(actuatorSelect)
 	var i, value, actuator, opt
 	for (i=0; i<actuators.length; i++) {
 	    opt = $('<option>').attr('value', i).text(actuators[i].label).appendTo(actuatorSelect)
@@ -218,7 +218,7 @@ function HardwareManager(options) {
 	}
 	select.val(def)
     }
-    
+
     /* Based on port data and addressingType chosen, creates the addressing data
      * structure that is expected by the server
      * TODO
@@ -238,7 +238,7 @@ function HardwareManager(options) {
 	else if (port.enumeration) {
 	    addressing.type = 2
 	    if (!addressing.options || addressing.options.length == 0)
-		addressing.options = port.scalePoints.map(function(point) { 
+		addressing.options = port.scalePoints.map(function(point) {
 		    return [ point.value, point.label ]
 		})
 	} else if (port.trigger)
@@ -285,7 +285,7 @@ function HardwareManager(options) {
 		    self.addressings[actuatorKey].splice(portIndex, 1)
 		    delete self.controls[instanceId][symbol]
 		    gui.enable(symbol)
-		    
+
 		    // Set the returned value in GUI
 		    gui.setPortValue(symbol, result.value)
 		}
