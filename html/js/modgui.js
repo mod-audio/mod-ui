@@ -15,6 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+function loadCSS(css) {
+    loaded = $('head').find('link')
+    for (var i=0; i<loaded.length; i++) {
+	if ($(loaded[i]).attr('href') == css) {
+	    return
+	}
+    }
+    $('<link rel="stylesheet" type="text/css">').attr('href', css).appendTo($('head'))    
+}
+
 function GUI(effect, options) {
     var self = this
 
@@ -33,6 +43,9 @@ function GUI(effect, options) {
 
     if (!effect.gui)
 	effect.gui = {}
+
+    if (effect.gui.stylesheet)
+	loadCSS('/effect/stylesheet.css?url='+escape(effect.url)+'&bundle='+escape(effect.package))
 
     self.effect = effect
 
@@ -235,7 +248,6 @@ function GUI(effect, options) {
 		    })
 		    valueField.keydown(function(e) {
 			return true
-			console.log(e.keyCode)
 			if (e.keyCode >= 48 && e.keyCode <= 57)
 			    // It's a number
 			    return true
@@ -789,7 +801,6 @@ JqueryClass('customSelect', baseWidget, {
 	});
 	var hidden = self.find('[mod-widget-property=hidden]')
 	self.click(function() {
-	    console.log('clique')
 	    hidden.toggle()
 	})
 
