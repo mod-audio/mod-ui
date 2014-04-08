@@ -80,6 +80,8 @@ class Session(object):
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
+        Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
+        Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
@@ -97,6 +99,8 @@ class Session(object):
     def host_callback(self):
         if self.hmi_initialized:
             self.restore_last_pedalboard()
+        logging.info("hmi initialized")
+        self.hmi_initialized = True
         logging.info("host initialized")
         self.host_initialized = True
         ioloop.IOLoop.instance().add_callback(self.setup_monitor)
@@ -104,8 +108,10 @@ class Session(object):
     def hmi_callback(self):
         if self.host_initialized:
             self.restore_last_pedalboard()
-        logging.info("hmi initialized")
-        self.hmi_initialized = True
+
+    def reset_current_pedalboard(self, callback):
+        last_bank, last_pedalboard = get_last_bank_and_pedalboard()
+        self.load_bank_pedalboard(last_bank, last_pedalboard, callback, reset=True)
 
     def restore_last_pedalboard(self):
         last_bank, last_pedalboard = get_last_bank_and_pedalboard()
@@ -250,10 +256,10 @@ class Session(object):
             logging.error('[session] Unknown pedalboard %d in bank %d' % (pedalboard_number, bank_id))
             return None
 
-    def load_bank_pedalboard(self, bank_id, pedalboard_number, callback):
+    def load_bank_pedalboard(self, bank_id, pedalboard_number, callback, reset=False):
         pedalboard_id = self._get_pedalboard_id(bank_id, int(pedalboard_number))
 
-        if self._pedalboards.get(pedalboard_id, None) is None:
+        if reset or self._pedalboards.get(pedalboard_id, None) is None:
             self._pedalboard = Pedalboard(pedalboard_id)
             self._pedalboards[pedalboard_id] = self._pedalboard
         else:
@@ -432,6 +438,10 @@ class Session(object):
 
     def save_pedalboard(self, title, as_new):
         return self._pedalboard.save(title, as_new)
+
+    def save_current_pedalboard(self, callback):
+        self._pedalboard.save()
+        return callback(True)
 
     def load_bank(self, bank_id):
         bank = self._banks[bank_id]

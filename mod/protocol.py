@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -79,6 +79,8 @@ class Protocol(object):
         "peakmeter": [str],
         "tuner": [str],
         "tuner_input": [int],
+        "pedalboard_save": [],
+        "pedalboard_reset": [],
     }
 
     COMMANDS_FUNC = {}
@@ -91,7 +93,7 @@ class Protocol(object):
     def register_cmd_callback(cls, cmd, func):
         if cmd not in cls.COMMANDS.keys():
             raise ValueError("Command %s is not registered" % cmd)
-        
+
         cls.COMMANDS_FUNC[cmd] = func
 
     def __init__(self, msg):
@@ -123,7 +125,7 @@ class Protocol(object):
     def parse(self):
         if self.is_resp():
             return
-        
+
         cmd = self.msg.split()
         if not cmd or cmd[0] not in self.COMMANDS.keys():
             raise ProtocolError("not found") # Command not found
