@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, re, shutil, sys
+import os, re, shutil, sys, pystache
 import json, socket
 import tornado.ioloop
 import tornado.options
@@ -384,6 +384,30 @@ class EffectImage(EffectSearcher):
         self.set_header('Content-Type', 'image/png')
         self.write(open(path).read())
 
+class EffectStylesheet(EffectSearcher):
+    def get(self, prop):
+        objid = self.get_by_url()
+
+        try:
+            options = self.get_object(objid)
+        except:
+            raise web.HTTPError(404)
+        
+        try:
+            path = options['gui'][prop]
+        except:
+            raise web.HTTPError(404)
+
+        if not os.path.exists(path):
+            raise web.HTTPError(404)
+        
+
+        content = open(path).read()
+        context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
+
+        self.set_header('Content-type', 'text/css')
+        self.write(pystache.render(content, context))
+            
 class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
@@ -1024,6 +1048,7 @@ application = web.Application(
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
+            (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/position/(\d+)/?", EffectPosition),
             (r"/effect/set/(release)/?", EffectSetLocalVariable),
 
