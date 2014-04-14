@@ -1,3 +1,10 @@
+0.30.5
+======
+
+  - fix: minor fixes, names, unused interface objects, etc
+  - new: implements pedalboard_save and pedalboard_reset
+  - new: implements modgui:stylesheet
+
 0.30.4
 ======
 
