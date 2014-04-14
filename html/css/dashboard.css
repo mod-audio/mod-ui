@@ -709,6 +709,21 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	vertical-align: baseline;
 }
 
+#fb-authorization-container {
+    float: left;
+    position: relative;
+    height: 30px;
+    width: 280px;
+}
+#fb-authorization-container iframe {
+    border: 0;
+    width: 280px;
+    height: 30px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
 #share-window img.loading {
     height: 66px;
     left: 50%;

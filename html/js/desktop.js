@@ -347,6 +347,7 @@ function Desktop(elements) {
     })
 
     elements.shareWindow.shareBox({ 
+	userSession: self.userSession,
 	takeScreenshot: function(uid, callback) {
 	    $.ajax({ url: '/pedalboard/screenshot/'+uid,
 		     success: callback,

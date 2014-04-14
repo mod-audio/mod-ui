@@ -27,6 +27,7 @@ JqueryClass('shareBox', {
 	var self = $(this)
 
 	options = $.extend({
+	    userSession: { 'sid': '' },
 	    // Generates a screenshot of pedalboard with given uid and calls callback with b64encoded data
 	    takeScreenshot: function(uid, callback) { callback('') },
 
@@ -45,6 +46,7 @@ JqueryClass('shareBox', {
 	self.data('pedalboard', {})
 	self.data('recordedData', null)
 
+
 	self.find('#record-rec').click(function() { self.shareBox('recordStartCountdown'); return false })
 	self.find('#record-stop').click(function() { self.shareBox('recordStop'); return false })
 	self.find('#record-play').click(function() { self.shareBox('recordPlay'); return false })
@@ -53,6 +55,7 @@ JqueryClass('shareBox', {
 	self.find('#record-delete').click(function() { self.shareBox('recordDelete'); return false })
 	self.find('#record-cancel').click(function() { self.shareBox('close'); return false })
 	self.find('#record-share').click(function() { self.shareBox('share'); return false })
+	self.find('#pedalboard-share-fb').click(function() { self.shareBox('checkFacebook') })
 
 	self.data('status', STOPPED)
 	self.data('step', 0)
@@ -61,6 +64,21 @@ JqueryClass('shareBox', {
 	    if (e.keyCode == 27)
 		self.shareBox('close')
 	})
+    },
+
+    checkFacebook: function() {
+	var self = $(this)
+	var fb = self.find('#pedalboard-share-fb')
+	if (!fb.is(':checked')) {
+	    self.find('iframe').remove()
+	    return
+	}
+
+	sid = self.data('sid')
+	session = self.data('userSession')
+	self.find('iframe').remove()
+	$('<iframe>').attr('src', SITEURL.replace(/api$/, 'facebook/' + session.sid)).appendTo($('#fb-authorization-container'))
+	self.data('sid', session.sid)	
     },
 
     showStep: function(step) {
@@ -83,7 +101,7 @@ JqueryClass('shareBox', {
 		button.attr('disabled', true)
 	}
 	if (step == 4)
-	    $('#share-window-fb label').hide() // TODO facebook integration
+	    $('#share-window-fb label').show() // TODO facebook integration
 	else
 	    $('#share-window-fb label').hide()
     },
@@ -194,6 +212,7 @@ JqueryClass('shareBox', {
 	$('#record-share').attr('disabled', true)
 	if (step == 4) {
 	    // User has recorded some sound
+	    data.facebook = self.find('#pedalboard-share-fb').is(':checked')
 	    self.data('recordDownload')(function(audioData) {
 		data = $.extend(data, audioData)
 		self.data('share')(data, function(ok) {
@@ -244,4 +263,3 @@ JqueryClass('shareBox', {
     }
 
 })
-
