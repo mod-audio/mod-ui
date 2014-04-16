@@ -389,7 +389,7 @@ function Desktop(elements) {
 		     method: 'POST',
 		     data: JSON.stringify(data),
 		     success: function(resp) {
-			 callback(resp.ok)
+			 callback(resp.ok, resp.error)
 		     },
 		     error: function() {
 			 new Notification('error', "Can't share pedalboard")

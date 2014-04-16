@@ -215,25 +215,26 @@ JqueryClass('shareBox', {
 	    data.facebook = self.find('#pedalboard-share-fb').is(':checked')
 	    self.data('recordDownload')(function(audioData) {
 		data = $.extend(data, audioData)
-		self.data('share')(data, function(ok) {
+		self.data('share')(data, function(ok, error) {
 		    $('#record-share').attr('disabled', false)
 		    if (ok) {
 			self.data('recordReset')(function(){
 			    self.hide()
 			})
 		    } else {
-			new Notification('error', "Couldn't share pedalboard")
+			new Notification('error', "Couldn't share pedalboard: " + error)
+			$('#record-share').attr('disabled', false)
 		    }
 		})
 	    })
 	} else {
 	    // Just share without audio
-	    self.data('share')(data, function(ok) {
+	    self.data('share')(data, function(ok, error) {
 		$('#record-share').attr('disabled', false)
 		if (ok) {
 		    self.hide()
 		} else {
-		    new Notification('error', "Couldn't share pedalboard")
+		    new Notification('error', "Couldn't share pedalboard: " + error)
 		}
 	    })
 	}
