@@ -334,7 +334,7 @@ function HardwareManager(options) {
 		self.setAddressing(instanceId, symbol, addressings[symbol], processNext)
 	    else {
 		addressingErrors.push([instanceId, symbol])
-		console.log('hardware not found')
+		processNext()
 	    }
 	}
 
