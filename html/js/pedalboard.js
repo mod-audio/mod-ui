@@ -989,6 +989,8 @@ JqueryClass('pedalboard', {
 		// clicking in output or output jack means connecting
 		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-audio-port]')))
 		    return
+		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-midi-port]')))
+		    return
 		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-jack]')))
 		    return
 
