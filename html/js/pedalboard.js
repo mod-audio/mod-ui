@@ -371,11 +371,27 @@ JqueryClass('pedalboard', {
 		callback()
 	}
 
+	var addressingErrors = []
+	var instanceNameIndex = {}
+
 	// Queue closures to all actions needed after everything is loaded
 	var finalActions = []
 	var finish = function() {
 	    for (var i in finalActions)
 		finalActions[i]()
+
+	    // Now check for addressing errors
+	    if (addressingErrors.length > 0) {
+		verboseErrors = []
+		var error
+		for (var i=0; i<addressingErrors.length; i++) {
+		    error = addressingErrors[i]
+		    verboseErrors.push(instanceNameIndex[error[0]] + "/" + error[1])
+		}
+		message = 'The following parameters could not be addressed: ' + verboseErrors.join(', ')
+		new Notification('warn', message)
+	    }
+
 	    self.data('bypassApplication', false)
 	    setTimeout(function() { self.pedalboard('adapt') }, 1)
 	    if (loadPedalboardAtOnce)
@@ -395,6 +411,8 @@ JqueryClass('pedalboard', {
 		return connect()
 
 	    var pluginData = pluginsData[plugin.url]
+	    instanceNameIndex[plugin.instanceId] = pluginData.name
+
 	    self.data('pluginLoad')(plugin.url, plugin.instanceId,
 				    function(ok) {
 					if (!ok)
@@ -419,12 +437,12 @@ JqueryClass('pedalboard', {
 							    { 
 								'preset': plugin.preset,
 								'bypassed': plugin.bypassed
-							    }, plugin.addressing)
+							    }, plugin.addressing, addressingErrors)
 					})
 					loadPlugin(pluginsData)
 				    })
 	}
-	
+
 	// Loads next connection in queue
 	var connect = function() {
 	    var con = data.connections.pop()
@@ -949,7 +967,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instanceId, now we need to put it in screen.
-    addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing) {
+    addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing, addressingErrors) {
 	var self = $(this)
 	var scale = self.data('scale')
 
@@ -1032,7 +1050,7 @@ JqueryClass('pedalboard', {
 
 	var hardware = self.data('hardwareManager')
 	if (addressing && hardware)
-	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'))
+	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'), addressingErrors)
 
 	var i, symbol, port
 	if (hardware) {

@@ -251,6 +251,15 @@ function HardwareManager(options) {
 	    addressing.type = 7
     }
 
+    this.hardwareExists = function(addressing) {
+	var actuator = addressing.actuator || [-1, -1, -1, -1]
+	    var actuatorKey = actuator.join(',')
+	if (self.addressings[actuatorKey])
+	    return true
+	else
+	    return false
+    }
+
     // Does the addressing
     this.setAddressing = function(instanceId, symbol, addressing, callback) {
 	self.setIHMParameters(instanceId, symbol, addressing)
@@ -298,9 +307,14 @@ function HardwareManager(options) {
 	return self.controls[instanceId]
     }
 
-    this.unserializeInstance = function(instanceId, addressings, bypassApplication) {
+    this.unserializeInstance = function(instanceId, addressings, bypassApplication, addressingErrors) {
 	// Store the original options.change callback, to bypass application
 	var callback = options.address
+	
+	// addressingErrors is an array where we should append controls addressed to unknown hardware
+	if (!addressingErrors)
+	    addressingErrors = []
+
 	if (bypassApplication)
 	    options.address = function() { arguments[arguments.length-1](true) }
 	var restore = function() {
@@ -311,11 +325,17 @@ function HardwareManager(options) {
 	// a recursive asynchronous function
 	var queue = Object.keys(addressings)
 	var symbol
+
 	var processNext = function() {
 	    if (queue.length == 0)
 		return restore()
 	    symbol = queue.pop()
-	    self.setAddressing(instanceId, symbol, addressings[symbol], processNext)
+	    if (self.hardwareExists(addressings[symbol]))
+		self.setAddressing(instanceId, symbol, addressings[symbol], processNext)
+	    else {
+		addressingErrors.push([instanceId, symbol])
+		console.log('hardware not found')
+	    }
 	}
 
 	processNext()

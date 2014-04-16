@@ -94,7 +94,10 @@ class Pedalboard(object):
                     addressing.update({'instance_id': instance_id, 'port_id': port_id})
                 if port_id == ":bypass":
                     addressing['value'] = int(instance['bypassed'])
-                self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
+                try:
+                    self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
+                except KeyError:
+                    self.data['instances'][addressing['instance_id']]['addressing'].pop(addressing['port_id'])
 
     def save(self, title=None, as_new=False):
         if as_new or not self.data['_id']:
