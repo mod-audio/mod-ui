@@ -17,7 +17,7 @@ setup(name = 'mod',
           },
       scripts = [
       ],
-      install_requires = ['tornado', 'whoosh'],
+      install_requires = ['tornado', 'whoosh', 'pystache', 'construct'],
       classifiers = [
           'Intended Audience :: Developers',
           'Natural Language :: English',

@@ -50,9 +50,10 @@ Known actuators and hardwares:
 class Hardware(object):
     HW_TYP = -1
 
-    def __init__(self, id, name, actuators=[]):
+    def __init__(self, id, name, channel=0, actuators=[]):
         self.name = name
         self.id = id
+        self.channel = channel
         self.actuators = []
         acts = {}
         for act in actuators:

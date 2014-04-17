@@ -56,6 +56,13 @@ def process_resp(resp, datatype):
             resp['value'] = float(resps[1])
         except IndexError:
             resp['ok'] = False
+    elif datatype == 'control_chain':
+        resps = resp.split()
+        resp = { 'ok': int(resps[0]) >= 0 }
+        try:
+            resp['value'] = resps[1]
+        except IndexError:
+            resp['ok'] = False
     else:
         try:
             resp = int(resp)
@@ -81,6 +88,7 @@ class Protocol(object):
         "tuner_input": [int],
         "pedalboard_save": [],
         "pedalboard_reset": [],
+        "chain": [str],
     }
 
     COMMANDS_FUNC = {}
@@ -126,7 +134,7 @@ class Protocol(object):
         if self.is_resp():
             return
 
-        cmd = self.msg.split()
+        cmd = self.msg.split(' ')
         if not cmd or cmd[0] not in self.COMMANDS.keys():
             raise ProtocolError("not found") # Command not found
 

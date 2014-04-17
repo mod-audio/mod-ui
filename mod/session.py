@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, logging, copy
+import os, time, logging, copy, random
 
 from datetime import timedelta
 from tornado import iostream, ioloop
@@ -38,7 +38,11 @@ from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
+from mod.control_chain import ControlChain
+from mod.hardware import Hardware
 from tuner import NOTES, FREQS, find_freqnotecents
+
+control_chain = ControlChain()
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -68,6 +72,8 @@ class Session(object):
         self._pedalboard = Pedalboard()
         self._pedalboards = {}
         self._banks = list_banks()
+        self._hardwares_by_ch = {}
+        self._hardwares_by_id = {}
 
         Protocol.register_cmd_callback("banks", self.hmi_list_banks)
         Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
@@ -82,6 +88,7 @@ class Session(object):
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
         Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
         Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
+        Protocol.register_cmd_callback("chain", self.process_control_chain)
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
@@ -108,6 +115,28 @@ class Session(object):
     def hmi_callback(self):
         if self.host_initialized:
             self.restore_last_pedalboard()
+
+
+    def generate_hw_id(self):
+        i = random.randint(0x00, 0xff)
+        while i in self._hardwares_by_id.keys():
+            i = random.randint(0x00, 0xff)
+        return i
+
+    def process_control_chain(self, ccmsg, callback):
+        msg = control_chain.parse(ccmsg)
+        if msg.connection:
+            print "device '%s' connecting on channel %d" % (msg.connection.name, msg.connection.channel)
+            hwid = self.generate_hw_id()
+            hw = Hardware(hwid, msg.connection.name, msg.connection.channel)
+            self._hardwares_by_ch[msg.connection.name] = self._hardwares_by_ch.get(msg.connection.name, {})
+            self._hardwares_by_ch[msg.connection.name][msg.connection.channel] = hw
+            self._hardwares_by_id[hwid] = hw
+            response = msg
+            response.destination = "%x" % hwid
+            callback(True, resp_args=control_chain.build(response))
+        elif msg.device_descriptor:
+            print msg
 
     def reset_current_pedalboard(self, callback):
         last_bank, last_pedalboard = get_last_bank_and_pedalboard()
