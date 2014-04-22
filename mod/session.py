@@ -189,11 +189,15 @@ class Session(object):
                 self._tuner = True
                 self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
 
-        self.add(TUNER_URI, TUNER, setup_tuner, True)
+        def mute_callback():
+            self.add(TUNER_URI, TUNER, setup_tuner, True)
+        self.mute(mute_callback)
 
     def tuner_off(self, cb):
-        self.remove(TUNER, cb, True)
-        self._tuner = False
+        def callback():
+            self.remove(TUNER, cb, True)
+            self._tuner = False
+        self.unmute(callback)
 
     def peakmeter_set(self, status, callback):
         if "on" in status:
