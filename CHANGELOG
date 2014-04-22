@@ -1,3 +1,13 @@
+0.99.0
+======
+
+  This is the first release candidate for 1.0
+
+  - new: sharing to facebook
+  - fix: addressing error would prevent following addressings
+  - fix: when loading pedalboard, controls addressed to unknown hardware devices are ignored and reported to user
+  - proper error handling when cloud refuses shared pedalboard
+
 0.30.5
 ======
 
