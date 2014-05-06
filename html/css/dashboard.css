@@ -338,9 +338,9 @@
     background-image:url(../img/midi-output-jack.png);
     background-position:center right;
     background-repeat:no-repeat;
-    background-size:81px 31px;
+    background-size:81px 45px;
     cursor:pointer;
-    height:31px;
+    height:45px;
     position:absolute;
     width:81px;
 }
@@ -375,10 +375,10 @@
     background-image:url(../img/midi-input-connected.png) !important;
     background-position:center right !important;
     background-repeat:no-repeat !important;
-    background-size:auto 31px !important;
-    height:31px !important;
+    background-size:auto 45px !important;
+    height:45px !important;
     position:absolute !important;
-    width:65px !important;
+    width:67px !important;
     z-index:100 !important;
 }
 
