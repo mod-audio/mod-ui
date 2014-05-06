@@ -270,11 +270,11 @@
     background-image:url(../img/jack-p10.png);
     background-position:center right;
     background-repeat:no-repeat;
-    background-size:auto 56px;
+    background-size:107px 56px;
     cursor:pointer;
     height:18px;
     position:absolute;
-    width:87px;
+    width:83px;
 }
 
 
@@ -301,8 +301,16 @@
     z-index:100;
 }
 
+.mod-input.mod-midi-input.input-connecting {
+    background-image:url(../img/midi-input-connecting.png) !important;
+}
+
 .mod-input.input-connecting-highlight {
     background-image:url(../img/input-connecting-highlight.png) !important;
+}
+
+.mod-input.mod-midi-input.input-connecting-highlight {
+    background-image:url(../img/midi-input-connecting-highlight.png) !important;
 }
 
 .hardware-input .jack-connecting {
@@ -327,7 +335,7 @@
 /* = MIDI Input/Output
 ================================================ */
 .hardware-output.mod-midi-output .mod-output-jack {
-    background-image:url(../img/midi-output.png);
+    background-image:url(../img/midi-output-jack.png);
     background-position:center right;
     background-repeat:no-repeat;
     background-size:81px 31px;
