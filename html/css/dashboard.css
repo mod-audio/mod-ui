@@ -329,13 +329,14 @@
 
 /* = MIDI Input/Output
 ================================================ */
-.hardware-output.mod-midi-output .mod-output-jack {
-    background-image:url(../img/midi-output-jack.png);
+.mod-midi-output .mod-output-jack,
+.mod-midi-input .mod-output-jack {
+    background-image:url(../img/midi-output-jack.png) !important;
     background-position:center right;
     background-repeat:no-repeat;
     background-size:81px 45px;
     cursor:pointer;
-    height:45px;
+    height:45px !important;
     position:absolute;
     width:81px;
 }
@@ -345,6 +346,7 @@
     background-image:url(../img/midi-output-jack.png) !important;
     width: 83px !important;
 }
+
 .mod-midi-input .jack-connecting {
     margin-left: -25px;
 }
@@ -356,6 +358,18 @@
     background-size:9px 45px;
     height:45px;
     position:absolute;
+    width:9px;
+    z-index:100;
+}
+
+.mod-pedal .mod-midi-output .mod-pedal-output-image {
+    background-image:url(../img/midi-input.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:9px 45px;
+    height:45px;
+    position:absolute;
+    margin-top: 10px;
     width:9px;
     z-index:100;
 }
