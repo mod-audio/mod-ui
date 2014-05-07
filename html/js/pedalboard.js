@@ -1258,6 +1258,10 @@ JqueryClass('pedalboard', {
 				element.removeClass('input-connecting-highlight')
 			    },
 			    over: function(event, ui) { 
+				var outputType = ui.draggable.parent().attr('mod-role').split(/-/)[1]
+				var inputType = element.attr('mod-role').split(/-/)[1]
+				if (outputType != inputType)
+				    return
 				self.data('background').droppable('disable');
 				element.addClass('input-connecting-highlight')
 			    },
@@ -1541,6 +1545,10 @@ JqueryClass('pedalboard', {
 	    jack.data('canvas').addClass('cable-connected')
 	    jack.data('connected', true)
 	    input.addClass('input-connected')
+	    jack.css({ top: 'auto', 
+		       left: 'auto',
+		       marginTop: 'auto',
+		     })
 	    return
 	}
 
