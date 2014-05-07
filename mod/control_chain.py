@@ -32,7 +32,29 @@ class ControlChain():
         )
 
         control_addressing = Struct("control_addressing",
-            ULInt16("resp_status")
+            If(lambda ctx: ctx._.origin > 0, ULInt16("resp_status")),
+            If(lambda ctx: ctx._.origin == 0, Byte("channel")),
+            If(lambda ctx: ctx._.origin == 0, Byte("actuator_id")),
+            If(lambda ctx: ctx._.origin == 0, Enum(Byte("mask_prop_size"), UI08 = 1, UI16 = 2, UI32 = 4)),
+            If(lambda ctx: ctx._.origin == 0, Switch("mask", lambda ctx: ctx.mask_prop_size,
+                                                     {"UI08": ULInt8("spam"), 
+                                                      "UI16": ULInt16("spam"), 
+                                                      "UI32": ULInt32("spam")}
+                                                     )),
+            If(lambda ctx: ctx._.origin == 0, CString("label")),
+            If(lambda ctx: ctx._.origin == 0, LFloat32("value")),
+            If(lambda ctx: ctx._.origin == 0, LFloat32("minimum")),
+            If(lambda ctx: ctx._.origin == 0, LFloat32("maximum")),
+            If(lambda ctx: ctx._.origin == 0, LFloat32("default")),
+            If(lambda ctx: ctx._.origin == 0, ULInt16("steps")),
+            If(lambda ctx: ctx._.origin == 0, CString("unit")),
+            If(lambda ctx: ctx._.origin == 0, Byte("scale_points_count")),
+            If(lambda ctx: ctx._.origin == 0, Array(lambda ctx: ctx.scale_points_count,
+                                                    Struct("scale_points",
+                                                           CString("label"),
+                                                           LFloat32("value"),
+                                                           )
+                                                    ))
         )
 
         control_unaddressing = Struct("control_unaddressing",
@@ -56,11 +78,11 @@ class ControlChain():
             Byte("origin"),
             Byte("function"),
             ULInt16("data_size"),
-            If(lambda ctx: ctx["function"] == 1, connection),
-            If(lambda ctx: ctx["function"] == 2, device_descriptor),
-            If(lambda ctx: ctx["function"] == 3, control_addressing),
-            If(lambda ctx: ctx["function"] == 4, data_request),
-            If(lambda ctx: ctx["function"] == 5, control_unaddressing),
+            If(lambda ctx: ctx["data_size"] > 0 and ctx["function"] == 1, connection),
+            If(lambda ctx: ctx["data_size"] > 0 and ctx["function"] == 2, device_descriptor),
+            If(lambda ctx: ctx["data_size"] > 0 and ctx["function"] == 3, control_addressing),
+            If(lambda ctx: ctx["data_size"] > 0 and ctx["function"] == 4, data_request),
+            If(lambda ctx: ctx["data_size"] > 0 and ctx["function"] == 5, control_unaddressing),
             Byte("checksum"),
             Byte("end")
         )
