@@ -88,7 +88,6 @@ class Session(object):
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
         Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
         Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
-        Protocol.register_cmd_callback("chain", self.process_control_chain)
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
@@ -122,21 +121,6 @@ class Session(object):
         while i in self._hardwares_by_id.keys():
             i = random.randint(0x00, 0xff)
         return i
-
-    def process_control_chain(self, ccmsg, callback):
-        msg = control_chain.parse(ccmsg)
-        if msg.connection:
-            print "device '%s' connecting on channel %d" % (msg.connection.name, msg.connection.channel)
-            hwid = self.generate_hw_id()
-            hw = Hardware(hwid, msg.connection.name, msg.connection.channel)
-            self._hardwares_by_ch[msg.connection.name] = self._hardwares_by_ch.get(msg.connection.name, {})
-            self._hardwares_by_ch[msg.connection.name][msg.connection.channel] = hw
-            self._hardwares_by_id[hwid] = hw
-            response = msg
-            response.destination = "%x" % hwid
-            callback(True, resp_args=control_chain.build(response))
-        elif msg.device_descriptor:
-            print msg
 
     def reset_current_pedalboard(self, callback):
         last_bank, last_pedalboard = get_last_bank_and_pedalboard()

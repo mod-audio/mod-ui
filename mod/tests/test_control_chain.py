@@ -22,7 +22,7 @@ class ControlChainParserTest(unittest.TestCase):
         self.chain = ControlChain()
 
     def parse(self, msg):
-        return self.chain.parse('\xaa%s\x00' % msg)
+        return self.chain.parse(msg)
 
     def test_connection_device(self):
         msg = '\x00\x00\x01\x0A\x00\x06my-dev\x01\x01\x00'

@@ -27,7 +27,9 @@ LOG = bool(int(os.environ.get('MOD_LOG', False)))
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
 
-HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware'))
+HARDWARE_DRIVER_DIR = os.environ.get('MOD_HARDWARE_DRIVER_DIR', join(DATA_DIR, 'hardware/drivers'))
+INSTALLED_HARDWARE_DIR = os.environ.get('MOD_INSTALLED_HARDWARE_DIR', join(DATA_DIR, 'hardware/installed'))
+UNINSTALLED_HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware/uninstalled'))
 
 KEYPATH = os.environ.get('MOD_KEY_PATH', '/root/keys')
 
