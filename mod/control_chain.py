@@ -210,13 +210,13 @@ class Gateway():
         if checksum == self.__checksum(message):
             self.handle(self.message.parse(message))
 
-class Kernel():
+class PipeLine():
     """
-    Kernel will send any commands from the Manager to the devices, while polling for events
+    PipeLine will send any commands from the Manager to the devices, while polling for events
     every 2 milliseconds. It does that in a way to priorize commands, avoid collisions and
     preserve polling frequency.
-    The only control chain message handled by Kernel is the data_request, all others will go
-    to Manager
+    The only control chain message handled by PipeLine is the data_request, all others will go
+    to HardwareManager
     """
     def __init__(self, handler):
         # Used to handle messages above this level
@@ -317,7 +317,7 @@ class HardwareManager():
     """
     class __init__(self, session):
         self.session = session
-        self.kernel = Kernel(self.receive)
+        self.pipeline = PipeLine(self.receive)
 
         # Store hardware data, indexed by hwid
         self.hardwares = {}
@@ -325,6 +325,8 @@ class HardwareManager():
         self.hardware_index = {}
         # Pointer used to choose a free hardware id
         self.hardware_id_pointer = 0
+        # Last time each hardware have been seen, for timeouts
+        self.hardware_tstamp = {}
 
         # Store addressings data, indexed by hwid, addressing_id
         self.addressings = {}
@@ -343,14 +345,15 @@ class HardwareManager():
             }
     
     def start(self):
-        self.kernel.start()
+        self.pipeline.start()
     def send(self, hwid, function, data=None):
-        self.kernel.send(hwid, function, data)
+        self.pipeline.send(hwid, function, data)
 
     def receive(self, msg):
         """
-        Called from kernel, will route message internally
+        Called by pipeline, will route message internally
         """
+        self.hardware_tstamp[msg.origin] = ioloop.IOLoop.time()
         self.dispatch_table[msg.function](msg.origin, msg.data)
     
     def _generate_hardware_id(self):
@@ -362,12 +365,13 @@ class HardwareManager():
         return self.hardware_id_pointer
 
     def device_connect(self, origin, data):
-        logging.info("connection %s on %d" % (data.url, data.channel))
+        url = data['url']
+        channel = data['channel']
+        logging.info("connection %s on %d" % (url, channel))
         hwid = self._generate_hardware_id()
         self.hardwares[hwid] = data
-        url = data.url
-        channel = data.channel
         self.hwid_index[(url, channel)] = hwid
+        self.hardware_tstamp[hwid] = ioloop.IOLoop.time()
         self.send(hwid, CONNECTION, data)
         if not os.path.exists(self.get_driver_path(url)):
             self.send(hwid, DEVICE_DESCRIPTOR)
@@ -377,6 +381,12 @@ class HardwareManager():
             return
 
         self.load_hardware(url, channel)
+
+    def device_disconnect(self, hwid):
+        data = self.hardwares.pop(hwid)
+        del self.hw_index[(data['url'], data['channel'])]
+        del self.hardware_tstamp[hwid]
+        self.unload_hardware(hwid)
 
     def get_driver_path(self, url):
         device_id = md5(url).hexdigest()
@@ -391,7 +401,7 @@ class HardwareManager():
         hwid = self.hwid_index.get((url, channel))
         if hwid is None:
             return
-        self.kernel.add_hardware(hwid)
+        self.pipeline.add_hardware(hwid)
 
         """
         hardware_data = json.loads(open(self.get_driver_path(url)).read())
@@ -399,12 +409,12 @@ class HardwareManager():
         """
 
     def unload_hardware(self, hwid):
-        self.data_request_seqs.pop(hwid)
-        self.poll_queue.remove(hwid)
-        url = self.hardwares[hwid]['url']
-        channel = self.hardwares[hwid]['channel']
-        self.hardwares.pop(hwid)
-        self.hwid_index.pop((url, channel))
+        self.pipeline.remove_hardware(hwid)
+
+    def save_device_driver(self, hwid, data):
+        path = self.get_driver_path(data['url'])
+        open(path, 'w').write(json.dumps(data))
+        
 
     def receive_device_data(self, hwid, data):
         self.data_request_seqs[hwid] = (self.data_request_seqs[hwid]+1) % 256
