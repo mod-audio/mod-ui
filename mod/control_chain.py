@@ -370,7 +370,7 @@ class AddressingManager():
         Starts the engine
         """
         self.pipeline.start()
-        self.ioloop.add_callback(self._callbacks_garbage_collection)
+        self.ioloop.add_callback(self._timeouts)
 
     def send(self, hwid, function, data=None, callback=None):
         """
@@ -383,28 +383,44 @@ class AddressingManager():
             # the previous message was not returned, let's consider this an error
             # in previous communication
             current_callback(False)
-        self.callbacks[(hwid, function)] = (callback, ioloop.IOLoop.time())
+        if callback is not None:
+            self.callbacks[(hwid, function)] = (callback, ioloop.IOLoop.time())
         self.pipeline.send(hwid, function, data)
 
-    def _callbacks_garbage_collection(self):
+    def _timeouts(self):
         """
-        Checks for callbacks for messages that have timed out.
-        Call this callbacks with False result and cleans memory.
+        Checks for hardwares that are not communicating and messages that have not been answered.
+        Disconnects the devices and call the response callbacks with False result.
         """
+        # TODO it would be more efficient to separate them, as the hardware_timeout is much greater than
+        # response timeout
         now = ioloop.IOLoop.time()
-        keys = self.callbacks.keys()
-        for key in keys:
-            callback, tstamp = self.callbacks[key]
-            if now - tsamp > RESPONSE_TIMEOUT:
-                callback(False)
-                del self.callbacks[key]
-        self.ioloop.add_timeout(now + RESPONSE_TIMEOUT, self._callbacks_garbage_collection)
+        try:
+            # Devices
+            hwids = self.hardwares_tstamp.keys()
+            for hwid, tstamp in self.hardware_tstamp.keys():
+                if now - tstamp > HARDWARE_TIMEOUT:
+                    self.device_disconnect(hwid)
+                
+            # Callbacks
+            keys = self.callbacks.keys()
+            for key in keys:
+                callback, tstamp = self.callbacks[key]
+                if now - tsamp > RESPONSE_TIMEOUT:
+                    callback(False)
+                    del self.callbacks[key]
+        finally:
+            self.ioloop.add_timeout(now + RESPONSE_TIMEOUT), self._timeouts)
 
     def receive(self, msg):
         """
         Called by pipeline.
         Routes message internally, including the callback, if any
         """
+        if msg.origin > 0 and not self.hardwares.get(msg.origin):
+            # device is sending message after being disconnected
+            return
+
         self.hardware_tstamp[msg.origin] = ioloop.IOLoop.time()
         try:
             callback, tstamp = self.callbacks.pop((msg.origin, msg.function))
@@ -539,9 +555,12 @@ class AddressingManager():
         Handles updates sent by hardware. This is the result of a polling by Pipeline.
         """
         self.data_request_seqs[hwid] = (self.data_request_seqs[hwid]+1) % 256
-        # TODO handle updates
-        for addressing_id in data.requests:
-            self.send_addressing_data(addressing_id)
+        # Report events to Session
+        for event in data.events:
+            self.handle(event['id'], event['value'])            
+        # Resend any addressings requested
+        for addrid in data.requests:
+            self.send(hwid, ADDRESSING, self.addressings[hwid][addrid][2])
 
     def address(self, actuator, mode, instance_id, port_id, port_properties, label, value, 
                 minimum, maximum, default, steps, unit, scale_points, callback=None):
@@ -605,11 +624,12 @@ class AddressingManager():
         self.pending_addressings[hwkey][(instance_id, port_id)] = addressing
         self.addressing_index[(instance_id, port_id)] = (False, actuator['url'], actuator['channel'])
 
-    def confirm_addressing(self, origin, data, callback):
+    def confirm_addressing(self, origin, data, callback=None):
         """
         Receives a confirmation that the addressing occurred.
         """
-        callback(True)
+        if callback:
+            callback(True)
 
     def unaddress(self, instance_id, port_id, callback):
         """
@@ -641,11 +661,12 @@ class AddressingManager():
         connected, hwid, addrid = current
         self.send(hwid, UNADDRESSING, { 'addressing_id': addrid }, clean_addressing_structures)
 
-    def confirm_unaddressing(self, origin, data, callback):
+    def confirm_unaddressing(self, origin, data, callback=None):
         """
         Receives an unaddressing confirmation
         """
-        callback(True)
+        if callback:
+            callback(True)
 
     def unaddress_many(self, addressings, callback):
         """
