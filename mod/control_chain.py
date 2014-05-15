@@ -468,17 +468,14 @@ class AddressingManager():
 
         self.load_hardware(url, channel)
 
-        # TODO sends all pending addressings for this hardware
-
     def device_disconnect(self, hwid):
         """
         Cleans all data from a given hardware id. This will be used in timeouts.
         """
+        self.unload_hardware(hwid)
         data = self.hardwares.pop(hwid)
-        # TODO copy all addressings to self.pending_addressings
         del self.hw_index[(data['url'], data['channel'])]
         del self.hardware_tstamp[hwid]
-        self.unload_hardware(hwid)
 
     def get_driver_path(self, url):
         """
@@ -498,17 +495,36 @@ class AddressingManager():
 
     def load_hardware(self, url, channel):
         """
-        Load a hardware in Pipeline.
+        Load a hardware in Pipeline and sends all pending addresses to it
         """
         hwid = self.hardware_index.get((url, channel))
         if hwid is None:
             return
         self.pipeline.add_hardware(hwid)
 
+        pending = self.pending_addressings.get((url, channel), {}).keys()
+        def next_addressing():
+            if len(pending) == 0:
+                return
+            instance_id, port_id = pending.pop(-1)
+            addressing = self.pending_addressings[(url, channel)].pop((instance_id, port_id))
+            self.commit_addressing(hwid, instance_id, port_id, next_addressing)
+
+        self.ioloop.add_callback(next_addressing)
+            
     def unload_hardware(self, hwid):
         """
-        Unload hardware in Pipeline.
+        Saves all of device's addressings and removes it from Pipeline
         """
+        url = self.hardwares[hwid]['url']
+        channel = self.hardwares[hwid]['channel']
+        self.pending_addressings[(url, channel)] = {}
+        addrids = self.addressings[hwid].keys()
+        for addrid in addrids:
+            instance_id, port_id, addressing = self.addressing[hwid].pop(addrid)
+            self.addressing_index[(instance_id, port)] = (False, url, channel)
+            self.pending_addressings[(url, channel)][(instance_id, port_id)] = addressing
+        
         self.pipeline.remove_hardware(hwid)
 
     def save_device_driver(self, hwid, data):
@@ -537,7 +553,6 @@ class AddressingManager():
         data = {
             'actuator_id': actuator['actuator_id'],
             'chosen_mask': mode,
-            'addressing_id': addrid,
             'port_mask': port_properties,
             'label': label,
             'value': value,
@@ -555,28 +570,40 @@ class AddressingManager():
             if not result:
                 return callback(False, msg)
 
-            hwkey = (actuator['url'], actuator['channel'])
-            hwid = self.hardware_index.get(hwkey)
-            if hwid is None:
-                # The hardware we want to address is to is not connected, 
-                # let's store this addressing to send when it's present
-                if not self.pending_addressings.get(hwkey):
-                    self.pending_addressings[hwkey] = {}
-                self.pending_addressings[hwkey][(instance_id, port_id)] = data
-                self.addressing_index[(instance_id, port_id)] = (False, actuator['url'], actuator['channel'])
+            url = actuator['url']
+            channel = actuator['channel']
+            hwid = self.hardware_index.get((url, channel))
+            if hwid is not None:
+                self.commit_addressing(hwid, instance_id, port_id, data, callback)
+            else:
+                self.store_pending_addressing(url, channel, instance_id, port_id, data)
                 self.ioloop.add_callback(lambda: callback(True))
-                return
 
-            addrid = self._generate_addressing_id(hwid)
-            self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
-            self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
-            self.send(hwid, ADDRESSING, data, callback)
-
-        current = self.addressing_index.get((instance_id, port_id)):
-        if current is None:
+        if self.addressing_index.get((instance_id, port_id)) is None:
             do_address()
         else:
             self.unaddress_port(instance_id, port_id, do_address)
+
+    def commit_addressing(self, hwid, instance_id, port_id, addressing, callback):
+        """
+        Sends this addressing to a connected hardware
+        """
+        addrid = self._generate_addressing_id(hwid)
+        addressing['addressing_id'] = addrid            
+        self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
+        self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
+        self.send(hwid, ADDRESSING, data, callback)
+
+
+    def store_pending_addressing(self, url, channel, instance_id, port_id, addressing):
+        """
+        Stores an addressing to a disconnected hardware to send it when it's connected
+        """
+        hwkey = (url, channel)
+        if not self.pending_addressings.get(hwkey):
+            self.pending_addressings[hwkey] = {}
+        self.pending_addressings[hwkey][(instance_id, port_id)] = addressing
+        self.addressing_index[(instance_id, port_id)] = (False, actuator['url'], actuator['channel'])
 
     def confirm_addressing(self, origin, data, callback):
         """
