@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from construct import *
+from construct import (Struct, Byte, String, ULInt16, UBInt16, Array, LFloat32,
+                       If, Adapter, Container
+                       )
 import Queue
 from tornado import ioloop
 
@@ -37,44 +39,51 @@ ADDRESSING = 3
 DATA_REQUEST = 4
 UNADDRESSING = 5
 
-class Message():
+class ControlChainMessage():
     """
-    Message is responsible for parsing and building Control Chain messages. It converts structured data into proper byteflow
+    ControlChainMessage is responsible for parsing and building Control Chain messages. It converts structured data into proper byteflow
     and vice-versa, according to the protocol.
     """
     def __init__(self):
-        connection_parser = Struct("data",
-            Byte("name_size"),
-            String("name", lambda ctx: ctx.name_size),
+        connection_parser = Struct(
+            "data",
+            Byte("url_size"),
+            String("url", lambda ctx: ctx.url_size),
             Byte("channel"),
             ULInt16("protocol_version"),
-        )
+            )
         connection_builder = connection_parser
 
-        error_parser = Struct("data",
-            ULInt16("code"),
+        error_parser = Struct(
+            "data",
+            Byte("function"),
+            Byte("code"),
             Byte("msg_size"),
             String("message", lambda ctx: ctx.msg_size),
-        )
+            )
         error_builder = error_parser
 
         device_descriptor_builder = Struct("data")
-        device_descriptor_parser = Struct("data",
+        device_descriptor_parser = Struct(
+            "data",
+            Byte("name_size"),
+            String("name", lambda ctx: ctx.name_size),
             Byte("actuators_count"),
-            Array(lambda ctx: ctx.actuators_count,
-                Struct("actuator",
+            Array(
+                lambda ctx: ctx.actuators_count,
+                Struct(
+                    "actuator",
                     Byte("name_size"),
                     String("name", lambda ctx: ctx.name_size),
-                    Byte("masks_count"),
-                    Array(lambda ctx: ctx.masks_count,
-                          Struct("mask",
-                                 Byte("prop"),
+                    Byte("modes_count"),
+                    Array(lambda ctx: ctx.modes_count,
+                          Struct("modes",
+                                 UBInt16("mask"),
                                  Byte("label_size"),
                                  String("label", lambda ctx: ctx.label_size),
                                  )
                           ),
                     Byte("slots"),
-                    Byte("type"),
                     Byte("steps_count"),
                     Array(lambda ctx: ctx.steps_count, ULInt16("steps"))
                 )
@@ -82,10 +91,10 @@ class Message():
         )
 
         control_addressing_builder = Struct("data",
+                                            Byte("actuator_id"),
+                                            UBInt16("chosen_mask"),
                                             Byte("addressing_id"),
                                             Byte("port_mask"),
-                                            Byte("actuator_id"),
-                                            Byte("chosen_mask"),
                                             Byte("label_size"),
                                             String("label", lambda ctx: ctx.label_size),
                                             LFloat32("value"),
@@ -98,8 +107,8 @@ class Message():
                                             Byte("scale_points_count"),
                                             Array(lambda ctx: ctx.scale_points_count,
                                                   Struct("scale_points",
-                                                         Byte("label_size"),
-                                                         String("label", lambda ctx: ctx.label_size),
+                                                         Byte("labil_size"),
+                                                         String("labil", lambda ctx: ctx.labil_size),
                                                          LFloat32("value"),
                                                            )
                                                   ),
@@ -107,9 +116,9 @@ class Message():
         control_addressing_parser = Struct("data",
                                            ULInt16("resp_status"),
                                            )
-        control_unaddressing_builder = Struct("control_unaddressing",
-            If(lambda ctx: ctx._.origin == 0, Byte("addressing_id")),
-        )
+        control_unaddressing_builder = Struct("data",
+                                              Byte("addressing_id"),
+                                              )
         control_unaddressing_parser = Struct("data")
 
         data_request_builder = Struct("data",
@@ -127,32 +136,31 @@ class Message():
                                      Array(lambda ctx: ctx.requests_count, Byte("requests")),
                                      )
 
-        self._parser = Struct("parser",
-            Byte("destination"),
-            Byte("origin"),
-            Byte("function"),
-            ULInt16("data_size"),
-            If(lambda ctx: ctx["function"] == 255, error_parser),
-            If(lambda ctx: ctx["function"] == 1, connection_parser),
-            If(lambda ctx: ctx["function"] == 2, device_descriptor_parser),
-            If(lambda ctx: ctx["function"] == 3, control_addressing_parser),
-            If(lambda ctx: ctx["function"] == 4, data_request_parser),
-            If(lambda ctx: ctx["function"] == 5, control_unaddressing_parser),
-        )
+        header = Struct("header",
+                        Byte("destination"),
+                        Byte("origin"),
+                        Byte("function"),
+                        ULInt16("data_size"),
+                        )
+
+        self._parser = {
+            'header': header,
+            ERROR: Struct("data", error_parser),
+            CONNECTION: Struct("data", connection_parser),
+            DEVICE_DESCRIPTOR: Struct("data", device_descriptor_parser),
+            ADDRESSING: Struct("data", control_addressing_parser),
+            DATA_REQUEST: Struct("data", data_request_parser),
+            UNADDRESSING: Struct("data", control_unaddressing_parser),
+            }
 
         self._builder = {
-            'header': Struct("header",
-                             Byte("destination"),
-                             Byte("origin"),
-                             Byte("function"),
-                             ULInt16("data_size")),
-
-            255: Struct("data", error_builder),
-            1: Struct("data", connection_builder),
-            2: Struct("data", device_descriptor_builder),
-            3: Struct("data", control_addressing_builder),
-            4: Struct("data", data_request_builder),
-            5: Struct("data", control_unaddressing_builder),
+            'header': header,
+            ERROR: Struct("data", error_builder),
+            CONNECTION: Struct("data", connection_builder),
+            DEVICE_DESCRIPTOR: Struct("data", device_descriptor_builder),
+            ADDRESSING: Struct("data", control_addressing_builder),
+            DATA_REQUEST: Struct("data", data_request_builder),
+            UNADDRESSING: Struct("data", control_unaddressing_builder),
             }
 
     def _make_container(self, obj):
@@ -161,9 +169,15 @@ class Message():
         for key, value in obj.items():
             if type(value) is dict:
                 obj[key] = self._make_container(value)
+            elif type(value) in (str, unicode):
+                obj["%s_size" % key] = len(obj[key])
+            elif type(value) is list:
+                obj["%s_count" % key] = len(value)
+                for i, item in enumerate(value):
+                    value[i] = self._make_container(item)
         return Container(**obj)
 
-    def build(self, destination, function, obj=None):
+    def build(self, destination, function, obj={}):
         data = self._builder[function].build(Container(data=self._make_container(obj)))
         header = self._builder['header'].build(Container(destination=destination,
                                                          origin=0,
@@ -172,18 +186,23 @@ class Message():
         return header + data
 
     def parse(self, buffer):
-        return self._parser.parse(buffer)
+        header = self._parser['header'].parse(buffer[:5])
+        data = buffer[5:]
+        assert len(data) == header.data_size, "Message is not consistent, wrong data size"
+        parser = self._parser[header.function]
+        header.data = parser.parse(data).data
+        return header
 
 class Gateway():
     """
     Gateway is responsible for routing control chain messages to the proper way. It expects a byteflow message and 
     handles checksums, byte replacings and connection issues.
-    It uses Message to build and parse the messages.
+    It uses ControlChainMessage to build and parse the messages.
     """
     def __init__(self, handler):
         # Used to handle message above this level
         self.handle = handler
-        self.message = Message()
+        self.message = ControlChainMessage()
 
         # Currently control_chain is routed through HMI
         from mod.session import SESSION
@@ -322,7 +341,7 @@ class AddressingManager():
     HardwareManager is responsible for managing the connections to devices, know which ones are online, the hardware ids and addressing ids.
     It translates the Control Chain protocol to proper calls to Session methods.
     """
-    class __init__(self, handler):
+    def __init__(self, handler):
         # Handler is the function that will receive (instance_id, symbol, value) updates
         self.handle = handler
 
@@ -410,7 +429,7 @@ class AddressingManager():
                     callback(False)
                     del self.callbacks[key]
         finally:
-            self.ioloop.add_timeout(now + RESPONSE_TIMEOUT), self._timeouts)
+            self.ioloop.add_timeout(now + RESPONSE_TIMEOUT, self._timeouts)
 
     def receive(self, msg):
         """

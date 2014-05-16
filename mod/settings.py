@@ -161,6 +161,8 @@ CAPTURE_PATH='/tmp/capture.ogg'
 
 for dirname in (PEDALBOARD_BINARY_DIR,
                 PLUGIN_INSTALLATION_TMP_DIR,
-		HARDWARE_DIR):
+		INSTALLED_HARDWARE_DIR, 
+                UNINSTALLED_HARDWARE_DIR,
+                HARDWARE_DRIVER_DIR):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
