@@ -73,6 +73,7 @@ class ControlChainMessage():
                 lambda ctx: ctx.actuators_count,
                 Struct(
                     "actuator",
+                    Byte("id"),
                     Byte("name_size"),
                     String("name", lambda ctx: ctx.name_size),
                     Byte("modes_count"),

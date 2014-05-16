@@ -62,13 +62,14 @@ class ControlChainMessageTest(unittest.TestCase):
         self.assertEquals(msg, '\x80\x00\x02\x00\x00')
 
     def test_device_descriptor_device(self):
-        msg = '\x00\x80\x02\x4D\x00\x09My device\x02\x04knob\x02\x08\x00\x00\x08\x08\x00\xFF\x03\x10\x00\x20\x00\x40\x00\x04foot\x04\x7D\x5D\x06ON/OFF\x7D\x4D\x05PULSE\x02\x00\x09Tap tempo\x2A\x22\x06Rotate\x01\x00'
+        msg = '\x00\x80\x02\x4F\x00\x09My device\x02\x01\x04knob\x02\x08\x00\x00\x08\x08\x00\xFF\x03\x10\x00\x20\x00\x40\x00\x02\x04foot\x04\x7D\x5D\x06ON/OFF\x7D\x4D\x05PULSE\x02\x00\x09Tap tempo\x2A\x22\x06Rotate\x01\x00'
         msg = self.parse(msg)
         self.assertEquals(msg.origin, 128)
         self.assertEquals(msg.destination, 0)
         self.assertEquals(msg.function, 2)
         self.assertEquals(msg.data.name, 'My device')
         self.assertEquals(len(msg.data.actuator), 2)
+        self.assertEquals(msg.data.actuator[0].id, 1)
         self.assertEquals(msg.data.actuator[0].name, 'knob')
         self.assertEquals(msg.data.actuator[0].slots, 255)
         self.assertEquals(msg.data.actuator[0].steps, [16, 32, 64])
@@ -77,6 +78,7 @@ class ControlChainMessageTest(unittest.TestCase):
         self.assertEquals(msg.data.actuator[0].modes[0].label, '')
         self.assertEquals(msg.data.actuator[0].modes[1].mask, 0x0808)
         self.assertEquals(msg.data.actuator[0].modes[1].label, '')
+        self.assertEquals(msg.data.actuator[1].id, 2)
         self.assertEquals(msg.data.actuator[1].name, 'foot')
         self.assertEquals(msg.data.actuator[1].slots, 1)
         self.assertEquals(msg.data.actuator[1].steps, [])
