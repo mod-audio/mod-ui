@@ -317,7 +317,7 @@ class Migration():
             # 1-4: foots 1-4
             # 5-8: knobs 1-4
             return [ 'http://portalmod.com/devices/quadra',
-                     actuator[1],
+                     0,
                      (actuator[2]-1) * 4 + actuator[3] + 1,
                      ]
         if actuator[0] == 1:
@@ -331,7 +331,7 @@ class Migration():
     @classmethod
     def _migrate_type(cls, url, port_id, addr):
         if port_id == ':bypass':
-            mode = (0b01111110, 0b00100000) # ON/OFF, same as below
+            mode = (0b01111111, 0b00100001)
             return (struct.pack('2B', *mode), 
                     0b00100001)
         try:
