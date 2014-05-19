@@ -158,11 +158,3 @@ AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))
 DEFAULT_JACK_BUFSIZE = int(os.environ.get('MOD_DEFAULT_JACK_BUFSIZE', 128))
 
 CAPTURE_PATH='/tmp/capture.ogg'
-
-for dirname in (PEDALBOARD_BINARY_DIR,
-                PLUGIN_INSTALLATION_TMP_DIR,
-		INSTALLED_HARDWARE_DIR, 
-                UNINSTALLED_HARDWARE_DIR,
-                HARDWARE_DRIVER_DIR):
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)

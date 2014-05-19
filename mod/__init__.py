@@ -49,17 +49,22 @@ def ensure_index_sync(index, dirname):
 
 def check_environment(callback):
     from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR,
-                              HARDWARE_DIR, INDEX_PATH,
+                              INDEX_PATH, PLUGIN_INSTALLATION_TMP_DIR,
                               PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
                               DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE,
-                              PEDALBOARD_SCREENSHOT_DIR, HTML_DIR)
+                              PEDALBOARD_SCREENSHOT_DIR, HTML_DIR, INSTALLED_HARDWARE_DIR,
+                              UNINSTALLED_HARDWARE_DIR, HARDWARE_DRIVER_DIR)
     from mod import indexing
     from mod.session import SESSION
 
     for dirname in (EFFECT_DIR, PEDALBOARD_DIR,
-                    HARDWARE_DIR, DOWNLOAD_TMP_DIR,
+                    DOWNLOAD_TMP_DIR,
                     PLUGIN_LIBRARY_DIR,
-                    PEDALBOARD_SCREENSHOT_DIR):
+                    PEDALBOARD_SCREENSHOT_DIR,
+                    PLUGIN_INSTALLATION_TMP_DIR,
+                    INSTALLED_HARDWARE_DIR, 
+                    UNINSTALLED_HARDWARE_DIR,
+                    HARDWARE_DRIVER_DIR):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 

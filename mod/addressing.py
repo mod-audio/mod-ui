@@ -3,32 +3,12 @@
 from construct import (Struct, Byte, String, ULInt16, UBInt16, Array, LFloat32,
                        If, Adapter, Container, ListContainer
                        )
-import pystache
+import pystache, os, json
+from hashlib import md5
 import Queue
 from tornado import ioloop
 
-"""
-{'range': [[0, 0, 2, 0, False, u'Knob 1'],
-           [0, 0, 2, 1, False, u'Knob 2'],
-           [0, 0, 2, 2, False, u'Knob 3'],
-           [0, 0, 2, 3, False, u'Knob 4'],
-           [1, 0, 3, 0, True, 'Exp. 1']],
- 'select': [[0, 0, 2, 0, False, u'Knob 1'],
-            [0, 0, 2, 1, False, u'Knob 2'],
-            [0, 0, 2, 2, False, u'Knob 3'],
-            [0, 0, 2, 3, False, u'Knob 4']],
- 'switch': [[0, 0, 1, 0, True, u'Foot 1'],
-            [0, 0, 1, 1, True, u'Foot 2'],
-            [0, 0, 1, 2, True, u'Foot 3'],
-            [0, 0, 1, 3, True, u'Foot 4'],
-            [1, 0, 1, 0, True, 'Foot - Exp. 1']],
- 'tap_tempo': [[0, 0, 1, 0, True, u'Foot 1 (Tap Tempo)'],
-               [0, 0, 1, 1, True, u'Foot 2 (Tap Tempo)'],
-               [0, 0, 1, 2, True, u'Foot 3 (Tap Tempo)'],
-               [0, 0, 1, 3, True, u'Foot 4 (Tap Tempo)'],
-               [1, 0, 1, 0, True, 'Foot - Exp. 1']]}
-
-"""
+from mod.settings import HARDWARE_DRIVER_DIR
 
 ERROR = 255
 CONNECTION = 1
@@ -36,6 +16,9 @@ DEVICE_DESCRIPTOR = 2
 ADDRESSING = 3
 DATA_REQUEST = 4
 UNADDRESSING = 5
+
+HARDWARE_TIMEOUT = 0.008
+RESPONSE_TIMEOUT = 0.002
 
 def get_time():
     return ioloop.IOLoop.time(ioloop.IOLoop.instance())
@@ -552,7 +535,7 @@ class AddressingManager():
         Otherwise, it's not considered in pipeline.
         """
         device_id = md5(url).hexdigest()
-        installation_path = os.path.join(KNOWN_HARDWARE_DIR, "%s_%d" % (device_id, channel))
+        installation_path = os.path.join(INSTALLED_HARDWARE_DIR, "%s_%d" % (device_id, channel))
         return os.path.exists(installation_path) and os.path.exists(self.get_driver_path())
 
     def load_hardware(self, url, channel):
@@ -742,3 +725,19 @@ class AddressingManager():
         """
         addressings = self.addressing_index.keys()
         self.unaddress_many(addressings, callback)
+
+
+def get_hardware():
+    actuators = []
+    for device_id in os.listdir(HARDWARE_DRIVER_DIR):
+        path = os.path.join(HARDWARE_DRIVER_DIR, device_id)
+        data = json.loads(open(path).read())
+        if not md5(data.get('url')).hexdigest() == device_id:
+            # Just to avoid automatic backup files here
+            continue
+        for actuator in data['actuator']:
+            actuator['url'] = data['url']
+            actuator['channel'] = data['channel']
+            actuators.append(actuator)
+    return actuators
+
