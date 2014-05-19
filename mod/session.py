@@ -25,7 +25,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, 
                           DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
 from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
@@ -34,15 +34,12 @@ from mod.hmi import HMI
 from mod.host import Host
 from mod.clipmeter import Clipmeter
 from mod.browser import BrowserControls
+from mod.addressing import AddressingManager
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
-from mod.control_chain import ControlChain
-from mod.hardware import Hardware
 from tuner import NOTES, FREQS, find_freqnotecents
-
-control_chain = ControlChain()
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -72,17 +69,12 @@ class Session(object):
         self._pedalboard = Pedalboard()
         self._pedalboards = {}
         self._banks = list_banks()
-        self._hardwares_by_ch = {}
-        self._hardwares_by_id = {}
 
         Protocol.register_cmd_callback("banks", self.hmi_list_banks)
         Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
         Protocol.register_cmd_callback("pedalboard", self.load_bank_pedalboard)
-        Protocol.register_cmd_callback("hw_con", self.hardware_connected)
-        Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
-        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
-        Protocol.register_cmd_callback("control_get", self.parameter_get)
-        Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
+        #Protocol.register_cmd_callback("control_get", self.parameter_get)
+        #Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
@@ -93,6 +85,8 @@ class Session(object):
                             MANAGER_PORT, "localhost", self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI,
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+        self.addressing = AddressingManager(self.hmi, self.hw_parameter_set)
+
 
         self.recorder = Recorder()
         self.player = Player()
@@ -314,7 +308,7 @@ class Session(object):
 
         # How it works:
         # check jack bufsize
-        # remove -1  (remove all effects)
+        # remove all effects
         # for each effect
         #   add effect
         #   sets bypass value
@@ -330,7 +324,7 @@ class Session(object):
         # in queue. Then proceed to connections
         def add_effects(result):
             if not effects:
-                ioloop.IOLoop.instance().add_callback(choose_ports_addr)
+                ioloop.IOLoop.instance().add_callback(add_connections)
                 return
             effect = effects.pop(0)
 
@@ -347,40 +341,16 @@ class Session(object):
         # After queue is empty, goes to control addressings
         def set_ports(effect):
             if not effect.get('preset', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: set_bypass_addr(effect))
+                ioloop.IOLoop.instance().add_callback(lambda: set_ports_addr(effect))
                 return
             symbol = effect['preset'].keys()[0]
             value = effect['preset'].pop(symbol)
             self.parameter_set(effect['instanceId'], symbol, value, lambda result: set_ports(effect),
                                True)
 
-        # This dictionary holds in its keys all actuators that have some addressing, so after
-        # loading everything, the first parameter of each actuator will be sent to IHM
-        addressings = {}
-
-        # Sets bypass addressing of one effect.
-        def set_bypass_addr(effect):
-            if not effect.get('addressing', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
-                return
-
-            symbol = ":bypass"
-            addressing = effect['addressing'].pop(symbol, {})
-
-            if addressing.get('actuator', [-1])[0] == -1:
-                ioloop.IOLoop.instance().add_callback(lambda: set_ports_addr(effect))
-                return
-
-            hwtyp, hwid, acttyp, actid = addressing['actuator']
-            addressings[(hwtyp, hwid, acttyp, actid)] = 1
-            self.bypass_address(effect['instanceId'], hwtyp, hwid, acttyp, actid,
-                                effect['bypassed'], addressing['label'],
-                                lambda result: set_ports_addr(effect),
-                                True)
-
         # Consumes a queue of control addressing, then goes to next effect
         def set_ports_addr(effect):
-            # addressing['actuator'] can be [-1] or [hwtyp, hwid, acttyp, actid]
+            # addressing['actuator'] can be None or [url, channel, actuator_id]
             if not effect.get('addressing', {}):
                 ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
                 return
@@ -388,39 +358,25 @@ class Session(object):
             symbol = effect['addressing'].keys()[0]
             addressing = effect['addressing'].pop(symbol)
 
-            if addressing.get('actuator', [-1])[0] == -1:
+            if addressing.get('actuator') is None:
                 ioloop.IOLoop.instance().add_callback(lambda: set_ports_addr(effect))
                 return
 
-            hwtyp, hwid, acttyp, actid = map(int, addressing['actuator'])
-            addressings[(hwtyp, hwid, acttyp, actid)] = 1
-            self.parameter_address(effect['instanceId'],
-                                   symbol,
-                                   addressing['addressing_type'],
-                                   addressing.get('label', '---'),
-                                   int(addressing.get('type', 0)),
-                                   addressing.get('unit', 'none') or 'none',
-                                   float(addressing['value']),
-                                   float(addressing['maximum']),
-                                   float(addressing['minimum']),
-                                   int(addressing.get('steps', 33)),
-                                   hwtyp,
-                                   hwid,
-                                   acttyp,
-                                   actid,
-                                   addressing.get('options', []),
+            url, channel, actid = addressing['actuator']
+            self.parameter_address(effect['instanceId'], symbol,
+                                   addressing['actuator'],
+                                   addressing['mode'],
+                                   addressing['port_properties'],
+                                   addressing['label', '---'],
+                                   addressing['value'],
+                                   addressing['minimum'],
+                                   addressing['maximum'],
+                                   addressing['default'],
+                                   addressing['steps'],
+                                   addressing['unit'],
+                                   addressing['scale_points'],
                                    lambda result: set_ports_addr(effect),
-                                   True)
-        def choose_ports_addr():
-            if len(addressings.keys()) == 0:
-                ioloop.IOLoop.instance().add_callback(lambda: add_connections())
-                return
-            key = addressings.keys()[0]
-            addressings.pop(key)
-            hwtyp, hwid, acttyp, actid = key
-            self.parameter_addressing_load(hwtyp, hwid, acttyp, actid, 0)
-            ioloop.IOLoop.instance().add_callback(choose_ports_addr)
-
+                                   )
 
         def add_connections():
             if not connections:
@@ -472,17 +428,6 @@ class Session(object):
 
         consume()
 
-    def hardware_connected(self, hwtyp, hwid, callback):
-        callback(True)
-        #open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
-        #callback(True)
-
-    def hardware_disconnected(self, hwtype, hwid, callback):
-        callback(True)
-        #if os.path.exist():
-        #    os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
-        #callback(True)
-
     # host commands
 
     def add(self, objid, instance_id, callback, loaded=False):
@@ -500,9 +445,9 @@ class Session(object):
             commit(False)
 
     def remove(self, instance_id, callback, loaded=False):
-        affected_actuators = []
         if not loaded:
-            affected_actuators = self._pedalboard.remove_instance(instance_id)
+            self._pedalboard.remove_instance(instance_id)
+
         def bufsize_callback(bufsize_changed):
             callback(True)
         def change_bufsize(ok):
@@ -510,9 +455,7 @@ class Session(object):
 
         def _callback(ok):
             if ok:
-                self.hmi.control_rm(instance_id, ":all", change_bufsize)
-                for addr in affected_actuators:
-                    self.parameter_addressing_load(*addr)
+                self.addressing.unaddress_instance(instance_id, change_bufsize)
             else:
                 change_bufsize(ok)
 
@@ -529,11 +472,8 @@ class Session(object):
         if not loaded:
             self._pedalboard.connect(port_from, port_to)
 
-        # Cases below happen because we just save instance ID in pedalboard connection structure, not whole string
-        if not 'system' in port_from and not 'effect' in port_from:
-            port_from = "effect_%s" % port_from
-        if not 'system' in port_to and not 'effect' in port_to:
-            port_to = "effect_%s" % port_to
+        port_from = self.format_port(port_from)
+        port_to = self.format_port(port_to)
 
         if "system" in port_to:
             def cb(result):
@@ -555,6 +495,11 @@ class Session(object):
         self.host.connect(port_from, port_to, cb)
 
     def format_port(self, port):
+        """
+        Gets a port ID, that might be something like "system:playback_1", "effect_1:symbol" or just "1:symbol"
+        and return a port as it's in jack.
+        """
+        port = str(port)
         if not 'system' in port and not 'effect' in port:
             port = "effect_%s" % port
         return port
@@ -592,9 +537,9 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
-    def hmi_parameter_set(self, instance_id, port_id, value, callback):
+    def hw_parameter_set(self, instance_id, port_id, value):
         self.browser.send(instance_id, port_id, value)
-        self.parameter_set(instance_id, port_id, value, callback)
+        self.parameter_set(instance_id, port_id, value, lambda result: None)
 
     def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
         if port_id == ":bypass":
@@ -641,110 +586,63 @@ class Session(object):
         self.browser.end()
         self.hmi.ui_dis(callback)
 
-    def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
-                       callback, loaded=False):
-        self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
-                               1, 0, 0, hardware_type, hardware_id, actuator_type,
-                               actuator_id, [], callback, loaded)
-
-    def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
-        addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
-        if len(addrs['addrs']) > 0:
-            addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
-            callback(True)
-            self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
-                                           addrs['idx'])
-            return True
-        #elif len(addrs['addrs']) <= 0:
-        #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
-        callback(True)
-        return False
-    def parameter_addressing_load(self, hw_type, hw_id, act_type, act_id, idx):
-        addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
-        try:
-            addressing = addrs['addrs'][idx]
-        except IndexError:
-            return
-        self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'],
-                             addressing['type'], addressing['unit'], addressing['value'],
-                             addressing['maximum'], addressing['minimum'], addressing['steps'],
-                             addressing['actuator'][0], addressing['actuator'][1],
-                             addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
-                             addressing.get('options', []))
-
-
-    def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
-                          unit, current_value, maximum, minimum, steps,
-                          hardware_type, hardware_id, actuator_type, actuator_id,
-                          options, callback, loaded=False):
-        # TODO the IHM parameters set by hardware.js should be here!
-        # The problem is that we need port data, and getting it now is expensive
+    def parameter_address(self, instance_id, port_id, actuator, mode, port_properties, label, value,
+                          minimum, maximum, default, steps, unit, scale_points, callback):
         """
         instance_id: effect instance
         port_id: control port
-        addressing_type: 'range', 'switch' or 'tap_tempo'
-        label: lcd display label
-        ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
-        unit: string representing the parameter unit (hz, bpm, seconds, etc)
-        hardware_type: the hardware model
-        hardware_id: the id of the hardware where we find this actuator
-        actuator_type: the encoder button type
-        actuator_id: the encoder button number
-        options: array of options, each one being a tuple (value, label)
+        actuator: (url, channel, actuator_id) tupple.
+        mode: two byte indicating masks of addressing mode, as defined by actuator
+        port_properties: mask indicating the properties of this port
+        label: display label
+        value: the current value of this port
+        minimum, maximum, default: the minimum, maximum and default values for this port
+        steps: the number of steps from minimum to maximum
+        unit: string representing the parameter unit (ex: "%f hz")
+        scale_points: array of options, each one being a tuple (value, label)
         """
-        if (hardware_type == -1 and
-            hardware_id == -1 and
-            actuator_type == -1 and
-            actuator_id == -1):
-            if not loaded:
-                a = self._pedalboard.parameter_unaddress(instance_id, port_id)
-                if a:
-                    if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
-                        self.hmi.control_rm(instance_id, port_id, lambda r:None)
-                else:
-                    callback(True)
-            else:
-                self.hmi.control_rm(instance_id, port_id, callback)
+
+        if actuator is None:
+            # We're unaddressing
+            self._pedalboard.parameter_unaddress(instance_id, port_id)
+            self.addressing.unaddress(instance_id, port_id, callback)
             return
 
-        if not loaded:
-            old = self._pedalboard.parameter_address(instance_id, port_id,
-                                                     addressing_type,
-                                                     label,
-                                                     ctype,
-                                                     unit,
-                                                     current_value,
-                                                     maximum,
-                                                     minimum,
-                                                     steps,
-                                                     hardware_type,
-                                                     hardware_id,
-                                                     actuator_type,
-                                                     actuator_id,
-                                                     options)
+        # Unaddress parameter in pedalboard object.
+        # This will return old addressing for this port
+        old = self._pedalboard.parameter_address(instance_id, port_id,
+                                                 actuator, mode,
+                                                 port_properties,
+                                                 label,
+                                                 value,
+                                                 minimum,
+                                                 maximum,
+                                                 default,
+                                                 steps,
+                                                 unit,
+                                                 scale_points)
+        
+        def hw_address(ok=True, msg=None):
+            if not result:
+                return callback(False)
+            self.addressing.address(instance_id, port_id,
+                                    actuator, mode,
+                                    port_properties,
+                                    label,
+                                    value,
+                                    minimum,
+                                    maximum,
+                                    default,
+                                    steps,
+                                    unit,
+                                    scale_points,
+                                    callback)
 
-            self.hmi.control_add(instance_id,
-                                 port_id,
-                                 label,
-                                 ctype,
-                                 unit,
-                                 current_value,
-                                 maximum,
-                                 minimum,
-                                 steps,
-                                 hardware_type,
-                                 hardware_id,
-                                 actuator_type,
-                                 actuator_id,
-                                 len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 options,
-                                 callback)
-            if old:
-                self.parameter_addressing_load(*old)
+        if old:
+            # This port is already addressed, let's unaddress first
+            self.addressing.unaddress(instance_id, port_id, hw_address)
         else:
-            callback(True)
-
+            hw_address()
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """

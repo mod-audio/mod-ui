@@ -57,7 +57,6 @@ from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard, remove_pedalboard
 from mod.bank import save_banks
-from mod.hardware import get_hardware
 from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
@@ -468,9 +467,26 @@ class EffectBypass(web.RequestHandler):
 class EffectBypassAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
-    def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", 'switch', label, 6, "none",
-                            int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
+    def post(self, instance):
+        data = json.loads(self.request.body)
+
+        instance_id = int(instance)
+        port_id = ':bypass'
+        actuator = data.get('actuator')
+        mode = int(data['mode'])
+        port_properties = 0b00100001
+        label = data.get('label', 'ON/OFF')
+        value = int(data['value'])
+        minimum = 0
+        maximum = 0
+        default = 0
+        steps = 2
+        unit = None
+        scale_points = []        
+        
+        res = yield gen.Task(SESSION.parameter_address, 
+                             instance_id, port_id, actuator, mode, port_properties, label, value,
+                             minimum, maximum, default, steps, unit, scale_points)
 
         # TODO: get value when unaddressing
         self.write(json.dumps({ 'ok': res, 'value': False }))
@@ -511,15 +527,15 @@ class EffectParameterSet(web.RequestHandler):
 class EffectParameterAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
-    def post(self, instance, parameter):
+    def post(self, instance, port_id):
         data = json.loads(self.request.body)
+        instance_id = int(instance)
 
-        actuator = data.get('actuator', [-1] * 4)
+        actuator = data.get('actuator')
 
-        if actuator[0] < 0:
-            actuator = [ -1, -1, -1, -1 ]
+        if actuator is None:
             result = yield gen.Task(SESSION.parameter_get,
-                                    int(instance),
+                                    instance_id,
                                     parameter)
             if not result['ok']:
                 self.write(json.dumps(result))
@@ -528,38 +544,20 @@ class EffectParameterAddress(web.RequestHandler):
         else:
             result = {}
 
+        mode = int(data['mode'])
+        port_properties = int(data['port_properties'])
         label = data.get('label', '---')
-
-        try:
-            ctype = int(data['type'])
-        except:
-            ctype = 0
-
         value = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
+        default = float(data['default'])
         steps = int(data.get('steps', 33))
-        unit = data.get('unit', 'none') or 'none'
+        unit = data.get('unit')
+        scale_points = data.get('scale_points', [])
 
-        options = data.get('options', [])
-
-        result['ok'] = yield gen.Task(SESSION.parameter_address,
-                                      int(instance),
-                                      parameter,
-                                      data.get('addressing_type', None),
-                                      label,
-                                      ctype,
-                                      unit,
-                                      value,
-                                      maximum,
-                                      minimum,
-                                      steps,
-                                      actuator[0],
-                                      actuator[1],
-                                      actuator[2],
-                                      actuator[3],
-                                      options,
-                                      )
+        result['ok'] = yield gen.Task(SESSION.parameter_address, 
+                                      instance_id, port_id, actuator, mode, port_properties, label, value,
+                                      minimum, maximum, default, steps, unit, scale_points)
 
         self.write(json.dumps(result))
         self.finish()
@@ -1046,7 +1044,7 @@ application = web.Application(
             (r"/effect/parameter/feed/?", EffectParameterFeed),
             (r"/effect/parameter/address/(\d+),([A-Za-z0-9_]+)", EffectParameterAddress),
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
-            (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+            (r"/effect/bypass/address/(\d+)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/position/(\d+)/?", EffectPosition),

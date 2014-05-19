@@ -39,6 +39,9 @@ ADDRESSING = 3
 DATA_REQUEST = 4
 UNADDRESSING = 5
 
+def get_time():
+    return ioloop.IOLoop.time(ioloop.IOLoop.instance())
+
 class ControlChainMessage():
     """
     ControlChainMessage is responsible for parsing and building Control Chain messages. It converts structured data into proper byteflow
@@ -200,14 +203,13 @@ class Gateway():
     handles checksums, byte replacings and connection issues.
     It uses ControlChainMessage to build and parse the messages.
     """
-    def __init__(self, handler):
+    def __init__(self, hmi, handler):
         # Used to handle message above this level
         self.handle = handler
         self.message = ControlChainMessage()
 
         # Currently control_chain is routed through HMI
-        from mod.session import SESSION
-        self.hmi = SESSION.hmi
+        self.hmi = hmi
         from mod.protocol import Protocol
         Protocol.register_cmd_callback("chain", self.receive)
         
@@ -242,17 +244,17 @@ class PipeLine():
     The only control chain message handled by PipeLine is the data_request, all others will go
     to HardwareManager
     """
-    def __init__(self, handler):
+    def __init__(self, hmi, handler):
         # Used to handle messages above this level
         self.handle = handler
-        self.gateway = Gateway(self.receive)
+        self.gateway = Gateway(hmi, self.receive)
         
         # List of hardware ids that will be polled
         self.poll_queue = []
         #  Pointer to the next device to be polled
         self.poll_pointer = 0
         # Time of last poll, initialized on past to schedule start asap
-        self.last_poll = ioloop.IOLoop.time() - 1
+        self.last_poll = get_time() - 1
         # There must always be one scheduled event, this will store the tornado's timeout for it.
         self.timeout = None
         # The sequencial data request number for each device.
@@ -306,7 +308,7 @@ class PipeLine():
         """
         Does one polling cycle and schedules next event.
         """
-        self.last_poll = ioloop.IOLoop.time()
+        self.last_poll = get_time()
         try:
             if len(self.poll_queue) == 0:
                 return self.schedule(self.process_next)
@@ -342,11 +344,11 @@ class AddressingManager():
     HardwareManager is responsible for managing the connections to devices, know which ones are online, the hardware ids and addressing ids.
     It translates the Control Chain protocol to proper calls to Session methods.
     """
-    def __init__(self, handler):
+    def __init__(self, hmi, handler):
         # Handler is the function that will receive (instance_id, symbol, value) updates
         self.handle = handler
 
-        self.pipeline = PipeLine(self.receive)
+        self.pipeline = PipeLine(hmi, self.receive)
 
         # Store hardware data, indexed by hwid
         self.hardwares = {}
@@ -404,7 +406,7 @@ class AddressingManager():
             # in previous communication
             current_callback(False)
         if callback is not None:
-            self.callbacks[(hwid, function)] = (callback, ioloop.IOLoop.time())
+            self.callbacks[(hwid, function)] = (callback, get_time())
         self.pipeline.send(hwid, function, data)
 
     def _timeouts(self):
@@ -414,7 +416,7 @@ class AddressingManager():
         """
         # TODO it would be more efficient to separate them, as the hardware_timeout is much greater than
         # response timeout
-        now = ioloop.IOLoop.time()
+        now = get_time()
         try:
             # Devices
             hwids = self.hardwares_tstamp.keys()
@@ -441,7 +443,7 @@ class AddressingManager():
             # device is sending message after being disconnected
             return
 
-        self.hardware_tstamp[msg.origin] = ioloop.IOLoop.time()
+        self.hardware_tstamp[msg.origin] = get_time()
         try:
             callback, tstamp = self.callbacks.pop((msg.origin, msg.function))
             self.dispatch_table[msg.function](msg.origin, msg.data, callback)
@@ -493,7 +495,7 @@ class AddressingManager():
         hwid = self._generate_hardware_id()
         self.hardwares[hwid] = data
         self.hardware_index[(url, channel)] = hwid
-        self.hardware_tstamp[hwid] = ioloop.IOLoop.time()
+        self.hardware_tstamp[hwid] = get_time()
         self.addressings[hwid] = {}
         self.addressing_id_pointers[hwid] = 0
         self.send(hwid, CONNECTION, data)
@@ -577,12 +579,13 @@ class AddressingManager():
         self.data_request_seqs[hwid] = (self.data_request_seqs[hwid]+1) % 256
         # Report events to Session
         for event in data.events:
-            self.handle(event['id'], event['value'])            
+            instance_id, port_id, addressing = self.addressings[hwid][event['id']]
+            self.handle(instance_id, port_id, event['value'])
         # Resend any addressings requested
         for addrid in data.requests:
             self.send(hwid, ADDRESSING, self.addressings[hwid][addrid][2])
 
-    def address(self, actuator, mode, instance_id, port_id, port_properties, label, value, 
+    def address(self, instance_id, port_id, url, channel, actuator_id, mode, port_properties, label, value, 
                 minimum, maximum, default, steps, unit, scale_points, callback=None):
         """
         Addresses a control port to an actuator.
@@ -590,7 +593,7 @@ class AddressingManager():
         if that's the case.
         """
         data = {
-            'actuator_id': actuator['actuator_id'],
+            'actuator_id': actuator_id,
             'chosen_mask': mode,
             'port_mask': port_properties,
             'label': label,
@@ -609,8 +612,6 @@ class AddressingManager():
             if not result:
                 return callback(False, msg)
 
-            url = actuator['url']
-            channel = actuator['channel']
             hwid = self.hardware_index.get((url, channel))
             if hwid is not None:
                 self.commit_addressing(hwid, instance_id, port_id, data, callback)
@@ -642,7 +643,7 @@ class AddressingManager():
         if not self.pending_addressings.get(hwkey):
             self.pending_addressings[hwkey] = {}
         self.pending_addressings[hwkey][(instance_id, port_id)] = addressing
-        self.addressing_index[(instance_id, port_id)] = (False, actuator['url'], actuator['channel'])
+        self.addressing_index[(instance_id, port_id)] = (False, url, channel)
 
     def confirm_addressing(self, origin, data, callback=None):
         """
