@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from construct import (Struct, Byte, String, ULInt16, UBInt16, Array, LFloat32,
-                       If, Adapter, Container
+                       If, Adapter, Container, ListContainer
                        )
 import Queue
 from tornado import ioloop
@@ -27,9 +27,6 @@ from tornado import ioloop
                [0, 0, 1, 3, True, u'Foot 4 (Tap Tempo)'],
                [1, 0, 1, 0, True, 'Foot - Exp. 1']]}
 
-actuator: hwtype, hwid, acttype, actid -> url, channel, actid
-addressing_type -> mode + port_properties
-options renamed to scale_points
 """
 
 ERROR = 255
@@ -61,8 +58,8 @@ class ControlChainMessage():
             "data",
             Byte("function"),
             Byte("code"),
-            Byte("msg_size"),
-            String("message", lambda ctx: ctx.msg_size),
+            Byte("message_size"),
+            String("message", lambda ctx: ctx.message_size),
             )
         error_builder = error_parser
 
@@ -71,9 +68,9 @@ class ControlChainMessage():
             "data",
             Byte("name_size"),
             String("name", lambda ctx: ctx.name_size),
-            Byte("actuators_count"),
+            Byte("actuator_count"),
             Array(
-                lambda ctx: ctx.actuators_count,
+                lambda ctx: ctx.actuator_count,
                 Struct(
                     "actuator",
                     Byte("id"),
@@ -167,22 +164,43 @@ class ControlChainMessage():
             UNADDRESSING: Struct("data", control_unaddressing_builder),
             }
 
-    def _make_container(self, obj):
+    def _encode(self, obj):
+        """
+        Recursively encodes a dictionary into Container object to be serialized.
+        Also, puts proper _size and _count properties.
+        """
         if obj is None:
             return Container()
         for key, value in obj.items():
             if type(value) is dict:
-                obj[key] = self._make_container(value)
+                obj[key] = self._encode(value)
             elif type(value) in (str, unicode):
                 obj["%s_size" % key] = len(obj[key])
             elif type(value) is list:
                 obj["%s_count" % key] = len(value)
                 for i, item in enumerate(value):
-                    value[i] = self._make_container(item)
+                    value[i] = self._encode(item)
         return Container(**obj)
 
+    def _decode(self, obj):
+        """
+        Removes _size and _count properties to avoid garbage in local data.
+        """
+        if type(obj) in (dict, Container):
+            for key, value in obj.items():
+                obj[key] = self._decode(value)
+                if type(value) in (list, ListContainer):
+                    del obj["%s_count" % key]
+                elif type(value) in (str, unicode):
+                    del obj["%s_size" % key]
+        elif type(obj) in (list, ListContainer):
+            for i, item in enumerate(obj):
+                obj[i] = self._decode(item)
+
+        return obj
+
     def build(self, destination, function, obj={}):
-        data = self._builder[function].build(Container(data=self._make_container(obj)))
+        data = self._builder[function].build(Container(data=self._encode(obj)))
         header = self._builder['header'].build(Container(destination=destination,
                                                          origin=0,
                                                          function=function,
@@ -194,8 +212,9 @@ class ControlChainMessage():
         data = buffer[5:]
         assert len(data) == header.data_size, "Message is not consistent, wrong data size"
         parser = self._parser[header.function]
+        del header['data_size']
         header.data = parser.parse(data).data
-        return header
+        return self._decode(header)
 
 class Gateway():
     """
