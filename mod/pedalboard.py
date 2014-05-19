@@ -292,7 +292,7 @@ class Migration():
             addressing = instance.get('addressing', {})
             for port_id in addressing.keys():
                 addr = addressing[port_id]
-                add['actuator'] = cls._migrate_actuator(addr['actuator'])
+                addr['actuator'] = cls._migrate_actuator(addr['actuator'])
                 mode, props = cls._migrate_type(instance['url'], port_id, addr['addressing_type'])
                 if mode is None:
                     # Either the effect is not installed anymore, or there's some weird
