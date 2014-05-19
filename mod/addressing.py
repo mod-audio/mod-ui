@@ -3,6 +3,7 @@
 from construct import (Struct, Byte, String, ULInt16, UBInt16, Array, LFloat32,
                        If, Adapter, Container, ListContainer
                        )
+import pystache
 import Queue
 from tornado import ioloop
 
@@ -171,16 +172,20 @@ class ControlChainMessage():
         """
         if obj is None:
             return Container()
-        for key, value in obj.items():
-            if type(value) is dict:
+        if type(obj) in (dict, Container):
+            for key, value in obj.items():
                 obj[key] = self._encode(value)
-            elif type(value) in (str, unicode):
-                obj["%s_size" % key] = len(obj[key])
-            elif type(value) is list:
-                obj["%s_count" % key] = len(value)
-                for i, item in enumerate(value):
-                    value[i] = self._encode(item)
-        return Container(**obj)
+                if type(value) in (str, unicode):
+                    obj["%s_size" % key] = len(obj[key])
+                elif type(value) is list:
+                    obj["%s_count" % key] = len(value)
+            return Container(**obj)
+
+        if type(obj) in (list, ListContainer):
+            for i, item in enumerate(obj):
+                obj[i] = self._encode(item)
+
+        return obj
 
     def _decode(self, obj):
         """
@@ -588,6 +593,9 @@ class AddressingManager():
         """
         Save the device description send by the device.
         """
+        data.update(self.hardwares[hwid])
+        for actuator in data['actuator']:
+            actuator['name'] = pystache.render(actuator['name'], data)
         path = self.get_driver_path(data['url'])
         open(path, 'w').write(json.dumps(data))
 

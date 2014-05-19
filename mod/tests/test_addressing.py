@@ -13,7 +13,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import unittest
+import unittest, struct
 from mod.addressing import ControlChainMessage
 
 class ControlChainMessageTest(unittest.TestCase):
@@ -91,7 +91,6 @@ class ControlChainMessageTest(unittest.TestCase):
         self.assertEquals(msg.data.actuator[1].modes[2].label, 'Tap tempo')
         self.assertEquals(msg.data.actuator[1].modes[3].mask, 0x2A22)
         self.assertEquals(msg.data.actuator[1].modes[3].label, 'Rotate')
-
 
     def test_control_addressing_host(self):
         data = {

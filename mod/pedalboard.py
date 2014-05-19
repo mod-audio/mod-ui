@@ -324,7 +324,7 @@ class Migration():
             # This is the expression pedal. The actuator IDs will be:
             # 1 - the pedal (potenciometer); 2 - the footswitch
             return [ 'http://portalmod.com/devices/expression_pedal',
-                     actuator[1],
+                     actuator[1]+1,
                      { 3: 1, 1: 2 }[actuator[2]],
                      ]
 
@@ -387,8 +387,6 @@ class Migration():
             props |= 0b00000010
 
         return (mode, props)
-
-
         
     @classmethod
     def _get_port(cls, url, port_id):
