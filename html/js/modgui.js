@@ -83,7 +83,8 @@ function GUI(effect, options) {
 	toggled: true,
 	widgets: [],
 	enabled: true,
-	value: options.bypassed
+	value: options.bypassed,
+	property_mask: 33, // 0b00100001
     }	
 
     this.setPortValue = function(symbol, value, source) {

@@ -3,7 +3,7 @@
 from construct import (Struct, Byte, String, ULInt16, UBInt16, Array, LFloat32,
                        If, Adapter, Container, ListContainer
                        )
-import pystache, os, json
+import pystache, os, json, struct
 from hashlib import md5
 import Queue
 from tornado import ioloop
@@ -57,7 +57,7 @@ class ControlChainMessage():
                 lambda ctx: ctx.actuator_count,
                 Struct(
                     "actuator",
-                    Byte("id"),
+                    Byte("actuator_id"),
                     Byte("name_size"),
                     String("name", lambda ctx: ctx.name_size),
                     Byte("modes_count"),
@@ -727,7 +727,7 @@ class AddressingManager():
         self.unaddress_many(addressings, callback)
 
 
-def get_hardware():
+def get_actuator_list():
     actuators = []
     for device_id in os.listdir(HARDWARE_DRIVER_DIR):
         path = os.path.join(HARDWARE_DRIVER_DIR, device_id)
@@ -738,6 +738,18 @@ def get_hardware():
         for actuator in data['actuator']:
             actuator['url'] = data['url']
             actuator['channel'] = data['channel']
+            actuator['key'] = md5('%s:%s:%s' % (actuator['url'],
+                                                actuator['channel'],
+                                                actuator['actuator_id'])).hexdigest()
+            for mode in actuator['modes']:
+                mode['key'] = '%04X' % mode['mask']
+                mode['relevant'], mode['expected'] = struct.unpack('2B', struct.pack('>H', mode['mask']))
             actuators.append(actuator)
+    return actuators
+
+def get_actuator_index():
+    actuators = {}
+    for actuator in get_actuator_list():
+        actuators[actuator['key']] = actuator
     return actuators
 

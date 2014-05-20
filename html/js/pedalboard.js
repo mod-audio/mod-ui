@@ -26,8 +26,8 @@ JqueryClass('pedalboard', {
 	    maxScale: 1,
 	    // WindowManager instance
 	    windowManager: new WindowManager(),
-	    // HardwareManager instance, must be specified
-	    hardwareManager: null,
+	    // AddressingManager instance, must be specified
+	    addressingManager: null,
 	    // InstallationQueue instance
 	    installationQueue: new InstallationQueue(),
 
@@ -301,7 +301,7 @@ JqueryClass('pedalboard', {
     serialize: function(callback) {
 	var self = $(this)
 	var scale = self.data('scale')
-	var hw = self.data('hardwareManager')
+	var hw = self.data('addressingManager')
 
 	var data = {}
 	data.width = self.width()
@@ -1028,7 +1028,7 @@ JqueryClass('pedalboard', {
 	plugin.data('settings', settings)
 	plugin.data('instanceId', instanceId)
 
-	var hardware = self.data('hardwareManager')
+	var hardware = self.data('addressingManager')
 	if (addressing && hardware)
 	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'))
 
@@ -1134,7 +1134,7 @@ JqueryClass('pedalboard', {
 	    })
 	    connections.removeInstance(instanceId)
 
-	    var hw = self.data('hardwareManager')
+	    var hw = self.data('addressingManager')
 	    if (hw)
 		hw.removeInstance(instanceId)
 
@@ -1207,7 +1207,7 @@ JqueryClass('pedalboard', {
 		self.pedalboard('destroyJack', jack)
 	    })
 	    self.data('connectionManager').reset()
-	    var hw = self.data('hardwareManager')
+	    var hw = self.data('addressingManager')
 	    if (hw)
 		hw.reset()
 	    self.data('bypassApplication', false)

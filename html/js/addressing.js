@@ -15,9 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function HardwareManager(options) {
+function AddressingManager(options) {
     var self = this
-
+    
     options = $.extend({
 	// This is the function that will actually make the addressing
 	address: function(instanceId, symbol, addressing, callback) { callback(true) },
@@ -29,96 +29,81 @@ function HardwareManager(options) {
 
     }, options)
 
-    // All control types
-    var controlTypes = [ 'switch', 'range', 'tap_tempo' ]
-
     this.reset = function() {
 	/* All adressings indexed by actuator
-	   key: "hardwareType,hardwareId,actuatorType,actuatorId"
-	   value: ["instanceId,symbol"]
+	   key: "url,channel,actuatorId"
+	   value: list of pairs ["instanceId,symbol"]
 	*/
 	self.addressings = {}
 
 	/* All addressings indexed by instanceId and control port
 	   key: [instanceId][symbol]
-	   value: complete addressing structure
+	   value: addressing structure
 	*/
 	self.controls = {}
 
-	// Initializes addressings
-	self.listActuators()
-    }
-
-    // Lists all available actuators and initializes the addressing structure
-    this.listActuators = function() {
-	var actuators = []
-	var i, j, type, actuator, actuatorKey
-	for (i=0; i<controlTypes.length; i++) {
-	    type = controlTypes[i]
-	    for (j=0; j<HARDWARE_PROFILE[type].length; j++) {
-		actuatorData = HARDWARE_PROFILE[type][j]
-		actuator = {}
-		actuator.address = actuatorData.slice(0, 4)
-		actuator.type = type
-		actuator.exclusive = actuatorData[4]
-		actuator.label = actuatorData[5]
-		actuators.push(actuator)
-
-		actuatorKey = actuator.address.join(',')
-		if (!self.addressings[actuatorKey])
-		    self.addressings[actuatorKey] = []
-	    }
-	}
-	return actuators
+	var actuatorKey, i, actuator
+	for (var i=0; i<HARDWARE_PROFILE.length; i++) {
+	    actuator = HARDWARE_PROFILE[i]
+	    actuatorKey = [ actuator.url, actuator.channel, actuator.actuator_id ].join(',')
+	    self.addressings[actuatorKey] = []
+	}	    
     }
 
     this.reset()
 
-    // Get all addressing types that can be used for a port
-    this.availableAddressingTypes = function(port) {
-	var types = []
-	if (port.toggled) {
-	    types.push('switch')
-	} else if (port.enumeration) {
-	    types.push('switch')
-	    types.push('range')
-	} else {
-	    types.push('range')
-	    if (port.tap_tempo)
-		types.push('tap_tempo')
+    this.sameActuator = function(a, b) {
+	if (a == b)
+	    return true
+	if (a == null || b == null)
+	    return false
+	return (a.url == b.url &&
+		a.channel == b.channel &&
+		a.actuator_id == c.actuator_id)
+    }
+
+    // Checks if an actuator is available for a port in given mode
+    this.available = function(actuator, mode, instanceId, port) {
+	// First check if this port is already addressed to this actuator.
+	// If so, return true
+	try {
+	    var current = self.controls[instanceId][port.symbol]
+	    if (self.sameActuator(current, actuator) && current.chosen_mask == mode.mask)
+		return true
+	} catch(e) {
+	    // TypeError when self.controls[instanceId] is null or addressing is none.
+	    // That's ok
 	}
-	return types
+
+	// Check if there are available slots in this actuator
+	var actuatorKey = [ actuator.url, actuator.channel, actuator.actuator_id ].join(',')
+	if (self.addressings[actuatorKey].length >= actuator.slots)
+	    return false;
+
+	// Now let's see if the actuator supports this mode
+	// Operate the three masks to check if port matches mode, as specified
+	// by Control Chain protocol
+	return (mode.relevant & port.property_mask) == mode.expected
     }
 
-    // Checks if an actuator is available for a port
-    this.available = function(actuator, instanceId, port) {
-	var actuatorKey = actuator.address.join(',')
-	var portKey = [instanceId, port.symbol].join(',')
-	return (!actuator.exclusive
-		|| self.addressings[actuatorKey].length == 0
-		|| self.addressings[actuatorKey].indexOf(portKey) >= 0)
-    }
-
-    // Gets a list of available actuators for a port
+    // Gets a list of (actuator, mode) available for an instanceId and port
     this.availableActuators = function(instanceId, port) {
-	var portKey = [instanceId, port.symbol].join(',')
-	var types = self.availableAddressingTypes(port)
-	var actuators = self.listActuators(instanceId, port)
-
-	var available = []
-	for (var i=0; i<actuators.length; i++) {
-	    if (types.indexOf(actuators[i].type) < 0)
-		continue
-	    if (!self.available(actuators[i], instanceId, port))
-		continue
-	    available.push(actuators[i])
+	console.log('aqui')
+	var addressings = []
+	var i, actuator, j, mode
+	for (i=0; i<HARDWARE_PROFILE.length; i++) {
+	    actuator = HARDWARE_PROFILE[i]
+	    for (j=0; j<actuator.modes.length; j++) {
+		mode = actuator.modes[j]
+		if (self.available(actuator, mode, instanceId, port))
+		    addressings.push([actuator, mode])
+	    }
 	}
-	return available
+	return addressings
     }
 
-    // Opens an addressing window to address this a port
+    // Opens an addressing window to address this port
     this.open = function(instanceId, port, currentValue) {
-	console.log('open')
 	var currentAddressing = {}
 	if (self.controls[instanceId])
 	    currentAddressing = self.controls[instanceId][port.symbol] || {}
@@ -129,12 +114,15 @@ function HardwareManager(options) {
 	var actuators = self.availableActuators(instanceId, port)
 	var actuatorSelect = form.find('select[name=actuator]')
 	$('<option value="-1">').text('None').appendTo(actuatorSelect)
-	var i, value, actuator, opt
+	var i, actuator, mode, opt, label
 	for (i=0; i<actuators.length; i++) {
-	    opt = $('<option>').attr('value', i).text(actuators[i].label).appendTo(actuatorSelect)
-	    if (currentAddressing.actuator
-		&& currentAddressing.actuator.join(',') == actuators[i].address.join(','))
-	    {
+	    actuator = actuators[i][0]
+	    mode = actuators[i][1]
+	    label = actuator.name
+	    if (mode.label)
+		label += ' (' + mode.label + ')'
+	    opt = $('<option>').attr('value', i).text(label).appendTo(actuatorSelect)
+	    if (self.sameActuator(currentAddressing, actuator) && addressing.chosen_mask == mode.mask) {
 		actuatorSelect.val(i)
 	    }
 	}
@@ -156,22 +144,31 @@ function HardwareManager(options) {
 	    sensibility.val(currentAddressing.steps)
 
 	form.find('.js-save').click(function() {
-	    actuator = {}
-	    if (actuatorSelect.val() >= 0)
-		actuator = actuators[actuatorSelect.val()]
+	    actuator = null
+	    mode = null
+	    if (actuatorSelect.val() >= 0) {
+		actuator = actuators[actuatorSelect.val()][0]
+		mode     = actuators[actuatorSelect.val()][1]
+	    }
 
 	    // Here the addressing structure is created
-	    var addressing = { actuator: actuator.address, // the actuator used
-			       addressing_type: actuator.type, // one of controlTypes
-			       label: label.val() || port.name,
-			       minimum: min.val() || port.minimum,
-			       maximum: max.val() || port.maximum,
+	    var addressing
+	    if (actuator && mode)		
+		addressing = { url: actuator.url,
+			       channel: actuator.channel,
+			       actuator_id: actuator.actuator_id,
+			       chosen_mask: mode.mask,
+			       port_mask: port.property_mask,
+			       label: label.val(),
 			       value: currentValue,
+			       minimum: min.val(),
+			       maximum: max.val(),
+			       'default': port['default'],
 			       steps: sensibility.val(),
-			       options: [] // the available options in case this is enumerated (no interface for that now)
+			       scale_points: [] // the available options in case this is enumerated (no interface for that now)
 			     }
 
-	    self.setAddressing(instanceId, port.symbol, addressing,
+	    self.setAddressing(instanceId, port, addressing,
 			       function() {
 				   form.remove()
 			       })
@@ -219,57 +216,30 @@ function HardwareManager(options) {
 	select.val(def)
     }
 
-    /* Based on port data and addressingType chosen, creates the addressing data
-     * structure that is expected by the server
-     * TODO
-     * This is very confusing. This method calculates firmware protocol parameters based on
-     * user chosen values. These parameters shouldn't be part of the serialized data. The proper
-     * place for this is the webserver, that should calculate this on demand.
-     */
-    this.setIHMParameters = function(instanceId, symbol, addressing) {
-	addressing.type = 0
-	addressing.options = []
-	if (!addressing.actuator)
-	    return
-	var port = options.getGui(instanceId).controls[symbol]
-	addressing.unit = port.unit ? port.unit.symbol : null
-	if (port.logarithmic)
-	    addressing.type = 1
-	else if (port.enumeration) {
-	    addressing.type = 2
-	    if (!addressing.options || addressing.options.length == 0)
-		addressing.options = port.scalePoints.map(function(point) {
-		    return [ point.value, point.label ]
-		})
-	} else if (port.trigger)
-	    addressing.type = 4
-	else if (port.toggled)
-	    addressing.type = 3
-	else if (addressing.addressing_type == 'tap_tempo')
-	    addressing.type = 5
-	else if (port.integer)
-	    addressing.type = 7
-    }
-
     // Does the addressing
     this.setAddressing = function(instanceId, symbol, addressing, callback) {
-	self.setIHMParameters(instanceId, symbol, addressing)
 
 	options.address(instanceId, symbol, addressing, function(ok, result) {
-	    var actuator = addressing.actuator || [-1, -1, -1, -1]
-	    var actuatorKey = actuator.join(',')
 	    var portKey = [ instanceId, symbol ].join(',')
+
+	    // Get the current addressing
+	    var current, currentKey
+	    try {
+		current = self.controls[instanceId][symbol]
+		currentKey = [ current.url, current.channel, current.actuator_id ].join(',')
+	    } catch(e) {
+		// TypeError when self.controls[instanceId] is null, that's ok
+	    }
+
 	    if (ok) {
 		var gui = options.getGui(instanceId)
-		if (actuator[0] >= 0) {
+		// First removes current addressing
+		if (current) {
+		    remove_from_array(self.addressings[currentKey], portKey)
+		} 
+		if (addressing) {
 		    // We're addressing
-		    try {
-			var currentAddressing = self.controls[instanceId][symbol]
-			remove_from_array(self.addressings[currentAddressing.actuator.join(',')],
-					  [instanceId, symbol].join(","))
-		    } catch(e) {
-			// TypeError when self.controls[instanceId] is null, that's ok
-		    }
+		    var actuatorKey = [ addressing.url, addressing.channel, addressing.actuator_id ].join(',')
 		    self.addressings[actuatorKey].push(portKey)
 		    self.controls[instanceId] = self.controls[instanceId] || {}
 		    self.controls[instanceId][symbol] = addressing
@@ -279,10 +249,6 @@ function HardwareManager(options) {
 		    if (!self.controls[instanceId] || !self.controls[instanceId][symbol])
 			// not addressed, nothing to be done
 			return callback(true)
-		    var currentAddressing = self.controls[instanceId][symbol]
-		    actuatorKey = currentAddressing.actuator.join(',')
-		    var portIndex = self.addressings[actuatorKey].indexOf(portKey)
-		    self.addressings[actuatorKey].splice(portIndex, 1)
 		    delete self.controls[instanceId][symbol]
 		    gui.enable(symbol)
 
@@ -323,10 +289,10 @@ function HardwareManager(options) {
 
     // Removes an instance
     this.removeInstance = function(instanceId) {
-	var actuator, symbol, actuatorKey, ports, i
+	var addressing, symbol, actuatorKey, ports, i
 	for (symbol in self.controls[instanceId]) {
-	    actuator = self.controls[instanceId][symbol].actuator
-	    actuatorKey = actuator.join(',')
+	    addressing = self.controls[instanceId][symbol]
+	    actuatorKey = [ addressing.url, addressing.channel, addressing.actuator_id ]
 	    ports = self.addressings[actuatorKey]
 	    for (i=0; i<ports.length; i++) {
 		if (parseInt(ports[i].split(/,/)[0]) == instanceId) {
@@ -338,3 +304,15 @@ function HardwareManager(options) {
 	delete self.controls[instanceId]
     }
 }
+
+
+    
+
+    
+
+    
+
+    
+
+
+

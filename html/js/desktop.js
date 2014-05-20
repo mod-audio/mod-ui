@@ -113,7 +113,7 @@ function Desktop(elements) {
 	return false
     })
     this.userSession.getSessionId()
-    this.hardwareManager = new HardwareManager({
+    this.addressingManager = new AddressingManager({
 	address: function(instanceId, symbol, addressing, callback) {
 	    addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
 	    if (symbol == ':bypass') {
@@ -446,7 +446,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
     var self = this
     el.pedalboard({
 	windowManager: self.windowManager,
-	hardwareManager: self.hardwareManager,
+	addressingManager: self.addressingManager,
 	bottomMargin: effectBox.height(),
 	pluginLoad: function(url, instanceId, callback, errorCallback) {
 	    var firstTry = true

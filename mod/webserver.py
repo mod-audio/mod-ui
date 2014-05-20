@@ -57,7 +57,7 @@ from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard, remove_pedalboard
 from mod.bank import save_banks
-from mod.addressing import get_hardware
+from mod.addressing import get_actuator_list
 from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
@@ -731,7 +731,7 @@ class BankSave(web.RequestHandler):
 
 class HardwareLoad(web.RequestHandler):
     def get(self):
-        hardware = get_hardware()
+        hardware = get_actuator_list()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(hardware))
 
@@ -787,7 +787,7 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': json.dumps(get_hardware()),
+            'hardware_profile': json.dumps(get_actuator_list()),
             'current_pedalboard': json.dumps(SESSION.serialize_pedalboard(), default=json_handler),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
