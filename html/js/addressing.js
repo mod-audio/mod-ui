@@ -68,7 +68,7 @@ function AddressingManager(options) {
 	// If so, return true
 	try {
 	    var current = self.controls[instanceId][port.symbol]
-	    if (self.sameActuator(current, actuator) && current.chosen_mask == mode.mask)
+	    if (self.sameActuator(current, actuator) && current.mode == mode.mask)
 		return true
 	} catch(e) {
 	    // TypeError when self.controls[instanceId] is null or addressing is none.
@@ -88,7 +88,6 @@ function AddressingManager(options) {
 
     // Gets a list of (actuator, mode) available for an instanceId and port
     this.availableActuators = function(instanceId, port) {
-	console.log('aqui')
 	var addressings = []
 	var i, actuator, j, mode
 	for (i=0; i<HARDWARE_PROFILE.length; i++) {
@@ -122,7 +121,7 @@ function AddressingManager(options) {
 	    if (mode.label)
 		label += ' (' + mode.label + ')'
 	    opt = $('<option>').attr('value', i).text(label).appendTo(actuatorSelect)
-	    if (self.sameActuator(currentAddressing, actuator) && addressing.chosen_mask == mode.mask) {
+	    if (self.sameActuator(currentAddressing, actuator) && addressing.mode == mode.mask) {
 		actuatorSelect.val(i)
 	    }
 	}
@@ -157,8 +156,8 @@ function AddressingManager(options) {
 		addressing = { url: actuator.url,
 			       channel: actuator.channel,
 			       actuator_id: actuator.actuator_id,
-			       chosen_mask: mode.mask,
-			       port_mask: port.property_mask,
+			       mode: mode.mask,
+			       port_properties: port.property_mask,
 			       label: label.val(),
 			       value: currentValue,
 			       minimum: min.val(),
@@ -168,7 +167,7 @@ function AddressingManager(options) {
 			       scale_points: [] // the available options in case this is enumerated (no interface for that now)
 			     }
 
-	    self.setAddressing(instanceId, port, addressing,
+	    self.setAddressing(instanceId, port.symbol, addressing,
 			       function() {
 				   form.remove()
 			       })

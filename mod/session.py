@@ -586,7 +586,8 @@ class Session(object):
         self.browser.end()
         self.hmi.ui_dis(callback)
 
-    def parameter_address(self, instance_id, port_id, actuator, mode, port_properties, label, value,
+
+    def parameter_address(self, instance_id, port_id, url, channel, actuator_id, mode, port_properties, label, value,
                           minimum, maximum, default, steps, unit, scale_points, callback):
         """
         instance_id: effect instance
@@ -602,31 +603,21 @@ class Session(object):
         scale_points: array of options, each one being a tuple (value, label)
         """
 
-        if actuator is None:
+        if url is None:
             # We're unaddressing
             self._pedalboard.parameter_unaddress(instance_id, port_id)
             self.addressing.unaddress(instance_id, port_id, callback)
             return
 
-        # Unaddress parameter in pedalboard object.
-        # This will return old addressing for this port
-        old = self._pedalboard.parameter_address(instance_id, port_id,
-                                                 actuator, mode,
-                                                 port_properties,
-                                                 label,
-                                                 value,
-                                                 minimum,
-                                                 maximum,
-                                                 default,
-                                                 steps,
-                                                 unit,
-                                                 scale_points)
-        
+        def store_addressing(addressing):
+            self._pedalboard.parameter_address(instance_id, port_id, addressing)
+            callback(addressing is not None)
+
         def hw_address(ok=True, msg=None):
-            if not result:
+            if not ok:
                 return callback(False)
             self.addressing.address(instance_id, port_id,
-                                    actuator, mode,
+                                    url, channel, actuator_id, mode,
                                     port_properties,
                                     label,
                                     value,
@@ -636,7 +627,11 @@ class Session(object):
                                     steps,
                                     unit,
                                     scale_points,
-                                    callback)
+                                    store_addressing)
+
+        # Unaddress parameter in pedalboard object.
+        # This will return old addressing for this port
+        old = self._pedalboard.parameter_unaddress(instance_id, port_id)
 
         if old:
             # This port is already addressed, let's unaddress first

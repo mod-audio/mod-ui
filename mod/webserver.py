@@ -532,9 +532,8 @@ class EffectParameterAddress(web.RequestHandler):
         data = json.loads(self.request.body)
         instance_id = int(instance)
 
-        actuator = data.get('actuator')
-
-        if actuator is None:
+        import ipdb; ipdb.set_trace()
+        if data is None:
             result = yield gen.Task(SESSION.parameter_get,
                                     instance_id,
                                     parameter)
@@ -545,6 +544,10 @@ class EffectParameterAddress(web.RequestHandler):
         else:
             result = {}
 
+        actuator = (data['url'], data['channel'], data['actuator_id'])
+        url = data['url']
+        channel = data['channel']
+        actuator_id = data['actuator_id']
         mode = int(data['mode'])
         port_properties = int(data['port_properties'])
         label = data.get('label', '---')
@@ -557,8 +560,10 @@ class EffectParameterAddress(web.RequestHandler):
         scale_points = data.get('scale_points', [])
 
         result['ok'] = yield gen.Task(SESSION.parameter_address, 
-                                      instance_id, port_id, actuator, mode, port_properties, label, value,
-                                      minimum, maximum, default, steps, unit, scale_points)
+                                      instance_id, port_id, 
+                                      url, channel, actuator_id,
+                                      mode, port_properties, label, value, minimum, 
+                                      maximum, default, steps, unit, scale_points)
 
         self.write(json.dumps(result))
         self.finish()

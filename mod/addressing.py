@@ -620,14 +620,14 @@ class AddressingManager():
             # This will either be called immediately or after unaddressing
             # this port from other actuator. So, do_address maybe a callback.
             if not result:
-                return callback(False, msg)
+                return callback(None, msg)
 
             hwid = self.hardware_index.get((url, channel))
             if hwid is not None:
                 self.commit_addressing(hwid, instance_id, port_id, data, callback)
             else:
                 self.store_pending_addressing(url, channel, instance_id, port_id, data)
-                self.ioloop.add_callback(lambda: callback(True))
+                self.ioloop.add_callback(lambda: callback(data))
 
         if self.addressing_index.get((instance_id, port_id)) is None:
             do_address()
@@ -642,7 +642,13 @@ class AddressingManager():
         addressing['addressing_id'] = addrid            
         self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
         self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
-        self.send(hwid, ADDRESSING, data, callback)
+
+        def _callback(ok=True):
+            if ok:
+                callback(addressing)
+            else:
+                callback(None)
+        self.send(hwid, ADDRESSING, data, _callback)
 
 
     def store_pending_addressing(self, url, channel, instance_id, port_id, addressing):

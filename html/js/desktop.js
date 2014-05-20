@@ -115,38 +115,20 @@ function Desktop(elements) {
     this.userSession.getSessionId()
     this.addressingManager = new AddressingManager({
 	address: function(instanceId, symbol, addressing, callback) {
-	    addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
-	    if (symbol == ':bypass') {
-		var url = instanceId
-		url += ',' + addressing.actuator.join(',')
-		url += ',' + (addressing.value ? 1 : 0)
-		url += ',' + addressing.label
-		$.ajax({ url: '/effect/bypass/address/' + url,
-			 success: function (resp) {
-			     callback(resp.ok, resp)
-			 },
-			 error: function () {
-			     new Bug("Couldn't address bypass")
-			     callback(false)
-			 },
-			 cache: false,
-			 dataType: 'json'
-		       })
-	    } else {
-		$.ajax({ url: '/effect/parameter/address/' + instanceId + ',' + symbol,
-			 type: 'POST',
-			 data: JSON.stringify(addressing),
-			 success: function(resp) {
-			     callback(resp.ok, resp)
-			 },
-			 error: function() {
-			     new Bug("Couldn't address parameter")
-			     callback(false)
-			 },
-			 cache: false,
-			 dataType: 'json'
-		       })
-	    }
+	    $.ajax({ url: '/effect/parameter/address/' + instanceId + ',' + symbol,
+		     type: 'POST',
+		     data: JSON.stringify(addressing),
+		     success: function(resp) {
+			 callback(resp.ok, resp)
+		     },
+		     error: function() {
+			 new Bug("Couldn't address parameter")
+			 callback(false)
+		     },
+		     cache: false,
+		     dataType: 'json'
+		   })
+	    
 	},
 	getGui: function(instanceId) {
 	    return self.pedalboard.pedalboard('getGui', instanceId)
