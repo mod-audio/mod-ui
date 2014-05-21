@@ -1346,6 +1346,10 @@ JqueryClass('pedalboard', {
 			     // Prevents dragging of whole pedalboard while jack is being dragged
 			     self.pedalboard('preventDrag', true)
 
+			     // If user has started a connection by clicking a jack, this drag will
+			     // end it
+			     self.pedalboard('finishConnection')
+
 			     // Highlight all inputs in which this jack can be dropped
 			     self.pedalboard('highlightInputs', true, jack)
 
@@ -1474,6 +1478,8 @@ JqueryClass('pedalboard', {
 
     startConnection: function(output) {
 	var self = $(this)
+	if (self.data('ongoingConnection'))
+	    return
 	var jack = output.find('[mod-role=output-jack]')
 	var canvas = $('<div>')
 	canvas.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 })
@@ -1486,8 +1492,8 @@ JqueryClass('pedalboard', {
 	    self.pedalboard('finishConnection')
 	})
 	svg = canvas.svg('get')
-	var scale = self.data('scale')
 	var moveHandler = function(e) {
+	    var scale = self.data('scale')
 	    // In iPad a tap will first trigger a mousemove event and, if no modifications are made, a click
 	    // event will be triggered. So, to capture a click we must schedule all actions in mousemove handler
 	    if (!self.data('ongoingConnection'))
