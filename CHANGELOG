@@ -1,3 +1,9 @@
+0.99.3
+======
+
+  - fix: after starting a connection by clicking a jack, the cyan connecting cable would get stuck in some cases
+  - also, this cyan cable is now drawed using a bezier curve
+
 0.99.2
 ======
 
