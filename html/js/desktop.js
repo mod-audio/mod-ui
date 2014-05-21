@@ -117,7 +117,7 @@ function Desktop(elements) {
 	address: function(instanceId, symbol, addressing, callback) {
 	    $.ajax({ url: '/effect/parameter/address/' + instanceId + ',' + symbol,
 		     type: 'POST',
-		     data: JSON.stringify(addressing),
+		     data: JSON.stringify(addressing || null),
 		     success: function(resp) {
 			 callback(resp.ok, resp)
 		     },
@@ -137,10 +137,7 @@ function Desktop(elements) {
 	    context = $.extend({ 
 		plugin: self.pedalboard.pedalboard('getGui', instanceId).effect
 	    }, port)
-	    if (port.symbol == ':bypass')
-		return Mustache.render(TEMPLATES.bypass_addressing, context)
-	    else
-		return Mustache.render(TEMPLATES.addressing, context)
+	    return Mustache.render(TEMPLATES.addressing, context)
 	}
     })
 

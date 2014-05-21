@@ -532,18 +532,28 @@ class EffectParameterAddress(web.RequestHandler):
         data = json.loads(self.request.body)
         instance_id = int(instance)
 
-        import ipdb; ipdb.set_trace()
         if data is None:
-            result = yield gen.Task(SESSION.parameter_get,
-                                    instance_id,
-                                    parameter)
-            if not result['ok']:
-                self.write(json.dumps(result))
-                self.finish()
-                return
+            result = yield gen.Task(self.parameter_unaddress, instance_id, port_id)
         else:
-            result = {}
+            result = yield gen.Task(self.parameter_address, instance_id, port_id, data)
 
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(result))
+        self.finish()
+
+    @gen.engine
+    def parameter_unaddress(self, instance_id, port_id, callback):
+        result = yield gen.Task(SESSION.parameter_get,
+                                instance_id,
+                                port_id)
+        if result['ok']:
+            result['ok'] = yield gen.Task(SESSION.parameter_unaddress,
+                                          instance_id, port_id)
+            
+        callback(result)
+
+    @gen.engine
+    def parameter_address(self, instance_id, port_id, data, callback):
         actuator = (data['url'], data['channel'], data['actuator_id'])
         url = data['url']
         channel = data['channel']
@@ -559,14 +569,14 @@ class EffectParameterAddress(web.RequestHandler):
         unit = data.get('unit')
         scale_points = data.get('scale_points', [])
 
-        result['ok'] = yield gen.Task(SESSION.parameter_address, 
+        result = {}
+        result['ok'] = yield gen.Task(SESSION.parameter_address,
                                       instance_id, port_id, 
                                       url, channel, actuator_id,
                                       mode, port_properties, label, value, minimum, 
                                       maximum, default, steps, unit, scale_points)
 
-        self.write(json.dumps(result))
-        self.finish()
+        callback(result)
 
 class EffectParameterGet(web.RequestHandler):
     @web.asynchronous
@@ -1048,7 +1058,7 @@ application = web.Application(
             (r"/effect/parameter/set/(\d+),([A-Za-z0-9_]+)", EffectParameterSet),
             (r"/effect/parameter/get/(\d+),([A-Za-z0-9_]+)", EffectParameterGet),
             (r"/effect/parameter/feed/?", EffectParameterFeed),
-            (r"/effect/parameter/address/(\d+),([A-Za-z0-9_]+)", EffectParameterAddress),
+            (r"/effect/parameter/address/(\d+),([A-Za-z0-9_:]+)", EffectParameterAddress),
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),

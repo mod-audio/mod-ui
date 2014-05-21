@@ -603,12 +603,6 @@ class Session(object):
         scale_points: array of options, each one being a tuple (value, label)
         """
 
-        if url is None:
-            # We're unaddressing
-            self._pedalboard.parameter_unaddress(instance_id, port_id)
-            self.addressing.unaddress(instance_id, port_id, callback)
-            return
-
         def store_addressing(addressing):
             self._pedalboard.parameter_address(instance_id, port_id, addressing)
             callback(addressing is not None)
@@ -638,6 +632,10 @@ class Session(object):
             self.addressing.unaddress(instance_id, port_id, hw_address)
         else:
             hw_address()
+
+    def parameter_unaddress(self, instance_id, port_id, callback):
+        self._pedalboard.parameter_unaddress(instance_id, port_id)
+        self.addressing.unaddress(instance_id, port_id, callback)
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """

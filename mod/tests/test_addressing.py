@@ -95,7 +95,7 @@ class ControlChainMessageTest(unittest.TestCase):
     def test_control_addressing_host(self):
         data = {
             'actuator_id': 1,
-            'chosen_mask': 0x0C00,
+            'mode': 0x0C00,
             'addressing_id': 1,
             'port_mask': 0x0C,
             'label': 'Delay',

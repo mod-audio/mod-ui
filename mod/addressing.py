@@ -77,7 +77,7 @@ class ControlChainMessage():
 
         control_addressing_builder = Struct("data",
                                             Byte("actuator_id"),
-                                            UBInt16("chosen_mask"),
+                                            UBInt16("mode"),
                                             Byte("addressing_id"),
                                             Byte("port_mask"),
                                             Byte("label_size"),
@@ -603,8 +603,12 @@ class AddressingManager():
         if that's the case.
         """
         data = {
+            # url and channel are important in addressing structure, but
+            # won't be encoded in control_chain message
+            'url': url,
+            'channel': channel,
             'actuator_id': actuator_id,
-            'chosen_mask': mode,
+            'mode': mode,
             'port_mask': port_properties,
             'label': label,
             'value': value,
@@ -681,7 +685,7 @@ class AddressingManager():
         def clean_addressing_structures(ok=True, msg=None):
             if not ok:
                 return callback(False, msg)
-            addr = self.addressing_index.pop[(instance_id, port_id)]
+            addr = self.addressing_index.pop((instance_id, port_id))
             if addr[0]:
                 # device is present
                 del self.addressings[addr[1]][addr[2]]

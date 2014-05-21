@@ -59,7 +59,7 @@ function AddressingManager(options) {
 	    return false
 	return (a.url == b.url &&
 		a.channel == b.channel &&
-		a.actuator_id == c.actuator_id)
+		a.actuator_id == b.actuator_id)
     }
 
     // Checks if an actuator is available for a port in given mode
@@ -121,7 +121,7 @@ function AddressingManager(options) {
 	    if (mode.label)
 		label += ' (' + mode.label + ')'
 	    opt = $('<option>').attr('value', i).text(label).appendTo(actuatorSelect)
-	    if (self.sameActuator(currentAddressing, actuator) && addressing.mode == mode.mask) {
+	    if (self.sameActuator(currentAddressing, actuator) && currentAddressing.mode == mode.mask) {
 		actuatorSelect.val(i)
 	    }
 	}
@@ -303,15 +303,3 @@ function AddressingManager(options) {
 	delete self.controls[instanceId]
     }
 }
-
-
-    
-
-    
-
-    
-
-    
-
-
-

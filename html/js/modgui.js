@@ -80,6 +80,7 @@ function GUI(effect, options) {
 	symbol: ':bypass',
 	minimum: 0,
 	maximum: 1,
+	'default': 0,
 	toggled: true,
 	widgets: [],
 	enabled: true,
