@@ -1335,10 +1335,11 @@ JqueryClass('pedalboard', {
 	svg.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 })
 	
 	jack.data('canvas', canvas)
-	jack.data('svg', canvas.svg('get'))
-	jack.data('pathShadow', canvas.svg('get').createPath())
-	jack.data('pathCable', canvas.svg('get').createPath())
-	jack.data('pathLight', canvas.svg('get').createPath())
+	svg = canvas.svg('get')
+	jack.data('svg', svg)
+	canvas.data('pathShadow', svg.createPath())
+	canvas.data('pathCable', svg.createPath())
+	canvas.data('pathLight', svg.createPath())
 
 	jack.draggable({ revert: 'invalid',
 			 revertDuration: 0,
@@ -1421,21 +1422,15 @@ JqueryClass('pedalboard', {
 	    if (!svg)
 		// maybe jack has just been disconnected and so no drawing is necessary
 		return 
-	    var pathS = jack.data('pathShadow') 
-	    var pathC = jack.data('pathCable') 
-	    var pathL = jack.data('pathLight') 
-
-	    var source = jack.data('origin')
-	    var scale = self.data('scale')
 
 	    svg.clear()
-	    pathS.reset()
-	    pathC.reset()
-	    pathL.reset()
 
 	    // If this jack is not connected and 
 	    if (!jack.data('connected') && !force)
 		return
+
+	    var source = jack.data('origin')
+	    var scale = self.data('scale')
 
 	    // Cable will follow a cubic bezier curve, which is defined by 4 points. They are:
 	    // P0 (xi, yi) - starting point
@@ -1448,32 +1443,50 @@ JqueryClass('pedalboard', {
 	    var xo = jack.offset().left / scale - self.offset().left / scale 
 	    var yo = jack.offset().top / scale - self.offset().top / scale + jack.height()/2
 
-	    var deltaX = xo - xi - jack.width()
-	    // The calculations below were empirically obtained by trying several things.
-	    // It gives us a pretty good result
-	    if (deltaX < 0) {
-		deltaX = 10 * (deltaX/6)^0.8
-	    } else {
-		deltaX /= 1.5
-	    }
-	    
-	    // Draw three lines following same path, one for shadow, one for cable and one for light
-	    // The recipe for a good cable is that shadow is wide and darke, cable is not so wide and not so dark, 
-	    // and light is very thin and light.
-	    // Each has a different class, so it will be defined by CSS.
-	    svg.path(null,
-		     pathS.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
-		     { class_: 'shadow' }		 
-		    )
-	    svg.path(null,
-		     pathC.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
-		     { class_: 'cable' }		 
-		    )
-	    svg.path(null,
-		     pathL.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
-		     { class_: 'light' }		 
-		    )
+	    self.pedalboard('drawBezier', jack.data('canvas'), xi, yi, xo, yo, '')
+
 	}, 0)
+    },
+
+    drawBezier: function(canvas, xi, yi, xo, yo, stylePrefix) {
+	var svg = canvas.svg('get')
+	if (!svg)
+	    return
+	svg.clear()
+
+	var pathS = canvas.data('pathShadow') 
+	var pathC = canvas.data('pathCable') 
+	var pathL = canvas.data('pathLight') 
+	
+	pathS.reset()
+	pathC.reset()
+	pathL.reset()
+	
+	// The calculations below were empirically obtained by trying several things.
+	// It gives us a pretty good result
+	var deltaX = xo - xi - 50
+	if (deltaX < 0) {
+	    deltaX = 8.5 * (deltaX/6)^0.8
+	} else {
+	    deltaX /= 1.5
+	}
+	
+	// Draw three lines following same path, one for shadow, one for cable and one for light
+	// The recipe for a good cable is that shadow is wide and darke, cable is not so wide and not so dark, 
+	// and light is very thin and light.
+	// Each has a different class, so it will be defined by CSS.
+	svg.path(null,
+		 pathS.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
+		 { class_: stylePrefix + 'shadow' }		 
+		)
+	svg.path(null,
+		 pathC.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
+		 { class_: stylePrefix + 'cable' }		 
+		)
+	svg.path(null,
+		 pathL.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
+		 { class_: stylePrefix + 'light' }		 
+		)
     },
 
     startConnection: function(output) {
@@ -1488,10 +1501,14 @@ JqueryClass('pedalboard', {
 	var svg = canvas.find('svg')
 	svg.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 })
 
+	svg = canvas.svg('get')
+	canvas.data('pathShadow', svg.createPath())
+	canvas.data('pathCable', svg.createPath())
+	canvas.data('pathLight', svg.createPath())
+
 	canvas.click(function() {
 	    self.pedalboard('finishConnection')
 	})
-	svg = canvas.svg('get')
 	var moveHandler = function(e) {
 	    var scale = self.data('scale')
 	    // In iPad a tap will first trigger a mousemove event and, if no modifications are made, a click
@@ -1500,14 +1517,11 @@ JqueryClass('pedalboard', {
 		// a tap in ipad will cause this
 		return
 	    setTimeout(function() {
-		svg.clear()
 		var xi = output.offset().left / scale - self.offset().left / scale
 		var yi = output.offset().top / scale - self.offset().top / scale + output.height()/2 
 		var xo = (e.pageX - self.offset().left) / scale
 		var yo = (e.pageY - self.offset().top) / scale
-		svg.line(xi, yi, xo, yo, { class_: 'connecting-shadow' })
-		svg.line(xi, yi, xo, yo, { class_: 'connecting-cable' })
-		svg.line(xi, yi, xo, yo, { class_: 'connecting-light' })
+		self.pedalboard('drawBezier', canvas, xi, yi, xo, yo, 'connecting-')
 	    }, 0)
 	}
 	var connection = {
