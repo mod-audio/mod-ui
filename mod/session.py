@@ -297,8 +297,8 @@ class Session(object):
                             load))))
 
 
-    def load_pedalboard(self, pedalboard_id, callback):
-        self._pedalboard = Pedalboard(pedalboard_id)
+    def load_pedalboard(self, data_or_id, callback):
+        self._pedalboard = Pedalboard(data_or_id)
         self.load_current_pedalboard(callback)
 
     def load_current_pedalboard(self, callback):
@@ -380,7 +380,7 @@ class Session(object):
 
         def add_connections():
             if not connections:
-                ioloop.IOLoop.instance().add_callback(lambda: callback(True))
+                ioloop.IOLoop.instance().add_callback(lambda: callback(self._pedalboard.serialize()))
                 return
             connection = connections.pop(0)
             orig = '%s:%s' % (str(connection[0]), connection[1])

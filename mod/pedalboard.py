@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, json, logging, copy
+import os, json, logging, copy, struct
 from datetime import datetime
 from bson import ObjectId
-from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
+from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
                           INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
 
 from modcommon import json_handler
@@ -31,12 +31,17 @@ class Pedalboard(object):
     class ValidationError(Exception):
         pass
 
-    def __init__(self, uid=None):
+    def __init__(self, data_or_id=None):
         self.data = None
         self.clear()
 
-        if uid:
-            self.load(uid)
+        if data_or_id is None:
+            return
+        
+        if type(data_or_id) in (unicode, str):
+            self.load(data_or_id)
+        elif type(data_or_id) is dict:
+            self.unserialize(data_or_id)
         
     def clear(self):
         self.max_instance_id = -1
@@ -71,6 +76,7 @@ class Pedalboard(object):
         for instance in instances:
             data['instances'][instance['instanceId']] = instance
         self.data = data
+        self.load_addressings()
 
     def load(self, uid):
         try:
@@ -80,7 +86,6 @@ class Pedalboard(object):
             return self.clear()
         self.unserialize(json.load(fh))
         fh.close()
-        self.load_addressings()
 
     def load_addressings(self):
         for instance_id, instance in self.data.get('instances', {}).items():
@@ -271,21 +276,35 @@ class Migration():
         for instance in data['instances']:
             addressing = instance.get('addressing', {})
             for port_id in addressing.keys():
+                if port_id == ':bypass':
+                    port = { 'symbol': ':bypass',
+                             'default': 0,
+                             }
+                else:
+                    try:
+                        port = cls._get_port(instance['url'], port_id)
+                    except:
+                        # The effect is not installed, we can't migrate the data, let's unaddress
+                        del addressing[port_id]
+                        continue
+                
                 addr = addressing[port_id]
-                addr['actuator'] = cls._migrate_actuator(addr['actuator'])
-                mode, props = cls._migrate_type(instance['url'], port_id, addr['addressing_type'])
+                old_actuator = addr.pop('actuator')
+                old_addressing_type = addr.pop('addressing_type')
+                addr.update(cls._migrate_actuator(old_actuator))
+                mode, props = cls._migrate_type(instance['url'], port, old_actuator, old_addressing_type)
+                addr
                 if mode is None:
-                    # Either the effect is not installed anymore, or there's some weird
-                    # addressing here. Let's unaddress to recover.
+                    # There's some weird addressing here. Let's unaddress to recover.
                     del addressing[port_id]
                     continue
                 addr['mode'] = mode
                 addr['port_properties'] = props
+                addr['default'] = port['default']
                 try:
                     addr['scale_points'] = addr.pop('options')
                 except KeyError:
                     addr['scale_points'] = []
-
         return data
 
     @classmethod
@@ -296,51 +315,46 @@ class Migration():
             # This is Quadra. The actuator IDs will be:
             # 1-4: foots 1-4
             # 5-8: knobs 1-4
-            return [ 'http://portalmod.com/devices/quadra',
-                     0,
-                     (actuator[2]-1) * 4 + actuator[3] + 1,
-                     ]
+            return { 'url': 'http://portalmod.com/devices/quadra',
+                     'channel': 0,
+                     'actuator_id': (actuator[2]-1) * 4 + actuator[3] + 1,
+                     }
         if actuator[0] == 1:
             # This is the expression pedal. The actuator IDs will be:
             # 1 - the pedal (potenciometer); 2 - the footswitch
-            return [ 'http://portalmod.com/devices/expression_pedal',
-                     actuator[1]+1,
-                     { 3: 1, 1: 2 }[actuator[2]],
-                     ]
+            return { 'url': 'http://portalmod.com/devices/expression_pedal',
+                     'channel': actuator[1]+1,
+                     'actuator_id': { 3: 1, 1: 2 }[actuator[2]],
+                     }
 
     @classmethod
-    def _migrate_type(cls, url, port_id, addr):
-        if port_id == ':bypass':
+    def _migrate_type(cls, url, port, actuator, addressing_type):
+        if port['symbol'] == ':bypass':
             mode = (0b01111111, 0b00100001)
-            return (struct.pack('2B', *mode), 
+            return (struct.unpack('>H', struct.pack('2B', *mode))[0],
                     0b00100001)
-        try:
-            port = cls._get_port(url, port_id)
-        except:
-            # The effect is not installed, we can't migrate the data, let's unaddress
-            return None, None
         mode = None
-        if addr['addressing_type'] == 'range':
-            if addr['actuator'][2] == 2:
+        if addressing_type == 'range':
+            if actuator[2] == 2:
                 # this is a knob
                 mode = (0b00110011, 0b00000000)
-            elif addr['actuator'][2] == 3:
+            elif actuator[2] == 3:
                 # this is expression pedal
                 mode = (0b00111111, 0b00000000)
-        elif addr['addressing_type'] == 'switch':
+        elif addressing_type == 'switch':
             # This is footswitch, only possible case, 
             # let's make sure everything is consistent
-            if addr['actuator'][2] == 1:
+            if actuator[2] == 1:
                 if port.get('toggled') and port.get('trigger'):
                     # Pulse
                     mode = (0b01111111, 0b00110000)
                 elif port.get('toggled'):
                     # ON/OFF
                     mode = (0b01111110, 0b00100000)
-                elif len(port.get('scale_points', [])) > 0:
+                elif len(port.get('scalePoints', [])) > 0:
                     # Select next scale point
-                    mode = (0b01111111, 0b00001000)
-        elif addr['addressing_type'] == 'tap_tempo':
+                    mode = (0b01111011, 0b00001000)
+        elif addressing_type == 'tap_tempo':
             # Again, let's check for consistency, must be footswitch
             if addr['actuator'][2] == 1:
                 # Tap Tempo
@@ -348,7 +362,7 @@ class Migration():
 
         if mode is None:
             return (None, None)
-        mode = struct.pack('2B', *mode)
+        mode = struct.unpack('>H', struct.pack('2B', *mode))[0]
 
         props = 0
         if port.get("integer"):
@@ -376,7 +390,7 @@ class Migration():
         effect = index.find(url=url).next()
         effect = json.loads(open(os.path.join(EFFECT_DIR, str(effect['id']))).read())
         for port in effect['ports']['control']['input']:
-            if port.symbol == port_id:
+            if port['symbol'] == port_id:
                 return port
 
 def remove_pedalboard(uid):

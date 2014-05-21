@@ -257,11 +257,23 @@ function Desktop(elements) {
 	},
 	loadPedalboard: function(pedalboard) {
 	    self.reset(function() {
-		self.pedalboard.pedalboard('unserialize', pedalboard.pedalboard, 
-					   function() {
-					       self.pedalboardModified = true
-					       self.windowManager.closeWindows()
-					   }, false)
+		$.ajax({
+                    url: '/pedalboard/load/',
+                    type: 'POST',
+		    data: JSON.stringify(pedalboard.pedalboard),
+                    contentType: 'application/json',
+                    success: function(data) {
+			self.pedalboard.pedalboard('unserialize', data,
+						   function() {
+						       self.pedalboardModified = true
+						       self.windowManager.closeWindows()
+						   }, true)
+                    },
+		    cache: false,
+                    dataType: 'json'
+		});
+
+		
 	    })
 	},
 	trigger: elements.socialTrigger,
@@ -408,7 +420,7 @@ function Desktop(elements) {
 				   self.pedalboardId = CURRENT_PEDALBOARD._id
 				   self.title = CURRENT_PEDALBOARD.metadata.title
 				   self.titleBox.text(self.title || 'Untitled')
-			       }, false, true)
+			       }, true)
 
     /*
      * when putting this function, we must remember to remove it from /ping call
@@ -560,22 +572,6 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		   })
 	},
 
-        pedalboardLoad: function(uid, callback) {
-            $.ajax({
-                url: '/pedalboard/load/' + uid,
-                type: 'GET',
-                contentType: 'application/json',
-                success: function(result) {
-                    if (result !== true) {
-                        new Notification('error', "Error loading pedalboard");
-                    }
-                    callback(!!result);
-                },
-		cache: false,
-                dataType: 'json'
-            });
-        },
-
 	getPluginsData: function(urls, callback) {
             $.ajax({
 		url: '/effect/bulk/',
@@ -690,7 +686,7 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 	},
 	load: function(pedalboardId, callback) {
 	    $.ajax({
-		url: '/pedalboard/get/' + pedalboardId,
+		url: '/pedalboard/load/' + pedalboardId,
 		type: 'GET',
 		success: function(pedalboard) {
 		    self.reset(function() {
@@ -701,7 +697,7 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 						       self.titleBox.text(self.title)
 						       self.pedalboardModified = false
 						       callback()
-						   }, true)
+						   })
 		    })
 		},
 		error: function() {

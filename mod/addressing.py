@@ -79,7 +79,7 @@ class ControlChainMessage():
                                             Byte("actuator_id"),
                                             UBInt16("mode"),
                                             Byte("addressing_id"),
-                                            Byte("port_mask"),
+                                            Byte("port_properties"),
                                             Byte("label_size"),
                                             String("label", lambda ctx: ctx.label_size),
                                             LFloat32("value"),
@@ -609,7 +609,7 @@ class AddressingManager():
             'channel': channel,
             'actuator_id': actuator_id,
             'mode': mode,
-            'port_mask': port_properties,
+            'port_properties': port_properties,
             'label': label,
             'value': value,
             'minimum': minimum,
@@ -636,7 +636,7 @@ class AddressingManager():
         if self.addressing_index.get((instance_id, port_id)) is None:
             do_address()
         else:
-            self.unaddress_port(instance_id, port_id, do_address)
+            self.unaddress(instance_id, port_id, do_address)
 
     def commit_addressing(self, hwid, instance_id, port_id, addressing, callback):
         """
@@ -726,6 +726,8 @@ class AddressingManager():
         """
         Removes all addressings from an instance
         """
+        if instance_id < 0:
+            return self.unaddress_all(callback)
         addressings = [ x for x in self.addressing_index.keys() if x[0] == instance_id ]
         self.unaddress_many(addressings, callback)
 

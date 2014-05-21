@@ -67,9 +67,6 @@ JqueryClass('pedalboard', {
 	    // Removes all plugins
 	    reset: function(callback) { callback(true) },
 
-	    // Loads a pedalboard
-	    pedalboardLoad: function(uid, callback) { callback(true) },
-
 	    // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
 	    // indexed by URL
 	    getPluginsData: function(plugins, callback) { callback({}) },
@@ -88,7 +85,7 @@ JqueryClass('pedalboard', {
 
 	self.pedalboard('wrapApplicationFunctions', options,
 			[ 'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginBypass',
-			  'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad', 'pluginMove' ])
+			  'portConnect', 'portDisconnect', 'reset', 'pluginMove' ])
 	
 	self.data(options)
 
@@ -343,7 +340,7 @@ JqueryClass('pedalboard', {
 	callback(data)
     },
 
-    unserialize: function(data, callback, loadPedalboardAtOnce, bypassApplication) {
+    unserialize: function(data, callback, bypassApplication) {
 	var self = $(this)
 
 	/*
@@ -357,9 +354,6 @@ JqueryClass('pedalboard', {
 
 	// Let's avoid modifying original data
 	data = $.extend({}, data)
-
-	if (bypassApplication == null)
-	    bypassApplication = !!loadPedalboardAtOnce
 
 	// We might want to bypass application
 	self.data('bypassApplication', bypassApplication)
@@ -378,10 +372,7 @@ JqueryClass('pedalboard', {
 		finalActions[i]()
 	    self.data('bypassApplication', false)
 	    setTimeout(function() { self.pedalboard('adapt') }, 1)
-	    if (loadPedalboardAtOnce)
-		self.data('pedalboardLoad')(data._id, ourCallback)
-	    else
-		ourCallback()
+	    ourCallback()
 	}
 
 	var loadPlugin, connect

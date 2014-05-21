@@ -97,7 +97,7 @@ class ControlChainMessageTest(unittest.TestCase):
             'actuator_id': 1,
             'mode': 0x0C00,
             'addressing_id': 1,
-            'port_mask': 0x0C,
+            'port_properties': 0x0C,
             'label': 'Delay',
             'value': 1.0,
             'minimum': 0,

@@ -652,10 +652,31 @@ class PedalboardSave(web.RequestHandler):
         self.finish()
 
 class PedalboardLoad(web.RequestHandler):
+    """
+    Loads pedalboard either by uid (GET) or pedalboard data (POST).
+    The result will be the json encoded pedalboard data
+    """
     @web.asynchronous
     @gen.engine
     def get(self, pedalboard_id):
+        """
+        Loads pedalboard by id
+        """
         res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(res, default=json_handler))
+        self.finish()
+
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        """
+        Loads pedalboard data
+        """
+        data = json.loads(self.request.body)
+        res = yield gen.Task(SESSION.load_pedalboard, data)
+
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(res, default=json_handler))
         self.finish()
@@ -1070,6 +1091,7 @@ application = web.Application(
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
             (r"/pedalboard/save", PedalboardSave),
+            (r"/pedalboard/load/?", PedalboardLoad),
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
             (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),
