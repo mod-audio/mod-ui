@@ -40,6 +40,8 @@ from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
 from tuner import NOTES, FREQS, find_freqnotecents
 
+from mod.strategy import FreeAssociation, Stompbox
+
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
         return fakeClass(*args, **kwargs)
@@ -95,6 +97,13 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
+
+        FreeAssociation(self)
+
+    def stompbox_mode(self):
+        Stompbox(self)
+    def freeassociation_mode(self):
+        FreeAssociation(self)
 
     def host_callback(self):
         if self.hmi_initialized:
@@ -476,16 +485,16 @@ class Session(object):
 
     # host commands
 
-    def add(self, objid, instance_id, callback, loaded=False):
+    def add(self, url, instance_id, callback, loaded=False):
         if not loaded:
-            instance_id = self._pedalboard.add_instance(objid, instance_id)
+            instance_id = self._pedalboard.add_instance(url, instance_id)
         def commit(bufsize_changed):
             if not bufsize_changed:
-                self.host.add(objid, instance_id, callback)
+                self.host.add(url, instance_id, callback)
             else:
-                callback(True)
+                callback(instance_id)
         try:
-            effect_data = self.effect_index.find(url=objid).next()
+            effect_data = self.effect_index.find(url=url).next()
             self.change_bufsize(max(effect_data['bufsize'], self.jack_bufsize), commit)
         except StopIteration:
             commit(False)

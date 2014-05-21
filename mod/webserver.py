@@ -61,6 +61,7 @@ from mod.hardware import get_hardware
 from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
+from mod.strategy import Strategy
 from mod import register
 from mod import check_environment
 
@@ -418,7 +419,9 @@ class EffectAdd(EffectSearcher):
             options = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-        res = yield gen.Task(SESSION.add, options['url'], int(instance_id))
+        res = yield gen.Task(Strategy.instance.add_effect, 
+                             url=options['url'], 
+                             instance_id=int(instance_id))
         if self.request.connection.stream.closed():
             return
         if res >= 0:
@@ -451,7 +454,8 @@ class EffectRemove(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance_id):
-        resp = yield gen.Task(SESSION.remove, int(instance_id))
+        resp = yield gen.Task(Strategy.instance.remove_effect,
+                              instance_id=int(instance_id))
         if self.request.connection.stream.closed():
             return
         self.write(json.dumps(resp))
