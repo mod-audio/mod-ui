@@ -51,6 +51,16 @@ class FreeAssociation(Strategy):
     pass
 
 class Stompbox(Strategy):
+    margins = {
+        'top': 80,
+        'left': 250,
+        'bottom': 50,
+        'right': 250,
+        'middle': 100,
+        }
+
+    average_width = 600
+
     def __init__(self, session, callback):
         super(Stompbox, self).__init__(session)
         self.effects = [None] * 4
@@ -80,6 +90,7 @@ class Stompbox(Strategy):
                 [self.disconnect, previous_outputs, next_inputs],
                 [self.connect, previous_outputs, my_inputs],
                 [self.connect, my_outputs, next_inputs],
+                [self.calculate_positions],
                 ], lambda: callback(True))
 
     def get_outputs(self, slot):
@@ -126,6 +137,29 @@ class Stompbox(Strategy):
         if outputs[1] is not None and inputs[1] is not None:
             jobs.append([self.session.disconnect, outputs[1], inputs[1]])
         self.async_jobs(jobs, callback)
+
+    def calculate_positions(self, callback):
+        height = 0
+        for effect in self.effects:
+            if effect is None:
+                continue
+            instance_id, effect = effect
+            height = max(height, effect['gui']['height'])
+        x = self.margins['left']
+        for effect in self.effects:
+            if effect is None:
+                x += self.average_width
+                continue
+            instance_id, effect = effect
+            y = self.margins['top'] + (height - effect['gui']['height'])/2
+            self.session.effect_position(instance_id, x, y)
+            x += effect['gui']['width'] + self.margins['middle']
+
+        self.session.pedalboard_size(x + self.margins['right'],
+                                     height + self.margins['top'] + self.margins['bottom'])
+
+        callback()
+            
         
     def async_jobs(self, jobs, callback):
         def process(result=None):

@@ -29,8 +29,16 @@ class IHM():
         self.sp.write(message + '\0')
 
     def filter(self, message):
+        plugins = {
+            'filter': 'http://portalmod.com/plugins/caps/AutoFilter',
+            }
         if message == 'add':
             return 'stompbox_add http://portalmod.com/plugins/caps/AutoFilter 1'
+        elif message.startswith('add'):
+            cmd, plugin, slot = message.split()
+            plugin = plugins[plugin]
+            slot = int(slot)
+            return 'stompbox_add %s %d' % (plugin, slot)
         if message == 'clear':
             return 'stompbox_clear'
         return message

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from tornado.ioloop import IOLoop
 import logging
 from mod.hmi import HMI
 from mod.host import Host
@@ -23,17 +24,21 @@ class FakeCommunicator(object):
     def send(self, msg, callback, datatype=None):
         logging.info(msg)
         if datatype == 'boolean':
-            callback(True)
+            IOLoop.instance().add_callback(lambda: callback(True))
         else:
-            callback(0)
+            IOLoop.instance().add_callback(lambda: callback(0))
 
     def open_connection(self, callback):
-        callback()
+        IOLoop.instance().add_callback(callback)
 
 class FakeHMI(FakeCommunicator, HMI):
     pass
 
 class FakeHost(FakeCommunicator, Host):
     def param_get(self, instance_id, symbol, callback=lambda result: None):
-        callback({'ok': True, 'value': 17})
+        IOLoop.instance().add_callback(lambda: callback({'ok': True, 'value': 17}))
+
+    def add(self, uri, instance_id, callback=lambda result: None):
+        IOLoop.instance().add_callback(lambda: callback(instance_id))
+
 
