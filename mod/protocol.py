@@ -81,6 +81,8 @@ class Protocol(object):
         "tuner_input": [int],
         "pedalboard_save": [],
         "pedalboard_reset": [],
+        "stompbox_clear": [],
+        "stompbox_add": [str, int],
     }
 
     COMMANDS_FUNC = {}

@@ -40,7 +40,7 @@ from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
 from tuner import NOTES, FREQS, find_freqnotecents
 
-from mod.strategy import FreeAssociation, Stompbox
+from mod.strategy import Strategy, FreeAssociation, Stompbox
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -84,6 +84,9 @@ class Session(object):
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
         Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
         Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
+        # Stompbox mode
+        Protocol.register_cmd_callback("stompbox_clear", self.hmi_stompbox_clear)
+        Protocol.register_cmd_callback("stompbox_add", self.hmi_stompbox_add)
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
@@ -98,12 +101,12 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
 
-        FreeAssociation(self)
+        self.freeassociation_mode()
 
-    def stompbox_mode(self):
-        Stompbox(self)
+    def stompbox_mode(self, callback):
+        Strategy.use(Stompbox, self, callback)
     def freeassociation_mode(self):
-        FreeAssociation(self)
+        Strategy.use(FreeAssociation, self)
 
     def host_callback(self):
         if self.hmi_initialized:
@@ -636,6 +639,8 @@ class Session(object):
 
         self.hmi.ui_con(verify)
 
+        self.freeassociation_mode()
+
     def end_session(self, callback):
         self._banks = list_banks()
         self.browser.end()
@@ -856,5 +861,15 @@ class Session(object):
         if not cb:
             cb = lambda r: r
         self.hmi.xrun(cb)
+
+    def hmi_stompbox_clear(self, callback):
+        self.stompbox_mode(callback)
+
+    def hmi_stompbox_add(self, url, slot, callback):
+        stompbox = None
+        def _callback(ok=None):
+            stompbox.add_effect(url, slot, callback)
+        stompbox = Strategy.use(Stompbox, self, _callback)
+        
 
 SESSION = Session()
