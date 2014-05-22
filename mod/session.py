@@ -87,6 +87,7 @@ class Session(object):
         # Stompbox mode
         Protocol.register_cmd_callback("stompbox_clear", self.hmi_stompbox_clear)
         Protocol.register_cmd_callback("stompbox_add", self.hmi_stompbox_add)
+        Protocol.register_cmd_callback("stompbox_remove", self.hmi_stompbox_remove)
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
@@ -870,6 +871,12 @@ class Session(object):
         stompbox = None
         def _callback(ok=None):
             stompbox.add_effect(url, slot, callback)
+        stompbox = Strategy.use(Stompbox, self, _callback)
+
+    def hmi_stompbox_remove(self, slot, callback):
+        stompbox = None
+        def _callback(ok=None):
+            stompbox.remove_effect(slot, callback)
         stompbox = Strategy.use(Stompbox, self, _callback)
         
 

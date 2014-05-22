@@ -73,7 +73,20 @@ class Stompbox(Strategy):
     def add_effect(self, url, slot, callback=None):
         def add(instance_id):
             self.insert(url, slot, instance_id, callback)
-        self.session.add(url, None, add)
+        def session_add():
+            self.session.add(url, None, add)
+        self.remove_effect(slot, session_add)
+
+    def remove_effect(self, slot, callback):
+        if self.effects[slot] is None:
+            return IOLoop.instance().add_callback(callback)
+        instance_id = self.effects[slot][0]
+        previous_outputs = self.get_outputs(slot-1)
+        next_inputs = self.get_inputs(slot+1)
+        self.async_jobs([
+                [self.session.remove, instance_id],
+                [self.connect, previous_outputs, next_inputs],
+                ], callback)
 
     def insert(self, url, slot, instance_id, callback):
         effect = self.index.get(url=url)

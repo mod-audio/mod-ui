@@ -31,6 +31,9 @@ class IHM():
     def filter(self, message):
         plugins = {
             'filter': 'http://portalmod.com/plugins/caps/AutoFilter',
+            'amp': 'http://portalmod.com/plugins/caps/AmpVTS',
+            'wider': 'http://portalmod.com/plugins/caps/Wider',
+            'eq': 'http://portalmod.com/plugins/caps/Eq10X2',
             }
         if message == 'add':
             return 'stompbox_add http://portalmod.com/plugins/caps/AutoFilter 1'
@@ -41,6 +44,8 @@ class IHM():
             return 'stompbox_add %s %d' % (plugin, slot)
         if message == 'clear':
             return 'stompbox_clear'
+        elif message.startswith('remove'):
+            return 'stompbox_%s' % message
         return message
         
 class User():

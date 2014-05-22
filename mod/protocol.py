@@ -83,6 +83,7 @@ class Protocol(object):
         "pedalboard_reset": [],
         "stompbox_clear": [],
         "stompbox_add": [str, int],
+        "stompbox_remove": [int],
     }
 
     COMMANDS_FUNC = {}
