@@ -105,8 +105,9 @@ class Session(object):
 
     def stompbox_mode(self, callback):
         Strategy.use(Stompbox, self, callback)
-    def freeassociation_mode(self):
-        Strategy.use(FreeAssociation, self)
+    def freeassociation_mode(self, callback=None):
+        return self.stompbox_mode(callback)
+        Strategy.use(FreeAssociation, self, callback)
 
     def host_callback(self):
         if self.hmi_initialized:

@@ -42,7 +42,7 @@ class Strategy(object):
             if callback is None:
                 return
             callback(bool(instance_id))
-        self.session.add(url, instance_id, callback)
+        self.session.add(url, instance_id, _callback)
 
     def remove_effect(self, instance_id, callback):
         self.session.remove(instance_id, callback)
@@ -55,12 +55,85 @@ class Stompbox(Strategy):
         super(Stompbox, self).__init__(session)
         self.effects = [None] * 4
         self.index = EffectIndex()
-        session.reset(callback)
+        if callback is None:
+            callback = lambda result: None
+        def initial_connection(result):
+            self.connect(self.get_outputs(-1),
+                         self.get_inputs(4),
+                         lambda: callback(result))
+        session.reset(initial_connection)
         
     def add_effect(self, url, slot, callback=None):
-        effect = self.index.find(url=url).next()
         def add(instance_id):
-            self.effects[slot] = (instance_id, effect)
-            if callback:
-                callback(True)
+            self.insert(url, slot, instance_id, callback)
         self.session.add(url, None, add)
+
+    def insert(self, url, slot, instance_id, callback):
+        effect = self.index.get(url=url)
+        self.effects[slot] = (instance_id, effect)
+        previous_outputs = self.get_outputs(slot-1)
+        my_inputs = self.get_inputs(slot)
+        my_outputs = self.get_outputs(slot)
+        next_inputs = self.get_inputs(slot+1)
+
+        self.async_jobs([
+                [self.disconnect, previous_outputs, next_inputs],
+                [self.connect, previous_outputs, my_inputs],
+                [self.connect, my_outputs, next_inputs],
+                ], lambda: callback(True))
+
+    def get_outputs(self, slot):
+        if slot < 0:
+            return ('system:capture_1', 'system:capture_2')
+
+        if self.effects[slot] is None:
+            return self.get_outputs(slot-1)
+
+        instance_id, effect = self.effects[slot]
+        return (self.get_port_id(instance_id, effect['ports']['audio']['output'], 'left'),
+                self.get_port_id(instance_id, effect['ports']['audio']['output'], 'right'),
+                )
+
+    def get_inputs(self, slot):
+        if slot >= len(self.effects):
+            return ('system:playback_1', 'system:playback_2')
+
+        if self.effects[slot] is None:
+            return self.get_inputs(slot+1)
+
+        instance_id, effect = self.effects[slot]
+        return (self.get_port_id(instance_id, effect['ports']['audio']['input'], 'left'),
+                self.get_port_id(instance_id, effect['ports']['audio']['input'], 'right'),
+                )
+
+    def get_port_id(self, instance_id, ports, channel):
+        for port in ports:
+            if port[channel]:
+                return "%d:%s" % (instance_id, port['symbol'])
+
+    def connect(self, outputs, inputs, callback):
+        jobs = []
+        if outputs[0] is not None and inputs[0] is not None:
+            jobs.append([self.session.connect, outputs[0], inputs[0]])
+        if outputs[1] is not None and inputs[1] is not None:
+            jobs.append([self.session.connect, outputs[1], inputs[1]])
+        self.async_jobs(jobs, callback)
+
+    def disconnect(self, outputs, inputs, callback):
+        jobs = []
+        if outputs[0] is not None and inputs[0] is not None:
+            jobs.append([self.session.disconnect, outputs[0], inputs[0]])
+        if outputs[1] is not None and inputs[1] is not None:
+            jobs.append([self.session.disconnect, outputs[1], inputs[1]])
+        self.async_jobs(jobs, callback)
+        
+    def async_jobs(self, jobs, callback):
+        def process(result=None):
+            if len(jobs) == 0:
+                if callback:
+                    IOLoop.instance().add_callback(callback)
+                return
+            job = jobs.pop(0)
+            method = job.pop(0)
+            method(*job, callback=process)
+        IOLoop.instance().add_callback(process)

@@ -146,6 +146,13 @@ class Index(object):
         writer.commit()
         return count > 0
 
+    def get(self, **kwargs):
+        try:
+            data = self.find(**kwargs).next()
+        except StopIteration:
+            return None
+        return json.loads(open(os.path.join(self.data_source, data['id'])).read())
+
 class EffectIndex(Index):
     index_path = INDEX_PATH
     data_source = EFFECT_DIR
