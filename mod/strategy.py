@@ -51,14 +51,11 @@ class FreeAssociation(Strategy):
     pass
 
 class Stompbox(Strategy):
-    margins = {
-        'top': 80,
-        'left': 250,
-        'bottom': 50,
-        'right': 250,
-        'middle': 100,
-        }
-
+    margin_top = 80
+    margin_left = 250
+    margin_bottom = 50
+    margin_right = 250
+    plugin_distance = 100
     average_width = 600
 
     def __init__(self, session, callback):
@@ -145,18 +142,18 @@ class Stompbox(Strategy):
                 continue
             instance_id, effect = effect
             height = max(height, effect['gui']['height'])
-        x = self.margins['left']
+        x = self.margin_left
         for effect in self.effects:
             if effect is None:
                 x += self.average_width
                 continue
             instance_id, effect = effect
-            y = self.margins['top'] + (height - effect['gui']['height'])/2
+            y = self.margin_top + (height - effect['gui']['height'])/2
             self.session.effect_position(instance_id, x, y)
-            x += effect['gui']['width'] + self.margins['middle']
+            x += effect['gui']['width'] + self.plugin_distance
 
-        self.session.pedalboard_size(x + self.margins['right'],
-                                     height + self.margins['top'] + self.margins['bottom'])
+        self.session.pedalboard_size(x + self.margin_right,
+                                     height + self.margin_top + self.margin_bottom)
 
         callback()
             
