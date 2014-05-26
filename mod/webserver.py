@@ -575,7 +575,7 @@ class EffectParameterGet(web.RequestHandler):
         self.write(json.dumps(response))
         self.finish()
 
-class EffectParameterFeed(web.RequestHandler):
+class Feed(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
@@ -641,9 +641,9 @@ class PedalboardLoad(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
+        metadata = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(res, default=json_handler))
+        self.write(json.dumps(metadata, default=json_handler))
         self.finish()
 
 class PedalboardRemove(web.RequestHandler):
@@ -760,7 +760,16 @@ class TemplateHandler(web.RequestHandler):
         except AttributeError:
             context = {}
         context['cloud_url'] = CLOUD_HTTP_ADDRESS
+        context['social_url'] = self.get_social_url(CLOUD_HTTP_ADDRESS)
+        
         self.write(loader.load(path).generate(**context))
+
+    def get_social_url(self, url):
+        if url.endswith('/'):
+            url = url[:-1]
+        if url.endswith('/api'):
+            url = url[:-4]
+        return url + '/social/'
 
     def get_version(self):
         if DEV_ENVIRONMENT:
@@ -1043,7 +1052,7 @@ application = web.Application(
             (r"/effect/disconnect/([A-Za-z0-9_:]+),([A-Za-z0-9_:]+)", EffectDisconnect),
             (r"/effect/parameter/set/(\d+),([A-Za-z0-9_]+)", EffectParameterSet),
             (r"/effect/parameter/get/(\d+),([A-Za-z0-9_]+)", EffectParameterGet),
-            (r"/effect/parameter/feed/?", EffectParameterFeed),
+            (r"/feed/?", Feed),
             (r"/effect/parameter/address/(\d+),([A-Za-z0-9_]+)", EffectParameterAddress),
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),

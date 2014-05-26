@@ -64,6 +64,10 @@ class Pedalboard(object):
             }
         self.init_addressings()
 
+    @property
+    def metadata(self):
+        return self.data['metadata']
+
     def serialize(self):
         serialized = copy.deepcopy(self.data)
         serialized['instances'] = serialized['instances'].values()

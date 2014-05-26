@@ -276,15 +276,6 @@ function Desktop(elements) {
 		     dataType: 'json'
 		   })
 	},
-	loadPedalboard: function(pedalboard) {
-	    self.reset(function() {
-		self.pedalboard.pedalboard('unserialize', pedalboard.pedalboard, 
-					   function() {
-					       self.pedalboardModified = true
-					       self.windowManager.closeWindows()
-					   }, false)
-	    })
-	},
 	trigger: elements.socialTrigger,
     })
 
@@ -430,7 +421,7 @@ function Desktop(elements) {
 				   self.pedalboardId = CURRENT_PEDALBOARD._id
 				   self.title = CURRENT_PEDALBOARD.metadata.title
 				   self.titleBox.text(self.title || 'Untitled')
-			       }, false, true)
+			       })
 
     /*
      * when putting this function, we must remember to remove it from /ping call
@@ -556,48 +547,6 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 		   })
 	},
 
-	reset: function(callback) {
-	    $.ajax({ url: '/reset',
-		     success: function(resp) {
-			 if (!resp)
-			     return new Notification('error', 
-						     "Couldn't reset pedalboard")
-
-			 /*
-			   var dialog = self.data('shareDialog')
-			   dialog.find('.js-title').val('')
-			   dialog.find('.js-tags').tagField('val', [])
-			   dialog.find('.js-musics').tagField('val', [])
-			   dialog.find('.js-description').val('')
-			 */
-
-			 self.titleBox.text('Untitled')
-			 
-			 callback(true)
-		     },
-		     error: function() {
-			 new Bug("Couldn't reset pedalboard")
-		     },
-		     cache: false
-		   })
-	},
-
-        pedalboardLoad: function(uid, callback) {
-            $.ajax({
-                url: '/pedalboard/load/' + uid,
-                type: 'GET',
-                contentType: 'application/json',
-                success: function(result) {
-                    if (result !== true) {
-                        new Notification('error', "Error loading pedalboard");
-                    }
-                    callback(!!result);
-                },
-		cache: false,
-                dataType: 'json'
-            });
-        },
-
 	getPluginsData: function(urls, callback) {
             $.ajax({
 		url: '/effect/bulk/',
@@ -609,9 +558,9 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
             })
 	},
 
-	getParameterFeed: function(callback) {
+	getFeed: function(callback) {
 	    $.ajax({
-		url: '/effect/parameter/feed',
+		url: '/feed',
 		type: 'GET',
 		success: callback,
 		dataType: 'json',
@@ -710,29 +659,27 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 		     method: 'POST'
 		   })
 	},
-	load: function(pedalboardId, callback) {
+        load: function(uid, callback) {
 	    $.ajax({
-		url: '/pedalboard/get/' + pedalboardId,
-		type: 'GET',
-		success: function(pedalboard) {
-		    self.reset(function() {
-			self.pedalboard.pedalboard('unserialize', pedalboard, 
-						   function() {
-						       self.pedalboardId = pedalboard._id
-						       self.title = pedalboard.metadata.title
-						       self.titleBox.text(self.title)
-						       self.pedalboardModified = false
-						       callback()
-						   }, true)
-		    })
-		},
-		error: function() {
-		    new Bug("Couldn't load pedalboard")
-		},
+                url: '/pedalboard/load/' + uid,
+                type: 'GET',
+                contentType: 'application/json',
+                success: function(metadata) {
+		    if (!metadata) {
+                        new Notification('error', "Error loading pedalboard");
+		    } else {
+			self.pedalboardId = uid
+			self.title = metadata.title
+			self.titleBox.text(self.title)
+			self.pedalboardModified = false
+		    }
+		    callback(!!metadata);
+                },
 		cache: false,
-		dataType: 'json'
-	    })
-	},
+                dataType: 'json'
+	    });
+        },
+
 	duplicate: function(pedalboard, callback) {
 	    // This does not work, because api has changed
 	    return
@@ -780,13 +727,30 @@ Desktop.prototype.makeBankBox = function(el, trigger) {
 }
 
 Desktop.prototype.reset = function(callback) {
+    var self = this;
     if (this.pedalboardModified)
 	if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
 	    return
     this.pedalboardId = null
     this.title = ''
     this.pedalboardModified = false
-    this.pedalboard.pedalboard('reset', callback)
+
+    $.ajax({ url: '/reset',
+	     success: function(resp) {
+		 if (!resp)
+		     return new Notification('error', 
+					     "Couldn't reset pedalboard")
+		 
+		 self.titleBox.text('Untitled')
+		
+		 self.pedalboard.pedalboard('reset')
+		 callback(true)
+	     },
+	     error: function() {
+		 new Bug("Couldn't reset pedalboard")
+	     },
+	     cache: false
+	   })
 }
 
 Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {

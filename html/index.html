@@ -54,6 +54,7 @@
       {% autoescape None %}
       var TEMPLATES = {}
       SITEURL = '{{cloud_url}}'.replace(/\/?$/, '/api')
+      var SOCIAL_URL = '{{social_url}}'
       var NOTIFICATIONS_ENABLED = true
       var HARDWARE_PROFILE = JSON.parse('{{hardware_profile}}')
       var CURRENT_PEDALBOARD = JSON.parse('{{current_pedalboard}}')
@@ -649,7 +650,8 @@ $('document').ready(function() {
 
 
 <!-- MOD SOCIAL NETWORK -->
-<div id="mod-social-network" class="clearfix hidden">
+<iframe id="mod-social-network" class="clearfix hidden"></iframe>
+<div id="_mod-social-network" class="clearfix hidden">
 
     <!-- HEADER -->
     <div id="mod-social-network-header" class="clearfix">

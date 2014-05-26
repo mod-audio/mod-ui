@@ -20,9 +20,6 @@ JqueryClass('socialWindow', {
 	var self = $(this)
 	options = $.extend({
 	    userSession: null, //must be passed
-	    getFeed: function(page, callback) { callback([]) },
-	    loadPedalboard: function(pedalboard) {},
-	    trigger: $('<div>')
 	}, options)
 
 	self.data(options)
@@ -31,26 +28,25 @@ JqueryClass('socialWindow', {
 		options.userSession.login(callback)
 	    },
 	    open: function() {
-		self.data('page', 0)
-		self.socialWindow('showFeed', 0)
+		if (!self.data('loaded')) {
+		    self.attr('src', SOCIAL_URL + 'index.html')
+		    self.data('loaded', true)
+		}
 	    }
 	}, options))
 
-	self.find('button').click(function() {
-	    self.socialWindow('nextPage')
-	})
+	self.socialWindow('fitToWindow')
+	$(window).resize(function() { self.socialWindow('fitToWindow') })
 
-	/*
-	self.find('#cloud-feed').click(function() {
-	    self.socialWindow('renderFeed')
-	})
-	self.find('#cloud-pedalboards').click(function() {
-	    self.socialWindow('showSearch')
-	})
-	*/
 	return self
     },
 
+    fitToWindow: function() {
+	var self = $(this)
+	self.height($(window).height() - 46)
+    },
+
+    /*
     showFeed: function(page) {
 	var self = $(this)
 	self.data('getFeed')(page, function(pedalboards) {
@@ -108,4 +104,5 @@ JqueryClass('socialWindow', {
 
     showSearch: function() {
     },
+    */
 })

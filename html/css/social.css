@@ -9,7 +9,9 @@
     position:absolute;
     right:0;
     top:0;
+    width:100%;
     z-index:3;
+    border: 0;
 }
 
 /* Top Menu */

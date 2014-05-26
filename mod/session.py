@@ -33,7 +33,7 @@ from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 from mod.host import Host
 from mod.clipmeter import Clipmeter
-from mod.browser import BrowserControls
+from mod.browser import Browser
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
@@ -94,7 +94,7 @@ class Session(object):
         self.recording = None
 
         self._clipmeter = Clipmeter(self.hmi)
-        self.browser = BrowserControls()
+        self.browser = Browser()
 
     def host_callback(self):
         if self.hmi_initialized:
@@ -296,7 +296,14 @@ class Session(object):
 
     def load_pedalboard(self, pedalboard_id, callback):
         self._pedalboard = Pedalboard(pedalboard_id)
-        self.load_current_pedalboard(callback)
+        def _callback(result):
+            if not result:
+                callback(False)
+            else:
+                self.browser.load_pedalboard(self._pedalboard.serialize())
+                callback(self._pedalboard.metadata)
+            
+        self.load_current_pedalboard(_callback)
 
     def load_current_pedalboard(self, callback):
         # let's copy the data
@@ -584,7 +591,7 @@ class Session(object):
         self.host.disconnect(port_from, port_to, cb)
 
     def hmi_parameter_set(self, instance_id, port_id, value, callback):
-        self.browser.send(instance_id, port_id, value)
+        self.browser.send_control_value(instance_id, port_id, value)
         self.parameter_set(instance_id, port_id, value, callback)
 
     def parameter_set(self, instance_id, port_id, value, callback, loaded=False):

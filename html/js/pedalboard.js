@@ -67,16 +67,13 @@ JqueryClass('pedalboard', {
 	    // Removes all plugins
 	    reset: function(callback) { callback(true) },
 
-	    // Loads a pedalboard
-	    pedalboardLoad: function(uid, callback) { callback(true) },
-
 	    // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
 	    // indexed by URL
 	    getPluginsData: function(plugins, callback) { callback({}) },
 
-	    // This is used to long poll server for parameter updates.
-	    // Once callback is called, getParameterFeed will immediately be called again
-	    getParameterFeed: function(callback) { setTimeout(function() { callback([]) }, 60000) },
+	    // This is used to long poll server for updates.
+	    // Once callback is called, getFeed will immediately be called again
+	    getFeed: function(callback) { setTimeout(function() { callback([]) }, 60000) },
 
 	    // Marks the position of a plugin
 	    pluginMove: function(instanceId, x, y, callback) { callback(true) },
@@ -88,7 +85,7 @@ JqueryClass('pedalboard', {
 
 	self.pedalboard('wrapApplicationFunctions', options,
 			[ 'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginBypass',
-			  'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad', 'pluginMove' ])
+			  'portConnect', 'portDisconnect', 'pluginMove' ])
 	
 	self.data(options)
 
@@ -217,23 +214,36 @@ JqueryClass('pedalboard', {
 
     startFeed: function() {
 	var self = $(this)
-	var callback = function(result) {
-	    self.pedalboard('parameterFeed', result)
-	    self.data('getParameterFeed')(callback)
+	var callback, getFeed;
+	getFeed = function() {
+	    self.data('getFeed')(callback)
 	}
-	self.data('getParameterFeed')(callback)
+	callback = function(result) {
+	    self.pedalboard('feed', result, getFeed)
+	}
+	getFeed()
     },
 
-    parameterFeed: function(result) {
+    feed: function(result, callback) {
 	var self = $(this)
-	var i, instanceId, symbol, value, gui
-	for (i=0; i<result.length; i++) {
-	    instanceId = result[i][0]
-	    symbol = result[i][1]
-	    value = result[i][2]
-	    gui = self.pedalboard('getGui', instanceId)
-	    gui.setPortWidgetsValue(symbol, value)
+	var processNext = function() {
+	    var update = result.shift()
+	    if (update == null)
+		return callback()
+	    var command = update[0]
+	    if (command == 'pedalboard') {
+		var data = update[1]
+		self.pedalboard('unserialize', update[1], processNext)
+	    } else if (command == 'control') {
+		var instanceId = update[1][0]
+		var symbol = update[1]
+		var value = update[1][2]
+		var gui = self.pedalboard('getGui', instanceId)
+		gui.setPortWidgetsValue(symbol, value)
+		processNext()
+	    }
 	}
+	processNext()
     },
 
     initGestures: function() {
@@ -343,8 +353,10 @@ JqueryClass('pedalboard', {
 	callback(data)
     },
 
-    unserialize: function(data, callback, loadPedalboardAtOnce, bypassApplication) {
+    unserialize: function(data, callback) {
 	var self = $(this)
+
+	self.pedalboard('reset')
 
 	/*
 	 * Unserialization will first call all application callbacks and after everything is done,
@@ -358,11 +370,8 @@ JqueryClass('pedalboard', {
 	// Let's avoid modifying original data
 	data = $.extend({}, data)
 
-	if (bypassApplication == null)
-	    bypassApplication = !!loadPedalboardAtOnce
-
-	// We might want to bypass application
-	self.data('bypassApplication', bypassApplication)
+	// When unserializing, we assume everything has been solved at server side
+	self.data('bypassApplication', true)
 
 	self.data('wait').start('Loading pedalboard...')
 	var ourCallback = function() {
@@ -394,10 +403,7 @@ JqueryClass('pedalboard', {
 
 	    self.data('bypassApplication', false)
 	    setTimeout(function() { self.pedalboard('adapt') }, 1)
-	    if (loadPedalboardAtOnce)
-		self.data('pedalboardLoad')(data._id, ourCallback)
-	    else
-		ourCallback()
+	    ourCallback()
 	}
 
 	var loadPlugin, connect
@@ -1204,38 +1210,30 @@ JqueryClass('pedalboard', {
     
     // Removes all plugins and restore pedalboard initial state, so that a new pedalboard
     // can be created
-    reset: function(callback) {
+    reset: function() {
 	var self = $(this)
+	
+	self.data('bypassApplication', true)
+
+	for (instanceId in self.data('plugins'))
+	    self.pedalboard('removePlugin', instanceId)
+	
+	self.pedalboard('resetSize')
+	self.pedalboard('positionHardwarePorts')
+	self.data('instanceCounter', -1)
+
+	var connections = self.data('connectionManager')
+	connections.iterate(function(jack) {
+	    self.pedalboard('destroyJack', jack)
+	})
+	self.data('connectionManager').reset()
+	var hw = self.data('hardwareManager')
+	if (hw)
+	    hw.reset()
 
 	self.data('bypassApplication', false)
-
-	self.data('reset')(function(ok) {
-	    if (!ok) {
-		return
-	    }
-	    self.data('bypassApplication', true)
-
-	    for (instanceId in self.data('plugins'))
-		self.pedalboard('removePlugin', instanceId)
-	
-	    self.pedalboard('resetSize')
-	    self.pedalboard('positionHardwarePorts')
-	    self.data('instanceCounter', -1)
-
-	    var connections = self.data('connectionManager')
-	    connections.iterate(function(jack) {
-		self.pedalboard('destroyJack', jack)
-	    })
-	    self.data('connectionManager').reset()
-	    var hw = self.data('hardwareManager')
-	    if (hw)
-		hw.reset()
-	    self.data('bypassApplication', false)
-	    if (callback)
-		callback()
-	})
     },
-
+    
     // Make element an audio/midi inputs, to which jacks can be dragged to make connections
     makeInput: function(element, instanceId) {
 	var self = $(this)
