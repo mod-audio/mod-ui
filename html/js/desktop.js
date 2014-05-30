@@ -562,7 +562,10 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 	    $.ajax({
 		url: '/feed',
 		type: 'GET',
-		success: callback,
+		success: function(result) {
+		    callback(result)
+		    self.windowManager.closeWindows() ;
+		},
 		dataType: 'json',
 		cache: false
 	    })
@@ -726,7 +729,7 @@ Desktop.prototype.makeBankBox = function(el, trigger) {
     })
 }
 
-Desktop.prototype.reset = function(callback) {
+Desktop.prototype.reset = function() {
     var self = this;
     if (this.pedalboardModified)
 	if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
@@ -744,7 +747,6 @@ Desktop.prototype.reset = function(callback) {
 		 self.titleBox.text('Untitled')
 		
 		 self.pedalboard.pedalboard('reset')
-		 callback(true)
 	     },
 	     error: function() {
 		 new Bug("Couldn't reset pedalboard")

@@ -79,6 +79,7 @@ class Pedalboard(object):
         for instance in instances:
             data['instances'][instance['instanceId']] = instance
         self.data = data
+        self.load_addressings()
 
     def load(self, uid):
         try:
@@ -88,7 +89,6 @@ class Pedalboard(object):
             return self.clear()
         self.unserialize(json.load(fh))
         fh.close()
-        self.load_addressings()
 
     def load_addressings(self):
         self.init_addressings()

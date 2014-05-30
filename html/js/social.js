@@ -29,7 +29,7 @@ JqueryClass('socialWindow', {
 	    },
 	    open: function() {
 		if (!self.data('loaded')) {
-		    self.attr('src', SOCIAL_URL + 'index.html')
+		    self.attr('src', SOCIAL_URL + 'index.html?' + new Date().getTime())
 		    self.data('loaded', true)
 		}
 	    }

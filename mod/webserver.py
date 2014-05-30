@@ -646,6 +646,28 @@ class PedalboardLoad(web.RequestHandler):
         self.write(json.dumps(metadata, default=json_handler))
         self.finish()
 
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        try:
+            self.set_header('Access-Control-Allow-Origin', self.request.headers['Origin'])
+        except KeyError:
+            pass
+        pedalboard = json.loads(self.request.body)
+        result = yield gen.Task(SESSION.load_pedalboard_data, pedalboard)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(result, default=json_handler))
+        self.finish()
+
+    def options(self):
+        try:
+            self.set_header('Access-Control-Allow-Origin', self.request.headers['Origin'])
+        except KeyError:
+            pass
+        self.set_header('Access-Control-Allow-Methods', 'GET, POST')
+        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
+        
+
 class PedalboardRemove(web.RequestHandler):
     def get(self, uid):
         remove_pedalboard(uid)
@@ -1066,6 +1088,7 @@ application = web.Application(
 
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
+            (r"/pedalboard/load/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
             (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),

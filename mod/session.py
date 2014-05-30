@@ -305,6 +305,18 @@ class Session(object):
             
         self.load_current_pedalboard(_callback)
 
+    def load_pedalboard_data(self, pedalboard, callback):
+        self._pedalboard = Pedalboard()
+        self._pedalboard.unserialize(pedalboard)
+        def _callback(result):
+            if not result:
+                callback(False)
+            else:
+                self.browser.load_pedalboard(self._pedalboard.serialize())
+                callback(True)
+
+        self.load_current_pedalboard(_callback)
+
     def load_current_pedalboard(self, callback):
         # let's copy the data
         effects = copy.deepcopy(self._pedalboard.data['instances'].values())
