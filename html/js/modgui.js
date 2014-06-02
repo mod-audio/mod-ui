@@ -576,6 +576,7 @@ JqueryClass('film', baseWidget, {
 	    }
 	})
 
+	self.data('wheelBuffer', 0)
  	self.bind('mousewheel', function(e) {
 	    self.film('mouseWheel', e)
 	})
@@ -671,7 +672,10 @@ JqueryClass('film', baseWidget, {
 
     mouseWheel: function(e) {
 	var self = $(this)
-	var diff = e.originalEvent.wheelDelta / 30
+	var wheelStep = 30
+	var delta = self.data('wheelBuffer') + e.originalEvent.wheelDelta
+	self.data('wheelBuffer', delta % wheelStep)
+	var diff = parseInt(delta / wheelStep)
 	var position = self.data('position')
 	position += diff
 	self.data('position', position)
