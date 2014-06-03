@@ -209,7 +209,7 @@ JqueryClass('effectBox', {
 	    for (i in results.cloud) {
 		plugin = results.cloud[i]
 		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion, plugin.release ]
-		plugin.source = SITEURL
+		plugin.source = SITEURL.replace(/api\/?$/, '')
 		if (results.local[plugin.url]) {
 		    plugin.installedVersion = [ results.local[plugin.url].minorVersion,
 						results.local[plugin.url].microVersion,
@@ -279,7 +279,7 @@ JqueryClass('effectBox', {
 		plugin = results.cloud[i]
 		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion, plugin.release ]
 		plugin.status = 'blocked'
-		plugin.source = SITEURL
+		plugin.source = SITEURL.replace(/api\/?$/, '')
 		if (!results.local[plugin.url])
 		    plugins.push(plugin)
 	    }

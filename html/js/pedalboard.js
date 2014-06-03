@@ -567,18 +567,21 @@ JqueryClass('pedalboard', {
 
 	element.draggable($.extend({
 	    helper: function() {
-		var element = new GUI(pluginData, options).renderDummy()
-		element.addClass('dragging')
+		var element = $('<div class="mod-pedal dummy">')
+		new GUI(pluginData, options).renderDummyIcon(function(icon) {
+		    element.attr('class', icon.attr('class'))
+		    element.addClass('dragging')
 
-		var scale = self.data('scale')
-		var w = element.width()
-		var h = element.height()
-		var dx = w/(4*scale) - w/4
-		var dy = h/(2*scale) - h/2
-		element.css({
-		    webkitTransform: 'scale('+scale+') translate(-'+dx+'px, -'+dy+'px)',
+		    var scale = self.data('scale')
+		    var w = icon.width()
+		    var h = icon.height()
+		    var dx = w/(4*scale) - w/4
+		    var dy = h/(2*scale) - h/2
+		    element.css({
+			webkitTransform: 'scale('+scale+') translate(-'+dx+'px, -'+dy+'px)',
+		    })
+		    element.append(icon.children())
 		})
-
 		$('body').append(element)
 
 		return element
@@ -971,11 +974,11 @@ JqueryClass('pedalboard', {
 	var self = $(this)
 	var scale = self.data('scale')
 
-	var plugin, pluginGui
+	var obj = {}
 	var options = $.extend({
 	    dragStart: function() {
 		self.trigger('pluginDragStart', instanceId)
-		plugin.addClass('dragging')
+		obj.icon.addClass('dragging')
 		return true
 	    },
 	    drag: function(e, ui) {
@@ -984,37 +987,37 @@ JqueryClass('pedalboard', {
 		ui.position.left /= scale
 		ui.position.top /= scale
 		self.trigger('modified')
-		self.pedalboard('drawPluginJacks', plugin)
+		self.pedalboard('drawPluginJacks', obj.icon)
 	    },
 	    dragStop: function(e, ui) { 
 		self.trigger('pluginDragStop') 
 		self.trigger('modified')
-		self.pedalboard('drawPluginJacks', plugin)
-		plugin.removeClass('dragging')
+		self.pedalboard('drawPluginJacks', obj.icon)
+		obj.icon.removeClass('dragging')
 		self.data('pluginMove')(instanceId, ui.position.left, ui.position.top, function(r){})
 		self.pedalboard('adapt')
 	    },
 	    click: function(event) {
 		// check if mouse is not over a control button
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=input-control-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-control-port]')))
 		    return
 		// check if mouse is not over the footswitch
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=bypass]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=bypass]')))
 		    return
 		// clicking in input means expand
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=input-audio-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-audio-port]')))
 		    return
 		// clicking in output or output jack means connecting
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-audio-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-audio-port]')))
 		    return
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-midi-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-midi-port]')))
 		    return
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-jack]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-jack]')))
 		    return
 
 
 		// setTimeout avoids cable drawing bug
-		setTimeout(function() { self.pedalboard('focusPlugin', plugin) }, 0)
+		setTimeout(function() { self.pedalboard('focusPlugin', obj.icon) }, 0)
 	    },
 	    change: function(symbol, value) {
 		self.data('pluginParameterChange')(instanceId, symbol, value,
@@ -1034,92 +1037,92 @@ JqueryClass('pedalboard', {
 	    defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
 	}, guiOptions)
 
-	pluginGui = new GUI(pluginData, options)
+	var pluginGui = new GUI(pluginData, options)
+	pluginGui.render(function(icon, settings) {
+	    obj.icon = icon
 
-	plugin = pluginGui.renderIcon()
-	var settings = pluginGui.renderSettings()
+	    self.data('plugins')[instanceId] = icon
 
-	self.data('plugins')[instanceId] = plugin
+	    self.trigger('modified')
 
-	self.trigger('modified')
+	    icon.data('url', pluginData.url)
+	    icon.data('gui', pluginGui)
+	    icon.data('settings', settings)
+	    icon.data('instanceId', instanceId)
 
-	plugin.data('url', pluginData.url)
-	plugin.data('gui', pluginGui)
-	plugin.data('settings', settings)
-	plugin.data('instanceId', instanceId)
+	    var hardware = self.data('hardwareManager')
+	    if (addressing && hardware)
+		hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'), addressingErrors)
 
-	var hardware = self.data('hardwareManager')
-	if (addressing && hardware)
-	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'), addressingErrors)
-
-	var i, symbol, port
-	if (hardware) {
-	    var addressFactory = function(port) {
-		return function() {
-		    hardware.open(instanceId, port, pluginGui.getPortValue(port.symbol))
+	    var i, symbol, port
+	    if (hardware) {
+		var addressFactory = function(port) {
+		    return function() {
+			hardware.open(instanceId, port, pluginGui.getPortValue(port.symbol))
+		    }
 		}
-	    }
-	    
-	    for (i=0; i < pluginData.ports.control.input.length; i++) {
-		port = pluginData.ports.control.input[i]
-		var address = settings.find('[mod-role=input-control-address][mod-port-symbol='+port.symbol+']')
-		if (address.length == 0)
-		    continue
-		address.click(addressFactory(port))
-	    }
-
-	    // Let's define bypass like other ports.
-	    settings.find('[mod-role=bypass-address]').click(function() {
-		hardware.open(instanceId, pluginGui.controls[':bypass'], pluginGui.bypassed)
-	    })
-	} else {
-	    settings.find('[mod-role=input-control-address]').hide()
-	}
-
-	// Find elements with mod-role of audio/midi input/output ports and assign functionality to them
-	var types = ['audio', 'midi']
-	var directions = ['input', 'output']
-	var j, k, type, direction, method
-	for (i=0; i<types.length; i++) {
-	    type = types[i]
-	    for (j=0; j<directions.length; j++) {
-		direction = directions[j]
-		if (!pluginData.ports[type] || !pluginData.ports[type][direction])
-		    continue
-		for (k=0; k<pluginData.ports[type][direction].length; k++) {
-		    symbol = pluginData.ports[type][direction][k].symbol
-		    element = plugin.find('[mod-role='+direction+'-'+type+'-port][mod-port-symbol='+symbol+']')
-		    if (element.length == 0)
+		
+		for (i=0; i < pluginData.ports.control.input.length; i++) {
+		    port = pluginData.ports.control.input[i]
+		    var address = settings.find('[mod-role=input-control-address][mod-port-symbol='+port.symbol+']')
+		    if (address.length == 0)
 			continue
-		    // call either makeInput or makeOutput
-		    var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
-		    self.pedalboard(method, element, instanceId)
+		    address.click(addressFactory(port))
+		}
+
+		// Let's define bypass like other ports.
+		settings.find('[mod-role=bypass-address]').click(function() {
+		    hardware.open(instanceId, pluginGui.controls[':bypass'], pluginGui.bypassed)
+		})
+	    } else {
+		settings.find('[mod-role=input-control-address]').hide()
+	    }
+
+	    // Find elements with mod-role of audio/midi input/output ports and assign functionality to them
+	    var types = ['audio', 'midi']
+	    var directions = ['input', 'output']
+	    var j, k, type, direction, method
+	    for (i=0; i<types.length; i++) {
+		type = types[i]
+		for (j=0; j<directions.length; j++) {
+		    direction = directions[j]
+		    if (!pluginData.ports[type] || !pluginData.ports[type][direction])
+			continue
+		    for (k=0; k<pluginData.ports[type][direction].length; k++) {
+			symbol = pluginData.ports[type][direction][k].symbol
+			element = icon.find('[mod-role='+direction+'-'+type+'-port][mod-port-symbol='+symbol+']')
+			if (element.length == 0)
+			    continue
+			// call either makeInput or makeOutput
+			var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
+			self.pedalboard(method, element, instanceId)
+		    }
 		}
 	    }
-	}
 
-	plugin.mousedown(function() {
-	    self.pedalboard('preventDrag', true)
-	    var upHandler = function() {
-		self.pedalboard('preventDrag', false)
-		$('body').unbind('mouseup', upHandler)
-	    }
-	    $('body').bind('mouseup', upHandler)
+	    icon.mousedown(function() {
+		self.pedalboard('preventDrag', true)
+		var upHandler = function() {
+		    self.pedalboard('preventDrag', false)
+		    $('body').unbind('mouseup', upHandler)
+		}
+		$('body').bind('mouseup', upHandler)
+	    })
+
+	    var actions = $('<div>').addClass('mod-actions').appendTo(icon)
+	    $('<div>').addClass('mod-settings').click(function() {
+		settings.window('open')
+		return false
+	    }).appendTo(actions)
+	    $('<div>').addClass('mod-remove').click(function() {
+		self.pedalboard('removePlugin', instanceId)
+		return false
+	    }).appendTo(actions)
+
+	    settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
+	    icon.css({ position: 'absolute', left: x, top: y }).appendTo(self)
+	    self.data('pluginMove')(instanceId, x, y, function(r){})
 	})
-
-	var actions = $('<div>').addClass('mod-actions').appendTo(plugin)
-	$('<div>').addClass('mod-settings').click(function() {
-	    settings.window('open')
-	    return false
-	}).appendTo(actions)
-	$('<div>').addClass('mod-remove').click(function() {
-	    self.pedalboard('removePlugin', instanceId)
-	    return false
-	}).appendTo(actions)
-
-	settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
-	plugin.css({ position: 'absolute', left: x, top: y }).appendTo(self)
-	self.data('pluginMove')(instanceId, x, y, function(r){})
     },
 
     getGui: function(instanceId) {
