@@ -385,16 +385,16 @@ class EffectImage(EffectSearcher):
         self.write(open(path).read())
 
 class EffectStylesheet(EffectSearcher):
-    def get(self, prop):
+    def get(self):
         objid = self.get_by_url()
 
         try:
-            options = self.get_object(objid)
+            effect = self.get_object(objid)
         except:
             raise web.HTTPError(404)
         
         try:
-            path = options['gui'][prop]
+            path = effect['gui']['stylesheet']
         except:
             raise web.HTTPError(404)
 
