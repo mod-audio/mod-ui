@@ -1,3 +1,9 @@
+0.99.4
+======
+
+  - fix: knob layout would break when using scroll on mac plataform
+  - fix: proper handling of modgui:stylesheet lv2 property
+
 0.99.3
 ======
 
