@@ -392,7 +392,7 @@ class EffectStylesheet(EffectSearcher):
             options = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-
+        
         try:
             path = options['gui'][prop]
         except:
@@ -400,14 +400,14 @@ class EffectStylesheet(EffectSearcher):
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
-
+        
 
         content = open(path).read()
         context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))
-
+            
 class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
@@ -483,9 +483,9 @@ class EffectBypassAddress(web.RequestHandler):
         default = 0
         steps = 2
         unit = None
-        scale_points = []
-
-        res = yield gen.Task(SESSION.parameter_address,
+        scale_points = []        
+        
+        res = yield gen.Task(SESSION.parameter_address, 
                              instance_id, port_id, actuator, mode, port_properties, label, value,
                              minimum, maximum, default, steps, unit, scale_points)
 
@@ -549,7 +549,7 @@ class EffectParameterAddress(web.RequestHandler):
         if result['ok']:
             result['ok'] = yield gen.Task(SESSION.parameter_unaddress,
                                           instance_id, port_id)
-
+            
         callback(result)
 
     @gen.engine
@@ -571,9 +571,9 @@ class EffectParameterAddress(web.RequestHandler):
 
         result = {}
         result['ok'] = yield gen.Task(SESSION.parameter_address,
-                                      instance_id, port_id,
+                                      instance_id, port_id, 
                                       url, channel, actuator_id,
-                                      mode, port_properties, label, value, minimum,
+                                      mode, port_properties, label, value, minimum, 
                                       maximum, default, steps, unit, scale_points)
 
         callback(result)
@@ -898,7 +898,7 @@ class SysMonProcessList(web.RequestHandler):
             def set_ps_list(v):
                 self.ps_list = v
                 callback()
-            self.sock.read_until("\xe3", set_ps_list)
+            self.sock.read_until("\0", set_ps_list)
         self.sock.connect(('127.0.0.1', 57890), recv_ps_list)
 
 

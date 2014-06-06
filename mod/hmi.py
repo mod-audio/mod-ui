@@ -97,7 +97,7 @@ class HMI(object):
 
                     msg.run_cmd(_callback)
         try:
-            self.sp.read_until('\xe3', self.checker)
+            self.sp.read_until('\0', self.checker)
         except serial.SerialException, e:
             logging.error("[hmi] error while reading %s" % e)
 
@@ -105,7 +105,7 @@ class HMI(object):
         try:
             msg = self.queue[0][0] # fist msg on the queue
             logging.info("[hmi] popped from queue: %s" % msg)
-            self.sp.write("%s\xe3" % str(msg))
+            self.sp.write("%s\0" % str(msg))
             logging.info("[hmi] sending -> %s" % msg)
             self.queue_idle = False
         except IndexError:
@@ -124,7 +124,7 @@ class HMI(object):
                 self.process_queue()
             return
         # is resp, just send
-        self.sp.write("%s\xe3" % str(msg))
+        self.sp.write("%s\0" % str(msg))
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
         pedalboards = [ '"%s"' % p['title'] for p in pedalboards ]
