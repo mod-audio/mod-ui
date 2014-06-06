@@ -206,7 +206,7 @@ class ControlChainMessage():
 
 class Gateway():
     """
-    Gateway is responsible for routing control chain messages to the proper way. It expects a byteflow message and 
+    Gateway is responsible for routing control chain messages to the proper way. It expects a byteflow message and
     handles checksums, byte replacings and connection issues.
     It uses ControlChainMessage to build and parse the messages.
     """
@@ -219,7 +219,7 @@ class Gateway():
         self.hmi = hmi
         from mod.protocol import Protocol
         Protocol.register_cmd_callback("chain", self.receive)
-        
+
     def __checksum(self, buffer, size):
         check = 0
         for i in range(size):
@@ -233,11 +233,18 @@ class Gateway():
 
     def send(self, hwid, function, message=None):
         stream = self.message.build(hwid, 0, function, message)
-        self.hmi.send("chain %s%s" % (stream, self.__checksum(stream)))
+        msg = "%s%s" % (stream, self.__checksum(stream))
+        msg = msg.replace("\xaa","\x1b\x55")
+        msg = msg.replace("\x1b","\x1b\x1b")
+        msg = msg.replace("\xe3","\x1b\x1c")
+        self.hmi.chain(msg)
 
     def receive(self, message, callback):
         # control_chain protocol is being implemented over the hmi protocol, this will soon be changed.
         # ignoring callback by now
+        message = message.replace("\x1b\x55", "\xaa")
+        message = message.replace("\x1b\x1b", "\x1b")
+        message = message.replace("\x1b\x1c", "\xe3")
         checksum = message[-1]
         message = message[:-1]
         if checksum == self.__checksum(message):
@@ -255,7 +262,7 @@ class PipeLine():
         # Used to handle messages above this level
         self.handle = handler
         self.gateway = Gateway(hmi, self.receive)
-        
+
         # List of hardware ids that will be polled
         self.poll_queue = []
         #  Pointer to the next device to be polled
@@ -306,7 +313,7 @@ class PipeLine():
             if self.output_queue.empty():
                 return self.schedule(self.poll_next)
             hwid, function, message = self.output_queue.get()
-            self.gateway.send(hwid, function, message)        
+            self.gateway.send(hwid, function, message)
             self.schedule(self.process_next)
         except:
             self.schedule(self.process_next)
@@ -338,7 +345,7 @@ class PipeLine():
         """
         seq = self.data_request_seqs[hwid]
         self.send(hwid, DATA_REQUEST, {'seq': seq })
-        
+
     def send(self, hwid, function, data=None):
         """
         Puts the message in output queue and interrupts any sleeping
@@ -377,7 +384,7 @@ class AddressingManager():
         self.addressing_id_pointers = {}
         # Addressings to devices that are not connected
         # indexed by (url, channel) then (instance_id, port_id)
-        self.pending_addressings = {}        
+        self.pending_addressings = {}
 
         # Callbacks to be called when answers to commands sent are received,
         # indexed by (hwid, function)
@@ -393,7 +400,7 @@ class AddressingManager():
             ADDRESSING: self.confirm_addressing,
             UNADDRESSING: self.confirm_unaddressing,
             }
-    
+
     def start(self):
         """
         Starts the engine
@@ -430,7 +437,7 @@ class AddressingManager():
             for hwid, tstamp in self.hardware_tstamp.keys():
                 if now - tstamp > HARDWARE_TIMEOUT:
                     self.device_disconnect(hwid)
-                
+
             # Callbacks
             keys = self.callbacks.keys()
             for key in keys:
@@ -462,7 +469,7 @@ class AddressingManager():
             either expect no callback to handle an error or this call will result in error.
             """
             self.dispatch_table[msg.function](msg.origin, msg.data)
-    
+
     def _generate_hardware_id(self):
         """
         Gets a free hardware id
@@ -556,7 +563,7 @@ class AddressingManager():
             self.commit_addressing(hwid, instance_id, port_id, next_addressing)
 
         self.ioloop.add_callback(next_addressing)
-            
+
     def unload_hardware(self, hwid):
         """
         Saves all of device's addressings and removes it from Pipeline
@@ -569,7 +576,7 @@ class AddressingManager():
             instance_id, port_id, addressing = self.addressing[hwid].pop(addrid)
             self.addressing_index[(instance_id, port)] = (False, url, channel)
             self.pending_addressings[(url, channel)][(instance_id, port_id)] = addressing
-        
+
         self.pipeline.remove_hardware(hwid)
 
     def save_device_driver(self, hwid, data):
@@ -595,7 +602,7 @@ class AddressingManager():
         for addrid in data.requests:
             self.send(hwid, ADDRESSING, self.addressings[hwid][addrid][2])
 
-    def address(self, instance_id, port_id, url, channel, actuator_id, mode, port_properties, label, value, 
+    def address(self, instance_id, port_id, url, channel, actuator_id, mode, port_properties, label, value,
                 minimum, maximum, default, steps, unit, scale_points, callback=None):
         """
         Addresses a control port to an actuator.
@@ -643,7 +650,7 @@ class AddressingManager():
         Sends this addressing to a connected hardware
         """
         addrid = self._generate_addressing_id(hwid)
-        addressing['addressing_id'] = addrid            
+        addressing['addressing_id'] = addrid
         self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
         self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
 
@@ -693,7 +700,7 @@ class AddressingManager():
                 # device is not present
                 del self.pending_addressings[(addr[1], addr[2])][(instance_id, port_id)]
             callback(True, msg)
-            
+
         if not current[0]:
             # Addressed to a disconnected device, we just need to clean structures
             self.ioloop.add_callback(clean_addressing_structures)
