@@ -5,12 +5,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -27,7 +27,7 @@ def update_process_list():
     for pid in psutil.get_pid_list():
         try:
             p = Process(pid)
-            plist.append((p,p.get_cpu_percent(),p.get_memory_percent())) 
+            plist.append((p,p.get_cpu_percent(),p.get_memory_percent()))
         except psutil.NoSuchProcess:
             continue
     # copy plist to PS
@@ -37,9 +37,9 @@ def process_stats():
     pslist = []
     for p, cpu, mem in PS:
         try:
-            pslist.append({'pid': p.pid, 
-                            'name': p.name, 
-                            'cpu': float("%.2f" % p.get_cpu_percent(0)), 
+            pslist.append({'pid': p.pid,
+                            'name': p.name,
+                            'cpu': float("%.2f" % p.get_cpu_percent(0)),
                             'mem': float("%.2f" % p.get_memory_percent())})
         except psutil.NoSuchProcess:
             continue
@@ -54,7 +54,7 @@ def connection_ready(sock, fd, events):
                 raise
             return
         connection.setblocking(0)
-        connection.send(json.dumps({'ps': process_stats(), 'total_cpu': "%.2f" % psutil.cpu_percent()})+"\0")
+        connection.send(json.dumps({'ps': process_stats(), 'total_cpu': "%.2f" % psutil.cpu_percent()})+"\xe3")
         connection.close()
         return
 

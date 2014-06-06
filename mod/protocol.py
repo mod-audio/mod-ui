@@ -38,7 +38,7 @@ class ProtocolError(Exception):
     }
     def __init__(self, err=""):
         self.err = err
-        super(ProtocolError, self).__init__(self.ERRORS.get(err.replace("\0", ""), "ERR_UNKNOWN"))
+        super(ProtocolError, self).__init__(self.ERRORS.get(err.replace("\xe3", ""), "ERR_UNKNOWN"))
 
     def error_code(self):
         try:
@@ -105,7 +105,7 @@ class Protocol(object):
         cls.COMMANDS_FUNC[cmd] = func
 
     def __init__(self, msg):
-        self.msg = msg.replace("\0", "").strip()
+        self.msg = msg.replace("\xe3", "").strip()
         self.cmd = ""
         self.args = []
         self.parse()
