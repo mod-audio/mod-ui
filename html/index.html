@@ -55,8 +55,8 @@
       var TEMPLATES = {}
       SITEURL = '{{cloud_url}}'.replace(/\/?$/, '/api')
       var NOTIFICATIONS_ENABLED = true
-      var HARDWARE_PROFILE = JSON.parse('{{hardware_profile}}')
-      var CURRENT_PEDALBOARD = JSON.parse('{{current_pedalboard}}')
+      var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
+      var CURRENT_PEDALBOARD = JSON.parse(atob('{{current_pedalboard}}'))
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var MAX_SCREENSHOT_WIDTH = 600

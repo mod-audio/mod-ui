@@ -55,10 +55,10 @@
       var TEMPLATES = {}
       SITEURL = '{{cloud_url}}'
       var NOTIFICATIONS_ENABLED = false
-      var HARDWARE_PROFILE = JSON.parse('{{hardware_profile}}')
+      var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
-      var PEDALBOARD_DATA = JSON.parse('{{pedalboard}}')
+      var PEDALBOARD_DATA = JSON.parse(atob('{{pedalboard}}'))
 
       var JS_CUSTOM_CHANNEL = false
       var AUTO_CLOUD_BACKUP = false
