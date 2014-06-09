@@ -105,7 +105,7 @@ class Protocol(object):
         cls.COMMANDS_FUNC[cmd] = func
 
     def __init__(self, msg):
-        self.msg = msg.replace("\0", "").strip()
+        self.msg = msg.replace("\0", "").strip().replace("\x5c\xff", "\x00").replace("\x5c\x5c", "\x5c")
         self.cmd = ""
         self.args = []
         self.parse()

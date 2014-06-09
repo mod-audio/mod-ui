@@ -117,6 +117,8 @@ class HMI(object):
         self.send("resp -1")
 
     def send(self, msg, callback=None, datatype='int'):
+        # ASCII Protocol replaces
+        msg = msg.replace("\x5c", "\x5c\x5c").replace("\x00", "\x5c\xff")
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
             logging.info("[hmi] scheduling -> %s" % str(msg))
