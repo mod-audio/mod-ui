@@ -1,3 +1,8 @@
+0.99.5
+======
+
+  - fix: " and ' characters in addressing labels or pedalboard name would break interface loading and screenshot
+
 0.99.4
 ======
 
