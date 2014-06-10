@@ -3,12 +3,12 @@
 from construct import (Struct, Byte, String, ULInt16, UBInt16, Array, LFloat32,
                        If, Adapter, Container, ListContainer
                        )
-import pystache, os, json, struct
+import pystache, os, json, struct, logging
 from hashlib import md5
 import Queue
 from tornado import ioloop
 
-from mod.settings import HARDWARE_DRIVER_DIR
+from mod.settings import HARDWARE_DRIVER_DIR, INSTALLED_HARDWARE_DIR
 
 ERROR = 255
 CONNECTION = 1
@@ -122,6 +122,7 @@ class ControlChainMessage():
                                      )
 
         header = Struct("header",
+                        Byte("sync"),
                         Byte("destination"),
                         Byte("origin"),
                         Byte("function"),
@@ -189,15 +190,17 @@ class ControlChainMessage():
 
     def build(self, destination, function, obj={}):
         data = self._builder[function].build(Container(data=self._encode(obj)))
-        header = self._builder['header'].build(Container(destination=destination,
+        header = self._builder['header'].build(Container(sync=0xaa,
+                                                         destination=destination,
                                                          origin=0,
                                                          function=function,
                                                          data_size=len(data)))
         return header + data
 
     def parse(self, buffer):
-        header = self._parser['header'].parse(buffer[:5])
-        data = buffer[5:]
+        header = self._parser['header'].parse(buffer[:6])
+        assert 0xAA == header.sync, "Message is not consistent, wrong SYNC byte (is not 0xAA)"
+        data = buffer[6:]
         assert len(data) == header.data_size, "Message is not consistent, wrong data size"
         parser = self._parser[header.function]
         del header['data_size']
@@ -232,11 +235,10 @@ class Gateway():
         return check
 
     def send(self, hwid, function, message=None):
-        stream = self.message.build(hwid, 0, function, message)
-        msg = "%s%s" % (stream, self.__checksum(stream))
-        msg = msg.replace("\xaa","\x1b\x55")
+        stream = self.message.build(hwid, function, message)
+        msg = "%s%s" % (stream, chr(self.__checksum(stream, len(stream))))
         msg = msg.replace("\x1b","\x1b\x1b")
-        msg = msg.replace("\xe3","\x1b\x1c")
+        msg = msg.replace("\xaa","\x1b\x55")
         self.hmi.chain(msg)
 
     def receive(self, message, callback):
@@ -244,10 +246,9 @@ class Gateway():
         # ignoring callback by now
         message = message.replace("\x1b\x55", "\xaa")
         message = message.replace("\x1b\x1b", "\x1b")
-        message = message.replace("\x1b\x1c", "\xe3")
         checksum = message[-1]
         message = message[:-1]
-        if checksum == self.__checksum(message):
+        if checksum == chr(self.__checksum(message, len(message))):
             self.handle(self.message.parse(message))
 
 class PipeLine():
@@ -413,7 +414,7 @@ class AddressingManager():
         Sends a message through the pipeline.
         Stores the callback to handle responses later.
         """
-        current_callback, tstamp = self.callbacks.get((hwid, function))
+        current_callback, tstamp = self.callbacks.get((hwid, function), (None, 0))
         if current_callback is not None:
             # There's already a callback for this hardware/function. This means that
             # the previous message was not returned, let's consider this an error
