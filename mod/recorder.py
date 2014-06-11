@@ -20,7 +20,7 @@ class Recorder(object):
         self.proc = subprocess.Popen(['jack_capture',
                                       '-f', 'ogg',
                                       '-V',
-                                      '-d', '15',
+                                      '-d', '65',
                                       CAPTURE_PATH],
                                      stdout=open('/tmp/capture.err', 'w'),
                                      stderr=open('/tmp/capture.out', 'w')

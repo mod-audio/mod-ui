@@ -20,7 +20,7 @@ var RECORDING = 1
 var PLAYING = 2
 
 var RECORD_COUNTDOWN = 3
-var RECORD_LENGTH = 15
+var RECORD_LENGTH = 60
 
 JqueryClass('shareBox', {
     init: function(options) {
