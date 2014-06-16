@@ -1,3 +1,7 @@
+0.99.6
+======
+  - fix: initial_state command wasn't sending the pedalboards uids
+
 0.99.5
 ======
 
