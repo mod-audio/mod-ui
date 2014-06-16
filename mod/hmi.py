@@ -127,10 +127,10 @@ class HMI(object):
         self.sp.write("%s\0" % str(msg))
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        pedalboards = [ '"%s"' % p['title'] for p in pedalboards ]
+        pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
         self.send("initial_state %d %d %s" % (bank_id,
                                               pedalboard_id,
-                                              " ".join(pedalboards)),
+                                              pedalboards),
                   callback)
 
     def ui_con(self, callback=lambda result: None):
