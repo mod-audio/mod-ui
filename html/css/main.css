@@ -846,6 +846,7 @@ body {
     height:154px;
     margin-bottom:9px;
     width:100%;
+    overflow: hidden;
 }
 #pedalboards-library .pedalboards .pedalboard .img img {
     cursor:pointer;
