@@ -603,7 +603,7 @@ class Session(object):
         scale_points: array of options, each one being a tuple (value, label)
         """
 
-        def store_addressing(addressing):
+        def store_addressing(addressing, msg=""):
             self._pedalboard.parameter_address(instance_id, port_id, addressing)
             callback(addressing is not None)
 

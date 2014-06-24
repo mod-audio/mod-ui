@@ -105,7 +105,7 @@ class Protocol(object):
         cls.COMMANDS_FUNC[cmd] = func
 
     def __init__(self, msg):
-        self.msg = msg.replace("\0", "").strip().replace("\x5c\xff", "\x00").replace("\x5c\x5c", "\x5c")
+        self.msg = msg.replace("\0", "").strip()
         self.cmd = ""
         self.args = []
         self.parse()
@@ -135,12 +135,16 @@ class Protocol(object):
             return
 
         cmd = self.msg.split(' ')
+
+        def replaces(arg):
+            return arg.replace("\x5c\xff", "\x00").replace("\x5c\xdf", " ", ).replace("\x5c\x5c", "\x5c")
+
         if not cmd or cmd[0] not in self.COMMANDS.keys():
             raise ProtocolError("not found") # Command not found
 
         try:
             self.cmd = cmd[0]
-            self.args = [ typ(arg) for typ, arg in zip(self.COMMANDS[self.cmd], cmd[1:]) ]
+            self.args = [ typ(replaces(arg)) for typ, arg in zip(self.COMMANDS[self.cmd], cmd[1:]) ]
             if not all(str(a) for a in self.args):
                 raise ValueError
         except ValueError:

@@ -199,7 +199,7 @@ class ControlChainMessage():
 
     def parse(self, buffer):
         header = self._parser['header'].parse(buffer[:6])
-        assert 0xAA == header.sync, "Message is not consistent, wrong SYNC byte (is not 0xAA)"
+        assert "\xaa" == chr(header.sync), "Message is not consistent, wrong SYNC byte (is not 0xAA)"
         data = buffer[6:]
         assert len(data) == header.data_size, "Message is not consistent, wrong data size"
         parser = self._parser[header.function]
@@ -231,14 +231,13 @@ class Gateway():
 
         if check == 0x00 or check == 0xAA:
             return (~check & 0xFF)
-
         return check
 
     def send(self, hwid, function, message=None):
         stream = self.message.build(hwid, function, message)
         msg = "%s%s" % (stream, chr(self.__checksum(stream, len(stream))))
         msg = msg.replace("\x1b","\x1b\x1b")
-        msg = msg.replace("\xaa","\x1b\x55")
+        msg = msg[0] + msg[1:].replace("\xaa","\x1b\x55")
         self.hmi.chain(msg)
 
     def receive(self, message, callback):
@@ -248,8 +247,8 @@ class Gateway():
         message = message.replace("\x1b\x1b", "\x1b")
         checksum = message[-1]
         message = message[:-1]
-        if checksum == chr(self.__checksum(message, len(message))):
-            self.handle(self.message.parse(message))
+        assert checksum == chr(self.__checksum(message, len(message))), "Message is not consistent, checksum does not match"
+        self.handle(self.message.parse(message))
 
 class PipeLine():
     """
@@ -315,8 +314,7 @@ class PipeLine():
                 return self.schedule(self.poll_next)
             hwid, function, message = self.output_queue.get()
             self.gateway.send(hwid, function, message)
-            self.schedule(self.process_next)
-        except:
+        finally:
             self.schedule(self.process_next)
 
     def poll_next(self):
@@ -370,7 +368,7 @@ class AddressingManager():
         # hwids, indexed by url, channel
         self.hardware_index = {}
         # Pointer used to choose a free hardware id
-        self.hardware_id_pointer = 0
+        self.hardware_id_pointer = 1
         # Last time each hardware have been seen, for timeouts
         self.hardware_tstamp = {}
 
@@ -482,7 +480,7 @@ class AddressingManager():
             if pointer == start:
                 return None # full!
         self.hardware_id_pointer = pointer
-        return pointer
+        return pointer + 0x7f
 
     def _generate_addressing_id(self, hwid):
         """
@@ -513,13 +511,21 @@ class AddressingManager():
         self.hardware_tstamp[hwid] = get_time()
         self.addressings[hwid] = {}
         self.addressing_id_pointers[hwid] = 0
+
         self.send(hwid, CONNECTION, data)
         self.send(hwid, DEVICE_DESCRIPTOR)
+
+        self.install_hardware(url, channel)
 
         if not self.hardware_is_installed(url, channel):
             return
 
         self.load_hardware(url, channel)
+
+    def install_hardware(self, url, channel):
+        device_id = md5(url).hexdigest()
+        installation_path = os.path.join(INSTALLED_HARDWARE_DIR, "%s_%d" % (device_id, channel))
+        open(installation_path, 'w').close()
 
     def device_disconnect(self, hwid):
         """
@@ -544,7 +550,7 @@ class AddressingManager():
         """
         device_id = md5(url).hexdigest()
         installation_path = os.path.join(INSTALLED_HARDWARE_DIR, "%s_%d" % (device_id, channel))
-        return os.path.exists(installation_path) and os.path.exists(self.get_driver_path())
+        return os.path.exists(installation_path) and os.path.exists(self.get_driver_path(url))
 
     def load_hardware(self, url, channel):
         """
@@ -553,7 +559,6 @@ class AddressingManager():
         hwid = self.hardware_index.get((url, channel))
         if hwid is None:
             return
-        self.pipeline.add_hardware(hwid)
 
         pending = self.pending_addressings.get((url, channel), {}).keys()
         def next_addressing():
@@ -594,7 +599,7 @@ class AddressingManager():
         """
         Handles updates sent by hardware. This is the result of a polling by Pipeline.
         """
-        self.data_request_seqs[hwid] = (self.data_request_seqs[hwid]+1) % 256
+        self.pipeline.data_request_seqs[hwid] = (self.pipeline.data_request_seqs[hwid]+1) % 256
         # Report events to Session
         for event in data.events:
             instance_id, port_id, addressing = self.addressings[hwid][event['id']]
@@ -654,12 +659,13 @@ class AddressingManager():
         addressing['addressing_id'] = addrid
         self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
         self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
-
         def _callback(ok=True):
             if ok:
+                self.pipeline.add_hardware(hwid)
                 callback(addressing)
             else:
                 callback(None)
+        data = self.addressings[hwid][addrid][2]
         self.send(hwid, ADDRESSING, data, _callback)
 
 
