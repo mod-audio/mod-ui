@@ -442,7 +442,6 @@ class EffectGet(EffectSearcher):
 
         if self.request.connection.stream.closed():
             return
-
         self.write(json.dumps(options, default=json_handler))
         self.finish()
 
@@ -482,7 +481,7 @@ class EffectBypassAddress(web.RequestHandler):
         maximum = 0
         default = 0
         steps = 2
-        unit = None
+        unit = ""
         scale_points = []        
         
         res = yield gen.Task(SESSION.parameter_address, 
@@ -559,14 +558,14 @@ class EffectParameterAddress(web.RequestHandler):
         channel = data['channel']
         actuator_id = data['actuator_id']
         mode = int(data['mode'])
-        port_properties = int(data['port_properties'])
+        port_properties = int(data.get('port_properties', 0b00000000))
         label = data.get('label', '---')
         value = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
         default = float(data['default'])
         steps = int(data.get('steps', 33))
-        unit = data.get('unit')
+        unit = data.get('unit', "")
         scale_points = data.get('scale_points', [])
 
         result = {}
