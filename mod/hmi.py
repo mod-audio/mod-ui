@@ -91,9 +91,9 @@ class HMI(object):
                 else:
                     def _callback(resp, resp_args=None):
                         if resp_args is None:
-                            self.send("resp %d" % (0 if resp else -1))
+                            self.send("resp", [(0 if resp else -1)])
                         else:
-                            self.send("resp %d %s" % (0 if resp else -1, resp_args))
+                            self.send("resp", (0 if resp else -1, resp_args))
 
                     msg.run_cmd(_callback)
         try:
@@ -114,11 +114,24 @@ class HMI(object):
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
-        self.send("resp -1")
+        self.send("resp", [-1])
 
-    def send(self, msg, callback=None, datatype='int'):
+    def build_msg(self, cmd, args):
+        myargs = []
+        for arg in args:
+            if isinstance(arg, str) or isinstance(arg, unicode):
+                arg = '"%s"' % arg.replace("\x5c", "\x5c\x5c").replace("\x00", "\x5c\xff").replace('"', "\x5c\xdd")
+            myargs.append(arg)
+
+        if not myargs:
+            msg = cmd
+        else:
+            msg = "%s %s" % (cmd, " ".join([ str(arg) for arg in myargs]))
+        return msg
+
+    def send(self, cmd, args=[], callback=None, datatype='int'):
         # ASCII Protocol replaces
-        msg = msg.replace("\x5c", "\x5c\x5c").replace("\x00", "\x5c\xff")
+        msg = self.build_msg(cmd, args)
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
             logging.info("[hmi] scheduling -> %s" % str(msg))
@@ -130,22 +143,19 @@ class HMI(object):
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
         pedalboards = [ '"%s"' % p['title'] for p in pedalboards ]
-        self.send("initial_state %d %d %s" % (bank_id,
-                                              pedalboard_id,
-                                              " ".join(pedalboards)),
-                  callback)
+        self.send("initial_state", (bank_id, pedalboard_id, " ".join(pedalboards)), callback)
 
     def ui_con(self, callback=lambda result: None):
-        self.send("ui_con", callback, datatype='boolean')
+        self.send("ui_con", [], callback, datatype='boolean')
 
     def ui_dis(self, callback=lambda result: None):
-        self.send("ui_dis", callback, datatype='boolean')
+        self.send("ui_dis", [], callback, datatype='boolean')
 
     def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback=lambda result:None):
-        self.send("control_clean %d %d %d %d" % (hw_type, hw_id, actuator_type, actuator_id), callback, datatype='boolean')
+        self.send("control_clean", (hw_type, hw_id, actuator_type, actuator_id), callback, datatype='boolean')
 
     def chain(self, msg, callback=lambda result: None):
-        self.send("chain %s" % msg, callback)
+        self.send('chain', [msg], callback)
 
     def control_add(self, instance_id, symbol, label, var_type, unit, value, max,
                     min, steps, hw_type, hw_id, actuator_type, actuator_id, n_controllers, index,
@@ -161,17 +171,17 @@ class HMI(object):
             5 tap tempo
             6 bypass
         """
-        label = '"%s"' % label.upper().replace('"', "")
-        unit = '"%s"' % unit.replace('"', '')
+        label = '"%s"' % label.upper().replace('"', "\\\xdd")
+        unit = '"%s"' % unit.replace('"', '\\\xdd')
         length = len(options)
         if options:
-            options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
+            options = [ '"%s" %f' % (o[1].replace('"', '\\\xdd').upper(), float(o[0]))
                         for o in options ]
         options = "%d %s" % (length, " ".join(options))
         options = options.strip()
 
-        self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
-                  ( instance_id,
+        self.send('control_add',
+                   (instance_id,
                     symbol,
                     label,
                     var_type,
@@ -197,22 +207,22 @@ class HMI(object):
         if instance_id is -1 will remove all addressings
         if symbol == ":all" will remove every addressing for the instance_id
         """
-        self.send('control_rm %d %s' % (instance_id, symbol), callback, datatype='boolean')
+        self.send('control_rm', (instance_id, symbol), callback, datatype='boolean')
 
     def ping(self, callback=lambda result: None):
-        self.send('ping', callback, datatype='boolean')
+        self.send('ping', [], callback, datatype='boolean')
 
     def clipmeter(self, position, callback=lambda result: None):
-        self.send('clipmeter %d' % position, callback)
+        self.send('clipmeter', [position], callback)
 
     def peakmeter(self, position, value, peak, callback=lambda result: None):
-        self.send('peakmeter %d %f %f' % (position, value, peak), callback)
+        self.send('peakmeter', (position, value, peak), callback)
 
     def tuner(self, freq, note, cents, callback=lambda result: None):
-        self.send('tuner %f %s %f' % (freq, note, cents), callback)
+        self.send('tuner', (freq, note, cents), callback)
 
     def xrun(self, callback=lambda result: None):
-        self.send('xrun', callback)
+        self.send('xrun', [], callback)
 
     def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback=lambda result: None):
         """
@@ -224,5 +234,5 @@ class HMI(object):
             2: Pedalboard UP
             3: Pedalboard DOWN
         """
-        self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
+        self.send('bank_config', (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
 

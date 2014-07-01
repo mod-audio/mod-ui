@@ -73,6 +73,34 @@ def process_resp(resp, datatype):
             resp = resp >= 0
     return resp
 
+def split(s):
+    l = []
+    b = ""
+    quoted = False
+    for c in s:
+        if c == ' ':
+            if not quoted:
+                if len(b):
+                    l.append(b)
+                b = ""
+            else:
+                b += c
+        elif c == '"':
+            if quoted:
+                l.append(b)
+                quoted = False
+                b = ""
+            else:
+                quoted = True
+        else:
+            b += c
+    if quoted:
+        raise ValueError("quote fail")
+    if len(b):
+        l.append(b)
+    return l
+
+
 class Protocol(object):
     COMMANDS = {
         "banks": [],
@@ -105,7 +133,8 @@ class Protocol(object):
         cls.COMMANDS_FUNC[cmd] = func
 
     def __init__(self, msg):
-        self.msg = msg.replace("\0", "").strip()
+        assert msg[-1] == "\0", "Message inconsistent: does not end with \\0"
+        self.msg = msg[:-1]
         self.cmd = ""
         self.args = []
         self.parse()
@@ -134,10 +163,10 @@ class Protocol(object):
         if self.is_resp():
             return
 
-        cmd = self.msg.split(' ')
-
         def replaces(arg):
-            return arg.replace("\x5c\xff", "\x00").replace("\x5c\xdf", " ", ).replace("\x5c\x5c", "\x5c")
+            return arg.replace("\x5c\xff", "\x00").replace("\x5c\xdd", '"').replace("\x5c\x5c", "\x5c")
+
+        cmd = split(self.msg)
 
         if not cmd or cmd[0] not in self.COMMANDS.keys():
             raise ProtocolError("not found") # Command not found

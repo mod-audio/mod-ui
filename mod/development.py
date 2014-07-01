@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -20,7 +20,7 @@ from mod.hmi import HMI
 from mod.host import Host
 
 class FakeCommunicator(object):
-    def send(self, msg, callback, datatype=None):
+    def send(self, msg, callback=None, datatype=None):
         logging.info(msg)
         if datatype == 'boolean':
             callback(True)
@@ -31,7 +31,13 @@ class FakeCommunicator(object):
         callback()
 
 class FakeHMI(FakeCommunicator, HMI):
-    pass
+    def send(self, cmd, args=[], callback=None, datatype=None):
+        msg = self.build_msg(cmd, args)
+        logging.info("HMI:%s" % msg)
+        if datatype == 'boolean':
+            callback(True)
+        else:
+            callback(0)
 
 class FakeHost(FakeCommunicator, Host):
     def param_get(self, instance_id, symbol, callback=lambda result: None):
