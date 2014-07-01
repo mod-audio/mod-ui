@@ -270,11 +270,11 @@
     background-image:url(../img/jack-p10.png);
     background-position:center right;
     background-repeat:no-repeat;
-    background-size:auto 56px;
+    background-size:107px 56px;
     cursor:pointer;
     height:18px;
     position:absolute;
-    width:87px;
+    width:83px;
 }
 
 
@@ -301,20 +301,23 @@
     z-index:100;
 }
 
+.mod-input.mod-midi-input.input-connecting {
+    background-image:url(../img/midi-input-connecting.png) !important;
+}
+
 .mod-input.input-connecting-highlight {
     background-image:url(../img/input-connecting-highlight.png) !important;
 }
 
-.hardware-input .jack-connecting {
+.mod-input.mod-midi-input.input-connecting-highlight {
+    background-image:url(../img/midi-input-connecting-highlight.png) !important;
+}
+
+.mod-audio-output .jack-connecting,
+.mod-audio-input .jack-connecting {
     background-image:url(../img/jack-p10.png);
-    background-position:center right;
-    background-repeat:no-repeat;
-    background-size:auto 56px;
-    cursor:pointer;
-    height:18px;
-    position:absolute;
-    width:129px;
-    z-index:100;
+    width:107px !important;
+    margin-left: -23px;
 }
 
 .hardware-input.input-connected {
@@ -326,15 +329,26 @@
 
 /* = MIDI Input/Output
 ================================================ */
-.hardware-output.mod-midi-output .mod-output-jack {
-    background-image:url(../img/midi-output.png);
+.mod-midi-output .mod-output-jack,
+.mod-midi-input .mod-output-jack {
+    background-image:url(../img/midi-output-jack.png) !important;
     background-position:center right;
     background-repeat:no-repeat;
-    background-size:81px 31px;
+    background-size:81px 45px;
     cursor:pointer;
-    height:31px;
+    height:45px !important;
     position:absolute;
     width:81px;
+}
+
+.mod-midi-output .jack-connecting,
+.mod-midi-input .jack-connecting {
+    background-image:url(../img/midi-output-jack.png) !important;
+    width: 83px !important;
+}
+
+.mod-midi-input .jack-connecting {
+    margin-left: -25px;
 }
 
 .mod-pedal .mod-midi-input .mod-pedal-input-image {
@@ -344,6 +358,18 @@
     background-size:9px 45px;
     height:45px;
     position:absolute;
+    width:9px;
+    z-index:100;
+}
+
+.mod-pedal .mod-midi-output .mod-pedal-output-image {
+    background-image:url(../img/midi-input.png);
+    background-position:center right;
+    background-repeat:no-repeat;
+    background-size:9px 45px;
+    height:45px;
+    position:absolute;
+    margin-top: 10px;
     width:9px;
     z-index:100;
 }
@@ -367,10 +393,10 @@
     background-image:url(../img/midi-input-connected.png) !important;
     background-position:center right !important;
     background-repeat:no-repeat !important;
-    background-size:auto 31px !important;
-    height:31px !important;
+    background-size:auto 45px !important;
+    height:45px !important;
     position:absolute !important;
-    width:65px !important;
+    width:67px !important;
     z-index:100 !important;
 }
 
@@ -707,6 +733,21 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 #share-window-fb input {
 	vertical-align: baseline;
+}
+
+#fb-authorization-container {
+    float: left;
+    position: relative;
+    height: 30px;
+    width: 280px;
+}
+#fb-authorization-container iframe {
+    border: 0;
+    width: 280px;
+    height: 50px;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 #share-window img.loading {

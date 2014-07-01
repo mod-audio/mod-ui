@@ -209,7 +209,7 @@ JqueryClass('effectBox', {
 	    for (i in results.cloud) {
 		plugin = results.cloud[i]
 		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion, plugin.release ]
-		plugin.source = SITEURL
+		plugin.source = SITEURL.replace(/api\/?$/, '')
 		if (results.local[plugin.url]) {
 		    plugin.installedVersion = [ results.local[plugin.url].minorVersion,
 						results.local[plugin.url].microVersion,
@@ -279,7 +279,7 @@ JqueryClass('effectBox', {
 		plugin = results.cloud[i]
 		plugin.latestVersion = [ plugin.minorVersion, plugin.microVersion, plugin.release ]
 		plugin.status = 'blocked'
-		plugin.source = SITEURL
+		plugin.source = SITEURL.replace(/api\/?$/, '')
 		if (!results.local[plugin.url])
 		    plugins.push(plugin)
 	    }
@@ -430,8 +430,9 @@ JqueryClass('effectBox', {
 	    info.find('.js-remove').click(function() {
 		self.data('removePlugin')(plugin, function(ok) {
 		    if (ok) {
-			plugins.splice(index, 1)
 			info.window('close')
+			delete plugins[index].installedVersion
+			plugins[index].status = 'blocked'
 			self.effectBox('showPlugins', plugins)
 		    }
 		})
@@ -443,10 +444,10 @@ JqueryClass('effectBox', {
 		self.data('installPlugin')(plugin, function(plugin) {
 		    if (plugin) {
 			plugins[index].installedVersion = plugins[index].latestVersion
-			info.remove()
-			self.effectBox('showPlugins', plugins)
-			self.effectBox('showPluginInfo', index)
-
+			if (info.is(':visible')) {
+			    info.remove()
+			    self.effectBox('showPluginInfo', index)
+			}
 		    }
 		})
 	    })
@@ -461,9 +462,10 @@ JqueryClass('effectBox', {
 			    plugin.installedVersion = plugins[index].latestVersion
 			    plugin.latestVersion = plugins[index].latestVersion
 			    plugins[index] = plugin
-			    info.remove()
-			    self.effectBox('showPlugins', plugins)
-			    self.effectBox('showPluginInfo', index)
+			    if (info.is(':visible')) {
+				info.remove()
+				self.effectBox('showPluginInfo', index)
+			    }
 			}
 		    })
 		}).show()

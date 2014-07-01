@@ -385,29 +385,29 @@ class EffectImage(EffectSearcher):
         self.write(open(path).read())
 
 class EffectStylesheet(EffectSearcher):
-    def get(self, prop):
+    def get(self):
         objid = self.get_by_url()
 
         try:
-            options = self.get_object(objid)
+            effect = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-        
+
         try:
-            path = options['gui'][prop]
+            path = effect['gui']['stylesheet']
         except:
             raise web.HTTPError(404)
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
-        
+
 
         content = open(path).read()
         context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))
-            
+
 class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
@@ -482,9 +482,9 @@ class EffectBypassAddress(web.RequestHandler):
         default = 0
         steps = 2
         unit = ""
-        scale_points = []        
-        
-        res = yield gen.Task(SESSION.parameter_address, 
+        scale_points = []
+
+        res = yield gen.Task(SESSION.parameter_address,
                              instance_id, port_id, actuator, mode, port_properties, label, value,
                              minimum, maximum, default, steps, unit, scale_points)
 
@@ -548,7 +548,7 @@ class EffectParameterAddress(web.RequestHandler):
         if result['ok']:
             result['ok'] = yield gen.Task(SESSION.parameter_unaddress,
                                           instance_id, port_id)
-            
+
         callback(result)
 
     @gen.engine
@@ -570,9 +570,9 @@ class EffectParameterAddress(web.RequestHandler):
 
         result = {}
         result['ok'] = yield gen.Task(SESSION.parameter_address,
-                                      instance_id, port_id, 
+                                      instance_id, port_id,
                                       url, channel, actuator_id,
-                                      mode, port_properties, label, value, minimum, 
+                                      mode, port_properties, label, value, minimum,
                                       maximum, default, steps, unit, scale_points)
 
         callback(result)
@@ -822,8 +822,8 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': json.dumps(get_actuator_list()),
-            'current_pedalboard': json.dumps(SESSION.serialize_pedalboard(), default=json_handler),
+            'hardware_profile': b64encode(json.dumps(get_hardware())),
+            'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler)),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
@@ -839,7 +839,7 @@ class TemplateHandler(web.RequestHandler):
     def pedalboard(self):
         context = self.index()
         uid = self.get_argument('uid')
-        context['pedalboard'] = open(os.path.join(PEDALBOARD_DIR, uid)).read()
+        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid)).read())
         return context
 
 class EditionLoader(TemplateHandler):

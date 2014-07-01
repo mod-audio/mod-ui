@@ -1,3 +1,44 @@
+0.99.6
+======
+  - fix: initial_state command wasn't sending the pedalboards uids
+
+0.99.5
+======
+
+  - fix: " and ' characters in addressing labels or pedalboard name would break interface loading and screenshot
+
+0.99.4
+======
+
+  - fix: knob layout would break when using scroll on mac plataform
+  - fix: proper handling of modgui:stylesheet lv2 property
+
+0.99.3
+======
+
+  - fix: after starting a connection by clicking a jack, the cyan connecting cable would get stuck in some cases
+  - also, this cyan cable is now drawed using a bezier curve
+
+0.99.2
+======
+
+  - new: midi output port layout and usability adjustments
+
+0.99.1
+======
+
+  - new: sound is muted when tuner is active
+
+0.99.0
+======
+
+  This is the first release candidate for 1.0
+
+  - new: sharing to facebook
+  - fix: addressing error would prevent following addressings
+  - fix: when loading pedalboard, controls addressed to unknown hardware devices are ignored and reported to user
+  - proper error handling when cloud refuses shared pedalboard
+
 0.30.5
 ======
 

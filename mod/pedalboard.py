@@ -5,12 +5,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -37,12 +37,12 @@ class Pedalboard(object):
 
         if data_or_id is None:
             return
-        
+
         if type(data_or_id) in (unicode, str):
             self.load(data_or_id)
         elif type(data_or_id) is dict:
             self.unserialize(data_or_id)
-        
+
     def clear(self):
         self.max_instance_id = -1
         if self.data:
@@ -94,13 +94,17 @@ class Pedalboard(object):
                     addressing.update({'instance_id': instance_id, 'port_id': port_id})
                 if port_id == ":bypass":
                     addressing['value'] = int(instance['bypassed'])
+                try:
+                    self.addressings[tuple(addressing['actuator'])]['addrs'].append(addressing)
+                except KeyError:
+                    self.data['instances'][addressing['instance_id']]['addressing'].pop(addressing['port_id'])
 
     def save(self, title=None, as_new=False):
         if as_new or not self.data['_id']:
             self.data['_id'] = ObjectId()
         if title is not None:
             self.set_title(title)
-        
+
         title = self.data['metadata']['title']
 
         if not title:
@@ -114,7 +118,7 @@ class Pedalboard(object):
             pass
         except AssertionError:
             raise self.ValidationError('Pedalboard "%s" already exists' % title)
-        
+
         fh = open(os.path.join(PEDALBOARD_DIR, str(self.data['_id'])), 'w')
         self.data['metadata']['tstamp'] = datetime.now()
         serialized = self.serialize()
@@ -269,7 +273,7 @@ class Migration():
         specification, and adapts the structure if necessary
         """
         version = data.get('version', 0)
-        
+
         if version == cls.version:
             return data
 
@@ -287,7 +291,7 @@ class Migration():
                         # The effect is not installed, we can't migrate the data, let's unaddress
                         del addressing[port_id]
                         continue
-                
+
                 addr = addressing[port_id]
                 old_actuator = addr.pop('actuator')
                 old_addressing_type = addr.pop('addressing_type')
@@ -342,7 +346,7 @@ class Migration():
                 # this is expression pedal
                 mode = (0b00111111, 0b00000000)
         elif addressing_type == 'switch':
-            # This is footswitch, only possible case, 
+            # This is footswitch, only possible case,
             # let's make sure everything is consistent
             if actuator[2] == 1:
                 if port.get('toggled') and port.get('trigger'):
@@ -381,7 +385,7 @@ class Migration():
             props |= 0b00000010
 
         return (mode, props)
-        
+
     @classmethod
     def _get_port(cls, url, port_id):
         index = indexing.EffectIndex()

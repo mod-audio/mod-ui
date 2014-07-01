@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -51,7 +51,7 @@ JqueryClass('pedalboard', {
 
 	    // Removes the plugin given by instanceId
 	    pluginRemove: function(instanceId, callback) { callback(true) },
-	    
+
 	    // Changes the parameter of a plugin's control port
 	    pluginParameterChange: function(instanceId, symbol, value, callback) { callback(true) },
 
@@ -86,15 +86,15 @@ JqueryClass('pedalboard', {
 	self.pedalboard('wrapApplicationFunctions', options,
 			[ 'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginBypass',
 			  'portConnect', 'portDisconnect', 'reset', 'pluginMove' ])
-	
+
 	self.data(options)
 
 	// When bypassApplication is set to true, the applicationFunctions provided by options will be bypassed
 	self.data('bypassApplication', false)
-	
+
 	// minScale holds the minimum scale of the pedalboard. It's initialized as being the base scale
 	// and gets smaller as pedalboard size grows
-	self.data('minScale', options.baseScale) 
+	self.data('minScale', options.baseScale)
 
 	// Generates instanceIds, starting from 0.
 	// InstanceIds are incremental and never reused, unless pedalboard is reseted.
@@ -124,8 +124,8 @@ JqueryClass('pedalboard', {
 		     overflow: 'hidden'
 		   })
 	parent.insertAfter(self)
-	self.appendTo(parent)	
-	
+	self.appendTo(parent)
+
 	self.pedalboard('resetSize')
 
 	// Pedalboard is expected to be the main element in screen. So, the original margins relative to window will be
@@ -145,13 +145,13 @@ JqueryClass('pedalboard', {
 	self.append(bg)
 	bg.droppable({ accept: '[mod-role=output-jack]',
 		       greedy: true,
-		       drop: function(event, ui) { 
+		       drop: function(event, ui) {
 			   var jack = ui.draggable
 			   self.pedalboard('disconnect', jack)
 		       },
 		     })
 	self.data('background', bg)
-	
+
 	// Dragging the pedalboard move the view area
 	self.mousedown(function(e) { self.pedalboard('drag', e) })
 	// The mouse wheel is used to zoom in and out
@@ -196,8 +196,8 @@ JqueryClass('pedalboard', {
 		if (ui.helper.consumed)
 		    return // TODO Check if this really necessary
 		var scale = self.data('scale')
-		ui.draggable.trigger('pluginAdded', { 
-		    x: (ui.helper.offset().left - self.offset().left) / scale, 
+		ui.draggable.trigger('pluginAdded', {
+		    x: (ui.helper.offset().left - self.offset().left) / scale,
 		    y: (ui.helper.offset().top  - self.offset().top)  / scale,
 		    width: ui.helper.children().width(),
 		    height: ui.helper.children().height()
@@ -208,7 +208,7 @@ JqueryClass('pedalboard', {
 	self.pedalboard('startFeed')
 
 	self.disableSelection()
-	
+
 	return self
     },
 
@@ -291,7 +291,7 @@ JqueryClass('pedalboard', {
 	    }
 	}
 	// First, let's wrap all application functions to provide a way to bypass all of them when desired
-	for (var i in functions) 
+	for (var i in functions)
 	    options[functions[i]] = factory(functions[i], options[functions[i]])
     },
 
@@ -365,11 +365,27 @@ JqueryClass('pedalboard', {
 		callback()
 	}
 
+	var addressingErrors = []
+	var instanceNameIndex = {}
+
 	// Queue closures to all actions needed after everything is loaded
 	var finalActions = []
 	var finish = function() {
 	    for (var i in finalActions)
 		finalActions[i]()
+
+	    // Now check for addressing errors
+	    if (addressingErrors.length > 0) {
+		verboseErrors = []
+		var error
+		for (var i=0; i<addressingErrors.length; i++) {
+		    error = addressingErrors[i]
+		    verboseErrors.push(instanceNameIndex[error[0]] + "/" + error[1])
+		}
+		message = 'The following parameters could not be addressed: ' + verboseErrors.join(', ')
+		new Notification('warn', message)
+	    }
+
 	    self.data('bypassApplication', false)
 	    setTimeout(function() { self.pedalboard('adapt') }, 1)
 	    ourCallback()
@@ -386,6 +402,8 @@ JqueryClass('pedalboard', {
 		return connect()
 
 	    var pluginData = pluginsData[plugin.url]
+	    instanceNameIndex[plugin.instanceId] = pluginData.name
+
 	    self.data('pluginLoad')(plugin.url, plugin.instanceId,
 				    function(ok) {
 					if (!ok)
@@ -406,16 +424,16 @@ JqueryClass('pedalboard', {
 
 					// Queue action to add plugin to pedalboard
 					finalActions.push(function() {
-					    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, 
-							    { 
+					    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y,
+							    {
 								'preset': plugin.preset,
 								'bypassed': plugin.bypassed
-							    }, plugin.addressing)
+							    }, plugin.addressing, addressingErrors)
 					})
 					loadPlugin(pluginsData)
 				    })
 	}
-	
+
 	// Loads next connection in queue
 	var connect = function() {
 	    var con = data.connections.pop()
@@ -445,12 +463,12 @@ JqueryClass('pedalboard', {
 					 connect()
 				     })
 	}
-							     
+
 	self.pedalboard('getPluginsData', data.instances, loadPlugin)
     },
 
     // Gets a list of instances, loads from application the data from all plugins available,
-    // installs missing plugins and gives callback the whole result    
+    // installs missing plugins and gives callback the whole result
     getPluginsData: function(instances, callback) {
 	var self = $(this)
 	var plugins = {}
@@ -471,7 +489,7 @@ JqueryClass('pedalboard', {
 		    callback(data)
 	    })
 	}
-	    
+
 	var installMissing = function(data) {
 	    for (var i in urls)
 		if (data[urls[i]] == null)
@@ -479,13 +497,13 @@ JqueryClass('pedalboard', {
 	    if (missingCount == 0)
 		callback(data)
 	}
-	
+
 	self.data('getPluginsData')(urls, installMissing)
     },
 
     // Register hardware inputs and outputs, elements that will be used to represent the audio inputs and outputs
     // that interface with the hardware.
-    // Note that these are considered inputs and outputs from the pedalboard point of view: the outputs are 
+    // Note that these are considered inputs and outputs from the pedalboard point of view: the outputs are
     // expected to be a source of sound, and so it's an input from the user perspective; the input is the
     // sound destination, so will be an output to user.
     addHardwareInput: function(element, symbol, portType) {
@@ -504,7 +522,7 @@ JqueryClass('pedalboard', {
 	self.data('hwOutputs').push(element)
 	self.append(element)
     },
-    
+
     /* Make this element a draggable item that can be used to add effects to this pedalboard.
      * Plugin adding has the following workflow:
      * 1 - Application registers an HTML element as being an available plugin
@@ -521,7 +539,7 @@ JqueryClass('pedalboard', {
     registerAvailablePlugin: function(element, pluginData, draggableOptions) {
 	var self = $(this)
 
-	element.bind('pluginAdded', function(e, position) { 
+	element.bind('pluginAdded', function(e, position) {
 	    var waiter = self.data('wait')
 	    var instanceId = self.pedalboard('generateInstanceId')
 	    waiter.startPlugin(instanceId, position)
@@ -540,18 +558,21 @@ JqueryClass('pedalboard', {
 
 	element.draggable($.extend({
 	    helper: function() {
-		var element = new GUI(pluginData, options).renderDummy()
-		element.addClass('dragging')
+		var element = $('<div class="mod-pedal dummy">')
+		new GUI(pluginData, options).renderDummyIcon(function(icon) {
+		    element.attr('class', icon.attr('class'))
+		    element.addClass('dragging')
 
-		var scale = self.data('scale')
-		var w = element.width()
-		var h = element.height()
-		var dx = w/(4*scale) - w/4
-		var dy = h/(2*scale) - h/2
-		element.css({
-		    webkitTransform: 'scale('+scale+') translate(-'+dx+'px, -'+dy+'px)',
+		    var scale = self.data('scale')
+		    var w = icon.width()
+		    var h = icon.height()
+		    var dx = w/(4*scale) - w/4
+		    var dy = h/(2*scale) - h/2
+		    element.css({
+			webkitTransform: 'scale('+scale+') translate(-'+dx+'px, -'+dy+'px)',
+		    })
+		    element.append(icon.children())
 		})
-
 		$('body').append(element)
 
 		return element
@@ -570,22 +591,22 @@ JqueryClass('pedalboard', {
 	    width: self.width(),
 	    height: self.height()
 	}
-	
+
 	var scale = self.data('baseScale')
 
-	self.parent().css({ 
+	self.parent().css({
 	    width: $(window).width() - self.data('hmargins'),
 	    height: $(window).height() - self.data('vmargins')
 	})
-	
+
 	var scale = self.data('baseScale')
-	self.css({ 
+	self.css({
 	    width: self.parent().width() / scale,
 	    height: self.parent().height() / scale,
 	})
 
 	self.pedalboard('positionHardwarePorts')
-	
+
 	var zoom = self.data('currentZoom')
 	if (!zoom)
 	    return
@@ -598,7 +619,7 @@ JqueryClass('pedalboard', {
 	self.data('windowSize')(self.width(), self.height())
     },
 
-    // Prevents dragging of whole dashboard when dragging of effect or jack starts      
+    // Prevents dragging of whole dashboard when dragging of effect or jack starts
     preventDrag: function(prevent) {
 	$(this).data('preventDrag', prevent)
     },
@@ -615,22 +636,22 @@ JqueryClass('pedalboard', {
 	var canvasY = (start.pageY - self.offset().top) / scale
 	var screenX = start.pageX - self.parent().offset().left
 	var screenY = start.pageY - self.parent().offset().top
-	
+
 	var moveHandler = function(e) {
 	    if (self.data('preventDrag'))
 		return
 
-	    self.pedalboard('zoom', scale, canvasX, canvasY, 
+	    self.pedalboard('zoom', scale, canvasX, canvasY,
 			    screenX + e.pageX - start.pageX,
 			    screenY + e.pageY - start.pageY,
 			    0)
 	}
-	
+
 	var upHandler = function(e) {
 	    $(document).unbind('mouseup', upHandler)
 	    $(document).unbind('mousemove', moveHandler)
 	}
-	
+
 	$(document).bind('mousemove', moveHandler)
 	$(document).bind('mouseup', upHandler)
     },
@@ -676,7 +697,7 @@ JqueryClass('pedalboard', {
 
 	if (duration == null)
 	    duration == 400
-	self.animate({ 
+	self.animate({
 	    scale: scale,
 	    top: offsetY,
 	    left: offsetX
@@ -754,7 +775,7 @@ JqueryClass('pedalboard', {
 	}
     },
 
-    // Enlarge the pedalboard to a minimum size capable of accommodating all plugins. 
+    // Enlarge the pedalboard to a minimum size capable of accommodating all plugins.
     adapt: function() {
 	var self = $(this)
 	// First, get the minmum bounding rectangle,
@@ -803,8 +824,8 @@ JqueryClass('pedalboard', {
 	}
 	if (maxY > h)
 	    hDif += maxY - h
-	
-	
+
+
 	if (wDif == 0 && hDif == 0)
 	    // nothing has changed
 	    return
@@ -813,7 +834,7 @@ JqueryClass('pedalboard', {
 
 	// now let's modify desired width and height to keep
 	// screen ratio
-	var ratio = w / h 
+	var ratio = w / h
 	w += wDif
 	h += hDif
 	if (ratio > w/h) // we have to increase width to keep ratio
@@ -847,14 +868,14 @@ JqueryClass('pedalboard', {
 	    })
 	    self.data('pluginMove')(instanceId, x, y, function(r){})
 	}
-	
+
 	var viewWidth = self.parent().width()
 	var viewHeight = self.parent().height()
 	var newScale = viewWidth / w
 
 	self.data('minScale', Math.min(self.data('minScale'), newScale))
 
-	self.animate({ 
+	self.animate({
 	    scale: newScale,
 	}, {
 	    duration: time,
@@ -867,7 +888,7 @@ JqueryClass('pedalboard', {
 		var offsetY = (viewHeight - height)/2
 		self.width(width)
 		self.height(height)
-		self.css({ 
+		self.css({
 		    webkitTransform: 'scale('+scale+')',
 		    top: offsetY,
 		    left: offsetX,
@@ -913,7 +934,7 @@ JqueryClass('pedalboard', {
 	var scale = self.data('baseScale')
 	var w = self.parent().width() / scale
 	var h = self.parent().height() / scale
-	self.css({ 
+	self.css({
 	    width: w,
 	    height: h,
 	    position: 'absolute'
@@ -928,7 +949,7 @@ JqueryClass('pedalboard', {
     /*********
      * Plugins
      */
-    
+
     // Generate an instance ID for a new plugin.
     generateInstanceId: function() {
 	var self = $(this)
@@ -940,15 +961,15 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instanceId, now we need to put it in screen.
-    addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing) {
+    addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing, addressingErrors) {
 	var self = $(this)
 	var scale = self.data('scale')
 
-	var plugin, pluginGui
+	var obj = {}
 	var options = $.extend({
 	    dragStart: function() {
 		self.trigger('pluginDragStart', instanceId)
-		plugin.addClass('dragging')
+		obj.icon.addClass('dragging')
 		return true
 	    },
 	    drag: function(e, ui) {
@@ -957,35 +978,37 @@ JqueryClass('pedalboard', {
 		ui.position.left /= scale
 		ui.position.top /= scale
 		self.trigger('modified')
-		self.pedalboard('drawPluginJacks', plugin)
+		self.pedalboard('drawPluginJacks', obj.icon)
 	    },
-	    dragStop: function(e, ui) { 
-		self.trigger('pluginDragStop') 
+	    dragStop: function(e, ui) {
+		self.trigger('pluginDragStop')
 		self.trigger('modified')
-		self.pedalboard('drawPluginJacks', plugin)
-		plugin.removeClass('dragging')
+		self.pedalboard('drawPluginJacks', obj.icon)
+		obj.icon.removeClass('dragging')
 		self.data('pluginMove')(instanceId, ui.position.left, ui.position.top, function(r){})
 		self.pedalboard('adapt')
 	    },
 	    click: function(event) {
 		// check if mouse is not over a control button
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=input-control-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-control-port]')))
 		    return
 		// check if mouse is not over the footswitch
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=bypass]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=bypass]')))
 		    return
 		// clicking in input means expand
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=input-audio-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-audio-port]')))
 		    return
 		// clicking in output or output jack means connecting
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-audio-port]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-audio-port]')))
 		    return
-		if (self.pedalboard('mouseIsOver', event, plugin.find('[mod-role=output-jack]')))
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-midi-port]')))
+		    return
+		if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-jack]')))
 		    return
 
 
 		// setTimeout avoids cable drawing bug
-		setTimeout(function() { self.pedalboard('focusPlugin', plugin) }, 0)
+		setTimeout(function() { self.pedalboard('focusPlugin', obj.icon) }, 0)
 	    },
 	    change: function(symbol, value) {
 		self.data('pluginParameterChange')(instanceId, symbol, value,
@@ -996,7 +1019,7 @@ JqueryClass('pedalboard', {
 						   })
 	    },
 	    bypass: function(bypassed) {
-		self.data('pluginBypass')(instanceId, bypassed, 
+		self.data('pluginBypass')(instanceId, bypassed,
 					  function(ok) {
 					      // TODO Handle this error
 					  })
@@ -1005,92 +1028,94 @@ JqueryClass('pedalboard', {
 	    defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
 	}, guiOptions)
 
-	pluginGui = new GUI(pluginData, options)
+	var pluginGui = new GUI(pluginData, options)
+	pluginGui.render(function(icon, settings) {
+	    obj.icon = icon
 
-	plugin = pluginGui.renderIcon()
-	var settings = pluginGui.renderSettings()
-
-	self.data('plugins')[instanceId] = plugin
-
-	self.trigger('modified')
-
-	plugin.data('url', pluginData.url)
-	plugin.data('gui', pluginGui)
-	plugin.data('settings', settings)
-	plugin.data('instanceId', instanceId)
+	    self.data('plugins')[instanceId] = icon
 
 	var hardware = self.data('addressingManager')
 	if (addressing && hardware)
 	    hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'))
 
-	var i, symbol, port
-	if (hardware) {
-	    var addressFactory = function(port) {
-		return function() {
-		    hardware.open(instanceId, port, pluginGui.getPortValue(port.symbol))
+	    icon.data('url', pluginData.url)
+	    icon.data('gui', pluginGui)
+	    icon.data('settings', settings)
+	    icon.data('instanceId', instanceId)
+
+	    var hardware = self.data('hardwareManager')
+	    if (addressing && hardware)
+		hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'), addressingErrors)
+
+	    var i, symbol, port
+	    if (hardware) {
+		var addressFactory = function(port) {
+		    return function() {
+			hardware.open(instanceId, port, pluginGui.getPortValue(port.symbol))
+		    }
 		}
-	    }
-	    
-	    for (i=0; i < pluginData.ports.control.input.length; i++) {
-		port = pluginData.ports.control.input[i]
-		var address = settings.find('[mod-role=input-control-address][mod-port-symbol='+port.symbol+']')
-		if (address.length == 0)
-		    continue
-		address.click(addressFactory(port))
-	    }
 
-	    // Let's define bypass like other ports.
-	    settings.find('[mod-role=bypass-address]').click(function() {
-		hardware.open(instanceId, pluginGui.controls[':bypass'], pluginGui.bypassed)
-	    })
-	} else {
-	    settings.find('[mod-role=input-control-address]').hide()
-	}
-
-	// Find elements with mod-role of audio/midi input/output ports and assign functionality to them
-	var types = ['audio', 'midi']
-	var directions = ['input', 'output']
-	var j, k, type, direction, method
-	for (i=0; i<types.length; i++) {
-	    type = types[i]
-	    for (j=0; j<directions.length; j++) {
-		direction = directions[j]
-		if (!pluginData.ports[type] || !pluginData.ports[type][direction])
-		    continue
-		for (k=0; k<pluginData.ports[type][direction].length; k++) {
-		    symbol = pluginData.ports[type][direction][k].symbol
-		    element = plugin.find('[mod-role='+direction+'-'+type+'-port][mod-port-symbol='+symbol+']')
-		    if (element.length == 0)
+		for (i=0; i < pluginData.ports.control.input.length; i++) {
+		    port = pluginData.ports.control.input[i]
+		    var address = settings.find('[mod-role=input-control-address][mod-port-symbol='+port.symbol+']')
+		    if (address.length == 0)
 			continue
-		    // call either makeInput or makeOutput
-		    var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
-		    self.pedalboard(method, element, instanceId)
+		    address.click(addressFactory(port))
+		}
+
+		// Let's define bypass like other ports.
+		settings.find('[mod-role=bypass-address]').click(function() {
+		    hardware.open(instanceId, pluginGui.controls[':bypass'], pluginGui.bypassed)
+		})
+	    } else {
+		settings.find('[mod-role=input-control-address]').hide()
+	    }
+
+	    // Find elements with mod-role of audio/midi input/output ports and assign functionality to them
+	    var types = ['audio', 'midi']
+	    var directions = ['input', 'output']
+	    var j, k, type, direction, method
+	    for (i=0; i<types.length; i++) {
+		type = types[i]
+		for (j=0; j<directions.length; j++) {
+		    direction = directions[j]
+		    if (!pluginData.ports[type] || !pluginData.ports[type][direction])
+			continue
+		    for (k=0; k<pluginData.ports[type][direction].length; k++) {
+			symbol = pluginData.ports[type][direction][k].symbol
+			element = icon.find('[mod-role='+direction+'-'+type+'-port][mod-port-symbol='+symbol+']')
+			if (element.length == 0)
+			    continue
+			// call either makeInput or makeOutput
+			var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
+			self.pedalboard(method, element, instanceId)
+		    }
 		}
 	    }
-	}
 
-	plugin.mousedown(function() {
-	    self.pedalboard('preventDrag', true)
-	    var upHandler = function() {
-		self.pedalboard('preventDrag', false)
-		$('body').unbind('mouseup', upHandler)
-	    }
-	    $('body').bind('mouseup', upHandler)
+	    icon.mousedown(function() {
+		self.pedalboard('preventDrag', true)
+		var upHandler = function() {
+		    self.pedalboard('preventDrag', false)
+		    $('body').unbind('mouseup', upHandler)
+		}
+		$('body').bind('mouseup', upHandler)
+	    })
+
+	    var actions = $('<div>').addClass('mod-actions').appendTo(icon)
+	    $('<div>').addClass('mod-settings').click(function() {
+		settings.window('open')
+		return false
+	    }).appendTo(actions)
+	    $('<div>').addClass('mod-remove').click(function() {
+		self.pedalboard('removePlugin', instanceId)
+		return false
+	    }).appendTo(actions)
+
+	    settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
+	    icon.css({ position: 'absolute', left: x, top: y }).appendTo(self)
+	    self.data('pluginMove')(instanceId, x, y, function(r){})
 	})
-
-	var actions = $('<div>').addClass('mod-actions').appendTo(plugin)
-	$('<div>').addClass('mod-settings').click(function() {
-	    settings.window('open')
-	    return false
-	}).appendTo(actions)
-	$('<div>').addClass('mod-remove').click(function() {
-	    self.pedalboard('removePlugin', instanceId)
-	    return false
-	}).appendTo(actions)
-
-	settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
-	plugin.css({ position: 'absolute', left: x, top: y }).appendTo(self)
-	self.data('pluginMove')(instanceId, x, y, function(r){})
     },
 
     getGui: function(instanceId) {
@@ -1106,7 +1131,7 @@ JqueryClass('pedalboard', {
 	    self.pedalboard('drawJack', jack)
 	})
     },
-	    
+
     // Removes a plugin from pedalboard.
     // Calls application removal function with proper removal callback
     removePlugin: function(instanceId) {
@@ -1135,7 +1160,7 @@ JqueryClass('pedalboard', {
 	})
 
     },
-    
+
     // Highlight all inputs to which a jack can be connected (any inputs that are not from same
     // instance and are not already connected). Highlight parameter indicates if we want highlighting
     // on or off. If highlight parameter is false, no jack is needed.
@@ -1154,7 +1179,7 @@ JqueryClass('pedalboard', {
 	var fromInstance = output.data('instanceId')
 	var fromSymbol = output.data('symbol')
 	var portType = output.data('portType')
-	
+
 	self.find('[mod-role=input-'+portType+'-port]').each(function() {
 	    var input = $(this)
 	    var toInstance = input.data('instanceId')
@@ -1172,7 +1197,7 @@ JqueryClass('pedalboard', {
 	    }
 	});
     },
-    
+
     // Removes all plugins and restore pedalboard initial state, so that a new pedalboard
     // can be created
     reset: function(callback) {
@@ -1188,7 +1213,7 @@ JqueryClass('pedalboard', {
 
 	    for (instanceId in self.data('plugins'))
 		self.pedalboard('removePlugin', instanceId)
-	
+
 	    self.pedalboard('resetSize')
 	    self.pedalboard('positionHardwarePorts')
 	    self.data('instanceCounter', -1)
@@ -1222,17 +1247,21 @@ JqueryClass('pedalboard', {
 	element.data('portType', portType)
 
 	element.droppable({ accept: '[mod-role=output-jack]',
-			    drop: function(event, ui) { 
+			    drop: function(event, ui) {
 				var jack = ui.draggable
 
 				self.pedalboard('connect', jack, element)
 				element.removeClass('input-connecting-highlight')
 			    },
-			    over: function(event, ui) { 
+			    over: function(event, ui) {
+				var outputType = ui.draggable.parent().attr('mod-role').split(/-/)[1]
+				var inputType = element.attr('mod-role').split(/-/)[1]
+				if (outputType != inputType)
+				    return
 				self.data('background').droppable('disable');
 				element.addClass('input-connecting-highlight')
 			    },
-			    out: function(event, ui) { 
+			    out: function(event, ui) {
 				self.data('background').droppable('enable');
 				element.removeClass('input-connecting-highlight')
 			    },
@@ -1266,7 +1295,7 @@ JqueryClass('pedalboard', {
 
 	self.pedalboard('spawnJack', element)
 
-	element.click(function() { 
+	element.click(function() {
 	    self.pedalboard('startConnection', element)
 	})
     },
@@ -1300,18 +1329,23 @@ JqueryClass('pedalboard', {
 	canvas.svg()
 	var svg = canvas.find('svg')
 	svg.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 })
-	
+
 	jack.data('canvas', canvas)
-	jack.data('svg', canvas.svg('get'))
-	jack.data('pathShadow', canvas.svg('get').createPath())
-	jack.data('pathCable', canvas.svg('get').createPath())
-	jack.data('pathLight', canvas.svg('get').createPath())
+	svg = canvas.svg('get')
+	jack.data('svg', svg)
+	canvas.data('pathShadow', svg.createPath())
+	canvas.data('pathCable', svg.createPath())
+	canvas.data('pathLight', svg.createPath())
 
 	jack.draggable({ revert: 'invalid',
 			 revertDuration: 0,
 			 start: function() {
 			     // Prevents dragging of whole pedalboard while jack is being dragged
 			     self.pedalboard('preventDrag', true)
+
+			     // If user has started a connection by clicking a jack, this drag will
+			     // end it
+			     self.pedalboard('finishConnection')
 
 			     // Highlight all inputs in which this jack can be dropped
 			     self.pedalboard('highlightInputs', true, jack)
@@ -1324,7 +1358,7 @@ JqueryClass('pedalboard', {
 			     output.addClass('output-connecting')
 			     canvas.removeClass('cable-connected')
 			     canvas.addClass('cable-connecting')
-			     
+
 			     var cur = jack.data('destination')
 			     if (cur)
 				 cur.removeClass('input-connected')
@@ -1337,7 +1371,7 @@ JqueryClass('pedalboard', {
 			     p.left /= scale
 			     self.pedalboard('drawJack', jack, true)
 			 },
-			 stop: function() { 
+			 stop: function() {
 			     self.pedalboard('preventDrag', false)
 
 			     self.pedalboard('highlightInputs', false)
@@ -1383,22 +1417,16 @@ JqueryClass('pedalboard', {
 	    var svg = jack.data('svg')
 	    if (!svg)
 		// maybe jack has just been disconnected and so no drawing is necessary
-		return 
-	    var pathS = jack.data('pathShadow') 
-	    var pathC = jack.data('pathCable') 
-	    var pathL = jack.data('pathLight') 
+		return
+
+	    svg.clear()
+
+	    // If this jack is not connected and
+	    if (!jack.data('connected') && !force)
+		return
 
 	    var source = jack.data('origin')
 	    var scale = self.data('scale')
-
-	    svg.clear()
-	    pathS.reset()
-	    pathC.reset()
-	    pathL.reset()
-
-	    // If this jack is not connected and 
-	    if (!jack.data('connected') && !force)
-		return
 
 	    // Cable will follow a cubic bezier curve, which is defined by 4 points. They are:
 	    // P0 (xi, yi) - starting point
@@ -1407,40 +1435,60 @@ JqueryClass('pedalboard', {
 
 	    // Gets origin and destination coordinates
 	    var xi = source.offset().left / scale - self.offset().left / scale // + source.width()
-	    var yi = source.offset().top / scale - self.offset().top / scale + source.height()/2 
-	    var xo = jack.offset().left / scale - self.offset().left / scale 
+	    var yi = source.offset().top / scale - self.offset().top / scale + source.height()/2
+	    var xo = jack.offset().left / scale - self.offset().left / scale
 	    var yo = jack.offset().top / scale - self.offset().top / scale + jack.height()/2
 
-	    var deltaX = xo - xi - jack.width()
-	    // The calculations below were empirically obtained by trying several things.
-	    // It gives us a pretty good result
-	    if (deltaX < 0) {
-		deltaX = 10 * (deltaX/6)^0.8
-	    } else {
-		deltaX /= 1.5
-	    }
-	    
-	    // Draw three lines following same path, one for shadow, one for cable and one for light
-	    // The recipe for a good cable is that shadow is wide and darke, cable is not so wide and not so dark, 
-	    // and light is very thin and light.
-	    // Each has a different class, so it will be defined by CSS.
-	    svg.path(null,
-		     pathS.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
-		     { class_: 'shadow' }		 
-		    )
-	    svg.path(null,
-		     pathC.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
-		     { class_: 'cable' }		 
-		    )
-	    svg.path(null,
-		     pathL.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
-		     { class_: 'light' }		 
-		    )
+	    self.pedalboard('drawBezier', jack.data('canvas'), xi, yi, xo, yo, '')
+
 	}, 0)
+    },
+
+    drawBezier: function(canvas, xi, yi, xo, yo, stylePrefix) {
+	var svg = canvas.svg('get')
+	if (!svg)
+	    return
+	svg.clear()
+
+	var pathS = canvas.data('pathShadow')
+	var pathC = canvas.data('pathCable')
+	var pathL = canvas.data('pathLight')
+
+	pathS.reset()
+	pathC.reset()
+	pathL.reset()
+
+	// The calculations below were empirically obtained by trying several things.
+	// It gives us a pretty good result
+	var deltaX = xo - xi - 50
+	if (deltaX < 0) {
+	    deltaX = 8.5 * (deltaX/6)^0.8
+	} else {
+	    deltaX /= 1.5
+	}
+
+	// Draw three lines following same path, one for shadow, one for cable and one for light
+	// The recipe for a good cable is that shadow is wide and darke, cable is not so wide and not so dark,
+	// and light is very thin and light.
+	// Each has a different class, so it will be defined by CSS.
+	svg.path(null,
+		 pathS.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
+		 { class_: stylePrefix + 'shadow' }
+		)
+	svg.path(null,
+		 pathC.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
+		 { class_: stylePrefix + 'cable' }
+		)
+	svg.path(null,
+		 pathL.move(xi, yi).curveC(xo - deltaX, yi, xi + deltaX, yo, xo, yo),
+		 { class_: stylePrefix + 'light' }
+		)
     },
 
     startConnection: function(output) {
 	var self = $(this)
+	if (self.data('ongoingConnection'))
+	    return
 	var jack = output.find('[mod-role=output-jack]')
 	var canvas = $('<div>')
 	canvas.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 })
@@ -1449,26 +1497,27 @@ JqueryClass('pedalboard', {
 	var svg = canvas.find('svg')
 	svg.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 })
 
+	svg = canvas.svg('get')
+	canvas.data('pathShadow', svg.createPath())
+	canvas.data('pathCable', svg.createPath())
+	canvas.data('pathLight', svg.createPath())
+
 	canvas.click(function() {
 	    self.pedalboard('finishConnection')
 	})
-	svg = canvas.svg('get')
-	var scale = self.data('scale')
 	var moveHandler = function(e) {
+	    var scale = self.data('scale')
 	    // In iPad a tap will first trigger a mousemove event and, if no modifications are made, a click
 	    // event will be triggered. So, to capture a click we must schedule all actions in mousemove handler
 	    if (!self.data('ongoingConnection'))
 		// a tap in ipad will cause this
 		return
 	    setTimeout(function() {
-		svg.clear()
 		var xi = output.offset().left / scale - self.offset().left / scale
-		var yi = output.offset().top / scale - self.offset().top / scale + output.height()/2 
+		var yi = output.offset().top / scale - self.offset().top / scale + output.height()/2
 		var xo = (e.pageX - self.offset().left) / scale
 		var yo = (e.pageY - self.offset().top) / scale
-		svg.line(xi, yi, xo, yo, { class_: 'connecting-shadow' })
-		svg.line(xi, yi, xo, yo, { class_: 'connecting-cable' })
-		svg.line(xi, yi, xo, yo, { class_: 'connecting-light' })
+		self.pedalboard('drawBezier', canvas, xi, yi, xo, yo, 'connecting-')
 	    }, 0)
 	}
 	var connection = {
@@ -1479,7 +1528,7 @@ JqueryClass('pedalboard', {
 	self.bind('mousemove', moveHandler)
 	self.data('ongoingConnection', connection)
 	self.pedalboard('highlightInputs', true, jack)
-	
+
     },
     finishConnection: function() {
 	var self = $(this)
@@ -1498,7 +1547,7 @@ JqueryClass('pedalboard', {
     connect: function(jack, input, skipApplication) {
 	var self = $(this)
 	var output = jack.data('origin')
-	
+
 	var previousInput = jack.data('destination')
 
 	// If this jack is already connected to this output, keep connection
@@ -1512,6 +1561,10 @@ JqueryClass('pedalboard', {
 	    jack.data('canvas').addClass('cable-connected')
 	    jack.data('connected', true)
 	    input.addClass('input-connected')
+	    jack.css({ top: 'auto',
+		       left: 'auto',
+		       marginTop: 'auto',
+		     })
 	    return
 	}
 
@@ -1527,7 +1580,7 @@ JqueryClass('pedalboard', {
 	// Can only connect midi to midi and audio to audio
 	if (input.data('portType') != output.data('portType'))
 	    return self.pedalboard('disconnect', jack)
-	
+
 	// Output cannot be connected to an input of same effect
 	// TODO maybe it should be up to the application to decide, we could have
 	// a hook for confirmation
@@ -1638,7 +1691,7 @@ JqueryClass('pedalboard', {
 
     // Connect two ports using instanceId and symbol information.
     // Used for unserializing. We have to find the spare jack in output,
-    // put it 
+    // put it
     connectPorts: function(fromInstance, fromSymbol, toInstance, toSymbol) {
     },
 
@@ -1648,7 +1701,7 @@ JqueryClass('pedalboard', {
 	return manager.connected(output.data('instanceId'), output.data('symbol'),
 				 input.data('instanceId'), input.data('symbol'))
     },
-    
+
     // Adjust layout of all jacks connected to this input to fit inside it
     packJacks: function(input) {
 	var self = $(this)
@@ -1662,13 +1715,13 @@ JqueryClass('pedalboard', {
 	    input.addClass('input-connected')
 	    input.removeClass('input-disconnected')
 	} else {
-	    input.removeClass('input-connected')		
+	    input.removeClass('input-connected')
 	    input.addClass('input-disconnected')
 	}
 
 	jacks.each(function() {
 	    var jack = $(this)
-	    jack.css({ top: 'auto', 
+	    jack.css({ top: 'auto',
 		       left: 'auto',
 		       marginTop: 'auto',
 		     })
@@ -1704,8 +1757,8 @@ JqueryClass('pedalboard', {
 	    self.pedalboard('drawJack', jack)
 	    jack.draggable('enable')
 	}
-	wrapper.click(function() { 
-	    self.pedalboard('colapseInput', input) 
+	wrapper.click(function() {
+	    self.pedalboard('colapseInput', input)
 	    return false
 	})
 	input.addClass('expanded')
@@ -1736,7 +1789,7 @@ JqueryClass('pedalboard', {
 function ConnectionManager() {
     /*
      * Manages all connections in pedalboard.
-     * Each connection is represented by 4 values: 
+     * Each connection is represented by 4 values:
      * origin instanceId, origin symbol, destination instanceId and destination symbol
      * Keeps two indexes, origIndex and destIndex, with jack objects in both.
      * The indexes are dicts that store each jack in path [instanceId][symbol][instanceId][symbol]
@@ -1759,7 +1812,7 @@ function ConnectionManager() {
 	    if (index[key] == null)
 		index[key] = i < 4 ? {} : obj
 	    index = index[key]
-	}	
+	}
     }
 
     this._removeFromIndex = function() {
@@ -1782,7 +1835,7 @@ function ConnectionManager() {
 	for (var key in index)
 	    self.iterateIndex(index[key], depth-1, callback)
     }
-	
+
     // Connects two ports
     this.connect = function(fromInstance, fromSymbol, toInstance, toSymbol, jack) {
 	self._addToIndex(self.origIndex, fromInstance, fromSymbol, toInstance, toSymbol, jack)
@@ -1803,7 +1856,7 @@ function ConnectionManager() {
 	    return false
 	}
     }
-    
+
     // Execute callback for all connections, passing jack as parameter
     this.iterate = function(callback) {
 	self.iterateIndex(self.origIndex, 4, callback)
@@ -1838,7 +1891,7 @@ function ConnectionManager() {
 	    if (Object.keys(self.destIndex[instance]).length == 0)
 		delete self.destIndex[instance]
 	}
-		
+
     }
 }
 

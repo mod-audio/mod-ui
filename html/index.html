@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="css/social.css?v={{version}}"/>
 
     <!-- PEDALS -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/pedals.css?v={{version}}"/>
+    <link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
 
     <!-- DEFAULT -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
@@ -55,8 +55,8 @@
       var TEMPLATES = {}
       SITEURL = '{{cloud_url}}'.replace(/\/?$/, '/api')
       var NOTIFICATIONS_ENABLED = true
-      var HARDWARE_PROFILE = JSON.parse('{{hardware_profile}}')
-      var CURRENT_PEDALBOARD = JSON.parse('{{current_pedalboard}}')
+      var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
+      var CURRENT_PEDALBOARD = JSON.parse(atob('{{current_pedalboard}}'))
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var MAX_SCREENSHOT_WIDTH = 600
@@ -304,6 +304,7 @@ $('document').ready(function() {
 				</div>
 				<div id="share-window-fb">
 					<label for="pedalboard-share-fb"><input id="pedalboard-share-fb" type="checkbox" /> Share also on Facebook </label>
+					<div id="fb-authorization-container"></div>
 					<div class="textright">
 						<button style="margin-top: 3px" class="js-close btn btn-default btn-success" id="record-share">Just share</button>
 					</div>

@@ -15,14 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function loadCSS(css) {
-    loaded = $('head').find('link')
-    for (var i=0; i<loaded.length; i++) {
-	if ($(loaded[i]).attr('href') == css) {
-	    return
-	}
+var loadedCSS = {}
+function loadCSS(source, effect, bundle, callback) {
+    if (loadedCSS[effect])
+	return setTimeout(callback, 0)
+    url = ''
+    if (source) {
+	url += source
+	url.replace(/\/?$/, '')
     }
-    $('<link rel="stylesheet" type="text/css">').attr('href', css).appendTo($('head'))    
+    url += '/effect/stylesheet.css?url='+escape(effect)+'&bundle='+escape(bundle)
+    $.get(url, function(data) {
+	$('<style type="text/css">').text(data).appendTo($('head'))
+	loadedCSS[effect] = true
+	callback()
+    })
 }
 
 function GUI(effect, options) {
@@ -44,8 +51,19 @@ function GUI(effect, options) {
     if (!effect.gui)
 	effect.gui = {}
 
-    if (effect.gui.stylesheet)
-	loadCSS('/effect/stylesheet.css?url='+escape(effect.url)+'&bundle='+escape(effect.package))
+    self.cssLoaded = true
+    self.cssCallbacks = []
+    if (effect.gui.stylesheet) {
+	self.cssLoaded = false
+	loadCSS(effect.source, effect.url, effect.package, 
+	       function() {
+		   self.cssLoaded = true
+		   for (var i in self.cssCallbacks) {
+		       self.cssCallbacks[i]()
+		   }
+		   self.cssCallbacks = []
+	       })
+    }
 
     self.effect = effect
 
@@ -141,38 +159,49 @@ function GUI(effect, options) {
 	    port.widgets[i].controlWidget('enable')
     }
 
-    this.renderIcon = function(template) {
-	var element = $('<div class="mod-pedal">')
+    this.render = function(callback) {
+	var render = function() {
+	    var icon = $('<div class="mod-pedal">')
+	    icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
+					 self.getTemplateData(effect)))
+	    self.assignIconFunctionality(icon)
+	    self.assignControlFunctionality(icon)
+	    
+	    // Take the width of the plugin. This is necessary because plugin may have position absolute.
+	    // setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
+	    // all instructions to be executed.
+	    setTimeout(function() {
+		icon.width(icon.children().width())
+		icon.height(icon.children().height())
+	    }, 1)
 
-	element.html(Mustache.render(template || effect.gui.iconTemplate || options.defaultIconTemplate,
-				     self.getTemplateData(effect)))
-	self.assignIconFunctionality(element)
-	self.assignControlFunctionality(element)
+	    var settings = $('<div class="mod-settings">')
+	    settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
+					  self.getTemplateData(effect)))
+	    self.assignControlFunctionality(settings)
+	    
+	    callback(icon, settings)
+	}
 
-	// Take the width of the plugin. This is necessary because plugin may have position absolute.
-	// setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
-	// all instructions to be executed.
-	setTimeout(function() {
-	    element.width(element.children().width())
-	    element.height(element.children().height())
-	}, 1)
-
-	return element
+	if (self.cssLoaded) {
+	    render()
+	} else {
+	    self.cssCallbacks.push(render)
+	}
     }
 
-    this.renderSettings = function(template) {
-	var element = $('<div class="mod-settings">')
-	element.html(Mustache.render(template || effect.gui.settingsTemplate || options.defaultSettingsTemplate,
-				     self.getTemplateData(effect)))
-	self.assignControlFunctionality(element)
-	return element
-    }
-
-    this.renderDummy = function(template) {
-	var element = $('<div class="mod-pedal dummy">')
-	element.html(Mustache.render(template || effect.gui.iconTemplate || options.defaultIconTemplate,
-				     self.getTemplateData(effect)))
-	return element
+    this.renderDummyIcon = function(callback) {
+	var render = function() {
+	    var icon = $('<div class="mod-pedal dummy">')
+	    icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
+				      self.getTemplateData(effect)))
+	    callback(icon)
+	}
+	if (self.cssLoaded) {
+	    render()
+	} else {
+	    self.cssCallbacks.push(render)
+	}
     }
 
     this.assignIconFunctionality = function(element) {
@@ -578,6 +607,7 @@ JqueryClass('film', baseWidget, {
 	    }
 	})
 
+	self.data('wheelBuffer', 0)
  	self.bind('mousewheel', function(e) {
 	    self.film('mouseWheel', e)
 	})
@@ -673,7 +703,10 @@ JqueryClass('film', baseWidget, {
 
     mouseWheel: function(e) {
 	var self = $(this)
-	var diff = e.originalEvent.wheelDelta / 30
+	var wheelStep = 30
+	var delta = self.data('wheelBuffer') + e.originalEvent.wheelDelta
+	self.data('wheelBuffer', delta % wheelStep)
+	var diff = parseInt(delta / wheelStep)
 	var position = self.data('position')
 	position += diff
 	self.data('position', position)

@@ -24,7 +24,7 @@ body {
     position:absolute;
     top:0;
     width:100%;
-    z-index:1000;
+    z-index:100000;
 }
 
 #notifications > section {
@@ -846,6 +846,7 @@ body {
     height:154px;
     margin-bottom:9px;
     width:100%;
+    overflow: hidden;
 }
 #pedalboards-library .pedalboards .pedalboard .img img {
     cursor:pointer;

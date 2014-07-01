@@ -99,8 +99,6 @@ class Session(object):
     def host_callback(self):
         if self.hmi_initialized:
             self.restore_last_pedalboard()
-        logging.info("hmi initialized")
-        self.hmi_initialized = True
         logging.info("host initialized")
         self.host_initialized = True
         ioloop.IOLoop.instance().add_callback(self.setup_monitor)
@@ -108,6 +106,8 @@ class Session(object):
     def hmi_callback(self):
         if self.host_initialized:
             self.restore_last_pedalboard()
+        logging.info("hmi initialized")
+        self.hmi_initialized = True
 
 
     def generate_hw_id(self):
@@ -196,11 +196,15 @@ class Session(object):
                 self._tuner = True
                 self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
 
-        self.add(TUNER_URI, TUNER, setup_tuner, True)
+        def mute_callback():
+            self.add(TUNER_URI, TUNER, setup_tuner, True)
+        self.mute(mute_callback)
 
     def tuner_off(self, cb):
-        self.remove(TUNER, cb, True)
-        self._tuner = False
+        def callback():
+            self.remove(TUNER, cb, True)
+            self._tuner = False
+        self.unmute(callback)
 
     def peakmeter_set(self, status, callback):
         if "on" in status:

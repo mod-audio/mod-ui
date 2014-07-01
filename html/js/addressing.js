@@ -17,7 +17,7 @@
 
 function AddressingManager(options) {
     var self = this
-    
+
     options = $.extend({
 	// This is the function that will actually make the addressing
 	address: function(instanceId, symbol, addressing, callback) { callback(true) },
@@ -47,7 +47,7 @@ function AddressingManager(options) {
 	    actuator = HARDWARE_PROFILE[i]
 	    actuatorKey = [ actuator.url, actuator.channel, actuator.actuator_id ].join(',')
 	    self.addressings[actuatorKey] = []
-	}	    
+	}
     }
 
     this.reset()
@@ -152,7 +152,7 @@ function AddressingManager(options) {
 
 	    // Here the addressing structure is created
 	    var addressing
-	    if (actuator && mode)		
+	    if (actuator && mode)
 		addressing = { url: actuator.url,
 			       channel: actuator.channel,
 			       actuator_id: actuator.actuator_id,
@@ -215,6 +215,47 @@ function AddressingManager(options) {
 	select.val(def)
     }
 
+    /* Based on port data and addressingType chosen, creates the addressing data
+     * structure that is expected by the server
+     * TODO
+     * This is very confusing. This method calculates firmware protocol parameters based on
+     * user chosen values. These parameters shouldn't be part of the serialized data. The proper
+     * place for this is the webserver, that should calculate this on demand.
+     */
+    this.setIHMParameters = function(instanceId, symbol, addressing) {
+	addressing.type = 0
+	addressing.options = []
+	if (!addressing.actuator)
+	    return
+	var port = options.getGui(instanceId).controls[symbol]
+	addressing.unit = port.unit ? port.unit.symbol : null
+	if (port.logarithmic)
+	    addressing.type = 1
+	else if (port.enumeration) {
+	    addressing.type = 2
+	    if (!addressing.options || addressing.options.length == 0)
+		addressing.options = port.scalePoints.map(function(point) {
+		    return [ point.value, point.label ]
+		})
+	} else if (port.trigger)
+	    addressing.type = 4
+	else if (port.toggled)
+	    addressing.type = 3
+	else if (addressing.addressing_type == 'tap_tempo')
+	    addressing.type = 5
+	else if (port.integer)
+	    addressing.type = 7
+    }
+
+    this.hardwareExists = function(addressing) {
+	var actuator = addressing.actuator || [-1, -1, -1, -1]
+	    var actuatorKey = actuator.join(',')
+	if (self.addressings[actuatorKey])
+	    return true
+	else
+	    return false
+    }
+
     // Does the addressing
     this.setAddressing = function(instanceId, symbol, addressing, callback) {
 
@@ -235,7 +276,7 @@ function AddressingManager(options) {
 		// First removes current addressing
 		if (current) {
 		    remove_from_array(self.addressings[currentKey], portKey)
-		} 
+		}
 		if (addressing) {
 		    // We're addressing
 		    var actuatorKey = [ addressing.url, addressing.channel, addressing.actuator_id ].join(',')
@@ -263,9 +304,14 @@ function AddressingManager(options) {
 	return self.controls[instanceId]
     }
 
-    this.unserializeInstance = function(instanceId, addressings, bypassApplication) {
+    this.unserializeInstance = function(instanceId, addressings, bypassApplication, addressingErrors) {
 	// Store the original options.change callback, to bypass application
 	var callback = options.address
+
+	// addressingErrors is an array where we should append controls addressed to unknown hardware
+	if (!addressingErrors)
+	    addressingErrors = []
+
 	if (bypassApplication)
 	    options.address = function() { arguments[arguments.length-1](true) }
 	var restore = function() {
@@ -276,11 +322,17 @@ function AddressingManager(options) {
 	// a recursive asynchronous function
 	var queue = Object.keys(addressings)
 	var symbol
+
 	var processNext = function() {
 	    if (queue.length == 0)
 		return restore()
 	    symbol = queue.pop()
-	    self.setAddressing(instanceId, symbol, addressings[symbol], processNext)
+	    if (self.hardwareExists(addressings[symbol]))
+		self.setAddressing(instanceId, symbol, addressings[symbol], processNext)
+	    else {
+		addressingErrors.push([instanceId, symbol])
+		processNext()
+	    }
 	}
 
 	processNext()
