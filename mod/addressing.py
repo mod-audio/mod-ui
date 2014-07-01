@@ -108,7 +108,6 @@ class ControlChainMessage():
 
         data_request_builder = Struct("data",
                                       Byte("seq"))
-
         data_request_parser = Struct("data",
                                      Byte("events_count"),
                                      Array(lambda ctx: ctx.events_count,
@@ -118,8 +117,12 @@ class ControlChainMessage():
                                                   )
                                            ),
                                      Byte("requests_count"),
-                                     Array(lambda ctx: ctx.requests_count, Byte("requests")),
+                                     Array(lambda ctx: ctx.requests_count,
+                                           Struct("requests",
+                                               Byte("id")
+                                           ),
                                      )
+                                 )
 
         header = Struct("header",
                         Byte("sync"),
@@ -228,9 +231,6 @@ class Gateway():
         for i in range(size):
             check += ord(buffer[i])
             check &= 0xFF
-
-        if check == 0x00 or check == 0xAA:
-            return (~check & 0xFF)
         return check
 
     def send(self, hwid, function, message=None):
@@ -309,13 +309,14 @@ class PipeLine():
         """
         Checks if there's anything in output queue. If so, send first event, otherwise schedules a poll
         """
-        try:
-            if self.output_queue.empty():
-                return self.schedule(self.poll_next)
-            hwid, function, message = self.output_queue.get()
-            self.gateway.send(hwid, function, message)
-        finally:
-            self.schedule(self.process_next)
+        # TODO: check why this try/finally block wasnt working
+        #try:
+        if self.output_queue.empty():
+            return self.schedule(self.poll_next)
+        hwid, function, message = self.output_queue.get()
+        self.gateway.send(hwid, function, message)
+        #finally:
+        self.schedule(self.process_next)
 
     def poll_next(self):
         """
@@ -602,7 +603,11 @@ class AddressingManager():
         self.pipeline.data_request_seqs[hwid] = (self.pipeline.data_request_seqs[hwid]+1) % 256
         # Report events to Session
         for event in data.events:
-            instance_id, port_id, addressing = self.addressings[hwid][event['id']]
+            try:
+                instance_id, port_id, addressing = self.addressings[hwid][event['id']]
+            except KeyError:
+                logging.info("not addressed event: %s on %s" % (hwid, event['id']))
+                continue
             self.handle(instance_id, port_id, event['value'])
         # Resend any addressings requested
         for addrid in data.requests:
@@ -662,6 +667,8 @@ class AddressingManager():
         def _callback(ok=True):
             if ok:
                 self.pipeline.add_hardware(hwid)
+                # TODO: Check if this is really necessary
+                self.send(hwid, DATA_REQUEST, {'seq': 1})
                 callback(addressing)
             else:
                 callback(None)
