@@ -92,8 +92,8 @@ class ControlChainMessage():
                                             Byte("scale_points_count"),
                                             Array(lambda ctx: ctx.scale_points_count,
                                                   Struct("scale_points",
-                                                         Byte("labil_size"),
-                                                         String("labil", lambda ctx: ctx.labil_size),
+                                                         Byte("label_size"),
+                                                         String("label", lambda ctx: ctx.label_size),
                                                          LFloat32("value"),
                                                            )
                                                   ),
@@ -635,7 +635,7 @@ class AddressingManager():
             'default': default,
             'steps': steps,
             'unit': unit,
-            'scale_points': scale_points,
+            'scale_points': scale_points
             }
 
         def do_address(result=True, msg=None):
