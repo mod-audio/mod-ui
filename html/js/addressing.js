@@ -17,7 +17,7 @@
 
 function AddressingManager(options) {
     var self = this
-    
+
     options = $.extend({
 	// This is the function that will actually make the addressing
 	address: function(instanceId, symbol, addressing, callback) { callback(true) },
@@ -47,7 +47,7 @@ function AddressingManager(options) {
 	    actuator = HARDWARE_PROFILE[i]
 	    actuatorKey = [ actuator.url, actuator.channel, actuator.actuator_id ].join(',')
 	    self.addressings[actuatorKey] = []
-	}	    
+	}
     }
 
     this.reset()
@@ -152,7 +152,7 @@ function AddressingManager(options) {
 
 	    // Here the addressing structure is created
 	    var addressing
-	    if (actuator && mode)		
+	    if (actuator && mode)
 		addressing = { url: actuator.url,
 			       channel: actuator.channel,
 			       actuator_id: actuator.actuator_id,
@@ -163,10 +163,10 @@ function AddressingManager(options) {
 			       minimum: min.val(),
 			       maximum: max.val(),
 			       'default': port['default'],
+                               unit: port['unit'] ? port['unit']['render'] : "",
 			       steps: sensibility.val(),
-			       scale_points: [] // the available options in case this is enumerated (no interface for that now)
+			       scale_points: port['scalePoints'] // the available options in case this is enumerated (no interface for that now)
 			     }
-
 	    self.setAddressing(instanceId, port.symbol, addressing,
 			       function() {
 				   form.remove()
@@ -235,7 +235,7 @@ function AddressingManager(options) {
 		// First removes current addressing
 		if (current) {
 		    remove_from_array(self.addressings[currentKey], portKey)
-		} 
+		}
 		if (addressing) {
 		    // We're addressing
 		    var actuatorKey = [ addressing.url, addressing.channel, addressing.actuator_id ].join(',')

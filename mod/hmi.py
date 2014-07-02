@@ -119,7 +119,10 @@ class HMI(object):
     def build_msg(self, cmd, args):
         myargs = []
         for arg in args:
-            if isinstance(arg, str) or isinstance(arg, unicode):
+            if isinstance(arg, unicode):
+                # from unicode to str
+                arg = arg.encode()
+            if isinstance(arg, str):
                 arg = '"%s"' % arg.replace("\x5c", "\x5c\x5c").replace("\x00", "\x5c\xff").replace('"', "\x5c\xdd")
             myargs.append(arg)
 
@@ -142,8 +145,9 @@ class HMI(object):
         self.sp.write("%s\0" % str(msg))
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        pedalboards = [ '"%s"' % p['title'] for p in pedalboards ]
-        self.send("initial_state", (bank_id, pedalboard_id, " ".join(pedalboards)), callback)
+        pedalboards = [p for pe in [ (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards) ] for p in pe ]
+        args = [bank_id, pedalboard_id] + pedalboards
+        self.send("initial_state", args, callback)
 
     def ui_con(self, callback=lambda result: None):
         self.send("ui_con", [], callback, datatype='boolean')
