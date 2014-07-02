@@ -527,8 +527,8 @@ JqueryClass('pedalboard', {
 	    waiter.startPlugin(instanceId, position)
 	    var pluginLoad = self.data('pluginLoad')
 	    pluginLoad(pluginData.url, instanceId,
-		       function() {
-			   self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y)
+		       function(plugin) {
+			   self.pedalboard('addPlugin', plugin, instanceId, position.x, position.y)
 			   setTimeout(function() { self.pedalboard('adapt') }, 1)
 			   waiter.stopPlugin(instanceId)
 		       }, function() {
