@@ -25,10 +25,16 @@ function loadCSS(source, effect, bundle, callback) {
 	url.replace(/\/?$/, '')
     }
     url += '/effect/stylesheet.css?url='+escape(effect)+'&bundle='+escape(bundle)
-    $.get(url, function(data) {
-	$('<style type="text/css">').text(data).appendTo($('head'))
-	loadedCSS[effect] = true
-	callback()
+    $.ajax({ 
+	url: url,
+	success: function(data) {
+	    $('<style type="text/css">').text(data).appendTo($('head'))
+	    loadedCSS[effect] = true
+	    callback()
+	},
+	error: function() {
+	    console.log('erro')
+	}
     })
 }
 
@@ -789,29 +795,32 @@ JqueryClass('switchWidget', baseWidget, {
     init: function(options) {
 	var self = $(this)
 	self.switchWidget('config', options)
-	self.data('value', options.value)
+	if (options.value != undefined) {
+	    self.switchWidget('setValue', options.value)
+	} else {
+	    self.switchWidget('setValue', options.port.default)
+	}
 	self.click(function(e) {
 	    if (!self.data('enabled'))
 		return self.switchWidget('prevent', e)
 	    var value = self.data('value')
 	    if (value == self.data('minimum')) {
 		self.switchWidget('setValue', self.data('maximum'))
-		self.addClass('on').removeClass('off')
 	    } else {
 		self.switchWidget('setValue', self.data('minimum'))
-		self.addClass('off').removeClass('on')
 	    }
 	})
-	if (options.value)
-	    self.addClass('on').removeClass('off')
-	else
-	    self.addClass('off').removeClass('on')
 
 	return self
     },
     setValue: function(value) {
 	var self = $(this)
 	self.data('value', value)
+	if (value == self.data('minimum')) {
+	    self.addClass('off').removeClass('on')
+	} else {
+	    self.addClass('on').removeClass('off')
+	}
 	self.trigger('valuechange', value)
     }
 })    
