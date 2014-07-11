@@ -175,8 +175,7 @@ class HMI(object):
             5 tap tempo
             6 bypass
         """
-        label = '"%s"' % label.upper().replace('"', "\\\xdd")
-        unit = '"%s"' % unit.replace('"', '\\\xdd')
+        label = label.upper()
         length = len(options)
         if options:
             options = [ '"%s" %f' % (o[1].replace('"', '\\\xdd').upper(), float(o[0]))

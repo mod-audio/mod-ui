@@ -25,7 +25,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, 
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
                           DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
 from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
@@ -74,7 +74,8 @@ class Session(object):
         Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
         Protocol.register_cmd_callback("pedalboard", self.load_bank_pedalboard)
         #Protocol.register_cmd_callback("control_get", self.parameter_get)
-        #Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
+        Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
+        Protocol.register_cmd_callback("control_set", self.hw_parameter_set)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
@@ -537,9 +538,9 @@ class Session(object):
 
         self.host.disconnect(port_from, port_to, cb)
 
-    def hw_parameter_set(self, instance_id, port_id, value):
+    def hw_parameter_set(self, instance_id, port_id, value, callback=lambda result:None):
         self.browser.send(instance_id, port_id, value)
-        self.parameter_set(instance_id, port_id, value, lambda result: None)
+        self.parameter_set(instance_id, port_id, value, callback)
 
     def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
         if port_id == ":bypass":
@@ -554,6 +555,10 @@ class Session(object):
 
     def parameter_get(self, instance_id, port_id, callback):
         self.host.param_get(instance_id, port_id, callback)
+
+    def parameter_addressing_next(self, hwid, hwtyp, actuator_type, actuator_id, callback):
+        self.addressing.send_next(hwid, actuator_type, actuator_id)
+        callback(True)
 
     def set_monitor(self, addr, port, status, callback):
         self.host.monitor(addr, port, status, callback)
