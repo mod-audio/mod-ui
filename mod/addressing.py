@@ -20,10 +20,11 @@ UNADDRESSING = 5
 HARDWARE_TIMEOUT = 0.008
 RESPONSE_TIMEOUT = 0.002
 
-QUADRA = 0
-
 def get_time():
     return ioloop.IOLoop.time(ioloop.IOLoop.instance())
+
+class Interrupt(Exception):
+    pass
 
 class ControlChainMessage():
     """
@@ -297,7 +298,7 @@ class PipeLine():
         """
         if self.timeout is not None:
             self.ioloop.remove_timeout(self.timeout)
-        self.timeout = self.ioloop.add_timeout(self.last_poll + 0.002, task)
+        self.timeout = self.ioloop.add_timeout(self.last_poll + 0.02, task)
 
     def interrupt(self):
         """
@@ -305,7 +306,8 @@ class PipeLine():
         """
         if self.timeout is not None:
             self.ioloop.remove_timeout(self.timeout)
-        self.timeout = self.ioloop.add_timeout(self.last_poll, self.process_next)
+        self.ioloop.add_timeout(self.last_poll, self.process_next)
+        raise Interrupt
 
     def process_next(self):
         """
@@ -331,7 +333,10 @@ class PipeLine():
             self.poll_pointer = (self.poll_pointer + 1) % len(self.poll_queue)
             self.poll_device(self.poll_queue[self.poll_pointer])
             self.schedule(self.process_next)
-        except:
+        except Interrupt:
+            pass
+        except Exception, e:
+            logging.info(str(e))
             self.schedule(self.process_next)
 
     def receive(self, msg):
@@ -363,7 +368,6 @@ class AddressingManager():
     def __init__(self, hmi, handler):
         # Handler is the function that will receive (instance_id, symbol, value) updates
         self.handle = handler
-        self.hmi = hmi
 
         self.pipeline = PipeLine(hmi, self.receive)
 
@@ -378,15 +382,11 @@ class AddressingManager():
 
         # Store addressings data, indexed by hwid, addressing_id
         self.addressings = {}
-        # Addressings indexed by instanceId, symbol. The data stored is a tuple containing:
+        # Addressings indexed by instanceId, symbol. The data stored is a tupple containing:
         #  - a boolean indicating if the hardware is present
         #  - hwid, addressing_id if so
         #  - url, channel otherwise
         self.addressing_index = {}
-
-        # Addressings indexed by hwid+actuator_id
-        self.addressings_by_actuator = {}
-
         # Pointers used to choose free addressing ids, per hardware
         self.addressing_id_pointers = {}
         # Addressings to devices that are not connected
@@ -399,10 +399,6 @@ class AddressingManager():
 
         self.ioloop = ioloop.IOLoop.instance()
 
-        # TODO: change the hard coded md5 hash
-        path = os.path.join(HARDWARE_DRIVER_DIR, '4f2d6d1d7467c026d68256449b6a59f0')
-        data = json.loads(open(path).read())
-        self.device_connect(0, data)
         # Maps Control Chain function ids to internal methods
         self.dispatch_table = {
             CONNECTION: self.device_connect,
@@ -432,7 +428,10 @@ class AddressingManager():
             current_callback(False)
         if callback is not None:
             self.callbacks[(hwid, function)] = (callback, get_time())
-        self.pipeline.send(hwid, function, data)
+        try:
+            self.pipeline.send(hwid, function, data)
+        except Interrupt:
+            pass
 
     def _timeouts(self):
         """
@@ -491,8 +490,6 @@ class AddressingManager():
             pointer = (pointer + 1) % 256
             if pointer == start:
                 return None # full!
-            elif pointer == 0: # 0 is for IHM/Quadra
-                pointer = 1
         self.hardware_id_pointer = pointer
         return pointer + 0x7f
 
@@ -519,19 +516,15 @@ class AddressingManager():
         url = data['url']
         channel = data['channel']
         logging.info("connection %s on %d" % (url, channel))
-        if 'quadra' in url:
-            hwid = 0
-        else:
-            hwid = self._generate_hardware_id()
+        hwid = self._generate_hardware_id()
         self.hardwares[hwid] = data
         self.hardware_index[(url, channel)] = hwid
         self.hardware_tstamp[hwid] = get_time()
         self.addressings[hwid] = {}
         self.addressing_id_pointers[hwid] = 0
 
-        if hwid != 0:
-            self.send(hwid, CONNECTION, data)
-            self.send(hwid, DEVICE_DESCRIPTOR)
+        self.send(hwid, CONNECTION, data)
+        self.send(hwid, DEVICE_DESCRIPTOR)
 
         self.install_hardware(url, channel)
 
@@ -681,66 +674,15 @@ class AddressingManager():
         addressing['addressing_id'] = addrid
         self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
         self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
-        index, by_actuator = self.addressings_by_actuator.get((hwid, addressing['actuator_id']), (-1, []))
-        index += 1
-        self.addressings_by_actuator[(hwid, addressing['actuator_id'])] = (index, by_actuator+[addrid])
-
         def _callback(ok=True):
-            if ok and hwid != 0:
+            if ok:
                 self.pipeline.add_hardware(hwid)
-                # TODO: Check if this is really necessary
-                self.send(hwid, DATA_REQUEST, {'seq': 1})
-            elif ok and hwid == 0:
                 callback(addressing)
             else:
                 callback(None)
-
         data = self.addressings[hwid][addrid][2]
-        if hwid != QUADRA:
-            self.send(hwid, ADDRESSING, data, _callback)
-        else:
-            # TODO: this is hard coded for QUADRA
-            self.send_hmi_addressing(hwid, addrid, data, callback=_callback)
+        self.send(hwid, ADDRESSING, data, _callback)
 
-    def send_next(self, hwid, actuator_type, actuator_id):
-        if actuator_type == 2:
-            actuator_id += 4
-        actuator_id += 1
-        index = self.addressings_by_actuator[(hwid, actuator_id)][0]
-        index = (index + 1) % len(self.addressings_by_actuator[(hwid, actuator_id)][1])
-        addrid = self.addressings_by_actuator[(hwid, actuator_id)][1][index]
-        self.addressings_by_actuator[(hwid, actuator_id)] = (index, self.addressings_by_actuator[(hwid, actuator_id)][1])
-        self.send_hmi_addressing(hwid, addrid, self.addressings[hwid][addrid][2])
-
-    def _get_hmi_acttype_and_actid(self, addressing):
-        data = addressing
-        acttype = 1 if data['actuator_id'] <= 4 else 2 # TODO: hard coded for QUADRA
-        actid = (data['actuator_id'] if data['actuator_id'] <= 4 else data['actuator_id'] - 4) - 1
-        return (acttype, actid)
-
-    def send_hmi_addressing(self, hwid, addrid, data, index=None, size=None, callback=lambda x: None):
-        if index is None:
-            current_idx = self.addressings_by_actuator[(hwid, data['actuator_id'])][0]
-            index = current_idx
-        if size is None:
-            size = len(self.addressings_by_actuator[(hwid, data['actuator_id'])][1])
-        acttype, actid = self._get_hmi_acttype_and_actid(data)
-        self.hmi.control_add(
-                    self.addressings[hwid][addrid][0],
-                    self.addressings[hwid][addrid][1],
-                    data['label'],
-                    0, # var type
-                    data['unit'],
-                    data['value'],
-                    data['maximum'],
-                    data['minimum'],
-                    data['steps'],
-                    0, # hwtype hard coded for QUADRA
-                    hwid,
-                    acttype,
-                    actid,
-                    size,
-                    index+1, callback=callback)
 
     def store_pending_addressing(self, url, channel, instance_id, port_id, addressing):
         """
@@ -775,15 +717,7 @@ class AddressingManager():
             addr = self.addressing_index.pop((instance_id, port_id))
             if addr[0]:
                 # device is present
-                actid = self.addressings[addr[1]][addr[2]][2]['actuator_id']
                 del self.addressings[addr[1]][addr[2]]
-                i = self.addressings_by_actuator[(addr[1], actid)][1].index(addr[2])
-                a = self.addressings_by_actuator[(addr[1], actid)]
-                if i < a[0] or len(a[1]) == 1:
-                    self.addressings_by_actuator[(addr[1], actid)] = (a[0]-1, a[1])
-                elif i >= len(a[1])-1:
-                    self.addressings_by_actuator[(addr[1], actid)] = (0, a[1])
-                self.addressings_by_actuator[(addr[1], actid)][1].pop(i)
             else:
                 # device is not present
                 del self.pending_addressings[(addr[1], addr[2])][(instance_id, port_id)]
@@ -795,31 +729,7 @@ class AddressingManager():
             return
 
         connected, hwid, addrid = current
-        if hwid != QUADRA: # TODO: hard coded for hwid = 0, QUADRA
-            self.send(hwid, UNADDRESSING, { 'addressing_id': addrid }, clean_addressing_structures)
-        else:
-            instance, symbol = self.addressings[hwid][addrid][:2]
-            actid = self.addressings[hwid][addrid][2]['actuator_id']
-            index = self.addressings_by_actuator[(hwid, actid)][0]
-            if self.addressings_by_actuator[(hwid, actid)][1][index] == addrid:
-                # unaddressing the current addressing
-                if len(self.addressings_by_actuator[(hwid, actid)][1]) == 1:
-                    # removing the only addressed parameter, cleans the control
-                    self.hmi.control_rm(instance, symbol, clean_addressing_structures)
-                    return
-                new_idx = (index + 1) % (len(self.addressings_by_actuator[(hwid, actid)][1]) - 1)
-                new_addrid = self.addressings_by_actuator[(hwid, actid)][1][new_idx]
-                if new_idx > index:
-                    index = new_idx - 1
-                data = self.addressings[hwid][new_addrid][2]
-            else:
-                new_addrid = self.addressings_by_actuator[(hwid, actid)][1][index]
-                data = self.addressings[hwid][new_addrid][2]
-                if index > self.addressings_by_actuator[(hwid, actid)][1].index(addrid):
-                    index -= 1
-                new_idx = index
-            new_size = len(self.addressings_by_actuator[(hwid, actid)][1]) - 1
-            self.send_hmi_addressing(hwid, new_addrid, data, new_idx, new_size, clean_addressing_structures)
+        self.send(hwid, UNADDRESSING, { 'addressing_id': addrid }, clean_addressing_structures)
 
     def confirm_unaddressing(self, origin, data, callback=None):
         """
