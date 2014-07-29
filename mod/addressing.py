@@ -225,7 +225,7 @@ class Gateway():
         self.message = ControlChainMessage()
 
         # Currently control_chain is routed through HMI
-        self.hmi = hmi
+        #self.hmi = hmi
         from mod.protocol import Protocol
         Protocol.register_cmd_callback("chain", self.receive)
 
@@ -265,6 +265,7 @@ class PipeLine():
         # Used to handle messages above this level
         self.handle = handler
         self.gateway = Gateway(hmi, self.receive)
+        self.segunda = False
 
         # List of hardware ids that will be polled
         self.poll_queue = []
@@ -351,6 +352,7 @@ class PipeLine():
         Sends a data_request message to a given hardware
         """
         seq = self.data_request_seqs[hwid]
+        print "SEQ: %d" % seq
         self.send(hwid, DATA_REQUEST, {'seq': seq })
 
     def send(self, hwid, function, data=None):
@@ -675,14 +677,65 @@ class AddressingManager():
         self.addressings[hwid][addrid] = (instance_id, port_id, addressing)
         self.addressing_index[(instance_id, port_id)] = (True, hwid, addrid)
         def _callback(ok=True):
-            if ok:
+            if ok and hwid != QUADRA:
                 self.pipeline.add_hardware(hwid)
+                # TODO: Check if this is really necessary
+                # self.send(hwid, DATA_REQUEST, {'seq': 1})
+                callback(addressing)
+            elif ok and hwid == QUADRA:
                 callback(addressing)
             else:
                 callback(None)
         data = self.addressings[hwid][addrid][2]
-        self.send(hwid, ADDRESSING, data, _callback)
+        if hwid != QUADRA:
+            self.send(hwid, ADDRESSING, data, _callback)
+        else:
+            # TODO: this is hard coded for QUADRA
+            self.send_hmi_addressing(hwid, addrid, data, callback=_callback)
 
+    def send_next(self, hwid, actuator_type, actuator_id):
+        if actuator_type == 2:
+            actuator_id += 4
+        actuator_id += 1
+        index = self.addressings_by_actuator[(hwid, actuator_id)][0]
+        index = (index + 1) % len(self.addressings_by_actuator[(hwid, actuator_id)][1])
+        addrid = self.addressings_by_actuator[(hwid, actuator_id)][1][index]
+        self.addressings_by_actuator[(hwid, actuator_id)] = (index, self.addressings_by_actuator[(hwid, actuator_id)][1])
+        self.send_hmi_addressing(hwid, addrid, self.addressings[hwid][addrid][2])
+
+    def _get_hmi_acttype_and_actid(self, addressing):
+        data = addressing
+        acttype = 1 if data['actuator_id'] <= 4 else 2 # TODO: hard coded for QUADRA
+        actid = (data['actuator_id'] if data['actuator_id'] <= 4 else data['actuator_id'] - 4) - 1
+        return (acttype, actid)
+
+    def send_hmi_addressing(self, hwid, addrid, data, index=None, size=None, callback=lambda x: None):
+        if index is None:
+            current_idx = self.addressings_by_actuator[(hwid, data['actuator_id'])][0]
+            index = current_idx
+        if size is None:
+            size = len(self.addressings_by_actuator[(hwid, data['actuator_id'])][1])
+        acttype, actid = self._get_hmi_acttype_and_actid(data)
+        import re
+        r = re.compile("%[^a-zA-Z ]*[dfs]")
+        self.hmi.control_add(
+                    self.addressings[hwid][addrid][0],
+                    self.addressings[hwid][addrid][1],
+                    data['label'],
+                    data['port_properties'], # var type
+                    r.sub("", data['unit']).strip(),
+                    data['value'],
+                    data['maximum'],
+                    data['minimum'],
+                    data['steps'],
+                    0, # hwtype hard coded for QUADRA
+                    hwid,
+                    acttype,
+                    actid,
+                    size,
+                    index+1,
+                    [ (e['label'], e['value']) for e in data['scale_points'] ],
+                    callback=callback)
 
     def store_pending_addressing(self, url, channel, instance_id, port_id, addressing):
         """

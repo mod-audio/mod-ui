@@ -178,14 +178,15 @@ class HMI(object):
         label = '"%s"' % label.upper().replace('"', "\\\xdd")
         unit = '"%s"' % unit.replace('"', '\\\xdd')
         length = len(options)
+        opts = []
         if options:
-            options = [ '"%s" %f' % (o[1].replace('"', '\\\xdd').upper(), float(o[0]))
-                        for o in options ]
-        options = "%d %s" % (length, " ".join(options))
-        options = options.strip()
+            for o in options:
+                opts.append(o[0].upper())
+                opts.append(float(o[1]))
+        opts = [len(opts)] + opts
 
         self.send('control_add',
-                   (instance_id,
+                   [instance_id,
                     symbol,
                     label,
                     var_type,
@@ -199,9 +200,7 @@ class HMI(object):
                     actuator_type,
                     actuator_id,
                     n_controllers,
-                    index,
-                    options,
-                  ),
+                    index] + opts,
                   callback, datatype='boolean')
 
     def control_rm(self, instance_id, symbol, callback=lambda result: None):
