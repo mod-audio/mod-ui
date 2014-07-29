@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,7 +25,7 @@ function loadCSS(source, effect, bundle, callback) {
 	url.replace(/\/?$/, '')
     }
     url += '/effect/stylesheet.css?url='+escape(effect)+'&bundle='+escape(bundle)
-    $.ajax({ 
+    $.ajax({
 	url: url,
 	success: function(data) {
 	    $('<style type="text/css">').text(data).appendTo($('head'))
@@ -61,7 +61,7 @@ function GUI(effect, options) {
     self.cssCallbacks = []
     if (effect.gui.stylesheet) {
 	self.cssLoaded = false
-	loadCSS(effect.source, effect.url, effect.package, 
+	loadCSS(effect.source, effect.url, effect.package,
 	       function() {
 		   self.cssLoaded = true
 		   for (var i in self.cssCallbacks) {
@@ -79,7 +79,7 @@ function GUI(effect, options) {
 	var ports = self.effect.ports.control.input
 	var index = {}
 	for (var i in ports) {
-	    var port = { 
+	    var port = {
 		widgets: [],
 		enabled: true,
 		value: null
@@ -108,10 +108,10 @@ function GUI(effect, options) {
 	widgets: [],
 	enabled: true,
 	value: options.bypassed
-    }	
+    }
 
     this.setPortValue = function(symbol, value, source) {
-	if (isNaN(value)) 
+	if (isNaN(value))
 	    throw "Invalid NaN value for " + symbol
 	var port = self.controls[symbol]
 	if (!port.enabled || port.value == value)
@@ -170,7 +170,7 @@ function GUI(effect, options) {
 					 self.getTemplateData(effect)))
 	    self.assignIconFunctionality(icon)
 	    self.assignControlFunctionality(icon)
-	    
+
 	    // Take the width of the plugin. This is necessary because plugin may have position absolute.
 	    // setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
 	    // all instructions to be executed.
@@ -183,7 +183,11 @@ function GUI(effect, options) {
 	    settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
 					  self.getTemplateData(effect)))
 	    self.assignControlFunctionality(settings)
-	    
+        var preset_select = settings.find('[mod-role=presets]')
+        preset_select.change(function () {
+            var value = $(this).val()
+            options.presetLoad(value)
+        })
 	    callback(icon, settings)
 	}
 
@@ -237,7 +241,7 @@ function GUI(effect, options) {
 		    format = '%.2f'
 		if (port.integer)
 		    format = format.replace(/%\.\d+f/, '%d')
-		
+
 		// Index the scalePoints
 		if (port.scalePoints) {
 		    var scalePointsIndex = {}
@@ -245,7 +249,7 @@ function GUI(effect, options) {
 			scalePointsIndex[sprintf(format, port.scalePoints[i].value)] = port.scalePoints[i]
 		    }
 		}
-		var valueField = element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']')
+        var valueField = element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']')
 		var setValue = function(value) {
 		    // When value is changed, let's use format and scalePoints to properly display
 		    // its value
@@ -254,7 +258,7 @@ function GUI(effect, options) {
 			label = scalePointsIndex[label].label
 		    valueField.data('value', value)
 		    valueField.text(label)
-		    
+
 		    self.setPortValue(symbol, value, control)
 		}
 		control.controlWidget({ port: port,
@@ -274,7 +278,7 @@ function GUI(effect, options) {
 			    valueField.blur()
 			    return false
 			}
-			return true			
+			return true
 		    })
 		    valueField.blur(function() {
 			var value = parseFloat(valueField.text())
@@ -288,7 +292,7 @@ function GUI(effect, options) {
 			    return true
 			if (e.keyCode == 13) {
 			}
-			return (e.keyCode == 46 || 
+			return (e.keyCode == 46 ||
 				e.keyCode == 9)
 		    })
 		}
@@ -346,8 +350,8 @@ function GUI(effect, options) {
 	if (options.bypassed)
 	    element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
 	else
-	    element.find('[mod-role=bypass-light]').addClass('on').removeClass('off')	    
-	
+	    element.find('[mod-role=bypass-light]').addClass('on').removeClass('off')
+
 	// Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
 	// Following events will be forwarded to proper widget
 	element[0].addEventListener('gesturestart', function(ev) {
@@ -450,7 +454,7 @@ var baseWidget = {
 	if (!(self.data('enabled') === false))
 	    self.data('enabled', true)
 	self.bind('valuechange', options.change)
-	
+
 	var port = options.port
 
 	var portSteps
@@ -582,7 +586,7 @@ var baseWidget = {
 JqueryClass('film', baseWidget, {
     init: function(options) {
 	var self = $(this)
-	self.film('getSize', function() { 
+	self.film('getSize', function() {
 	    self.film('config', options)
 	    self.film('setValue', options.port.default)
 	})
@@ -593,14 +597,14 @@ JqueryClass('film', baseWidget, {
 	    if (!self.data('enabled')) return
 	    self.film('mouseMove', e)
 	}
-	
+
 	var upHandler = function(e) {
 	    self.film('mouseUp', e)
 	    $(document).unbind('mouseup', upHandler)
 	    $(document).unbind('mousemove', moveHandler)
 	    //self.trigger('filmstop')
 	}
-	
+
 	self.mousedown(function(e) {
 	    if (!self.data('enabled')) return self.film('prevent', e)
 	    if (e.which == 1) { // left button
@@ -656,7 +660,7 @@ JqueryClass('film', baseWidget, {
 		callback()
 	    });
 	    $('body').append(bgImg);
-	    bgImg.attr('src', url);    
+	    bgImg.attr('src', url);
 	}, 1)
     },
 
@@ -823,7 +827,7 @@ JqueryClass('switchWidget', baseWidget, {
 	}
 	self.trigger('valuechange', value)
     }
-})    
+})
 
 JqueryClass('customSelect', baseWidget, {
     init: function(options) {

@@ -392,7 +392,7 @@ class EffectStylesheet(EffectSearcher):
             effect = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-        
+
         try:
             path = effect['gui']['stylesheet']
         except:
@@ -400,14 +400,14 @@ class EffectStylesheet(EffectSearcher):
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
-        
+
 
         content = open(path).read()
         context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))
-            
+
 class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
@@ -423,6 +423,10 @@ class EffectAdd(EffectSearcher):
             return
         if res >= 0:
             options['instanceId'] = res
+            presets = []
+            for k,preset in options['presets'].items():
+                presets.append({'label': preset['label']})
+            options['presets'] = presets
             self.write(json.dumps(options, default=json_handler))
         else:
             self.write(json.dumps(False))
@@ -437,6 +441,10 @@ class EffectGet(EffectSearcher):
 
         try:
             options = self.get_object(objid)
+            presets = []
+            for k,preset in options['presets'].items():
+                presets.append({'label': preset['label']})
+            options['presets'] = presets
         except:
             raise web.HTTPError(404)
 
@@ -493,6 +501,16 @@ class EffectDisconnect(web.RequestHandler):
         response = yield gen.Task(SESSION.disconnect, port_from, port_to)
         if self.request.connection.stream.closed():
             return
+        self.write(json.dumps(response))
+        self.finish()
+
+class EffectPresetLoad(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        response = yield gen.Task(SESSION.preset_load,
+                                  int(instance),
+                                  self.get_argument('label'))
         self.write(json.dumps(response))
         self.finish()
 
@@ -1041,6 +1059,7 @@ application = web.Application(
             (r"/effect/remove/([a-z0-9]+)", EffectRemove),
             (r"/effect/connect/([A-Za-z0-9_:]+),([A-Za-z0-9_:]+)", EffectConnect),
             (r"/effect/disconnect/([A-Za-z0-9_:]+),([A-Za-z0-9_:]+)", EffectDisconnect),
+            (r"/effect/preset/load/(\d+)", EffectPresetLoad),
             (r"/effect/parameter/set/(\d+),([A-Za-z0-9_]+)", EffectParameterSet),
             (r"/effect/parameter/get/(\d+),([A-Za-z0-9_]+)", EffectParameterGet),
             (r"/effect/parameter/feed/?", EffectParameterFeed),

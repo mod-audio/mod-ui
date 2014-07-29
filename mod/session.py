@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, logging, copy
+import os, time, logging, copy, json
+
+from os import path
 
 from datetime import timedelta
 from tornado import iostream, ioloop
@@ -586,6 +588,18 @@ class Session(object):
     def hmi_parameter_set(self, instance_id, port_id, value, callback):
         self.browser.send(instance_id, port_id, value)
         self.parameter_set(instance_id, port_id, value, callback)
+
+    def preset_load(self, instance_id, label, callback):
+        def cb(ok):
+            if not ok:
+                callback(ok)
+                return
+            indexed_plugin = self.effect_index.find(url=self._pedalboard.data['instances'][instance_id]['url']).next()
+            plugin = json.load(open(path.join(self.effect_index.data_source, indexed_plugin['id'])))
+            for port in plugin['presets'][label]['ports']:
+                self.browser.send(instance_id, port['symbol'], port['value'])
+            callback(ok)
+        self.host.preset_load(instance_id, label, cb)
 
     def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
         if port_id == ":bypass":

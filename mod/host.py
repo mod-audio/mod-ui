@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -19,7 +19,7 @@
 This module works as an interface for mod-host, it uses a socket to communicate
 with mod-host, the protocol is described in <http://github.com/portalmod/mod-host>
 
-The module relies on tornado.ioloop stuff, but you need to start the ioloop 
+The module relies on tornado.ioloop stuff, but you need to start the ioloop
 by yourself:
 
 >>> from tornado import ioloop
@@ -85,16 +85,16 @@ class Host(object):
 
         def check_response(resp):
             logging.info("[host] received <- %s" % repr(resp))
-            if not resp.startswith("resp"): 
+            if not resp.startswith("resp"):
                 logging.error("[host] protocol error: %s" % ProtocolError(resp)) # TODO: proper error handling
-            
-            r = resp.replace("resp ", "").replace("\0", "").strip() 
+
+            r = resp.replace("resp ", "").replace("\0", "").strip()
             callback(process_resp(r, datatype))
             self.process_queue()
 
         self.socket_idle = False
         logging.info("[host] sending -> %s" % msg)
-    
+
         self.s.write('%s\0' % str(msg))
         self.s.read_until('\0', check_response)
 
@@ -104,7 +104,7 @@ class Host(object):
         self.send("add %s %d" % (uri, instance_id), callback)
 
     def remove(self, instance_id, callback=lambda result: None):
-        self.send("remove %d" % instance_id, callback, datatype='boolean')  
+        self.send("remove %d" % instance_id, callback, datatype='boolean')
 
     def connect(self, origin_port, destination_port, callback=lambda result: None):
         self.send("connect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
@@ -117,6 +117,9 @@ class Host(object):
 
     def param_get(self, instance_id, symbol, callback=lambda result: None):
         self.send("param_get %d %s" % (instance_id, symbol), callback, datatype='float_structure')
+
+    def preset_load(self, instance_id, label, callback=lambda result: None):
+        self.send('preset_load %d "%s"' % (instance_id, label), callback, datatype='boolean')
 
     def param_monitor(self, instance_id, symbol, op, value, callback=lambda result: None):
         self.send("param_monitor %d %s %s %f" % (instance_id, symbol, op, value), callback, datatype='boolean')
