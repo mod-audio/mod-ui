@@ -4,14 +4,14 @@ from mod.settings import DEV_HOST
 
 def change_jack_bufsize(size, callback):
     ioloop = IOLoop.instance()
-    
+
     if not command_exists('jack_bufsize') and DEV_HOST:
         ioloop.add_callback(callback)
         return
 
     proc = subprocess.Popen(['jack_bufsize','%d' % size],
                             stdout=subprocess.PIPE)
-    
+
     def check(fileno, event):
         if proc.poll() is None:
             return

@@ -82,6 +82,7 @@ class Session(object):
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
         Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
         Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
+        Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
@@ -606,6 +607,9 @@ class Session(object):
 
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
+
+    def jack_cpu_load(self, callback):
+        self.host.cpu_load(callback)
     # END host commands
 
     # hmi commands

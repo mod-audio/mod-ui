@@ -33,4 +33,4 @@ class BrowserControls(object):
             callback(self.flush())
         else:
             self.callback = callback
-        
+

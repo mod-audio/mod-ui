@@ -81,6 +81,7 @@ class Protocol(object):
         "tuner_input": [int],
         "pedalboard_save": [],
         "pedalboard_reset": [],
+        "jack_cpu_load": [],
     }
 
     COMMANDS_FUNC = {}
