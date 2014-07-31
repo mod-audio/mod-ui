@@ -195,12 +195,12 @@ body {
     overflow: hidden;
 background: #1e5799; /* Old browsers */
 background: -moz-linear-gradient(left, #1e5799 0%, #2989d8 69%, #ff6430 78%, #ff6430 93%, #c40000 100%); /* FF3.6+ */
-background: -webkit-gradient(linear, left top, right top, color-stop(0%,#1e5799), color-stop(69%,#2989d8), color-stop(78%,#ff6430), color-s
+background: -webkit-gradient(linear, left top, right top, color-stop(0%,#1e5799), color-stop(69%,#2989d8), color-stop(78%,#ff6430), color-stop(93%,#ff6430), color-stop(100%,#c40000)); /* Chrome,Safari4+ */
 background: -webkit-linear-gradient(left, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%); /* Chrome10+,Safari5.1+ */
 background: -o-linear-gradient(left, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%); /* Opera 11.10+ */
 background: -ms-linear-gradient(left, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%); /* IE10+ */
 background: linear-gradient(to right, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%); /* W3C */
-filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#c40000',GradientType=1 ); /* IE6-9 */    -webkit
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#c40000',GradientType=1 ); /* IE6-9 */    -we
     -moz-border-radius: 4px;
     border-radius: 0 !important; */
 }
