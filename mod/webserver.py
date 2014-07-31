@@ -392,7 +392,7 @@ class EffectStylesheet(EffectSearcher):
             effect = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-        
+
         try:
             path = effect['gui']['stylesheet']
         except:
@@ -400,14 +400,14 @@ class EffectStylesheet(EffectSearcher):
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
-        
+
 
         content = open(path).read()
         context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))
-            
+
 class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
@@ -1115,6 +1115,8 @@ def run():
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
+    cpu_load_callback = tornado.ioloop.PeriodicCallback(SESSION.jack_cpu_load, 1000)
+    cpu_load_callback.start()
 
     tornado.ioloop.IOLoop.instance().start()
 

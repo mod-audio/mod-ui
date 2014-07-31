@@ -608,8 +608,11 @@ class Session(object):
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
 
-    def jack_cpu_load(self, callback):
-        self.host.cpu_load(callback)
+    def jack_cpu_load(self, callback=lambda result: None):
+        def cb(result):
+            if result['ok']:
+                self.browser.send(99999, 'cpu_load', round(result['value']))
+        self.host.cpu_load(cb)
     # END host commands
 
     # hmi commands
