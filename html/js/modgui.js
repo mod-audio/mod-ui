@@ -130,12 +130,12 @@ function GUI(effect, options) {
 	options.change(symbol, value)
     }
 
-    this.setPortWidgetsValue = function(symbol, value, source) {
+    this.setPortWidgetsValue = function(symbol, value, source, only_gui) {
 	var port = self.controls[symbol]
 	for (var i in port.widgets) {
 	    if (port.widgets[i] == source)
 		continue
-	    port.widgets[i].controlWidget('setValue', value)
+	    port.widgets[i].controlWidget('setValue', value, only_gui)
 	}
     }
 
@@ -628,12 +628,13 @@ JqueryClass('film', baseWidget, {
 	return self
     },
 
-    setValue: function(value) {
+    setValue: function(value, only_gui) {
 	var self = $(this)
 	var position = self.film('stepsFromValue', value)
 	self.data('position', position)
 	self.film('setRotation', position)
-	self.trigger('valuechange', value)
+    if (!only_gui)
+    	self.trigger('valuechange', value)
     },
 
     getSize: function(callback) {
@@ -788,10 +789,11 @@ JqueryClass('selectWidget', baseWidget, {
 	self.data('enabled', true)
     },
 
-    setValue: function(value) {
+    setValue: function(value, only_gui) {
 	var self = $(this)
 	self.val(value)
-	self.trigger('valuechange', value)
+	if (!only_gui)
+        self.trigger('valuechange', value)
     }
 })
 
@@ -817,7 +819,7 @@ JqueryClass('switchWidget', baseWidget, {
 
 	return self
     },
-    setValue: function(value) {
+    setValue: function(value, only_gui) {
 	var self = $(this)
 	self.data('value', value)
 	if (value == self.data('minimum')) {
@@ -825,7 +827,8 @@ JqueryClass('switchWidget', baseWidget, {
 	} else {
 	    self.addClass('on').removeClass('off')
 	}
-	self.trigger('valuechange', value)
+    if (!only_gui)
+    	self.trigger('valuechange', value)
     }
 })
 
@@ -853,10 +856,11 @@ JqueryClass('customSelect', baseWidget, {
 	return self
     },
 
-    setValue: function(value) {
+    setValue: function(value, only_gui) {
 	var self = $(this)
 	self.find('[mod-role=enumeration-option]').removeClass('selected')
 	self.find('[mod-role=enumeration-option][mod-port-value="'+value+'"]').addClass('selected')
-	self.trigger('valuechange', parseFloat(value))
+	if (!only_gui)
+        self.trigger('valuechange', parseFloat(value))
     }
 })

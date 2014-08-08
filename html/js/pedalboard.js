@@ -238,7 +238,7 @@ JqueryClass('pedalboard', {
             $("#cpu-bar").width(100-value)
         else {
             gui = self.pedalboard('getGui', instanceId)
-            gui.setPortWidgetsValue(symbol, value)
+            gui.setPortWidgetsValue(symbol, value, undefined, true)
         }
 	}
     },
