@@ -118,6 +118,9 @@ class Host(object):
     def param_get(self, instance_id, symbol, callback=lambda result: None):
         self.send("param_get %d %s" % (instance_id, symbol), callback, datatype='float_structure')
 
+    def preset_load(self, instance_id, label, callback=lambda result: None):
+        self.send('preset %d "%s"' % (instance_id, label), callback, datatype='boolean')
+
     def param_monitor(self, instance_id, symbol, op, value, callback=lambda result: None):
         self.send("param_monitor %d %s %s %f" % (instance_id, symbol, op, value), callback, datatype='boolean')
 

@@ -52,7 +52,10 @@ JqueryClass('pedalboard', {
 	    // Removes the plugin given by instanceId
 	    pluginRemove: function(instanceId, callback) { callback(true) },
 
-	    // Changes the parameter of a plugin's control port
+	    // Loads a preset
+        pluginPresetLoad: function(instanceId, label, callback) { callback(true) },
+
+        // Changes the parameter of a plugin's control port
 	    pluginParameterChange: function(instanceId, symbol, value, callback) { callback(true) },
 
 	    // Bypasses or un-bypasses plugin
@@ -87,7 +90,7 @@ JqueryClass('pedalboard', {
 	}, options)
 
 	self.pedalboard('wrapApplicationFunctions', options,
-			[ 'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginBypass',
+			[ 'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
 			  'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad', 'pluginMove' ])
 
 	self.data(options)
@@ -975,6 +978,7 @@ JqueryClass('pedalboard', {
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instanceId, now we need to put it in screen.
     addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing, addressingErrors) {
+        console.log(pluginData)
 	var self = $(this)
 	var scale = self.data('scale')
 
@@ -1023,6 +1027,12 @@ JqueryClass('pedalboard', {
 		// setTimeout avoids cable drawing bug
 		setTimeout(function() { self.pedalboard('focusPlugin', obj.icon) }, 0)
 	    },
+        presetLoad: function(label) {
+            self.data('pluginPresetLoad')(instanceId, label,
+                                         function(ok) {
+                                             // TODO Handle error
+                                         })
+        },
 	    change: function(symbol, value) {
 		self.data('pluginParameterChange')(instanceId, symbol, value,
 						   function(ok) {
@@ -1041,6 +1051,13 @@ JqueryClass('pedalboard', {
 	    defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
 	}, guiOptions)
 
+    var preset_list = []
+    for (var key in pluginData['presets']) {
+        preset_list.push({label: pluginData['presets'][key]['label']})
+    }
+    console.log(preset_list)
+    pluginData = $.extend({preset_list: preset_list}, pluginData)
+    console.log(pluginData)
 	var pluginGui = new GUI(pluginData, options)
 	pluginGui.render(function(icon, settings) {
 	    obj.icon = icon

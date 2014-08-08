@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -109,7 +109,7 @@ function Desktop(elements) {
     });
     elements.logout.click(function() {
 	self.userSession.logout()
-	self.windowManager.closeWindows() 
+	self.windowManager.closeWindows()
 	return false
     })
     this.userSession.getSessionId()
@@ -152,7 +152,7 @@ function Desktop(elements) {
 	    return self.pedalboard.pedalboard('getGui', instanceId)
 	},
 	renderForm: function(instanceId, port) {
-	    context = $.extend({ 
+	    context = $.extend({
 		plugin: self.pedalboard.pedalboard('getGui', instanceId).effect
 	    }, port)
 	    if (port.symbol == ':bypass')
@@ -184,8 +184,8 @@ function Desktop(elements) {
 	}
     }
 
-    elements.pedalboardTrigger.click(function() { 
-	self.windowManager.closeWindows() 
+    elements.pedalboardTrigger.click(function() {
+	self.windowManager.closeWindows()
     })
 
     this.titleBox = elements.titleBox
@@ -236,7 +236,7 @@ function Desktop(elements) {
 	    $.ajax({ url: '/disconnect',
 		     success: function(resp) {
 			 if (!resp)
-			     return new Notification('error', 
+			     return new Notification('error',
 						     "Couldn't disconnect")
 			 var block = $('<div class="screen-disconnected">')
 			 block.html('<p>Disconnected</p>')
@@ -264,7 +264,7 @@ function Desktop(elements) {
     this.socialWindow = elements.socialWindow.socialWindow({
 	windowManager: self.windowManager,
 	userSession: self.userSession,
-	getFeed: function(page, callback) { 
+	getFeed: function(page, callback) {
 	    $.ajax({ url: SITEURL + '/pedalboard/feed/'+self.userSession.sid + '/' + page,
 		     success: function(pedalboards) {
 			 callback(pedalboards)
@@ -278,7 +278,7 @@ function Desktop(elements) {
 	},
 	loadPedalboard: function(pedalboard) {
 	    self.reset(function() {
-		self.pedalboard.pedalboard('unserialize', pedalboard.pedalboard, 
+		self.pedalboard.pedalboard('unserialize', pedalboard.pedalboard,
 					   function() {
 					       self.pedalboardModified = true
 					       self.windowManager.closeWindows()
@@ -293,7 +293,7 @@ function Desktop(elements) {
 	    $.ajax({
 		url: '/pedalboard/save',
 		type: 'POST',
-		data: { title: title, 
+		data: { title: title,
 			asNew: asNew ? 1 : 0
 		      },
 		success: function(result) {
@@ -327,8 +327,8 @@ function Desktop(elements) {
 
     elements.shareButton.click(function() {
 	var share = function() {
-	    self.userSession.login(function() { 
-		self.pedalboard.pedalboard('serialize', 
+	    self.userSession.login(function() {
+		self.pedalboard.pedalboard('serialize',
 					   function(pedalboard) {
 					       if (!self.pedalboardId)
 						   return new Notification('warn', 'Nothing to share', 1500)
@@ -346,7 +346,7 @@ function Desktop(elements) {
 	}
     })
 
-    elements.shareWindow.shareBox({ 
+    elements.shareWindow.shareBox({
 	userSession: self.userSession,
 	takeScreenshot: function(uid, callback) {
 	    $.ajax({ url: '/pedalboard/screenshot/'+uid,
@@ -401,7 +401,7 @@ function Desktop(elements) {
 
     elements.bluetoothIcon.statusTooltip()
     var blueStatus = false
-    new Bluetooth({ 
+    new Bluetooth({
 	icon: elements.bluetoothIcon,
 	status: function(online) {
 	    if (online)
@@ -477,13 +477,38 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 	    add()
 	},
 
-	pluginRemove: function(instanceId, callback) { 
+	pluginRemove: function(instanceId, callback) {
 	    $.ajax({ 'url': '/effect/remove/' + instanceId,
 		     'success': function(resp) {
 			 if (resp)
 			     callback()
 			 else
 			     new Notification("error", "Couldn't remove effect")
+		     },
+		     cache: false,
+		     'dataType': 'json'
+		   })
+	},
+
+    pluginPresetLoad: function(instanceId, label, callback) {
+	    $.ajax({ url: '/effect/preset/load/' + instanceId,
+		     data: { label: label },
+		     success: function(resp) {
+			 /*
+			   // TODO trigger
+			   if (!resp || self.data('trigger')) {
+			   self.data('value', oldValue)
+			   self.widget('sync')
+			   }
+			 */
+			 callback(resp)
+		     },
+		     error: function() {
+			 /*
+			   self.data('value', oldValue)
+			   self.widget('sync')
+			   alert('erro no request (6)')
+			 */
 		     },
 		     cache: false,
 		     'dataType': 'json'
@@ -560,7 +585,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 	    $.ajax({ url: '/reset',
 		     success: function(resp) {
 			 if (!resp)
-			     return new Notification('error', 
+			     return new Notification('error',
 						     "Couldn't reset pedalboard")
 
 			 /*
@@ -572,7 +597,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
 			 */
 
 			 self.titleBox.text('Untitled')
-			 
+
 			 callback(true)
 		     },
 		     error: function() {
@@ -657,7 +682,7 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
     var outputM = $('<div class="hardware-output" title="Hardware MIDI Input">')
     var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
     var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
-    
+
     el.pedalboard('addHardwareOutput', outputL, 'capture_1', 'audio')
     el.pedalboard('addHardwareOutput', outputR, 'capture_2', 'audio')
     el.pedalboard('addHardwareOutput', outputM, 'midi_capture_1', 'midi')
@@ -716,7 +741,7 @@ Desktop.prototype.makePedalboardBox = function(el, trigger) {
 		type: 'GET',
 		success: function(pedalboard) {
 		    self.reset(function() {
-			self.pedalboard.pedalboard('unserialize', pedalboard, 
+			self.pedalboard.pedalboard('unserialize', pedalboard,
 						   function() {
 						       self.pedalboardId = pedalboard._id
 						       self.title = pedalboard.metadata.title
@@ -791,7 +816,7 @@ Desktop.prototype.reset = function(callback) {
 
 Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {
     var self = this
-    self.pedalboard.pedalboard('serialize', 
+    self.pedalboard.pedalboard('serialize',
 			       function(pedalboard) {
 				   self.saveBox.saveBox('save', self.title, asNew, pedalboard, self.userSession.sid,
 							function(uid, title) {
@@ -799,7 +824,7 @@ Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {
 							    self.title = title
 							    self.titleBox.text(title)
 							    self.pedalboardModified = false
-							    new Notification("info", 
+							    new Notification("info",
 									     sprintf('Pedalboard "%s" saved', title),
 									     2000)
 							    if (callback)
@@ -903,11 +928,11 @@ JqueryClass('statusTooltip', {
 	tooltip.hide()
 	self.data('tooltip', tooltip)
 	self.bind('mouseover', function() { self.statusTooltip('showTooltip') })
-	self.bind('mouseout', function() { 
+	self.bind('mouseout', function() {
 	    tooltip.stop().animate({ opacity: 0 }, 200,
-				   function() { 
-				       $(this).hide() 
-				   }) 
+				   function() {
+				       $(this).hide()
+				   })
 	})
 	tooltip.css('right', $(window).width() - self.position().left - self.width())
 	return self
@@ -937,7 +962,7 @@ JqueryClass('statusTooltip', {
 	tooltip.find('.text').html(self.data('message'))
 	tooltip.show().stop().animate({ opacity: 1 }, 200)
 	if (timeout)
-	    setTimeout(function() { 
+	    setTimeout(function() {
 		tooltip.stop().animate({ opacity: 0 }, 200,
 				       function() { $(this).hide() })
 	    }, timeout)
