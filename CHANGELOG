@@ -1,3 +1,8 @@
+0.99.8
+======
+
+  - new: support for lv2 presets
+
 0.99.7
 ======
   - new: jack_cpu_load support
