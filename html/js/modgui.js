@@ -15,7 +15,58 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var loadedCSS = {}
+var loadedCSSs = {}
+var loadedJSs = {}
+function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
+    var cssLoaded = true
+    var jsLoaded = true
+
+    var cb = function() {
+	if (cssLoaded && jsLoaded) {
+	    setTimeout(callback, 0)
+	}
+    }
+
+    var baseUrl = ''
+    if (effect.source) {
+	baseUrl += effect.source
+	baseUrl.replace(/\/?$/, '')
+    }
+
+    if (effect.gui.stylesheet && !loadedCSSs[effect.url]) {
+	cssLoaded = false
+	var cssUrl = baseUrl + '/effect/stylesheet.css?url='+escape(effect.url)+'&bundle='+escape(effect.package)
+	$.get(cssUrl, function(data) {
+	    $('<style type="text/css">').text(data).appendTo($('head'))
+	    loadedCSSs[effect.url] = true
+	    cssLoaded = true
+	    cb()
+	})
+    }
+
+    if (effect.gui.javascript) {
+	if (loadedJSs[effect.url]) {
+	    gui.jsCallback = loadedJSs[effect.url]
+	} else {
+	    jsLoaded = false
+	    var jsUrl = baseUrl + '/effect/gui.js?url='+escape(effect.url)+'&bundle='+escape(effect.package)
+	    $.ajax({ url: jsUrl,
+		     success: function(code) {
+			 var method;
+			 eval('method = ' + code)
+			 loadedJSs[effect.url] = method
+			 gui.jsCallback = method
+			 jsLoaded = true
+			 cb()
+		     },
+		     cache: false,
+		   })
+	}
+    }
+
+    cb()
+}
+
 function loadCSS(source, effect, bundle, callback) {
     if (loadedCSS[effect])
 	return setTimeout(callback, 0)
@@ -57,19 +108,16 @@ function GUI(effect, options) {
     if (!effect.gui)
 	effect.gui = {}
 
-    self.cssLoaded = true
-    self.cssCallbacks = []
-    if (effect.gui.stylesheet) {
-	self.cssLoaded = false
-	loadCSS(effect.source, effect.url, effect.package,
-	       function() {
-		   self.cssLoaded = true
-		   for (var i in self.cssCallbacks) {
-		       self.cssCallbacks[i]()
-		   }
-		   self.cssCallbacks = []
-	       })
-    }
+    self.dependenciesLoaded = false
+    self.dependenciesCallbacks = []
+
+    loadDependencies(this, effect, function() {
+	self.dependenciesLoaded = true
+	for (var i in self.dependenciesCallbacks) {
+	    self.dependenciesCallbacks[i]()
+	}
+	self.dependenciesCallbacks = []
+    })
 
     self.effect = effect
 
@@ -172,7 +220,7 @@ function GUI(effect, options) {
 					   self.getTemplateData(effect)))
 	    self.assignIconFunctionality(self.icon)
 	    self.assignControlFunctionality(self.icon)
-	    
+
 	    // Take the width of the plugin. This is necessary because plugin may have position absolute.
 	    // setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
 	    // all instructions to be executed.
@@ -185,12 +233,12 @@ function GUI(effect, options) {
 	    self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
 					       self.getTemplateData(effect)))
 	    self.assignControlFunctionality(self.settings)
-	    
+
 	    self.triggerJS({ 'type': 'start' })
 
 
 
-	var preset_select = settings.find('[mod-role=presets]')
+	var preset_select = self.settings.find('[mod-role=presets]')
         preset_select.change(function () {
             var value = $(this).val()
             options.presetLoad(value)
@@ -421,7 +469,7 @@ function GUI(effect, options) {
     this.triggerJS = function(event) {
 	if (!self.jsCallback)
 	    return
-	var e = { 
+	var e = {
 	    event: event,
 	    values: self.currentValues,
 	    icon: self.icon,
