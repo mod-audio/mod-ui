@@ -128,6 +128,8 @@ function GUI(effect, options) {
 	port.value = value
 	self.setPortWidgetsValue(symbol, value, source)
 	options.change(symbol, value)
+	self.currentValues[symbol] = value
+	self.triggerJS({ 'type': 'change', symbol: symbol })
     }
 
     this.setPortWidgetsValue = function(symbol, value, source, only_gui) {
@@ -165,36 +167,41 @@ function GUI(effect, options) {
 
     this.render = function(callback) {
 	var render = function() {
-	    var icon = $('<div class="mod-pedal">')
-	    icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
-					 self.getTemplateData(effect)))
-	    self.assignIconFunctionality(icon)
-	    self.assignControlFunctionality(icon)
-
+	    self.icon = $('<div class="mod-pedal">')
+	    self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
+					   self.getTemplateData(effect)))
+	    self.assignIconFunctionality(self.icon)
+	    self.assignControlFunctionality(self.icon)
+	    
 	    // Take the width of the plugin. This is necessary because plugin may have position absolute.
 	    // setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
 	    // all instructions to be executed.
 	    setTimeout(function() {
-		icon.width(icon.children().width())
-		icon.height(icon.children().height())
+		self.icon.width(self.icon.children().width())
+		self.icon.height(self.icon.children().height())
 	    }, 1)
 
-	    var settings = $('<div class="mod-settings">')
-	    settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
-					  self.getTemplateData(effect)))
-	    self.assignControlFunctionality(settings)
-        var preset_select = settings.find('[mod-role=presets]')
+	    self.settings = $('<div class="mod-settings">')
+	    self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
+					       self.getTemplateData(effect)))
+	    self.assignControlFunctionality(self.settings)
+	    
+	    self.triggerJS({ 'type': 'start' })
+
+
+
+	var preset_select = settings.find('[mod-role=presets]')
         preset_select.change(function () {
             var value = $(this).val()
             options.presetLoad(value)
         })
-	    callback(icon, settings)
+	    callback(self.icon, self.settings)
 	}
 
-	if (self.cssLoaded) {
+	if (self.dependenciesLoaded) {
 	    render()
 	} else {
-	    self.cssCallbacks.push(render)
+	    self.dependenciesCallbacks.push(render)
 	}
     }
 
@@ -205,10 +212,10 @@ function GUI(effect, options) {
 				      self.getTemplateData(effect)))
 	    callback(icon)
 	}
-	if (self.cssLoaded) {
+	if (self.dependenciesLoaded) {
 	    render()
 	} else {
-	    self.cssCallbacks.push(render)
+	    self.dependenciesCallbacks.push(render)
 	}
     }
 
@@ -249,7 +256,7 @@ function GUI(effect, options) {
 			scalePointsIndex[sprintf(format, port.scalePoints[i].value)] = port.scalePoints[i]
 		    }
 		}
-        var valueField = element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']')
+		var valueField = element.find('[mod-role=input-control-value][mod-port-symbol='+symbol+']')
 		var setValue = function(value) {
 		    // When value is changed, let's use format and scalePoints to properly display
 		    // its value
@@ -409,6 +416,23 @@ function GUI(effect, options) {
 	DEBUG = JSON.stringify(data, undefined, 4)
 	return data
     }
+
+    this.jsData = {}
+    this.triggerJS = function(event) {
+	if (!self.jsCallback)
+	    return
+	var e = { 
+	    event: event,
+	    values: self.currentValues,
+	    icon: self.icon,
+	    settings: self.settings,
+	    data: self.jsData
+	};
+	if (event.symbol)
+	    e.port = self.controls[event.symbol]
+	self.jsCallback(e)
+    }
+
 }
 
 function JqueryClass() {
@@ -812,8 +836,10 @@ JqueryClass('switchWidget', baseWidget, {
 	    var value = self.data('value')
 	    if (value == self.data('minimum')) {
 		self.switchWidget('setValue', self.data('maximum'))
+		self.addClass('on').removeClass('off')
 	    } else {
 		self.switchWidget('setValue', self.data('minimum'))
+		self.addClass('off').removeClass('on')
 	    }
 	})
 

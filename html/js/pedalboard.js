@@ -53,7 +53,7 @@ JqueryClass('pedalboard', {
 	    pluginRemove: function(instanceId, callback) { callback(true) },
 
 	    // Loads a preset
-        pluginPresetLoad: function(instanceId, label, callback) { callback(true) },
+	    pluginPresetLoad: function(instanceId, label, callback) { callback(true) },
 
         // Changes the parameter of a plugin's control port
 	    pluginParameterChange: function(instanceId, symbol, value, callback) { callback(true) },
@@ -438,15 +438,15 @@ JqueryClass('pedalboard', {
 									       })
 					}
 
-					// Queue action to add plugin to pedalboard
-					finalActions.push(function() {
-					    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y,
-							    {
-								'preset': plugin.preset,
-								'bypassed': plugin.bypassed
-							    }, plugin.addressing, addressingErrors)
-					})
-					loadPlugin(pluginsData)
+					self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, 
+							{ 
+							    'preset': plugin.preset,
+							    'bypassed': plugin.bypassed
+							}, plugin.addressing, addressingErrors,
+							function() {
+							    loadPlugin(pluginsData)
+							}
+						       )
 				    })
 	}
 
@@ -469,8 +469,10 @@ JqueryClass('pedalboard', {
 					 finalActions.push(function() {
 					     var plugins = $.extend({ 'system': self }, self.data('plugins'))
 					     var orig = plugins[fromInstance]
-					     var output = orig.find('[mod-port-symbol='+fromSymbol+']')
 					     var dest = plugins[toInstance]
+					     if (!orig || !dest)
+						 return
+					     var output = orig.find('[mod-port-symbol='+fromSymbol+']')
 					     var input = dest.find('[mod-port-symbol='+toSymbol+']')
 
 					     var jack = output.find('[mod-role=output-jack]')
@@ -977,8 +979,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instanceId, now we need to put it in screen.
-    addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing, addressingErrors) {
-        console.log(pluginData)
+    addPlugin: function(pluginData, instanceId, x, y, guiOptions, addressing, addressingErrors, renderCallback) {
 	var self = $(this)
 	var scale = self.data('scale')
 
@@ -1055,9 +1056,7 @@ JqueryClass('pedalboard', {
     for (var key in pluginData['presets']) {
         preset_list.push({label: pluginData['presets'][key]['label']})
     }
-    console.log(preset_list)
     pluginData = $.extend({preset_list: preset_list}, pluginData)
-    console.log(pluginData)
 	var pluginGui = new GUI(pluginData, options)
 	pluginGui.render(function(icon, settings) {
 	    obj.icon = icon
@@ -1143,6 +1142,8 @@ JqueryClass('pedalboard', {
 	    settings.window({ windowManager: self.data('windowManager') }).appendTo($('body'))
 	    icon.css({ position: 'absolute', left: x, top: y }).appendTo(self)
 	    self.data('pluginMove')(instanceId, x, y, function(r){})
+	    if (renderCallback)
+		renderCallback()
 	})
     },
 
