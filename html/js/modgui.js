@@ -67,28 +67,6 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
     cb()
 }
 
-function loadCSS(source, effect, bundle, callback) {
-    if (loadedCSS[effect])
-	return setTimeout(callback, 0)
-    url = ''
-    if (source) {
-	url += source
-	url.replace(/\/?$/, '')
-    }
-    url += '/effect/stylesheet.css?url='+escape(effect)+'&bundle='+escape(bundle)
-    $.ajax({
-	url: url,
-	success: function(data) {
-	    $('<style type="text/css">').text(data).appendTo($('head'))
-	    loadedCSS[effect] = true
-	    callback()
-	},
-	error: function() {
-	    console.log('erro')
-	}
-    })
-}
-
 function GUI(effect, options) {
     var self = this
 
@@ -107,6 +85,8 @@ function GUI(effect, options) {
 
     if (!effect.gui)
 	effect.gui = {}
+
+    this.currentValues = {}
 
     self.dependenciesLoaded = false
     self.dependenciesCallbacks = []
