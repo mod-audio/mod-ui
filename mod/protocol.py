@@ -164,7 +164,28 @@ class Protocol(object):
             return
 
         def replaces(arg):
-            return arg.replace("\x5c\xff", "\x00").replace("\x5c\xdd", '"').replace("\x5c\x5c", "\x5c")
+            replaced = ""
+            skip = False
+            for i,c in enumerate(arg):
+                if skip:
+                    skip = False
+                    continue
+                if i == len(arg) - 1:
+                    replaced += c
+                    break
+                if "%s%s" % (c, arg[i+1]) == "\x5c\xff":
+                    replaced += "\x00"
+                    skip = True
+                elif "%s%s" % (c, arg[i+1]) == "\x5c\xdd":
+                    replaced += '"'
+                    skip = True
+                elif "%s%s" % (c, arg[i+1]) == "\x5c\x5c":
+                    replaced += "\x5c"
+                    skip = True
+                else:
+                    replaced += c
+            return replaced
+            #return arg.replace("\x5c\xff", "\x00").replace("\x5c\xdd", '"').replace("\x5c\x5c", "\x5c")
 
         cmd = split(self.msg)
 
@@ -174,6 +195,7 @@ class Protocol(object):
         try:
             self.cmd = cmd[0]
             self.args = [ typ(replaces(arg)) for typ, arg in zip(self.COMMANDS[self.cmd], cmd[1:]) ]
+            print "ARGS: ", self.args
             if not all(str(a) for a in self.args):
                 raise ValueError
         except ValueError:

@@ -17,6 +17,8 @@ ADDRESSING = 3
 DATA_REQUEST = 4
 UNADDRESSING = 5
 
+QUADRA = 0
+
 HARDWARE_TIMEOUT = 0.008
 RESPONSE_TIMEOUT = 0.002
 
@@ -225,7 +227,7 @@ class Gateway():
         self.message = ControlChainMessage()
 
         # Currently control_chain is routed through HMI
-        #self.hmi = hmi
+        self.hmi = hmi
         from mod.protocol import Protocol
         Protocol.register_cmd_callback("chain", self.receive)
 
@@ -239,15 +241,37 @@ class Gateway():
     def send(self, hwid, function, message=None):
         stream = self.message.build(hwid, function, message)
         msg = "%s%s" % (stream, chr(self.__checksum(stream, len(stream))))
-        msg = msg.replace("\x1b","\x1b\x1b")
-        msg = msg[0] + msg[1:].replace("\xaa","\x1b\x55")
-        self.hmi.chain(msg)
+        replaced = "\xaa"
+        for c in msg[1:]:
+            if c == "\x1b":
+                replaced += "\x1b\x1b"
+            elif c == "\xaa":
+                replaced += "\x1b\x55"
+            else:
+                replaced += c
+        self.hmi.chain(replaced)
 
     def receive(self, message, callback):
         # control_chain protocol is being implemented over the hmi protocol, this will soon be changed.
         # ignoring callback by now
-        message = message.replace("\x1b\x55", "\xaa")
-        message = message.replace("\x1b\x1b", "\x1b")
+        replaced = ""
+        skip = False
+        for i,c in enumerate(message):
+            if skip:
+                skip = False
+                continue
+            if i == len(message)-1:
+                replaced += c
+                break
+            if "%s%s" % (message[i], message[i+1]) == "\x1b\x55":
+                replaced += "\xaa"
+                skip = True
+            elif "%s%s" % (message[i], message[i+1]) == "\x1b\x1b":
+                replaced += "\x1b"
+                skip = True
+            else:
+                replaced += c
+        message = replaced
         checksum = message[-1]
         message = message[:-1]
         assert checksum == chr(self.__checksum(message, len(message))), "Message is not consistent, checksum does not match"
