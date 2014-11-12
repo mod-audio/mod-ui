@@ -49,7 +49,7 @@ class MonitorServer(TCPServer):
             assert cmd == "monitor"
             instance = int(instance)
             value = float(value)
-        except (ValueError, AssertionError), e:
+        except (ValueError, AssertionError) as e:
             # TODO: tratar error
             pass
         else:

@@ -21,14 +21,14 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import StringIO
 import time
 from datetime import timedelta
+from io import StringIO
 try:
     import Image
 except ImportError:
     from PIL import Image
-from sha import sha
+from hashlib import sha1 as sha
 from hashlib import md5
 from base64 import b64decode, b64encode
 from tornado import gen, web, iostream
@@ -806,8 +806,8 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': b64encode(json.dumps(get_hardware())),
-            'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler)),
+            'hardware_profile': b64encode(json.dumps(get_hardware()).decode("utf-8")),
+            'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).decode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',

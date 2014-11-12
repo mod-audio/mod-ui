@@ -21,7 +21,7 @@ from os import path
 
 from datetime import timedelta
 from tornado import iostream, ioloop
-from Queue import Empty
+from queue import Empty
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
@@ -40,7 +40,7 @@ from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
-from tuner import NOTES, FREQS, find_freqnotecents
+from mod.tuner import NOTES, FREQS, find_freqnotecents
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:

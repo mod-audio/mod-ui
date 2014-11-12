@@ -50,7 +50,7 @@ class Host(object):
             # for it to finish properly
             try:
                 self.latest_callback('finish\0')
-            except Exception, e:
+            except Exception as e:
                 logging.warn("[host] latest callback failed: %s" % str(e))
 
         self.latest_callback = None

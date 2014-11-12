@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import urllib, urllib2, json, re
+import urllib, json, re
 from hashlib import md5
 from os.path import exists
 from mod.settings import (CLOUD_HTTP_ADDRESS, CLOUD_PUB, DEVICE_KEY, DEVICE_PUB,
