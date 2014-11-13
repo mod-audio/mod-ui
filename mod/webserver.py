@@ -296,7 +296,7 @@ class EffectBulkData(EffectSearcher):
 
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
-            self.json_args = json.loads(self.request.body)
+            self.json_args = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         else:
             raise web.HTTPError(501, 'Content-Type != "application/json"')
 
@@ -806,8 +806,8 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': b64encode(json.dumps(get_hardware()).decode("utf-8")),
-            'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).decode("utf-8")),
+            'hardware_profile': b64encode(json.dumps(get_hardware()).encode("utf-8")),
+            'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',

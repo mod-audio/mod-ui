@@ -84,6 +84,8 @@ class Host(object):
             return
 
         def check_response(resp):
+            resp = resp.decode("utf-8")
+
             logging.info("[host] received <- %s" % repr(resp))
             if not resp.startswith("resp"):
                 logging.error("[host] protocol error: %s" % ProtocolError(resp)) # TODO: proper error handling
@@ -95,8 +97,9 @@ class Host(object):
         self.socket_idle = False
         logging.info("[host] sending -> %s" % msg)
 
-        self.s.write('%s\0' % str(msg))
-        self.s.read_until('\0', check_response)
+        encmsg = '%s\0' % str(msg)
+        self.s.write(encmsg.encode("utf-8"))
+        self.s.read_until('\0'.encode("utf-8"), check_response)
 
         self.latest_callback = check_response
 
