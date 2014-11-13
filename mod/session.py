@@ -488,7 +488,7 @@ class Session(object):
             else:
                 callback(True)
         try:
-            effect_data = self.effect_index.find(url=objid).next()
+            effect_data = next(self.effect_index.find(url=objid))
             self.change_bufsize(max(effect_data['bufsize'], self.jack_bufsize), commit)
         except StopIteration:
             commit(False)
@@ -595,7 +595,7 @@ class Session(object):
             if not ok:
                 callback(ok)
                 return
-            indexed_plugin = self.effect_index.find(url=self._pedalboard.data['instances'][instance_id]['url']).next()
+            indexed_plugin = next(self.effect_index.find(url=self._pedalboard.data['instances'][instance_id]['url']))
             plugin = json.load(open(path.join(self.effect_index.data_source, indexed_plugin['id'])))
             addrs = self._pedalboard.data['instances'][instance_id]['addressing']
             for port in plugin['presets'][label]['ports']:

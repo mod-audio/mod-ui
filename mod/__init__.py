@@ -41,7 +41,7 @@ def ensure_index_sync(index, dirname):
                 continue
             obj = _json_or_remove(path)
             if obj and index.indexable(obj):
-                index.find(id=obj_id).next()
+                next(index.find(id=obj_id))
     except Exception as e:
         # This is supposed to be AssertionError, StopIteration or AttributeError, 
         # but let's just capture anything

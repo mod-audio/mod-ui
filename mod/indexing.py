@@ -53,12 +53,12 @@ class Index(object):
 
         for key, field in self.schema.items():
             if key == 'id':
-                data['id'] = unicode(obj['_id'])
+                data['id'] = str(obj['_id'])
                 continue
             try:
                 data[key] = obj[key]
             except KeyError:
-                data[key] = u''
+                data[key] = ''
         return data
 
     def searcher(self):
@@ -124,9 +124,9 @@ class Index(object):
         terms = []
         if query.get('term'):
             parser = MultifieldParser(self.term_fields, schema=self.index.schema)
-            terms.append(parser.parse(unicode(query.pop('term')[0])))
+            terms.append(parser.parse(str(query.pop('term')[0])))
         for key in query.keys():
-            terms.append(Or([ Term(key, unicode(t)) for t in query.pop(key) ]))
+            terms.append(Or([ Term(key, str(t)) for t in query.pop(key) ]))
         with self.searcher() as searcher:
             for entry in searcher.search(And(terms), limit=None):
                 yield entry.fields()

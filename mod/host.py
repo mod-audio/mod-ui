@@ -49,7 +49,7 @@ class Host(object):
             # There's a connection waiting, let's just send an error
             # for it to finish properly
             try:
-                self.latest_callback('finish\0')
+                self.latest_callback('finish\0'.encode("utf-8"))
             except Exception as e:
                 logging.warn("[host] latest callback failed: %s" % str(e))
 
@@ -84,7 +84,7 @@ class Host(object):
             return
 
         def check_response(resp):
-            resp = resp.decode("utf-8")
+            resp = resp.decode("utf-8", errors="ignore")
 
             logging.info("[host] received <- %s" % repr(resp))
             if not resp.startswith("resp"):
