@@ -36,3 +36,6 @@ keys/serial
 phantomjs-*
 html/pedalboards/*.png
 modui-env/
+build/
+dist/
+*.orig
