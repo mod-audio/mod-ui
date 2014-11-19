@@ -5,12 +5,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -43,7 +43,7 @@ def ensure_index_sync(index, dirname):
             if obj and index.indexable(obj):
                 index.find(id=obj_id).next()
     except Exception as e:
-        # This is supposed to be AssertionError, StopIteration or AttributeError, 
+        # This is supposed to be AssertionError, StopIteration or AttributeError,
         # but let's just capture anything
         index.reindex()
 
@@ -80,7 +80,7 @@ def check_environment(callback):
         for screenshot in os.listdir(old_screenshot_dir):
             shutil.move(os.path.join(old_screenshot_dir, screenshot), PEDALBOARD_SCREENSHOT_DIR)
         os.rmdir(old_screenshot_dir)
-    
+
     for effect_id in os.listdir(EFFECT_DIR):
         if effect_id.endswith('.metadata'):
             continue
@@ -122,20 +122,18 @@ def rebuild_database():
                               INDEX_PATH, PEDALBOARD_INDEX_PATH)
     from mod.effect import extract_effects_from_bundle
     from mod.indexing import EffectIndex, PedalboardIndex
-    from modcommon.lv2 import Bundle
+    from mod.lv2 import PluginSerializer, PLUGINS
 
     shutil.rmtree(INDEX_PATH)
     shutil.rmtree(PEDALBOARD_INDEX_PATH)
     shutil.rmtree(EFFECT_DIR)
     os.mkdir(EFFECT_DIR)
 
-    for bundle_name in os.listdir(PLUGIN_LIBRARY_DIR):
-        path = os.path.join(PLUGIN_LIBRARY_DIR, bundle_name)
-        bundle = Bundle(path, units_file=UNITS_TTL_PATH)
-        extract_effects_from_bundle(bundle)
+    for plugin in PLUGINS:
+        PluginSerializer(plugin=plugin).save_json(EFFECT_DIR)
 
     # The index will be rebuilt just by instantiating it
     PedalboardIndex()
     EffectIndex()
-    
-        
+
+
