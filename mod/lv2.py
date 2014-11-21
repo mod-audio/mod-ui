@@ -93,7 +93,7 @@ class PluginSerializer(object):
                 binary=p.get_library_uri().as_string().replace("file://", ""),
                 brand="",
                 bufsize=128,
-                category=category_index.get(p.get_class().get_label().as_string(), []),
+                category=category_index.get("%sPlugin" % p.get_class().get_label().as_string(), []),
                 description=None,
                 developer=None,
                 gui={},
@@ -141,17 +141,22 @@ class PluginSerializer(object):
         self.data['_id'] = hashlib.md5(uri).hexdigest()[:24]
         self.data['gui'] = self._get_gui_data()
 
-    def _get_file_data(self, fname):
+    def _get_file_data(self, fname, html=False, json=False):
         if fname is not None and os.path.exists(fname):
             f = open(fname)
+            if html:
+                return re.sub('<!--.+?-->', '', f.read()).strip()
+            if json:
+                import json as js
+                return js.loads(f.read())
             return f.read()
         return None
 
     def _get_gui_data(self):
         d = dict(
-            iconTemplate=self._get_file_data(self.data['gui_structure']['iconTemplate']),
-            settingsTemplate=self._get_file_data(self.data['gui_structure']['settingsTemplate']),
-            templateData=self._get_file_data(self.data['gui_structure']['templateData']),
+            iconTemplate=self._get_file_data(self.data['gui_structure']['iconTemplate'], html=True),
+            settingsTemplate=self._get_file_data(self.data['gui_structure']['settingsTemplate'], html=True),
+            templateData=self._get_file_data(self.data['gui_structure']['templateData'], json=True),
             resourcesDirectory=self.data['gui_structure']['resourcesDirectory'],
             screenshot=self.data['gui_structure']['screenshot'],
             thumbnail=self.data['gui_structure']['thumbnail'],

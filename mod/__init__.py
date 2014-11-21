@@ -111,7 +111,7 @@ def check_environment(callback):
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
     SESSION.ping(ping_callback)
 
-def rebuild_database():
+def rebuild_database(modgui_only=False):
     """
     This will:
       - Delete indexes
@@ -119,18 +119,28 @@ def rebuild_database():
       - Rebuild effect and pedalboard indexes
     """
     from mod.settings import (EFFECT_DIR, PLUGIN_LIBRARY_DIR, UNITS_TTL_PATH,
-                              INDEX_PATH, PEDALBOARD_INDEX_PATH)
+                              INDEX_PATH, PEDALBOARD_INDEX_PATH, DESKTOP)
     from mod.effect import extract_effects_from_bundle
     from mod.indexing import EffectIndex, PedalboardIndex
     from mod.lv2 import PluginSerializer, PLUGINS
 
-    shutil.rmtree(INDEX_PATH)
-    shutil.rmtree(PEDALBOARD_INDEX_PATH)
-    shutil.rmtree(EFFECT_DIR)
+    if os.path.exists(INDEX_PATH):
+        shutil.rmtree(INDEX_PATH)
+    if os.path.exists(PEDALBOARD_INDEX_PATH):
+        shutil.rmtree(PEDALBOARD_INDEX_PATH)
+    if os.path.exists(EFFECT_DIR):
+        shutil.rmtree(EFFECT_DIR)
     os.mkdir(EFFECT_DIR)
 
+    plugin_dirs = [PLUGIN_LIBRARY_DIR]
+
     for plugin in PLUGINS:
-        PluginSerializer(plugin=plugin).save_json(EFFECT_DIR)
+        ps = PluginSerializer(plugin=plugin)
+        if not modgui_only:
+            ps.save_json(EFFECT_DIR)
+        else:
+            if ps.data['gui']['thumbnail']:
+                ps.save_json(EFFECT_DIR)
 
     # The index will be rebuilt just by instantiating it
     PedalboardIndex()
