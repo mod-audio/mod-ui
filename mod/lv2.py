@@ -32,6 +32,7 @@ lv2core = NS(lilv.LILV_NS_LV2)
 rdf = NS(lilv.LILV_NS_RDF)
 rdfs = NS(lilv.LILV_NS_RDFS)
 atom = NS("http://lv2plug.in/ns/ext/atom#")
+units = NS("http://lv2plug.in/ns/extensions/units#")
 pset = NS("http://lv2plug.in/ns/ext/presets#")
 midi = NS("http://lv2plug.in/ns/ext/midi#")
 pprops = NS("http://lv2plug.in/ns/ext/port-props#")
@@ -282,7 +283,15 @@ class PluginSerializer(object):
             return dict(label=lilv.Node(sp.get_label()).as_string(),
                     value=float(lilv.Node(sp.get_value()).as_string()))
         d['scalePoints'] = list(LILV_FOREACH(scale_points, get_sp_data))
-        #unit
+
+        d['unit'] = {}
+        unit = port.get_value(units.unit.me)
+        if unit is not None:
+            unit = lilv.Nodes(unit).get_first().me
+            W.load_resource(unit)
+            d['unit']['label'] = W.find_nodes(unit, rdfs.label.me, None).get_first().as_string()
+            d['unit']['render'] = W.find_nodes(unit, units.render.me, None).get_first().as_string()
+            d['unit']['symbol'] = W.find_nodes(unit, rdfs.symbol.me, None).get_first().as_string()
         return d
 
     def save_json(self, directory):
