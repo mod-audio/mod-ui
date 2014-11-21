@@ -97,14 +97,7 @@ class PluginSerializer(object):
                 description=None,
                 developer=None,
                 gui={},
-                gui_structure=dict(
-                    iconTemplate=self._get_modgui('iconTemplate'),
-                    resourcesDirectory=self._get_modgui('resourcesDirectory'),
-                    screenshot=self._get_modgui('screenshot'),
-                    settingsTemplate=self._get_modgui('settingsTemplate'),
-                    templateData=self._get_modgui('templateData'),
-                    thumbnail=self._get_modgui('thumbnail')
-                ),
+                gui_structure={},
                 hidden=False,
                 label="",
                 license=p.get_value(doap.license).get_first().as_string(),
@@ -123,6 +116,18 @@ class PluginSerializer(object):
                 url=uri,
                 version=None,
                 )
+
+        if p.get_value(modgui.gui).get_first().as_string() is not None:
+            self.data['gui_structure'] = dict(
+                    iconTemplate=self._get_modgui('iconTemplate'),
+                    resourcesDirectory=self._get_modgui('resourcesDirectory'),
+                    screenshot=self._get_modgui('screenshot'),
+                    settingsTemplate=self._get_modgui('settingsTemplate'),
+                    templateData=self._get_modgui('templateData'),
+                    thumbnail=self._get_modgui('thumbnail')
+                )
+            self.data['gui'] = self._get_gui_data()
+
         if self.data['license']:
             self.data['license'] = self.data['license'].split("/")[-1]
         minor = self.data['minorVersion']
@@ -139,7 +144,6 @@ class PluginSerializer(object):
             self.data['stability'] = u'unstable'
 
         self.data['_id'] = hashlib.md5(uri).hexdigest()[:24]
-        self.data['gui'] = self._get_gui_data()
 
     def _get_file_data(self, fname, html=False, json=False):
         if fname is not None and os.path.exists(fname):

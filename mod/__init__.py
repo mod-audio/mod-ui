@@ -139,7 +139,7 @@ def rebuild_database(modgui_only=False):
         if not modgui_only:
             ps.save_json(EFFECT_DIR)
         else:
-            if ps.data['gui']['thumbnail']:
+            if ps.data['gui']:
                 ps.save_json(EFFECT_DIR)
 
     # The index will be rebuilt just by instantiating it
