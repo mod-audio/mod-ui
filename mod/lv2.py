@@ -278,6 +278,9 @@ class PluginSerializer(object):
         #unit
         return d
 
+    def has_modgui(self):
+        return self._modgui.me is not None
+
     def save_json(self, directory):
         import json
         json.dump(self.data, open(os.path.join(directory, self.data['_id']), 'w'))

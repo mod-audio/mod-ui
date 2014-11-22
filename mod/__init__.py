@@ -111,7 +111,7 @@ def check_environment(callback):
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
     SESSION.ping(ping_callback)
 
-def rebuild_database():
+def rebuild_database(modguis_only = False):
     """
     This will:
       - Delete indexes
@@ -130,7 +130,9 @@ def rebuild_database():
     os.mkdir(EFFECT_DIR)
 
     for plugin in PLUGINS:
-        PluginSerializer(plugin=plugin).save_json(EFFECT_DIR)
+        srlz = PluginSerializer(plugin=plugin)
+        if srlz.has_modgui() or not modguis_only:
+            srlz.save_json(EFFECT_DIR)
 
     # The index will be rebuilt just by instantiating it
     PedalboardIndex()
