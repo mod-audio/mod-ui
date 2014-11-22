@@ -138,7 +138,7 @@ class PluginSerializer(object):
         else:
             self.data['stability'] = u'unstable'
 
-        self.data['_id'] = hashlib.md5(uri).hexdigest()[:24]
+        self.data['_id'] = hashlib.md5(uri.encode("utf-8")).hexdigest()[:24]
         self.data['gui'] = self._get_gui_data()
 
     def _get_file_data(self, fname):
