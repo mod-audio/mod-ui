@@ -183,6 +183,8 @@ class PluginSerializer(object):
         return dict(LILV_FOREACH(presets, get_preset_data))
 
     def _get_modgui(self, predicate):
+        if self._modgui.me is None:
+            return ""
         pred = getattr(modgui, predicate)
         n = W.find_nodes(self._modgui.me, pred.me, None).get_first()
         return n.as_string().replace("file://", "") if n.as_string() is not None else n.as_string()
