@@ -118,7 +118,7 @@ def rebuild_database(modguis_only = False):
       - Rebuild effect and pedalboard indexes
     """
     from mod.settings import (EFFECT_DIR, UNITS_TTL_PATH,
-                              INDEX_PATH, PEDALBOARD_INDEX_PATH, DESKTOP)
+                              INDEX_PATH, PEDALBOARD_INDEX_PATH)
     from mod.effect import extract_effects_from_bundle
     from mod.indexing import EffectIndex, PedalboardIndex
     from mod.lv2 import PluginSerializer, PLUGINS

@@ -6,6 +6,7 @@ import hashlib
 
 W = lilv.World()
 W.load_all()
+
 PLUGINS = W.get_all_plugins()
 
 class NS(object):
@@ -118,7 +119,7 @@ class PluginSerializer(object):
                 version=None,
                 )
 
-        if p.get_value(modgui.gui).get_first().as_string() is not None:
+        if self.has_modgui():
             self.data['gui_structure'] = dict(
                     iconTemplate=self._get_modgui('iconTemplate'),
                     resourcesDirectory=self._get_modgui('resourcesDirectory'),
@@ -145,7 +146,6 @@ class PluginSerializer(object):
             self.data['stability'] = u'unstable'
 
         self.data['_id'] = hashlib.md5(uri.encode("utf-8")).hexdigest()[:24]
-        self.data['gui'] = self._get_gui_data()
 
     def _get_file_data(self, fname, html=False, json=False):
         if fname is not None and os.path.exists(fname):
@@ -287,14 +287,14 @@ class PluginSerializer(object):
                     value=float(lilv.Node(sp.get_value()).as_string()))
         d['scalePoints'] = list(LILV_FOREACH(scale_points, get_sp_data))
 
-        d['unit'] = {}
+        d['unit'] = None
         unit = port.get_value(units.unit.me)
         if unit is not None:
-            unit = lilv.Nodes(unit).get_first().me
-            W.load_resource(unit)
-            d['unit']['label'] = W.find_nodes(unit, rdfs.label.me, None).get_first().as_string()
-            d['unit']['render'] = W.find_nodes(unit, units.render.me, None).get_first().as_string()
-            d['unit']['symbol'] = W.find_nodes(unit, rdfs.symbol.me, None).get_first().as_string()
+            d['unit'] = {}
+            unit_node = lilv.Nodes(unit).get_first()
+            d['unit']['label'] = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
+            d['unit']['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
+            d['unit']['symbol'] = W.find_nodes(unit_node.me, rdfs.symbol.me, None).get_first().as_string()
         return d
 
     def has_modgui(self):
