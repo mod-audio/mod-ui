@@ -144,7 +144,8 @@ class PluginSerializer(object):
         else:
             self.data['stability'] = u'unstable'
 
-        self.data['_id'] = hashlib.md5(uri).hexdigest()[:24]
+        self.data['_id'] = hashlib.md5(uri.encode("utf-8")).hexdigest()[:24]
+        self.data['gui'] = self._get_gui_data()
 
     def _get_file_data(self, fname, html=False, json=False):
         if fname is not None and os.path.exists(fname):
@@ -193,6 +194,8 @@ class PluginSerializer(object):
         return dict(LILV_FOREACH(presets, get_preset_data))
 
     def _get_modgui(self, predicate):
+        if self._modgui.me is None:
+            return ""
         pred = getattr(modgui, predicate)
         n = W.find_nodes(self._modgui.me, pred.me, None).get_first()
         return n.as_string().replace("file://", "") if n.as_string() is not None else n.as_string()
@@ -293,6 +296,9 @@ class PluginSerializer(object):
             d['unit']['render'] = W.find_nodes(unit, units.render.me, None).get_first().as_string()
             d['unit']['symbol'] = W.find_nodes(unit, rdfs.symbol.me, None).get_first().as_string()
         return d
+
+    def has_modgui(self):
+        return self._modgui.me is not None
 
     def save_json(self, directory):
         import json

@@ -41,7 +41,7 @@ def ensure_index_sync(index, dirname):
                 continue
             obj = _json_or_remove(path)
             if obj and index.indexable(obj):
-                index.find(id=obj_id).next()
+                next(index.find(id=obj_id))
     except Exception as e:
         # This is supposed to be AssertionError, StopIteration or AttributeError,
         # but let's just capture anything
@@ -111,7 +111,7 @@ def check_environment(callback):
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
     SESSION.ping(ping_callback)
 
-def rebuild_database(modgui_only=False):
+def rebuild_database(modguis_only = False):
     """
     This will:
       - Delete indexes
@@ -135,12 +135,9 @@ def rebuild_database(modgui_only=False):
     plugin_dirs = [PLUGIN_LIBRARY_DIR]
 
     for plugin in PLUGINS:
-        ps = PluginSerializer(plugin=plugin)
-        if not modgui_only:
-            ps.save_json(EFFECT_DIR)
-        else:
-            if ps.data['gui']:
-                ps.save_json(EFFECT_DIR)
+        srlz = PluginSerializer(plugin=plugin)
+        if srlz.has_modgui() or not modguis_only:
+            srlz.save_json(EFFECT_DIR)
 
     # The index will be rebuilt just by instantiating it
     PedalboardIndex()
