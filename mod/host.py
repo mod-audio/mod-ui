@@ -49,7 +49,7 @@ class Host(object):
             # There's a connection waiting, let's just send an error
             # for it to finish properly
             try:
-                self.latest_callback('finish\0'.encode("utf-8"))
+                self.latest_callback("finish\0".encode("utf-8"))
             except Exception as e:
                 logging.warn("[host] latest callback failed: %s" % str(e))
 
@@ -97,9 +97,9 @@ class Host(object):
         self.socket_idle = False
         logging.info("[host] sending -> %s" % msg)
 
-        encmsg = '%s\0' % str(msg)
+        encmsg = "%s\0" % str(msg)
         self.s.write(encmsg.encode("utf-8"))
-        self.s.read_until('\0'.encode("utf-8"), check_response)
+        self.s.read_until("\0".encode("utf-8"), check_response)
 
         self.latest_callback = check_response
 

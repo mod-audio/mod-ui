@@ -6,6 +6,7 @@ import hashlib
 
 W = lilv.World()
 W.load_all()
+
 PLUGINS = W.get_all_plugins()
 
 class NS(object):
@@ -32,6 +33,7 @@ lv2core = NS(lilv.LILV_NS_LV2)
 rdf = NS(lilv.LILV_NS_RDF)
 rdfs = NS(lilv.LILV_NS_RDFS)
 atom = NS("http://lv2plug.in/ns/ext/atom#")
+units = NS("http://lv2plug.in/ns/extensions/units#")
 pset = NS("http://lv2plug.in/ns/ext/presets#")
 midi = NS("http://lv2plug.in/ns/ext/midi#")
 pprops = NS("http://lv2plug.in/ns/ext/port-props#")
@@ -93,18 +95,11 @@ class PluginSerializer(object):
                 binary=p.get_library_uri().as_string().replace("file://", ""),
                 brand="",
                 bufsize=128,
-                category=category_index.get(p.get_class().get_label().as_string(), []),
+                category=category_index.get("%sPlugin" % p.get_class().get_label().as_string(), []),
                 description=None,
                 developer=None,
                 gui={},
-                gui_structure=dict(
-                    iconTemplate=self._get_modgui('iconTemplate'),
-                    resourcesDirectory=self._get_modgui('resourcesDirectory'),
-                    screenshot=self._get_modgui('screenshot'),
-                    settingsTemplate=self._get_modgui('settingsTemplate'),
-                    templateData=self._get_modgui('templateData'),
-                    thumbnail=self._get_modgui('thumbnail')
-                ),
+                gui_structure={},
                 hidden=False,
                 label="",
                 license=p.get_value(doap.license).get_first().as_string(),
@@ -123,6 +118,18 @@ class PluginSerializer(object):
                 url=uri,
                 version=None,
                 )
+
+        if self.has_modgui():
+            self.data['gui_structure'] = dict(
+                    iconTemplate=self._get_modgui('iconTemplate'),
+                    resourcesDirectory=self._get_modgui('resourcesDirectory'),
+                    screenshot=self._get_modgui('screenshot'),
+                    settingsTemplate=self._get_modgui('settingsTemplate'),
+                    templateData=self._get_modgui('templateData'),
+                    thumbnail=self._get_modgui('thumbnail')
+                )
+            self.data['gui'] = self._get_gui_data()
+
         if self.data['license']:
             self.data['license'] = self.data['license'].split("/")[-1]
         minor = self.data['minorVersion']
@@ -139,19 +146,23 @@ class PluginSerializer(object):
             self.data['stability'] = u'unstable'
 
         self.data['_id'] = hashlib.md5(uri.encode("utf-8")).hexdigest()[:24]
-        self.data['gui'] = self._get_gui_data()
 
-    def _get_file_data(self, fname):
+    def _get_file_data(self, fname, html=False, json=False):
         if fname is not None and os.path.exists(fname):
             f = open(fname)
+            if html:
+                return re.sub('<!--.+?-->', '', f.read()).strip()
+            if json:
+                import json as js
+                return js.loads(f.read())
             return f.read()
         return None
 
     def _get_gui_data(self):
         d = dict(
-            iconTemplate=self._get_file_data(self.data['gui_structure']['iconTemplate']),
-            settingsTemplate=self._get_file_data(self.data['gui_structure']['settingsTemplate']),
-            templateData=self._get_file_data(self.data['gui_structure']['templateData']),
+            iconTemplate=self._get_file_data(self.data['gui_structure']['iconTemplate'], html=True),
+            settingsTemplate=self._get_file_data(self.data['gui_structure']['settingsTemplate'], html=True),
+            templateData=self._get_file_data(self.data['gui_structure']['templateData'], json=True),
             resourcesDirectory=self.data['gui_structure']['resourcesDirectory'],
             screenshot=self.data['gui_structure']['screenshot'],
             thumbnail=self.data['gui_structure']['thumbnail'],
@@ -275,7 +286,15 @@ class PluginSerializer(object):
             return dict(label=lilv.Node(sp.get_label()).as_string(),
                     value=float(lilv.Node(sp.get_value()).as_string()))
         d['scalePoints'] = list(LILV_FOREACH(scale_points, get_sp_data))
-        #unit
+
+        d['unit'] = None
+        unit = port.get_value(units.unit.me)
+        if unit is not None:
+            d['unit'] = {}
+            unit_node = lilv.Nodes(unit).get_first()
+            d['unit']['label'] = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
+            d['unit']['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
+            d['unit']['symbol'] = W.find_nodes(unit_node.me, rdfs.symbol.me, None).get_first().as_string()
         return d
 
     def has_modgui(self):

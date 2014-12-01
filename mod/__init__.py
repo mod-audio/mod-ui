@@ -51,14 +51,13 @@ def check_environment(callback):
     from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR,
                               HARDWARE_DIR, INDEX_PATH,
                               PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
-                              DOWNLOAD_TMP_DIR, PLUGIN_LIBRARY_DIR, BANKS_JSON_FILE,
+                              DOWNLOAD_TMP_DIR, BANKS_JSON_FILE,
                               PEDALBOARD_SCREENSHOT_DIR, HTML_DIR)
     from mod import indexing
     from mod.session import SESSION
 
     for dirname in (EFFECT_DIR, PEDALBOARD_DIR,
                     HARDWARE_DIR, DOWNLOAD_TMP_DIR,
-                    PLUGIN_LIBRARY_DIR,
                     PEDALBOARD_SCREENSHOT_DIR):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -118,15 +117,18 @@ def rebuild_database(modguis_only = False):
       - Remove effect json files and parse TTL files again
       - Rebuild effect and pedalboard indexes
     """
-    from mod.settings import (EFFECT_DIR, PLUGIN_LIBRARY_DIR, UNITS_TTL_PATH,
+    from mod.settings import (EFFECT_DIR, UNITS_TTL_PATH,
                               INDEX_PATH, PEDALBOARD_INDEX_PATH)
     from mod.effect import extract_effects_from_bundle
     from mod.indexing import EffectIndex, PedalboardIndex
     from mod.lv2 import PluginSerializer, PLUGINS
 
-    shutil.rmtree(INDEX_PATH)
-    shutil.rmtree(PEDALBOARD_INDEX_PATH)
-    shutil.rmtree(EFFECT_DIR)
+    if os.path.exists(INDEX_PATH):
+        shutil.rmtree(INDEX_PATH)
+    if os.path.exists(PEDALBOARD_INDEX_PATH):
+        shutil.rmtree(PEDALBOARD_INDEX_PATH)
+    if os.path.exists(EFFECT_DIR):
+        shutil.rmtree(EFFECT_DIR)
     os.mkdir(EFFECT_DIR)
 
     for plugin in PLUGINS:

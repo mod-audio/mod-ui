@@ -881,7 +881,7 @@ class SysMonProcessList(web.RequestHandler):
             def set_ps_list(v):
                 self.ps_list = v
                 callback()
-            self.sock.read_until('\0'.encode("utf-8"), set_ps_list)
+            self.sock.read_until("\0".encode("utf-8"), set_ps_list)
         self.sock.connect(('127.0.0.1', 57890), recv_ps_list)
 
 
