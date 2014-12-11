@@ -915,6 +915,8 @@ class JackXRun(web.RequestHandler):
 
 class LoginSign(web.RequestHandler):
     def get(self, sid):
+        if not os.path.exists(DEVICE_KEY):
+            return
         signature = crypto.Sender(DEVICE_KEY, sid).pack()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({
