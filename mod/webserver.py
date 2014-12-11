@@ -1123,7 +1123,7 @@ application = web.Application(
             ],
             debug=LOG, **settings)
 
-def run():
+def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
         if LOG:
@@ -1136,10 +1136,22 @@ def run():
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
+    global cpu_load_callback
     cpu_load_callback = tornado.ioloop.PeriodicCallback(SESSION.jack_cpu_load, 1000)
-    cpu_load_callback.start()
 
+def start():
+    global cpu_load_callback
+    cpu_load_callback.start()
     tornado.ioloop.IOLoop.instance().start()
+
+def stop():
+    global cpu_load_callback
+    cpu_load_callback.stop()
+    tornado.ioloop.IOLoop.instance().stop()
+
+def run():
+    prepare()
+    start()
 
 if __name__ == "__main__":
     run()
