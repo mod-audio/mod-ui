@@ -820,10 +820,13 @@ class TemplateHandler(web.RequestHandler):
             }
         return context
 
+    def icon(self):
+        return self.index()
+
     def pedalboard(self):
         context = self.index()
         uid = self.get_argument('uid')
-        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid)).read())
+        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid)).read().encode("utf-8"))
         return context
 
 class EditionLoader(TemplateHandler):
@@ -986,7 +989,7 @@ class RecordingStart(web.RequestHandler):
 class RecordingStop(web.RequestHandler):
     def get(self):
         result = SESSION.stop_recording()
-        #result['data'] = b64encode(result.pop('handle').read())
+        #result['data'] = b64encode(result.pop('handle').read().encode("utf-8"))
         #open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
@@ -1026,7 +1029,7 @@ class RecordingDownload(web.RequestHandler):
         recording = SESSION.recording
         recording['handle'].seek(0)
         data = {
-            'audio': b64encode(SESSION.recording['handle'].read()),
+            'audio': b64encode(SESSION.recording['handle'].read().encode("utf-8")),
             'events': recording['events'],
             }
         self.set_header('Content-Type', 'application/json')

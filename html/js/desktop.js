@@ -253,6 +253,13 @@ function Desktop(elements) {
 		   })
 	}
 
+    this.prepareForApp = function(){
+        self.reset()
+        $('#pedalboard-actions').hide()
+        $("#pedalboard-dashboard").parent().css({'top':'0px'})
+        $('#zoom-controllers').css({'top':'3px', 'right':'3px'})
+    }
+
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
 						elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,

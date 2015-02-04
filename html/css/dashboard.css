@@ -165,7 +165,7 @@
     color:#fff;
     font-size:24px;
     line-height:1;
-    text-shadow0 1px 3px #000;
+    text-shadow:0 1px 3px #000;
 }
 
 /* Share Pedalboard */
@@ -696,7 +696,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 #share-window .form-control input {
-	width 100%;
+	width: 100%;
 }
 
 #share-window label {
