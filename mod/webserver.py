@@ -820,6 +820,9 @@ class TemplateHandler(web.RequestHandler):
             }
         return context
 
+    def icon(self):
+        return self.index()
+
     def pedalboard(self):
         context = self.index()
         uid = self.get_argument('uid')
