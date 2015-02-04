@@ -72,10 +72,13 @@
       var JS_CUSTOM_CHANNEL = {{js_custom_channel}}
       var AUTO_CLOUD_BACKUP = {{auto_cloud_backup}}
 
+      // for mod-app control
+      var desktop = null
+
 $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
-  new Desktop({
+  desktop = new Desktop({
       titleBox: $('#pedalboard-info .title'),
       pedalboard: $('#pedalboard-dashboard'),
       zoomIn: $('.zoom-in'),
