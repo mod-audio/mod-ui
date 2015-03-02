@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MOD</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
+    <!-- <link rel="stylesheet" type="text/css" href="css/main.old.css"/> -->
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+
+    <!-- PEDALS -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/pedals.css"/>
+
+    <!-- DEFAULT -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/default.css"/>
+
+    <!-- JAPANESE -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/japanese/japanese.css"/>
+    <link rel="stylesheet" type="text/css" href="resources/knobs/japanese/japanese.css"/>
+
+    <!-- BOXY -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/boxy/boxy.css"/>
+
+    <!-- LATA -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/lata/lata.css"/>
+    <link rel="stylesheet" type="text/css" href="resources/knobs/lata/lata.css"/>
+
+    <!-- BRITISH -->
+    <link rel="stylesheet" type="text/css" href="resources/pedals/british/british.css"/>
+
+    <!-- HEAD MODEL 001 -->
+    <link rel="stylesheet" type="text/css" href="resources/heads/model-001/model-001.css"/>
+
+    <!-- COMBO MODEL 001 -->
+    <link rel="stylesheet" type="text/css" href="resources/combos/model-001/model-001.css"/>
+
+    <!-- RACK MODEL 001 -->
+    <link rel="stylesheet" type="text/css" href="resources/racks/model-001/model-001.css"/>
+
+    <!-- SLIDER -->
+    <link rel="stylesheet" type="text/css" href="resources/sliders/slider01/slider.css"/>
+
+    <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js"></script>
+    <script type="text/javascript" src="js/lib/mustache.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.svg.js"></script>
+    <script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
+
+<!--     <script type="text/javascript" src="js/templates.js"></script> -->
+    <script type="text/javascript" src="js/common.js"></script>
+<!--     <script type="text/javascript" src="js/wait.js"></script> -->
+<!--     <script type="text/javascript" src="js/file_transfer.js"></script> -->
+<!--     <script type="text/javascript" src="js/window.js"></script> -->
+<!--     <script type="text/javascript" src="js/tags.js"></script> -->
+    <script type="text/javascript" src="js/modgui.js"></script>
+<!--     <script type="text/javascript" src="js/notification.js"></script> -->
+<!--     <script type="text/javascript" src="js/installation.js"></script> -->
+<!--     <script type="text/javascript" src="js/desktop.js"></script> -->
+<!--     <script type="text/javascript" src="js/pedalboard.js"></script> -->
+<!--     <script type="text/javascript" src="js/pedalboards.js"></script> -->
+<!--     <script type="text/javascript" src="js/effects.js"></script> -->
+<!--     <script type="text/javascript" src="js/login.js"></script> -->
+<!--     <script type="text/javascript" src="js/hardware.js"></script> -->
+<!--     <script type="text/javascript" src="js/xrun.js"></script> -->
+
+    <script type="text/javascript">
+      {% autoescape None %}
+      var icongui = null
+
+      $(document).ready(function() {
+          var uri = window.location.hash.replace(/^#/, '')
+
+          if (uri) {
+              $.ajax({
+                  url: '/effect/get/',
+                  data: { url: uri },
+                  success: function(effect, options) {
+                      icongui = new GUI(effect)
+                      icongui.render(function(icon) {
+                          icon.draggable('disable')
+                          $('#pedalboard-dashboard').append(icon)
+                      })
+                  },
+                  error: function(resp) {
+                      alert("Error: Can't get requested plugin via URI.")
+                  },
+                  dataType: 'json'
+              })
+          }
+      })
+
+    </script>
+
+    <style type="text/css" media="screen">
+    body {
+        background: transparent !important;
+    }
+    #wrapper {
+        overflow: hidden;
+    }
+    #pedalboard-dashboard {
+        top: 0px;
+    }
+    #pedalboard-dashboard .mod-pedal .mod-drag-handle,
+    #pedalboard-dashboard .mod-pedal .mod-pedal-input-image,
+    #pedalboard-dashboard .mod-pedal .mod-pedal-output-image {
+        display: none;
+        visibility: hidden;
+    }
+    </style>
+
+</head>
+<body>
+    <!-- WRAPPER -->
+    <div id="wrapper">
+        <!-- PEDALBOARD -->
+        <div id="pedalboard">
+            <!-- PEDALBOARD-DASHBOARD -->
+            <div id="pedalboard-dashboard"></div>
+            <!-- END PEDALBOARD-DASHBOARD -->
+        </div>
+        <!-- END PEDALBOARD -->
+    </div>
+    <!-- END WRAPPER -->
+
+</body>
+</html>
