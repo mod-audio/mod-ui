@@ -31,6 +31,7 @@ This will start the mainloop and will handle the callbacks and the async functio
 from tornado import iostream, ioloop
 
 from mod.protocol import ProtocolError, process_resp
+from mod import ingen
 
 import socket, logging
 

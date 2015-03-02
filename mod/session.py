@@ -33,7 +33,8 @@ from mod.development import FakeHost, FakeHMI
 from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
-from mod.host import Host
+#from mod.host import Host
+from mod.ingen import Host
 from mod.clipmeter import Clipmeter
 from mod.browser import BrowserControls
 from mod.protocol import Protocol
@@ -86,8 +87,9 @@ class Session(object):
         Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
         Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
-        self.host = factory(Host, FakeHost, DEV_HOST,
-                            MANAGER_PORT, "localhost", self.host_callback)
+#        self.host = factory(Host, FakeHost, DEV_HOST,
+#                            "unix:///tmp/ingen.sock", self.host_callback)
+        self.host = Host("unix:///tmp/ingen.sock", self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI,
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
 
@@ -100,11 +102,11 @@ class Session(object):
         self.browser = BrowserControls()
 
     def host_callback(self):
-        if self.hmi_initialized:
-            self.restore_last_pedalboard()
-        logging.info("host initialized")
+        #if self.hmi_initialized:
+        #    self.restore_last_pedalboard()
+        #logging.info("host initialized")
         self.host_initialized = True
-        ioloop.IOLoop.instance().add_callback(self.setup_monitor)
+        #ioloop.IOLoop.instance().add_callback(self.setup_monitor)
 
     def hmi_callback(self):
         if self.host_initialized:
@@ -794,6 +796,7 @@ class Session(object):
         callback(True, pedalboards)
 
     def effect_position(self, instance, x, y):
+        self.host.set_position(instance, x, y)
         self._pedalboard.set_position(instance, x, y)
 
     def pedalboard_size(self, width, height):
