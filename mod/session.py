@@ -796,6 +796,7 @@ class Session(object):
         callback(True, pedalboards)
 
     def effect_position(self, instance, x, y):
+        self.host.set_position(instance, x, y)
         self._pedalboard.set_position(instance, x, y)
 
     def pedalboard_size(self, width, height):
