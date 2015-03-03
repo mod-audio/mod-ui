@@ -62,6 +62,9 @@ class Host(IngenAsync):
     #def preset_load(self, instance_id, label, callback=lambda result: None):
     #    self.
 
+    def remove(self, instance_id, callback=lambda result: None):
+        self.delete("/instance%d" % instance_id, callback)
+
     def cpu_load(self, callback=lambda r:r):
         callback({'ok': True, 'value': 50})
 
