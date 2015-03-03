@@ -71,5 +71,5 @@ class Host(AsyncHost):
     def bypass(self, instance, value, callback=lambda r:r):
         callback(True)
 
-    def remove(self, instance, callback=None):
-        pass
+    def remove(self, instance, callback=lambda r:r):
+        callback(True)

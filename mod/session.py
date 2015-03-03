@@ -108,7 +108,7 @@ class Session(object):
             instance_id = int(instance.replace("instance",""))
             #self.browser.send(instance_id, port, value)
 
-        def position_cb(self, instance, x, y):
+        def position_cb(instance, x, y):
             pass
 
         self.host.position_callback = position_cb

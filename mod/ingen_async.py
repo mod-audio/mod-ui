@@ -114,7 +114,7 @@ class Host(Interface):
         def check_response():
             if callback is not None:
                 callback()
-            self.sock.read_until("\0", self.keep_reading)
+            self.sock.read_until(self.msgencode("\0"), self.keep_reading)
 
         if self.uri.startswith('unix://'):
             self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
@@ -130,11 +130,11 @@ class Host(Interface):
     def keep_reading(self, msg=None):
         self._reading = False
 
-        msg_str = msg.replace("\0", "") if msg else ""
+        msg_str = msg.decode("utf-8", errors="ignore").replace("\0", "") if msg else ""
         if msg_str:
             msg_model = rdflib.Graph()
             msg_model.namespace_manager = self.ns_manager
-            msg_model.parse(StringIO(msg_str.decode('utf-8')), self.server_base, format='n3')
+            msg_model.parse(StringIO(msg_str), self.server_base, format='n3')
 
             # Handle responses if any
             """"
@@ -208,7 +208,7 @@ class Host(Interface):
 
             self._msg_callback(msg_model)
         self._reading = True
-        self.sock.read_until("\0", self.keep_reading)
+        self.sock.read_until(self.msgencode("\0"), self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
         self.sock.write(self.msgencode(msg))
