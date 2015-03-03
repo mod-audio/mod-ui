@@ -102,11 +102,17 @@ class Session(object):
         self.browser = BrowserControls()
 
     def host_callback(self):
-        #if self.hmi_initialized:
-        #    self.restore_last_pedalboard()
-        #logging.info("host initialized")
         self.host_initialized = True
-        #ioloop.IOLoop.instance().add_callback(self.setup_monitor)
+
+        def port_value_cb(instance, port, value):
+            instance_id = int(instance.replace("instance",""))
+            #self.browser.send(instance_id, port, value)
+
+        def position_cb(self, instance, x, y):
+            pass
+
+        self.host.position_callback = position_cb
+        self.host.port_value_callback = port_value_cb
 
     def hmi_callback(self):
         if self.host_initialized:
