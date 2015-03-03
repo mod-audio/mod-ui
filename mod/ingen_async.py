@@ -84,7 +84,7 @@ def ingen_bundle_path():
             return bundle
     return None
 
-class Host(Interface):
+class IngenAsync(Interface):
     def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None, msg_callback=lambda msg:None):
         self.msg_id      = 1
         self.server_base = uri + '/'
@@ -342,5 +342,5 @@ class Host(Interface):
 ''' % (path, remove_str, add_str), callback)
 
 if __name__ == "__main__":
-    h = Host()
+    h = IngenAsync()
     ioloop.IOLoop.instance().start()

@@ -15,7 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from tornado import iostream, ioloop
-from ingen_async import NS, Error, ingen_bundle_path, lv2_path, Host as AsyncHost
+from ingen_async import NS, Error, ingen_bundle_path, lv2_path, IngenAsync
 import os
 import rdflib
 import socket
@@ -26,7 +26,7 @@ try:
 except ImportError:
     from io import StringIO as StringIO
 
-class Host(AsyncHost):
+class Host(IngenAsync):
     def parse_port(self, port):
         r = port
         if "effect_" in port:
