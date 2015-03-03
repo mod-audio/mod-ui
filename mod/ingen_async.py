@@ -95,6 +95,8 @@ class Host(Interface):
         self._queue = []
         self._idle = True
         self._msg_callback = msg_callback
+        self.position_callback = lambda instance,x,y: None
+        self.port_value_callback = lambda instance,port,value: None
 
         for (k, v) in NS.__dict__.items():
             self.ns_manager.bind(k, v)
@@ -166,27 +168,44 @@ class Host(Interface):
             #callback(self.update_model(response_model))
             self.update_model(response_model)
             """
-            # Set messages
-            """
+
             blanks   = []
             msg_desc = []
-            #import ipdb; ipdb.set_trace()
+
+            # Patch messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Patch]):
-                bnode = i[0]
+                bnode       = i[0]
                 subject     = msg_model.value(bnode, NS.patch.subject)
                 add_node    = msg_model.value(bnode, NS.patch.add)
 
                 # Is it setting a position?
-                if NS.ingen.canvasX in msg_model.predicates(add_node) and NS.ingen.canvasY in msg_model.predicates(add_node):a
-                    x = msg_model.predicates()
-                    self._set_position_callback(subject.toPython().split("/")[-1], "", )
+                if NS.ingen.canvasX in msg_model.predicates(add_node) and NS.ingen.canvasY in msg_model.predicates(add_node):
+                    x = msg_model.value(add_node, NS.ingen.canvasX).toPython()
+                    y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
+                    self.position_callback(subject.toPython().split("/")[-1], x, y)
 
                 msg_desc += [i]
-                blanks        += [m]
+                blanks        += [bnode]
                 #if body != 0:
                 #    self.raise_error(int(body), msg)  # Raise exception on server error
 
-            """
+            # Checks for Set messages
+            for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
+                bnode       = i[0]
+                subject     = msg_model.value(bnode, NS.patch.subject)
+
+                # Setting a port value
+                if msg_model.value(bnode, NS.patch.property) == NS.ingen.value:
+                    sub = subject.toPython().split("/")
+                    instance = sub[-2]
+                    port = sub[-1]
+                    value = msg_model.value(bnode, NS.patch.value).toPython()
+                    self.port_value_callback(instance, port, value)
+
+                msg_desc += [i]
+                blanks        += [bnode]
+
+
             self._msg_callback(msg_model)
         self._reading = True
         self.sock.read_until("\0", self.keep_reading)
