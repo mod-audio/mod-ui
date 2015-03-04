@@ -929,15 +929,15 @@ class LoginSign(web.RequestHandler):
 
 class LoginAuthenticate(web.RequestHandler):
     def post(self):
-        serialized_user = self.get_argument('user')
+        serialized_user = self.get_argument('user').encode("utf-8")
         signature = self.get_argument('signature')
         receiver = crypto.Receiver(CLOUD_PUB, signature)
         checksum = receiver.unpack()
         self.set_header('Access-Control-Allow-Origin', CLOUD_HTTP_ADDRESS)
         self.set_header('Content-Type', 'application/json')
-        if not sha(serialized_user.encode("utf-8")).hexdigest() == checksum:
+        if not sha(serialized_user).hexdigest() == checksum:
             return self.write(json.dumps({ 'ok': False}))
-        user = json.loads(b64decode(serialized_user))
+        user = json.loads(b64decode(serialized_user).decode("utf-8", errors="ignore"))
         self.write(json.dumps({ 'ok': True,
                                 'user': user }))
 
