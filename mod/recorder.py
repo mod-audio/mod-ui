@@ -35,7 +35,7 @@ class Recorder(object):
         self.recording = False
         result = {
             'pedalboard': self.pedalboard.serialize(),
-            'handle': open(CAPTURE_PATH),
+            'handle': open(CAPTURE_PATH, 'rb'),
             'events': copy.deepcopy(self.events),
             }
         os.remove(CAPTURE_PATH)

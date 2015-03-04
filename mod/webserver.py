@@ -1029,7 +1029,7 @@ class RecordingDownload(web.RequestHandler):
         recording = SESSION.recording
         recording['handle'].seek(0)
         data = {
-            'audio': b64encode(SESSION.recording['handle'].read().encode("utf-8")),
+            'audio': b64encode(SESSION.recording['handle'].read()),
             'events': recording['events'],
             }
         self.set_header('Content-Type', 'application/json')

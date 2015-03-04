@@ -843,6 +843,10 @@ Desktop.prototype.saveCurrentPedalboard = function(asNew, callback) {
 			       })
 }
 
+Desktop.prototype.shareCurrentPedalboard = function(callback) {
+    $('#pedalboard-sharing .button').click()
+}
+
 JqueryClass('saveBox', {
     init: function(options) {
 	var self = $(this)
