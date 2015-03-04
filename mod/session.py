@@ -106,7 +106,13 @@ class Session(object):
 
         def port_value_cb(instance, port, value):
             instance_id = int(instance.replace("instance",""))
-            #self.browser.send(instance_id, port, value)
+            addrs = self._pedalboard.data['instances'][instance_id]['addressing']
+            addr = addrs.get(port, None)
+            if addr:
+                addr['value'] = value
+                act = addr['actuator']
+                self.parameter_addressing_load(*act)
+            self.browser.send(instance_id, port, value)
 
         def position_cb(instance, x, y):
             pass
@@ -598,11 +604,13 @@ class Session(object):
         self.browser.send(instance_id, port_id, value)
         self.parameter_set(instance_id, port_id, value, callback)
 
-    def preset_load(self, instance_id, label, callback):
+    def preset_load(self, instance_id, url, callback):
         def cb(ok):
             if not ok:
                 callback(ok)
                 return
+            """
+            This now is made by the set_value host callback
             indexed_plugin = self.effect_index.find(url=self._pedalboard.data['instances'][instance_id]['url']).next()
             plugin = json.load(open(path.join(self.effect_index.data_source, indexed_plugin['id'])))
             addrs = self._pedalboard.data['instances'][instance_id]['addressing']
@@ -613,8 +621,9 @@ class Session(object):
                     act = addr['actuator']
                     self.parameter_addressing_load(*act)
                 self.browser.send(instance_id, port['symbol'], port['value'])
+            """
             callback(ok)
-        self.host.preset_load(instance_id, label, cb)
+        self.host.preset_load(instance_id, url, cb)
 
     def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
         if port_id == ":bypass":

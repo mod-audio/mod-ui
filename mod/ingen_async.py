@@ -27,12 +27,13 @@ except ImportError:
     from io import StringIO as StringIO
 
 class NS:
-    ingen  = rdflib.Namespace('http://drobilla.net/ns/ingen#')
-    ingerr = rdflib.Namespace('http://drobilla.net/ns/ingen/errors#')
-    lv2    = rdflib.Namespace('http://lv2plug.in/ns/lv2core#')
-    patch  = rdflib.Namespace('http://lv2plug.in/ns/ext/patch#')
-    rdf    = rdflib.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-    xsd    = rdflib.Namespace('http://www.w3.org/2001/XMLSchema#')
+    ingen   = rdflib.Namespace('http://drobilla.net/ns/ingen#')
+    ingerr  = rdflib.Namespace('http://drobilla.net/ns/ingen/errors#')
+    lv2     = rdflib.Namespace('http://lv2plug.in/ns/lv2core#')
+    patch   = rdflib.Namespace('http://lv2plug.in/ns/ext/patch#')
+    rdf     = rdflib.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
+    xsd     = rdflib.Namespace('http://www.w3.org/2001/XMLSchema#')
+    presets = rdflib.Namespace('http://lv2plug.in/ns/ext/presets#')
 
 class Interface:
     'The core Ingen interface'

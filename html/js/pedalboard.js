@@ -438,8 +438,8 @@ JqueryClass('pedalboard', {
 									       })
 					}
 
-					self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, 
-							{ 
+					self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y,
+							{
 							    'preset': plugin.preset,
 							    'bypassed': plugin.bypassed
 							}, plugin.addressing, addressingErrors,
@@ -1054,7 +1054,8 @@ JqueryClass('pedalboard', {
 
     var preset_list = []
     for (var key in pluginData['presets']) {
-        preset_list.push({label: pluginData['presets'][key]['label']})
+        preset_list.push({label: pluginData['presets'][key]['label'],
+                          url:   pluginData['presets'][key]['url']})
     }
     pluginData = $.extend({preset_list: preset_list}, pluginData)
 	var pluginGui = new GUI(pluginData, options)

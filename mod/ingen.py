@@ -42,13 +42,9 @@ class Host(IngenAsync):
         self.put("/instance%d" % instance_id, "a ingen:Block ; ingen:prototype <%s>" % uri, callback)
 
     def set_position(self, instance_id, x, y, callback=lambda r:r):
-        remove = [("<http://drobilla.net/ns/ingen#canvasX>", "patch:wildcard"),
-                  ("<http://drobilla.net/ns/ingen#canvasY>", "patch:wildcard")]
-        add = [("<http://drobilla.net/ns/ingen#canvasX>", float(x)),
-                  ("<http://drobilla.net/ns/ingen#canvasY>", float(y))]
         #self.patch("/instance%d" % instance_id, remove, add, callback)
-        self.set("/instance%d" % instance_id, "<http://drobilla.net/ns/ingen#canvasX>", float(x), callback)
-        self.set("/instance%d" % instance_id, "<http://drobilla.net/ns/ingen#canvasY>", float(y), callback)
+        self.set("/instance%d" % instance_id, "<%s>" % NS.ingen.canvasX, float(x), callback)
+        self.set("/instance%d" % instance_id, "<%s>" % NS.ingen.canvasY, float(y), callback)
 
     def connect(self, origin_port, destination_port, callback=lambda r: r):
         self.connecti(self.parse_port(origin_port), self.parse_port(destination_port), callback)
@@ -56,11 +52,14 @@ class Host(IngenAsync):
     def disconnect(self, origin_port, destination_port, callback=lambda r: r):
         self.disconnecti(self.parse_port(origin_port), self.parse_port(destination_port), callback)
 
+    def param_get(self, instance_id, symbol, callback=lambda result: None):
+        callback(1)
+
     def param_set(self, instance_id, symbol, value, callback=lambda result: None):
         self.set("/instance%d/%s" % (instance_id, symbol), "ingen:value", value, callback)
 
-    #def preset_load(self, instance_id, label, callback=lambda result: None):
-    #    self.
+    def preset_load(self, instance_id, uri, callback=lambda result: None):
+        self.set("/instance%d" % instance_id, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
     def remove(self, instance_id, callback=lambda result: None):
         self.delete("/instance%d" % instance_id, callback)
