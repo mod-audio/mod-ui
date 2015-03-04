@@ -116,9 +116,13 @@ class Session(object):
 
         def position_cb(instance, x, y):
             pass
-
+        self.host.add_audio_port("Audio In 1", "Input")
+        self.host.add_audio_port("Audio In 2", "Input")
+        self.host.add_audio_port("Audio Out 1", "Output")
+        self.host.add_audio_port("Audio Out 2", "Output")
         self.host.position_callback = position_cb
         self.host.port_value_callback = port_value_cb
+
 
     def hmi_callback(self):
         if self.host_initialized:

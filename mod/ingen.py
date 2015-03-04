@@ -34,8 +34,11 @@ class Host(IngenAsync):
             instance = instance.replace("effect_", "")
             r = "/instance%s/%s" % (instance, port)
         elif "system" in port:
-            _, port = port.split(":")
-            r = "/system_%s" % port
+            p = port.split("_")[-1]
+            typ = "in"
+            if "playback" in port:
+                typ = "out"
+            r = "/audio_%s_%s" % (typ, p)
         return r
 
     def add(self, uri, instance_id, callback=lambda r: r):
@@ -72,3 +75,24 @@ class Host(IngenAsync):
 
     def bypass(self, instance, value, callback=lambda r:r):
         callback(True)
+
+    def add_audio_port(self, name, typ, callback=lambda r:r):
+        # typ should be Input or Output
+        if typ is not "Input" and typ is not "Output":
+            callback(False)
+            return
+
+        if typ is "Input":
+            x = 5.0
+        else:
+            x = 900.0
+
+        import random
+        y = random.randint(50,250)
+
+        self.put("/%s" % name.replace(" ", "_").lower(), """
+        <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+        <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+        <http://lv2plug.in/ns/lv2core#name> "%s" ;
+        a <http://lv2plug.in/ns/lv2core#AudioPort> ;
+        a <http://lv2plug.in/ns/lv2core#%sPort>""" % (x, y, name, typ), callback)
