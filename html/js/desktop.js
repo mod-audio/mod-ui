@@ -255,6 +255,9 @@ function Desktop(elements) {
 
     this.prepareForApp = function(){
         self.reset()
+        $('#mod-bluetooth').hide()
+        $('#mod-settings').hide()
+        $('#mod-disconnect').hide()
         $('#pedalboard-actions').hide()
         $("#pedalboard-dashboard").parent().css({'top':'0px'})
         $('#zoom-controllers').css({'top':'3px', 'right':'3px'})
