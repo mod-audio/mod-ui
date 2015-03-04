@@ -16,9 +16,10 @@
 
 import urllib, urllib2, json, re
 from hashlib import md5
+from os import mkdir
 from os.path import exists
 from mod.settings import (CLOUD_HTTP_ADDRESS, CLOUD_PUB, DEVICE_KEY, DEVICE_PUB,
-                          DEVICE_SERIAL, DEVICE_MODEL)
+                          DEVICE_SERIAL, DEVICE_MODEL, KEYPATH)
 from modcommon.communication import crypto
 
 class DeviceAlreadyRegistered(Exception):
@@ -35,6 +36,9 @@ class DeviceRegisterer(object):
             exists(DEVICE_PUB)):
             raise DeviceAlreadyRegistered
         
+        if not exists(KEYPATH):
+            mkdir(KEYPATH)
+
         key = crypto.NewKey(1024)
 
         open(DEVICE_KEY, 'w').write(key.private)
