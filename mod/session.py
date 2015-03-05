@@ -160,7 +160,14 @@ class Session(object):
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
-        self.remove(-1, callback)
+        import copy
+        gen = copy.deepcopy(self._pedalboard.data['instances']).iterkeys()
+        def remove_all_plugins(r=True):
+            try:
+                self.remove(gen.next(), remove_all_plugins)
+            except StopIteration:
+                callback(r)
+        remove_all_plugins()
 
     def setup_monitor(self):
         if self.monitor_server is None:
