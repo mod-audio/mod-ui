@@ -187,7 +187,8 @@ class PluginSerializer(object):
                 return dict(symbol=symbol, value=value)
 
             ports_data = list(LILV_FOREACH(ports, get_port_data))
-            return (label, dict(
+            return (preset.as_string(), dict(
+                            url  = preset.as_string(),
                             label=label,
                             ports=ports_data,
                             ))

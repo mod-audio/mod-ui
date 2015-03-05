@@ -27,12 +27,13 @@ except ImportError:
     from io import StringIO as StringIO
 
 class NS:
-    ingen  = rdflib.Namespace('http://drobilla.net/ns/ingen#')
-    ingerr = rdflib.Namespace('http://drobilla.net/ns/ingen/errors#')
-    lv2    = rdflib.Namespace('http://lv2plug.in/ns/lv2core#')
-    patch  = rdflib.Namespace('http://lv2plug.in/ns/ext/patch#')
-    rdf    = rdflib.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-    xsd    = rdflib.Namespace('http://www.w3.org/2001/XMLSchema#')
+    ingen   = rdflib.Namespace('http://drobilla.net/ns/ingen#')
+    ingerr  = rdflib.Namespace('http://drobilla.net/ns/ingen/errors#')
+    lv2     = rdflib.Namespace('http://lv2plug.in/ns/lv2core#')
+    patch   = rdflib.Namespace('http://lv2plug.in/ns/ext/patch#')
+    rdf     = rdflib.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
+    xsd     = rdflib.Namespace('http://www.w3.org/2001/XMLSchema#')
+    presets = rdflib.Namespace('http://lv2plug.in/ns/ext/presets#')
 
 class Interface:
     'The core Ingen interface'
@@ -84,7 +85,7 @@ def ingen_bundle_path():
             return bundle
     return None
 
-class Host(Interface):
+class IngenAsync(Interface):
     def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None, msg_callback=lambda msg:None):
         self.msg_id      = 1
         self.server_base = uri + '/'
@@ -342,5 +343,5 @@ class Host(Interface):
 ''' % (path, remove_str, add_str), callback)
 
 if __name__ == "__main__":
-    h = Host()
+    h = IngenAsync()
     ioloop.IOLoop.instance().start()
