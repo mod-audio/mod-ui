@@ -160,7 +160,13 @@ class Session(object):
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
-        self.remove(-1, callback)
+        gen = iter(copy.deepcopy(self._pedalboard.data['instances']).keys())
+        def remove_all_plugins(r=True):
+            try:
+                self.remove(next(gen), remove_all_plugins)
+            except StopIteration:
+                callback(r)
+        remove_all_plugins()
 
     def setup_monitor(self):
         if self.monitor_server is None:
@@ -450,7 +456,7 @@ class Session(object):
         self.change_bufsize(self._pedalboard.get_bufsize(DEFAULT_JACK_BUFSIZE), remove)
 
     def change_bufsize(self, size, callback):
-        if size == self.jack_bufsize:
+        if self.jack_bufsize == 0 or size == self.jack_bufsize:
             return callback(False)
         self.jack_bufsize = size
         def bufsize_changed(result=None):
@@ -528,7 +534,10 @@ class Session(object):
             else:
                 change_bufsize(ok)
 
-        self.host.remove(instance_id, _callback)
+        if instance_id == -1:
+            self.reset(_callback)
+        else:
+            self.host.remove(instance_id, _callback)
 
     def bypass(self, instance_id, value, callback, loaded=False):
         value = 1 if int(value) > 0 else 0
