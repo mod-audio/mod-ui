@@ -533,8 +533,10 @@ class Session(object):
                     self.parameter_addressing_load(*addr)
             else:
                 change_bufsize(ok)
-
-        self.host.remove(instance_id, _callback)
+        if instance_id == -1:
+            self.reset(_callback)
+        else:
+            self.host.remove(instance_id, _callback)
 
     def bypass(self, instance_id, value, callback, loaded=False):
         value = 1 if int(value) > 0 else 0
