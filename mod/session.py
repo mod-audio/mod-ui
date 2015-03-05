@@ -160,7 +160,6 @@ class Session(object):
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
-        import copy
         gen = copy.deepcopy(self._pedalboard.data['instances']).iterkeys()
         def remove_all_plugins(r=True):
             try:
