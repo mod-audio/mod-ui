@@ -162,6 +162,7 @@ function Desktop(elements) {
 	}
     })
 
+    this.isApp = false
     this.title = ''
 
     // Indicates that pedalboard is in an unsaved state
@@ -254,6 +255,7 @@ function Desktop(elements) {
 	}
 
     this.prepareForApp = function(){
+        self.isApp = true
         self.reset()
         $('#mod-bluetooth').hide()
         $('#mod-settings').hide()
@@ -970,7 +972,8 @@ JqueryClass('statusTooltip', {
 
     showTooltip: function(timeout) {
 	var self = $(this)
-	if (!self.data('message'))
+        var msg  = self.data('message')
+	if (!msg || (desktop.isApp && msg == "Local upgrade server is offline"))
 	    return
 	var tooltip = self.data('tooltip')
 	tooltip.find('.text').html(self.data('message'))
