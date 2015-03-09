@@ -100,6 +100,8 @@ class IngenAsync(Interface):
         self.port_value_callback = lambda instance,port,value: None
 
         for (k, v) in NS.__dict__.items():
+            if k.startswith("__") and k.endswith("__"):
+                continue
             self.ns_manager.bind(k, v)
 
         # Parse error description from Ingen bundle for pretty printing
