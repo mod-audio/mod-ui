@@ -371,7 +371,7 @@ class Session(object):
             if not effect.get('preset', {}):
                 ioloop.IOLoop.instance().add_callback(lambda: set_bypass_addr(effect))
                 return
-            symbol = effect['preset'].keys()[0]
+            symbol = list(effect['preset'].keys())[0]
             value = effect['preset'].pop(symbol)
             self.parameter_set(effect['instanceId'], symbol, value, lambda result: set_ports(effect),
                                True)
@@ -407,7 +407,7 @@ class Session(object):
                 ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
                 return
 
-            symbol = effect['addressing'].keys()[0]
+            symbol = list(effect['addressing'].keys())[0]
             addressing = effect['addressing'].pop(symbol)
 
             if addressing.get('actuator', [-1])[0] == -1:
@@ -434,10 +434,10 @@ class Session(object):
                                    lambda result: set_ports_addr(effect),
                                    True)
         def choose_ports_addr():
-            if len(addressings.keys()) == 0:
+            if len(list(addressings.keys())) == 0:
                 ioloop.IOLoop.instance().add_callback(lambda: add_connections())
                 return
-            key = addressings.keys()[0]
+            key = list(addressings.keys())[0]
             addressings.pop(key)
             hwtyp, hwid, acttyp, actid = key
             self.parameter_addressing_load(hwtyp, hwid, acttyp, actid, 0)
