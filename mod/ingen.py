@@ -91,8 +91,8 @@ class Host(IngenAsync):
         y = random.randint(50,250)
 
         self.put("/%s" % name.replace(" ", "_").lower(), """
-        <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
-        <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
-        <http://lv2plug.in/ns/lv2core#name> "%s" ;
-        a <http://lv2plug.in/ns/lv2core#AudioPort> ;
-        a <http://lv2plug.in/ns/lv2core#%sPort>""" % (x, y, name, typ), callback)
+            <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+            <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+            <http://lv2plug.in/ns/lv2core#name> "%s" ;
+            a <http://lv2plug.in/ns/lv2core#AudioPort> ;
+            a <http://lv2plug.in/ns/lv2core#%sPort>""" % (x, y, name, typ), callback)

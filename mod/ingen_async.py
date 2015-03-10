@@ -121,7 +121,7 @@ class IngenAsync(Interface):
             self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
             ioloop.IOLoop.instance().add_callback(lambda: self.sock.connect(self.uri[len('unix://'):], check_response))
         elif self.uri.startswith('tcp://'):
-            self.sock = iostream.IOStream(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
             parsed = re.split('[:/]', self.uri[len('tcp://'):])
             addr = (parsed[0], int(parsed[1]))
             ioloop.IOLoop.instance().add_callback(lambda: self.sock.connect(addr, check_response))
@@ -170,9 +170,6 @@ class IngenAsync(Interface):
             self.update_model(response_model)
             """
 
-            blanks   = []
-            msg_desc = []
-
             # Patch messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Patch]):
                 bnode       = i[0]
@@ -184,11 +181,6 @@ class IngenAsync(Interface):
                     x = msg_model.value(add_node, NS.ingen.canvasX).toPython()
                     y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
                     self.position_callback(subject.toPython().split("/")[-1], x, y)
-
-                msg_desc += [i]
-                blanks        += [bnode]
-                #if body != 0:
-                #    self.raise_error(int(body), msg)  # Raise exception on server error
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
@@ -203,17 +195,46 @@ class IngenAsync(Interface):
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.port_value_callback(instance, port, value)
 
-                msg_desc += [i]
-                blanks        += [bnode]
+            # Put messages
+            for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
+                bnode       = i[0]
+                subject     = msg_model.value(bnode, NS.patch.subject)
+                body = msg_model.value(bnode, NS.patch.body)
+
+                # Put for port, we set the value
+                if msg_model.value(body, NS.rdf.type) == NS.lv2.ControlPort:
+                    sub = subject.toPython().split("/")
+                    instance = sub[-2]
+                    port = sub[-1]
+                    value = msg_model.value(body, NS.ingen.value).toPython()
+                    self.port_value_callback(instance, port, value)
+                # Put for a plugin
+                elif (msg_model.value(body, NS.rdf.type) == NS.ingen.Block and
+                         msg_model.value(body, NS.ingen.prototype)):
+                    instance = subject.toPython().split("/")[-1]
+                    uri = msg_model.value(body, NS.ingen.prototype).toPython()
+                    x = msg_model.value(body, NS.ingen.canvasX).toPython()
+                    y = msg_model.value(body, NS.ingen.canvasY).toPython()
+                    self.plugin_add_callback(instance, uri, x, y)
+                # New port connection
+                elif msg_model.value(body, NS.rdf.type) == NS.ingen.Arc:
+                    head = msg_model.value(body, NS.ingen.head).toPython().split("/")
+                    tail = msg_model.value(body, NS.ingen.tail).toPython().split("/")
+                    instance_a = head[-2]
+                    port_a = head[-1]
+                    instance_b = tail[-2]
+                    port_b = tail[-1]
+                    self.connection_add_callback(instance_a, port_a, instance_b, port_b)
+
+            # Delete messages
 
 
             self._msg_callback(msg_model)
         self._reading = True
-        self.sock.read_until("\0", self.keep_reading)
+        self.sock.read_until(".\n", self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
-        self.sock.write(self.msgencode(msg))
-        callback(True)
+        self.sock.write(self.msgencode(msg), callback)
 
     def __del__(self):
         self.sock.close()
@@ -223,35 +244,6 @@ class IngenAsync(Interface):
             return bytes(msg, 'utf-8')
         else:
             return msg.encode("utf-8")
-
-    def update_model(self, update):
-        for i in update.triples([None, NS.rdf.type, NS.patch.Put]):
-            put     = i[0]
-            subject = update.value(put, NS.patch.subject, None)
-            body    = update.value(put, NS.patch.body, None)
-            desc    = {}
-            for i in update.triples([body, None, None]):
-                self.model.add([subject, i[1], i[2]])
-        return update
-
-    def uri_to_path(self, uri):
-        path = uri
-        if uri.startswith(self.server_base):
-            return uri[len(self.server_base)-1:]
-        return uri
-
-    def blank_closure(self, graph, node):
-        def blank_walk(node, g):
-            for i in g.triples([node, None, None]):
-                if type(i[2]) == rdflib.BNode and i[2] != node:
-                    yield i[2]
-                    blank_walk(i[2], g)
-
-        closure = [node]
-        for b in graph.transitiveClosure(blank_walk, node):
-            closure += [b]
-
-        return closure
 
     def raise_error(self, code, cause):
         klass = self.model.value(None, NS.ingerr.errorCode, rdflib.Literal(code))
