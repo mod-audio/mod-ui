@@ -213,9 +213,9 @@ class IngenAsync(Interface):
                          msg_model.value(body, NS.ingen.prototype)):
                     instance = subject.toPython().split("/")[-1]
                     uri = msg_model.value(body, NS.ingen.prototype).toPython()
-                    x = msg_model.value(body, NS.ingen.canvasX).toPython()
-                    y = msg_model.value(body, NS.ingen.canvasY).toPython()
-                    self.plugin_add_callback(instance, uri, x, y)
+                    x = msg_model.value(body, NS.ingen.canvasX)
+                    y = msg_model.value(body, NS.ingen.canvasY)
+                    self.plugin_add_callback(instance, uri, x if x else 0, y if y else 0)
                 # New port connection
                 elif msg_model.value(body, NS.rdf.type) == NS.ingen.Arc:
                     head = msg_model.value(body, NS.ingen.head).toPython().split("/")
@@ -234,7 +234,7 @@ class IngenAsync(Interface):
         self.sock.read_until(".\n", self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
-        self.sock.write(self.msgencode(msg), callback)
+        self.sock.write(self.msgencode(msg), lambda:callback(True))
 
     def __del__(self):
         self.sock.close()
