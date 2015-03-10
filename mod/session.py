@@ -20,7 +20,7 @@ import os, time, logging, copy, json
 from os import path
 
 from datetime import timedelta
-from tornado import iostream, ioloop
+from tornado import iostream, ioloop, gen
 from queue import Empty
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
@@ -101,32 +101,52 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
 
+    @gen.engine
     def host_callback(self):
         self.host_initialized = True
 
         def port_value_cb(instance, port, value):
             instance_id = int(instance.replace("instance",""))
-            addrs = self._pedalboard.data['instances'][instance_id]['addressing']
-            addr = addrs.get(port, None)
-            if addr:
-                addr['value'] = value
-                act = addr['actuator']
-                self.parameter_addressing_load(*act)
-            self.browser.send(instance_id, port, value)
+            if self._pedalboard.data['instances'].get(instance_id, False):
+                addrs = self._pedalboard.data['instances'][instance_id]['addressing']
+                addr = addrs.get(port, None)
+                if addr:
+                    addr['value'] = value
+                    act = addr['actuator']
+                    self.parameter_addressing_load(*act)
+                self.browser.send(instance_id, port, value)
 
         def position_cb(instance, x, y):
             pass
 
-        self.host.add_audio_port("Audio In 1", "Input")
-        time.sleep(0.5)
-        self.host.add_audio_port("Audio In 2", "Input")
-        time.sleep(0.5)
-        self.host.add_audio_port("Audio Out 1", "Output")
-        time.sleep(0.5)
-        self.host.add_audio_port("Audio Out 2", "Output")
+        def plugin_add_cb(instance, uri, x, y):
+            pass
+
+        def plugin_delete_cb(instance):
+            pass
+
+        def connection_add_cb(instance_a, port_a, instance_b, port_b):
+            pass
+
+        def connection_delete_cb(instance_a, port_a, instance_b, port_b):
+            pass
+
+        # TODO: use self.host.get("/") to get information about
+        # ingen's current status and build it in the JS interface
+        yield gen.Task(lambda callback: self.host.get("/", callback=callback))
+
+        # Adds audio ports
+        yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 1", "Input", callback=callback))
+        yield gen.Task(lambda callback: self.host.add_audio_port("Audio Out 1", "Output", callback=callback))
+        yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 2", "Input", callback=callback))
+        yield gen.Task(lambda callback: self.host.add_audio_port("Audio Out 2", "Output", callback=callback))
+
         self.host.position_callback = position_cb
         self.host.port_value_callback = port_value_cb
-
+        self.host.plugin_add_callback = plugin_add_cb
+        self.host.plugin_delete_callback = plugin_delete_cb
+        self.host.connection_add_callback = connection_add_cb
+        self.host.connection_delete_callback = connection_delete_cb
 
     def hmi_callback(self):
         if self.host_initialized:
@@ -331,7 +351,7 @@ class Session(object):
 
     def load_current_pedalboard(self, callback):
         # let's copy the data
-        effects = copy.deepcopy(list(self._pedalboard.data['instances'].values()))
+        effects = list(copy.deepcopy(self._pedalboard.data['instances'].values()))
         connections = copy.deepcopy(self._pedalboard.data['connections'])
 
         # How it works:
@@ -537,7 +557,6 @@ class Session(object):
                     self.parameter_addressing_load(*addr)
             else:
                 change_bufsize(ok)
-
         if instance_id == -1:
             self.reset(_callback)
         else:

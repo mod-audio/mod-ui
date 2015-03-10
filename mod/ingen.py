@@ -64,6 +64,9 @@ class Host(IngenAsync):
     def preset_load(self, instance_id, uri, callback=lambda result: None):
         self.set("/instance%d" % instance_id, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
+    def remove(self, instance_id, callback=lambda result: None):
+        self.delete("/instance%d" % instance_id, callback)
+
     def cpu_load(self, callback=lambda r:r):
         callback({'ok': True, 'value': 50})
 
@@ -88,11 +91,8 @@ class Host(IngenAsync):
         y = random.randint(50,250)
 
         self.put("/%s" % name.replace(" ", "_").lower(), """
-        <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
-        <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
-        <http://lv2plug.in/ns/lv2core#name> "%s" ;
-        a <http://lv2plug.in/ns/lv2core#AudioPort> ;
-        a <http://lv2plug.in/ns/lv2core#%sPort>""" % (x, y, name, typ), callback)
-
-    def remove(self, instance_id, callback=lambda result: None):
-        self.delete("/instance%d" % instance_id, callback)
+            <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+            <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+            <http://lv2plug.in/ns/lv2core#name> "%s" ;
+            a <http://lv2plug.in/ns/lv2core#AudioPort> ;
+            a <http://lv2plug.in/ns/lv2core#%sPort>""" % (x, y, name, typ), callback)

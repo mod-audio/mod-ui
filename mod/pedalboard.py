@@ -188,7 +188,6 @@ class Pedalboard(object):
                 i += 1
         return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
 
-
     def bypass(self, instance_id, value):
         try:
             self.data['instances'][instance_id]['bypassed'] = bool(value)
@@ -280,7 +279,7 @@ class Pedalboard(object):
         return tuple()
 
     def set_title(self, title):
-        self.data['metadata']['title'] = str(title)
+        self.data['metadata']['title'] = title
 
     def set_size(self, width, height):
         logging.debug("[pedalboard] setting window size %dx%d" % (width, height))
