@@ -826,7 +826,7 @@ class TemplateHandler(web.RequestHandler):
     def pedalboard(self):
         context = self.index()
         uid = self.get_argument('uid')
-        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid)).read().encode("utf-8"))
+        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid), 'rb').read())
         return context
 
 class EditionLoader(TemplateHandler):
