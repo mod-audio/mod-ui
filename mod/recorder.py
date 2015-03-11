@@ -77,7 +77,7 @@ class Player(object):
         if self.playing:
             self.stop()
         fh.seek(0)
-        open('/tmp/recording.ogg', 'w').write(fh.read())
+        open('/tmp/recording.ogg', 'wb').write(fh.read())
         self.proc = subprocess.Popen(['sndfile-jackplay', '/tmp/recording.ogg'],
                                      stdout=subprocess.PIPE)
         self.fh = fh
