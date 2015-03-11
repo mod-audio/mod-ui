@@ -351,7 +351,7 @@ class Session(object):
 
     def load_current_pedalboard(self, callback):
         # let's copy the data
-        effects = list(copy.deepcopy(self._pedalboard.data['instances'].values()))
+        effects = copy.deepcopy(list(self._pedalboard.data['instances'].values()))
         connections = copy.deepcopy(self._pedalboard.data['connections'])
 
         # How it works:

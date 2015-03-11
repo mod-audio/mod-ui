@@ -180,9 +180,9 @@ class IngenAsync(Interface):
 
                 # Is it setting a position?
                 if NS.ingen.canvasX in msg_model.predicates(add_node) and NS.ingen.canvasY in msg_model.predicates(add_node):
-                    x = msg_model.value(add_node, NS.ingen.canvasX)
-                    y = msg_model.value(add_node, NS.ingen.canvasY)
-                    self.position_callback(subject.split("/")[-1], x, y)
+                    x = msg_model.value(add_node, NS.ingen.canvasX).toPython()
+                    y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
+                    self.position_callback(subject.toPython().split("/")[-1], x, y)
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
@@ -191,10 +191,10 @@ class IngenAsync(Interface):
 
                 # Setting a port value
                 if msg_model.value(bnode, NS.patch.property) == NS.ingen.value:
-                    sub = subject.split("/")
+                    sub = subject.toPython().split("/")
                     instance = sub[-2]
                     port = sub[-1]
-                    value = msg_model.value(bnode, NS.patch.value)
+                    value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.port_value_callback(instance, port, value)
 
             # Put messages
@@ -205,23 +205,23 @@ class IngenAsync(Interface):
 
                 # Put for port, we set the value
                 if msg_model.value(body, NS.rdf.type) == NS.lv2.ControlPort:
-                    sub = subject.split("/")
+                    sub = subject.toPython().split("/")
                     instance = sub[-2]
                     port = sub[-1]
-                    value = msg_model.value(body, NS.ingen.value)
+                    value = msg_model.value(body, NS.ingen.value).toPython()
                     self.port_value_callback(instance, port, value)
                 # Put for a plugin
                 elif (msg_model.value(body, NS.rdf.type) == NS.ingen.Block and
                          msg_model.value(body, NS.ingen.prototype)):
-                    instance = subject.split("/")[-1]
-                    uri = msg_model.value(body, NS.ingen.prototype)
+                    instance = subject.toPython().split("/")[-1]
+                    uri = msg_model.value(body, NS.ingen.prototype).toPython()
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
-                    self.plugin_add_callback(instance, uri, x, y)
+                    self.plugin_add_callback(instance, uri, x or 0, y or 0)
                 # New port connection
                 elif msg_model.value(body, NS.rdf.type) == NS.ingen.Arc:
-                    head = msg_model.value(body, NS.ingen.head).split("/")
-                    tail = msg_model.value(body, NS.ingen.tail).split("/")
+                    head = msg_model.value(body, NS.ingen.head).toPython().split("/")
+                    tail = msg_model.value(body, NS.ingen.tail).toPython().split("/")
                     instance_a = head[-2]
                     port_a = head[-1]
                     instance_b = tail[-2]
@@ -236,8 +236,7 @@ class IngenAsync(Interface):
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
-        self.sock.write(self.msgencode(msg), callback)
-        #callback(True)
+        self.sock.write(self.msgencode(msg), lambda:callback(True))
 
     def __del__(self):
         self.sock.close()
