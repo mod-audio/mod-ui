@@ -96,6 +96,15 @@
     body {
         background: transparent !important;
     }
+    body, div {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+    }
     #wrapper {
         overflow: hidden;
     }
@@ -113,7 +122,7 @@
 </head>
 <body>
     <!-- WRAPPER -->
-    <div id="wrapper">
+    <div id="wrapper" unselectable="on" onselectstart="return false;" onmousedown="return false;">
         <!-- PEDALBOARD -->
         <div id="pedalboard">
             <!-- PEDALBOARD-DASHBOARD -->
