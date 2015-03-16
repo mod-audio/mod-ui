@@ -89,7 +89,7 @@ class Session(object):
 
 #        self.host = factory(Host, FakeHost, DEV_HOST,
 #                            "unix:///tmp/ingen.sock", self.host_callback)
-        self.host = Host("unix:///tmp/ingen.sock", self.host_callback)
+        self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"), self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI,
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
 
@@ -100,6 +100,9 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
+
+    def reconnect(self):
+        self.host.open_connection(self.host_callback)
 
     @gen.engine
     def host_callback(self):
