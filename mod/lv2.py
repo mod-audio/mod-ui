@@ -79,6 +79,32 @@ category_index = {
     'MixerPlugin': ['Utility', 'Mixer'],
     }
 
+def get_pedalboards():
+    def get_presets(p):
+        presets = p.get_related(pset.Preset)
+        def get_preset_data(preset):
+            W.load_resource(preset.me)
+            label = W.find_nodes(preset.me, rdfs.label.me, None).get_first().as_string()
+            return dict(url=preset.as_string(), label=label)
+        return list(LILV_FOREACH(presets, get_preset_data))
+
+    pedalboards = []
+    tester = modgui.thumbnail
+
+    for plugin in PLUGINS:
+        t = plugin.get_value(tester).get_first()
+
+        if t.me is None:
+            continue
+
+        name = plugin.get_name().as_string()
+        uri  = plugin.get_uri().as_string()
+        thum = t.as_string()
+
+        pedalboards.append((name, uri, thum, get_presets(plugin)))
+
+    return pedalboards
+
 class PluginSerializer(object):
     def __init__(self, uri=None, plugin=None):
         if plugin:
