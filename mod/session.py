@@ -36,7 +36,6 @@ from mod.hmi import HMI
 #from mod.host import Host
 from mod.ingen import Host
 from mod.clipmeter import Clipmeter
-from mod.browser import BrowserControls
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
@@ -99,7 +98,6 @@ class Session(object):
         self.recording = None
 
         self._clipmeter = Clipmeter(self.hmi)
-        self.browser = BrowserControls()
         self.websocket = None
 
     @gen.engine
@@ -115,7 +113,7 @@ class Session(object):
                     addr['value'] = value
                     act = addr['actuator']
                     self.parameter_addressing_load(*act)
-                self.browser.send(instance_id, port, value)
+                #self.browser.send(instance_id, port, value)
 
         def position_cb(instance, x, y):
             pass
@@ -647,7 +645,7 @@ class Session(object):
         self.host.disconnect(port_from, port_to, cb)
 
     def hmi_parameter_set(self, instance_id, port_id, value, callback):
-        self.browser.send(instance_id, port_id, value)
+        #self.browser.send(instance_id, port_id, value)
         self.parameter_set(instance_id, port_id, value, callback)
 
     def preset_load(self, instance_id, url, callback):
@@ -666,7 +664,7 @@ class Session(object):
                     addr['value'] = port['value']
                     act = addr['actuator']
                     self.parameter_addressing_load(*act)
-                self.browser.send(instance_id, port['symbol'], port['value'])
+                #self.browser.send(instance_id, port['symbol'], port['value'])
             """
             callback(ok)
         self.host.preset_load(instance_id, url, cb)
@@ -691,10 +689,12 @@ class Session(object):
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
 
+    # TODO: jack cpu load with ingen
     def jack_cpu_load(self, callback=lambda result: None):
         def cb(result):
             if result['ok']:
-                self.browser.send(99999, 'cpu_load', round(result['value']))
+                pass
+                #self.browser.send(99999, 'cpu_load', round(result['value']))
         self.host.cpu_load(cb)
     # END host commands
 
@@ -713,13 +713,10 @@ class Session(object):
         self.bank_address(0, 0, 1, 2, 0, lambda r: None)
         self.bank_address(0, 0, 1, 3, 0, lambda r: None)
 
-        self.browser.start()
-
         self.hmi.ui_con(verify)
 
     def end_session(self, callback):
         self._banks = list_banks()
-        self.browser.end()
         self.hmi.ui_dis(callback)
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,

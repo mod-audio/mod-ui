@@ -593,15 +593,6 @@ class EffectParameterGet(web.RequestHandler):
         self.write(json.dumps(response))
         self.finish()
 
-class EffectParameterFeed(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        response = yield gen.Task(SESSION.browser.wait)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response))
-        self.finish()
-
 class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
         SESSION.set_websocket(self)
@@ -1078,7 +1069,6 @@ application = web.Application(
             (r"/effect/preset/load/(\d+)", EffectPresetLoad),
             (r"/effect/parameter/set/(\d+),([A-Za-z0-9_]+)", EffectParameterSet),
             (r"/effect/parameter/get/(\d+),([A-Za-z0-9_]+)", EffectParameterGet),
-            (r"/effect/parameter/feed/?", EffectParameterFeed),
             (r"/effect/parameter/address/(\d+),([A-Za-z0-9_]+)", EffectParameterAddress),
             (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),

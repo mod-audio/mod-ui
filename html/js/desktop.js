@@ -641,16 +641,6 @@ Desktop.prototype.makePedalboard = function(el, effectBox) {
             })
 	},
 
-	getParameterFeed: function(callback) {
-	    $.ajax({
-		url: '/effect/parameter/feed',
-		type: 'GET',
-		success: callback,
-		dataType: 'json',
-		cache: false
-	    })
-	},
-
 	pluginMove: function(instanceId, x, y, callback) {
         if (callback == null) {
             callback = function(r) {}

@@ -25,49 +25,57 @@ $(document).ready(function() {
                  function (error, triple, prefixes) {
                     if (triple) {
                         store.addTriple(triple.subject, triple.predicate, triple.object);
+                    } else {
+                        // Delete messages
+                        store.find(null,
+                                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                                "http://lv2plug.in/ns/ext/patch#Delete").forEach(function (msg) {
+                                var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
+                                if(subject.length)
+                                    console.log("Delete: " + subject[0]);
+                        });
+
+                        // Put messages
+                        store.find(null,
+                                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                                "http://lv2plug.in/ns/ext/patch#Put").forEach(function (msg) {
+                                var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
+                                if(subject.length)
+                                    console.log("Put: " + subject[0]);
+
+                        });
+
+                        // Patch messages
+                        store.find(null,
+                                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                                "http://lv2plug.in/ns/ext/patch#Patch").forEach(function (msg) {
+                                var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
+                                if(subject.length)
+                                    console.log("Patch: " + subject[0]);
+
+                        });
+
+                        // Set messages
+                        store.find(null,
+                                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                                "http://lv2plug.in/ns/ext/patch#Set").forEach(function (msg) {
+                                var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
+                                if(subject.length) {
+                                    var property = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#property");
+                                    var value = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#value");
+                                    if (property.length && value.length) {
+                                        // setting a port value
+                                        if (property[0].object == "http://drobilla.net/ns/ingen#value") {
+                                            var sub = subject[0].object;
+                                            var instance = sub.split("/")[0];
+                                            var port = sub.split("/")[1];
+                                            var gui = desktop.pedalboard.pedalboard("getGui", instance.replace("instance", ""));
+                                            gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                        }
+                                    }
+                                }
+                        });
                     }
-
-                    // Delete messages
-                    store.find(null,
-                            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                            "http://lv2plug.in/ns/ext/patch#Delete").forEach(function (msg) {
-                            var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                            if(subject.length)
-                                console.log("Delete: " + subject[0]);
-                    });
-
-                    // Put messages
-                    store.find(null,
-                            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                            "http://lv2plug.in/ns/ext/patch#Put").forEach(function (msg) {
-                            var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                            if(subject.length)
-                                console.log("Put: " + subject[0]);
-
-                    });
-
-                    // Patch messages
-                    store.find(null,
-                            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                            "http://lv2plug.in/ns/ext/patch#Patch").forEach(function (msg) {
-                            var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                            if(subject.length)
-                                console.log("Patch: " + subject[0]);
-
-                    });
-
-                    // Set messages
-                    store.find(null,
-                            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                            "http://lv2plug.in/ns/ext/patch#Set").forEach(function (msg) {
-                            var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                            if(subject.length)
-                                console.log("Set: " + subject[0]);
-                            var property = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#property");
-                            var value = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#value");
-                            if(property.length && value.length)
-                                console.log("\t"+property[0]+": "+value[0]);
-                    });
                 });
     };
 });
