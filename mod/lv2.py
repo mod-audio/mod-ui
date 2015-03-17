@@ -85,7 +85,7 @@ def get_pedalboards():
         def get_preset_data(preset):
             W.load_resource(preset.me)
             label = W.find_nodes(preset.me, rdfs.label.me, None).get_first().as_string()
-            return dict(url=preset.as_string(), label=label)
+            return dict(uri=preset.as_string(), label=label)
         return list(LILV_FOREACH(presets, get_preset_data))
 
     pedalboards = []

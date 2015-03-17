@@ -257,6 +257,8 @@ function Desktop(elements) {
     this.prepareForApp = function(){
         self.isApp = true
         self.reset()
+        $('#mod-pedalboard').hide()
+        $('#mod-bank').hide()
         $('#mod-bluetooth').hide()
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
