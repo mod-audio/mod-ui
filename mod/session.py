@@ -100,6 +100,7 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.browser = BrowserControls()
+        self.websocket = None
 
     @gen.engine
     def host_callback(self):
@@ -130,6 +131,12 @@ class Session(object):
 
         def connection_delete_cb(instance_a, port_a, instance_b, port_b):
             pass
+
+        def msg_cb(msg):
+            if self.websocket:
+                self.websocket.write_message(msg)
+
+        self.host.msg_callback = msg_cb
 
         # TODO: use self.host.get("/") to get information about
         # ingen's current status and build it in the JS interface
@@ -524,6 +531,9 @@ class Session(object):
         #if os.path.exist():
         #    os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
         #callback(True)
+
+    def set_websocket(self, websocket):
+        self.websocket = websocket
 
     # host commands
 

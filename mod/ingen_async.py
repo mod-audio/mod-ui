@@ -86,7 +86,7 @@ def ingen_bundle_path():
     return None
 
 class IngenAsync(Interface):
-    def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None, msg_callback=lambda msg:None):
+    def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None):
         self.msg_id      = 1
         self.server_base = uri + '/'
         self.uri = uri
@@ -95,9 +95,9 @@ class IngenAsync(Interface):
         self.ns_manager.bind('server', self.server_base)
         self._queue = []
         self._idle = True
-        self._msg_callback = msg_callback
         self.position_callback = lambda instance,x,y: None
         self.port_value_callback = lambda instance,port,value: None
+        self.msg_callback = lambda msg: None
 
         for (k, v) in NS.__dict__.items():
             self.ns_manager.bind(k, v)
@@ -107,9 +107,6 @@ class IngenAsync(Interface):
         if bundle:
             self.model.parse(os.path.join(bundle, 'errors.ttl'), format='n3')
         self.open_connection(callback)
-
-    def set_callback(self, callback):
-        self._msg_callback = callback
 
     def open_connection(self, callback=None):
         def check_response():
@@ -133,6 +130,7 @@ class IngenAsync(Interface):
 
         msg_str = msg.replace("\0", "") if msg else ""
         if msg_str:
+            self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
             msg_model.namespace_manager = self.ns_manager
             msg_model.parse(StringIO(msg_str.decode('utf-8')), self.server_base, format='n3')
@@ -225,16 +223,11 @@ class IngenAsync(Interface):
                     instance_b = tail[-2]
                     port_b = tail[-1]
                     self.connection_add_callback(instance_a, port_a, instance_b, port_b)
-
-            # Delete messages
-
-
-            self._msg_callback(msg_model)
         self._reading = True
         self.sock.read_until(".\n", self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
-        self.sock.write(self.msgencode(msg), lambda:callback(True))
+        self.sock.write(self.msgencode(msg), lambda: callback(True))
 
     def __del__(self):
         self.sock.close()
