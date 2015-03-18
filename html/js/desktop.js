@@ -254,9 +254,8 @@ function Desktop(elements) {
 		   })
 	}
 
-    this.prepareForApp = function(){
+    this.prepareForApp = function(doReset){
         self.isApp = true
-        self.reset()
         $('#mod-pedalboard').hide()
         $('#mod-bank').hide()
         $('#mod-bluetooth').hide()
@@ -265,6 +264,10 @@ function Desktop(elements) {
         $('#pedalboard-actions').hide()
         $("#pedalboard-dashboard").parent().css({'top':'0px'})
         $('#zoom-controllers').css({'top':'3px', 'right':'3px'})
+
+        if (doReset) {
+            self.reset()
+        }
     }
 
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
