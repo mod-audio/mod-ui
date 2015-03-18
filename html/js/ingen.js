@@ -16,7 +16,7 @@
  */
 
 $(document).ready(function() {
-    var ws = new WebSocket("ws://localhost:8888/websocket");
+    var ws = new WebSocket("ws://" + window.location.host + "/websocket");
     var parser = N3.Parser();
     ws.onmessage = function (evt) {
         var msgs = evt.data;
