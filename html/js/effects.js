@@ -424,53 +424,7 @@ JqueryClass('effectBox', {
 	if (plugin.rating)
 	    $(info.find('.rating')[0]).addClass(['', 'one', 'two', 'three', 'four', 'five'][Math.round(plugin.rating)])
 
-	// The remove button will remove the plugin, close window and re-render the plugins
-	// without the removed one
-	if (plugin.installedVersion) {
-	    info.find('.js-remove').click(function() {
-		self.data('removePlugin')(plugin, function(ok) {
-		    if (ok) {
-			info.window('close')
-			delete plugins[index].installedVersion
-			plugins[index].status = 'blocked'
-			self.effectBox('showPlugins', plugins)
-		    }
-		})
-	    }).show()
-	} else {
-	    info.find('.js-installed-version').hide()	    
-	    info.find('.js-install').show().click(function() {
-		// Install plugin
-		self.data('installPlugin')(plugin, function(plugin) {
-		    if (plugin) {
-			plugins[index].installedVersion = plugins[index].latestVersion
-			if (info.is(':visible')) {
-			    info.remove()
-			    self.effectBox('showPluginInfo', index)
-			}
-		    }
-		})
-	    })
-	}
-
 	var checkVersion = function() {
-	    if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
-		info.find('.js-upgrade').click(function() {
-		    // Do the upgrade
-		    self.data('upgradePlugin')(plugin, function(plugin) {
-			if (plugin) {
-			    plugin.installedVersion = plugins[index].latestVersion
-			    plugin.latestVersion = plugins[index].latestVersion
-			    plugins[index] = plugin
-			    if (info.is(':visible')) {
-				info.remove()
-				self.effectBox('showPluginInfo', index)
-			    }
-			}
-		    })
-		}).show()
-	    }
-
 	    if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
 		self.effectBox('getRating', plugin, info.find('.js-rate'))
 
