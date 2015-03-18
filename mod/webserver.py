@@ -31,7 +31,7 @@ except ImportError:
 from hashlib import sha1 as sha
 from hashlib import md5
 from base64 import b64decode, b64encode
-from tornado import gen, web, iostream
+from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
@@ -602,6 +602,17 @@ class EffectParameterFeed(web.RequestHandler):
         self.write(json.dumps(response))
         self.finish()
 
+class AtomWebSocket(websocket.WebSocketHandler):
+    def open(self):
+        SESSION.set_websocket(self)
+
+    def on_message(self, message):
+        self.write_message(u"You said: " + message)
+
+    def on_close(self):
+        print("WebSocket closed")
+
+
 class EffectPosition(web.RequestHandler):
     def get(self, instance):
         instance = int(instance)
@@ -1120,6 +1131,8 @@ application = web.Application(
             (r"/js/templates.js$", BulkTemplateLoader),
 
             (r"/demo/restore/?$", DemoRestore),
+
+            (r"/websocket/?$", AtomWebSocket),
 
             (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": PEDALBOARD_SCREENSHOT_DIR}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
