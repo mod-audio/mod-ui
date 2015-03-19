@@ -37,54 +37,54 @@ function JqueryClass(name, methods) {
 }
 */
 
-(function($) {
-    $.fn.cleanableInput = function(options) {
-	var self = $(this)
-	var remove = $('<span class="input-clean">x</span>')
-	remove.insertAfter(self)
+(function ($) {
+    $.fn.cleanableInput = function (options) {
+        var self = $(this)
+        var remove = $('<span class="input-clean">x</span>')
+        remove.insertAfter(self)
 
-	var position = function() {
-	    remove.show()
-	    remove.css('left', self.position().left + self.width() - 3)
-	    remove.css('top', self.position().top + self.height() - 22)
-	}
+        var position = function () {
+            remove.show()
+            remove.css('left', self.position().left + self.width() - 3)
+            remove.css('top', self.position().top + self.height() - 22)
+        }
 
-	remove.click(function() {
-	    self.val('')
-	    remove.hide()
-	    self.trigger('keyup')
-	})
+        remove.click(function () {
+            self.val('')
+            remove.hide()
+            self.trigger('keyup')
+        })
 
-	if (self.val().length == 0)
-	    remove.hide()
-	else
-	    position()
+        if (self.val().length == 0)
+            remove.hide()
+        else
+            position()
 
-	self.keyup(function() {
-	    if (self.val().length > 0)
-		position()
-	    else
-		remove.hide()
-	})
-	
+        self.keyup(function () {
+            if (self.val().length > 0)
+                position()
+            else
+                remove.hide()
+        })
+
     }
 })(jQuery);
 
-(function($) {
+(function ($) {
     $.extend($.expr[":"], {
-	scrollable: function(element) {
-	    var vertically_scrollable, horizontally_scrollable;
-	    if ($(element).css('overflow') == 'scroll' || $(element).css('overflowX') == 'scroll' || $(element).css('overflowY') == 'scroll') return true;
+        scrollable: function (element) {
+            var vertically_scrollable, horizontally_scrollable;
+            if ($(element).css('overflow') == 'scroll' || $(element).css('overflowX') == 'scroll' || $(element).css('overflowY') == 'scroll') return true;
 
-	    vertically_scrollable = (element.clientHeight < element.scrollHeight) && (
-		$.inArray($(element).css('overflowY'), ['scroll', 'auto']) != -1 || $.inArray($(element).css('overflow'), ['scroll', 'auto']) != -1);
+            vertically_scrollable = (element.clientHeight < element.scrollHeight) && (
+                $.inArray($(element).css('overflowY'), ['scroll', 'auto']) != -1 || $.inArray($(element).css('overflow'), ['scroll', 'auto']) != -1);
 
-	    if (vertically_scrollable) return true;
+            if (vertically_scrollable) return true;
 
-	    horizontally_scrollable = (element.clientWidth < element.scrollWidth) && (
-		$.inArray($(element).css('overflowX'), ['scroll', 'auto']) != -1 || $.inArray($(element).css('overflow'), ['scroll', 'auto']) != -1);
-	    return horizontally_scrollable;
-	}
+            horizontally_scrollable = (element.clientWidth < element.scrollWidth) && (
+                $.inArray($(element).css('overflowX'), ['scroll', 'auto']) != -1 || $.inArray($(element).css('overflow'), ['scroll', 'auto']) != -1);
+            return horizontally_scrollable;
+        }
     });
 })(jQuery)
 
@@ -93,10 +93,10 @@ function setCookie(name, value, days) {
         var date = new Date();
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
         var expires = "; expires=" + date.toGMTString();
-    }
-    else var expires = "";
+    } else var expires = "";
     document.cookie = name + "=" + value + expires + "; path=/";
 }
+
 function getCookie(c_name, defaultValue) {
     if (document.cookie.length > 0) {
         c_start = document.cookie.indexOf(c_name + "=");
@@ -110,32 +110,33 @@ function getCookie(c_name, defaultValue) {
         }
     }
     if (defaultValue)
-	return defaultValue
+        return defaultValue
     return "";
 }
 
 function renderTime(time) {
     var months = ['Jan',
-		  'Feb',
-		  'Mar',
-		  'Apr',
-		  'May',
-		  'Jun',
-		  'Jul',
-		  'Aug',
-		  'Sep',
-		  'Oct',
-		  'Nov',
-		  'Dec']
-    return sprintf('%s %02d %02d:%02d', 
-		   months[time.getMonth()],
-		   time.getDate(),
-		   time.getHours(),
-		   time.getMinutes())		   
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+    ]
+    return sprintf('%s %02d %02d:%02d',
+        months[time.getMonth()],
+        time.getDate(),
+        time.getHours(),
+        time.getMinutes())
 }
 
 function remove_from_array(array, element) {
     var index = array.indexOf(element)
     if (index > -1)
-	array.splice(index, 1)
+        array.splice(index, 1)
 }

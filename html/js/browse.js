@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-$(document).ready(function() {
-    $.get('/load_template/plugin.html', function(template) {
+$(document).ready(function () {
+    $.get('/load_template/plugin.html', function (template) {
         $.ajax({
             method: 'get',
             url: SITEURL + '/effect/list/',
-            success: function(effects) {
+            success: function (effects) {
                 for (var i = 0; i < effects.length; i++) {
                     renderEffect(effects[i], template);
                 }
@@ -32,13 +32,13 @@ $(document).ready(function() {
 
 function renderEffect(effect, template) {
     var plugin = $(Mustache.render(template, effect));
-    plugin.find('.details').each(function() {
+    plugin.find('.details').each(function () {
         $(this).hide();
     });
-    plugin.find('h3').click(function() {
+    plugin.find('h3').click(function () {
         $(this).next().toggle('fast');
     });
-    plugin.find('.details button').click(function() {
+    plugin.find('.details button').click(function () {
         installPlugin(effect,
             plugin.find('.progressbar'),
             $(this));
@@ -52,13 +52,13 @@ function installPlugin(plugin, bar, button) {
         '/effect/install',
         plugin._id);
 
-    trans.reportStatus = function(status) {
+    trans.reportStatus = function (status) {
         bar.progressbar({
             value: status.percent
         });
     };
 
-    trans.reportFinished = function() {
+    trans.reportFinished = function () {
         bar.progressbar({
             value: 100
         });

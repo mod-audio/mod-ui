@@ -38,13 +38,13 @@
 
 function UserSession(options) {
     var self = this
-    
+
     var OFFLINE = 0 // Cloud haven't been reached yet, maybe no network
     var CONNECTING = 1 // Trying to reach cloud and get a session id
     var ONLINE = 2 // Device has been identified
     var LOGGED = 3 // User has been identified and is logged at this device
     var DISCONNECTED = 4 // Device was not recognized by Cloud, communication suspended
-     
+
 
     this.status = OFFLINE
     this.minRetryTimeout = 5
@@ -53,65 +53,66 @@ function UserSession(options) {
     this.retryTimeout = this.minRetryTimeout
 
     options = $.extend({
-        offline: function() {},
-        connecting: function() {},
-        online: function() {},
-        login: function() {},
-        logout: function() {},
-	disconnected: function() {},
-	notify: function(message) {
-	    new Notification('error', message)
-	},
-	loginWindow: $('<div>')
+        offline: function () {},
+        connecting: function () {},
+        online: function () {},
+        login: function () {},
+        logout: function () {},
+        disconnected: function () {},
+        notify: function (message) {
+            new Notification('error', message)
+        },
+        loginWindow: $('<div>')
     }, options)
 
-    this.getSessionId = function() {
+    this.getSessionId = function () {
         self.setStatus(CONNECTING)
         $.ajax({
-            url: SITEURL+'/login/start_session',
+            url: SITEURL + '/login/start_session',
             type: 'GET',
-            success: function(sid) {
+            success: function (sid) {
                 self.sid = sid
-		self.retryTimeout = self.minRetryTimeout
+                self.retryTimeout = self.minRetryTimeout
                 self.signSession()
             },
-            error: function(e) {
+            error: function (e) {
                 self.setStatus(OFFLINE)
-		if (self.retryTimeout == self.minRetryTimeout)
-		    self.notify("Could not contact cloud")
-		self.retry()
+                if (self.retryTimeout == self.minRetryTimeout)
+                    self.notify("Could not contact cloud")
+                self.retry()
             },
             dataType: 'json'
         })
     }
 
-    this.retry = function() {
-	timeout = self.retryTimeout
-	self.retryTimeout = Math.max(self.maxRetryTimeout, timeout * 2)
-	setTimeout(function() {
-	    self.getSessionId()
-	}, timeout)
+    this.retry = function () {
+        timeout = self.retryTimeout
+        self.retryTimeout = Math.max(self.maxRetryTimeout, timeout * 2)
+        setTimeout(function () {
+            self.getSessionId()
+        }, timeout)
     }
 
-    this.signSession = function() {
-        $.ajax({ url: '/login/sign_session/'+self.sid,
-           success: function(signature) {
-               self.identifyDevice(signature)
-           },
-           error: function(e) {
-	       console.log(e)
-               self.notify('Could not start authentication')
-           },
-           dataType: 'json'
-       })
-    }
-
-    this.identifyDevice = function(signature) {
+    this.signSession = function () {
         $.ajax({
-            url: SITEURL+'/login/identify_device',
+            url: '/login/sign_session/' + self.sid,
+            success: function (signature) {
+                self.identifyDevice(signature)
+            },
+            error: function (e) {
+                console.log(e)
+                self.notify('Could not start authentication')
+            },
+            dataType: 'json'
+        })
+    }
+
+    this.identifyDevice = function (signature) {
+        $.ajax({
+            url: SITEURL + '/login/identify_device',
             data: signature,
             type: 'GET',
-            success: function(status) {
+            success: function (status) {
                 if (!status.device_auth) {
                     self.setStatus(OFFLINE)
                     return self.notify('This device cannot be identified, please contact support')
@@ -120,136 +121,145 @@ function UserSession(options) {
                     self.identifyUser(status.user, status.signature, new Function())
                 else {
                     self.setStatus(ONLINE)
-		    self.notify()
-		}
+                    self.notify()
+                }
             },
-            error: function() {
+            error: function () {
                 self.setStatus(OFFLINE)
             },
             dataType: 'json'
         });
     }
 
-    this.login = function(callback) {
+    this.login = function (callback) {
         if (self.status === LOGGED) {
             return callback()
         } else if (self.status < ONLINE) {
             return self.notify('Device is offline')
         }
-	options.loginWindow.window('open')
-	self.loginCallback = callback
+        options.loginWindow.window('open')
+        self.loginCallback = callback
     };
 
-     options.loginWindow.find('form').on('submit', function(event) {
-	 event.preventDefault();
-	 options.loginWindow.find('.error').hide()
-	 data = $(this).serialize()
-	 $(this).find('input[type=password]').val('')
-	 $.ajax({ url: SITEURL+'/login/authenticate/' + self.sid,
-		  method: 'POST',
-		  data: data,
-		  success: function(resp) {
-		      if (!resp.ok) {
-			  options.loginWindow.find('.error').text('Invalid username or password').show()
-			  return
-		      }
-		      self.identifyUser(resp.user, resp.signature, function(ok) {
-			  if (ok) {
-			      if (self.loginCallback) {
-				  self.loginCallback()
-				  self.loginCallback = null
-			      }
-			  } else {
-			      self.notify('Security error: server sent invalid data')
-			  }
-		      })
-		  },
-		  error: function(resp) {
-		      return self.notify("Error authenticating")
-		  },
-		  dataType: 'json'
-		})
-     });
+    options.loginWindow.find('form').on('submit', function (event) {
+        event.preventDefault();
+        options.loginWindow.find('.error').hide()
+        data = $(this).serialize()
+        $(this).find('input[type=password]').val('')
+        $.ajax({
+            url: SITEURL + '/login/authenticate/' + self.sid,
+            method: 'POST',
+            data: data,
+            success: function (resp) {
+                if (!resp.ok) {
+                    options.loginWindow.find('.error').text('Invalid username or password').show()
+                    return
+                }
+                self.identifyUser(resp.user, resp.signature, function (ok) {
+                    if (ok) {
+                        if (self.loginCallback) {
+                            self.loginCallback()
+                            self.loginCallback = null
+                        }
+                    } else {
+                        self.notify('Security error: server sent invalid data')
+                    }
+                })
+            },
+            error: function (resp) {
+                return self.notify("Error authenticating")
+            },
+            dataType: 'json'
+        })
+    });
 
-     options.loginWindow.find('.js-close').on('click', function() {
-	 options.loginWindow.find('.error').hide()
-	 options.loginWindow.find('input[type=text]').val('')
-	 options.loginWindow.find('input[type=password]').val('')
-	 options.loginWindow.window('close')
-     })
-
-    options.loginWindow.find('#register').click(function() {
-	options.loginWindow.hide()
-	options.registration.start(function(resp) {
-	    self.identifyUser(resp.user, resp.signature, function(ok) {
-		if (ok) {
-		    if (self.loginCallback) {
-			self.loginCallback()
-			self.loginCallback = null
-		    }
-		} else {
-		    self.notify('Security error: server sent invalid data')
-		}
-	    })
-	})
+    options.loginWindow.find('.js-close').on('click', function () {
+        options.loginWindow.find('.error').hide()
+        options.loginWindow.find('input[type=text]').val('')
+        options.loginWindow.find('input[type=password]').val('')
+        options.loginWindow.window('close')
     })
-     
-     this.identifyUser = function(user, signature, callback) {
-	$.ajax({ url: '/login/authenticate',
-		 method: 'POST',
-		 data: { user: user, signature: signature },
-		 success: function(resp) {
-		     if (resp.ok) {
-			 self.user = self.treatUserData(resp.user)
-			 options.loginWindow.window('close')
-			 callback(true)
-			 self.setStatus(LOGGED)
-		     } else {
-			 callback(false)
-		     }
-		 },
-		 error: function(resp) {
-		     self.notify("Could not verify authentication data received from server")
-		 },
-		 dataType: 'json'
-	       })
-     }
 
-    this.logout = function() {
-        $.ajax({ 'url': SITEURL + '/logout/' + self.sid,
-            success: function() {
+    options.loginWindow.find('#register').click(function () {
+        options.loginWindow.hide()
+        options.registration.start(function (resp) {
+            self.identifyUser(resp.user, resp.signature, function (ok) {
+                if (ok) {
+                    if (self.loginCallback) {
+                        self.loginCallback()
+                        self.loginCallback = null
+                    }
+                } else {
+                    self.notify('Security error: server sent invalid data')
+                }
+            })
+        })
+    })
+
+    this.identifyUser = function (user, signature, callback) {
+        $.ajax({
+            url: '/login/authenticate',
+            method: 'POST',
+            data: {
+                user: user,
+                signature: signature
+            },
+            success: function (resp) {
+                if (resp.ok) {
+                    self.user = self.treatUserData(resp.user)
+                    options.loginWindow.window('close')
+                    callback(true)
+                    self.setStatus(LOGGED)
+                } else {
+                    callback(false)
+                }
+            },
+            error: function (resp) {
+                self.notify("Could not verify authentication data received from server")
+            },
+            dataType: 'json'
+        })
+    }
+
+    this.logout = function () {
+        $.ajax({
+            'url': SITEURL + '/logout/' + self.sid,
+            success: function () {
                 self.sid = null
                 options.logout()
-		self.getSessionId()
+                self.getSessionId()
             },
-            error: function() {
+            error: function () {
                 return self.notify('Could not logout')
             }
         })
     }
 
-    this.setStatus = function(status) {
+    this.setStatus = function (status) {
         if (status == self.status)
             return
         self.status = status
-        switch(status) {
-            case OFFLINE:
-            options.offline(); break;
-            case CONNECTING:
-            options.connecting(); break;
-            case ONLINE:
-            options.online(); break;
-            case LOGGED:
+        switch (status) {
+        case OFFLINE:
+            options.offline();
+            break;
+        case CONNECTING:
+            options.connecting();
+            break;
+        case ONLINE:
+            options.online();
+            break;
+        case LOGGED:
             options.login()
-            case DISCONNECTED:
-	    options.disconnected()
+        case DISCONNECTED:
+            options.disconnected()
         }
     }
 
-     this.treatUserData = function(user) {
-	 // This method is here as a hook to treat user data. It might be unnecessary legacy
-	 return user
-     }
+    this.treatUserData = function (user) {
+        // This method is here as a hook to treat user data. It might be unnecessary legacy
+        return user
+    }
 
     this.notify = options.notify
 }
