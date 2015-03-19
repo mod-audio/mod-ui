@@ -530,9 +530,6 @@ class Session(object):
         #    os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
         #callback(True)
 
-    def set_websocket(self, websocket):
-        self.websocket = websocket
-
     # host commands
 
     def add(self, objid, instance_id, callback, loaded=False):
