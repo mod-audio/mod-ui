@@ -40,9 +40,24 @@ $(document).ready(function() {
                                 "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
                                 "http://lv2plug.in/ns/ext/patch#Put").forEach(function (msg) {
                                 var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                                if(subject.length)
-                                    console.log("Put: " + subject[0]);
+                                var body    = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#body", null);
+                                if(subject.length && body.length) {
+                                    var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
+                                    var prototype = store.find(body[0].object, "http://drobilla.net/ns/ingen#prototype");
+                                    if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Block" && prototype.length) {
+                                        // add a new plugin
+                                        var instance = subject[0].object;
+                                        var uri = prototype[0].object;
+                                        var canvasX = store.find(body[0].object, "http://drobilla.net/ns/ingen#canvasX");
+                                        var canvasY = store.find(body[0].object, "http://drobilla.net/ns/ingen#canvasY");
+                                        var x = canvasX.length ? N3.Util.getLiteralValue(canvasX[0].object) : 0;
+                                        var y = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
+                                        //desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, x, y);
 
+                                    } else if(type == "http://lv2plug.in/ns/lv2core#ControlPort") {
+                                        // set the value for the port
+                                    }
+                                }
                         });
 
                         // Patch messages
