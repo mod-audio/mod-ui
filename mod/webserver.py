@@ -595,13 +595,13 @@ class EffectParameterGet(web.RequestHandler):
 
 class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
-        SESSION.set_websocket(self)
+        SESSION.websocket = self
 
     def on_message(self, message):
         self.write_message(u"You said: " + message)
 
     def on_close(self):
-        print("WebSocket closed")
+        SESSION.websocket = None
 
 
 class EffectPosition(web.RequestHandler):
