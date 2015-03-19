@@ -22,47 +22,51 @@ function Notification(type, message, timeout) {
 
     var container = $('#notifications')
     if (container.length == 0)
-	container = $('body')
+        container = $('body')
 
 
-    this.open = function() {
-	if (!NOTIFICATIONS_ENABLED)
-	    return
-	if (self.rendered)
-	    self.rendered.remove()
-	self.rendered = $(Mustache.render(TEMPLATES['notification'],
-					  { type: type, message: message }))
+    this.open = function () {
+        if (!NOTIFICATIONS_ENABLED)
+            return
+        if (self.rendered)
+            self.rendered.remove()
+        self.rendered = $(Mustache.render(TEMPLATES['notification'], {
+            type: type,
+            message: message
+        }))
 
-	self.rendered.find('.js-close').click(function() {
+        self.rendered.find('.js-close').click(function () {
             self.close()
-	})
+        })
 
-	self.barValue = $('<div class="progressbar-value">')
-	self.rendered.find('.js-progressbar').html('').hide().append(self.barValue)
+        self.barValue = $('<div class="progressbar-value">')
+        self.rendered.find('.js-progressbar').html('').hide().append(self.barValue)
 
-	container.append(self.rendered)
+        container.append(self.rendered)
 
-	if (timeout)
-	    self.closeAfter(timeout)
+        if (timeout)
+            self.closeAfter(timeout)
     }
 
-    this.closeAfter = function(timeout, callback) {
-        self.closeTimeout = setTimeout(function() {
+    this.closeAfter = function (timeout, callback) {
+        self.closeTimeout = setTimeout(function () {
             self.close()
             self.closeTimeout = false
         }, timeout)
     }
 
-    this.close = function() {
-	if (!self.rendered)
-	    return
-        self.rendered.animate({ opacity: 0 }, delay,
-        function() {
-            self.rendered.remove()
-        })
+    this.close = function () {
+        if (!self.rendered)
+            return
+        self.rendered.animate({
+                opacity: 0
+            }, delay,
+            function () {
+                self.rendered.remove()
+            })
     }
 
-    this.type = function(type) {
+    this.type = function (type) {
         self.rendered.removeClass('info')
         self.rendered.removeClass('warning')
         self.rendered.removeClass('error')
@@ -70,23 +74,23 @@ function Notification(type, message, timeout) {
         self.rendered.addClass(type)
     }
 
-    this.html = function(msg) {
+    this.html = function (msg) {
         var container = self.rendered.find('.js-message')
         container.html('')
         self.rendered.find('.js-message').append(msg)
     }
 
-    this.bar = function(value) {
-	var bar = self.rendered.find('.js-progressbar')
-	bar.show()
+    this.bar = function (value) {
+        var bar = self.rendered.find('.js-progressbar')
+        bar.show()
         var width = bar.width() * value / 100
         self.barValue.width(width)
     }
 
-    self.open()	
+    self.open()
 }
 
 function Bug(msg) {
     new Notification('error', 'Bug! ' + msg)
-    // TODO interface de notificação de bug
+        // TODO interface de notificação de bug
 }

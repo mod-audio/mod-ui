@@ -20,42 +20,45 @@ function FeedManager(options) {
 
     this.handlers = {}
 
-    this.start = function(sid) {
-	self.sid = sid
-	self.update()
+    this.start = function (sid) {
+        self.sid = sid
+        self.update()
     }
 
-    this.update = function() {
-	$.ajax({ url: SITEURL + '/feed/'+self.sid,
-		 success: function(events) {
-		     for (var i=0; i<events.length; i++) {
-			 var handlers = self.handlers[events[i].type]
-			 if (handlers == null) {
-			     console.log('Error: no handler for ' + events[i].type)
-			 } else {
-			     for (var j=0; j<handlers.length; j++) {
-				 handlers[j](events[i])
-			     }
-			 }
-			 self.update()
-		     }
-		 },
-		 error: function(e) {
-		     console.log("Error: can't get feed from cloud: " + e)
-		     setTimeout(function() { self.update() }, 10000)
-		 },
-		 dataType: 'json'
-	       })
-		     
+    this.update = function () {
+        $.ajax({
+            url: SITEURL + '/feed/' + self.sid,
+            success: function (events) {
+                for (var i = 0; i < events.length; i++) {
+                    var handlers = self.handlers[events[i].type]
+                    if (handlers == null) {
+                        console.log('Error: no handler for ' + events[i].type)
+                    } else {
+                        for (var j = 0; j < handlers.length; j++) {
+                            handlers[j](events[i])
+                        }
+                    }
+                    self.update()
+                }
+            },
+            error: function (e) {
+                console.log("Error: can't get feed from cloud: " + e)
+                setTimeout(function () {
+                    self.update()
+                }, 10000)
+            },
+            dataType: 'json'
+        })
+
     }
 
-    this.bind = function(eventType, handler) {
-	if (self.handlers[eventType] == null)
-	    self.handlers[eventType] = []
-	self.handlers[eventType].push(handler)
+    this.bind = function (eventType, handler) {
+        if (self.handlers[eventType] == null)
+            self.handlers[eventType] = []
+        self.handlers[eventType].push(handler)
     }
 
     for (var eventType in options) {
-	self.bind(eventType, options[eventType])
+        self.bind(eventType, options[eventType])
     }
 }

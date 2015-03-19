@@ -15,37 +15,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-(function($) {
-    $.fn.xRunIndicator = function() {
-	var self = $(this)
-	self.hide()
-	self.data('count', null)
-	
-	var timeout
-	var poll = function() {
-	    var url = '/sysmon/xrun/'
-	    var count = self.data('count')
-	    if (count)
-		url += count
-	    
-	    $.ajax({'url': url,
-		    'success': function(resp) {
-			if (resp && resp > count) {
-			    self.data('count', resp)
-			    self.html('XRUN! ' + resp % 100000)
-			    self.show()
-			    if (timeout)
-				clearTimeout(timeout)
-			    timeout = setTimeout(function() { self.hide() }, 10000)
-			}
-			poll()			    
-		    },
-		    'error': function() {
-			setTimeout(function() { poll() }, 1000)
-		    },
-		    'dataType': 'json'
-		   })
-	}
-	poll()
+(function ($) {
+    $.fn.xRunIndicator = function () {
+        var self = $(this)
+        self.hide()
+        self.data('count', null)
+
+        var timeout
+        var poll = function () {
+            var url = '/sysmon/xrun/'
+            var count = self.data('count')
+            if (count)
+                url += count
+
+            $.ajax({
+                'url': url,
+                'success': function (resp) {
+                    if (resp && resp > count) {
+                        self.data('count', resp)
+                        self.html('XRUN! ' + resp % 100000)
+                        self.show()
+                        if (timeout)
+                            clearTimeout(timeout)
+                        timeout = setTimeout(function () {
+                            self.hide()
+                        }, 10000)
+                    }
+                    poll()
+                },
+                'error': function () {
+                    setTimeout(function () {
+                        poll()
+                    }, 1000)
+                },
+                'dataType': 'json'
+            })
+        }
+        poll()
     }
 })(jQuery);
