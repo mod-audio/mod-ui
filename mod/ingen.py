@@ -28,17 +28,21 @@ except ImportError:
 
 class Host(IngenAsync):
     def parse_port(self, port):
+        # HACK
         r = port
         if "effect_" in port:
             instance, port = port.split(":")
             instance = instance.replace("effect_", "")
             r = "/instance%s/%s" % (instance, port)
         elif "system" in port:
-            p = port.split("_")[-1]
-            typ = "in"
-            if "playback" in port:
-                typ = "out"
-            r = "/audio_%s_%s" % (typ, p)
+            if "midi_capture_1" in port:
+                r = "/control_in"
+            else:
+                p = port.split("_")[-1]
+                typ = "in"
+                if "playback" in port:
+                    typ = "out"
+                r = "/audio_%s_%s" % (typ, p)
         return r
 
     def add(self, uri, instance_id, callback=lambda r: r):
