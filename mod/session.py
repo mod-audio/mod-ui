@@ -146,6 +146,10 @@ class Session(object):
         yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 2", "Input", callback=callback))
         yield gen.Task(lambda callback: self.host.add_audio_port("Audio Out 2", "Output", callback=callback))
 
+        # forcibly remove "/control_out" for now, we don't use it
+        yield gen.Task(lambda callback: self.host.move("/control_out", "/control_out_renamed", callback=callback))
+        yield gen.Task(lambda callback: self.host.delete("/control_out_renamed", callback=callback))
+
         self.host.position_callback = position_cb
         self.host.port_value_callback = port_value_cb
         self.host.plugin_add_callback = plugin_add_cb

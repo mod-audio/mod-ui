@@ -306,6 +306,14 @@ class IngenAsync(Interface):
 	patch:subject <ingen:/root%s> .
 ''' % path, callback)
 
+    def move(self, source, target, callback=lambda r: r):
+        return self._send('''
+[]
+        a patch:Move ;
+        patch:subject <ingen:/root%s> ;
+        patch:destination <ingen:/root%s> .
+''' % (source, target), callback)
+
     def patch(self, path, remove, add, callback=lambda r:r):
         remove_str = ""
         add_str = ""
