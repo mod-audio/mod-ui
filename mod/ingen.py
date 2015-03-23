@@ -45,8 +45,13 @@ class Host(IngenAsync):
                 r = "/audio_%s_%s" % (typ, p)
         return r
 
-    def add(self, uri, instance_id, callback=lambda r: r):
-        self.put("/instance%d" % instance_id, "a ingen:Block ; ingen:prototype <%s>" % uri, callback)
+    def add(self, uri, instance_id, x, y, callback=lambda r: r):
+        print x, y
+        self.put("/instance%d" % instance_id, """a ingen:Block ;
+ingen:prototype <%s> ;
+ingen:canvasX %f ;
+ingen:canvasY %f
+""" % (uri, float(x), float(y)), callback)
 
     def set_position(self, instance_id, x, y, callback=lambda r:r):
         #self.patch("/instance%d" % instance_id, remove, add, callback)

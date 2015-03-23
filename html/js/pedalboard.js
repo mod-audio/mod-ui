@@ -47,7 +47,7 @@ JqueryClass('pedalboard', {
 
             // Loads a plugin with given plugin url and instanceId
             // Application MUST use this instanceId. Overriding this is mandatory.
-            pluginLoad: function (url, instanceId, callback) {
+            pluginLoad: function (url, instanceId, x, y, callback) {
                 callback(true)
             },
 
@@ -441,7 +441,7 @@ JqueryClass('pedalboard', {
             var pluginData = pluginsData[plugin.url]
             instanceNameIndex[plugin.instanceId] = pluginData.name
 
-            self.data('pluginLoad')(plugin.url, plugin.instanceId,
+            self.data('pluginLoad')(plugin.url, plugin.instanceId, plugin.x, plugin.y,
                 function (ok) {
                     if (!ok)
                         return
@@ -582,10 +582,11 @@ JqueryClass('pedalboard', {
         element.bind('pluginAdded', function (e, position) {
             var waiter = self.data('wait')
             var instanceId = self.pedalboard('generateInstanceId')
+            console.log("pedal " + instanceId)
             waiter.startPlugin(instanceId, position)
             var pluginLoad = self.data('pluginLoad')
-            pluginLoad(pluginData.url, instanceId,
-                function () {
+            pluginLoad(pluginData.url, instanceId, position.x, position.y, function () {})
+/*                function () {
                     self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y)
                     setTimeout(function () {
                         self.pedalboard('adapt')
@@ -595,6 +596,7 @@ JqueryClass('pedalboard', {
                 function () {
                     waiter.stopPlugin(instanceId)
                 })
+*/
         })
 
         var options = {

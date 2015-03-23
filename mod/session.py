@@ -536,12 +536,12 @@ class Session(object):
 
     # host commands
 
-    def add(self, objid, instance_id, callback, loaded=False):
+    def add(self, objid, instance_id, x, y, callback, loaded=False):
         if not loaded:
-            instance_id = self._pedalboard.add_instance(objid, instance_id)
+            instance_id = self._pedalboard.add_instance(objid, instance_id, x=x, y=y)
         def commit(bufsize_changed):
             if not bufsize_changed:
-                self.host.add(objid, instance_id, callback)
+                self.host.add(objid, instance_id, x, y, callback)
             else:
                 callback(True)
         try:

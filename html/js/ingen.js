@@ -52,8 +52,22 @@ $(document).ready(function () {
                                 var canvasY = store.find(body[0].object, "http://drobilla.net/ns/ingen#canvasY");
                                 var x = canvasX.length ? N3.Util.getLiteralValue(canvasX[0].object) : 0;
                                 var y = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
-                                //desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, x, y);
-
+                                var waiter =desktop.pedalboard.data('wait')
+                                var instanceId = instance.replace("instance", "")
+                                $.ajax({
+                                    url: '/effect/get?url=' + escape(uri),
+                                    success: function (pluginData) {
+                                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instanceId, x, y)
+                                        setTimeout(function () {
+                                            desktop.pedalboard.pedalboard('adapt')
+                                        }, 1)
+                                        if (waiter.plugins[instanceId]) {
+                                            waiter.stopPlugin(instanceId)
+                                        }
+                                    },
+                                    cache: false,
+                                    'dataType': 'json'
+                                })
                             } else if (type == "http://lv2plug.in/ns/lv2core#ControlPort") {
                                 // set the value for the port
                             }
