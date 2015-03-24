@@ -53,21 +53,23 @@ $(document).ready(function () {
                                 var x = canvasX.length ? N3.Util.getLiteralValue(canvasX[0].object) : 0;
                                 var y = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
                                 var waiter =desktop.pedalboard.data('wait')
-                                var instanceId = instance.replace("instance", "")
-                                $.ajax({
-                                    url: '/effect/get?url=' + escape(uri),
-                                    success: function (pluginData) {
-                                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instanceId, x, y)
-                                        setTimeout(function () {
-                                            desktop.pedalboard.pedalboard('adapt')
-                                        }, 1)
-                                        if (waiter.plugins[instanceId]) {
+                                var instanceId = parseInt(instance.replace("instance", ""))
+                                var plugins = desktop.pedalboard.data('plugins')
+                                if (plugins[instanceId] == null) {
+                                    plugins[instanceId] = {} // register plugin
+                                    $.ajax({
+                                        url: '/effect/get?url=' + escape(uri),
+                                        success: function (pluginData) {
+                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instanceId, parseInt(x), parseInt(y))
+                                            setTimeout(function () {
+                                                desktop.pedalboard.pedalboard('adapt')
+                                            }, 1)
                                             waiter.stopPlugin(instanceId)
-                                        }
-                                    },
-                                    cache: false,
-                                    'dataType': 'json'
-                                })
+                                        },
+                                        cache: false,
+                                        'dataType': 'json'
+                                    })
+                                }
                             } else if (type == "http://lv2plug.in/ns/lv2core#ControlPort") {
                                 // set the value for the port
                             }
