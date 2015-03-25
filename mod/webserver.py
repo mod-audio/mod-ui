@@ -411,7 +411,7 @@ class EffectStylesheet(EffectSearcher):
 class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
-    def get(self, instance_id):
+    def get(self, instance):
         objid = self.get_by_url()
 
         try:
@@ -420,11 +420,11 @@ class EffectAdd(EffectSearcher):
             raise web.HTTPError(404)
         x = self.request.arguments.get('x', [0])[0]
         y = self.request.arguments.get('y', [0])[0]
-        res = yield gen.Task(SESSION.add, options['url'], int(instance_id), x, y)
+        res = yield gen.Task(SESSION.add, options['url'], instance, x, y)
         if self.request.connection.stream.closed():
             return
         if res >= 0:
-            options['instanceId'] = res
+            options['instance'] = res
             presets = []
             for k,preset in options['presets'].items():
                 presets.append({'label': preset['label']})
@@ -460,8 +460,8 @@ class EffectGet(EffectSearcher):
 class EffectRemove(web.RequestHandler):
     @web.asynchronous
     @gen.engine
-    def get(self, instance_id):
-        resp = yield gen.Task(SESSION.remove, int(instance_id))
+    def get(self, instance):
+        resp = yield gen.Task(SESSION.remove, instance)
         if self.request.connection.stream.closed():
             return
         self.write(json.dumps(resp))
@@ -471,7 +471,7 @@ class EffectBypass(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance, value):
-        res = yield gen.Task(SESSION.bypass, int(instance), int(value))
+        res = yield gen.Task(SESSION.bypass, instance, int(value))
         self.write(json.dumps(res))
         self.finish()
 
@@ -479,7 +479,7 @@ class EffectBypassAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        res = yield gen.Task(SESSION.parameter_address, int(instance), ":bypass", 'switch', label, 6, "none",
+        res = yield gen.Task(SESSION.parameter_address, instance, ":bypass", 'switch', label, 6, "none",
                             int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
 
         # TODO: get value when unaddressing
@@ -511,7 +511,7 @@ class EffectPresetLoad(web.RequestHandler):
     @gen.engine
     def get(self, instance):
         response = yield gen.Task(SESSION.preset_load,
-                                  int(instance),
+                                  instance,
                                   self.get_argument('label'))
         self.write(json.dumps(response))
         self.finish()
@@ -521,7 +521,7 @@ class EffectParameterSet(web.RequestHandler):
     @gen.engine
     def get(self, instance, parameter):
         response = yield gen.Task(SESSION.parameter_set,
-                                  int(instance),
+                                  instance,
                                   parameter,
                                   float(self.get_argument('value')),
                                   )
@@ -539,7 +539,7 @@ class EffectParameterAddress(web.RequestHandler):
         if actuator[0] < 0:
             actuator = [ -1, -1, -1, -1 ]
             result = yield gen.Task(SESSION.parameter_get,
-                                    int(instance),
+                                    instance,
                                     parameter)
             if not result['ok']:
                 self.write(json.dumps(result))
@@ -564,7 +564,7 @@ class EffectParameterAddress(web.RequestHandler):
         options = data.get('options', [])
 
         result['ok'] = yield gen.Task(SESSION.parameter_address,
-                                      int(instance),
+                                      instance,
                                       parameter,
                                       data.get('addressing_type', None),
                                       label,
@@ -589,7 +589,7 @@ class EffectParameterGet(web.RequestHandler):
     @gen.engine
     def get(self, instance, parameter):
         response = yield gen.Task(SESSION.parameter_get,
-                                  int(instance),
+                                  instance,
                                   parameter)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
@@ -597,7 +597,7 @@ class EffectParameterGet(web.RequestHandler):
 
 class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
-        SESSION.websocket = self
+        SESSION.websocket_opened(self)
 
     def on_message(self, message):
         self.write_message(u"You said: " + message)
@@ -608,7 +608,7 @@ class AtomWebSocket(websocket.WebSocketHandler):
 
 class EffectPosition(web.RequestHandler):
     def get(self, instance):
-        instance = int(instance)
+        instance = instance
         x = int(float(self.get_argument('x')))
         y = int(float(self.get_argument('y')))
         SESSION.effect_position(instance, x, y)
@@ -811,7 +811,7 @@ class TemplateHandler(web.RequestHandler):
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(get_hardware()).encode("utf-8")),
-            'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).encode("utf-8")),
+            # 'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
@@ -1062,21 +1062,21 @@ application = web.Application(
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/resources/(.*)", EffectResource),
 
-            (r"/effect/add/(\d+)/?", EffectAdd),
+            (r"/effect/add/([A-Za-z0-9_]+)/?", EffectAdd),
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulkData),
-            (r"/effect/remove/([a-z0-9]+)", EffectRemove),
-            (r"/effect/connect/([A-Za-z0-9_:]+),([A-Za-z0-9_:]+)", EffectConnect),
-            (r"/effect/disconnect/([A-Za-z0-9_:]+),([A-Za-z0-9_:]+)", EffectDisconnect),
+            (r"/effect/remove/([A-Za-z0-9_]+)", EffectRemove),
+            (r"/effect/connect(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)", EffectConnect),
+            (r"/effect/disconnect(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)", EffectDisconnect),
             (r"/effect/preset/load/(\d+)", EffectPresetLoad),
-            (r"/effect/parameter/set/(\d+),([A-Za-z0-9_]+)", EffectParameterSet),
-            (r"/effect/parameter/get/(\d+),([A-Za-z0-9_]+)", EffectParameterGet),
-            (r"/effect/parameter/address/(\d+),([A-Za-z0-9_]+)", EffectParameterAddress),
-            (r"/effect/bypass/(\d+),(\d+)", EffectBypass),
-            (r"/effect/bypass/address/(\d+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+            (r"/effect/parameter/set/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterSet),
+            (r"/effect/parameter/get/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterGet),
+            (r"/effect/parameter/address/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterAddress),
+            (r"/effect/bypass(/[A-Za-z0-9_]+),(\d+)", EffectBypass),
+            (r"/effect/bypass/address/([A-Za-z0-9_]),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
-            (r"/effect/position/(\d+)/?", EffectPosition),
+            (r"/effect/position/([A-Za-z0-9_]+)/?", EffectPosition),
             (r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),

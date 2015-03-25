@@ -279,7 +279,7 @@ class IngenAsync(Interface):
 ''' % (path, prop, value)
         return self._send(x, callback)
 
-    def connecti(self, tail, head, callback=lambda r: r):
+    def connect(self, tail, head, callback=lambda r: r):
         return self._send('''
 []
 	a patch:Put ;
@@ -291,7 +291,7 @@ class IngenAsync(Interface):
 	] .
 ''' % (os.path.commonprefix([tail, head]), tail, head), callback)
 
-    def disconnecti(self, tail, head, callback=lambda r: r):
+    def disconnect(self, tail, head, callback=lambda r: r):
         return self._send('''
 []
 	a patch:Delete ;

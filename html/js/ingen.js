@@ -17,22 +17,34 @@
 
 $(document).ready(function () {
     var ws = new WebSocket("ws://" + window.location.host + "/websocket");
-    var parser = N3.Parser();
     ws.onmessage = function (evt) {
+        var parser = N3.Parser();
         var msgs = evt.data;
         var store = N3.Store();
         parser.parse(msgs,
             function (error, triple, prefixes) {
+                if (error) {
+                    console.log("N3: " + error)
+                }
                 if (triple) {
                     store.addTriple(triple.subject, triple.predicate, triple.object);
-                } else {
+                } else if (triple == null) {
                     // Delete messages
                     store.find(null,
                         "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
                         "http://lv2plug.in/ns/ext/patch#Delete").forEach(function (msg) {
-                        var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                        if (subject.length)
-                            console.log("Delete: " + subject[0]);
+                        var body = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#body", null);
+                        if (body.length) {
+                            var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
+                            if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Arc") {
+                                // Deletes a connection between ports
+                                var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object.split("/")
+                                var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object.split("/")
+                                var cm = desktop.pedalboard.data("connectionManager")
+                                var jack = cm.origIndex[tail[0]][tail[1]][head[0]][head[1]]
+                                desktop.pedalboard.pedalboard('disconnect', jack)
+                            }
+                        }
                     });
 
                     // Put messages
@@ -41,7 +53,7 @@ $(document).ready(function () {
                         "http://lv2plug.in/ns/ext/patch#Put").forEach(function (msg) {
                         var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
                         var body = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#body", null);
-                        if (subject.length && body.length) {
+                        if (subject.length && body.length && subject[0].object) {
                             var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
                             var prototype = store.find(body[0].object, "http://drobilla.net/ns/ingen#prototype");
                             if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Block" && prototype.length) {
@@ -53,26 +65,87 @@ $(document).ready(function () {
                                 var x = canvasX.length ? N3.Util.getLiteralValue(canvasX[0].object) : 0;
                                 var y = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
                                 var waiter =desktop.pedalboard.data('wait')
-                                var instanceId = parseInt(instance.replace("instance", ""))
                                 var plugins = desktop.pedalboard.data('plugins')
-                                if (plugins[instanceId] == null) {
-                                    plugins[instanceId] = {} // register plugin
+                                if (plugins[instance] == null) {
+                                    plugins[instance] = {} // register plugin
                                     $.ajax({
                                         url: '/effect/get?url=' + escape(uri),
                                         success: function (pluginData) {
-                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instanceId, parseInt(x), parseInt(y))
-                                            setTimeout(function () {
+                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, parseInt(x), parseInt(y))
+                                            $("#pedalboard-dashboard").arrive("#" + instance, function () {
                                                 desktop.pedalboard.pedalboard('adapt')
-                                            }, 1)
-                                            waiter.stopPlugin(instanceId)
+                                                if (waiter.plugins[instance])
+                                                    waiter.stopPlugin(instance)
+                                                $("#pedalboard-dashboard").unbindArrive("#" + instance)
+                                            })
                                         },
                                         cache: false,
                                         'dataType': 'json'
                                     })
                                 }
-                            } else if (type == "http://lv2plug.in/ns/lv2core#ControlPort") {
+                            } else if (type[0].object == "http://lv2plug.in/ns/lv2core#ControlPort") {
                                 // set the value for the port
+                                var value = store.find(body[0].object, "http://drobilla.net/ns/ingen#value");
+                                var port = subject[0].object;
+                                var sub = subject[0].object;
+                                var instance = sub.split("/")[0];
+                                var port = sub.split("/")[1];
+                                var gui = desktop.pedalboard.pedalboard("getGui", instance);
+                                gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
                             }
+                        } else if (body.length) {
+                            var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
+                            if (type[0].object == "http://drobilla.net/ns/ingen#Arc") {
+                                // new port connection
+                                var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object
+                                var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object
+                                var plugins = desktop.pedalboard.data('plugins')
+                                var tail_instance = tail.split("/")[0]
+                                var head_instance = head.split("/")[0]
+                                var orig = plugins[tail_instance]
+                                var dest = plugins[head_instance]
+                                if (!$("#"+tail_instance).length) {
+                                    $("#pedalboard-dashboard").arrive("#" + tail_instance, function () {
+                                        var plugins = desktop.pedalboard.data('plugins')
+                                        var orig = plugins[tail_instance]
+                                        if (!$("#"+head_instance).length) {
+                                            $("#pedalboard-dashboard").arrive("#" + head_instance, function () {
+                                                var plugins = desktop.pedalboard.data('plugins')
+                                                var dest = plugins[head_instance]
+                                                var output = orig.find('[mod-port-symbol=' + tail.split("/")[1] + ']')
+                                                var input = dest.find('[mod-port-symbol=' + head.split("/")[1] + ']')
+                                                var jack = output.find('[mod-role=output-jack]')
+                                                desktop.pedalboard.pedalboard('connect', jack, input, true)
+                                                $("#pedalboard-dashboard").unbindArrive("#" + head_instance)
+                                            })
+                                        } else {
+                                            var plugins = desktop.pedalboard.data('plugins')
+                                            var dest = plugins[head_instance]
+                                            var output = orig.find('[mod-port-symbol=' + tail.split("/")[1] + ']')
+                                            var input = dest.find('[mod-port-symbol=' + head.split("/")[1] + ']')
+                                            var jack = output.find('[mod-role=output-jack]')
+                                            desktop.pedalboard.pedalboard('connect', jack, input, true)
+                                        }
+                                        $("#pedalboard-dashboard").unbindArrive("#" + tail_instance)
+                                    })
+                                } else if (!$("#"+head_instance).length) {
+                                    $("#pedalboard-dashboard").arrive("#" + head_instance, function () {
+                                            var plugins = desktop.pedalboard.data('plugins')
+                                            var dest = plugins[head_instance]
+                                            var output = orig.find('[mod-port-symbol=' + tail.split("/")[1] + ']')
+                                            var input = dest.find('[mod-port-symbol=' + head.split("/")[1] + ']')
+                                            var jack = output.find('[mod-role=output-jack]')
+                                            desktop.pedalboard.pedalboard('connect', jack, input, true)
+                                            $("#pedalboard-dashboard").unbindArrive("#" + head_instance)
+                                    })
+                                } else {
+                                    var output = orig.find('[mod-port-symbol=' + tail.split("/")[1] + ']')
+                                    var input = dest.find('[mod-port-symbol=' + head.split("/")[1] + ']')
+                                    var jack = output.find('[mod-role=output-jack]')
+                                    desktop.pedalboard.pedalboard('connect', jack, input, true)
+                                }
+                            }
+
                         }
                     });
 
@@ -100,7 +173,7 @@ $(document).ready(function () {
                                     var sub = subject[0].object;
                                     var instance = sub.split("/")[0];
                                     var port = sub.split("/")[1];
-                                    var gui = desktop.pedalboard.pedalboard("getGui", instance.replace("instance", ""));
+                                    var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
                                 }
                             }

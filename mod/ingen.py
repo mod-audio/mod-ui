@@ -45,24 +45,16 @@ class Host(IngenAsync):
                 r = "/audio_%s_%s" % (typ, p)
         return r
 
-    def add(self, uri, instance_id, x, y, callback=lambda r: r):
-        print x, y
-        self.put("/instance%d" % instance_id, """a ingen:Block ;
+    def add(self, uri, instance, x, y, callback=lambda r: r):
+        self.put("/%s" % instance, """a ingen:Block ;
 ingen:prototype <%s> ;
 ingen:canvasX %f ;
 ingen:canvasY %f
 """ % (uri, float(x), float(y)), callback)
 
-    def set_position(self, instance_id, x, y, callback=lambda r:r):
-        #self.patch("/instance%d" % instance_id, remove, add, callback)
-        self.set("/instance%d" % instance_id, "<%s>" % NS.ingen.canvasX, float(x), callback)
-        self.set("/instance%d" % instance_id, "<%s>" % NS.ingen.canvasY, float(y), callback)
-
-    def connect(self, origin_port, destination_port, callback=lambda r: r):
-        self.connecti(self.parse_port(origin_port), self.parse_port(destination_port), callback)
-
-    def disconnect(self, origin_port, destination_port, callback=lambda r: r):
-        self.disconnecti(self.parse_port(origin_port), self.parse_port(destination_port), callback)
+    def set_position(self, instance, x, y, callback=lambda r:r):
+        self.set("/%s" % instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
+        self.set("/%s" % instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
 
     def param_get(self, instance_id, symbol, callback=lambda result: None):
         callback(1)
