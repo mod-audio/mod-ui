@@ -35,7 +35,6 @@ function WaitMessage(canvas) {
     }
 
     this.stopPlugin = function (instanceId) {
-        console.log(self.plugins)
         self.plugins[instanceId].remove()
         delete self.plugins[instanceId]
     }
