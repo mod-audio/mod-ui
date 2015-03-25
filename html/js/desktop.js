@@ -492,11 +492,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         windowManager: self.windowManager,
         hardwareManager: self.hardwareManager,
         bottomMargin: effectBox.height(),
-        pluginLoad: function (url, instanceId, callback, errorCallback) {
+        pluginLoad: function (url, instanceId, x, y, callback, errorCallback) {
             var firstTry = true
             var add = function () {
                 $.ajax({
-                    url: '/effect/add/' + instanceId + '?url=' + escape(url),
+                    url: '/effect/add/' + instanceId + '?x=' + x + '&y=' + y + '&url=' + escape(url),
                     success: function (pluginData) {
                         if (pluginData)
                             callback(pluginData)

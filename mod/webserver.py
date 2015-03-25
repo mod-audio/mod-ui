@@ -418,7 +418,9 @@ class EffectAdd(EffectSearcher):
             options = self.get_object(objid)
         except:
             raise web.HTTPError(404)
-        res = yield gen.Task(SESSION.add, options['url'], int(instance_id))
+        x = self.request.arguments.get('x', [0])[0]
+        y = self.request.arguments.get('y', [0])[0]
+        res = yield gen.Task(SESSION.add, options['url'], int(instance_id), x, y)
         if self.request.connection.stream.closed():
             return
         if res >= 0:
@@ -436,7 +438,7 @@ class EffectAdd(EffectSearcher):
 class EffectGet(EffectSearcher):
     @web.asynchronous
     @gen.engine
-    def get(self, instance_id):
+    def get(self):
         objid = self.get_by_url()
 
         try:
