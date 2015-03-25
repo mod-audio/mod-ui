@@ -116,10 +116,10 @@ function Desktop(elements) {
     })
     this.userSession.getSessionId()
     this.hardwareManager = new HardwareManager({
-        address: function (instanceId, symbol, addressing, callback) {
+        address: function (instance, symbol, addressing, callback) {
             addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
             if (symbol == ':bypass') {
-                var url = instanceId
+                var url = instance
                 url += ',' + addressing.actuator.join(',')
                 url += ',' + (addressing.value ? 1 : 0)
                 url += ',' + addressing.label
@@ -137,7 +137,7 @@ function Desktop(elements) {
                 })
             } else {
                 $.ajax({
-                    url: '/effect/parameter/address/' + instanceId + ',' + symbol,
+                    url: '/effect/parameter/address/' + instance + ',' + symbol,
                     type: 'POST',
                     data: JSON.stringify(addressing),
                     success: function (resp) {
@@ -152,12 +152,12 @@ function Desktop(elements) {
                 })
             }
         },
-        getGui: function (instanceId) {
-            return self.pedalboard.pedalboard('getGui', instanceId)
+        getGui: function (instance) {
+            return self.pedalboard.pedalboard('getGui', instance)
         },
-        renderForm: function (instanceId, port) {
+        renderForm: function (instance, port) {
             context = $.extend({
-                plugin: self.pedalboard.pedalboard('getGui', instanceId).effect
+                plugin: self.pedalboard.pedalboard('getGui', instance).effect
             }, port)
             if (port.symbol == ':bypass')
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
@@ -458,13 +458,6 @@ function Desktop(elements) {
     $('body')[0].addEventListener('gesturechange', prevent)
     $('body')[0].addEventListener('touchmove', prevent)
 
-    self.pedalboard.pedalboard('unserialize', CURRENT_PEDALBOARD,
-        function () {
-            self.pedalboardId = CURRENT_PEDALBOARD._id
-            self.title = CURRENT_PEDALBOARD.metadata.title
-            self.titleBox.text(self.title || 'Untitled')
-        }, false, true)
-
     /*
      * when putting this function, we must remember to remove it from /ping call
     $(document).bind('ajaxSend', function() {
@@ -482,11 +475,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         windowManager: self.windowManager,
         hardwareManager: self.hardwareManager,
         bottomMargin: effectBox.height(),
-        pluginLoad: function (url, instanceId, x, y, callback, errorCallback) {
+        pluginLoad: function (url, instance, x, y, callback, errorCallback) {
             var firstTry = true
             var add = function () {
                 $.ajax({
-                    url: '/effect/add/' + instanceId + '?x=' + x + '&y=' + y + '&url=' + escape(url),
+                    url: '/effect/add/' + instance + '?x=' + x + '&y=' + y + '&url=' + escape(url),
                     success: function (pluginData) {
                         if (pluginData)
                             callback(pluginData)
@@ -511,9 +504,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             add()
         },
 
-        pluginRemove: function (instanceId, callback) {
+        pluginRemove: function (instance, callback) {
             $.ajax({
-                'url': '/effect/remove/' + instanceId,
+                'url': '/effect/remove/' + instance,
                 'success': function (resp) {
                     if (resp)
                         callback()
@@ -525,9 +518,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginPresetLoad: function (instanceId, label, callback) {
+        pluginPresetLoad: function (instance, label, callback) {
             $.ajax({
-                url: '/effect/preset/load/' + instanceId,
+                url: '/effect/preset/load/' + instance,
                 data: {
                     label: label
                 },
@@ -553,9 +546,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginParameterChange: function (instanceId, symbol, value, callback) {
+        pluginParameterChange: function (instance, symbol, value, callback) {
             $.ajax({
-                url: '/effect/parameter/set/' + instanceId + ',' + symbol,
+                url: '/effect/parameter/set/' + instance + ',' + symbol,
                 data: {
                     value: value
                 },
@@ -581,10 +574,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginBypass: function (instanceId, bypassed, callback) {
+        pluginBypass: function (instance, bypassed, callback) {
             var value = bypassed ? 1 : 0
             $.ajax({
-                url: '/effect/bypass/' + instanceId + ',' + value,
+                url: '/effect/bypass/' + instance + ',' + value,
                 success: function (resp) {
                     if (!resp)
                         console.log('erro')
@@ -599,7 +592,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         portConnect: function (fromInstance, fromSymbol, toInstance, toSymbol, callback) {
-            var urlParam = fromInstance + ':' + fromSymbol + ',' + toInstance + ':' + toSymbol
+            var urlParam = fromInstance + '/' + fromSymbol + '/' + toInstance + '/' + toSymbol
             $.ajax({
                 url: '/effect/connect/' + urlParam,
                 success: function (resp) {
@@ -614,7 +607,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         portDisconnect: function (fromInstance, fromSymbol, toInstance, toSymbol, callback) {
-            var urlParam = fromInstance + ':' + fromSymbol + ',' + toInstance + ':' + toSymbol
+            var urlParam = fromInstance + '/' + fromSymbol + '/' + toInstance + '/' + toSymbol
             $.ajax({
                 url: '/effect/disconnect/' + urlParam,
                 success: function () {
@@ -679,12 +672,12 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginMove: function (instanceId, x, y, callback) {
+        pluginMove: function (instance, x, y, callback) {
             if (callback == null) {
                 callback = function (r) {}
             }
             $.ajax({
-                url: '/effect/position/' + instanceId,
+                url: '/effect/position/' + instance,
                 type: 'GET',
                 data: {
                     x: x,

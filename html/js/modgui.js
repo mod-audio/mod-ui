@@ -198,9 +198,12 @@ function GUI(effect, options) {
             port.widgets[i].controlWidget('enable')
     }
 
-    this.render = function (callback) {
+    this.render = function (instance, callback) {
         var render = function () {
-            self.icon = $('<div class="mod-pedal">')
+            if(instance)
+                self.icon = $('<div id="' + instance + '" class="mod-pedal">')
+            else
+                self.icon = $('<div class="mod-pedal">')
             self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
                 self.getTemplateData(effect)))
             self.assignIconFunctionality(self.icon)

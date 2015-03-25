@@ -100,20 +100,23 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.websocket = None
 
+    def websocket_opened(self, ws):
+        print "WEBSOCKET OPENED!!!!"
+        self.websocket = ws
+        self.host.get("/")
+
     @gen.engine
     def host_callback(self):
         self.host_initialized = True
 
         def port_value_cb(instance, port, value):
-            instance_id = int(instance.replace("instance",""))
-            if self._pedalboard.data['instances'].get(instance_id, False):
+            if self._pedalboard.data['instances'].get(instance, False):
                 addrs = self._pedalboard.data['instances'][instance_id]['addressing']
                 addr = addrs.get(port, None)
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
                     self.parameter_addressing_load(*act)
-                #self.browser.send(instance_id, port, value)
 
         def position_cb(instance, x, y):
             pass
@@ -135,10 +138,6 @@ class Session(object):
                 self.websocket.write_message(msg)
 
         self.host.msg_callback = msg_cb
-
-        # TODO: use self.host.get("/") to get information about
-        # ingen's current status and build it in the JS interface
-        yield gen.Task(lambda callback: self.host.get("/", callback=callback))
 
         # Adds audio ports
         yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 1", "Input", callback=callback))
@@ -536,12 +535,12 @@ class Session(object):
 
     # host commands
 
-    def add(self, objid, instance_id, x, y, callback, loaded=False):
-        if not loaded:
-            instance_id = self._pedalboard.add_instance(objid, instance_id, x=x, y=y)
+    def add(self, objid, instance, x, y, callback, loaded=False):
+        #if not loaded:
+        #    instance = self._pedalboard.add_instance(objid, instance, x=x, y=y)
         def commit(bufsize_changed):
             if not bufsize_changed:
-                self.host.add(objid, instance_id, x, y, callback)
+                self.host.add(objid, instance, x, y, callback)
             else:
                 callback(True)
         try:
@@ -571,41 +570,41 @@ class Session(object):
         else:
             self.host.remove(instance_id, _callback)
 
-    def bypass(self, instance_id, value, callback, loaded=False):
+    def bypass(self, instance, value, callback, loaded=False):
         value = 1 if int(value) > 0 else 0
-        if not loaded:
-            self._pedalboard.bypass(instance_id, value)
-        self.recorder.bypass(instance_id, value)
-        self.host.bypass(instance_id, value, callback)
+        #if not loaded:
+        #    self._pedalboard.bypass(instance_id, value)
+        self.recorder.bypass(instance, value)
+        self.host.bypass(instance, value, callback)
 
     def connect(self, port_from, port_to, callback, loaded=False):
-        if not loaded:
-            self._pedalboard.connect(port_from, port_to)
+        #if not loaded:
+        #    self._pedalboard.connect(port_from, port_to)
 
         # Cases below happen because we just save instance ID in pedalboard connection structure, not whole string
-        if not 'system' in port_from and not 'effect' in port_from:
-            port_from = "effect_%s" % port_from
-        if not 'system' in port_to and not 'effect' in port_to:
-            port_to = "effect_%s" % port_to
+        #if not 'system' in port_from and not 'effect' in port_from:
+        #    port_from = "effect_%s" % port_from
+        #if not 'system' in port_to and not 'effect' in port_to:
+        #    port_to = "effect_%s" % port_to
 
-        if "system" in port_to:
-            def cb(result):
-                if result:
-                    if port_to == "system:playback_1":
-                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r, True)
-                        self._playback_1_connected_ports.append(port_from)
-                        if self._peakmeter:
-                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r, True)
-                    elif port_to == "system:playback_2":
-                        self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r, True)
-                        self._playback_2_connected_ports.append(port_from)
-                        if self._peakmeter:
-                            self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r, True)
-                callback(result)
-        else:
-            cb = callback
+        #if "system" in port_to:
+        #    def cb(result):
+        #        if result:
+        #            if port_to == "system:playback_1":
+        #                self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r, True)
+        #                self._playback_1_connected_ports.append(port_from)
+        #                if self._peakmeter:
+        #                    self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r, True)
+        #            elif port_to == "system:playback_2":
+        #                self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r, True)
+        #                self._playback_2_connected_ports.append(port_from)
+        #                if self._peakmeter:
+        #                    self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r, True)
+        #        callback(result)
+        #else:
+        #    cb = callback
 
-        self.host.connect(port_from, port_to, cb)
+        self.host.connect(port_from, port_to, callback)
 
     def format_port(self, port):
         if not 'system' in port and not 'effect' in port:
@@ -613,7 +612,7 @@ class Session(object):
         return port
 
     def disconnect(self, port_from, port_to, callback, loaded=False):
-        if not loaded:
+        """if not loaded:
             self._pedalboard.disconnect(port_from, port_to)
 
         port_from = self.format_port(port_from)
@@ -642,8 +641,8 @@ class Session(object):
                 callback(result)
         else:
             cb = callback
-
-        self.host.disconnect(port_from, port_to, cb)
+        """
+        self.host.disconnect(port_from, port_to, callback)
 
     def hmi_parameter_set(self, instance_id, port_id, value, callback):
         #self.browser.send(instance_id, port_id, value)
@@ -856,7 +855,7 @@ class Session(object):
 
     def effect_position(self, instance, x, y):
         self.host.set_position(instance, x, y)
-        self._pedalboard.set_position(instance, x, y)
+        #self._pedalboard.set_position(instance, x, y)
 
     def pedalboard_size(self, width, height):
         self._pedalboard.set_size(width, height)

@@ -49,6 +49,7 @@
     <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js?v={{version}}"></script>
     <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
     <script type="text/javascript" src="js/lib/n3-browser.min.js?v={{version}}"></script>
+    <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
 
     <script type="text/javascript">
 
@@ -57,7 +58,6 @@
       SITEURL = '{{cloud_url}}'.replace(/\/?$/, '/api')
       var NOTIFICATIONS_ENABLED = true
       var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
-      var CURRENT_PEDALBOARD = JSON.parse(atob('{{current_pedalboard}}'))
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var MAX_SCREENSHOT_WIDTH = 600

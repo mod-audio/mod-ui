@@ -5,12 +5,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -104,7 +104,7 @@ class Pedalboard(object):
             self.data['_id'] = ObjectId()
         if title is not None:
             self.set_title(title)
-        
+
         title = self.data['metadata']['title']
 
         if not title:
@@ -118,7 +118,7 @@ class Pedalboard(object):
             pass
         except AssertionError:
             raise self.ValidationError('Pedalboard "%s" already exists' % title)
-        
+
         fh = open(os.path.join(PEDALBOARD_DIR, str(self.data['_id'])), 'w')
         self.data['metadata']['tstamp'] = datetime.now()
         serialized = self.serialize()
@@ -141,8 +141,6 @@ class Pedalboard(object):
         return port
 
     def add_instance(self, url, instance_id=None, bypassed=False, x=0, y=0):
-        if instance_id is None:
-            instance_id = self.max_instance_id + 1
         self.max_instance_id = max(self.max_instance_id, instance_id)
         self.data['instances'][instance_id] = { 'url': url,
                                                 'instanceId': instance_id,
@@ -304,7 +302,7 @@ class Pedalboard(object):
             effect = index.find(url=instance['url']).next()
             bufsize = max(effect['bufsize'], minimum)
         return bufsize
-            
+
 
 def remove_pedalboard(uid):
     # Delete pedalboard file

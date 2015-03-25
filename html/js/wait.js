@@ -22,7 +22,7 @@ function WaitMessage(canvas) {
         $('#wrapper').css('z-index', 'auto')
     }
 
-    this.startPlugin = function (instanceId, position) {
+    this.startPlugin = function (instance, position) {
         var div = $('<div class="plugin-wait">')
         div.width(position.width).height(position.height)
         div.css({
@@ -31,11 +31,11 @@ function WaitMessage(canvas) {
             left: position.x
         })
         canvas.append(div)
-        self.plugins[instanceId] = div
+        self.plugins[instance] = div
     }
 
-    this.stopPlugin = function (instanceId) {
-        self.plugins[instanceId].remove()
-        delete self.plugins[instanceId]
+    this.stopPlugin = function (instance) {
+        self.plugins[instance].remove()
+        delete self.plugins[instance]
     }
 }

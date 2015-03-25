@@ -129,6 +129,7 @@ class IngenAsync(Interface):
         self._reading = False
 
         msg_str = msg.replace("\0", "") if msg else ""
+        print msg_str
         if msg_str:
             self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
@@ -227,6 +228,7 @@ class IngenAsync(Interface):
         self.sock.read_until(".\n", self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
+        print msg
         self.sock.write(self.msgencode(msg), lambda: callback(True))
 
     def __del__(self):
@@ -276,7 +278,7 @@ class IngenAsync(Interface):
 ''' % (path, prop, value)
         return self._send(x, callback)
 
-    def connecti(self, tail, head, callback=lambda r: r):
+    def connect(self, tail, head, callback=lambda r: r):
         return self._send('''
 []
 	a patch:Put ;
@@ -288,7 +290,7 @@ class IngenAsync(Interface):
 	] .
 ''' % (os.path.commonprefix([tail, head]), tail, head), callback)
 
-    def disconnecti(self, tail, head, callback=lambda r: r):
+    def disconnect(self, tail, head, callback=lambda r: r):
         return self._send('''
 []
 	a patch:Delete ;

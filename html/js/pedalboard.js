@@ -45,29 +45,29 @@ JqueryClass('pedalboard', {
             // callback with false value. The pedalboard will silently try to keep consistency, with
             // no garantees. (TODO: do something if consistency can't be achieved)
 
-            // Loads a plugin with given plugin url and instanceId
-            // Application MUST use this instanceId. Overriding this is mandatory.
-            pluginLoad: function (url, instanceId, x, y, callback) {
+            // Loads a plugin with given plugin url and instance
+            // Application MUST use this instance. Overriding this is mandatory.
+            pluginLoad: function (url, instance, x, y, callback) {
                 callback(true)
             },
 
-            // Removes the plugin given by instanceId
-            pluginRemove: function (instanceId, callback) {
+            // Removes the plugin given by instance
+            pluginRemove: function (instance, callback) {
                 callback(true)
             },
 
             // Loads a preset
-            pluginPresetLoad: function (instanceId, label, callback) {
+            pluginPresetLoad: function (instance, label, callback) {
                 callback(true)
             },
 
             // Changes the parameter of a plugin's control port
-            pluginParameterChange: function (instanceId, symbol, value, callback) {
+            pluginParameterChange: function (instance, symbol, value, callback) {
                 callback(true)
             },
 
             // Bypasses or un-bypasses plugin
-            pluginBypass: function (instanceId, bypassed, callback) {
+            pluginBypass: function (instance, bypassed, callback) {
                 callback(true)
             },
 
@@ -98,7 +98,7 @@ JqueryClass('pedalboard', {
             },
 
             // Marks the position of a plugin
-            pluginMove: function (instanceId, x, y, callback) {
+            pluginMove: function (instance, x, y, callback) {
                 callback(true)
             },
 
@@ -120,15 +120,12 @@ JqueryClass('pedalboard', {
         // and gets smaller as pedalboard size grows
         self.data('minScale', options.baseScale)
 
-        // Generates instanceIds, starting from 0.
-        // InstanceIds are incremental and never reused, unless pedalboard is reseted.
-        // Hardware ports will have instanceId "system"
         self.data('instanceCounter', -1)
 
-        // Holds all plugins loaded, indexed by instanceId
+        // Holds all plugins loaded, indexed by instance
         self.data('plugins', {})
 
-        // Hardware inputs and outputs, which have an instanceId of -1 and symbol as given by application
+        // Hardware inputs and outputs, which have an instance of -1 and symbol as given by application
         self.data('hwInputs', [])
         self.data('hwOutputs', [])
 
@@ -246,22 +243,6 @@ JqueryClass('pedalboard', {
         return self
     },
 
-    parameterFeed: function (result) {
-        var self = $(this)
-        var i, instanceId, symbol, value, gui
-        for (i = 0; i < result.length; i++) {
-            instanceId = result[i][0]
-            symbol = result[i][1]
-            value = result[i][2]
-            if (symbol == "cpu_load" && instanceId == 99999)
-                $("#cpu-bar").width(100 - value)
-            else {
-                gui = self.pedalboard('getGui', instanceId)
-                gui.setPortWidgetsValue(symbol, value, undefined, true)
-            }
-        }
-    },
-
     initGestures: function () {
         var self = $(this)
             // Gestures for tablets
@@ -334,22 +315,21 @@ JqueryClass('pedalboard', {
         data.height = self.height()
 
         data.instances = []
-        var instanceId, plugin, pluginData, gui
+        var instance, plugin, pluginData, gui
         var plugins = self.data('plugins')
-        for (instanceId in plugins) {
-            instanceId = parseInt(instanceId)
-            plugin = plugins[instanceId]
+        for (instance in plugins) {
+            plugin = plugins[instance]
             gui = plugin.data('gui')
             preset = gui.serializePreset()
                 // TODO: hack tosco para tirar a porta virtual :bypass, rever arquitetura
             delete preset[':bypass']
             pluginData = {
-                instanceId: instanceId,
+                instance: instance,
                 url: plugin.data('url'),
                 x: (plugin.offset().left - self.offset().left) / scale,
                 y: (plugin.offset().top - self.offset().top) / scale,
                 preset: preset,
-                addressing: hw ? hw.serializeInstance(instanceId) : null,
+                addressing: hw ? hw.serializeInstance(instance) : null,
                 bypassed: gui.bypassed
             }
             data.instances.push(pluginData)
@@ -359,9 +339,9 @@ JqueryClass('pedalboard', {
         self.data('connectionManager').iterate(function (jack) {
             var from = jack.data('origin')
             var to = jack.data('destination')
-            data.connections.push([from.data('instanceId'),
+            data.connections.push([from.data('instance'),
                 from.data('symbol'),
-                to.data('instanceId'),
+                to.data('instance'),
                 to.data('symbol')
             ])
         })
@@ -439,17 +419,15 @@ JqueryClass('pedalboard', {
                 return connect()
 
             var pluginData = pluginsData[plugin.url]
-            instanceNameIndex[plugin.instanceId] = pluginData.name
+            instanceNameIndex[plugin.instance] = pluginData.name
 
-            self.data('pluginLoad')(plugin.url, plugin.instanceId, plugin.x, plugin.y,
+            self.data('pluginLoad')(plugin.url, plugin.instance, plugin.x, plugin.y,
                 function (ok) {
                     if (!ok)
                         return
-                    self.data('instanceCounter', Math.max(plugin.instanceId, self.data('instanceCounter')))
-                    var value
                     for (var symbol in plugin.preset) {
                         value = plugin.preset[symbol]
-                        self.data('pluginParameterChange')(plugin.instanceId,
+                        self.data('pluginParameterChange')(plugin.instance,
                             symbol,
                             value,
                             function (ok) {
@@ -459,7 +437,7 @@ JqueryClass('pedalboard', {
                             })
                     }
 
-                    self.pedalboard('addPlugin', pluginData, plugin.instanceId, plugin.x, plugin.y, {
+                    self.pedalboard('addPlugin', pluginData, plugin.instance, plugin.x, plugin.y, {
                             'preset': plugin.preset,
                             'bypassed': plugin.bypassed
                         }, plugin.addressing, addressingErrors,
@@ -569,7 +547,7 @@ JqueryClass('pedalboard', {
      * 2 - User drags this element and drops in Pedalboard
      * 3 - Pedalboard calls a the application callback (pluginLoad option), with plugin url, instanceID and
      *     another callback.
-     * 4 - Application loads the plugin with given instanceId and calls the pedalboard callback,
+     * 4 - Application loads the plugin with given instance and calls the pedalboard callback,
      *     or communicate error to user
      * 5 - Pedalboard renders the plugin
      * Parameters are:
@@ -581,19 +559,19 @@ JqueryClass('pedalboard', {
 
         element.bind('pluginAdded', function (e, position) {
             var waiter = self.data('wait')
-            var instanceId = self.pedalboard('generateInstanceId')
-            waiter.startPlugin(instanceId, position)
+            var instance = self.pedalboard('generateInstance', pluginData.url)
+            waiter.startPlugin(instance, position)
             var pluginLoad = self.data('pluginLoad')
-            pluginLoad(pluginData.url, instanceId, position.x, position.y, function () {})
+            pluginLoad(pluginData.url, instance, position.x, position.y, function () {})
 /*                function () {
-                    self.pedalboard('addPlugin', pluginData, instanceId, position.x, position.y)
+                    self.pedalboard('addPlugin', pluginData, instance, position.x, position.y)
                     setTimeout(function () {
                         self.pedalboard('adapt')
                     }, 1)
-                    waiter.stopPlugin(instanceId)
+                    waiter.stopPlugin(instance)
                 },
                 function () {
-                    waiter.stopPlugin(instanceId)
+                    waiter.stopPlugin(instance)
                 })
 */
         })
@@ -836,9 +814,10 @@ JqueryClass('pedalboard', {
         minY = 0
         maxY = self.height()
         rightMargin = 150
-        var instanceId
-        for (instanceId in plugins) {
-            plugin = plugins[instanceId]
+        var instance
+        for (instance in plugins) {
+            plugin = plugins[instance]
+            if (!plugin.position) continue
             pos = plugin.position()
             w = plugin.width()
             h = plugin.height()
@@ -901,8 +880,8 @@ JqueryClass('pedalboard', {
         }
 
         // move plugins
-        for (instanceId in plugins) {
-            plugin = plugins[instanceId]
+        for (instance in plugins) {
+            plugin = plugins[instance]
             x = parseInt(plugin.css('left')) + left
             y = parseInt(plugin.css('top')) + top
             plugin.animate({
@@ -913,7 +892,7 @@ JqueryClass('pedalboard', {
                 step: drawFactory(plugin),
                 complete: drawFactory(plugin)
             })
-            self.data('pluginMove')(instanceId, x, y, function (r) {})
+            self.data('pluginMove')(instance, x, y, function (r) {})
         }
 
         var viewWidth = self.parent().width()
@@ -1003,30 +982,31 @@ JqueryClass('pedalboard', {
      * Plugins
      */
 
-    // Generate an instance ID for a new plugin.
-    generateInstanceId: function () {
+    // Generate an instance for a new plugin.
+    // TODO: check with ingen if instance does not exist
+    generateInstance: function (url) {
         var self = $(this)
-        var instanceId = self.data('instanceCounter')
-        instanceId++;
-        self.data('instanceCounter', instanceId)
-        return instanceId
+        url = url.split("/")
+        var instance = url[url.length-1]
+        instance = instance.split("#")[instance.split("#").length-1]
+        return instance
     },
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
-    // instanceId, now we need to put it in screen.
-    addPlugin: function (pluginData, instanceId, x, y, guiOptions, addressing, addressingErrors, renderCallback) {
+    // instance, now we need to put it in screen.
+    addPlugin: function (pluginData, instance, x, y, guiOptions, addressing, addressingErrors, renderCallback) {
         var self = $(this)
         var scale = self.data('scale')
 
         var obj = {}
         var options = $.extend({
             dragStart: function () {
-                self.trigger('pluginDragStart', instanceId)
+                self.trigger('pluginDragStart', instance)
                 obj.icon.addClass('dragging')
                 return true
             },
             drag: function (e, ui) {
-                self.trigger('pluginDrag', instanceId)
+                self.trigger('pluginDrag', instance)
                 var scale = self.data('scale')
                 ui.position.left /= scale
                 ui.position.top /= scale
@@ -1038,7 +1018,7 @@ JqueryClass('pedalboard', {
                 self.trigger('modified')
                 self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
-                self.data('pluginMove')(instanceId, ui.position.left, ui.position.top, function (r) {})
+                self.data('pluginMove')(instance, ui.position.left, ui.position.top, function (r) {})
                 self.pedalboard('adapt')
             },
             click: function (event) {
@@ -1066,13 +1046,13 @@ JqueryClass('pedalboard', {
                 }, 0)
             },
             presetLoad: function (label) {
-                self.data('pluginPresetLoad')(instanceId, label,
+                self.data('pluginPresetLoad')(instance, label,
                     function (ok) {
                         // TODO Handle error
                     })
             },
             change: function (symbol, value) {
-                self.data('pluginParameterChange')(instanceId, symbol, value,
+                self.data('pluginParameterChange')(instance, symbol, value,
                     function (ok) {
                         console.log('aqui sim')
                         console.log(pluginData)
@@ -1080,7 +1060,7 @@ JqueryClass('pedalboard', {
                     })
             },
             bypass: function (bypassed) {
-                self.data('pluginBypass')(instanceId, bypassed,
+                self.data('pluginBypass')(instance, bypassed,
                     function (ok) {
                         // TODO Handle this error
                     })
@@ -1100,27 +1080,27 @@ JqueryClass('pedalboard', {
             preset_list: preset_list
         }, pluginData)
         var pluginGui = new GUI(pluginData, options)
-        pluginGui.render(function (icon, settings) {
+        pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
 
-            self.data('plugins')[instanceId] = icon
+            self.data('plugins')[instance] = icon
 
             self.trigger('modified')
 
             icon.data('url', pluginData.url)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
-            icon.data('instanceId', instanceId)
+            icon.data('instance', instance)
 
             var hardware = self.data('hardwareManager')
             if (addressing && hardware)
-                hardware.unserializeInstance(instanceId, addressing, self.data('bypassApplication'), addressingErrors)
+                hardware.unserializeInstance(instance, addressing, self.data('bypassApplication'), addressingErrors)
 
             var i, symbol, port
             if (hardware) {
                 var addressFactory = function (port) {
                     return function () {
-                        hardware.open(instanceId, port, pluginGui.getPortValue(port.symbol))
+                        hardware.open(instance, port, pluginGui.getPortValue(port.symbol))
                     }
                 }
 
@@ -1134,7 +1114,7 @@ JqueryClass('pedalboard', {
 
                 // Let's define bypass like other ports.
                 settings.find('[mod-role=bypass-address]').click(function () {
-                    hardware.open(instanceId, pluginGui.controls[':bypass'], pluginGui.bypassed)
+                    hardware.open(instance, pluginGui.controls[':bypass'], pluginGui.bypassed)
                 })
             } else {
                 settings.find('[mod-role=input-control-address]').hide()
@@ -1157,7 +1137,7 @@ JqueryClass('pedalboard', {
                             continue
                             // call either makeInput or makeOutput
                         var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
-                        self.pedalboard(method, element, instanceId)
+                        self.pedalboard(method, element, instance)
                     }
                 }
             }
@@ -1177,7 +1157,7 @@ JqueryClass('pedalboard', {
                 return false
             }).appendTo(actions)
             $('<div>').addClass('mod-remove').click(function () {
-                self.pedalboard('removePlugin', instanceId)
+                self.pedalboard('removePlugin', instance)
                 return false
             }).appendTo(actions)
 
@@ -1194,43 +1174,43 @@ JqueryClass('pedalboard', {
         })
     },
 
-    getGui: function (instanceId) {
+    getGui: function (instance) {
         var self = $(this)
-        var plugin = self.data('plugins')[instanceId]
+        var plugin = self.data('plugins')[instance]
         return plugin.data('gui')
     },
 
     // Redraw all connections from or to a plugin
     drawPluginJacks: function (plugin) {
         var self = $(this)
-        self.data('connectionManager').iterateInstance(plugin.data('instanceId'), function (jack) {
+        self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
             self.pedalboard('drawJack', jack)
         })
     },
 
     // Removes a plugin from pedalboard.
     // Calls application removal function with proper removal callback
-    removePlugin: function (instanceId) {
+    removePlugin: function (instance) {
         var self = $(this)
         var pluginRemove = self.data('pluginRemove')
-        pluginRemove(instanceId, function () {
+        pluginRemove(instance, function () {
             var plugins = self.data('plugins')
-            var plugin = plugins[instanceId]
+            var plugin = plugins[instance]
 
             var connections = self.data('connectionManager')
-            connections.iterateInstance(instanceId, function (jack) {
+            connections.iterateInstance(instance, function (jack) {
                 var input = jack.data('destination')
                 jack.data('canvas').remove()
                 jack.remove()
                 self.pedalboard('packJacks', input)
             })
-            connections.removeInstance(instanceId)
+            connections.removeInstance(instance)
 
             var hw = self.data('hardwareManager')
             if (hw)
-                hw.removeInstance(instanceId)
+                hw.removeInstance(instance)
 
-            delete plugins[instanceId]
+            delete plugins[instance]
 
             plugin.remove()
         })
@@ -1252,13 +1232,13 @@ JqueryClass('pedalboard', {
         }
 
         var output = jack.data('origin')
-        var fromInstance = output.data('instanceId')
+        var fromInstance = output.data('instance')
         var fromSymbol = output.data('symbol')
         var portType = output.data('portType')
 
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
-            var toInstance = input.data('instanceId')
+            var toInstance = input.data('instance')
             var toSymbol = input.data('symbol')
             var ok
 
@@ -1287,8 +1267,8 @@ JqueryClass('pedalboard', {
             }
             self.data('bypassApplication', true)
 
-            for (instanceId in self.data('plugins'))
-                self.pedalboard('removePlugin', instanceId)
+            for (instance in self.data('plugins'))
+                self.pedalboard('removePlugin', instance)
 
             self.pedalboard('resetSize')
             self.pedalboard('positionHardwarePorts')
@@ -1309,7 +1289,7 @@ JqueryClass('pedalboard', {
     },
 
     // Make element an audio/midi inputs, to which jacks can be dragged to make connections
-    makeInput: function (element, instanceId) {
+    makeInput: function (element, instance) {
         var self = $(this)
         var symbol = element.attr('mod-port-symbol')
         var portType = element.attr('mod-role').split(/-/)[1]
@@ -1318,7 +1298,7 @@ JqueryClass('pedalboard', {
         element.addClass('mod-' + portType + '-input')
         element.addClass('input-disconnected')
 
-        element.data('instanceId', instanceId)
+        element.data('instance', instance)
         element.data('symbol', symbol)
         element.data('portType', portType)
 
@@ -1357,7 +1337,7 @@ JqueryClass('pedalboard', {
 
     // Make element an audio output, which contain jacks that can be dragged to
     // inputs to make connections
-    makeOutput: function (element, instanceId) {
+    makeOutput: function (element, instance) {
         var self = $(this)
         var symbol = element.attr('mod-port-symbol')
         var portType = element.attr('mod-role').split(/-/)[1]
@@ -1366,7 +1346,7 @@ JqueryClass('pedalboard', {
         element.addClass('mod-' + portType + '-output')
         element.addClass('output-disconnected')
 
-        element.data('instanceId', instanceId)
+        element.data('instance', instance)
         element.data('symbol', symbol)
         element.data('portType', portType)
 
@@ -1379,7 +1359,7 @@ JqueryClass('pedalboard', {
 
     // Creates a jack element inside an output. This jack can then be dragged and dropped
     // inside an input to connect them.
-    // Each jack knows it's origin's instanceId and symbol, and also tracks several elements
+    // Each jack knows it's origin's instance and symbol, and also tracks several elements
     // that are created with it to draw fancy cables.
     spawnJack: function (output) {
         var self = $(this)
@@ -1690,7 +1670,7 @@ JqueryClass('pedalboard', {
         // Output cannot be connected to an input of same effect
         // TODO maybe it should be up to the application to decide, we could have
         // a hook for confirmation
-        if (output.data('instanceId') >= 0 && output.data('instanceId') == input.data('instanceId'))
+        if (output.data('instance') >= 0 && output.data('instance') == input.data('instance'))
             return self.pedalboard('disconnect', jack)
 
         // Everything ok, let's do the connection
@@ -1698,8 +1678,8 @@ JqueryClass('pedalboard', {
         self.pedalboard('finishConnection')
 
         // Register the connection in desktop structure
-        self.data('connectionManager').connect(output.data('instanceId'), output.data('symbol'),
-            input.data('instanceId'), input.data('symbol'),
+        self.data('connectionManager').connect(output.data('instance'), output.data('symbol'),
+            input.data('instance'), input.data('symbol'),
             jack)
 
         // Register the connection in jack
@@ -1733,8 +1713,8 @@ JqueryClass('pedalboard', {
         // It might be better to check first and then connect instead
         if (skipApplication)
             return
-        self.data('portConnect')(output.data('instanceId'), output.data('symbol'),
-            input.data('instanceId'), input.data('symbol'),
+        self.data('portConnect')(output.data('instance'), output.data('symbol'),
+            input.data('instance'), input.data('symbol'),
             function (ok) {
                 if (!ok)
                     self.pedalboard('disconnect', jack)
@@ -1753,12 +1733,12 @@ JqueryClass('pedalboard', {
         if (connected) {
             var output = jack.data('origin')
 
-            self.data('connectionManager').disconnect(output.data('instanceId'),
+            self.data('connectionManager').disconnect(output.data('instance'),
                 output.data('symbol'),
-                input.data('instanceId'),
+                input.data('instance'),
                 input.data('symbol'))
-            self.data('portDisconnect')(output.data('instanceId'), output.data('symbol'),
-                input.data('instanceId'), input.data('symbol'),
+            self.data('portDisconnect')(output.data('instance'), output.data('symbol'),
+                input.data('instance'), input.data('symbol'),
                 function (ok) {})
             self.trigger('modified')
         }
@@ -1798,7 +1778,7 @@ JqueryClass('pedalboard', {
         }, 1)
     },
 
-    // Connect two ports using instanceId and symbol information.
+    // Connect two ports using instance and symbol information.
     // Used for unserializing. We have to find the spare jack in output,
     // put it
     connectPorts: function (fromInstance, fromSymbol, toInstance, toSymbol) {},
@@ -1806,8 +1786,8 @@ JqueryClass('pedalboard', {
     connected: function (output, input) {
         var self = $(this)
         var manager = self.data('connectionManager')
-        return manager.connected(output.data('instanceId'), output.data('symbol'),
-            input.data('instanceId'), input.data('symbol'))
+        return manager.connected(output.data('instance'), output.data('symbol'),
+            input.data('instance'), input.data('symbol'))
     },
 
     // Adjust layout of all jacks connected to this input to fit inside it
@@ -1900,9 +1880,9 @@ function ConnectionManager() {
     /*
      * Manages all connections in pedalboard.
      * Each connection is represented by 4 values:
-     * origin instanceId, origin symbol, destination instanceId and destination symbol
+     * origin instance, origin symbol, destination instance and destination symbol
      * Keeps two indexes, origIndex and destIndex, with jack objects in both.
-     * The indexes are dicts that store each jack in path [instanceId][symbol][instanceId][symbol]
+     * The indexes are dicts that store each jack in path [instance][symbol][instance][symbol]
      */
     var self = this
 
@@ -1973,19 +1953,19 @@ function ConnectionManager() {
     }
 
     // Execute callback for each connection of a given instance, passing jack as parameter
-    this.iterateInstance = function (instanceId, callback) {
-        self.iterateIndex(self.origIndex[instanceId], 3, callback)
-        self.iterateIndex(self.destIndex[instanceId], 3, callback)
+    this.iterateInstance = function (instance, callback) {
+        self.iterateIndex(self.origIndex[instance], 3, callback)
+        self.iterateIndex(self.destIndex[instance], 3, callback)
     }
 
     // Removes an instance from all indexes
-    this.removeInstance = function (instanceId) {
-        delete self.origIndex[instanceId]
-        delete self.destIndex[instanceId]
+    this.removeInstance = function (instance) {
+        delete self.origIndex[instance]
+        delete self.destIndex[instance]
         var instance, symbol
         for (instance in self.origIndex) {
             for (symbol in self.origIndex[instance]) {
-                delete self.origIndex[instance][symbol][instanceId]
+                delete self.origIndex[instance][symbol][instance]
                 if (Object.keys(self.origIndex[instance][symbol]).length == 0)
                     delete self.origIndex[instance][symbol]
             }
@@ -1994,7 +1974,7 @@ function ConnectionManager() {
         }
         for (instance in self.destIndex) {
             for (symbol in self.destIndex[instance]) {
-                delete self.destIndex[instance][symbol][instanceId]
+                delete self.destIndex[instance][symbol][instance]
                 if (Object.keys(self.destIndex[instance][symbol]).length == 0)
                     delete self.destIndex[instance][symbol]
             }
