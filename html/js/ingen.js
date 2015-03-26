@@ -163,13 +163,18 @@ $(document).ready(function () {
                             var property = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#property");
                             var value = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#value");
                             if (property.length && value.length) {
-                                // setting a port value
                                 if (property[0].object == "http://drobilla.net/ns/ingen#value") {
+                                    // setting a port value
                                     var sub = subject[0].object;
                                     var instance = sub.split("/")[0];
                                     var port = sub.split("/")[1];
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                } else if (propert[0].object == "http://drobilla.net/ns/ingen#enabled") {
+                                    // setting bypass
+                                    var instance = subject[0].object
+                                    var gui = desktop.pedalboard.pedalboard("getGui", instance);
+                                    gui.setPortWidgetsValue(":bypass", value[0].object == "true" ? 0 : 1, undefined, true);
                                 }
                             }
                         }
