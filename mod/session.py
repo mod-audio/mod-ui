@@ -549,7 +549,8 @@ class Session(object):
         except StopIteration:
             commit(False)
 
-    def remove(self, instance_id, callback, loaded=False):
+    def remove(self, instance, callback, loaded=False):
+        """
         affected_actuators = []
         if not loaded:
             affected_actuators = self._pedalboard.remove_instance(instance_id)
@@ -565,10 +566,11 @@ class Session(object):
                     self.parameter_addressing_load(*addr)
             else:
                 change_bufsize(ok)
-        if instance_id == -1:
-            self.reset(_callback)
+        """
+        if instance == "-1":
+            self.reset(callback)
         else:
-            self.host.remove(instance_id, _callback)
+            self.host.remove(instance, callback)
 
     def bypass(self, instance, value, callback, loaded=False):
         value = 1 if int(value) > 0 else 0
