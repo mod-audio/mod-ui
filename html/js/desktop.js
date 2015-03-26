@@ -579,8 +579,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             $.ajax({
                 url: '/effect/bypass/' + instance + ',' + value,
                 success: function (resp) {
-                    if (!resp)
-                        console.log('erro')
                     callback(!!resp)
                 },
                 error: function () {

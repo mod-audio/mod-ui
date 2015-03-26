@@ -64,7 +64,8 @@ ingen:canvasY %f
         callback(True)
 
     def bypass(self, instance, value, callback=lambda r:r):
-        callback(True)
+        value = "true" if value == 0 else "false"
+        self.set("/%s" % instance, "ingen:enabled", value, callback)
 
     def add_audio_port(self, name, typ, callback=lambda r:r):
         # typ should be Input or Output
