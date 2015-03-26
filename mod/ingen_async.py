@@ -129,7 +129,6 @@ class IngenAsync(Interface):
         self._reading = False
 
         msg_str = msg.replace("\0", "") if msg else ""
-        print msg_str
         if msg_str:
             self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
