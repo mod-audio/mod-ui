@@ -39,7 +39,7 @@ ingen:canvasY %f
         return IngenAsync.connect(self, "/%s" % tail, "/%s" % head, callback)
 
     def disconnect(self, tail, head, callback=lambda r: r):
-        return IngenAsync.diconnect(self, "/%s" % tail, "/%s" % head, callback)
+        return IngenAsync.disconnect(self, "/%s" % tail, "/%s" % head, callback)
 
     def set_position(self, instance, x, y, callback=lambda r:r):
         self.set("/%s" % instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
