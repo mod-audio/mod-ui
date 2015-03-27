@@ -27,23 +27,6 @@ except ImportError:
     from io import StringIO as StringIO
 
 class Host(IngenAsync):
-    def parse_port(self, port):
-        # HACK
-        r = port
-        if "effect_" in port:
-            instance, port = port.split(":")
-            instance = instance.replace("effect_", "")
-            r = "/instance%s/%s" % (instance, port)
-        elif "system" in port:
-            if "midi_capture_1" in port:
-                r = "/control_in"
-            else:
-                p = port.split("_")[-1]
-                typ = "in"
-                if "playback" in port:
-                    typ = "out"
-                r = "/audio_%s_%s" % (typ, p)
-        return r
 
     def add(self, uri, instance, x, y, callback=lambda r: r):
         self.put("/%s" % instance, """a ingen:Block ;
@@ -52,21 +35,27 @@ ingen:canvasX %f ;
 ingen:canvasY %f
 """ % (uri, float(x), float(y)), callback)
 
+    def connect(self, tail, head, callback=lambda r: r):
+        return IngenAsync.connect(self, "/%s" % tail, "/%s" % head, callback)
+
+    def disconnect(self, tail, head, callback=lambda r: r):
+        return IngenAsync.diconnect(self, "/%s" % tail, "/%s" % head, callback)
+
     def set_position(self, instance, x, y, callback=lambda r:r):
         self.set("/%s" % instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
         self.set("/%s" % instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
 
-    def param_get(self, instance_id, symbol, callback=lambda result: None):
+    def param_get(self, port, callback=lambda result: None):
         callback(1)
 
-    def param_set(self, instance_id, symbol, value, callback=lambda result: None):
-        self.set("/instance%d/%s" % (instance_id, symbol), "ingen:value", value, callback)
+    def param_set(self, port, value, callback=lambda result: None):
+        self.set("/%s" % port, "ingen:value", value, callback)
 
-    def preset_load(self, instance_id, uri, callback=lambda result: None):
-        self.set("/instance%d" % instance_id, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
+    def preset_load(self, instance, uri, callback=lambda result: None):
+        self.set("/%s" % instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
-    def remove(self, instance_id, callback=lambda result: None):
-        self.delete("/instance%d" % instance_id, callback)
+    def remove(self, instance, callback=lambda result: None):
+        self.delete("/%s" % instance, callback)
 
     def cpu_load(self, callback=lambda r:r):
         callback({'ok': True, 'value': 50})
@@ -86,7 +75,7 @@ ingen:canvasY %f
         if typ is "Input":
             x = 5.0
         else:
-            x = 900.0
+            x = 2300.0
 
         import random
         y = random.randint(50,250)

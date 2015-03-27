@@ -519,10 +519,9 @@ class EffectPresetLoad(web.RequestHandler):
 class EffectParameterSet(web.RequestHandler):
     @web.asynchronous
     @gen.engine
-    def get(self, instance, parameter):
+    def get(self, port):
         response = yield gen.Task(SESSION.parameter_set,
-                                  instance,
-                                  parameter,
+                                  port,
                                   float(self.get_argument('value')),
                                   )
         self.write(json.dumps(response))
@@ -587,9 +586,9 @@ class EffectParameterAddress(web.RequestHandler):
 class EffectParameterGet(web.RequestHandler):
     @web.asynchronous
     @gen.engine
-    def get(self, instance, parameter):
+    def get(self, port, parameter):
         response = yield gen.Task(SESSION.parameter_get,
-                                  instance,
+                                  port,
                                   parameter)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
@@ -1066,13 +1065,13 @@ application = web.Application(
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulkData),
             (r"/effect/remove/([A-Za-z0-9_]+)", EffectRemove),
-            (r"/effect/connect(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)", EffectConnect),
-            (r"/effect/disconnect(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)(/[A-Za-z0-9_]+/[A-Za-z0-9_]+)", EffectDisconnect),
+            (r"/effect/connect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectConnect),
+            (r"/effect/disconnect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectDisconnect),
             (r"/effect/preset/load/(\d+)", EffectPresetLoad),
-            (r"/effect/parameter/set/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterSet),
-            (r"/effect/parameter/get/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterGet),
+            (r"/effect/parameter/set/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterSet),
+            (r"/effect/parameter/get/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterGet),
             (r"/effect/parameter/address/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterAddress),
-            (r"/effect/bypass(/[A-Za-z0-9_]+),(\d+)", EffectBypass),
+            (r"/effect/bypass/([A-Za-z0-9_]+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/([A-Za-z0-9_]),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),

@@ -556,9 +556,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginParameterChange: function (instance, symbol, value, callback) {
+        pluginParameterChange: function (port, value, callback) {
             $.ajax({
-                url: '/effect/parameter/set/' + instance + ',' + symbol,
+                url: '/effect/parameter/set/' + port,
                 data: {
                     value: value
                 },
@@ -601,8 +601,8 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        portConnect: function (fromInstance, fromSymbol, toInstance, toSymbol, callback) {
-            var urlParam = fromInstance + '/' + fromSymbol + '/' + toInstance + '/' + toSymbol
+        portConnect: function (fromPort, toPort, callback) {
+            var urlParam = fromPort + ',' + toPort
             $.ajax({
                 url: '/effect/connect/' + urlParam,
                 success: function (resp) {
@@ -616,8 +616,8 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        portDisconnect: function (fromInstance, fromSymbol, toInstance, toSymbol, callback) {
-            var urlParam = fromInstance + '/' + fromSymbol + '/' + toInstance + '/' + toSymbol
+        portDisconnect: function (fromPort, toPort, callback) {
+            var urlParam = fromPort + ',' + toPort
             $.ajax({
                 url: '/effect/disconnect/' + urlParam,
                 success: function () {
@@ -727,11 +727,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
     var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
     var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
 
-    el.pedalboard('addHardwareOutput', outputL, 'capture_1', 'audio')
-    el.pedalboard('addHardwareOutput', outputR, 'capture_2', 'audio')
-    el.pedalboard('addHardwareOutput', outputM, 'midi_capture_1', 'midi')
-    el.pedalboard('addHardwareInput', inputL, 'playback_1', 'audio')
-    el.pedalboard('addHardwareInput', inputR, 'playback_2', 'audio')
+    el.pedalboard('addHardwareOutput', outputL, 'audio_in_1', 'audio')
+    el.pedalboard('addHardwareOutput', outputR, 'audio_in_2', 'audio')
+    el.pedalboard('addHardwareOutput', outputM, 'control_in', 'midi')
+    el.pedalboard('addHardwareInput', inputL, 'audio_out_1', 'audio')
+    el.pedalboard('addHardwareInput', inputR, 'audio_out_2', 'audio')
 
     el.pedalboard('positionHardwarePorts')
 

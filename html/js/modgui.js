@@ -144,11 +144,12 @@ function GUI(effect, options) {
         if (isNaN(value))
             throw "Invalid NaN value for " + symbol
         var port = self.controls[symbol]
+        var mod_port = source.attr("mod-port")
         if (!port.enabled || port.value == value)
             return
         if (port.trigger) {
             // Report the new value and return the widget to old value
-            options.change(symbol, value)
+            options.change(mod_port, value)
             if (source)
                 setTimeout(function () {
                     source.controlWidget('setValue', port.value)
@@ -157,7 +158,7 @@ function GUI(effect, options) {
         }
         port.value = value
         self.setPortWidgetsValue(symbol, value, source)
-        options.change(symbol, value)
+        options.change(mod_port, value)
         self.currentValues[symbol] = value
         self.triggerJS({
             'type': 'change',
@@ -201,7 +202,7 @@ function GUI(effect, options) {
     this.render = function (instance, callback) {
         var render = function () {
             if(instance)
-                self.icon = $('<div id="' + instance + '" class="mod-pedal">')
+                self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
             else
                 self.icon = $('<div class="mod-pedal">')
             self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
@@ -217,7 +218,10 @@ function GUI(effect, options) {
                 self.icon.height(self.icon.children().height())
             }, 1)
 
-            self.settings = $('<div class="mod-settings">')
+            if(instance)
+                self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
+            else
+                self.settings = $('<div class="mod-settings">')
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
                 self.getTemplateData(effect)))
             self.assignControlFunctionality(self.settings)
@@ -276,6 +280,9 @@ function GUI(effect, options) {
             var control = $(this)
             var symbol = $(this).attr('mod-port-symbol')
             var port = self.controls[symbol]
+
+            control.attr("mod-port", element.attr('mod-instance') + "/" + symbol)
+            control.addClass("mod-port")
 
             if (port) {
                 // Get the display formatting of this control

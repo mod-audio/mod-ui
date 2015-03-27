@@ -62,7 +62,7 @@ JqueryClass('pedalboard', {
             },
 
             // Changes the parameter of a plugin's control port
-            pluginParameterChange: function (instance, symbol, value, callback) {
+            pluginParameterChange: function (port, value, callback) {
                 callback(true)
             },
 
@@ -72,12 +72,12 @@ JqueryClass('pedalboard', {
             },
 
             // Connects two ports
-            portConnect: function (fromInstance, fromSymbol, toInstance, toSymbol, callback) {
+            portConnect: function (fromPort, toPort, callback) {
                 callback(true)
             },
 
             // Disconnect two ports
-            portDisconnect: function (fromInstance, fromSymbol, toInstance, toSymbol, callback) {
+            portDisconnect: function (fromPort, toPort, callback) {
                 callback(true)
             },
 
@@ -476,7 +476,7 @@ JqueryClass('pedalboard', {
                         var input = dest.find('[mod-port-symbol=' + toSymbol + ']')
 
                         var jack = output.find('[mod-role=output-jack]')
-                        self.pedalboard('connect', jack, input, true)
+                        self.pedalboard('connect', jack, input)
                     })
                     connect()
                 })
@@ -528,7 +528,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         element.attr('mod-role', 'input-' + portType + '-port')
         element.attr('mod-port-symbol', symbol)
-        self.pedalboard('makeInput', element, 'system')
+        self.pedalboard('makeInput', element, '')
         self.data('hwInputs').push(element)
         self.append(element)
     },
@@ -536,7 +536,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         element.attr('mod-role', 'output-' + portType + '-port')
         element.attr('mod-port-symbol', symbol)
-        self.pedalboard('makeOutput', element, 'system')
+        self.pedalboard('makeOutput', element, '')
         self.data('hwOutputs').push(element)
         self.append(element)
     },
@@ -1051,8 +1051,8 @@ JqueryClass('pedalboard', {
                         // TODO Handle error
                     })
             },
-            change: function (symbol, value) {
-                self.data('pluginParameterChange')(instance, symbol, value,
+            change: function (port, value) {
+                self.data('pluginParameterChange')(port, value,
                     function (ok) {
                         console.log('aqui sim')
                         console.log(pluginData)
@@ -1302,12 +1302,17 @@ JqueryClass('pedalboard', {
         element.data('symbol', symbol)
         element.data('portType', portType)
 
+        if (instance != "")
+            element.attr('id', instance + "/" + symbol)
+        else
+            element.attr('id', symbol)
+
         element.droppable({
             accept: '[mod-role=output-jack]',
             drop: function (event, ui) {
                 var jack = ui.draggable
 
-                self.pedalboard('connect', jack, element)
+                self.pedalboard('do_connect', jack, element)
                 element.removeClass('input-connecting-highlight')
             },
             over: function (event, ui) {
@@ -1328,7 +1333,7 @@ JqueryClass('pedalboard', {
         element.click(function () {
             var connection = self.data('ongoingConnection')
             if (connection) {
-                self.pedalboard('connect', connection.jack, element)
+                self.pedalboard('do_connect', connection.jack, element)
             } else {
                 self.pedalboard('expandInput', element)
             }
@@ -1349,6 +1354,11 @@ JqueryClass('pedalboard', {
         element.data('instance', instance)
         element.data('symbol', symbol)
         element.data('portType', portType)
+        if (instance != "")
+            element.attr('id', instance + "/" + symbol)
+        else
+            element.attr('id', symbol)
+
 
         self.pedalboard('spawnJack', element)
 
@@ -1626,10 +1636,19 @@ JqueryClass('pedalboard', {
         self.pedalboard('highlightInputs', false)
     },
 
+    do_connect: function (jack, input) {
+        var self = $(this)
+        var output = jack.data('origin')
+        self.data('portConnect')(output.attr('id'), input.attr('id'),
+            function (ok) {
+                if (!ok)
+                    self.pedalboard('disconnect', jack)
+            })
+    },
+
     // Connects an output port to an input port.
     // The output is obtained from jack
-    // skipApplication may be passed as true to avoid calling portConnect callback.
-    connect: function (jack, input, skipApplication) {
+    connect: function (jack, input) {
         var self = $(this)
         var output = jack.data('origin')
 
@@ -1711,14 +1730,7 @@ JqueryClass('pedalboard', {
 
         // Do the connection in host. If there's a problem, undo the connection
         // It might be better to check first and then connect instead
-        if (skipApplication)
-            return
-        self.data('portConnect')(output.data('instance'), output.data('symbol'),
-            input.data('instance'), input.data('symbol'),
-            function (ok) {
-                if (!ok)
-                    self.pedalboard('disconnect', jack)
-            })
+        return
     },
 
     // Disconnect this jack

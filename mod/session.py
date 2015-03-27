@@ -672,19 +672,19 @@ class Session(object):
             callback(ok)
         self.host.preset_load(instance_id, url, cb)
 
-    def parameter_set(self, instance_id, port_id, value, callback, loaded=False):
-        if port_id == ":bypass":
+    def parameter_set(self, port, value, callback, loaded=False):
+        if port == ":bypass":
             self.bypass(instance_id, value, callback)
             return
 
-        if not loaded:
-            self._pedalboard.parameter_set(instance_id, port_id, value)
+        #if not loaded:
+        #    self._pedalboard.parameter_set(instance_id, port_id, value)
 
-        self.recorder.parameter(instance_id, port_id, value)
-        self.host.param_set(instance_id, port_id, value, callback)
+        #self.recorder.parameter(instance, port_id, value)
+        self.host.param_set(port, value, callback)
 
-    def parameter_get(self, instance_id, port_id, callback):
-        self.host.param_get(instance_id, port_id, callback)
+    def parameter_get(self, port, callback):
+        self.host.param_get(port, callback)
 
     def set_monitor(self, addr, port, status, callback):
         self.host.monitor(addr, port, status, callback)
