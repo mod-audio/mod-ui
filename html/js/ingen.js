@@ -38,11 +38,11 @@ $(document).ready(function () {
                             var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
                             if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Arc") {
                                 // Deletes a connection between ports
-                                var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object.split("/")
-                                var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object.split("/")
+                                var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object
+                                var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object
                                 var cm = desktop.pedalboard.data("connectionManager")
-                                var jack = cm.origIndex[tail[0]][tail[1]][head[0]][head[1]]
-                                desktop.pedalboard.pedalboard('disconnect', jack)
+                                var jack = cm.origIndex[tail][head]
+                                desktop.pedalboard.pedalboard('destroyJack', jack)
                             }
                         }
                     });
@@ -170,7 +170,7 @@ $(document).ready(function () {
                                     var port = sub.split("/")[1];
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
-                                } else if (propert[0].object == "http://drobilla.net/ns/ingen#enabled") {
+                                } else if (property[0].object == "http://drobilla.net/ns/ingen#enabled") {
                                     // setting bypass
                                     var instance = subject[0].object
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
