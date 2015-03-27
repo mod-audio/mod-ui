@@ -528,6 +528,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         element.attr('mod-role', 'input-' + portType + '-port')
         element.attr('mod-port-symbol', symbol)
+        element.attr('mod-port', symbol)
         self.pedalboard('makeInput', element, '')
         self.data('hwInputs').push(element)
         self.append(element)
@@ -536,6 +537,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         element.attr('mod-role', 'output-' + portType + '-port')
         element.attr('mod-port-symbol', symbol)
+        element.attr('mod-port', symbol)
         self.pedalboard('makeOutput', element, '')
         self.data('hwOutputs').push(element)
         self.append(element)
@@ -955,7 +957,7 @@ JqueryClass('pedalboard', {
         })
 
         // Redraw all cables that connect to or from hardware ports
-        self.data('connectionManager').iterateInstance('system', function (jack) {
+        self.data('connectionManager').iterateInstance(':system:', function (jack) {
             self.pedalboard('drawJack', jack)
         })
     },
@@ -1054,8 +1056,6 @@ JqueryClass('pedalboard', {
             change: function (port, value) {
                 self.data('pluginParameterChange')(port, value,
                     function (ok) {
-                        console.log('aqui sim')
-                        console.log(pluginData)
                             // TODO Handle this error
                     })
             },
@@ -1303,9 +1303,9 @@ JqueryClass('pedalboard', {
         element.data('portType', portType)
 
         if (instance != "")
-            element.attr('id', instance + "/" + symbol)
+            element.attr('mod-port', instance + "/" + symbol)
         else
-            element.attr('id', symbol)
+            element.attr('mod-port', symbol)
 
         element.droppable({
             accept: '[mod-role=output-jack]',
@@ -1355,9 +1355,9 @@ JqueryClass('pedalboard', {
         element.data('symbol', symbol)
         element.data('portType', portType)
         if (instance != "")
-            element.attr('id', instance + "/" + symbol)
+            element.attr('mod-port', instance + "/" + symbol)
         else
-            element.attr('id', symbol)
+            element.attr('mod-port', symbol)
 
 
         self.pedalboard('spawnJack', element)
@@ -1480,8 +1480,10 @@ JqueryClass('pedalboard', {
 
     destroyJack: function (jack) {
         var self = $(this)
-        jack.data('canvas').remove()
+        var output = jack.data('origin')
         var input = jack.data('destination')
+        self.data('connectionManager').disconnect(output.attr('mod-port'), input.attr('mod-port'))
+        jack.data('canvas').remove()
         jack.remove()
         self.pedalboard('packJacks', input)
     },
@@ -1639,7 +1641,7 @@ JqueryClass('pedalboard', {
     do_connect: function (jack, input) {
         var self = $(this)
         var output = jack.data('origin')
-        self.data('portConnect')(output.attr('id'), input.attr('id'),
+        self.data('portConnect')(output.attr('mod-port'), input.attr('mod-port'),
             function (ok) {
                 if (!ok)
                     self.pedalboard('disconnect', jack)
@@ -1697,8 +1699,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('finishConnection')
 
         // Register the connection in desktop structure
-        self.data('connectionManager').connect(output.data('instance'), output.data('symbol'),
-            input.data('instance'), input.data('symbol'),
+        self.data('connectionManager').connect(output.attr("mod-port"), input.attr("mod-port"),
             jack)
 
         // Register the connection in jack
@@ -1745,13 +1746,7 @@ JqueryClass('pedalboard', {
         if (connected) {
             var output = jack.data('origin')
 
-            self.data('connectionManager').disconnect(output.data('instance'),
-                output.data('symbol'),
-                input.data('instance'),
-                input.data('symbol'))
-            self.data('portDisconnect')(output.data('instance'), output.data('symbol'),
-                input.data('instance'), input.data('symbol'),
-                function (ok) {})
+            self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
             self.trigger('modified')
         }
 
@@ -1781,11 +1776,6 @@ JqueryClass('pedalboard', {
                 // This was the spare jack and now it's connected, let's spawn a new one
                 self.pedalboard('spawnJack', jack.data('origin'))
                 return
-            }
-            if (previouslyConnected && !currentlyConnected) {
-                // The connection was undone, this jack is no longer necessary.
-                // There's already a spare one, so let's destroy the whole structure
-                self.pedalboard('destroyJack', jack)
             }
         }, 1)
     },
@@ -1891,69 +1881,77 @@ JqueryClass('pedalboard', {
 function ConnectionManager() {
     /*
      * Manages all connections in pedalboard.
-     * Each connection is represented by 4 values:
-     * origin instance, origin symbol, destination instance and destination symbol
+     * Each connection is represented by 2 values:
+     * origin port and destination port
      * Keeps two indexes, origIndex and destIndex, with jack objects in both.
-     * The indexes are dicts that store each jack in path [instance][symbol][instance][symbol]
+     * The indexes are dicts that store each jack in path [port][port]
      */
     var self = this
 
     this.reset = function () {
         self.origIndex = {}
         self.destIndex = {}
+        self.origByInstanceIndex = {}
+        self.destByInstanceIndex = {}
     }
 
     this.reset()
 
-    this._addToIndex = function () {
-        var i, key
-        var index = arguments[0]
-        var obj = arguments[5]
-        for (i = 1; i < 5; i++) {
-            key = arguments[i]
-            if (index[key] == null)
-                index[key] = i < 4 ? {} : obj
-            index = index[key]
-        }
+    this._addToIndex = function (index, key1, key2, jack) {
+        if(index[key1] == null)
+            index[key1] = {}
+        index[key1][key2] = jack
     }
 
-    this._removeFromIndex = function () {
-        var i, key
-        var index = arguments[0]
-        for (i = 1; i < 4; i++) {
-            key = arguments[i]
-            if (index[key] == null)
-                return
-            index = index[key]
-        }
-        delete index[arguments[4]]
-    }
-
-    this.iterateIndex = function (index, depth, callback) {
-        if (index == null)
-            return
-        if (depth == 0)
-            return callback(index)
-        for (var key in index)
-            self.iterateIndex(index[key], depth - 1, callback)
+    this._removeFromIndex = function (index, key1, key2) {
+        if(index[key1] != null)
+            delete index[key1][key2]
     }
 
     // Connects two ports
-    this.connect = function (fromInstance, fromSymbol, toInstance, toSymbol, jack) {
-        self._addToIndex(self.origIndex, fromInstance, fromSymbol, toInstance, toSymbol, jack)
-        self._addToIndex(self.destIndex, toInstance, toSymbol, fromInstance, fromSymbol, jack)
+    this.connect = function (fromPort, toPort, jack) {
+        self._addToIndex(self.origIndex, fromPort, toPort, jack)
+        self._addToIndex(self.destIndex, toPort, fromPort, jack)
+
+        // TODO: change the architecture so we don't need to keep this other index
+        // and this 'system' HACK
+        var from = fromPort.split("/")[0]
+        if (from.length == 1)
+            var instance = ':system:'
+        else
+            var instance = from[0]
+
+        if (self.origByInstanceIndex[instance] == null)
+            self.origByInstanceIndex[instance] = {}
+        self._addToIndex(self.origByInstanceIndex[instance], fromPort, toPort, jack)
+        if (self.destByInstanceIndex[instance] == null)
+            self.destByInstanceIndex[instance] = {}
+        self._addToIndex(self.destByInstanceIndex[instance], toPort, fromPort, jack)
     }
 
     // Disconnects two ports
-    this.disconnect = function (fromInstance, fromSymbol, toInstance, toSymbol) {
-        self._removeFromIndex(self.origIndex, fromInstance, fromSymbol, toInstance, toSymbol)
-        self._removeFromIndex(self.destIndex, toInstance, toSymbol, fromInstance, fromSymbol)
+    this.disconnect = function (fromPort, toPort) {
+        self._removeFromIndex(self.origIndex, fromPort, toPort)
+        self._removeFromIndex(self.destIndex, toPort, fromPort)
+
+        // TODO: change the architecture so we don't need to keep this other index
+        // and this 'system' HACK
+        var from = fromPort.split("/")[0]
+        if (from.length == 1)
+            var instance = ':system:'
+        else
+            var instance = from[0]
+
+        if (self.origByInstanceIndex[instance] != null)
+            self._removeFromIndex(self.origByInstanceIndex[instance], fromPort, toPort)
+        if (self.destByInstanceIndex[instance] != null)
+            self._removeFromIndex(self.destByInstanceIndex[instance], toPort, fromPort)
     }
 
     // Checks if two ports are connected
-    this.connected = function (fromInstance, fromSymbol, toInstance, toSymbol) {
+    this.connected = function (fromPort, toPort) {
         try {
-            return self.origIndex[fromInstance][fromSymbol][toInstance][toSymbol] != null
+            return self.origIndex[fromPort][toPort] != null
         } catch (TypeError) {
             return false
         }
@@ -1961,38 +1959,39 @@ function ConnectionManager() {
 
     // Execute callback for all connections, passing jack as parameter
     this.iterate = function (callback) {
-        self.iterateIndex(self.origIndex, 4, callback)
+        for (var key1 in self.origIndex)
+            for (var key2 in self.origIndex[key1])
+                callback(self.origIndex[key1][key2])
     }
 
     // Execute callback for each connection of a given instance, passing jack as parameter
     this.iterateInstance = function (instance, callback) {
-        self.iterateIndex(self.origIndex[instance], 3, callback)
-        self.iterateIndex(self.destIndex[instance], 3, callback)
+        if (self.origByInstanceIndex[instance] != null)
+            for (var key1 in self.origByInstanceIndex[instance])
+                for (var key2 in self.origByInstanceIndex[instance][key1])
+                    callback(self.origIndex[instance][key1][key2])
+        if (self.destByInstanceIndex[instance] != null)
+            for (var key1 in self.destByInstanceIndex[instance])
+                for (var key2 in self.destByInstanceIndex[instance][key1])
+                    callback(self.origIndex[instance][key1][key2])
     }
 
-    // Removes an instance from all indexes
     this.removeInstance = function (instance) {
-        delete self.origIndex[instance]
-        delete self.destIndex[instance]
-        var instance, symbol
-        for (instance in self.origIndex) {
-            for (symbol in self.origIndex[instance]) {
-                delete self.origIndex[instance][symbol][instance]
-                if (Object.keys(self.origIndex[instance][symbol]).length == 0)
-                    delete self.origIndex[instance][symbol]
+        for (var port in self.origByInstanceIndex[instance]) {
+            delete self.origIndex[port]
+            for (var oport in self.origIndex) {
+                delete self.origIndex[oport][port]
             }
-            if (Object.keys(self.origIndex[instance]).length == 0)
-                delete self.origIndex[instance]
-        }
-        for (instance in self.destIndex) {
-            for (symbol in self.destIndex[instance]) {
-                delete self.destIndex[instance][symbol][instance]
-                if (Object.keys(self.destIndex[instance][symbol]).length == 0)
-                    delete self.destIndex[instance][symbol]
-            }
-            if (Object.keys(self.destIndex[instance]).length == 0)
-                delete self.destIndex[instance]
         }
 
+        for (var port in self.destByInstanceIndex[instance]) {
+            delete self.destIndex[port]
+            for (var dport in self.destIndex) {
+                delete self.destIndex[dport][port]
+            }
+        }
+
+        delete self.origByInstanceIndex[instance]
+        delete self.destByInstanceIndex[instance]
     }
 }
