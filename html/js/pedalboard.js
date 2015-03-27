@@ -1915,11 +1915,16 @@ function ConnectionManager() {
 
         // TODO: change the architecture so we don't need to keep this other index
         // and this 'system' HACK
-        var from = fromPort.split("/")[0]
+        var from = fromPort.split("/")
         if (from.length == 1)
             var instance = ':system:'
         else
             var instance = from[0]
+        var to = toPort.split("/")
+        if (to.length == 1)
+            var instance = ':system:'
+        else
+            var instance = to[0]
 
         if (self.origByInstanceIndex[instance] == null)
             self.origByInstanceIndex[instance] = {}
@@ -1969,11 +1974,11 @@ function ConnectionManager() {
         if (self.origByInstanceIndex[instance] != null)
             for (var key1 in self.origByInstanceIndex[instance])
                 for (var key2 in self.origByInstanceIndex[instance][key1])
-                    callback(self.origIndex[instance][key1][key2])
+                    callback(self.origByInstanceIndex[instance][key1][key2])
         if (self.destByInstanceIndex[instance] != null)
             for (var key1 in self.destByInstanceIndex[instance])
                 for (var key2 in self.destByInstanceIndex[instance][key1])
-                    callback(self.origIndex[instance][key1][key2])
+                    callback(self.destByInstanceIndex[instance][key1][key2])
     }
 
     this.removeInstance = function (instance) {
