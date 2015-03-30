@@ -96,12 +96,12 @@ class Session(object):
         self.player = Player()
         self.mute_state = True
         self.recording = None
+        self.instances = []
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websocket = None
 
     def websocket_opened(self, ws):
-        print "WEBSOCKET OPENED!!!!"
         self.websocket = ws
         self.host.get("/")
 
@@ -110,22 +110,27 @@ class Session(object):
         self.host_initialized = True
 
         def port_value_cb(instance, port, value):
-            if self._pedalboard.data['instances'].get(instance, False):
+            """
+                if self._pedalboard.data['instances'].get(instance, False):
                 addrs = self._pedalboard.data['instances'][instance_id]['addressing']
                 addr = addrs.get(port, None)
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
                     self.parameter_addressing_load(*act)
+            """
+            pass
 
         def position_cb(instance, x, y):
             pass
 
         def plugin_add_cb(instance, uri, x, y):
-            pass
+            if not instance in self.instances:
+                self.instances.append(instance)
 
-        def plugin_delete_cb(instance):
-            pass
+        def delete_cb(instance):
+            if instance in self.instances:
+                self.instances.remove(instance)
 
         def connection_add_cb(instance_a, port_a, instance_b, port_b):
             pass
@@ -152,7 +157,7 @@ class Session(object):
         self.host.position_callback = position_cb
         self.host.port_value_callback = port_value_cb
         self.host.plugin_add_callback = plugin_add_cb
-        self.host.plugin_delete_callback = plugin_delete_cb
+        self.host.delete_callback = delete_cb
         self.host.connection_add_callback = connection_add_cb
         self.host.connection_delete_callback = connection_delete_cb
 
@@ -192,7 +197,7 @@ class Session(object):
         ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
-        gen = copy.deepcopy(self._pedalboard.data['instances']).iterkeys()
+        gen = iter(copy.deepcopy(self.instances))
         def remove_all_plugins(r=True):
             try:
                 self.remove(gen.next(), remove_all_plugins)
@@ -672,7 +677,7 @@ class Session(object):
 
     def parameter_set(self, port, value, callback, loaded=False):
         if port == ":bypass":
-            self.bypass(instance_id, value, callback)
+            # self.bypass(instance_id, value, callback)
             return
 
         #if not loaded:

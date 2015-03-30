@@ -1265,6 +1265,7 @@ JqueryClass('pedalboard', {
             if (!ok) {
                 return
             }
+            /*
             self.data('bypassApplication', true)
 
             for (instance in self.data('plugins'))
@@ -1283,6 +1284,7 @@ JqueryClass('pedalboard', {
             if (hw)
                 hw.reset()
             self.data('bypassApplication', false)
+            */
             if (callback)
                 callback()
         })
