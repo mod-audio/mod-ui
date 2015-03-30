@@ -44,6 +44,13 @@ $(document).ready(function () {
                                 var jack = cm.origIndex[tail][head]
                                 desktop.pedalboard.pedalboard('destroyJack', jack)
                             }
+                        } else {
+                            var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
+                            if (subject.length) {
+                                var instance = subject[0].object
+                                if (instance in desktop.pedalboard.data('plugins'))
+                                    desktop.pedalboard.pedalboard('removePluginFromCanvas', instance)
+                            }
                         }
                     });
 
