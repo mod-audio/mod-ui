@@ -1,7 +1,7 @@
 mod-ui
 ======
 
-This is the UI for the MOD software. It's a webserver that delivers an HTML 5 interface and communicates with the mod-host. It also communicates with the MOD hardware, but does not depend on it to run.
+This is the UI for the MOD software. It's a webserver that delivers an HTML 5 interface and communicates with Ingen. It also communicates with the MOD hardware, but does not depend on it to run.
 
 Install
 -------
@@ -48,10 +48,3 @@ Run the server::
     $ ./server.py
 
 Open your webkit based browser (I use Chromium) and point to http://localhost:8888
-
-
-
-
-
-
-
