@@ -1922,15 +1922,16 @@ function ConnectionManager() {
             var instance = ':system:'
         else
             var instance = from[0]
+        if (self.origByInstanceIndex[instance] == null)
+            self.origByInstanceIndex[instance] = {}
+        self._addToIndex(self.origByInstanceIndex[instance], fromPort, toPort, jack)
+
         var to = toPort.split("/")
         if (to.length == 1)
             var instance = ':system:'
         else
             var instance = to[0]
 
-        if (self.origByInstanceIndex[instance] == null)
-            self.origByInstanceIndex[instance] = {}
-        self._addToIndex(self.origByInstanceIndex[instance], fromPort, toPort, jack)
         if (self.destByInstanceIndex[instance] == null)
             self.destByInstanceIndex[instance] = {}
         self._addToIndex(self.destByInstanceIndex[instance], toPort, fromPort, jack)
@@ -1943,14 +1944,19 @@ function ConnectionManager() {
 
         // TODO: change the architecture so we don't need to keep this other index
         // and this 'system' HACK
-        var from = fromPort.split("/")[0]
+        var from = fromPort.split("/")
         if (from.length == 1)
             var instance = ':system:'
         else
             var instance = from[0]
-
         if (self.origByInstanceIndex[instance] != null)
             self._removeFromIndex(self.origByInstanceIndex[instance], fromPort, toPort)
+
+        var to = toPort.split("/")
+        if (to.length == 1)
+            var instance = ':system:'
+        else
+            var instance = to[0]
         if (self.destByInstanceIndex[instance] != null)
             self._removeFromIndex(self.destByInstanceIndex[instance], toPort, fromPort)
     }
