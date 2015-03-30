@@ -1194,27 +1194,30 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var pluginRemove = self.data('pluginRemove')
         pluginRemove(instance, function () {
-            var plugins = self.data('plugins')
-            var plugin = plugins[instance]
-
-            var connections = self.data('connectionManager')
-            connections.iterateInstance(instance, function (jack) {
-                var input = jack.data('destination')
-                jack.data('canvas').remove()
-                jack.remove()
-                self.pedalboard('packJacks', input)
-            })
-            connections.removeInstance(instance)
-
-            var hw = self.data('hardwareManager')
-            if (hw)
-                hw.removeInstance(instance)
-
-            delete plugins[instance]
-
-            plugin.remove()
         })
+    },
 
+    removePluginFromCanvas: function (instance) {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        var plugin = plugins[instance]
+
+        var connections = self.data('connectionManager')
+        connections.iterateInstance(instance, function (jack) {
+            var input = jack.data('destination')
+            jack.data('canvas').remove()
+            jack.remove()
+            self.pedalboard('packJacks', input)
+        })
+        connections.removeInstance(instance)
+
+        var hw = self.data('hardwareManager')
+        if (hw)
+            hw.removeInstance(instance)
+
+        delete plugins[instance]
+
+        plugin.remove()
     },
 
     // Highlight all inputs to which a jack can be connected (any inputs that are not from same
