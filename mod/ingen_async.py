@@ -97,6 +97,7 @@ class IngenAsync(Interface):
         self._idle = True
         self.position_callback = lambda instance,x,y: None
         self.port_value_callback = lambda instance,port,value: None
+        self.delete_callback = lambda subject: None
         self.msg_callback = lambda msg: None
 
         for (k, v) in NS.__dict__.items():
@@ -225,6 +226,11 @@ class IngenAsync(Interface):
                     instance_b = tail[-2]
                     port_b = tail[-1]
                     self.connection_add_callback(instance_a, port_a, instance_b, port_b)
+            # Delete msgs
+            for i in msg_model.triples([None, NS.rdf.type, NS.patch.Delete]):
+                bnode       = i[0]
+                subject     = msg_model.value(bnode, NS.patch.subject)
+                self.delete_callback(subject.toPython().split("/")[-1])
 
         self._reading = True
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
