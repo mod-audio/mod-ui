@@ -991,6 +991,14 @@ JqueryClass('pedalboard', {
         url = url.split("/")
         var instance = url[url.length-1]
         instance = instance.split("#")[instance.split("#").length-1]
+        var i = 1;
+        if (instance in self.data('plugins')) {
+            instance = instance + "_1"
+            while (instance in self.data('plugins')) {
+                i = i + 1
+                instance = instance.slice(0, -1) + i
+            }
+        }
         return instance
     },
 
