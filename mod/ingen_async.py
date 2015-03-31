@@ -229,7 +229,8 @@ class IngenAsync(Interface):
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Delete]):
                 bnode       = i[0]
                 subject     = msg_model.value(bnode, NS.patch.subject)
-                self.delete_callback(subject.toPython().split("/")[-1])
+                if subject:
+                    self.delete_callback(subject.toPython().split("/")[-1])
 
 
         self._reading = True
