@@ -41,8 +41,10 @@ $(document).ready(function () {
                                 var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object
                                 var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object
                                 var cm = desktop.pedalboard.data("connectionManager")
-                                var jack = cm.origIndex[tail][head]
-                                desktop.pedalboard.pedalboard('destroyJack', jack)
+                                if (cm.connected(tail, head)) {
+                                    var jack = cm.origIndex[tail][head]
+                                    desktop.pedalboard.pedalboard('destroyJack', jack)
+                                }
                             }
                         } else {
                             var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
@@ -90,16 +92,20 @@ $(document).ready(function () {
                                         'dataType': 'json'
                                     })
                                 }
-                            } else if (type[0].object == "http://lv2plug.in/ns/lv2core#ControlPort") {
+                            } else if (type.length == 2 && (type[0].object == "http://lv2plug.in/ns/lv2core#ControlPort" ||
+                                                            type[1].object == "http://lv2plug.in/ns/lv2core#ControlPort")) {
                                 // set the value for the port
                                 var value = store.find(body[0].object, "http://drobilla.net/ns/ingen#value");
                                 var sub = subject[0].object;
                                 var instance = sub.split("/")[0];
                                 var port = sub.split("/")[1];
-                                if (!$("." + sub)) {
+                                if (!$("[mod-port=" + sub.replace("/", "\\/") + "]").length) {
                                     var cb = function () {
                                         var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                        gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                        setTimeout(function() {
+                                            var gui = desktop.pedalboard.pedalboard("getGui", instance);
+                                            gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                        }, 100)
                                         $(document).unbindArrive('[mod-port=' + sub.replace("/", "\\/") + "]", cb)
                                     }
                                     $(document).arrive('[mod-port=' + sub.replace("/", "\\/") + "]", cb)
@@ -114,37 +120,40 @@ $(document).ready(function () {
                                 // new port connection
                                 var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object
                                 var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object
-                                var output = $('[mod-port=' + tail.replace("/", "\\/") + "]")
-                                if(!output.length) {
-                                    var cb = function () {
-                                        var output = $('[mod-port=' + tail.replace("/", "\\/") + "]")
+                                var cm = desktop.pedalboard.data("connectionManager")
+                                if (!cm.connected(tail, head)) {
+                                    var output = $('[mod-port=' + tail.replace("/", "\\/") + "]")
+                                    if(!output.length) {
+                                        var cb = function () {
+                                            var output = $('[mod-port=' + tail.replace("/", "\\/") + "]")
+                                            var jack = output.find('[mod-role=output-jack]')
+                                            var input =  $('[mod-port=' + head.replace("/", "\\/") + "]")
+                                            if (!input.length) {
+                                                var incb = function () {
+                                                    var input =  $('[mod-port=' + head.replace("/", "\\/") + "]")
+                                                    desktop.pedalboard.pedalboard('connect', jack, input)
+                                                    $(document).unbindArrive('[mod-port=' + head.replace("/", "\\/") + "]", incb)
+                                                }
+                                                $(document).arrive('[mod-port=' + head.replace("/", "\\/") + "]", incb)
+                                            } else {
+                                                desktop.pedalboard.pedalboard('connect', jack, input)
+                                            }
+                                            $(document).unbindArrive('[mod-port=' + tail.replace("/", "\\/") + "]", cb)
+                                        }
+                                        $(document).arrive('[mod-port=' + tail.replace("/", "\\/") + "]", cb)
+                                    } else {
                                         var jack = output.find('[mod-role=output-jack]')
                                         var input =  $('[mod-port=' + head.replace("/", "\\/") + "]")
                                         if (!input.length) {
-                                            var incb = function () {
+                                            var cb = function () {
                                                 var input =  $('[mod-port=' + head.replace("/", "\\/") + "]")
                                                 desktop.pedalboard.pedalboard('connect', jack, input)
-                                                $(document).unbindArrive('[mod-port=' + head.replace("/", "\\/") + "]", incb)
+                                                $(document).unbindArrive('[mod-port=' + head.replace("/", "\\/") + "]", cb)
                                             }
-                                            $(document).arrive('[mod-port=' + head.replace("/", "\\/") + "]", incb)
+                                            $(document).arrive('[mod-port=' + head.replace("/", "\\/") + "]", cb)
                                         } else {
                                             desktop.pedalboard.pedalboard('connect', jack, input)
                                         }
-                                        $(document).unbindArrive('[mod-port=' + tail.replace("/", "\\/") + "]", cb)
-                                    }
-                                    $(document).arrive('[mod-port=' + tail.replace("/", "\\/") + "]", cb)
-                                } else {
-                                    var jack = output.find('[mod-role=output-jack]')
-                                    var input =  $('[mod-port=' + head.replace("/", "\\/") + "]")
-                                    if (!input.length) {
-                                        var cb = function () {
-                                            var input =  $('[mod-port=' + head.replace("/", "\\/") + "]")
-                                            desktop.pedalboard.pedalboard('connect', jack, input)
-                                            $(document).unbindArrive('[mod-port=' + head.replace("/", "\\/") + "]", cb)
-                                        }
-                                        $(document).arrive('[mod-port=' + head.replace("/", "\\/") + "]", cb)
-                                    } else {
-                                        desktop.pedalboard.pedalboard('connect', jack, input)
                                     }
                                 }
                             }

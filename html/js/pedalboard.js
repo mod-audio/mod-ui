@@ -1645,7 +1645,13 @@ JqueryClass('pedalboard', {
 
     do_connect: function (jack, input) {
         var self = $(this)
+
+        var cm = self.data('connectionManager')
         var output = jack.data('origin')
+        if (cm.connected(output.attr('mod-port'), input.attr('mod-port'))) {
+            self.pedalboard('connect', jack, input)
+            return
+        }
         self.data('portConnect')(output.attr('mod-port'), input.attr('mod-port'),
             function (ok) {
                 if (!ok)
@@ -1664,7 +1670,7 @@ JqueryClass('pedalboard', {
         // If this jack is already connected to this output, keep connection
         // This means user just took a connected jack, dragged around and dropped
         // in the same input
-        if (previousInput == input) {
+        if (previousInput && input && previousInput[0] == input[0]) {
             jack.addClass('jack-connected')
             output.addClass('output-connected')
             output.removeClass('output-disconnected')
