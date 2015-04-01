@@ -153,7 +153,7 @@ function UserSession(options) {
             url: SITEURLNEW + '/api/auth/session',
             method: 'POST',
             data: $(this).serialize(),
-            headers : { 'Content' : window.location.host },
+            headers : { 'Content' : "http://" + window.location.host },
             success: function (resp) {
                 if (!resp.ok) {
                     options.loginWindow.find('.error').text('Invalid username or password').show()
