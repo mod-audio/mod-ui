@@ -59,7 +59,7 @@ function RegistrationWindow(options) {
             url: SITEURLNEW + '/api/auth/users',
             method: 'POST',
             data: $(this).serialize(),
-            headers : { 'Content' : "http://" + window.location.host },
+            headers : { 'Content-Type' : 'application/json' },
             success: function (result) {
                 if (!result.ok) {
                     self.error(result.error)
