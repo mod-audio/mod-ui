@@ -18,9 +18,10 @@
 function RegistrationWindow(options) {
     var self = this;
 
+    var SITEURLNEW = "http://social.dev.portalmod.com"
+
     options = $.extend({
         registrationWindow: $('<div>'),
-        getUserSession: function () {}, //must be defined 
     }, options)
 
     options.registrationWindow.find('.js-close').click(function () {
@@ -43,7 +44,8 @@ function RegistrationWindow(options) {
     this.form.submit(function (event) {
         event.preventDefault()
         options.registrationWindow.find('.error').hide()
-        $(this).find('input[name=sid]').val(options.getUserSession())
+        var user_id = $(this).find('input[name=user_id]').val()
+        var name    = $(this).find('input[name=name]').val()
         var pass1 = $(this).find('input[name=password]').val()
         var pass2 = $(this).find('input[name=password2]').val()
         var email = $(this).find('input[name=email]').val()
@@ -54,9 +56,10 @@ function RegistrationWindow(options) {
         if (!self.validatePassword(pass1, pass2))
             return
         $.ajax({
-            url: SITEURL + '/user/register',
+            url: SITEURLNEW + '/api/auth/users',
             method: 'POST',
             data: $(this).serialize(),
+            headers : { 'Content' : window.location.host },
             success: function (result) {
                 if (!result.ok) {
                     self.error(result.error)
@@ -85,7 +88,8 @@ function RegistrationWindow(options) {
     this.validateRequiredFields = function () {
         var required = {
             'email': 'E-mail',
-            'name': 'Name'
+            'name': 'Name',
+            'user_id': 'User ID'
         }
         for (var field in required) {
             if (!self.form.find('input[name=' + field + ']').val())

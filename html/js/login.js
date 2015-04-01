@@ -45,6 +45,7 @@ function UserSession(options) {
     var LOGGED = 3 // User has been identified and is logged at this device
     var DISCONNECTED = 4 // Device was not recognized by Cloud, communication suspended
 
+    var SITEURLNEW = "http://social.dev.portalmod.com"
 
     this.status = OFFLINE
     this.minRetryTimeout = 5
@@ -65,10 +66,13 @@ function UserSession(options) {
         loginWindow: $('<div>')
     }, options)
 
-    this.getSessionId = function () {
+    this.tryConnectingToSocial = function () {
+        self.setStatus(OFFLINE)
+        /*
+         TODO
         self.setStatus(CONNECTING)
         $.ajax({
-            url: SITEURL + '/login/start_session',
+            url: SITEURLNEW + '/api/auth/session',
             type: 'GET',
             success: function (sid) {
                 self.sid = sid
@@ -83,8 +87,10 @@ function UserSession(options) {
             },
             dataType: 'json'
         })
+        */
     }
 
+    /*
     this.retry = function () {
         timeout = self.retryTimeout
         self.retryTimeout = Math.max(self.maxRetryTimeout, timeout * 2)
@@ -109,7 +115,7 @@ function UserSession(options) {
 
     this.identifyDevice = function (signature) {
         $.ajax({
-            url: SITEURL + '/login/identify_device',
+            url: SITEURLNEW + '/login/identify_device',
             data: signature,
             type: 'GET',
             success: function (status) {
@@ -129,13 +135,11 @@ function UserSession(options) {
             },
             dataType: 'json'
         });
-    }
+    }*/
 
     this.login = function (callback) {
         if (self.status === LOGGED) {
             return callback()
-        } else if (self.status < ONLINE) {
-            return self.notify('Device is offline')
         }
         options.loginWindow.window('open')
         self.loginCallback = callback
@@ -144,17 +148,19 @@ function UserSession(options) {
     options.loginWindow.find('form').on('submit', function (event) {
         event.preventDefault();
         options.loginWindow.find('.error').hide()
-        data = $(this).serialize()
         $(this).find('input[type=password]').val('')
         $.ajax({
-            url: SITEURL + '/login/authenticate/' + self.sid,
+            url: SITEURLNEW + '/api/auth/session',
             method: 'POST',
-            data: data,
+            data: $(this).serialize(),
+            headers : { 'Content' : window.location.host },
             success: function (resp) {
                 if (!resp.ok) {
                     options.loginWindow.find('.error').text('Invalid username or password').show()
                     return
                 }
+                alert(resp)
+                /*
                 self.identifyUser(resp.user, resp.signature, function (ok) {
                     if (ok) {
                         if (self.loginCallback) {
@@ -165,6 +171,7 @@ function UserSession(options) {
                         self.notify('Security error: server sent invalid data')
                     }
                 })
+                */
             },
             error: function (resp) {
                 return self.notify("Error authenticating")
@@ -183,6 +190,8 @@ function UserSession(options) {
     options.loginWindow.find('#register').click(function () {
         options.loginWindow.hide()
         options.registration.start(function (resp) {
+            alert(resp)
+            /*
             self.identifyUser(resp.user, resp.signature, function (ok) {
                 if (ok) {
                     if (self.loginCallback) {
@@ -193,16 +202,18 @@ function UserSession(options) {
                     self.notify('Security error: server sent invalid data')
                 }
             })
+            */
         })
     })
 
-    this.identifyUser = function (user, signature, callback) {
+    /*
+    this.identifyUser = function (user_id, password, callback) {
         $.ajax({
             url: '/login/authenticate',
             method: 'POST',
             data: {
-                user: user,
-                signature: signature
+                user_id: user,
+                password: password
             },
             success: function (resp) {
                 if (resp.ok) {
@@ -220,20 +231,23 @@ function UserSession(options) {
             dataType: 'json'
         })
     }
+    */
 
+    /*
     this.logout = function () {
         $.ajax({
-            'url': SITEURL + '/logout/' + self.sid,
+            'url': SITEURLNEW + '/logout/' + self.sid,
             success: function () {
                 self.sid = null
                 options.logout()
-                self.getSessionId()
+                //self.getSessionId()
             },
             error: function () {
                 return self.notify('Could not logout')
             }
         })
     }
+    */
 
     this.setStatus = function (status) {
         if (status == self.status)
@@ -250,9 +264,11 @@ function UserSession(options) {
             options.online();
             break;
         case LOGGED:
-            options.login()
+            options.login();
+            break;
         case DISCONNECTED:
-            options.disconnected()
+            options.disconnected();
+            break;
         }
     }
 

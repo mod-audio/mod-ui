@@ -114,7 +114,7 @@ function Desktop(elements) {
         self.windowManager.closeWindows()
         return false
     })
-    this.userSession.getSessionId()
+    this.userSession.tryConnectingToSocial()
     this.hardwareManager = new HardwareManager({
         address: function (instance, symbol, addressing, callback) {
             addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
