@@ -44,7 +44,6 @@ class Pedalboard(object):
         self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
 
     def clear(self):
-        self.max_instance_id = -1
         if self.data:
             width = self.data['width']
             height = self.data['height']
@@ -88,9 +87,9 @@ class Pedalboard(object):
 
     def load_addressings(self):
         self.init_addressings()
-        for instance_id, instance in self.data.get('instances', {}).items():
+        for instance, data in self.data.get('instances', {}).items():
             for port_id, addressing in instance.get('addressing', {}).items():
-                if not addressing.get("instance_id", False):
+                if not addressing.get("instance", False):
                     addressing.update({'instance_id': instance_id, 'port_id': port_id})
                 if port_id == ":bypass":
                     addressing['value'] = int(instance['bypassed'])
@@ -140,17 +139,16 @@ class Pedalboard(object):
             pass
         return port
 
-    def add_instance(self, url, instance_id=None, bypassed=False, x=0, y=0):
-        self.max_instance_id = max(self.max_instance_id, instance_id)
-        self.data['instances'][instance_id] = { 'url': url,
-                                                'instanceId': instance_id,
+    def add_instance(self, url, instance, bypassed=False, x=0, y=0):
+        self.data['instances'][instance] = { 'url': url,
+                                                'instance': instance,
                                                 'bypassed': bool(bypassed),
                                                 'x': x,
                                                 'y': y,
                                                 'preset': {},
                                                 'addressing': {},
                                                 }
-        return instance_id
+        return instance
 
     # Remove an instance and returns a list of all affected actuators
     def remove_instance(self, instance_id):
