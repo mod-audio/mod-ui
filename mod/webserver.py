@@ -530,16 +530,14 @@ class EffectParameterSet(web.RequestHandler):
 class EffectParameterAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
-    def post(self, instance, parameter):
+    def post(self, port):
         data = json.loads(self.request.body)
 
         actuator = data.get('actuator', [-1] * 4)
 
         if actuator[0] < 0:
             actuator = [ -1, -1, -1, -1 ]
-            result = yield gen.Task(SESSION.parameter_get,
-                                    instance,
-                                    parameter)
+            result = yield gen.Task(SESSION.parameter_get, port)
             if not result['ok']:
                 self.write(json.dumps(result))
                 self.finish()
@@ -563,8 +561,7 @@ class EffectParameterAddress(web.RequestHandler):
         options = data.get('options', [])
 
         result['ok'] = yield gen.Task(SESSION.parameter_address,
-                                      instance,
-                                      parameter,
+                                      port,
                                       data.get('addressing_type', None),
                                       label,
                                       ctype,
@@ -1070,7 +1067,7 @@ application = web.Application(
             (r"/effect/preset/load/(\d+)", EffectPresetLoad),
             (r"/effect/parameter/set/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterSet),
             (r"/effect/parameter/get/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterGet),
-            (r"/effect/parameter/address/([A-Za-z0-9_]+),([A-Za-z0-9_]+)", EffectParameterAddress),
+            (r"/effect/parameter/address/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterAddress),
             (r"/effect/bypass/([A-Za-z0-9_]+),(\d+)", EffectBypass),
             (r"/effect/bypass/address/([A-Za-z0-9_]),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),

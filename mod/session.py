@@ -30,7 +30,6 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
                           DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
-from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 #from mod.host import Host
@@ -46,6 +45,26 @@ def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
         return fakeClass(*args, **kwargs)
     return realClass(*args, **kwargs)
+
+
+class InstanceIdMapper(object):
+    def __init__(self):
+        self.instance_map = {}
+        self.id_map = {}
+
+    def _get_new_id(self):
+        return max(self.id_map.keys()) + 1 if self.id_map else 0
+
+    def map(self, instance):
+        if instance not in self.instance_map:
+            id = self._get_new_id()
+            self.instance_map[instance] = id
+            self.id_map[id] = instance
+        return self.instance_map[instance]
+
+    def get_instance(self, id):
+        return self.id_map.get(id, None)
+
 
 class Session(object):
 
@@ -68,12 +87,9 @@ class Session(object):
         self.effect_index = EffectIndex()
 
         self._pedalboard = Pedalboard()
-        self._pedalboards = {}
-        self._banks = list_banks()
 
-        Protocol.register_cmd_callback("banks", self.hmi_list_banks)
-        Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
-        Protocol.register_cmd_callback("pedalboard", self.load_bank_pedalboard)
+        #Protocol.register_cmd_callback("banks", self.hmi_list_banks)
+        #Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
         Protocol.register_cmd_callback("hw_con", self.hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
         Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
@@ -82,8 +98,8 @@ class Session(object):
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         Protocol.register_cmd_callback("tuner", self.tuner_set)
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
-        Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
-        Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
+        #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
+        #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
         Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
 #        self.host = factory(Host, FakeHost, DEV_HOST,
@@ -97,6 +113,7 @@ class Session(object):
         self.mute_state = True
         self.recording = None
         self.instances = []
+        self.instance_mapper = InstanceIdMapper()
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websocket = None
@@ -110,22 +127,22 @@ class Session(object):
         self.host_initialized = True
 
         def port_value_cb(instance, port, value):
-            """
-                if self._pedalboard.data['instances'].get(instance, False):
+            instance_id = self.instance_mapper.map(instance)
+            if self._pedalboard.data['instances'].get(instance_id, False):
+                self._pedalboard.parameter_set(instance_id, port, value)
                 addrs = self._pedalboard.data['instances'][instance_id]['addressing']
                 addr = addrs.get(port, None)
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
                     self.parameter_addressing_load(*act)
-            """
-            pass
 
         def position_cb(instance, x, y):
             pass
 
         def plugin_add_cb(instance, uri, x, y):
             if not instance in self.instances:
+                self._pedalboard.add_instance(uri, self.instance_mapper.map(instance), x=x, y=y)
                 self.instances.append(instance)
 
         def delete_cb(instance):
@@ -166,35 +183,6 @@ class Session(object):
             self.restore_last_pedalboard()
         logging.info("hmi initialized")
         self.hmi_initialized = True
-
-    def reset_current_pedalboard(self, callback):
-        last_bank, last_pedalboard = get_last_bank_and_pedalboard()
-        self.load_bank_pedalboard(last_bank, last_pedalboard, callback, reset=True)
-
-    def restore_last_pedalboard(self):
-        last_bank, last_pedalboard = get_last_bank_and_pedalboard()
-
-        def initialize(r):
-            self.pedalboard_initialized = True
-            return r
-
-        def restore():
-            if last_bank is not None and last_pedalboard is not None:
-                self.load_bank_pedalboard(last_bank, last_pedalboard, initialize)
-            else:
-                initialize(0)
-
-        def bufsize(result=None):
-            change_jack_bufsize(self.jack_bufsize, restore)
-
-        def initial_state():
-            if last_bank is None or last_pedalboard is None:
-                return bufsize()
-            banks = list_banks()
-            pedalboards = banks[last_bank]['pedalboards']
-            self.hmi.initial_state(last_bank, last_pedalboard, pedalboards, bufsize)
-
-        ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.5), initial_state)
 
     def reset(self, callback):
         gen = iter(copy.deepcopy(self.instances))
@@ -312,221 +300,6 @@ class Session(object):
         self.remove(PEAKMETER_OUT, lambda r: None, True)
         self._tuner = False
 
-    def _get_pedalboard_id(self, bank_id, pedalboard_number):
-        try:
-            pedalboards = self._banks[bank_id]['pedalboards']
-        except (KeyError, IndexError):
-            logging.error('[session] Unknown bank %d' % bank_id)
-            return None
-        try:
-            return pedalboards[pedalboard_number]['id']
-        except (KeyError, IndexError):
-            logging.error('[session] Unknown pedalboard %d in bank %d' % (pedalboard_number, bank_id))
-            return None
-
-    def load_bank_pedalboard(self, bank_id, pedalboard_number, callback, reset=False):
-        pedalboard_id = self._get_pedalboard_id(bank_id, int(pedalboard_number))
-
-        if reset or self._pedalboards.get(pedalboard_id, None) is None:
-            self._pedalboard = Pedalboard(pedalboard_id)
-            self._pedalboards[pedalboard_id] = self._pedalboard
-        else:
-            self._pedalboard = self._pedalboards[pedalboard_id]
-
-        # TODO the if True and if False below are checkings that have been
-        # temporarily removed. Theorically we don't need to re-address banks,
-        # but since this is a bit bugged, let's test and stabilize it before
-        # making this optimization
-        def _callback(*args):
-            if True or not bank_id == self.current_bank:
-                self.current_bank = bank_id
-                self.load_bank(bank_id)
-            save_last_pedalboard(bank_id, pedalboard_number)
-
-            callback(*args)
-
-        def load(result):
-            self.load_current_pedalboard(_callback)
-
-        if False and bank_id == self.current_bank:
-            load(0)
-        else:
-            self.bank_address(0, 0, 1, 0, 0,
-                lambda r: self.bank_address(0, 0, 1, 1, 0,
-                    lambda r: self.bank_address(0, 0, 1, 2, 0,
-                        lambda r: self.bank_address(0, 0, 1, 3, 0,
-                            load))))
-
-
-    def load_pedalboard(self, pedalboard_id, callback):
-        self._pedalboard = Pedalboard(pedalboard_id)
-        self.load_current_pedalboard(callback)
-
-    def load_current_pedalboard(self, callback):
-        # let's copy the data
-        effects = copy.deepcopy(self._pedalboard.data['instances'].values())
-        connections = copy.deepcopy(self._pedalboard.data['connections'])
-
-        # How it works:
-        # check jack bufsize
-        # remove -1  (remove all effects)
-        # for each effect
-        #   add effect
-        #   sets bypass value
-        #   sets bypass addressing if any
-        #   sets value of all ports
-        #   sets addressings of all ports
-        # add all connections
-
-        # TODO: tratar o result para cada callback
-
-        # Consumes a queue of effects, in each one goes through bypass, bypass addressing,
-        # control port values and control port addressings, before processing next effect
-        # in queue. Then proceed to connections
-        def add_effects(result):
-            if not effects:
-                ioloop.IOLoop.instance().add_callback(choose_ports_addr)
-                return
-            effect = effects.pop(0)
-
-            self.add(effect['url'], effect['instanceId'],
-                     lambda result: set_bypass(effect),
-                     True)
-
-        # Set bypass state of one effect, then goes to bypass addressing
-        def set_bypass(effect):
-            self.bypass(effect['instanceId'], effect['bypassed'], lambda result: set_ports(effect),
-                        True)
-
-        # Set the value of one port of an effect, consumes it and schedules next one
-        # After queue is empty, goes to control addressings
-        def set_ports(effect):
-            if not effect.get('preset', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: set_bypass_addr(effect))
-                return
-            symbol = effect['preset'].keys()[0]
-            value = effect['preset'].pop(symbol)
-            self.parameter_set(effect['instanceId'], symbol, value, lambda result: set_ports(effect),
-                               True)
-
-        # This dictionary holds in its keys all actuators that have some addressing, so after
-        # loading everything, the first parameter of each actuator will be sent to IHM
-        addressings = {}
-
-        # Sets bypass addressing of one effect.
-        def set_bypass_addr(effect):
-            if not effect.get('addressing', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
-                return
-
-            symbol = ":bypass"
-            addressing = effect['addressing'].pop(symbol, {})
-
-            if addressing.get('actuator', [-1])[0] == -1:
-                ioloop.IOLoop.instance().add_callback(lambda: set_ports_addr(effect))
-                return
-
-            hwtyp, hwid, acttyp, actid = addressing['actuator']
-            addressings[(hwtyp, hwid, acttyp, actid)] = 1
-            self.bypass_address(effect['instanceId'], hwtyp, hwid, acttyp, actid,
-                                effect['bypassed'], addressing['label'],
-                                lambda result: set_ports_addr(effect),
-                                True)
-
-        # Consumes a queue of control addressing, then goes to next effect
-        def set_ports_addr(effect):
-            # addressing['actuator'] can be [-1] or [hwtyp, hwid, acttyp, actid]
-            if not effect.get('addressing', {}):
-                ioloop.IOLoop.instance().add_callback(lambda: add_effects(0))
-                return
-
-            symbol = effect['addressing'].keys()[0]
-            addressing = effect['addressing'].pop(symbol)
-
-            if addressing.get('actuator', [-1])[0] == -1:
-                ioloop.IOLoop.instance().add_callback(lambda: set_ports_addr(effect))
-                return
-
-            hwtyp, hwid, acttyp, actid = map(int, addressing['actuator'])
-            addressings[(hwtyp, hwid, acttyp, actid)] = 1
-            self.parameter_address(effect['instanceId'],
-                                   symbol,
-                                   addressing['addressing_type'],
-                                   addressing.get('label', '---'),
-                                   int(addressing.get('type', 0)),
-                                   addressing.get('unit', 'none') or 'none',
-                                   float(addressing['value']),
-                                   float(addressing['maximum']),
-                                   float(addressing['minimum']),
-                                   int(addressing.get('steps', 33)),
-                                   hwtyp,
-                                   hwid,
-                                   acttyp,
-                                   actid,
-                                   addressing.get('options', []),
-                                   lambda result: set_ports_addr(effect),
-                                   True)
-        def choose_ports_addr():
-            if len(addressings.keys()) == 0:
-                ioloop.IOLoop.instance().add_callback(lambda: add_connections())
-                return
-            key = addressings.keys()[0]
-            addressings.pop(key)
-            hwtyp, hwid, acttyp, actid = key
-            self.parameter_addressing_load(hwtyp, hwid, acttyp, actid, 0)
-            ioloop.IOLoop.instance().add_callback(choose_ports_addr)
-
-
-        def add_connections():
-            if not connections:
-                ioloop.IOLoop.instance().add_callback(lambda: callback(True))
-                return
-            connection = connections.pop(0)
-            orig = '%s:%s' % (str(connection[0]), connection[1])
-            dest = '%s:%s' % (str(connection[2]), connection[3])
-            self.connect(orig, dest, lambda result: add_connections(),
-                         True)
-
-        def remove(result=None):
-            self.remove(-1, add_effects, True)
-
-        self.change_bufsize(self._pedalboard.get_bufsize(DEFAULT_JACK_BUFSIZE), remove)
-
-    def change_bufsize(self, size, callback):
-        if size == self.jack_bufsize:
-            return callback(False)
-        self.jack_bufsize = size
-        def bufsize_changed(result=None):
-            callback(True)
-        def reload():
-            self.load_current_pedalboard(bufsize_changed)
-        def change(result):
-            change_jack_bufsize(size, reload)
-        self.remove(-1, change, True)
-
-    def save_pedalboard(self, title, as_new):
-        return self._pedalboard.save(title, as_new)
-
-    def save_current_pedalboard(self, callback):
-        self._pedalboard.save()
-        return callback(True)
-
-    def load_bank(self, bank_id):
-        bank = self._banks[bank_id]
-        addressing = bank.get('addressing', [0, 0, 0, 0])
-        queue = []
-
-        def consume(result=None) :
-            if len(queue) == 0:
-                return
-            param = queue.pop(0)
-            self.bank_address(*param)
-
-        for actuator, function in enumerate(addressing):
-            queue.append([0, 0, 1, actuator, function, consume])
-
-        consume()
-
     def hardware_connected(self, hwtyp, hwid, callback):
         callback(True)
         #open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
@@ -541,18 +314,7 @@ class Session(object):
     # host commands
 
     def add(self, objid, instance, x, y, callback, loaded=False):
-        #if not loaded:
-        #    instance = self._pedalboard.add_instance(objid, instance, x=x, y=y)
-        def commit(bufsize_changed):
-            if not bufsize_changed:
-                self.host.add(objid, instance, x, y, callback)
-            else:
-                callback(True)
-        try:
-            effect_data = self.effect_index.find(url=objid).next()
-            self.change_bufsize(max(effect_data['bufsize'], self.jack_bufsize), commit)
-        except StopIteration:
-            commit(False)
+        self.host.add(objid, instance, x, y, callback)
 
     def remove(self, instance, callback, loaded=False):
         """
@@ -679,10 +441,6 @@ class Session(object):
         if port == ":bypass":
             # self.bypass(instance_id, value, callback)
             return
-
-        #if not loaded:
-        #    self._pedalboard.parameter_set(instance_id, port_id, value)
-
         #self.recorder.parameter(instance, port_id, value)
         self.host.param_set(port, value, callback)
 
@@ -722,7 +480,6 @@ class Session(object):
         self.hmi.ui_con(verify)
 
     def end_session(self, callback):
-        self._banks = list_banks()
         self.hmi.ui_dis(callback)
 
     def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
@@ -760,7 +517,7 @@ class Session(object):
                              addressing.get('options', []))
 
 
-    def parameter_address(self, instance_id, port_id, addressing_type, label, ctype,
+    def parameter_address(self, port, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
                           hardware_type, hardware_id, actuator_type, actuator_id,
                           options, callback, loaded=False):
@@ -779,6 +536,8 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
+        instance_id = self.instance_mapper.map(port.split("/")[0])
+        port_id = port.split("/")[1]
         if (hardware_type == -1 and
             hardware_id == -1 and
             actuator_type == -1 and
@@ -845,19 +604,6 @@ class Session(object):
 
     def ping(self, callback):
         self.hmi.ping(callback)
-
-    def hmi_list_banks(self, callback):
-        banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(self._banks))
-        callback(True, banks)
-
-    def hmi_list_pedalboards(self, bank_id, callback):
-        try:
-            pedalboards = self._banks[bank_id]['pedalboards']
-        except (IndexError, KeyError):
-            return callback(False)
-
-        pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
-        callback(True, pedalboards)
 
     def effect_position(self, instance, x, y):
         self.host.set_position(instance, x, y)

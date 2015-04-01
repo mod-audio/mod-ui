@@ -137,7 +137,7 @@ function Desktop(elements) {
                 })
             } else {
                 $.ajax({
-                    url: '/effect/parameter/address/' + instance + ',' + symbol,
+                    url: '/effect/parameter/address/' + instance + "/" + symbol,
                     type: 'POST',
                     data: JSON.stringify(addressing),
                     success: function (resp) {
