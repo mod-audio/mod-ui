@@ -115,6 +115,10 @@ function GUI(effect, options) {
                 value: null
             }
             $.extend(port, ports[i])
+            if (port.sampleRate) {
+                port.minimum = port.minimum * SAMPLERATE
+                port.maximum = port.maximum * SAMPLERATE
+            }
             if (options.preset[port.symbol] != null)
                 port.default = options.preset[port.symbol]
             port.value = port.default

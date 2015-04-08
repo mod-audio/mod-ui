@@ -114,6 +114,7 @@ class Session(object):
         self.recording = None
         self.instances = []
         self.instance_mapper = InstanceIdMapper()
+        self.engine_samplerate = 48000 # default value
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websocket = None
@@ -159,7 +160,13 @@ class Session(object):
             if self.websocket:
                 self.websocket.write_message(msg)
 
+        def sr_cb(value):
+            self.engine_samplerate = value
+
         self.host.msg_callback = msg_cb
+        self.host.samplerate_value_callback = sr_cb
+
+        yield gen.Task(lambda callback: self.host.get_engine_info(callback=callback))
 
         # Adds audio ports
         yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 1", "Input", callback=callback))

@@ -304,7 +304,7 @@ class PluginSerializer(object):
             trigger=port.has_property(pprops.trigger.me),
             toggled=port.has_property(lv2core.toggled.me),
             rangeSteps=port.has_property(pprops.rangeSteps.me),
-            sampleRate=port.has_property(pprops.sampleRate.me),
+            sampleRate=port.has_property(lv2core.sampleRate.me),
             tap_tempo = True if get_value(lv2core.designation.me) == time.beatsPerMinute.as_string() else False,
             )
 

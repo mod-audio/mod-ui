@@ -778,6 +778,7 @@ class TemplateHandler(web.RequestHandler):
         except AttributeError:
             context = {}
         context['cloud_url'] = CLOUD_HTTP_ADDRESS
+        context['sampleRate'] = SESSION.engine_samplerate
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
