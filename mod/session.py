@@ -25,7 +25,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, 
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
                           DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
 from mod.bank import list_banks, save_last_pedalboard, get_last_bank_and_pedalboard
@@ -40,6 +40,9 @@ from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
 from tuner import NOTES, FREQS, find_freqnotecents
+
+SERIALPORT = "/dev/ttyACM0"
+BAUDRATE = 500000
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -83,10 +86,12 @@ class Session(object):
 
         self.host = factory(Host, FakeHost, DEV_HOST,
                             MANAGER_PORT, "localhost", self.host_callback)
-        self.hmi = factory(HMI, FakeHMI, DEV_HMI,
-                           HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+        # self.hmi = factory(HMI, FakeHMI, DEV_HMI,
+        #                   HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+        from no_hmi_controlchain import CC, FakeCC
+        self.hmi = CC(SERIALPORT, BAUDRATE, self.hmi_callback)
+        #self.hmi = FakeCC(SERIALPORT, BAUDRATE, self.hmi_callback)
         self.addressing = AddressingManager(self.hmi, self.hw_parameter_set)
-
 
         self.recorder = Recorder()
         self.player = Player()
@@ -602,7 +607,6 @@ class Session(object):
         unit: string representing the parameter unit (ex: "%f hz")
         scale_points: array of options, each one being a tuple (value, label)
         """
-
         def store_addressing(addressing, msg=""):
             self._pedalboard.parameter_address(instance_id, port_id, addressing)
             callback(addressing is not None)

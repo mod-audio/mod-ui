@@ -17,7 +17,7 @@ ADDRESSING = 3
 DATA_REQUEST = 4
 UNADDRESSING = 5
 
-QUADRA = 0
+QUADRA = -9999
 
 HARDWARE_TIMEOUT = 0.008
 RESPONSE_TIMEOUT = 0.002
@@ -228,8 +228,10 @@ class Gateway():
 
         # Currently control_chain is routed through HMI
         self.hmi = hmi
-        from mod.protocol import Protocol
-        Protocol.register_cmd_callback("chain", self.receive)
+        #from mod.protocol import Protocol
+        #Protocol.register_cmd_callback("chain", self.receive)
+        from mod.no_hmi_controlchain import CC
+        CC.msg_callback = self.receive
 
     def __checksum(self, buffer, size):
         check = 0
@@ -249,7 +251,7 @@ class Gateway():
                 replaced += "\x1b\x55"
             else:
                 replaced += c
-        self.hmi.chain(replaced)
+        self.hmi.send(replaced)
 
     def receive(self, message, callback):
         # control_chain protocol is being implemented over the hmi protocol, this will soon be changed.
@@ -504,7 +506,10 @@ class AddressingManager():
             In case of timeout, this call will probably raise an error, the receiving function may
             either expect no callback to handle an error or this call will result in error.
             """
-            self.dispatch_table[msg.function](msg.origin, msg.data)
+            if msg.function != 255:
+                self.dispatch_table[msg.function](msg.origin, msg.data)
+            else:
+                print "debug msg..."
 
     def _generate_hardware_id(self):
         """
@@ -685,6 +690,7 @@ class AddressingManager():
                 self.commit_addressing(hwid, instance_id, port_id, data, callback)
             else:
                 self.store_pending_addressing(url, channel, instance_id, port_id, data)
+                print "Storing"
                 self.ioloop.add_callback(lambda: callback(data))
 
         if self.addressing_index.get((instance_id, port_id)) is None:
