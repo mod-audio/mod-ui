@@ -68,30 +68,18 @@ class CC(FakeHMI):
         return SerialIOStream(sp)
 
     def checker(self, data=None):
-        if data is not None and data != '\xaa':
+        if data is not None and data != 'xuxu':
             logging.info('[cc] received <- %s' % repr(data))
-            msg = "\xaa" + data[:-1]
+            msg = data.replace("xuxu", "")
             try:
                 self.msg_callback(msg, lambda: None)
             except AssertionError, e:
                 print repr(msg)
                 print e
-
         try:
-            self.sp.read_until('\xaa', self.checker)
+            self.sp.read_until('xuxu', self.checker)
         except serial.SerialException, e:
             logging.error("[hmi] error while reading %s" % e)
-
-    def process_queue(self):
-        try:
-            msg = self.queue[0][0] # fist msg on the queue
-            logging.info("[hmi] popped from queue: %s" % msg)
-            self.sp.write("%s\0" % str(msg))
-            logging.info("[hmi] sending -> %s" % msg)
-            self.queue_idle = False
-        except IndexError:
-            logging.info("[hmi] queue is empty, nothing to do")
-            self.queue_idle = True
 
     def build_msg(self, msg, args=[]):
         return msg
