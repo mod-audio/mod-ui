@@ -38,12 +38,20 @@ $(document).ready(function () {
                             var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
                             if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Arc") {
                                 // Deletes a connection between ports
-                                var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object
-                                var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object
                                 var cm = desktop.pedalboard.data("connectionManager")
-                                if (cm.connected(tail, head)) {
-                                    var jack = cm.origIndex[tail][head]
-                                    desktop.pedalboard.pedalboard('destroyJack', jack)
+                                var incidentTo = store.find(body[0].object, "http://drobilla.net/ns/ingen#incidentTo", null);
+                                if (incidentTo.length) {
+                                    var instance = incidentTo[0].object;
+                                    cm.iterateInstance(instance, function (jack) {
+                                        desktop.pedalboard.pedalboard('destroyJack', jack)
+                                    })
+                                } else {
+                                    var tail = store.find(body[0].object, "http://drobilla.net/ns/ingen#tail", null)[0].object
+                                    var head = store.find(body[0].object, "http://drobilla.net/ns/ingen#head", null)[0].object
+                                    if (cm.connected(tail, head)) {
+                                        var jack = cm.origIndex[tail][head]
+                                        desktop.pedalboard.pedalboard('destroyJack', jack)
+                                    }
                                 }
                             }
                         } else {
