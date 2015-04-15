@@ -148,6 +148,11 @@ TUNER = 9994
 TUNER_PORT = "in"
 TUNER_MON_PORT = "FREQ"
 
+INGEN_NUM_AUDIO_INS  = int(os.environ.get('MOD_INGEN_NUM_AUDIO_INS', 2))
+INGEN_NUM_AUDIO_OUTS = int(os.environ.get('MOD_INGEN_NUM_AUDIO_OUTS', 2))
+INGEN_NUM_MIDI_INS   = int(os.environ.get('MOD_INGEN_NUM_MIDI_INS', 1))
+INGEN_NUM_MIDI_OUTS  = int(os.environ.get('MOD_INGEN_NUM_MIDI_OUTS', 1))
+
 JS_CUSTOM_CHANNEL = bool(int(os.environ.get('MOD_JS_CUSTOM_CHANNEL', False)))
 AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))
 

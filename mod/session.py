@@ -28,6 +28,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
+                          INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS, INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           DEFAULT_JACK_BUFSIZE)
 from mod.development import FakeHost, FakeHMI
 from mod.pedalboard import Pedalboard
@@ -168,15 +169,18 @@ class Session(object):
 
         yield gen.Task(lambda callback: self.host.get_engine_info(callback=callback))
 
-        # Adds audio ports
-        yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 1", "Input", callback=callback))
-        yield gen.Task(lambda callback: self.host.add_audio_port("Audio Out 1", "Output", callback=callback))
-        yield gen.Task(lambda callback: self.host.add_audio_port("Audio In 2", "Input", callback=callback))
-        yield gen.Task(lambda callback: self.host.add_audio_port("Audio Out 2", "Output", callback=callback))
+        # Add ports
+        for i in range(1, INGEN_NUM_AUDIO_INS+1):
+            yield gen.Task(lambda callback: self.host.add_external_port("Audio In %i" % i, "Input", "Audio", callback=callback))
 
-        # forcibly remove "/control_out" for now, we don't use it
-        yield gen.Task(lambda callback: self.host.move("/control_out", "/control_out_renamed", callback=callback))
-        yield gen.Task(lambda callback: self.host.delete("/control_out_renamed", callback=callback))
+        for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
+            yield gen.Task(lambda callback: self.host.add_external_port("Audio Out %i" % i, "Output", "Audio", callback=callback))
+
+        for i in range(2, INGEN_NUM_MIDI_INS+1):
+            yield gen.Task(lambda callback: self.host.add_external_port("MIDI In %i" % i, "Input", "MIDI", callback=callback))
+
+        for i in range(2, INGEN_NUM_MIDI_OUTS+1):
+            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Out %i" % i, "Output", "MIDI", callback=callback))
 
         self.host.position_callback = position_cb
         self.host.port_value_callback = port_value_cb

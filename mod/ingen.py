@@ -67,23 +67,38 @@ ingen:canvasY %f
         value = "true" if value == 0 else "false"
         self.set("/%s" % instance, "ingen:enabled", value, callback)
 
-    def add_audio_port(self, name, typ, callback=lambda r:r):
-        # typ should be Input or Output
-        if typ is not "Input" and typ is not "Output":
+    def add_external_port(self, name, mode, typ, callback=lambda r:r):
+        # mode should be Input or Output
+        if mode not in ("Input", "Output"):
             callback(False)
             return
 
-        if typ is "Input":
-            x = 5.0
-        else:
-            x = 2300.0
+        # type should be Audio or MIDI
+        if typ not in ("Audio", "MIDI"):
+            callback(False)
+            return
 
         import random
+        x = 5.0 if mode == "Input" else 2300.0
         y = random.randint(50,250)
 
-        self.put("/%s" % name.replace(" ", "_").lower(), """
-            <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
-            <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
-            <http://lv2plug.in/ns/lv2core#name> "%s" ;
-            a <http://lv2plug.in/ns/lv2core#AudioPort> ;
-            a <http://lv2plug.in/ns/lv2core#%sPort>""" % (x, y, name, typ), callback)
+        if typ == "MIDI":
+            portyp = "<http://lv2plug.in/ns/ext/atom#AtomPort>"
+            extra  = """
+            <http://lv2plug.in/ns/ext/atom#bufferType> <http://lv2plug.in/ns/ext/atom#Sequence> ;
+            <http://lv2plug.in/ns/ext/atom#supports> <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
+            """
+        else:
+            portyp = "<http://lv2plug.in/ns/lv2core#AudioPort>"
+            extra  = ""
+
+        msg = """
+        <http://drobilla.net/ns/ingen#canvasX> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+        <http://drobilla.net/ns/ingen#canvasY> "%f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+        <http://lv2plug.in/ns/lv2core#name> "%s" ;
+        a <http://lv2plug.in/ns/lv2core#%sPort> ;
+        a %s ;
+        %s
+        """ % (x, y, name, mode, portyp, extra)
+
+        self.put("/%s" % name.replace(" ", "_").lower(), msg, callback)
