@@ -23,8 +23,7 @@ from whoosh.query import And, Or, Every, Term
 from whoosh.qparser import MultifieldParser
 from whoosh import sorting
 
-from modcommon import json_handler
-
+from mod import json_handler
 from mod.settings import INDEX_PATH, EFFECT_DIR, PEDALBOARD_INDEX_PATH, PEDALBOARD_DIR
 
 class Index(object):

@@ -48,8 +48,6 @@ BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/effects'))
 
-UNITS_TTL_PATH = os.environ.get('MOD_UNITS_TTL_PATH', '/usr/lib/lv2/units.lv2/units.ttl')
-
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 
 def get_tty_acm():

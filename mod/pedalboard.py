@@ -20,7 +20,7 @@ from bson import ObjectId
 from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
                           INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
 
-from modcommon import json_handler
+from mod import json_handler
 from mod.bank import remove_pedalboard_from_banks
 from mod.hardware import get_hardware
 from mod import indexing

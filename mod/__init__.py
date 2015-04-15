@@ -14,9 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import timedelta
+from bson.objectid import ObjectId
+from datetime import datetime, timedelta
 from tornado import ioloop
 import os, re, json, logging, shutil
+
+def json_handler(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    #print(type(obj), obj)
+    return None
 
 def _json_or_remove(path):
     try:
@@ -117,8 +126,7 @@ def rebuild_database(modguis_only = False):
       - Remove effect json files and parse TTL files again
       - Rebuild effect and pedalboard indexes
     """
-    from mod.settings import (EFFECT_DIR, UNITS_TTL_PATH,
-                              INDEX_PATH, PEDALBOARD_INDEX_PATH)
+    from mod.settings import (EFFECT_DIR, INDEX_PATH, PEDALBOARD_INDEX_PATH)
     from mod.effect import extract_effects_from_bundle
     from mod.indexing import EffectIndex, PedalboardIndex
     from mod.lv2 import PluginSerializer, PLUGINS

@@ -21,9 +21,7 @@ from sha import sha
 from os.path import exists, join
 from tornado.ioloop import IOLoop
 from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,
-                          PLUGIN_LIBRARY_DIR, PLUGIN_INSTALLATION_TMP_DIR,
-                          UNITS_TTL_PATH)
-from modcommon import json_handler, lv2
+                          PLUGIN_LIBRARY_DIR, PLUGIN_INSTALLATION_TMP_DIR)
 from mod import indexing
 
 def install_bundle(uid, callback):
@@ -55,13 +53,15 @@ def install_all_bundles():
     plugin_dir = PLUGIN_INSTALLATION_TMP_DIR
     effects = []
 
-    for package in os.listdir(plugin_dir):
-        bundle_path = join(PLUGIN_LIBRARY_DIR, package)
-        if os.path.exists(bundle_path):
-            uninstall_bundle(package)
-        shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
-        bundle = lv2.Bundle(bundle_path, units_file=UNITS_TTL_PATH)
-        effects += extract_effects_from_bundle(bundle)
+    # TODO - rewrite for new API without modcommon
+
+    #for package in os.listdir(plugin_dir):
+        #bundle_path = join(PLUGIN_LIBRARY_DIR, package)
+        #if os.path.exists(bundle_path):
+            #uninstall_bundle(package)
+        #shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
+        #bundle = lv2.Bundle(bundle_path)
+        #effects += extract_effects_from_bundle(bundle)
         
     return effects
 

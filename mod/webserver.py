@@ -51,8 +51,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
 
 
 from modcommon.communication import fileserver, crypto
-from modcommon import json_handler
-from mod import indexing
+from mod import indexing, json_handler
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard, remove_pedalboard
