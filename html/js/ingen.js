@@ -64,7 +64,7 @@ $(document).ready(function () {
                         var body = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#body", null);
                         if (subject.length && body.length && subject[0].object) {
                             var type = store.find(body[0].object, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null);
-                            var prototype = store.find(body[0].object, "http://drobilla.net/ns/ingen#prototype");
+                            var prototype = store.find(body[0].object, "http://lv2plug.in/ns/lv2core#prototype");
                             if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Block" && prototype.length) {
                                 // add a new plugin
                                 var instance = subject[0].object;

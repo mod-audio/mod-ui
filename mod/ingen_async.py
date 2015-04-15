@@ -213,9 +213,9 @@ class IngenAsync(Interface):
                     self.port_value_callback(instance, port, value)
                 # Put for a plugin
                 elif (msg_model.value(body, NS.rdf.type) == NS.ingen.Block and
-                         msg_model.value(body, NS.ingen.prototype)):
+                         msg_model.value(body, NS.lv2.prototype)):
                     instance = subject.toPython().split("/")[-1]
-                    uri = msg_model.value(body, NS.ingen.prototype).toPython()
+                    uri = msg_model.value(body, NS.lv2.prototype).toPython()
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
                     self.plugin_add_callback(instance, uri, x if x else 0, y if y else 0)

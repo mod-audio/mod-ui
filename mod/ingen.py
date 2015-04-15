@@ -30,7 +30,7 @@ class Host(IngenAsync):
 
     def add(self, uri, instance, x, y, callback=lambda r: r):
         self.put("/%s" % instance, """a ingen:Block ;
-ingen:prototype <%s> ;
+<http://lv2plug.in/ns/lv2core#prototype> <%s> ;
 ingen:canvasX %f ;
 ingen:canvasY %f
 """ % (uri, float(x), float(y)), callback)
