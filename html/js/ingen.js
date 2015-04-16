@@ -100,6 +100,40 @@ $(document).ready(function () {
                                         'dataType': 'json'
                                     })
                                 }
+                            } else if (type.length == 2 && (type[0].object == "http://lv2plug.in/ns/lv2core#AudioPort" ||
+                                                            type[1].object == "http://lv2plug.in/ns/lv2core#AudioPort" ||
+                                                            type[0].object == "http://lv2plug.in/ns/ext/atom#AtomPort" ||
+                                                            type[1].object == "http://lv2plug.in/ns/ext/atom#AtomPort"
+                                                            )) {
+                                var sub = subject[0].object;
+                                var name = N3.Util.getLiteralValue(store.find(
+                                                                body[0].object,
+                                                                "http://lv2plug.in/ns/lv2core#name")[0].object);
+                                if (sub.split("/").length != 1) {
+                                    // not a system/hardware port
+                                    return
+                                }
+                                var types = [type[0].object, type[1].object]
+                                if (types.indexOf("http://lv2plug.in/ns/ext/atom#AtomPort") > -1) {
+                                    // atom
+                                    var port_type = "midi"
+                                } else {
+                                    // audio
+                                    var port_type = "audio"
+                                }
+
+                                var el = $("#" + sub)
+                                if (el.length > 0) return;
+
+                                if (types.indexOf("http://lv2plug.in/ns/lv2core#InputPort") > -1) {
+                                    el = $('<div id="' + sub + '" class="hardware-output" title="Hardware ' + name + '">')
+                                    desktop.pedalboard.pedalboard('addHardwareOutput', el, sub, port_type)
+                                } else {
+                                    el = $('<div id="' + sub + '" class="hardware-input" title="Hardware ' + name + '">')
+                                    desktop.pedalboard.pedalboard('addHardwareInput', el, sub, port_type)
+                                }
+                                desktop.pedalboard.pedalboard('positionHardwarePorts')
+
                             } else if (type.length == 2 && (type[0].object == "http://lv2plug.in/ns/lv2core#ControlPort" ||
                                                             type[1].object == "http://lv2plug.in/ns/lv2core#ControlPort")) {
                                 // set the value for the port

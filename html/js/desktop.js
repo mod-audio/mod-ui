@@ -708,21 +708,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
     });
 
-    // Add hardware ports
-    var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
-    var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
-    var outputM = $('<div class="hardware-output" title="Hardware MIDI Input">')
-    var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
-    var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
-
-    el.pedalboard('addHardwareOutput', outputL, 'audio_in_1', 'audio')
-    el.pedalboard('addHardwareOutput', outputR, 'audio_in_2', 'audio')
-    el.pedalboard('addHardwareOutput', outputM, 'control_in', 'midi')
-    el.pedalboard('addHardwareInput', inputL, 'audio_out_1', 'audio')
-    el.pedalboard('addHardwareInput', inputR, 'audio_out_2', 'audio')
-
-    el.pedalboard('positionHardwarePorts')
-
     // Bind events
     el.bind('modified', function () {
         self.pedalboardModified = true

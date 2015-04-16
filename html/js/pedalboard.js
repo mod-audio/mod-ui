@@ -1276,26 +1276,9 @@ JqueryClass('pedalboard', {
             if (!ok) {
                 return
             }
-            /*
-            self.data('bypassApplication', true)
-
-            for (instance in self.data('plugins'))
-                self.pedalboard('removePlugin', instance)
-
-            self.pedalboard('resetSize')
-            self.pedalboard('positionHardwarePorts')
-            self.data('instanceCounter', -1)
-
-            var connections = self.data('connectionManager')
-            connections.iterate(function (jack) {
-                self.pedalboard('destroyJack', jack)
+            self.data('connectionManager').iterateInstance(":system:", function (jack) {
+                self.pedalboard('disconnect', jack)
             })
-            self.data('connectionManager').reset()
-            var hw = self.data('hardwareManager')
-            if (hw)
-                hw.reset()
-            self.data('bypassApplication', false)
-            */
             if (callback)
                 callback()
         })
