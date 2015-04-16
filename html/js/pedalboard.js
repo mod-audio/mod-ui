@@ -1706,12 +1706,11 @@ JqueryClass('pedalboard', {
         // Can only connect midi to midi and audio to audio
         if (input.data('portType') != output.data('portType'))
             return self.pedalboard('disconnect', jack)
-
         // Output cannot be connected to an input of same effect
         // TODO maybe it should be up to the application to decide, we could have
         // a hook for confirmation
-        if (output.data('instance') >= 0 && output.data('instance') == input.data('instance'))
-            return self.pedalboard('disconnect', jack)
+        // if (output.data('instance') >= 0 && output.data('instance') == input.data('instance'))
+        //    return self.pedalboard('disconnect', jack)
 
         // Everything ok, let's do the connection
 

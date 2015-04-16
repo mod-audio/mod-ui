@@ -300,13 +300,13 @@ class IngenAsync(Interface):
         return self._send('''
 []
 	a patch:Put ;
-	patch:subject <ingen:/root%s> ;
+	patch:subject <> ;
 	patch:body [
 		a ingen:Arc ;
 		ingen:tail <ingen:/root%s> ;
 		ingen:head <ingen:/root%s> ;
 	] .
-''' % (os.path.commonprefix([tail, head]), tail, head), callback)
+''' % (tail, head), callback)
 
     def disconnect(self, tail, head, callback=lambda r: r):
         return self._send('''
