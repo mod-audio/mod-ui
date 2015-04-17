@@ -132,7 +132,6 @@ class IngenAsync(Interface):
 
         msg_str = msg.replace("\0", "") if msg else ""
         if msg_str:
-            print msg_str
             self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
             msg_model.namespace_manager = self.ns_manager
