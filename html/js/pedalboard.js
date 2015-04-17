@@ -941,6 +941,23 @@ JqueryClass('pedalboard', {
         var adjust = function (elements, css) {
             var top = height / (elements.length + 1)
             var i, el
+            elements.sort(function(e1, e2) {
+                var e1_midi = e1.hasClass('mod-midi-output') || e1.hasClass('mod-midi-input')
+                var e2_midi = e2.hasClass('mod-midi-output') || e2.hasClass('mod-midi-input')
+                if (e1_midi == e2_midi) {
+                    if (e1.attr('mod-port-index') > e2.attr('mod-port-index')) {
+                        return 1
+                    } else {
+                        return -1
+                    }
+                } else {
+                    if (e1_midi) {
+                        return 1
+                    } else {
+                        return -1
+                    }
+                }
+            })
             for (i = 0; i < elements.length; i++) {
                 el = elements[i]
                 el.css($.extend(css, {

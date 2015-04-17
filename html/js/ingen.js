@@ -109,6 +109,9 @@ $(document).ready(function () {
                                 var name = N3.Util.getLiteralValue(store.find(
                                                                 body[0].object,
                                                                 "http://lv2plug.in/ns/lv2core#name")[0].object);
+                                var index = N3.Util.getLiteralValue(store.find(
+                                                                body[0].object,
+                                                                "http://lv2plug.in/ns/lv2core#index")[0].object);
                                 if (sub.split("/").length != 1) {
                                     // not a system/hardware port
                                     return
@@ -126,10 +129,10 @@ $(document).ready(function () {
                                 if (el.length > 0) return;
 
                                 if (types.indexOf("http://lv2plug.in/ns/lv2core#InputPort") > -1) {
-                                    el = $('<div id="' + sub + '" class="hardware-output" title="Hardware ' + name + '">')
+                                    el = $('<div id="' + sub + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                                     desktop.pedalboard.pedalboard('addHardwareOutput', el, sub, port_type)
                                 } else {
-                                    el = $('<div id="' + sub + '" class="hardware-input" title="Hardware ' + name + '">')
+                                    el = $('<div id="' + sub + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                                     desktop.pedalboard.pedalboard('addHardwareInput', el, sub, port_type)
                                 }
                                 desktop.pedalboard.pedalboard('positionHardwarePorts')
