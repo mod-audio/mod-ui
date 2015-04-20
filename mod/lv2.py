@@ -279,7 +279,8 @@ class PluginSerializer(object):
                 typ = 'control'
                 port_dict.update(self._get_control_port_data(port))
             elif port.is_a(atom.AtomPort.me):
-                if port.supports_event(midi.MidiEvent.me):
+                if port.supports_event(midi.MidiEvent.me) and \
+                        lilv.Nodes(port.get_value(atom.bufferType.me)).get_first() == atom.Sequence:
                     typ ='midi'
                 else:
                     typ = 'atom'
