@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,7 +25,7 @@
  * - searchbox: dom of search's input
  * - resultCanvas: dom div in which results will be shown
  * - categoryBrowse: dom div with category menu
- * - results: dictionary containing detailed data of all plugins 
+ * - results: dictionary containing detailed data of all plugins
  *            displayed
  */
 JqueryClass('effectBox', {
@@ -389,7 +389,7 @@ JqueryClass('effectBox', {
             plugin.label = plugin.gui.templateData.label
             plugin.author = plugin.gui.templateData.author
         }
-        plugin.label = plugin.label || plugin.name.split(/\s*-\s*/)[0]
+        plugin.label = plugin.label || plugin.name
     },
 
     renderPlugin: function (index, container) {
