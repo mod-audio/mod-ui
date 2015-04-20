@@ -252,7 +252,7 @@ class PluginSerializer(object):
                 atom=dict(
                     input=[],
                     output=[]
-                    )
+                    ),
                 midi=dict(
                     input=[],
                     output=[]
