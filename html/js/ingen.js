@@ -106,16 +106,16 @@ $(document).ready(function () {
                                                             type[1].object == "http://lv2plug.in/ns/ext/atom#AtomPort"
                                                             )) {
                                 var sub = subject[0].object;
+                                if (sub.split("/").length != 1) {
+                                    // not a system/hardware port
+                                    return
+                                }
                                 var name = N3.Util.getLiteralValue(store.find(
                                                                 body[0].object,
                                                                 "http://lv2plug.in/ns/lv2core#name")[0].object);
                                 var index = N3.Util.getLiteralValue(store.find(
                                                                 body[0].object,
                                                                 "http://lv2plug.in/ns/lv2core#index")[0].object);
-                                if (sub.split("/").length != 1) {
-                                    // not a system/hardware port
-                                    return
-                                }
                                 var types = [type[0].object, type[1].object]
                                 if (types.indexOf("http://lv2plug.in/ns/ext/atom#AtomPort") > -1) {
                                     // atom
