@@ -291,6 +291,22 @@
     z-index:100;
 }
 
+.hardware-input.mod-input.mod-midi-input {
+    background-image:url(../img/midi-input.png);
+}
+
+.hardware-input.mod-midi-input.input-connected{
+    background-image:url(../img/midi-input-connected.png) !important;
+    background-position:center right !important;
+    background-repeat:no-repeat !important;
+    background-size:auto 45px !important;
+    height:45px !important;
+    position:absolute !important;
+    width:67px !important;
+    z-index:100 !important;
+}
+
+
 .mod-input.input-connecting {
     background-image:url(../img/input-connecting.png) !important;
     background-position:center right;
