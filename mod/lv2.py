@@ -249,6 +249,10 @@ class PluginSerializer(object):
                     input=[],
                     output=[]
                     ),
+                atom=dict(
+                    input=[],
+                    output=[]
+                    )
                 midi=dict(
                     input=[],
                     output=[]
@@ -274,9 +278,11 @@ class PluginSerializer(object):
             elif port.is_a(lv2core.ControlPort.me):
                 typ = 'control'
                 port_dict.update(self._get_control_port_data(port))
-            elif port.is_a(lv2core.EventPort.me) or port.is_a(atom.AtomPort.me):
-                typ = 'midi'
-                port_dict['midi'] = port.supports_event(midi.MidiEvent.me)
+            elif port.is_a(atom.AtomPort.me):
+                if port.supports_event(midi.MidiEvent.me):
+                    typ ='midi'
+                else:
+                    typ = 'atom'
 
             if flow is not None and typ is not None:
                 ports[typ][flow].append(port_dict)
