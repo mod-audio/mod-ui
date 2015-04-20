@@ -1806,8 +1806,7 @@ JqueryClass('pedalboard', {
     connected: function (output, input) {
         var self = $(this)
         var manager = self.data('connectionManager')
-        return manager.connected(output.data('instance'), output.data('symbol'),
-            input.data('instance'), input.data('symbol'))
+        return manager.connected(output.attr("mod-port"), input.attr("mod-port"))
     },
 
     // Adjust layout of all jacks connected to this input to fit inside it
