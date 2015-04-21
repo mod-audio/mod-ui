@@ -201,22 +201,9 @@ class PluginSerializer(object):
         def get_preset_data(preset):
             W.load_resource(preset.me)
             label = W.find_nodes(preset.me, rdfs.label.me, None).get_first().as_string()
-            ports = W.find_nodes(preset.me, lv2core.port.me, None)
-            def get_port_data(port):
-                symbol = W.find_nodes(port.me, lv2core.symbol.me, None).get_first().as_string()
-                value = W.find_nodes(port.me, pset.value.me, None).get_first().as_string()
-                try:
-                    value = float(value)
-                except ValueError:
-                    # TODO: should at least warn that the ttl is invalid
-                    value = 0.0
-                return dict(symbol=symbol, value=value)
-
-            ports_data = list(LILV_FOREACH(ports, get_port_data))
             return (preset.as_string(), dict(
-                            url  = preset.as_string(),
+                            uri  = preset.as_string(),
                             label=label,
-                            ports=ports_data,
                             ))
         return dict(LILV_FOREACH(presets, get_preset_data))
 

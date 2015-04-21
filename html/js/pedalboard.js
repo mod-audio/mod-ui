@@ -1072,8 +1072,8 @@ JqueryClass('pedalboard', {
                     self.pedalboard('focusPlugin', obj.icon)
                 }, 0)
             },
-            presetLoad: function (label) {
-                self.data('pluginPresetLoad')(instance, label,
+            presetLoad: function (uri) {
+                self.data('pluginPresetLoad')(instance, uri,
                     function (ok) {
                         // TODO Handle error
                     })
@@ -1098,7 +1098,7 @@ JqueryClass('pedalboard', {
         for (var key in pluginData['presets']) {
             preset_list.push({
                 label: pluginData['presets'][key]['label'],
-                url: pluginData['presets'][key]['url']
+                uri: pluginData['presets'][key]['uri']
             })
         }
         pluginData = $.extend({

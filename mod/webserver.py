@@ -444,7 +444,8 @@ class EffectGet(EffectSearcher):
             options = self.get_object(objid)
             presets = []
             for k,preset in options['presets'].items():
-                presets.append({'label': preset['label']})
+                presets.append({'label': preset['label'],
+                                'uri': preset['uri']})
             options['presets'] = presets
         except:
             raise web.HTTPError(404)
@@ -511,7 +512,7 @@ class EffectPresetLoad(web.RequestHandler):
     def get(self, instance):
         response = yield gen.Task(SESSION.preset_load,
                                   instance,
-                                  self.get_argument('label'))
+                                  self.get_argument('uri'))
         self.write(json.dumps(response))
         self.finish()
 
@@ -1064,7 +1065,7 @@ application = web.Application(
             (r"/effect/remove/([A-Za-z0-9_]+)", EffectRemove),
             (r"/effect/connect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectConnect),
             (r"/effect/disconnect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectDisconnect),
-            (r"/effect/preset/load/(\d+)", EffectPresetLoad),
+            (r"/effect/preset/load/([A-Za-z0-9_]+)", EffectPresetLoad),
             (r"/effect/parameter/set/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterSet),
             (r"/effect/parameter/get/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterGet),
             (r"/effect/parameter/address/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterAddress),

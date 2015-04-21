@@ -518,11 +518,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginPresetLoad: function (instance, label, callback) {
+        pluginPresetLoad: function (instance, uri, callback) {
             $.ajax({
                 url: '/effect/preset/load/' + instance,
                 data: {
-                    label: label
+                    uri: uri
                 },
                 success: function (resp) {
                     /*
