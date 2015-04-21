@@ -1962,16 +1962,20 @@ function ConnectionManager() {
     this.removeInstance = function (instance) {
         for (var port in self.origByInstanceIndex[instance]) {
             delete self.origIndex[port]
-            for (var oport in self.origIndex) {
-                delete self.origIndex[oport][port]
-            }
+            for (var ins in self.destByInstanceIndex)
+                for (var obiport in self.destByInstanceIndex[ins])
+                    delete self.destByInstanceIndex[ins][obiport][port]
+            for (var oport in self.destIndex)
+                delete self.destIndex[oport][port]
         }
 
         for (var port in self.destByInstanceIndex[instance]) {
             delete self.destIndex[port]
-            for (var dport in self.destIndex) {
-                delete self.destIndex[dport][port]
-            }
+            for (var ins in self.origByInstanceIndex)
+                for (var dbiport in self.origByInstanceIndex[ins])
+                    delete self.origByInstanceIndex[ins][dbiport][port]
+            for (var dport in self.origIndex)
+                delete self.origIndex[dport][port]
         }
 
         delete self.origByInstanceIndex[instance]
