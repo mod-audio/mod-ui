@@ -1653,24 +1653,6 @@ JqueryClass('pedalboard', {
 
     do_connect: function (jack, input) {
         var self = $(this)
-
-        var cm = self.data('connectionManager')
-        var output = jack.data('origin')
-        if (cm.connected(output.attr('mod-port'), input.attr('mod-port'))) {
-            self.pedalboard('connect', jack, input)
-            return
-        }
-        self.data('portConnect')(output.attr('mod-port'), input.attr('mod-port'),
-            function (ok) {
-                if (!ok)
-                    self.pedalboard('disconnect', jack)
-            })
-    },
-
-    // Connects an output port to an input port.
-    // The output is obtained from jack
-    connect: function (jack, input) {
-        var self = $(this)
         var output = jack.data('origin')
 
         var previousInput = jack.data('destination')
@@ -1693,27 +1675,34 @@ JqueryClass('pedalboard', {
             })
             return
         }
-
-        if (previousInput)
         // This jack was connected to some other input, let's disconnect it
+        if (previousInput) {
             self.pedalboard('disconnect', jack)
+            self.pedalboard('packJacks', previousInput)
+        }
 
-        // If output is already connected to this input through another jack, abort connection
+        self.data('portConnect')(output.attr('mod-port'), input.attr('mod-port'),
+            function (ok) {
+                if (!ok)
+                    self.pedalboard('disconnect', jack)
+            })
+    },
+
+    // Connects an output port to an input port.
+    // The output is obtained from jack
+    connect: function (jack, input) {
+        var self = $(this)
+        var output = jack.data('origin')
+
+       // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input))
             return self.pedalboard('disconnect', jack)
-
 
         // Can only connect midi to midi and audio to audio
         if (input.data('portType') != output.data('portType'))
             return self.pedalboard('disconnect', jack)
-        // Output cannot be connected to an input of same effect
-        // TODO maybe it should be up to the application to decide, we could have
-        // a hook for confirmation
-        // if (output.data('instance') >= 0 && output.data('instance') == input.data('instance'))
-        //    return self.pedalboard('disconnect', jack)
 
         // Everything ok, let's do the connection
-
         self.pedalboard('finishConnection')
 
         // Register the connection in desktop structure
@@ -1736,14 +1725,7 @@ JqueryClass('pedalboard', {
 
         // Redraw jack arrangement in both new and previous input, if any
         self.pedalboard('packJacks', input)
-        if (previousInput)
-            self.pedalboard('packJacks', previousInput)
-
-        // Every output must have an spare jack. If this jack was the spare one,
-        // let's spawn a new jack
-        if (previousInput == null)
-            self.pedalboard('spawnJack', output)
-
+        self.pedalboard('spawnJack', output)
         // Pedalboard has been modified
         self.trigger('modified')
 
@@ -1769,33 +1751,6 @@ JqueryClass('pedalboard', {
         }
 
         jack.data('connected', false)
-
-        // It's possible the user has just dropped this jack in another input, so let's
-        // wait for this current flow of instructions to end and then decide what to do
-        // with the jack element
-        setTimeout(function () {
-            var previouslyConnected = connected
-            var currentlyConnected = jack.data('connected')
-
-            if (!previouslyConnected && !currentlyConnected) {
-                // A disconnected jack was just dropped nowhere,
-                // let's put it back where it belongs
-                jack.css({
-                    top: '',
-                    left: ''
-                })
-                jack.data('origin').append(jack)
-                return
-            }
-            if (previouslyConnected && currentlyConnected)
-            // We have disconnected jack and reconnected
-                return
-            if (!previouslyConnected && currentlyConnected) {
-                // This was the spare jack and now it's connected, let's spawn a new one
-                self.pedalboard('spawnJack', jack.data('origin'))
-                return
-            }
-        }, 1)
     },
 
     // Connect two ports using instance and symbol information.
