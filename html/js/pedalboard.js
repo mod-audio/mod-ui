@@ -1739,7 +1739,6 @@ JqueryClass('pedalboard', {
     // destroy the jack and spawn a new one if necessary
     disconnect: function (jack) {
         var self = $(this)
-
         var connected = jack.data('connected')
         var input = jack.data('destination')
 
@@ -1748,6 +1747,11 @@ JqueryClass('pedalboard', {
 
             self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
             self.trigger('modified')
+        } else {
+            jack.css({
+                top: 0,
+                left: 0
+            })
         }
 
         jack.data('connected', false)
