@@ -178,7 +178,7 @@
     top:39px;
     width:0; 
 }
-.mod-pedal .mod-output-jack,
+.mod-pedal .mod-audio-output .mod-output-jack,
 .mod-pedal .output-connected .mod-output-jack:hover {
     background-image:url(../img/jack-p10.png);
     background-position:right center;
@@ -194,6 +194,17 @@
 .mod-pedal .mod-output-jack:hover,
 .mod-pedal .mod-output-jack.jack-connecting {}
 
+.mod-pedal .mod-midi-output .mod-output-jack,
+.mod-pedal .output-connected .mod-output-jack:hover {
+    background-image:url(../img/midi-output-jack.png);
+    background-position:right center;
+    background-repeat:no-repeat;
+    cursor:pointer;
+    height:18px;
+    left:2px;
+    position:absolute;
+    width:87px;
+}
 .mod-pedal .mod-pedal-output {
     height:170px;
     position:absolute;

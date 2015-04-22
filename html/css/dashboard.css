@@ -278,6 +278,10 @@
 }
 
 
+.hardware-output.mod-midi-output .mod-output-jack {
+    top: -15px;
+}
+
 /* = HARDWARE - INPUT
 ================================================ */
 .hardware-input {
@@ -347,7 +351,7 @@
 ================================================ */
 .mod-midi-output .mod-output-jack,
 .mod-midi-input .mod-output-jack {
-    background-image:url(../img/midi-output-jack.png) !important;
+    background-image:url(../img/midi-output-jack.png);
     background-position:center right;
     background-repeat:no-repeat;
     background-size:81px 45px;
@@ -385,7 +389,7 @@
     background-size:9px 45px;
     height:45px;
     position:absolute;
-    margin-top: 10px;
+    /*margin-top: 10px;*/
     width:9px;
     z-index:100;
 }
