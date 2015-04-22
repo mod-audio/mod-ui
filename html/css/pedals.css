@@ -195,7 +195,7 @@
 .mod-pedal .mod-output-jack.jack-connecting {}
 
 .mod-pedal .mod-midi-output .mod-output-jack,
-.mod-pedal .output-connected .mod-output-jack:hover {
+.mod-pedal .mod-midi-output .output-connected .mod-output-jack:hover {
     background-image:url(../img/midi-output-jack.png);
     background-position:right center;
     background-repeat:no-repeat;
