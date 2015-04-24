@@ -1761,17 +1761,28 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var connected = jack.data('connected')
         var input = jack.data('destination')
+        var output = jack.data('origin')
 
         if (connected) {
-            var output = jack.data('origin')
-
             self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
             self.trigger('modified')
         } else {
-            jack.css({
-                top: 0,
-                left: 0
-            })
+            // UGLY WORKAROUND :(
+            if (output.hasClass("mod-audio-output") && !output.hasClass("hardware-output"))
+                jack.css({
+                    top: 12,
+                    left: 0
+                })
+            else if (output.hasClass("mod-midi-output") && output.hasClass("hardware-output"))
+                jack.css({
+                    top: -15,
+                    left: 0
+                })
+            else
+                jack.css({
+                    top: 0,
+                    left: 0
+                })
         }
 
         jack.data('connected', false)
