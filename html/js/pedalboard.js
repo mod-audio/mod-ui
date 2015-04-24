@@ -34,6 +34,9 @@ JqueryClass('pedalboard', {
             // Wait object, used to show waiting message to user
             wait: new WaitMessage(self),
 
+            // current z index (last plugin added or moved around)
+            z_index: 30,
+
             // This is a margin, in pixels, that will be disconsidered from pedalboard height when calculating
             // hardware ports positioning
             bottomMargin: 0,
@@ -1030,6 +1033,8 @@ JqueryClass('pedalboard', {
             dragStart: function () {
                 self.trigger('pluginDragStart', instance)
                 obj.icon.addClass('dragging')
+                obj.icon.css({'z-index': self.data('z_index')+1})
+                self.data('z_index', self.data('z_index')+1)
                 return true
             },
             drag: function (e, ui) {
@@ -1049,6 +1054,10 @@ JqueryClass('pedalboard', {
                 self.pedalboard('adapt')
             },
             click: function (event) {
+                obj.icon.css({'z-index': self.data('z_index')+1})
+                self.pedalboard('drawPluginJacks', obj.icon)
+                self.data('z_index', self.data('z_index')+1)
+
                 // check if mouse is not over a control button
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-control-port]')))
                     return
@@ -1190,10 +1199,12 @@ JqueryClass('pedalboard', {
                 windowManager: self.data('windowManager')
             }).appendTo($('body'))
             icon.css({
+                'z-index': self.data('z_index'),
                 position: 'absolute',
                 left: x,
                 top: y
             }).appendTo(self)
+            self.data('z_index', self.data('z_index')+1)
             if (renderCallback)
                 renderCallback()
         })
@@ -1208,8 +1219,17 @@ JqueryClass('pedalboard', {
     // Redraw all connections from or to a plugin
     drawPluginJacks: function (plugin) {
         var self = $(this)
+        var myjacks = []
+
+        self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
+            myjacks.push($(jack.data('svg')._container))
+        })
+
+        $('.hasSVG.cable-connected').filter(function(e) {!(e in myjacks)}).css({'z-index': 0})
+
         self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
             self.pedalboard('drawJack', jack)
+            $(jack.data('svg')._container).css({ 'z-index': self.data("z_index")-1, 'pointer-events': 'none'})
         })
     },
 
@@ -1527,15 +1547,15 @@ JqueryClass('pedalboard', {
             // P0 (xi, yi) - starting point
             // P3 (xo, yo) - the destination point
             // P1 (xo - deltaX, yi) and P2 (xi + deltaX, yo): define the curve
-
             // Gets origin and destination coordinates
             var xi = source.offset().left / scale - self.offset().left / scale // + source.width()
             var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
             var xo = jack.offset().left / scale - self.offset().left / scale
             var yo = jack.offset().top / scale - self.offset().top / scale + jack.height() / 2
-
-            self.pedalboard('drawBezier', jack.data('canvas'), xi, yi, xo, yo, '')
-
+            if (source.hasClass("mod-audio-output"))
+                self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
+            else
+                self.pedalboard('drawBezier', jack.data('canvas'), xi+9, yi, xo, yo, '')
         }, 0)
     },
 
