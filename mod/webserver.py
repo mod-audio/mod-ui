@@ -595,11 +595,8 @@ class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
         SESSION.websocket_opened(self)
 
-    def on_message(self, message):
-        self.write_message(u"You said: " + message)
-
     def on_close(self):
-        SESSION.websocket = None
+        SESSION.websockets.remove(self)
 
 
 class EffectPosition(web.RequestHandler):

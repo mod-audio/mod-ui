@@ -1784,6 +1784,7 @@ JqueryClass('pedalboard', {
                     left: 0
                 })
         }
+        console.log(output)
 
         jack.data('connected', false)
     },

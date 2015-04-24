@@ -118,10 +118,10 @@ class Session(object):
         self.engine_samplerate = 48000 # default value
 
         self._clipmeter = Clipmeter(self.hmi)
-        self.websocket = None
+        self.websockets = []
 
     def websocket_opened(self, ws):
-        self.websocket = ws
+        self.websockets.append(ws)
         self.host.get("/")
 
     @gen.engine
@@ -158,8 +158,8 @@ class Session(object):
             pass
 
         def msg_cb(msg):
-            if self.websocket:
-                self.websocket.write_message(msg)
+            for ws in self.websockets:
+                ws.write_message(msg)
 
         def sr_cb(value):
             self.engine_samplerate = value
