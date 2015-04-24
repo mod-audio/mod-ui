@@ -1784,7 +1784,10 @@ JqueryClass('pedalboard', {
                     left: 0
                 })
         }
-        console.log(output)
+        if (Object.keys(self.data('connectionManager').origIndex[output.attr('mod-port')]).length == 1) {
+            output.addClass('output-disconnected')
+            output.removeClass('output-connected')
+        }
 
         jack.data('connected', false)
     },
