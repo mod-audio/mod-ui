@@ -1011,6 +1011,8 @@ JqueryClass('pedalboard', {
         url = url.split("/")
         var instance = url[url.length-1]
         instance = instance.split("#")[instance.split("#").length-1]
+        var re = /[^_a-zA-Z0-9]*/
+        instance.replace(re, "_")
         if (!isNaN(instance[0]) // instance names cant start with numbers
             instance = "_" + instance
         var i = 1;
