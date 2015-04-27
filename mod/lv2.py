@@ -15,6 +15,8 @@ class NS(object):
         self._cache = {}
 
     def __getattr__(self, attr):
+        if attr.endswith("_"):
+            attr = attr[:-1]
         if attr not in self._cache:
             self._cache[attr] = lilv.Node(W.new_uri(self.base+attr))
         return self._cache[attr]
@@ -40,44 +42,52 @@ pprops = NS("http://lv2plug.in/ns/ext/port-props#")
 time = NS("http://lv2plug.in/ns/ext/time#")
 modgui = NS("http://portalmod.com/ns/modgui#")
 
-category_index = {
-    'DelayPlugin': ['Delay'],
-    'DistortionPlugin': ['Distortion'],
-    'WaveshaperPlugin': ['Distortion', 'Waveshaper'],
-    'DynamicsPlugin': ['Dynamics'],
-    'AmplifierPlugin': ['Dynamics', 'Amplifier'],
-    'CompressorPlugin': ['Dynamics', 'Compressor'],
-    'ExpanderPlugin': ['Dynamics', 'Expander'],
-    'GatePlugin': ['Dynamics', 'Gate'],
-    'LimiterPlugin': ['Dynamics', 'Limiter'],
-    'FilterPlugin': ['Filter'],
-    'AllpassPlugin': ['Filter', 'Allpass'],
-    'BandpassPlugin': ['Filter', 'Bandpass'],
-    'CombPlugin': ['Filter', 'Comb'],
-    'EQPlugin': ['Filter', 'Equaliser'],
-    'MultiEQPlugin': ['Filter', 'Equaliser', 'Multiband'],
-    'ParaEQPlugin': ['Filter', 'Equaliser', 'Parametric'],
-    'HighpassPlugin': ['Filter', 'Highpass'],
-    'LowpassPlugin': ['Filter', 'Lowpass'],
-    'GeneratorPlugin': ['Generator'],
-    'ConstantPlugin': ['Generator', 'Constant'],
-    'InstrumentPlugin': ['Generator', 'Instrument'],
-    'OscillatorPlugin': ['Generator', 'Oscillator'],
-    'ModulatorPlugin': ['Modulator'],
-    'ChorusPlugin': ['Modulator', 'Chorus'],
-    'FlangerPlugin': ['Modulator', 'Flanger'],
-    'PhaserPlugin': ['Modulator', 'Phaser'],
-    'ReverbPlugin': ['Reverb'],
-    'SimulatorPlugin': ['Simulator'],
-    'SpatialPlugin': ['Spatial'],
-    'SpectralPlugin': ['Spectral'],
-    'PitchPlugin': ['Spectral', 'Pitch Shifter'],
-    'UtilityPlugin': ['Utility'],
-    'AnalyserPlugin': ['Utility', 'Analyser'],
-    'ConverterPlugin': ['Utility', 'Converter'],
-    'FunctionPlugin': ['Utility', 'Function'],
-    'MixerPlugin': ['Utility', 'Mixer'],
+def get_category(nodes):
+    category_indexes = {
+        'DelayPlugin': ['Delay'],
+        'DistortionPlugin': ['Distortion'],
+        'WaveshaperPlugin': ['Distortion', 'Waveshaper'],
+        'DynamicsPlugin': ['Dynamics'],
+        'AmplifierPlugin': ['Dynamics', 'Amplifier'],
+        'CompressorPlugin': ['Dynamics', 'Compressor'],
+        'ExpanderPlugin': ['Dynamics', 'Expander'],
+        'GatePlugin': ['Dynamics', 'Gate'],
+        'LimiterPlugin': ['Dynamics', 'Limiter'],
+        'FilterPlugin': ['Filter'],
+        'AllpassPlugin': ['Filter', 'Allpass'],
+        'BandpassPlugin': ['Filter', 'Bandpass'],
+        'CombPlugin': ['Filter', 'Comb'],
+        'EQPlugin': ['Filter', 'Equaliser'],
+        'MultiEQPlugin': ['Filter', 'Equaliser', 'Multiband'],
+        'ParaEQPlugin': ['Filter', 'Equaliser', 'Parametric'],
+        'HighpassPlugin': ['Filter', 'Highpass'],
+        'LowpassPlugin': ['Filter', 'Lowpass'],
+        'GeneratorPlugin': ['Generator'],
+        'ConstantPlugin': ['Generator', 'Constant'],
+        'InstrumentPlugin': ['Generator', 'Instrument'],
+        'OscillatorPlugin': ['Generator', 'Oscillator'],
+        'ModulatorPlugin': ['Modulator'],
+        'ChorusPlugin': ['Modulator', 'Chorus'],
+        'FlangerPlugin': ['Modulator', 'Flanger'],
+        'PhaserPlugin': ['Modulator', 'Phaser'],
+        'ReverbPlugin': ['Reverb'],
+        'SimulatorPlugin': ['Simulator'],
+        'SpatialPlugin': ['Spatial'],
+        'SpectralPlugin': ['Spectral'],
+        'PitchPlugin': ['Spectral', 'Pitch Shifter'],
+        'UtilityPlugin': ['Utility'],
+        'AnalyserPlugin': ['Utility', 'Analyser'],
+        'ConverterPlugin': ['Utility', 'Converter'],
+        'FunctionPlugin': ['Utility', 'Function'],
+        'MixerPlugin': ['Utility', 'Mixer'],
     }
+
+    def fill_in_category(node):
+        category = node.as_string().replace("http://lv2plug.in/ns/lv2core#","")
+        if category in category_indexes.keys():
+            return category_indexes[category]
+        return []
+    return [cat for catlist in LILV_FOREACH(nodes, fill_in_category) for cat in catlist]
 
 def get_pedalboards():
     def get_presets(p):
@@ -121,7 +131,7 @@ class PluginSerializer(object):
                 binary=p.get_library_uri().as_string().replace("file://", ""),
                 brand="",
                 bufsize=128,
-                category=category_index.get("%sPlugin" % p.get_class().get_label().as_string(), []),
+                category=get_category(p.get_value(rdf.type_)),
                 description=None,
                 developer=None,
                 gui={},
