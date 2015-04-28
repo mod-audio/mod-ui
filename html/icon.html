@@ -5,7 +5,6 @@
     <title>MOD</title>
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="css/main.css"/>
-    <!-- <link rel="stylesheet" type="text/css" href="css/main.old.css"/> -->
     <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
 
     <!-- PEDALS -->
@@ -48,25 +47,10 @@
     <script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
     <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
 
-<!--     <script type="text/javascript" src="js/templates.js"></script> -->
     <script type="text/javascript" src="js/common.js"></script>
-<!--     <script type="text/javascript" src="js/wait.js"></script> -->
-<!--     <script type="text/javascript" src="js/file_transfer.js"></script> -->
-<!--     <script type="text/javascript" src="js/window.js"></script> -->
-<!--     <script type="text/javascript" src="js/tags.js"></script> -->
     <script type="text/javascript" src="js/modgui.js"></script>
-<!--     <script type="text/javascript" src="js/notification.js"></script> -->
-<!--     <script type="text/javascript" src="js/installation.js"></script> -->
-<!--     <script type="text/javascript" src="js/desktop.js"></script> -->
-<!--     <script type="text/javascript" src="js/pedalboard.js"></script> -->
-<!--     <script type="text/javascript" src="js/pedalboards.js"></script> -->
-<!--     <script type="text/javascript" src="js/effects.js"></script> -->
-<!--     <script type="text/javascript" src="js/login.js"></script> -->
-<!--     <script type="text/javascript" src="js/hardware.js"></script> -->
-<!--     <script type="text/javascript" src="js/xrun.js"></script> -->
 
     <script type="text/javascript">
-      {% autoescape None %}
       var icongui = null
 
       $(document).ready(function() {
@@ -78,7 +62,7 @@
                   data: { url: uri },
                   success: function(effect, options) {
                       icongui = new GUI(effect)
-                      icongui.render(function(icon) {
+                      icongui.render(null, function(icon, settings) {
                           icon.draggable('disable')
                           $('#pedalboard-dashboard').append(icon)
                       })
@@ -97,6 +81,15 @@
     body {
         background: transparent !important;
     }
+    body, div {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+    }
     #wrapper {
         overflow: hidden;
     }
@@ -114,7 +107,7 @@
 </head>
 <body>
     <!-- WRAPPER -->
-    <div id="wrapper">
+    <div id="wrapper" unselectable="on" onselectstart="return false;" onmousedown="return false;">
         <!-- PEDALBOARD -->
         <div id="pedalboard">
             <!-- PEDALBOARD-DASHBOARD -->
