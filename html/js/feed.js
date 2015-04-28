@@ -20,16 +20,21 @@ function FeedManager(options) {
 
     this.handlers = {}
 
-    this.start = function (sid) {
-        self.sid = sid
+    this.start = function (token) {
+        self.token = token
         self.update()
     }
 
     this.update = function () {
         $.ajax({
-            url: SITEURL + '/feed/' + self.sid,
+            //url: SITEURLNEW + '/social/posts/',
+            url: SITEURLNEW + '/pedalboards/',
+            headers : { 'Authorization' : 'MOD ' + self.token },
             success: function (events) {
                 for (var i = 0; i < events.length; i++) {
+                  //console.log(events[i])
+                /*
+                TODO: handle events
                     var handlers = self.handlers[events[i].type]
                     if (handlers == null) {
                         console.log('Error: no handler for ' + events[i].type)
@@ -39,6 +44,7 @@ function FeedManager(options) {
                         }
                     }
                     self.update()
+                */
                 }
             },
             error: function (e) {

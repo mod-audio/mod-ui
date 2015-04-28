@@ -41,6 +41,14 @@ ingen:canvasY %f
     def disconnect(self, tail, head, callback=lambda r: r):
         return IngenAsync.disconnect(self, "/%s" % tail, "/%s" % head, callback)
 
+    def initial_setup(self, callback=lambda r:r):
+        self.set("/", "<http://portalmod.com/ns/modgui#screenshot>", "<screenshot.png>", callback)
+        self.set("/", "<http://portalmod.com/ns/modgui#thumbnail>", "<thumbnail.png>", callback)
+
+    def set_pedalboard_size(self, width, height, callback=lambda r:r):
+        self.set("/", "<urn:mod:width>", width, callback)
+        self.set("/", "<urn:mod:height>", height, callback)
+
     def set_position(self, instance, x, y, callback=lambda r:r):
         self.set("/%s" % instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
         self.set("/%s" % instance, "<%s>" % NS.ingen.canvasY, float(y), callback)

@@ -20,7 +20,6 @@ function RegistrationWindow(options) {
 
     options = $.extend({
         registrationWindow: $('<div>'),
-        getUserSession: function () {}, //must be defined 
     }, options)
 
     options.registrationWindow.find('.js-close').click(function () {
@@ -43,27 +42,37 @@ function RegistrationWindow(options) {
     this.form.submit(function (event) {
         event.preventDefault()
         options.registrationWindow.find('.error').hide()
-        $(this).find('input[name=sid]').val(options.getUserSession())
-        var pass1 = $(this).find('input[name=password]').val()
-        var pass2 = $(this).find('input[name=password2]').val()
-        var email = $(this).find('input[name=email]').val()
+        var user_id = $(this).find('input[name=user_id]').val()
+        var name    = $(this).find('input[name=name]').val()
+        var pass1   = $(this).find('input[name=password]').val()
+        var pass2   = $(this).find('input[name=password2]').val()
+        var email   = $(this).find('input[name=email]').val()
         if (!self.validateRequiredFields())
+            return
+        if (!self.validateUserId(user_id))
             return
         if (!self.validateEmail(email))
             return
         if (!self.validatePassword(pass1, pass2))
             return
+        var data = {
+            user_id: user_id,
+            name: name,
+            email: email,
+            password: pass1
+        }
         $.ajax({
-            url: SITEURL + '/user/register',
+            url: SITEURLNEW + '/users',
             method: 'POST',
-            data: $(this).serialize(),
-            success: function (result) {
-                if (!result.ok) {
+            data: JSON.stringify(data),
+            headers : { 'Content-Type' : 'application/json' },
+            success: function (/*result*/) {
+                /*if (!result.ok) {
                     self.error(result.error)
                     return
-                }
+                }*/
                 self.close()
-                self.registrationCallback(result)
+                self.registrationCallback(data)
             },
             error: function (error) {
                 new Notification('error', 'Could not register user: ' + error.statusText)
@@ -72,20 +81,11 @@ function RegistrationWindow(options) {
         })
     })
 
-    this.validatePassword = function (pass1, pass2) {
-        if (pass1.length < 6) {
-            return self.error('Password must be at least 6 characters long')
-        }
-        if (pass1 != pass2) {
-            return self.error('Passwords do not match')
-        }
-        return true
-    }
-
     this.validateRequiredFields = function () {
         var required = {
             'email': 'E-mail',
-            'name': 'Name'
+            'name': 'Name',
+            'user_id': 'User ID'
         }
         for (var field in required) {
             if (!self.form.find('input[name=' + field + ']').val())
@@ -94,10 +94,28 @@ function RegistrationWindow(options) {
         return true
     }
 
+    this.validateUserId = function (user_id) {
+        if (user_id.length < 4)
+            return self.error('User ID must be at least 4 characters long')
+        // TODO regex for valid user id fields
+        //var re = /^((a-zA-Z\-0-9]))$/;
+        //if (!re.test(user_id))
+        //    return self.error('You must provide a valid user ID')
+        return true
+    }
+
     this.validateEmail = function (email) {
         var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         if (!re.test(email))
             return self.error('You must provide a valid e-mail address')
+        return true
+    }
+
+    this.validatePassword = function (pass1, pass2) {
+        if (pass1.length < 6)
+            return self.error('Password must be at least 6 characters long')
+        if (pass1 != pass2)
+            return self.error('Passwords do not match')
         return true
     }
 
