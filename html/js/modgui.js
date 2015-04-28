@@ -148,7 +148,7 @@ function GUI(effect, options) {
         if (isNaN(value))
             throw "Invalid NaN value for " + symbol
         var port = self.controls[symbol]
-        var mod_port = source.attr("mod-port")
+        var mod_port = source ? source.attr("mod-port") : symbol
         if (!port.enabled || port.value == value)
             return
         if (port.trigger) {

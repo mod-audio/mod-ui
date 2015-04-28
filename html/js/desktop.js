@@ -166,6 +166,7 @@ function Desktop(elements) {
         }
     })
 
+    this.isApp = false
     this.title = ''
 
     // Indicates that pedalboard is in an unsaved state
@@ -267,7 +268,12 @@ function Desktop(elements) {
     }
 
     this.prepareForApp = function () {
-        self.reset()
+        self.isApp = true
+        $('#mod-pedalboard').hide()
+        $('#mod-bank').hide()
+        $('#mod-bluetooth').hide()
+        $('#mod-settings').hide()
+        $('#mod-disconnect').hide()
         $('#pedalboard-actions').hide()
         $("#pedalboard-dashboard").parent().css({
             'top': '0px'
@@ -826,8 +832,8 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
     })
 }
 
-Desktop.prototype.reset = function (callback) {
-    if (this.pedalboardModified)
+Desktop.prototype.reset = function (callback, warn) {
+    if (this.pedalboardModified && (warn === undefined || warn))
         if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
             return
     this.pedalboardId = null
@@ -853,6 +859,10 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
                         callback()
                 })
         })
+}
+
+Desktop.prototype.shareCurrentPedalboard = function (callback) {
+    $('#pedalboard-sharing .button').click()
 }
 
 JqueryClass('saveBox', {
@@ -985,7 +995,8 @@ JqueryClass('statusTooltip', {
 
     showTooltip: function (timeout) {
         var self = $(this)
-        if (!self.data('message'))
+        var msg = self.data('message')
+        if (!msg || (desktop.isApp && msg == "Local upgrade server is offline"))
             return
         var tooltip = self.data('tooltip')
         tooltip.find('.text').html(self.data('message'))
