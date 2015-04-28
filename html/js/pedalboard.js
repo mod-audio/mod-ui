@@ -381,7 +381,7 @@ JqueryClass('pedalboard', {
         }
 
         var addressingErrors = []
-        var instanceNameIndex = {}
+        //var instanceNameIndex = {}
 
         // Queue closures to all actions needed after everything is loaded
         var finalActions = []
@@ -394,8 +394,8 @@ JqueryClass('pedalboard', {
                 verboseErrors = []
                 var error
                 for (var i = 0; i < addressingErrors.length; i++) {
-                    error = addressingErrors[i]
-                    verboseErrors.push(instanceNameIndex[error[0]] + "/" + error[1])
+                    //error = addressingErrors[i]
+                    //verboseErrors.push(instanceNameIndex[error[0]] + "/" + error[1])
                 }
                 message = 'The following parameters could not be addressed: ' + verboseErrors.join(', ')
                 new Notification('warn', message)
@@ -416,23 +416,24 @@ JqueryClass('pedalboard', {
         // Loads the next plugin in queue. Gets as parameter a data structure containing
         // information on all plugins
         loadPlugin = function (pluginsData) {
+
             var plugin = data.instances.pop()
             if (plugin == null)
             // Queue is empty, let's load connections now
                 return connect()
 
             var pluginData = pluginsData[plugin.url]
-            instanceNameIndex[plugin.instance] = pluginData.name
+            var instance   = self.pedalboard('generateInstance', pluginData.url)
+            console.log(instance)
+            //instanceNameIndex[plugin.instance] = pluginData.name
 
-            self.data('pluginLoad')(plugin.url, plugin.instance, plugin.x, plugin.y,
+            self.data('pluginLoad')(plugin.url, instance, plugin.x, plugin.y,
                 function (ok) {
                     if (!ok)
                         return
-                    for (var symbol in plugin.preset) {
-                        value = plugin.preset[symbol]
-                        self.data('pluginParameterChange')(plugin.instance,
-                            symbol,
-                            value,
+                    for (var symbol in plugin.values) {
+                        value = plugin.values[symbol]
+                        self.data('pluginParameterChange')(instance+"/"+symbol, value,
                             function (ok) {
                                 if (!ok) {
                                     new Notification('error', sprintf("Can't set parameter for %s", symbol))
@@ -440,8 +441,8 @@ JqueryClass('pedalboard', {
                             })
                     }
 
-                    self.pedalboard('addPlugin', pluginData, plugin.instance, plugin.x, plugin.y, {
-                            'preset': plugin.preset,
+                    self.pedalboard('addPlugin', pluginData, instance, plugin.x, plugin.y, {
+                            //'preset': plugin.preset,
                             'bypassed': plugin.bypassed
                         }, plugin.addressing, addressingErrors,
                         function () {
@@ -458,12 +459,10 @@ JqueryClass('pedalboard', {
             // Queue is empty, let's load everything
                 return finish()
 
-            var fromInstance = con[0]
-            var fromSymbol = con[1]
-            var toInstance = con[2]
-            var toSymbol = con[3]
+            var source = con[0]
+            var target = con[1]
 
-            self.data('portConnect')(fromInstance, fromSymbol, toInstance, toSymbol,
+            self.data('portConnect')(source, target,
                 function (ok) {
                     if (!ok)
                         return
@@ -471,6 +470,7 @@ JqueryClass('pedalboard', {
                         var plugins = $.extend({
                             'system': self
                         }, self.data('plugins'))
+                        /*
                         var orig = plugins[fromInstance]
                         var dest = plugins[toInstance]
                         if (!orig || !dest)
@@ -480,6 +480,7 @@ JqueryClass('pedalboard', {
 
                         var jack = output.find('[mod-role=output-jack]')
                         self.pedalboard('connect', jack, input)
+                        */
                     })
                     connect()
                 })

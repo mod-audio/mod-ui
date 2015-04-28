@@ -16,7 +16,7 @@
  */
 
 /*
- * The authentication has the following steps:
+ * The authentication has the following steps: (NOTE: work in progress, this has changed now)
  * 
  * 1 - Get a session id (sid) from cloud
  * 
@@ -39,18 +39,16 @@
 function UserSession(options) {
     var self = this
 
-    var OFFLINE = 0 // Cloud haven't been reached yet, maybe no network
-    var CONNECTING = 1 // Trying to reach cloud and get a session id
-    var ONLINE = 2 // Device has been identified
-    var LOGGED = 3 // User has been identified and is logged at this device
+    var OFFLINE      = 0 // Cloud haven't been reached yet, maybe no network
+    var CONNECTING   = 1 // Trying to reach cloud and get a session id
+    var ONLINE       = 2 // Device has been identified
+    var LOGGED       = 3 // User has been identified and is logged at this device
     var DISCONNECTED = 4 // Device was not recognized by Cloud, communication suspended
 
-
-    this.status = OFFLINE
-    this.minRetryTimeout = 5
-    this.maxRetryTimeout = 320
-
-    this.retryTimeout = this.minRetryTimeout
+    this.status        = OFFLINE
+    this.user_id       = null
+    this.access_token  = null
+    this.refresh_token = null
 
     options = $.extend({
         offline: function () {},
@@ -65,77 +63,64 @@ function UserSession(options) {
         loginWindow: $('<div>')
     }, options)
 
-    this.getSessionId = function () {
+    this.tryConnectingToSocial = function () {
         self.setStatus(CONNECTING)
+
+        // get data from mod-ui
         $.ajax({
-            url: SITEURL + '/login/start_session',
+            url: '/tokens/get',
             type: 'GET',
-            success: function (sid) {
-                self.sid = sid
-                self.retryTimeout = self.minRetryTimeout
-                self.signSession()
-            },
-            error: function (e) {
-                self.setStatus(OFFLINE)
-                if (self.retryTimeout == self.minRetryTimeout)
-                    self.notify("Could not contact cloud")
-                self.retry()
-            },
-            dataType: 'json'
-        })
-    }
-
-    this.retry = function () {
-        timeout = self.retryTimeout
-        self.retryTimeout = Math.max(self.maxRetryTimeout, timeout * 2)
-        setTimeout(function () {
-            self.getSessionId()
-        }, timeout)
-    }
-
-    this.signSession = function () {
-        $.ajax({
-            url: '/login/sign_session/' + self.sid,
-            success: function (signature) {
-                self.identifyDevice(signature)
-            },
-            error: function (e) {
-                console.log(e)
-                self.notify('Could not start authentication')
-            },
-            dataType: 'json'
-        })
-    }
-
-    this.identifyDevice = function (signature) {
-        $.ajax({
-            url: SITEURL + '/login/identify_device',
-            data: signature,
-            type: 'GET',
-            success: function (status) {
-                if (!status.device_auth) {
+            success: function (resp) {
+                if (!resp.ok) {
                     self.setStatus(OFFLINE)
-                    return self.notify('This device cannot be identified, please contact support')
+                    return
                 }
-                if (status.user_auth)
-                    self.identifyUser(status.user, status.signature, new Function())
-                else {
-                    self.setStatus(ONLINE)
-                    self.notify()
-                }
+
+                // see if the cloud is working
+                $.ajax({
+                    url: SITEURLNEW + '/auth/tokens',
+                    method: 'PUT',
+                    headers: { /*'Authorization': 'MOD ' + resp.access_token,*/
+                               'Content-Type' : 'application/json'
+                    },
+                    data: JSON.stringify({
+                        refresh_token: resp.refresh_token
+                    }),
+                    success: function (resp2) {
+                        self.user_id       = resp2.user_id
+                        self.access_token  = resp2.access_token
+                        self.refresh_token = resp2.refresh_token
+                        self.setStatus(LOGGED)
+
+                        // update the refresh token in mod-ui
+                        $.ajax({
+                            url: '/tokens/save/',
+                            type: 'POST',
+                            headers : { 'Content-Type' : 'application/json' },
+                            data: JSON.stringify(resp2),
+                            dataType: 'json'
+                        })
+
+                    },
+                    error: function (e) {
+                        self.setStatus(OFFLINE)
+                        self.notify("Could not contact cloud")
+                    },
+                    dataType: 'json'
+                })
+
             },
             error: function () {
                 self.setStatus(OFFLINE)
+                self.notify("Communication with mod-ui failed")
             },
             dataType: 'json'
-        });
+        })
     }
 
     this.login = function (callback) {
         if (self.status === LOGGED) {
             return callback()
-        } else if (self.status < ONLINE) {
-            return self.notify('Device is offline')
         }
         options.loginWindow.window('open')
         self.loginCallback = callback
@@ -144,33 +129,16 @@ function UserSession(options) {
     options.loginWindow.find('form').on('submit', function (event) {
         event.preventDefault();
         options.loginWindow.find('.error').hide()
-        data = $(this).serialize()
+
+        // get values
+        var user_id  = $(this).find('input[name=user_id]').val()
+        var password = $(this).find('input[name=password]').val()
+
+        // clear password entry
         $(this).find('input[type=password]').val('')
-        $.ajax({
-            url: SITEURL + '/login/authenticate/' + self.sid,
-            method: 'POST',
-            data: data,
-            success: function (resp) {
-                if (!resp.ok) {
-                    options.loginWindow.find('.error').text('Invalid username or password').show()
-                    return
-                }
-                self.identifyUser(resp.user, resp.signature, function (ok) {
-                    if (ok) {
-                        if (self.loginCallback) {
-                            self.loginCallback()
-                            self.loginCallback = null
-                        }
-                    } else {
-                        self.notify('Security error: server sent invalid data')
-                    }
-                })
-            },
-            error: function (resp) {
-                return self.notify("Error authenticating")
-            },
-            dataType: 'json'
-        })
+
+        // log in
+        self.tryLogin(user_id, password)
     });
 
     options.loginWindow.find('.js-close').on('click', function () {
@@ -182,57 +150,89 @@ function UserSession(options) {
 
     options.loginWindow.find('#register').click(function () {
         options.loginWindow.hide()
-        options.registration.start(function (resp) {
-            self.identifyUser(resp.user, resp.signature, function (ok) {
-                if (ok) {
-                    if (self.loginCallback) {
-                        self.loginCallback()
-                        self.loginCallback = null
-                    }
-                } else {
-                    self.notify('Security error: server sent invalid data')
-                }
-            })
+        options.registration.start(function (data) {
+            self.tryLogin(data.user_id, data.password)
         })
     })
 
-    this.identifyUser = function (user, signature, callback) {
+    this.getUserData = function (user_id, callback) {
+        if (user_id == null)
+            user_id = self.user_id
+
         $.ajax({
-            url: '/login/authenticate',
-            method: 'POST',
-            data: {
-                user: user,
-                signature: signature
+            url: SITEURLNEW + '/users/' + user_id,
+            headers : { 'Authorization' : 'MOD ' + self.access_token },
+            success: function (data) {
+                callback(data)
             },
+            error: function (e) {
+                console.log("Error: can't get user data for " + user_id)
+            },
+            dataType: 'json'
+        })
+    }
+
+    this.tryLogin = function (user_id, password) {
+        self.setStatus(CONNECTING)
+
+        $.ajax({
+            url: SITEURLNEW + '/auth/tokens',
+            method: 'POST',
+            headers : { 'Content-Type' : 'application/json' },
+            data: JSON.stringify({
+                user_id: user_id,
+                password: password
+            }),
             success: function (resp) {
-                if (resp.ok) {
-                    self.user = self.treatUserData(resp.user)
-                    options.loginWindow.window('close')
-                    callback(true)
-                    self.setStatus(LOGGED)
-                } else {
-                    callback(false)
+                // make sure the cloud server sent us the correct user data
+                if (resp.user_id != user_id) {
+                    self.setStatus(OFFLINE)
+                    self.notify("User ID mismatch")
+                    return
                 }
+
+                // send data to mod-ui, saving for next time
+                $.ajax({
+                    url: '/tokens/save/',
+                    type: 'POST',
+                    headers : { 'Content-Type' : 'application/json' },
+                    data: JSON.stringify(resp),
+                    success: function (uiresp) {
+                        self.user_id       = resp.user_id
+                        self.access_token  = resp.access_token
+                        self.refresh_token = resp.refresh_token
+                        options.loginWindow.window('close')
+                        self.setStatus(LOGGED)
+                        if (self.loginCallback) {
+                            self.loginCallback()
+                            self.loginCallback = null
+                        }
+                    },
+                    error: function () {
+                        self.setStatus(OFFLINE)
+                        self.notify("Communication with mod-ui failed")
+                    },
+                    dataType: 'json'
+                })
+
             },
             error: function (resp) {
-                self.notify("Could not verify authentication data received from server")
+                self.setStatus(OFFLINE)
+                self.notify("Could not get token from server")
             },
             dataType: 'json'
         })
     }
 
     this.logout = function () {
-        $.ajax({
-            'url': SITEURL + '/logout/' + self.sid,
-            success: function () {
-                self.sid = null
-                options.logout()
-                self.getSessionId()
-            },
-            error: function () {
-                return self.notify('Could not logout')
-            }
-        })
+        // tell mod-ui to delete tokens
+        $.ajax({ url: '/tokens/delete' })
+
+        self.user_id       = null
+        self.access_token  = null
+        self.refresh_token = null
+        options.logout()
+        self.setStatus(OFFLINE)
     }
 
     this.setStatus = function (status) {
@@ -250,15 +250,12 @@ function UserSession(options) {
             options.online();
             break;
         case LOGGED:
-            options.login()
+            options.login();
+            break;
         case DISCONNECTED:
-            options.disconnected()
+            options.disconnected();
+            break;
         }
-    }
-
-    this.treatUserData = function (user) {
-        // This method is here as a hook to treat user data. It might be unnecessary legacy
-        return user
     }
 
     this.notify = options.notify

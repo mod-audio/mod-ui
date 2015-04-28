@@ -5,11 +5,10 @@
     <title>MOD</title>
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="css/main.css"/>
-    <!-- <link rel="stylesheet" type="text/css" href="css/main.old.css"/> -->
     <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
 
     <!-- PEDALS -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/pedals.css"/>
+    <link rel="stylesheet" type="text/css" href="css/pedals.css"/>
 
     <!-- DEFAULT -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/default.css"/>
@@ -20,7 +19,6 @@
     
     <!-- BOXY -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/boxy/boxy.css"/>
-    <link rel="stylesheet" type="text/css" href="resources/knobs/boxy/boxy.css"/>
     
     <!-- LATA -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/lata/lata.css"/>
@@ -28,7 +26,6 @@
 
     <!-- BRITISH -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/british/british.css"/>
-    <link rel="stylesheet" type="text/css" href="resources/knobs/british/british.css"/>
     
     <!-- HEAD MODEL 001 -->
     <link rel="stylesheet" type="text/css" href="resources/heads/model-001/model-001.css"/>
@@ -77,6 +74,7 @@
                  })
              }
           })
+
           // Add hardware ports
           var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
           var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
@@ -92,21 +90,8 @@
 
           el.pedalboard('positionHardwarePorts')
 
-	  el.pedalboard('unserialize', PEDALBOARD_DATA)
-
-          /*
-          new Desktop({
-              titleBox: $('#pedalboard-info .title'),
-              pedalboard: $('#pedalboard-dashboard'),
-              saveBox: $('#save-pedalboard'),
-              saveButton: $('#pedalboard-info .js-save'),
-              saveAsButton: $('#pedalboard-info .js-save-as'),
-              resetButton:  $('#pedalboard-info .js-reset'),
-              effectBox: $('#effects-library'),
-              pedalboardBox: $('#pedalboards-library'),
-              pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
-          })
-          */
+          console.log(PEDALBOARD_DATA)
+          el.pedalboard('unserialize', PEDALBOARD_DATA)
       })
 
     </script>
@@ -134,6 +119,10 @@
 
 </head>
 <body>
+  <!-- NOTIFICATIONS -->
+  <div id="notifications"></div>
+  <!-- END NOTIFICATIONS -->
+
     <!-- WRAPPER -->
     <div id="wrapper">
 
@@ -143,11 +132,6 @@
 	    <div class="js-canvas"></div>
         </div>
         <!-- END PEDALBOARD-SETTINGS-WINDOW -->
-
-	<!-- NOTIFICATIONS -->
-	<div id="notifications">
-	</div>
-	<!-- END NOTIFICATIONS -->
 
         <!-- PEDALBOARD -->
         <div id="pedalboard">

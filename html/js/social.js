@@ -83,28 +83,29 @@ JqueryClass('socialWindow', {
         }
         for (i = 0; i < pedalboards.length; i++) {
             pb = pedalboards[i]
-            if (pb.author.first_name) {
-                pb.author.name = pb.author.first_name
-                if (pb.author.last_name)
-                    pb.author.name += ' ' + pb.author.last_name
-            } else {
-                pb.author.name = pb.author.username
-            }
-            pb.created = renderTime(new Date(pb.created * 1000))
-            context = {
-                cloud: SITEURL,
-                avatar_url: AVATAR_URL
-            }
-            $.extend(context, pb)
-            content = $(Mustache.render(TEMPLATES.cloud_feed, context))
-            content.find('.js-pedalboard-' + pedalboards[i]['_id']).click(pbFactory(pb))
-            content.find('div.spec').each(function () {
-                var spec = $(this)
-                if (parseInt(spec.find('span').html()) == 0) {
-                    spec.addClass('none')
+            console.log(pb)
+            // FIXME
+            desktop.userSession.getUserData(pb.user_id, function (data) {
+                context = {
+                    cloud: SITEURLNEW,
+                    avatar_href: data.avatar_href,
+                    user_name:   data.name
                 }
-            });
-            content.appendTo(canvas)
+                // FIXME broken
+                //pb.created = renderTime(new Date(pb.created * 1000))
+
+                $.extend(context, pb)
+
+                content = $(Mustache.render(TEMPLATES.cloud_feed, context))
+                //content.find('.js-pedalboard-' + pb['id']).click(pbFactory(pb))
+                content.find('div.spec').each(function () {
+                    var spec = $(this)
+                    if (parseInt(spec.find('span').html()) == 0) {
+                        spec.addClass('none')
+                    }
+                });
+                content.appendTo(canvas)
+            })
         }
     },
 

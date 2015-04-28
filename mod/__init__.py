@@ -15,8 +15,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime, timedelta
+from functools import wraps
 from tornado import ioloop
 import os, re, json, logging, shutil
+
+def jsoncall(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        body = self.request.body
+        self.request.jsoncall = True
+        if body is not None:
+            decoded = body.decode()
+            if decoded:
+                self.request.body = json.loads(decoded)
+        result = method(self, *args, **kwargs)
+        if not result is None:
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps(result, default=json_handler))
+        else:
+            self.set_header('Content-Type', 'text/plain')
+            self.set_status(204)
+    return wrapper
 
 def json_handler(obj):
     if isinstance(obj, datetime):

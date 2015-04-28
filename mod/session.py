@@ -68,7 +68,6 @@ class InstanceIdMapper(object):
 
 
 class Session(object):
-
     def __init__(self):
         self.hmi_initialized = False
         self.host_initialized = False
@@ -119,6 +118,8 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
+
+        self._save_waiter = None
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)
@@ -185,6 +186,8 @@ class Session(object):
         for i in range(2, INGEN_NUM_MIDI_OUTS+1):
             yield gen.Task(lambda callback: self.host.add_external_port("MIDI Out %i" % i, "Output", "MIDI", callback=callback))
 
+        yield gen.Task(lambda callback: self.host.initial_setup(callback=callback))
+
         self.host.position_callback = position_cb
         self.host.port_value_callback = port_value_cb
         self.host.plugin_add_callback = plugin_add_cb
@@ -206,6 +209,15 @@ class Session(object):
             except StopIteration:
                 callback(r)
         remove_all_plugins()
+
+    def save_pedalboard(self, title, asNew):
+        bundlepath = os.path.expanduser("~/.lv2/testing.ingen")
+        self._save_waiter()
+        if not os.path.exists(bundlepath):
+            raise Pedalboard.ValidationError("failed to find testing pedalboard, did you save it like I asked?")
+        os.system("sed -i 's|<ingen:/root/screenshot.png>|<screenshot.png>|' ~/.lv2/testing.ingen/testing.ttl")
+        os.system("sed -i 's|<ingen:/root/thumbnail.png>|<thumbnail.png>|' ~/.lv2/testing.ingen/testing.ttl")
+        return bundlepath
 
     def setup_monitor(self):
         if self.monitor_server is None:
@@ -607,7 +619,7 @@ class Session(object):
         #self._pedalboard.set_position(instance, x, y)
 
     def pedalboard_size(self, width, height):
-        self._pedalboard.set_size(width, height)
+        self.host.set_pedalboard_size(width, height)
 
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)

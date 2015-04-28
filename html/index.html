@@ -40,6 +40,11 @@
     <!-- SLIDER -->
     <link rel="stylesheet" type="text/css" href="resources/sliders/slider01/slider.css?v={{version}}"/>
 
+    <script type="text/javascript">
+      // for mod-app control
+      var desktop = null
+    </script>
+
     <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
     <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
     <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
@@ -55,7 +60,8 @@
 
       {% autoescape None %}
       var TEMPLATES = {}
-      SITEURL = '{{cloud_url}}'.replace(/\/?$/, '/api')
+      SITEURL    = '{{cloud_url}}'.replace(/\/?$/, '/api')
+      SITEURLNEW = "http://social.dev.portalmod.com/api"
       var SAMPLERATE = {{sampleRate}}
       var NOTIFICATIONS_ENABLED = true
       var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
@@ -74,8 +80,6 @@
       var JS_CUSTOM_CHANNEL = {{js_custom_channel}}
       var AUTO_CLOUD_BACKUP = {{auto_cloud_backup}}
 
-      // for mod-app control
-      var desktop = null
 
 $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
@@ -195,15 +199,15 @@ $('document').ready(function() {
                     <div class="error hidden"></div>
                     <form class="bottom">
                         <div class="control-group">
-                            <label>E-mail</label>
+                            <label>User ID</label>
                             <div class="mod-controls">
-                                <input type="text" name="id"/>
+                                <input type="text" name="user_id" value="uu05"/>
                             </div>
                         </div>
                         <div class="control-group">
                             <label>Password</label>
                             <div class="mod-controls">
-                                <input type="password" name="password"/>
+                                <input type="password" name="password" value="uu05uu05"/>
                             </div>
                         </div>
                         <div class="textright">
@@ -222,17 +226,22 @@ $('document').ready(function() {
                     <!-- The div below will hold error message. It must have class "error" -->
                     <div class="error hidden"></div>
                     <form class="bottom form-horizontal">
-                        <input type="hidden" name="sid" value="by javascript"/>
                         <div class="control-group">
-                            <label>E-mail</label>
+                            <label>User ID</label>
                             <div class="mod-controls">
-                                <input type="text" name="email"/>
+                                <input type="text" name="user_id"/>
                             </div>
                         </div>
                         <div class="control-group">
                             <label>Name</label>
                             <div class="mod-controls">
                                 <input type="text" name="name"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>E-mail</label>
+                            <div class="mod-controls">
+                                <input type="text" name="email"/>
                             </div>
                         </div>
                         <div class="control-group">

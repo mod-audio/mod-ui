@@ -1,14 +1,14 @@
         <li class="feed clearfix">
-            <a class="avatar"><img src="{{avatar_url}}/{{author.gravatar}}.png?s=64"/></a>
+            <a class="avatar"><img src="{{avatar_href}}?s=64"/></a>
             <div class="content alignleft span10">
-                <p>On {{created}} <a>{{author.name}}</a> published <b>{{title}}</b>:</p>
+                <p>On {{created}} <a>{{user_name}}</a> published <b>{{name}}</b>:</p>
                 <p class="screenshot">
 		  {{#video}}
-  		    <iframe src="//player.vimeo.com/video/{{id}}" width="780" height="440" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+  		    <iframe src="http://player.vimeo.com/video/{{id}}" width="780" height="440" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 		  {{/video}}
                   {{^video}}
-                    <a class="js-pedalboard-{{_id}}">
-                        <img src="{{cloud}}/pedalboard/screenshot/{{_id}}.png" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
+                    <a class="js-pedalboard-{{id}}">
+                        <img src="{{cloud}}/api/pedalboard/screenshot/{{id}}.png" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
                     </a>
                   {{/video}}
                 </p>
@@ -56,8 +56,8 @@
                         </div>
                     </div>
                 </div>
-		<button class="pedalboard-load btn btn-primary js-pedalboard-{{_id}}">Try</button>
-                <div class="description">{{description}}</div>
+		<button class="pedalboard-load btn btn-primary js-pedalboard-{{id}}">Try</button>
+                <!--<div class="description">{{description}}</div>-->
                 <div class="actions">
                   <!-- <a href="">Like</a> • <a href="">Comment</a> -->
                 </div>

@@ -79,7 +79,7 @@ function Desktop(elements) {
     this.registration = new RegistrationWindow({
         registrationWindow: elements.registrationWindow,
         getUserSession: function () {
-            return self.userSession.sid
+            return self.userSession.user_id
         }
     })
     this.userSession = new UserSession({
@@ -92,14 +92,17 @@ function Desktop(elements) {
             self.netStatus.statusTooltip('status', 'offline')
         },
         login: function () {
-            elements.userName.show().html(self.userSession.user.name).click(function () {
+            elements.userName.show().html(self.userSession.user_id).click(function () {
                 console.log('user profile')
                 return false
             })
-            elements.userAvatar.show().attr('src', AVATAR_URL + '/' + self.userSession.user.gravatar + '.png')
-            self.feedManager.start(self.userSession.sid)
-            self.netStatus.statusTooltip('message', sprintf('Logged as %s', self.userSession.user.name), true)
-            self.netStatus.statusTooltip('status', 'logged')
+            self.userSession.getUserData(null, function (data) {
+                // FIXME the avatar_href from portalmod server is wrong
+                elements.userAvatar.show().attr('src', data.avatar_href)
+                self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
+                self.netStatus.statusTooltip('status', 'logged')
+            })
+            //self.feedManager.start(self.userSession.access_token)
         },
         logout: function () {
             elements.userName.hide()
@@ -116,7 +119,7 @@ function Desktop(elements) {
         self.windowManager.closeWindows()
         return false
     })
-    this.userSession.getSessionId()
+    this.userSession.tryConnectingToSocial()
     this.hardwareManager = new HardwareManager({
         address: function (instance, symbol, addressing, callback) {
             addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
@@ -321,7 +324,8 @@ function Desktop(elements) {
         userSession: self.userSession,
         getFeed: function (page, callback) {
             $.ajax({
-                url: SITEURL + '/pedalboard/feed/' + self.userSession.sid + '/' + page,
+                url: SITEURLNEW + '/pedalboards/?top=2', // TESTING
+                headers : { 'Authorization' : 'MOD ' + self.userSession.access_token },
                 success: function (pedalboards) {
                     callback(pedalboards)
                 },
@@ -334,11 +338,13 @@ function Desktop(elements) {
         },
         loadPedalboard: function (pedalboard) {
             self.reset(function () {
+            /*
                 self.pedalboard.pedalboard('unserialize', pedalboard.pedalboard,
                     function () {
                         self.pedalboardModified = true
                         self.windowManager.closeWindows()
                     }, false)
+            */
             })
         },
         trigger: elements.socialTrigger,
@@ -355,7 +361,7 @@ function Desktop(elements) {
                 },
                 success: function (result) {
                     if (result.ok)
-                        callback(result.uid)
+                        callback(true, result.bundlepath)
                     else
                         callback(false, result.error)
                 },
@@ -446,7 +452,7 @@ function Desktop(elements) {
 
         share: function (data, callback) {
             $.ajax({
-                url: SITEURL + '/pedalboard/videoshare/' + self.userSession.sid,
+                url: SITEURL + '/pedalboard/videoshare/' + self.userSession.user_id,
                 method: 'POST',
                 data: JSON.stringify(data),
                 success: function (resp) {
@@ -780,7 +786,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             if (!AUTO_CLOUD_BACKUP)
                 return
             $.ajax({
-                url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.sid + '/' + pedalboard._id,
+                url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.user_id + '/' + pedalboard._id,
                 method: 'POST'
             })
         },
@@ -856,7 +862,7 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
             if (!AUTO_CLOUD_BACKUP)
                 return
             $.ajax({
-                url: SITEURL + '/banks/backup/' + self.userSession.sid,
+                url: SITEURL + '/banks/backup/' + self.userSession.user_id,
                 method: 'POST',
                 data: JSON.stringify(data)
             })
@@ -878,7 +884,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
     self.pedalboard.pedalboard('serialize',
         function (pedalboard) {
-            self.saveBox.saveBox('save', self.title, asNew, pedalboard, self.userSession.sid,
+            self.saveBox.saveBox('save', self.title, asNew, pedalboard, self.userSession.user_id,
                 function (uid, title) {
                     self.pedalboardId = uid
                     self.title = title

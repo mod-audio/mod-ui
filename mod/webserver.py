@@ -50,7 +50,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           )
 
 
-from mod import indexing, json_handler
+from mod import indexing, jsoncall, json_handler
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
@@ -640,16 +640,16 @@ class PedalboardSave(web.RequestHandler):
         as_new = bool(int(self.get_argument('asNew')))
 
         try:
-            uid = SESSION.save_pedalboard(title, as_new)
+            bundlepath = SESSION.save_pedalboard(title, as_new)
         except Pedalboard.ValidationError as e:
             self.write(json.dumps({ 'ok': False, 'error': str(e) }))
             self.finish()
             raise StopIteration
 
-        THUMB_GENERATOR.schedule_thumbnail(uid)
+        THUMB_GENERATOR.schedule_thumbnail(bundlepath)
 
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True, 'uid': uid }, default=json_handler))
+        self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
         self.finish()
 
 class PedalboardLoad(web.RequestHandler):
@@ -823,8 +823,31 @@ class TemplateHandler(web.RequestHandler):
 
     def pedalboard(self):
         context = self.index()
-        uid = self.get_argument('uid')
-        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid), 'rb').read())
+        #uri = self.get_argument('uri')
+
+        # TODO
+        data = b"""
+        {
+
+        "_id": "0",
+
+        "instances":
+        [
+            { "url": "http://portalmod.com/plugins/mod-devel/DS1", "bypassed": false, "y": 67, "x": 25, "values": {} },
+            { "url": "http://portalmod.com/plugins/mod-devel/HighPassFilter", "bypassed": false, "y": 109, "x": 680, "values": {} },
+            { "url": "http://portalmod.com/plugins/mod-devel/SuperCapo", "bypassed": false, "y": 179, "x": 401, "values": {} }
+        ],
+
+        "connections":
+        [
+            ["/system/capture_1", "/_0/input"],
+            ["/_0/output", "/system/layback_1"]
+        ]
+
+        }
+        """
+
+        context['pedalboard'] = b64encode(data)
         return context
 
 class EditionLoader(TemplateHandler):
@@ -1039,6 +1062,45 @@ class RecordingReset(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
 
+class TokensDelete(web.RequestHandler):
+    def get(self):
+        tokensConf = os.path.join(DATA_DIR, "tokens.conf")
+
+        if os.path.exists(tokensConf):
+            os.remove(tokensConf)
+
+class TokensGet(web.RequestHandler):
+    def get(self):
+        #curtime    = int(time.time())
+        tokensConf = os.path.join(DATA_DIR, "tokens.conf")
+
+        self.set_header('Content-Type', 'application/json')
+
+        if os.path.exists(tokensConf):
+            with open(tokensConf, 'r') as fd:
+                data = json.load(fd)
+                keys = data.keys()
+                data['ok'] = bool("user_id"       in keys and
+                                  "access_token"  in keys and
+                                  "refresh_token" in keys)
+                #data['curtime'] = curtime
+                return self.write(json.dumps(data))
+
+        return self.write(json.dumps({ 'ok': False }))
+
+class TokensSave(web.RequestHandler):
+    @jsoncall
+    def post(self):
+        #curtime    = int(time.time())
+        tokensConf = os.path.join(DATA_DIR, "tokens.conf")
+
+        data = dict(self.request.body)
+        #data['time'] = curtime
+        data.pop("expires_in_days")
+
+        with open(tokensConf, 'w') as fd:
+            json.dump(data, fd)
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -1095,6 +1157,10 @@ application = web.Application(
             (r"/recording/play/(start|wait|stop)", RecordingPlay),
             (r"/recording/download", RecordingDownload),
             (r"/recording/reset", RecordingReset),
+
+            (r"/tokens/delete", TokensDelete),
+            (r"/tokens/get", TokensGet),
+            (r"/tokens/save/?", TokensSave),
 
             (r"/reset/?", DashboardClean),
             (r"/disconnect/?", DashboardDisconnect),

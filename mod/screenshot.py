@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, subprocess, json, random, shutil
+import os, subprocess, json
+
 try:
     import Image
 except ImportError:
@@ -26,29 +27,29 @@ from mod.settings import (PEDALBOARD_SCREENSHOT_DIR, DEVICE_WEBSERVER_PORT,
                           PEDALBOARD_DIR, PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
 
-def get_pedalboard(uid):
-    try:
-        return json.loads(open(os.path.join(PEDALBOARD_DIR, uid)).read())
-    except (IOError, ValueError):
-        return None
+def get_pedalboard(bundlepath):
+    #try:
+        #return json.loads(open(os.path.join(PEDALBOARD_DIR, uid)).read())
+    #except (IOError, ValueError):
+    return { 'width': MAX_THUMB_HEIGHT, 'height': MAX_THUMB_WIDTH }
 
-def generate_screenshot(uid, max_width, max_height, callback):
+def generate_screenshot(bundlepath, max_width, max_height, callback):
     if not os.path.exists(PHANTOM_BINARY):
         return callback()
-    pedalboard = get_pedalboard(uid)
+    pedalboard = get_pedalboard(bundlepath)
     if not pedalboard:
         return callback()
 
-    path = '/tmp/%s.png' % ''.join([ random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for i in range(8) ])
+    path = '%s/screenshot.png' % bundlepath
     port = DEVICE_WEBSERVER_PORT
 
-    proc = subprocess.Popen([ PHANTOM_BINARY, 
+    proc = subprocess.Popen([ PHANTOM_BINARY,
                               SCREENSHOT_JS,
-                              'http://localhost:%d/pedalboard.html?uid=%s' % (port, uid),
+                              'http://localhost:%d/pedalboard.html?bundlepath=%s' % (port, bundlepath),
                               path,
                               str(pedalboard.get('width', max_width)),
                               str(pedalboard.get('height', max_height)),
-                              ],
+                             ],
                             stdout=subprocess.PIPE)
 
     def handle_image():
@@ -78,22 +79,15 @@ def resize_image(img, max_width, max_height):
         img.thumbnail((width, height), Image.ANTIALIAS)
 
 class ThumbnailGenerator(object):
-
     def __init__(self):
         self.queue = []
         self.processing = False
 
-    def schedule_thumbnail(self, uid):
-        uid = str(uid)
-        if not uid in self.queue:
-            self.queue.append(uid)
+    def schedule_thumbnail(self, bundlepath):
+        if not bundlepath in self.queue:
+            self.queue.append(bundlepath)
         if not self.processing:
             self.process_next()
-
-    def save_pedalboard(self, uid, thumbnail):
-        pedalboard = get_pedalboard(uid)
-        pedalboard['metadata']['thumbnail'] = thumbnail
-        open(os.path.join(PEDALBOARD_DIR, uid), 'w').write(json.dumps(pedalboard))
 
     def process_next(self):
         if len(self.queue) == 0:
@@ -101,24 +95,16 @@ class ThumbnailGenerator(object):
             return
         self.processing = True
 
-        uid = self.queue.pop(0)
+        bundlepath = self.queue.pop(0)
 
         def callback(img=None):
-            if not img:# or not os.path.exists(tmp_path):
+            if not img:
                 self.process_next()
                 return
 
-            pedalboard = get_pedalboard(uid)
-            if pedalboard is None:
-                self.process_next()
-                return
-
-            
-            thumbnail = '%s.png' % uid
-            path = os.path.join(PEDALBOARD_SCREENSHOT_DIR, thumbnail)
+            path = os.path.join(bundlepath, 'thumbnail.png')
             img.save(path)
-            self.save_pedalboard(uid, 'pedalboards/%s' % thumbnail)
+
             self.process_next()
 
-        generate_screenshot(uid, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
-
+        generate_screenshot(bundlepath, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
