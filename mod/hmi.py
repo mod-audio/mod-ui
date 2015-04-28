@@ -73,7 +73,7 @@ class HMI(object):
             logging.info('[hmi] received <- %s' % repr(data))
             try:
                 msg = Protocol(data)
-            except ProtocolError, e:
+            except ProtocolError as e:
                 logging.error('[hmi] error parsing msg %s' % repr(data))
                 self.reply_protocol_error(e.error_code())
             else:
@@ -98,7 +98,7 @@ class HMI(object):
                     msg.run_cmd(_callback)
         try:
             self.sp.read_until('\0', self.checker)
-        except serial.SerialException, e:
+        except serial.SerialException as e:
             logging.error("[hmi] error while reading %s" % e)
 
     def process_queue(self):

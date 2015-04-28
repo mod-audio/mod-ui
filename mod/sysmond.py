@@ -49,7 +49,7 @@ def connection_ready(sock, fd, events):
     while True:
         try:
             connection, address = sock.accept()
-        except socket.error, e:
+        except socket.error as e:
             if e.args[0] not in (errno.EWOULDBLOCK, errno.EAGAIN):
                 raise
             return

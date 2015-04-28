@@ -65,7 +65,7 @@ class Pedalboard(object):
 
     def serialize(self):
         serialized = copy.deepcopy(self.data)
-        serialized['instances'] = serialized['instances'].values()
+        serialized['instances'] = list(serialized['instances'].values())
         return serialized
 
     def unserialize(self, data):
@@ -111,8 +111,8 @@ class Pedalboard(object):
 
         index = indexing.PedalboardIndex()
         try:
-            existing = index.find(title=title).next()
-            assert existing['id'] == unicode(self.data['_id'])
+            existing = next(index.find(title=title))
+            assert existing['id'] == str(self.data['_id'])
         except StopIteration:
             pass
         except AssertionError:
@@ -183,7 +183,6 @@ class Pedalboard(object):
             else:
                 i += 1
         return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
-
 
     def bypass(self, instance_id, value):
         try:
@@ -276,7 +275,7 @@ class Pedalboard(object):
         return tuple()
 
     def set_title(self, title):
-        self.data['metadata']['title'] = unicode(title)
+        self.data['metadata']['title'] = title
 
     def set_size(self, width, height):
         logging.debug("[pedalboard] setting window size %dx%d" % (width, height))
@@ -297,10 +296,9 @@ class Pedalboard(object):
         bufsize = minimum
         index = indexing.EffectIndex()
         for instance in self.data['instances'].values():
-            effect = index.find(url=instance['url']).next()
+            effect  = next(index.find(url=instance['url']))
             bufsize = max(effect['bufsize'], minimum)
         return bufsize
-
 
 def remove_pedalboard(uid):
     # Delete pedalboard file

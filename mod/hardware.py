@@ -79,9 +79,9 @@ class Actuator(object):
     @property
     def label(self):
         if self.id != -1:
-            return u"%s %d" % (self.name, self.id + 1)
+            return "%s %d" % (self.name, self.id + 1)
         elif self.hw is not None:
-            return u"%s %d" % (self.hw.name, self.hw.id + 1)
+            return "%s %d" % (self.hw.name, self.hw.id + 1)
         else:
             return self.name
 
@@ -155,7 +155,7 @@ class Touch(Hardware):
         super(Touch, self).__init__(id, "Touch", actuators)
 
     def get_label_for_actuator(self, actuator, addr_type):
-        return u"%s: %s" % (self.name, actuator.name)
+        return "%s: %s" % (self.name, actuator.name)
 
 
 class Accel(Hardware):
@@ -170,7 +170,7 @@ class Accel(Hardware):
         super(Accel, self).__init__(id, "Accel", actuators)
 
     def get_label_for_actuator(self, actuator, addr_type):
-        return u"%s: %s" % (self.name, actuator.name)
+        return "%s: %s" % (self.name, actuator.name)
 
 
 HW_TYP_TO_CLS = dict((cls.HW_TYP, cls) for cls in Hardware.__subclasses__())

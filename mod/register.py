@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import urllib, urllib2, json, re
+import urllib, json, re
 from hashlib import md5
 from os import mkdir
 from os.path import exists
@@ -50,7 +50,7 @@ class DeviceRegisterer(object):
             }
 
         serialized_data = json.dumps(data)
-        checksum = md5(serialized_data).hexdigest()
+        checksum = md5(serialized_data.encode("utf-8")).hexdigest()
         signature = crypto.Sender(DEVICE_KEY, checksum).pack()
 
         return {

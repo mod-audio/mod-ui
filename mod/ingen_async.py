@@ -102,6 +102,8 @@ class IngenAsync(Interface):
         self.msg_callback = lambda msg: None
 
         for (k, v) in NS.__dict__.items():
+            if k.startswith("__") and k.endswith("__"):
+                continue
             self.ns_manager.bind(k, v)
 
         # Parse error description from Ingen bundle for pretty printing
@@ -114,7 +116,7 @@ class IngenAsync(Interface):
         def check_response():
             if callback is not None:
                 callback()
-            self.sock.read_until("\0", self.keep_reading)
+            self.sock.read_until(self.msgencode("\0"), self.keep_reading)
 
         if self.uri.startswith('unix://'):
             self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
@@ -130,12 +132,12 @@ class IngenAsync(Interface):
     def keep_reading(self, msg=None):
         self._reading = False
 
-        msg_str = msg.replace("\0", "") if msg else ""
+        msg_str = msg.decode("utf-8", errors="ignore").replace("\0", "") if msg else ""
         if msg_str:
             self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
             msg_model.namespace_manager = self.ns_manager
-            msg_model.parse(StringIO(msg_str.decode('utf-8')), self.server_base, format='n3')
+            msg_model.parse(StringIO(msg_str), self.server_base, format='n3')
 
             # Handle responses if any
             """"
@@ -217,7 +219,7 @@ class IngenAsync(Interface):
                     uri = msg_model.value(body, NS.lv2.prototype).toPython()
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
-                    self.plugin_add_callback(instance, uri, x if x else 0, y if y else 0)
+                    self.plugin_add_callback(instance, uri, x or 0, y or 0)
                 # New port connection
                 elif msg_model.value(body, NS.rdf.type) == NS.ingen.Arc:
                     head = msg_model.value(body, NS.ingen.head).toPython().split("/")
@@ -234,9 +236,8 @@ class IngenAsync(Interface):
                 if subject:
                     self.delete_callback(subject.toPython().split("/")[-1])
 
-
         self._reading = True
-        self.sock.read_until(".\n", self.keep_reading)
+        self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
         self.sock.write(self.msgencode(msg), lambda: callback(True))

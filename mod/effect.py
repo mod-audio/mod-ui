@@ -17,7 +17,7 @@
 
 
 import json, os, subprocess, shutil, select
-from sha import sha
+from hashlib import sha1 as sha
 from os.path import exists, join
 from tornado.ioloop import IOLoop
 from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,

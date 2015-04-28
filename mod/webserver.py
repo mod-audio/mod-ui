@@ -21,14 +21,14 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import StringIO
 import time
 from datetime import timedelta
+from io import StringIO
 try:
     import Image
 except ImportError:
     from PIL import Image
-from sha import sha
+from hashlib import sha1 as sha
 from hashlib import md5
 from base64 import b64decode, b64encode
 from tornado import gen, web, iostream, websocket
@@ -131,7 +131,7 @@ class EffectSetLocalVariable(web.RequestHandler):
         url = self.get_argument('url')
         value = self.get_argument(var)
         index = indexing.EffectIndex()
-        objid = index.find(url=url).next()['id']
+        objid = next(index.find(url=url))['id']
         index.save_local_variable(objid, var, value)
 
 class SDKSysUpdate(web.RequestHandler):
@@ -213,7 +213,7 @@ class Searcher(tornado.web.RequestHandler):
         self.write(json.dumps(response, default=json_handler))
 
     def autocomplete(self):
-        term = unicode(self.request.arguments.get('term')[0])
+        term = str(self.request.arguments.get('term')[0])
         result = []
         for entry in self.index.term_search(term):
             result.append(entry)
@@ -242,7 +242,7 @@ class Searcher(tornado.web.RequestHandler):
         for key in self.request.arguments.keys():
             query[key] = self.get_argument(key)
         try:
-            return self.index.find(**query).next()
+            return next(self.index.find(**query))
         except StopIteration:
             return None
 
@@ -257,7 +257,7 @@ class EffectSearcher(Searcher):
 
         search = self.index.find(url=url)
         try:
-            entry = search.next()
+            entry = next(search)
         except StopIteration:
             raise tornado.web.HTTPError(404)
 
@@ -275,7 +275,7 @@ class EffectBulkData(EffectSearcher):
         "return true if an effect is installed"
         search = self.index.find(url=url)
         try:
-            entry = search.next()
+            entry = next(search)
         except StopIteration:
             return False
         try:
@@ -295,7 +295,7 @@ class EffectBulkData(EffectSearcher):
 
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
-            self.json_args = json.loads(self.request.body)
+            self.json_args = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         else:
             raise web.HTTPError(501, 'Content-Type != "application/json"')
 
@@ -330,7 +330,7 @@ class SDKEffectScript(EffectSearcher):
         path = path.split(options['package']+'/')[-1]
         path = os.path.join(PLUGIN_LIBRARY_DIR, options['package'], path)
 
-        self.write(open(path).read())
+        self.write(open(path, 'rb').read())
 
 class EffectResource(web.StaticFileHandler, EffectSearcher):
 
@@ -381,7 +381,7 @@ class EffectImage(EffectSearcher):
             raise web.HTTPError(404)
 
         self.set_header('Content-Type', 'image/png')
-        self.write(open(path).read())
+        self.write(open(path, 'rb').read())
 
 class EffectStylesheet(EffectSearcher):
     def get(self):
@@ -531,7 +531,7 @@ class EffectParameterAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self, port):
-        data = json.loads(self.request.body)
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
 
         actuator = data.get('actuator', [-1] * 4)
 
@@ -739,7 +739,7 @@ class BankSave(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        banks = json.loads(self.request.body)
+        banks = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         save_banks(banks)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
@@ -804,8 +804,8 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
             'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': b64encode(json.dumps(get_hardware())),
-            # 'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler)),
+            'hardware_profile': b64encode(json.dumps(get_hardware()).encode("utf-8")),
+            # 'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
@@ -824,7 +824,7 @@ class TemplateHandler(web.RequestHandler):
     def pedalboard(self):
         context = self.index()
         uid = self.get_argument('uid')
-        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid)).read())
+        context['pedalboard'] = b64encode(open(os.path.join(PEDALBOARD_DIR, uid), 'rb').read())
         return context
 
 class EditionLoader(TemplateHandler):
@@ -882,7 +882,7 @@ class SysMonProcessList(web.RequestHandler):
             def set_ps_list(v):
                 self.ps_list = v
                 callback()
-            self.sock.read_until("\0", set_ps_list)
+            self.sock.read_until("\0".encode("utf-8"), set_ps_list)
         self.sock.connect(('127.0.0.1', 57890), recv_ps_list)
 
 
@@ -927,7 +927,7 @@ class LoginSign(web.RequestHandler):
 
 class LoginAuthenticate(web.RequestHandler):
     def post(self):
-        serialized_user = self.get_argument('user')
+        serialized_user = self.get_argument('user').encode("utf-8")
         signature = self.get_argument('signature')
         receiver = crypto.Receiver(CLOUD_PUB, signature)
         checksum = receiver.unpack()
@@ -935,7 +935,7 @@ class LoginAuthenticate(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         if not sha(serialized_user).hexdigest() == checksum:
             return self.write(json.dumps({ 'ok': False}))
-        user = json.loads(b64decode(serialized_user))
+        user = json.loads(b64decode(serialized_user).decode("utf-8", errors="ignore"))
         self.write(json.dumps({ 'ok': True,
                                 'user': user }))
 
@@ -951,7 +951,7 @@ class RegistrationStart(web.RequestHandler):
 
 class RegistrationFinish(web.RequestHandler):
     def post(self):
-        response = json.loads(self.request.body)
+        response = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         ok = register.DeviceRegisterer().register(response)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(ok))
@@ -987,7 +987,7 @@ class RecordingStart(web.RequestHandler):
 class RecordingStop(web.RequestHandler):
     def get(self):
         result = SESSION.stop_recording()
-        #result['data'] = b64encode(result.pop('handle').read())
+        #result['data'] = b64encode(result.pop('handle').read().encode("utf-8"))
         #open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))

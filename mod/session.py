@@ -21,7 +21,7 @@ from os import path
 
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
-from Queue import Empty
+from queue import Empty
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
@@ -40,7 +40,7 @@ from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.indexing import EffectIndex
-from tuner import NOTES, FREQS, find_freqnotecents
+from mod.tuner import NOTES, FREQS, find_freqnotecents
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -105,7 +105,7 @@ class Session(object):
 
 #        self.host = factory(Host, FakeHost, DEV_HOST,
 #                            "unix:///tmp/ingen.sock", self.host_callback)
-        self.host = Host("unix:///tmp/ingen.sock", self.host_callback)
+        self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"), self.host_callback)
         self.hmi = factory(HMI, FakeHMI, DEV_HMI,
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
 
@@ -119,6 +119,9 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
+
+    def reconnect(self):
+        self.host.open_connection(self.host_callback)
 
     def websocket_opened(self, ws):
         self.websockets.append(ws)
@@ -199,7 +202,7 @@ class Session(object):
         gen = iter(copy.deepcopy(self.instances))
         def remove_all_plugins(r=True):
             try:
-                self.remove(gen.next(), remove_all_plugins)
+                self.remove(next(gen), remove_all_plugins)
             except StopIteration:
                 callback(r)
         remove_all_plugins()
@@ -383,6 +386,7 @@ class Session(object):
         #        callback(result)
         #else:
         #    cb = callback
+
         self.host.connect(port_from, port_to, callback)
 
     def format_port(self, port):
