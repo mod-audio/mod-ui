@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, sys, urllib2, json, argparse
+import os, sys, json, argparse
+from urllib.request import urlopen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 parser = argparse.ArgumentParser(description='Register device at Cloud')
@@ -32,7 +33,7 @@ def urlify(url):
 device_address = urlify(args.device)
 cloud_address = urlify(args.cloud)
 
-registration_package = urllib2.urlopen('%s/register/start/%s' % (device_address, serial)).read()
+registration_package = urlopen('%s/register/start/%s' % (device_address, serial)).read()
 
 try:
     json.loads(registration_package)
@@ -40,7 +41,7 @@ except:
     print "Can't generate registration package"
     sys.exit(1)
 
-response_package = urllib2.urlopen('%s/api/device/register' % cloud_address, registration_package).read()
+response_package = urlopen('%s/api/device/register' % cloud_address, registration_package).read()
 try:
     json.loads(response_package)
 except:
@@ -51,7 +52,7 @@ if not json.loads(response_package)['ok']:
     print "Cloud rejected this serial number (maybe duplicate?)"
     sys.exit(1)
 
-resp = urllib2.urlopen('%s/register/finish' % device_address, response_package).read()
+resp = urlopen('%s/register/finish' % device_address, response_package).read()
 try:
     ok = json.loads(resp)
 except:
