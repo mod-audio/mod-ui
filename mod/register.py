@@ -20,7 +20,7 @@ from os import mkdir
 from os.path import exists
 from mod.settings import (CLOUD_HTTP_ADDRESS, CLOUD_PUB, DEVICE_KEY, DEVICE_PUB,
                           DEVICE_SERIAL, DEVICE_MODEL, KEYPATH)
-from modcommon.communication import crypto
+from mod.communication import crypto
 
 class DeviceAlreadyRegistered(Exception):
     pass
