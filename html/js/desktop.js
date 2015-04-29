@@ -32,6 +32,8 @@ function Desktop(elements) {
         disconnectButton: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
+        cloudPluginBox: $('<div>'),
+        cloudPluginBoxTrigger: $('<div>'),
         pedalboardTrigger: $('<div>'),
         pedalboardBox: $('<div>'),
         pedalboardBoxTrigger: $('<div>'),
@@ -228,6 +230,26 @@ function Desktop(elements) {
         }
     })
 
+    this.cloudPluginListFunction = function (callback) {
+        $.ajax({
+            'method': 'GET',
+            'url': '/effect/list',
+            'success': callback,
+            'dataType': 'json'
+        })
+    }
+
+    this.cloudPluginSearchFunction = function (query, callback) {
+        $.ajax({
+            'method': 'GET',
+            'url': '/effect/search',
+            'query': query,
+            'success': callback,
+            'dataType': 'json'
+        })
+    }
+
+
     this.pedalboardListFunction = function (callback) {
         $.ajax({
             'method': 'GET',
@@ -287,6 +309,8 @@ function Desktop(elements) {
         })
     }
 
+    this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
+            elements.cloudPluginBoxTrigger)
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
         elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
@@ -799,6 +823,14 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
     })
 }
 
+Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
+    var self = this
+    return el.cloudPluginBox({
+        trigger: trigger,
+        windowManager: this.windowManager,
+        list: self.cloudPluginListFunction,
+    })
+}
 Desktop.prototype.makeBankBox = function (el, trigger) {
     var self = this
     el.bankBox({
