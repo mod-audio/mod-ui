@@ -321,11 +321,13 @@ class PluginSerializer(object):
         d['unit'] = None
         unit = port.get_value(units.unit.me)
         if unit is not None:
-            d['unit'] = {}
+            unit_dict = {}
             unit_node = lilv.Nodes(unit).get_first()
-            d['unit']['label'] = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
-            d['unit']['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
-            d['unit']['symbol'] = W.find_nodes(unit_node.me, rdfs.symbol.me, None).get_first().as_string()
+            unit_dict['label'] = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
+            unit_dict['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
+            unit_dict['symbol'] = W.find_nodes(unit_node.me, rdfs.symbol.me, None).get_first().as_string()
+            if unit_dict['label'] and unit_dict['render'] and unit_dict['symbol']:
+                d['unit'] = unit_dict
         return d
 
     def has_modgui(self):

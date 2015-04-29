@@ -93,6 +93,8 @@ $('document').ready(function() {
       disconnectButton:  $('#mod-disconnect'),
       effectBox: $('#plugins-library'),
       pedalboardTrigger: $('#main-menu #mod-plugins'),
+      cloudPluginBox: $('#cloud-plugins-library'),
+      cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
       pedalboardBox: $('#pedalboards-library'),
       pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
       bankBox: $('#bank-library'),
@@ -360,6 +362,7 @@ $('document').ready(function() {
     <div id="main-menu">
         <div id="mod-social" class="icon"></div>
         <div id="mod-plugins" class="icon selected"></div>
+        <div id="mod-cloud-plugins" class="icon"></div>
         <div id="mod-pedalboard" class="icon"></div>
         <div id="mod-bank" class="icon"></div>
 	<div id="banks-saving">Auto saving banks...</div>
@@ -403,18 +406,7 @@ $('document').ready(function() {
         <!-- EFFECTS LIBRARY SETTINGS WINDOW -->
         <div id="plugins-library-settings-window">
             <form class="box form-inline">
-                <h1>Plugin's Search Filters</h1>
-                <div class="control-group">
-                    <label class="radio">
-                        <input type="radio" name="mode" value="all"> All
-                    </label>
-                    <label class="radio">
-                        <input type="radio" name="mode" value="installed"> Installed
-                    </label>
-                    <label class="radio">
-                        <input type="radio" name="mode" value="not-installed"> Not Installed
-                    </label>
-                </div>
+                <h1>Plugin Search</h1>
                 <div class="control-group">
                     <label>Keywords</label>
                     <br/>
@@ -449,6 +441,57 @@ $('document').ready(function() {
     </div>
     <!-- END plugins-library -->
 
+    <!-- Cloud Plugins LIBRARY -->
+    <div id="cloud-plugins-library" class="hidden">
+        <div class="box clearfix">
+            <header>
+                <h1 class="bottom top">
+                    Cloud Plugins
+                    <!-- <span class="help"></span> -->
+                </h1>
+                <!-- <span class="close btn btn-danger js-close">Close</span> -->
+            </header>
+            <div class="form-horizontal filter clearfix">
+                <div class="control-group">
+                    <label>Keywords</label><br/>
+                    <input type="search"/>
+                </div>
+                <ul class="categories control-group">
+                    <li id="cloud-plugin-tab-All">All</li>
+                    <li id="cloud-plugin-tab-Delay">Delay</li>
+                    <li id="cloud-plugin-tab-Distortion">Distortion</li>
+                    <li id="cloud-plugin-tab-Dynamics">Dynamics</li>
+                    <li id="cloud-plugin-tab-Filter">Filter</li>
+                    <li id="cloud-plugin-tab-Generator">Generator</li>
+                    <li id="cloud-plugin-tab-Modulator">Modulator</li>
+                    <li id="cloud-plugin-tab-Reverb">Reverb</li>
+                    <li id="cloud-plugin-tab-Simulator">Simulator</li>
+                    <li id="cloud-plugin-tab-Spatial">Spatial</li>
+                    <li id="cloud-plugin-tab-Spectral">Spectral</li>
+                    <li id="cloud-plugin-tab-Utility">Utility</li>
+                </div>
+            </div>
+            <div class="cloud-plugins clearfix js-cloud-plugins">
+                <!-- EFFECTS OF A CATEGORY -->
+                <div id="cloudplugin-results-wrapper">
+                    <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Dynamics" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Filter" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Generator" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Modulator" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Reverb" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Simulator" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Spatial" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Spectral" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Utility" class="plugins-wrapper"></div>
+                </div>
+                <!-- END EFFECTS OF A CATEGORY -->
+            </div>
+        </div>
+    </div>
+    <!-- END Cloud Plugins Library -->
 
     <!-- PEDALBOARDS LIBRARY -->
     <div id="pedalboards-library" class="hidden">
@@ -520,7 +563,6 @@ $('document').ready(function() {
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
     </div>
-    <!-- PEDALBOARDS LIBRARY -->
 
     <!-- BANK LIBRARY -->
     <div id="bank-library" class="hidden">
