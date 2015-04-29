@@ -50,8 +50,8 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           )
 
 
-from modcommon.communication import fileserver, crypto
 from mod import indexing, jsoncall, json_handler
+from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard, remove_pedalboard
