@@ -16,7 +16,6 @@
 
 import os, json, logging, copy
 from datetime import datetime
-from bson import ObjectId
 from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
                           INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
 
@@ -100,7 +99,7 @@ class Pedalboard(object):
 
     def save(self, title=None, as_new=False):
         if as_new or not self.data['_id']:
-            self.data['_id'] = ObjectId()
+            self.data['_id'] = "RANDOM"
         if title is not None:
             self.set_title(title)
 

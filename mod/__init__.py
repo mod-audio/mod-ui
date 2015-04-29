@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from tornado import ioloop
 import os, re, json, logging, shutil
@@ -22,8 +21,6 @@ import os, re, json, logging, shutil
 def json_handler(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
-    if isinstance(obj, ObjectId):
-        return str(obj)
     #print(type(obj), obj)
     return None
 
