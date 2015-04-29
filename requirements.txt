@@ -1,5 +1,7 @@
-PIL==1.1.7
--e git+https://github.com/portalmod/mod-python.git@3fafeb963a43804350346dd1191513d0ea5626d3#egg=mod_common-dev
-pymongo==2.5.2
-pyserial==2.6
-tornado==3.1
+Pillow==2.8.1
+pymongo==3.0.1
+pyserial==2.7
+pystache==0.5.4
+rdflib==4.2.0
+tornado==4.1
+Whoosh==2.7.0
