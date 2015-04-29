@@ -109,7 +109,7 @@ JqueryClass('effectBox', {
         })
 
         self.data('category', null)
-            // CATEGORY TABS
+        // CATEGORY TABS
         self.find('ul.js-category-tabs li').click(function () {
             var category = $(this).attr('id').replace(/^effect-tab-/, '')
             self.effectBox('setCategory', category)
@@ -169,26 +169,10 @@ JqueryClass('effectBox', {
     search: function () {
         var self = $(this)
         var searchbox = self.data('searchbox')
-        var mode = self.find('input[name=mode]:checked').val() || 'installed'
-
-        setCookie('searchMode', mode)
-
         var term = searchbox.val()
-
         var query = {
             'term': term
         }
-
-        if (mode == 'installed')
-            self.effectBox('searchInstalled', query)
-        else if (mode == 'not-installed')
-            self.effectBox('searchNotInstalled', query)
-        else
-            self.effectBox('searchAll', query)
-    },
-
-    searchInstalled: function (query) {
-        var self = $(this)
 
         var url = query.term ? '/effect/search/' : '/effect/list/'
         $.ajax({
@@ -373,14 +357,6 @@ JqueryClass('effectBox', {
         }
 
         self.effectBox('calculateNavigation')
-
-        /*
-	if (empty || (currentCategory == null)) {
-	    currentCategory = Object.keys(count).sort(function(a,b) { return count[b]-count[a] })[0]
-	    self.effectBox('setCategory', currentCategory)
-	}
-	*/
-
     },
 
     getLabelAndAuthor: function (plugin) {
@@ -726,6 +702,160 @@ JqueryClass('effectBox', {
         }, 500)
     }
 })
+
+JqueryClass('cloudPluginBox', {
+    init: function (options) {
+        var self = $(this)
+
+        options = $.extend({
+            resultCanvas: self.find('.js-cloud-plugins'),
+            list: function (callback) {
+                callback([])
+            },
+            search: function (local, query, callback) {
+                callback([])
+            },
+            remove: function (pedalboard, callback) {
+                callback()
+            },
+            load: function (pedalboardId, callback) {
+                callback()
+            },
+            duplicate: function (pedalboard, callback) {
+                callback(pedalboard)
+            }
+        }, options)
+
+        self.data(options)
+
+        var results = {}
+        self.data('results', results)
+
+        self.data('category', null)
+        // CATEGORY TABS
+        self.find('ul.categories li').click(function () {
+            var category = $(this).attr('id').replace(/^cloud-plugin-tab-/, '')
+            self.cloudPluginBox('setCategory', category)
+        })
+
+        self.cloudPluginBox('search')
+        self.cloudPluginBox('setCategory', "All")
+        self.window(options)
+    },
+
+    setCategory: function (category) {
+        var self = $(this)
+        self.find('ul.categories li').removeClass('selected')
+        self.find('.plugins-wrapper').hide()
+        self.find('#cloud-plugin-tab-' + category).addClass('selected')
+        self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
+        self.data('category', category)
+    },
+
+    search: function () {
+        var self = $(this)
+        //var searchbox = self.data('searchbox')
+        //var term = searchbox.val()
+        var term = ''
+        var query = {
+            'term': term
+        }
+
+        var url = query.term ? '/effect/search/' : '/effect/list/'
+        $.ajax({
+            'method': 'GET',
+            'url': url,
+            'data': query,
+            'success': function (plugins) {
+                plugins.sort(function (a, b) {
+                    if (a.label > b.label)
+                        return 1
+                    if (a.label < b.label)
+                        return -1
+                    return 0
+                })
+                var count = {
+                    'All': 0
+                }
+                var category
+
+                for (var i in plugins) {
+                    plugins[i].installedVersion = [plugins[i].minorVersion,
+                        plugins[i].microVersion,
+                        plugins[i].release || 0
+                    ]
+                    plugins[i].status = 'installed'
+                    self.cloudPluginBox('showPlugin', plugins[i])
+                    category = plugins[i].category[0]
+                    if (count[category] == null)
+                        count[category] = 1
+                    else
+                        count[category] += 1
+                    count.All += 1
+                }
+               self.data('plugins', plugins)
+
+                var currentCategory = self.data('category')
+                var empty = true
+                for (category in count) {
+                    var tab = self.find('#cloud-plugin-tab-' + category)
+                    tab.html(tab.html() + ' (' + count[category] + ')')
+                    if (category == currentCategory && count[category] > 0)
+                        empty = false;
+                }
+
+            },
+            'dataType': 'json'
+        })
+    },
+
+    showPlugin: function (plugin) {
+        var self = $(this)
+        var results = self.data('results')
+        var canvas = self.data('resultCanvas')
+        self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-All'))
+        self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-' + plugin.category[0]))
+    },
+
+    render: function (plugin, canvas) {
+        var self = $(this)
+        var template = TEMPLATES.cloudplugin
+        var plugin_data = {
+            source: "",
+            label: plugin.name,
+            urle: escape(plugin.url),
+            author: plugin.gui.templateData ? plugin.gui.templateData.author : ""
+        }
+        plugin.label = plugin.label || plugin.name
+
+        var rendered = $(Mustache.render(template, plugin_data))
+
+        /*
+        var load = function () {
+            self.data('load')(pedalboard._id, function () {
+                self.window('close')
+            })
+            return false
+        }
+        rendered.find('.js-load').click(load)
+        rendered.find('img').click(load)
+        rendered.find('.js-duplicate').click(function () {
+            self.data('duplicate')(pedalboard, function (duplicated) {
+                var dupRendered = self.pedalboardBox('render', duplicated, canvas)
+                dupRendered.insertAfter(rendered)
+                dupRendered.css('opacity', 0)
+                dupRendered.animate({
+                    opacity: 1
+                }, 200)
+            })
+            return false
+        })
+        */
+        canvas.append(rendered)
+        return rendered
+    }
+})
+
 
 // Compares two version arrays. They are both known to have two non-negative integers.
 function compareVersions(a, b) {
