@@ -24,7 +24,7 @@ except ImportError:
 
 from tornado import ioloop
 from mod.lv2 import get_pedalboard_info
-from mod.settings import (PEDALBOARD_SCREENSHOT_DIR, DEVICE_WEBSERVER_PORT,
+from mod.settings import (DEVICE_WEBSERVER_PORT,
                           PEDALBOARD_DIR, PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
 
