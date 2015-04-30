@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
 
     <!-- PEDALS -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/pedals.css"/>
+    <link rel="stylesheet" type="text/css" href="css/pedals.css"/>
 
     <!-- DEFAULT -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/default.css"/>
@@ -60,7 +60,7 @@
               success: function(effects) {
                   for (var i = 0; i < effects.length; i++) {
                       icongui = new GUI(effects[i])
-                      icongui.render(function(icon) {
+                      icongui.render(null, function(icon, settings) {
                          $('#pedalboard-dashboard').append(icon)
                       })
                   }
