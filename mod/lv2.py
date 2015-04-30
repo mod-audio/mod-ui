@@ -10,15 +10,16 @@ W.load_all()
 PLUGINS = W.get_all_plugins()
 
 class NS(object):
-    def __init__(self, base):
+    def __init__(self, base, world=W):
         self.base = base
+        self.world = world
         self._cache = {}
 
     def __getattr__(self, attr):
         if attr.endswith("_"):
             attr = attr[:-1]
         if attr not in self._cache:
-            self._cache[attr] = lilv.Node(W.new_uri(self.base+attr))
+            self._cache[attr] = lilv.Node(self.world.new_uri(self.base+attr))
         return self._cache[attr]
 
 def LILV_FOREACH(collection, func):
@@ -40,6 +41,7 @@ pset = NS("http://lv2plug.in/ns/ext/presets#")
 midi = NS("http://lv2plug.in/ns/ext/midi#")
 pprops = NS("http://lv2plug.in/ns/ext/port-props#")
 time = NS("http://lv2plug.in/ns/ext/time#")
+mod = NS("http://portalmod.com/ns/mod#")
 modgui = NS("http://portalmod.com/ns/modgui#")
 
 def get_category(nodes):
@@ -89,6 +91,99 @@ def get_category(nodes):
         return []
     return [cat for catlist in LILV_FOREACH(nodes, fill_in_category) for cat in catlist]
 
+# Get info from an lv2 bundle
+# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
+def get_pedalboard_info(bundle):
+    # lilv wants the last character as the separator
+    if not bundle.endswith(os.sep):
+        bundle += os.sep
+
+    # Create our own unique lilv world
+    # We'll load a single bundle and get all plugins from it
+    world = lilv.World()
+
+    # this is needed when loading specific bundles instead of load_all
+    # (these functions are not exposed via World yet)
+    lilv.lilv_world_load_specifications(world.me)
+    lilv.lilv_world_load_plugin_classes(world.me)
+
+    # convert bundle string into a lilv node
+    bundlenode = lilv.lilv_new_file_uri(world.me, None, bundle)
+
+    # load the bundle
+    world.load_bundle(bundlenode)
+
+    # free bundlenode, no longer needed
+    lilv.lilv_node_free(bundlenode)
+
+    # get all plugins in the bundle
+    plugins = world.get_all_plugins()
+
+    # make sure the bundle includes 1 and only 1 plugin (the pedalboard)
+    if plugins.size() != 1:
+        raise Exception('get_info_from_lv2_bundle(%s) - bundle has 0 or > 1 plugin'.format(bundle))
+
+    # no indexing in python-lilv yet, just get the first item
+    plugin = None
+    for p in plugins:
+        plugin = p
+        break
+
+    if plugin is None:
+        raise Exception('get_info_from_lv2_bundle(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
+
+    # define the needed stuff
+    rdf = NS(lilv.LILV_NS_RDF, world)
+    lv2core = NS(lilv.LILV_NS_LV2, world)
+    ingen = NS('http://drobilla.net/ns/ingen#', world)
+    schema = NS("http://schema.org/", world)
+
+    # check if the plugin is a pedalboard
+    def fill_in_type(node):
+        return node.as_string()
+    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
+
+    if "http://portalmod.com/ns/mod#Pedalboard" not in plugin_types:
+        raise Exception('get_info_from_lv2_bundle(%s) - plugin has no mod:Pedalboard type'.format(bundle))
+
+    # let's get all the info now
+    ingenplugins = []
+
+    info = {
+        'name':   plugin.get_name().as_string(),
+        'author': plugin.get_author_name().as_string() or '', # Might be empty
+        'uri':    plugin.get_uri().as_string(),
+        'size': {
+            'width':  plugin.get_value(schema.width).get_first().as_int(),
+            'height': plugin.get_value(schema.height).get_first().as_int(),
+        },
+        'screenshot': os.path.basename(plugin.get_value(schema.screenshot).get_first().as_string()),
+        'thumbnail':  os.path.basename(plugin.get_value(schema.thumbnail).get_first().as_string()),
+        'plugins':    [] # we save this info later
+    }
+
+    blocks = plugin.get_value(ingen.block)
+
+    it = blocks.begin()
+    while not blocks.is_end(it):
+        block = blocks.get(it)
+        it    = blocks.next(it)
+
+        if block.me is None:
+            continue
+
+        protouri1 = lilv.lilv_world_get(world.me, block.me, lv2core.prototype.me, None)
+        protouri2 = lilv.lilv_world_get(world.me, block.me, ingen.prototype.me, None)
+
+        if protouri1 is not None:
+            ingenplugins.append(lilv.lilv_node_as_uri(protouri1))
+        elif protouri2 is not None:
+            ingenplugins.append(lilv.lilv_node_as_uri(protouri2))
+
+    info['plugins'] = ingenplugins
+
+    return info
+
 def get_pedalboards():
     def get_presets(p):
         presets = p.get_related(pset.Preset)
@@ -99,7 +194,7 @@ def get_pedalboards():
         return list(LILV_FOREACH(presets, get_preset_data))
 
     pedalboards = []
-    tester = modgui.thumbnail
+    tester = mod.Pedalboard
 
     for plugin in PLUGINS:
         t = plugin.get_value(tester).get_first()
@@ -109,7 +204,7 @@ def get_pedalboards():
 
         name = plugin.get_name().as_string()
         uri  = plugin.get_uri().as_string()
-        thum = t.as_string()
+        thum = plugin.get_value(schema.thumbnail).get_first().as_string()
 
         pedalboards.append((name, uri, thum, get_presets(plugin)))
 
