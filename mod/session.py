@@ -212,7 +212,8 @@ class Session(object):
 
     def save_pedalboard(self, title, asNew):
         bundlepath = os.path.expanduser("~/.lv2/testing.ingen")
-        self._save_waiter()
+        if self._save_waiter is not None:
+            self._save_waiter()
         if not os.path.exists(bundlepath):
             raise Pedalboard.ValidationError("failed to find testing pedalboard, did you save it like I asked?")
         os.system("sed -i 's|<ingen:/root/screenshot.png>|<screenshot.png>|' ~/.lv2/testing.ingen/testing.ttl")
