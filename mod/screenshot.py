@@ -23,22 +23,18 @@ except ImportError:
     from PIL import Image
 
 from tornado import ioloop
+from mod.lv2 import get_pedalboard_info
 from mod.settings import (PEDALBOARD_SCREENSHOT_DIR, DEVICE_WEBSERVER_PORT,
                           PEDALBOARD_DIR, PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
 
-def get_pedalboard(bundlepath):
-    #try:
-        #return json.loads(open(os.path.join(PEDALBOARD_DIR, uid)).read())
-    #except (IOError, ValueError):
-    return { 'width': MAX_THUMB_HEIGHT, 'height': MAX_THUMB_WIDTH }
-
 def generate_screenshot(bundlepath, max_width, max_height, callback):
     if not os.path.exists(PHANTOM_BINARY):
         return callback()
-    pedalboard = get_pedalboard(bundlepath)
-    if not pedalboard:
-        return callback()
+    #try: # TESTING let us receive exceptions for now
+    pedalboard = get_pedalboard_info(bundlepath)
+    #except:
+        #return callback()
 
     path = '%s/screenshot.png' % bundlepath
     port = DEVICE_WEBSERVER_PORT
@@ -47,8 +43,8 @@ def generate_screenshot(bundlepath, max_width, max_height, callback):
                               SCREENSHOT_JS,
                               'http://localhost:%d/pedalboard.html?bundlepath=%s' % (port, bundlepath),
                               path,
-                              str(pedalboard.get('width', max_width)),
-                              str(pedalboard.get('height', max_height)),
+                              str(pedalboard['size']['width']),
+                              str(pedalboard['size']['height']),
                              ],
                             stdout=subprocess.PIPE)
 
