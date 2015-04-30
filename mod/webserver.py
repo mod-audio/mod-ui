@@ -57,6 +57,7 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard, remove_pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
+from mod.lv2 import get_pedalboard_info
 from mod.screenshot import ScreenshotGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
@@ -840,29 +841,40 @@ class TemplateHandler(web.RequestHandler):
 
     def pedalboard(self):
         context = self.index()
-        #uri = self.get_argument('uri')
+        bundlepath = self.get_argument('bundlepath')
 
-        # TODO
-        data = b"""
-        {
+        #try: # TESTING let us receive exceptions for now
+        pedalboard = get_pedalboard_info(bundlepath)
+        #except:
+            #return None
 
-        "_id": "0",
+        data = b'{ "_id": "0", "instances": ['
 
-        "instances":
-        [
-            { "url": "http://portalmod.com/plugins/mod-devel/DS1", "bypassed": false, "y": 67, "x": 25, "values": {} },
-            { "url": "http://portalmod.com/plugins/mod-devel/HighPassFilter", "bypassed": false, "y": 109, "x": 680, "values": {} },
-            { "url": "http://portalmod.com/plugins/mod-devel/SuperCapo", "bypassed": false, "y": 179, "x": 401, "values": {} }
-        ],
+        first = True
+        for plugin in pedalboard['plugins']:
+            if first:
+                first = False
+            else:
+                data += b','
 
-        "connections":
-        [
-            ["/system/capture_1", "/_0/input"],
-            ["/_0/output", "/system/layback_1"]
-        ]
+            msg = '{ "url": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
+            print(msg)
+            data += bytes(msg, "utf-8")
 
-        }
-        """
+        data += b'], "connections": ['
+
+        first = True
+        for connection in pedalboard['connections']:
+            if first:
+                first = False
+            else:
+                data += b','
+
+            msg = '{ "source": "%s", "target": "%s" }' % (connection['source'], connection['target'])
+            print(msg)
+            data += bytes(msg, "utf-8")
+
+        data += b'] } '
 
         context['pedalboard'] = b64encode(data)
         return context

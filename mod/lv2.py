@@ -147,7 +147,8 @@ def get_pedalboard_info(bundle):
         raise Exception('get_info_from_lv2_bundle(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     # let's get all the info now
-    ingenplugins = []
+    ingenarcs   = []
+    ingenblocks = []
 
     info = {
         'name':   plugin.get_name().as_string(),
@@ -159,11 +160,35 @@ def get_pedalboard_info(bundle):
         },
         'screenshot': os.path.basename(plugin.get_value(schema.screenshot).get_first().as_string()),
         'thumbnail':  os.path.basename(plugin.get_value(schema.thumbnail).get_first().as_string()),
-        'plugins':    [] # we save this info later
+        'connections': [], # we save this info later
+        'plugins':     []  # we save this info later
     }
 
-    blocks = plugin.get_value(ingen.block)
+    # connections
+    arcs = plugin.get_value(ingen.arc)
+    it = arcs.begin()
+    while not arcs.is_end(it):
+        arc = arcs.get(it)
+        it  = arcs.next(it)
 
+        if arc.me is None:
+            continue
+
+        head = lilv.lilv_world_get(world.me, arc.me, ingen.head.me, None)
+        tail = lilv.lilv_world_get(world.me, arc.me, ingen.tail.me, None)
+
+        if head is None or tail is None:
+            continue
+
+        ingenarcs.append({
+            "source": lilv.lilv_node_as_string(tail).replace("file://","",1).replace(bundle,"",1),
+            "target": lilv.lilv_node_as_string(head).replace("file://","",1).replace(bundle,"",1)
+        })
+
+    print(ingenarcs)
+
+    # plugins
+    blocks = plugin.get_value(ingen.block)
     it = blocks.begin()
     while not blocks.is_end(it):
         block = blocks.get(it)
@@ -176,11 +201,22 @@ def get_pedalboard_info(bundle):
         protouri2 = lilv.lilv_world_get(world.me, block.me, ingen.prototype.me, None)
 
         if protouri1 is not None:
-            ingenplugins.append(lilv.lilv_node_as_uri(protouri1))
+            proto = protouri1
+            uri   = lilv.lilv_node_as_uri(protouri1)
         elif protouri2 is not None:
-            ingenplugins.append(lilv.lilv_node_as_uri(protouri2))
+            proto = protouri2
+            uri   = lilv.lilv_node_as_uri(protouri2)
+        else:
+            continue
 
-    info['plugins'] = ingenplugins
+        ingenblocks.append({
+            "uri": uri,
+            "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasX.me, None)),
+            "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasY.me, None))
+        })
+
+    info['connections'] = ingenarcs
+    info['plugins']     = ingenblocks
 
     return info
 
