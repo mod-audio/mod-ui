@@ -57,13 +57,14 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard, remove_pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.screenshot import ThumbnailGenerator, generate_screenshot, resize_image
+from mod.screenshot import ScreenshotGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
 
-THUMB_GENERATOR = ThumbnailGenerator()
+SCREENSHOT_GENERATOR = ScreenshotGenerator()
+
 class UpgradeSync(fileserver.FileReceiver):
     download_tmp_dir = DOWNLOAD_TMP_DIR
     remote_public_key = CLOUD_PUB
@@ -646,7 +647,7 @@ class PedalboardSave(web.RequestHandler):
             self.finish()
             raise StopIteration
 
-        THUMB_GENERATOR.schedule_thumbnail(bundlepath)
+        SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))

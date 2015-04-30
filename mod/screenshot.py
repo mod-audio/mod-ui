@@ -78,12 +78,12 @@ def resize_image(img, max_width, max_height):
         img.convert('RGB')
         img.thumbnail((width, height), Image.ANTIALIAS)
 
-class ThumbnailGenerator(object):
+class ScreenshotGenerator(object):
     def __init__(self):
         self.queue = []
         self.processing = False
 
-    def schedule_thumbnail(self, bundlepath):
+    def schedule_screenshot(self, bundlepath):
         if not bundlepath in self.queue:
             self.queue.append(bundlepath)
         if not self.processing:
