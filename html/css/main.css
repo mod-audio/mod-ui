@@ -817,7 +817,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     overflow:auto;
     position:absolute;
     right:0;
-    top:0;
+    top:68px;
     z-index:2;
 }
 #cloud-plugins-library h1 {
@@ -857,13 +857,14 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     border-color:#111;
     border-style:dotted;
     border-width:0 1px 0 0;
-    bottom:45px;
+    bottom:46px;
     left:10px;
     padding-top:18px;
     position:fixed;
     right:0;
     top:68px;
     width:240px;
+    overflow: hidden;
 }
 #cloud-plugins-library .filter .control-group {
     float:left;
@@ -874,8 +875,8 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     display:inline-block;
     font-size:12px;
     font-weight:bold;
-    width:165px;
 }
+
 #cloud-plugins-library .filter .control-group select {
     width:50px;
 }
@@ -883,7 +884,6 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     left:252px;
     position:absolute;
     right:10px;
-    top:100px;
 }
 
 #cloud-plugins-library .categories {
@@ -986,7 +986,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     overflow:auto;
     position:absolute;
     right:0;
-    top:0;
+    top:68px;
     z-index:2;
 }
 #pedalboards-library h1 {
@@ -1026,7 +1026,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     border-color:#111;
     border-style:dotted;
     border-width:0 1px 0 0;
-    bottom:45px;
+    bottom:46px;
     left:10px;
     padding-top:18px;
     position:fixed;
@@ -1052,7 +1052,6 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     left:252px;
     position:absolute;
     right:10px;
-    top:100px;
 }
 #pedalboards-library .pedalboards .pedalboard {
     color:#fff;

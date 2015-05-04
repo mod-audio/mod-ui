@@ -60,6 +60,7 @@ JqueryClass('effectBox', {
         var searchbox = self.find('input[type=search]')
 
         searchbox.cleanableInput()
+        self.data('searchbox', searchbox)
 
         //var categoryBrowse = self.find('div.categories')
 
@@ -70,7 +71,6 @@ JqueryClass('effectBox', {
             trigger: self.find('.js-settings-trigger')
         })
 
-        self.data('searchbox', searchbox)
             //self.data('categoryBrowse', categoryBrowse)
 
         /*
@@ -192,129 +192,6 @@ JqueryClass('effectBox', {
             'dataType': 'json'
         })
     },
-
-    searchAll: function (query) {
-        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by url.
-	   Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
-	   All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
-	 */
-        var self = $(this)
-        var results = {}
-        var plugins = []
-        var plugin, i;
-
-        renderResults = function () {
-            for (i in results.cloud) {
-                plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                plugin.source = SITEURL.replace(/api\/?$/, '')
-                if (results.local[plugin.url]) {
-                    plugin.installedVersion = [results.local[plugin.url].minorVersion,
-                        results.local[plugin.url].microVersion,
-                        results.local[plugin.url].release || 0
-                    ]
-                    delete results.local[plugin.url]
-                }
-                if (plugin.installedVersion == null) {
-                    plugin.status = 'blocked'
-                } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
-                    plugin.status = 'installed'
-                } else {
-                    plugin.status = 'outdated'
-                }
-                plugins.push(plugin)
-            }
-            for (url in results.local) {
-                plugin = results.local[url]
-                plugin.installedVersion = [plugin.minorVersion,
-                    plugin.microVersion,
-                    plugin.release || 0
-                ]
-                plugin.status = 'installed'
-                plugins.push(plugin)
-            }
-            self.effectBox('showPlugins', plugins)
-        }
-
-        var url = query.term ? '/effect/search/' : '/effect/list/'
-
-        $.ajax({
-            'method': 'GET',
-            'url': url,
-            'data': query,
-            'success': function (plugins) {
-                results.local = {}
-                for (i in plugins)
-                    results.local[plugins[i].url] = plugins[i]
-                if (results.cloud != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
-
-        $.ajax({
-            'method': 'GET',
-            'url': SITEURL + url,
-            'data': query,
-            'success': function (plugins) {
-                results.cloud = plugins
-                if (results.local != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
-    },
-
-    searchNotInstalled: function (query) {
-        /* Get an array of plugins from cloud and a dict of installed plugins by url.
-	   Show only those plugins not installed
-	 */
-        var self = $(this)
-        var results = {}
-        var plugin, i;
-
-        renderResults = function () {
-            var plugins = []
-            for (i in results.cloud) {
-                plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                plugin.status = 'blocked'
-                plugin.source = SITEURL.replace(/api\/?$/, '')
-                if (!results.local[plugin.url])
-                    plugins.push(plugin)
-            }
-            self.effectBox('showPlugins', plugins)
-        }
-
-        var url = query.term ? '/effect/search/' : '/effect/list/'
-
-        $.ajax({
-            'method': 'GET',
-            'url': url,
-            'data': query,
-            'success': function (plugins) {
-                results.local = {}
-                for (i in plugins)
-                    results.local[plugins[i].url] = plugins[i]
-                if (results.cloud != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
-
-        $.ajax({
-            'method': 'GET',
-            'url': SITEURL + url,
-            'data': query,
-            'success': function (plugins) {
-                results.cloud = plugins
-                if (results.local != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
-    },
-
     showPlugins: function (plugins) {
         var self = $(this)
         self.effectBox('cleanResults')
@@ -727,12 +604,40 @@ JqueryClass('cloudPluginBox', {
         }, options)
 
         self.data(options)
+        var searchbox = self.find('input[type=search]')
+
+        searchbox.cleanableInput()
+        self.data('searchbox', searchbox)
+
+        searchbox.keydown(function (e) {
+            if (e.keyCode == 13) {
+                self.cloudPluginBox('search')
+                return false
+            }
+        })
+        var lastKeyUp;
+        searchbox.keyup(function (e) {
+            if (e.keyCode == 13)
+                return
+            clearTimeout(lastKeyUp)
+            if (e.keyCode == 13)
+                return
+            lastKeyUp = setTimeout(function () {
+                self.cloudPluginBox('search')
+            }, 400);
+        })
+
+        var filters = self.find('input:radio[name=installed]')
+        self.data('filters', filters)
+
+        filters.click(function (e) {
+            self.cloudPluginBox('search')
+        })
 
         var results = {}
         self.data('results', results)
 
         self.data('category', null)
-        // CATEGORY TABS
         self.find('ul.categories li').click(function () {
             var category = $(this).attr('id').replace(/^cloud-plugin-tab-/, '')
             self.cloudPluginBox('setCategory', category)
@@ -751,15 +656,149 @@ JqueryClass('cloudPluginBox', {
         self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
         self.data('category', category)
     },
+    cleanResults: function () {
+        var self = $(this)
+        self.find('.plugins-wrapper').html('')
+        self.find('ul.categories li').each(function () {
+            $(this).html($(this).html().split(/\s/)[0])
+        });
+    },
+    searchAll: function (query) {
+        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by url.
+	   Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
+	   All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
+	 */
+        var self = $(this)
+        var results = {}
+        var plugins = []
+        var plugin, i;
+
+        renderResults = function () {
+            for (i in results.cloud) {
+                plugin = results.cloud[i]
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                plugin.source = SITEURL.replace(/api\/?$/, '')
+                if (results.local[plugin.url]) {
+                    plugin.installedVersion = [results.local[plugin.url].minorVersion,
+                        results.local[plugin.url].microVersion,
+                        results.local[plugin.url].release || 0
+                    ]
+                    delete results.local[plugin.url]
+                }
+                if (plugin.installedVersion == null) {
+                    plugin.status = 'blocked'
+                } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
+                    plugin.status = 'installed'
+                } else {
+                    plugin.status = 'outdated'
+                }
+                plugins.push(plugin)
+            }
+            for (url in results.local) {
+                plugin = results.local[url]
+                plugin.installedVersion = [plugin.minorVersion,
+                    plugin.microVersion,
+                    plugin.release || 0
+                ]
+                plugin.status = 'installed'
+                plugins.push(plugin)
+            }
+            self.cloudPluginBox('showPlugins', plugins)
+        }
+
+        var url = query.term ? '/effect/search/' : '/effect/list/'
+
+        $.ajax({
+            'method': 'GET',
+            'url': url,
+            'data': query,
+            'success': function (plugins) {
+                results.local = {}
+                for (i in plugins)
+                    results.local[plugins[i].url] = plugins[i]
+                if (results.cloud != null)
+                    renderResults()
+            },
+            'dataType': 'json'
+        })
+
+        $.ajax({
+            'method': 'GET',
+            'url': SITEURL + url,
+            'data': query,
+            'success': function (plugins) {
+                results.cloud = plugins
+                if (results.local != null)
+                    renderResults()
+            },
+            'dataType': 'json'
+        })
+    },
+
+    searchNotInstalled: function (query) {
+        /* Get an array of plugins from cloud and a dict of installed plugins by url.
+	   Show only those plugins not installed
+	 */
+        var self = $(this)
+        var results = {}
+        var plugin, i;
+
+        renderResults = function () {
+            var plugins = []
+            for (i in results.cloud) {
+                plugin = results.cloud[i]
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                plugin.status = 'blocked'
+                plugin.source = SITEURL.replace(/api\/?$/, '')
+                if (!results.local[plugin.url]) {
+                    plugins.push(plugin)
+                }
+            }
+            self.cloudPluginBox('showPlugins', plugins)
+        }
+
+        var url = query.term ? '/effect/search/' : '/effect/list/'
+
+        $.ajax({
+            'method': 'GET',
+            'url': url,
+            'data': query,
+            'success': function (plugins) {
+                results.local = {}
+                for (i in plugins)
+                    results.local[plugins[i].url] = plugins[i]
+                if (results.cloud != null)
+                    renderResults()
+            },
+            'dataType': 'json'
+        })
+
+        $.ajax({
+            'method': 'GET',
+            'url': SITEURL + url,
+            'data': query,
+            'success': function (plugins) {
+                results.cloud = plugins
+                if (results.local != null)
+                    renderResults()
+            },
+            'dataType': 'json'
+        })
+    },
 
     search: function () {
         var self = $(this)
-        //var searchbox = self.data('searchbox')
-        //var term = searchbox.val()
-        var term = ''
+        var searchbox = self.data('searchbox')
+        var checked_filter = self.find('input:radio[name=installed]:checked').val()
+        var term = searchbox.val()
         var query = {
             'term': term
         }
+
+        if (checked_filter == "all")
+            return self.cloudPluginBox('searchAll', query)
+        else if (checked_filter == "not-installed")
+            return self.cloudPluginBox('searchNotInstalled', query)
 
         var url = query.term ? '/effect/search/' : '/effect/list/'
         $.ajax({
@@ -767,46 +806,51 @@ JqueryClass('cloudPluginBox', {
             'url': url,
             'data': query,
             'success': function (plugins) {
-                plugins.sort(function (a, b) {
-                    if (a.label > b.label)
-                        return 1
-                    if (a.label < b.label)
-                        return -1
-                    return 0
-                })
-                var count = {
-                    'All': 0
-                }
-                var category
-
-                for (var i in plugins) {
-                    plugins[i].installedVersion = [plugins[i].minorVersion,
-                        plugins[i].microVersion,
-                        plugins[i].release || 0
-                    ]
-                    plugins[i].status = 'installed'
-                    self.cloudPluginBox('showPlugin', plugins[i])
-                    category = plugins[i].category[0]
-                    if (count[category] == null)
-                        count[category] = 1
-                    else
-                        count[category] += 1
-                    count.All += 1
-                }
-               self.data('plugins', plugins)
-
-                var currentCategory = self.data('category')
-                var empty = true
-                for (category in count) {
-                    var tab = self.find('#cloud-plugin-tab-' + category)
-                    tab.html(tab.html() + ' (' + count[category] + ')')
-                    if (category == currentCategory && count[category] > 0)
-                        empty = false;
-                }
-
+                self.cloudPluginBox('showPlugins', plugins)
             },
             'dataType': 'json'
         })
+    },
+
+    showPlugins: function (plugins) {
+        var self = $(this)
+        self.cloudPluginBox('cleanResults')
+        plugins.sort(function (a, b) {
+            if (a.label > b.label)
+                return 1
+            if (a.label < b.label)
+                return -1
+            return 0
+        })
+        var count = {
+            'All': 0
+        }
+        var category
+
+        for (var i in plugins) {
+            plugins[i].installedVersion = [plugins[i].minorVersion,
+                plugins[i].microVersion,
+                plugins[i].release || 0
+            ]
+            plugins[i].status = 'installed'
+            self.cloudPluginBox('showPlugin', plugins[i])
+            category = plugins[i].category[0]
+            if (count[category] == null)
+                count[category] = 1
+            else
+                count[category] += 1
+            count.All += 1
+        }
+       self.data('plugins', plugins)
+
+        var currentCategory = self.data('category')
+        var empty = true
+        for (category in count) {
+            var tab = self.find('#cloud-plugin-tab-' + category)
+            tab.html(tab.html() + ' (' + count[category] + ')')
+            if (category == currentCategory && count[category] > 0)
+                empty = false;
+        }
     },
 
     showPlugin: function (plugin) {
@@ -821,7 +865,7 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
         var plugin_data = {
-            source: "",
+            source: plugin.source ? plugin.source : "",
             label: plugin.name,
             urle: escape(plugin.url),
             author: plugin.gui.templateData ? plugin.gui.templateData.author : ""
