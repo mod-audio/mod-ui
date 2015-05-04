@@ -926,7 +926,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
 }
 
 #cloud-plugins-library .cloud-plugins .cloud-plugin .thumb {
-    height: 70%;
+    height: 60%;
 }
 
 #cloud-plugins-library .cloud-plugins .cloud-plugin .img {
@@ -951,10 +951,31 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     overflow:hidden;
     position:relative;
 }
+#cloud-plugins-library .cloud-plugins .cloud-plugin .status {
+    display:block;
+    height:16px;
+    margin:0 auto;
+    width:16px;
+}
+#cloud-plugins-library .cloud-plugins .cloud-plugin .status.installed {
+    background-image:url(../img/icn-installed.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
+#cloud-plugins-library .cloud-plugins .cloud-plugin .status.outdated {
+    background-image:url(../img/icn-outdated.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
+#cloud-plugins-library .cloud-plugins .cloud-plugin .status.blocked {
+    background-image:url(../img/icn-blocked.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+}
 #cloud-plugins-library .cloud-plugins .cloud-plugin .description {
     display:block;
     font-size:12px;
-    height:36px;
+    height:52px;
     line-height:1.5;
     overflow:hidden;
 }

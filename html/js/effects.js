@@ -806,6 +806,13 @@ JqueryClass('cloudPluginBox', {
             'url': url,
             'data': query,
             'success': function (plugins) {
+                for (var i = 0; i < plugins.length; i++) {
+                    plugins[i].installedVersion = [plugins[i].minorVersion,
+                        plugins[i].microVersion,
+                        plugins[i].release || 0
+                    ]
+                    plugins[i].status = 'installed'
+                }
                 self.cloudPluginBox('showPlugins', plugins)
             },
             'dataType': 'json'
@@ -828,11 +835,6 @@ JqueryClass('cloudPluginBox', {
         var category
 
         for (var i in plugins) {
-            plugins[i].installedVersion = [plugins[i].minorVersion,
-                plugins[i].microVersion,
-                plugins[i].release || 0
-            ]
-            plugins[i].status = 'installed'
             self.cloudPluginBox('showPlugin', plugins[i])
             category = plugins[i].category[0]
             if (count[category] == null)
@@ -868,6 +870,7 @@ JqueryClass('cloudPluginBox', {
             source: plugin.source ? plugin.source : "",
             label: plugin.name,
             urle: escape(plugin.url),
+            status: plugin.status,
             author: plugin.gui.templateData ? plugin.gui.templateData.author : ""
         }
         plugin.label = plugin.label || plugin.name
