@@ -1789,7 +1789,8 @@ JqueryClass('pedalboard', {
                     left: 0
                 })
         }
-        if (Object.keys(self.data('connectionManager').origIndex[output.attr('mod-port')]).length == 1) {
+        if (self.data('connectionManager').origIndex[output.attr('mod-port')] &&
+             self.data('connectionManager').origIndex[output.attr('mod-port')].length == 1) {
             output.addClass('output-disconnected')
             output.removeClass('output-connected')
         }
