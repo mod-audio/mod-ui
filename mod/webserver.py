@@ -645,7 +645,7 @@ class PedalboardSave(web.RequestHandler):
         except Pedalboard.ValidationError as e:
             self.write(json.dumps({ 'ok': False, 'error': str(e) }))
             self.finish()
-            raise StopIteration
+            return
 
         SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
 

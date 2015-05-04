@@ -216,6 +216,7 @@ class Session(object):
             self._save_waiter()
         if not os.path.exists(bundlepath):
             raise Pedalboard.ValidationError("failed to find testing pedalboard, did you save it like I asked?")
+        # FIXME
         os.system("sed -i 's|<ingen:/root/screenshot.png>|<screenshot.png>|' ~/.lv2/testing.ingen/testing.ttl")
         os.system("sed -i 's|<ingen:/root/thumbnail.png>|<thumbnail.png>|' ~/.lv2/testing.ingen/testing.ttl")
         return bundlepath
