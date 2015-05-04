@@ -336,15 +336,23 @@ function Desktop(elements) {
                 dataType: 'json'
             })
         },
-        loadPedalboard: function (pedalboard) {
+        loadPedalboard: function (pb_url) {
             self.reset(function () {
-            /*
-                self.pedalboard.pedalboard('unserialize', pedalboard.pedalboard,
-                    function () {
+                $.ajax({
+                    url: '/pedalboard/load_web',
+                    type: 'POST',
+                    data: {
+                        url: pb_url
+                    },
+                    success: function () {
                         self.pedalboardModified = true
                         self.windowManager.closeWindows()
-                    }, false)
-            */
+                    },
+                    error: function () {
+                        new Bug("Couldn't load pedalboard")
+                    },
+                    dataType: 'json'
+                });
             })
         },
         trigger: elements.socialTrigger,
