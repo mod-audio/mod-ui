@@ -645,12 +645,28 @@ class PedalboardSave(web.RequestHandler):
         except Pedalboard.ValidationError as e:
             self.write(json.dumps({ 'ok': False, 'error': str(e) }))
             self.finish()
-            raise StopIteration
+            return
 
         SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
+        self.finish()
+
+class PedalboardLoadWeb(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        url = self.get_argument('url')
+
+        # TODO:
+        # 1. download file
+        # 2. extract to ~/.lv2 (careful not overriding any existing pb)
+        # 3. make lv2.W load the new bundle
+        # 4. load the pb (via ingen or mod-app hacks)
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps({ 'ok': True }, default=json_handler))
         self.finish()
 
 class PedalboardLoad(web.RequestHandler):
@@ -1140,6 +1156,7 @@ application = web.Application(
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
             (r"/pedalboard/save", PedalboardSave),
+            (r"/pedalboard/load_web", PedalboardLoadWeb),
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
             (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),

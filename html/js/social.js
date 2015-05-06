@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -76,9 +76,9 @@ JqueryClass('socialWindow', {
     renderFeed: function (pedalboards, canvas) {
         var self = $(this)
         var pb, i, context, content;
-        var pbFactory = function (pedalboard) {
+        var pbLoad = function (pb_url) {
             return function () {
-                self.data('loadPedalboard')(pedalboard)
+                self.data('loadPedalboard')(pb_url)
             }
         }
         for (i = 0; i < pedalboards.length; i++) {
@@ -87,7 +87,7 @@ JqueryClass('socialWindow', {
             // FIXME
             desktop.userSession.getUserData(pb.user_id, function (data) {
                 context = {
-                    cloud: SITEURLNEW,
+                    cloud:       SITEURLNEW,
                     avatar_href: data.avatar_href,
                     user_name:   data.name
                 }
@@ -97,7 +97,7 @@ JqueryClass('socialWindow', {
                 $.extend(context, pb)
 
                 content = $(Mustache.render(TEMPLATES.cloud_feed, context))
-                //content.find('.js-pedalboard-' + pb['id']).click(pbFactory(pb))
+                content.find('.js-pedalboard-' + pb['id']).click(pbLoad(pb.href))
                 content.find('div.spec').each(function () {
                     var spec = $(this)
                     if (parseInt(spec.find('span').html()) == 0) {
