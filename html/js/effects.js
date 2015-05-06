@@ -28,6 +28,9 @@
  * - results: dictionary containing detailed data of all plugins
  *            displayed
  */
+
+var NEW_CLOUD_API = "http://social.dev.portalmod.com/api/lv2/plugins"
+
 JqueryClass('effectBox', {
     init: function (options) {
         var self = $(this)
@@ -677,7 +680,6 @@ JqueryClass('cloudPluginBox', {
             for (i in results.cloud) {
                 plugin = results.cloud[i]
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                plugin.source = SITEURL.replace(/api\/?$/, '')
                 if (results.local[plugin.url]) {
                     plugin.installedVersion = [results.local[plugin.url].minorVersion,
                         results.local[plugin.url].microVersion,
@@ -724,7 +726,7 @@ JqueryClass('cloudPluginBox', {
 
         $.ajax({
             'method': 'GET',
-            'url': SITEURL + url,
+            'url': NEW_CLOUD_API,
             'data': query,
             'success': function (plugins) {
                 results.cloud = plugins
@@ -775,7 +777,7 @@ JqueryClass('cloudPluginBox', {
 
         $.ajax({
             'method': 'GET',
-            'url': SITEURL + url,
+            'url': NEW_CLOUD_API,
             'data': query,
             'success': function (plugins) {
                 results.cloud = plugins
@@ -866,14 +868,15 @@ JqueryClass('cloudPluginBox', {
     render: function (plugin, canvas) {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
+        var urle = escape(plugin.url)
+        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
         var plugin_data = {
-            source: plugin.source ? plugin.source : "",
-            label: plugin.name,
-            urle: escape(plugin.url),
+            thumbnail_href: thumbnail_href,
+            urle: urle,
             status: plugin.status,
-            author: plugin.gui.templateData ? plugin.gui.templateData.author : ""
+            author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
+            label: plugin.label || plugin.name
         }
-        plugin.label = plugin.label || plugin.name
 
         var rendered = $(Mustache.render(template, plugin_data))
 
