@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,16 +25,16 @@ from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,
 from mod import indexing
 
 def install_bundle(uid, callback):
-    filename = join(PLUGIN_INSTALLATION_TMP_DIR, '%s.tgz' % uid)
+    filename = join(PLUGIN_INSTALLATION_TMP_DIR, '%s' % uid)
     assert exists(filename)
-
+    print("HERE: ", PLUGIN_INSTALLATION_TMP_DIR)
     proc = subprocess.Popen(['tar','zxf', filename],
                             cwd=PLUGIN_INSTALLATION_TMP_DIR,
                             stdout=subprocess.PIPE)
 
 
     ioloop = IOLoop.instance()
-    
+
     def install(fileno, event):
         if proc.poll() is None:
             return
@@ -62,7 +62,7 @@ def install_all_bundles():
         #shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
         #bundle = lv2.Bundle(bundle_path)
         #effects += extract_effects_from_bundle(bundle)
-        
+
     return effects
 
 def extract_effects_from_bundle(bundle):
@@ -75,7 +75,7 @@ def extract_effects_from_bundle(bundle):
         open(effect_path, 'w').write(json.dumps(data))
         effects.append(data['_id'])
     return effects
-        
+
 
 def remove_old_version(url):
     """
@@ -113,4 +113,4 @@ def uninstall_bundle(package):
         # and marking as broken
 
     return True
-    
+

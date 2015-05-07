@@ -52,7 +52,7 @@ class FileSender(tornado.web.RequestHandler):
         else:
             return self.get_chunk(filename, int(chunk_number))
 
-    
+
     def get_torrent(self, filename):
         self.set_header('Access-Control-Allow-Origin', self.request.headers['Origin'])
         self.set_header('Content-Type', 'application/json')
@@ -89,7 +89,7 @@ class FileSender(tornado.web.RequestHandler):
                 cache_file = base_cache_file
 
             filepath = os.path.join(self.base_dir, filename)
-            if (os.path.exists(cache_file) and 
+            if (os.path.exists(cache_file) and
                 os.path.getmtime(cache_file) == os.path.getmtime(filepath)
                 ):
                 print("getting from %s" % cache_file)
@@ -110,7 +110,7 @@ class FileSender(tornado.web.RequestHandler):
             mtime = os.path.getmtime(filepath)
             os.utime(base_cache_file, (mtime, mtime))
             os.utime(gzip_cache_file, (mtime, mtime))
-        
+
             if supports_gzip:
                 data = open(gzip_cache_file).read()
 
@@ -129,7 +129,7 @@ class GridFileSender(FileSender):
 
     def torrent(self, objectid):
         return GridTorrentGenerator(self.model(objectid))
-        
+
 
 class FileReceiver(tornado.web.RequestHandler):
     @property
@@ -164,11 +164,11 @@ class FileReceiver(tornado.web.RequestHandler):
         """
         This Handler receives a torrent file and returns a session id to browser, so that
         chunks of this file may be uploaded through ChunkUploader using this session id
-        
+
         Subclass must implement download_tmp_dir, remote_public_key properties and destination_dir
         """
         torrent_data = self.request.body.decode("utf-8", errors="ignore")
-        receiver = TorrentReceiver(download_tmp_dir=self.download_tmp_dir, 
+        receiver = TorrentReceiver(download_tmp_dir=self.download_tmp_dir,
                                    remote_public_key=self.remote_public_key,
                                    destination_dir=self.destination_dir)
 
@@ -180,11 +180,11 @@ class FileReceiver(tornado.web.RequestHandler):
                                     }))
             self.finish()
             return
-                        
+
         info = {
             'ok': True,
             # using int instead of boolean saves bandwidth
-            'status': [ int(i) for i in receiver.status ], 
+            'status': [ int(i) for i in receiver.status ],
             'id': receiver.torrent_id,
             }
 
@@ -193,7 +193,7 @@ class FileReceiver(tornado.web.RequestHandler):
             info['result'] = self.result
             self.write(json.dumps(info))
             self.finish()
-            
+
         if receiver.complete:
             try:
                 receiver.torrent.pop('data')
@@ -203,16 +203,16 @@ class FileReceiver(tornado.web.RequestHandler):
             self.process_file(receiver.torrent, callback=finish)
         else:
             finish()
-        
+
     def receive_chunk(self, torrent_id, chunk_number):
         """
-        This Handler receives chunks of a file being uploaded, previously registered 
+        This Handler receives chunks of a file being uploaded, previously registered
         through FileUploader.
-        
+
         Subclass must implement download_tmp_dir and destination_dir property
         """
         receiver = TorrentReceiver(torrent_id,
-                                   download_tmp_dir=self.download_tmp_dir, 
+                                   download_tmp_dir=self.download_tmp_dir,
                                    destination_dir=self.destination_dir)
         receiver.receive(chunk_number, self.request.body)
         response = { 'torrent_id': torrent_id,
@@ -226,14 +226,14 @@ class FileReceiver(tornado.web.RequestHandler):
             response['result'] = self.result
             self.write(json.dumps(response))
             self.finish()
-            
+
         if receiver.complete:
             response['complete'] = True
             receiver.finish()
             self.process_file(receiver.torrent, callback=finish)
         else:
             finish()
-        
+
 
     def process_file(self, file_data, callback):
         """

@@ -589,20 +589,14 @@ JqueryClass('cloudPluginBox', {
 
         options = $.extend({
             resultCanvas: self.find('.js-cloud-plugins'),
-            list: function (callback) {
-                callback([])
+            removePlugin: function (plugin, callback) {
+                callback(true)
             },
-            search: function (local, query, callback) {
-                callback([])
+            installPlugin: function (plugin, callback) {
+                callback(plugin)
             },
-            remove: function (pedalboard, callback) {
-                callback()
-            },
-            load: function (pedalboardId, callback) {
-                callback()
-            },
-            duplicate: function (pedalboard, callback) {
-                callback(pedalboard)
+            upgradePlugin: function (plugin, callback) {
+                callback(plugin)
             }
         }, options)
 
@@ -865,6 +859,108 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-' + plugin.category[0]))
     },
 
+    showPluginInfo: function (plugin) {
+        var self = $(this)
+        console.log(plugin)
+        var urle = escape(plugin.url)
+        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
+        var screenshot_href = plugin.screenshot_href ? plugin.screenshot_href : "/effect/image/screenshot.png?url=" + urle
+
+        var plugin_data = {
+            thumbnail_href: thumbnail_href,
+            screenshot_href: screenshot_href,
+            category: plugin.category,
+            installed_version: version(plugin.installedVersion),
+            latest_version: version(plugin.latestVersion),
+            package_name: "TODO",//plugin.package.replace(/\.lv2$/, ''),
+            urle: urle,
+            status: plugin.status,
+            author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
+            label: plugin.label || plugin.name
+        }
+
+        var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
+
+        // The remove button will remove the plugin, close window and re-render the plugins
+        // without the removed one
+        if (plugin.installedVersion) {
+            info.find('.js-remove').click(function () {
+                self.data('removePlugin')(plugin, function (ok) {
+                    if (ok) {
+                        info.window('close')
+                        delete plugins[index].installedVersion
+                        plugins[index].status = 'blocked'
+                        self.cloudPluginBox('showPlugins', plugins)
+                    }
+                })
+            }).show()
+        } else {
+            info.find('.js-installed-version').hide()
+            info.find('.js-install').show().click(function () {
+                // Install plugin
+                self.data('installPlugin')(plugin, function (plugin) {
+                    if (plugin) {
+                        plugins[index].installedVersion = plugins[index].latestVersion
+                        if (info.is(':visible')) {
+                            info.remove()
+                            self.cloudPluginBox('showPluginInfo', plugin)
+                        }
+                    }
+                })
+            })
+        }
+
+        var checkVersion = function () {
+            if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
+                info.find('.js-upgrade').click(function () {
+                    // Do the upgrade
+                    self.data('upgradePlugin')(plugin, function (plugin) {
+                        if (plugin) {
+                            plugin.installedVersion = plugins[index].latestVersion
+                            plugin.latestVersion = plugins[index].latestVersion
+                            plugins[index] = plugin
+                            if (info.is(':visible')) {
+                                info.remove()
+                                self.effectBox('showPluginInfo', plugin)
+                            }
+                        }
+                    })
+                }).show()
+            }
+        }
+
+        if (plugin.latestVersion)
+            checkVersion()
+        else {
+            $.ajax({
+                url: NEW_CLOUD_API,
+                data: {
+                    url: plugin.url
+                },
+                success: function (pluginData) {
+                    plugin.latestVersion = [pluginData.minorVersion,
+                        pluginData.microVersion,
+                        pluginData.release
+                    ]
+                    info.find('.js-latest-version span').html(version(plugin.latestVersion))
+                    checkVersion()
+                },
+                dataType: 'json'
+            })
+        }
+
+        info.window({
+            windowManager: self.data('windowManager'),
+            close: function () {
+                info.remove()
+                self.data('info', null)
+            }
+        })
+        info.appendTo($('body'))
+        info.window('open')
+        self.data('info', info)
+    },
+
     render: function (plugin, canvas) {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
@@ -879,6 +975,10 @@ JqueryClass('cloudPluginBox', {
         }
 
         var rendered = $(Mustache.render(template, plugin_data))
+        rendered.click(function () {
+            self.cloudPluginBox('showPluginInfo', plugin)
+        })
+
 
         /*
         var load = function () {

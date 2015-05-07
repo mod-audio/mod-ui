@@ -21,7 +21,7 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import time
+import time, uuid
 from datetime import timedelta
 from io import StringIO
 try:
@@ -64,6 +64,43 @@ from mod import register
 from mod import check_environment
 
 SCREENSHOT_GENERATOR = ScreenshotGenerator()
+
+class SimpleFileReceiver(web.RequestHandler):
+    @property
+    def download_tmp_dir(self):
+        raise NotImplemented
+    @property
+    def remote_public_key(self):
+        raise NotImplemented
+    @property
+    def destination_dir(self):
+        raise NotImplemented
+
+    @classmethod
+    def urls(cls, path):
+        return [
+            (r"/%s/$" % path, cls),
+            #(r"/%s/([a-f0-9]{32})/(\d+)$" % path, cls),
+            #(r"/%s/([a-f0-9]{40})/(finish)$" % path, cls),
+            ]
+
+    @web.asynchronous
+    @gen.engine
+    def post(self, sessionid=None, chunk_number=None):
+        # self.result can be set by subclass in process_file,
+        # so that answer will be returned to browser
+        name = str(uuid.uuid4())
+        fh = open(os.path.join(self.destination_dir, name), 'wb')
+        fh.write(self.request.body)
+        fh.close()
+        data = dict(filename=name)
+        yield gen.Task(self.process_file, data)
+        info = {'ok': True}
+        self.write(json.dumps(info))
+        self.finish()
+
+    def process_file(self, data, callback=lambda:None):
+        """to be overriden"""
 
 class UpgradeSync(fileserver.FileReceiver):
     download_tmp_dir = DOWNLOAD_TMP_DIR
@@ -116,16 +153,15 @@ class BluetoothSetPin(web.RequestHandler):
             self.write(json.dumps(True))
         self.finish()
 
-class EffectInstaller(fileserver.FileReceiver):
-    download_tmp_dir = DOWNLOAD_TMP_DIR
+class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
     destination_dir = PLUGIN_INSTALLATION_TMP_DIR
 
-    def process_file(self, data, callback):
+    def process_file(self, data, callback=lambda:None):
         def on_finish(result):
             self.result = result
             callback()
-        install_bundle(data['_id'], on_finish)
+        install_bundle(data['filename'], on_finish)
 
 class EffectSetLocalVariable(web.RequestHandler):
     def post(self, var):
