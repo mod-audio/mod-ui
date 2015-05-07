@@ -1,0 +1,28 @@
+<div class="plugin-info">
+    <div class="container-fluid box">
+        <span class="js-close alignright btn btn-mini btn-danger">Close</span>
+        <div class="row-fluid clearfix">
+            <div class="span10 offset1 clearfix">
+                <div class="span3 screenshot">
+                    <img src="{{screenshot_href}}">
+                </div>
+                
+                <div class="span9">
+                    <header>
+                        <h1>{{label}}</h1>
+			            <p>{{category.0}}</p>
+                        <p class="version">
+                            <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span></span>
+                            <br/>
+                            <span class="js-installed-version">Installed Version: <span class="bold">{{installed_version}}</span></span>
+                            <br/>
+                            <button class="js-install btn btn-info btn-mini hidden">Install</button>
+                            <button class="js-upgrade btn btn-info btn-mini hidden">Upgrade</button>
+                            <button class="js-remove btn btn-danger btn-mini hidden">Remove</button>
+                        </p>
+                    </header>
+                    <p><a href="http://wiki.portalmod.com/wiki/Plugins/{{package_name}}" target="_blank">More info at <b>{{package_name}}</b>'s wiki page</a></p>
+            </div>
+        </div>
+    </div>
+</div>
