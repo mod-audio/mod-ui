@@ -134,16 +134,16 @@ def get_pedalboard_info(bundle):
 
     # define the needed stuff
     rdf = NS(lilv.LILV_NS_RDF, world)
-    lv2core = NS(lilv.LILV_NS_LV2, world)
     ingen = NS('http://drobilla.net/ns/ingen#', world)
-    schema = NS("http://schema.org/", world)
+    lv2core = NS(lilv.LILV_NS_LV2, world)
+    modpedal = NS("http://portalmod.com/ns/modpedal#", world)
 
     # check if the plugin is a pedalboard
     def fill_in_type(node):
         return node.as_string()
     plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
 
-    if "http://portalmod.com/ns/mod#Pedalboard" not in plugin_types:
+    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
         raise Exception('get_info_from_lv2_bundle(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     # let's get all the info now
@@ -155,11 +155,11 @@ def get_pedalboard_info(bundle):
         'author': plugin.get_author_name().as_string() or '', # Might be empty
         'uri':    plugin.get_uri().as_string(),
         'size': {
-            'width':  plugin.get_value(schema.width).get_first().as_int(),
-            'height': plugin.get_value(schema.height).get_first().as_int(),
+            'width':  plugin.get_value(modpedal.width).get_first().as_int(),
+            'height': plugin.get_value(modpedal.height).get_first().as_int(),
         },
-        'screenshot': os.path.basename(plugin.get_value(schema.screenshot).get_first().as_string()),
-        'thumbnail':  os.path.basename(plugin.get_value(schema.thumbnail).get_first().as_string()),
+        'screenshot': os.path.basename(plugin.get_value(modpedal.screenshot).get_first().as_string()),
+        'thumbnail':  os.path.basename(plugin.get_value(modpedal.thumbnail).get_first().as_string()),
         'connections': [], # we save this info later
         'plugins':     []  # we save this info later
     }
@@ -184,8 +184,6 @@ def get_pedalboard_info(bundle):
             "source": lilv.lilv_node_as_string(tail).replace("file://","",1).replace(bundle,"",1),
             "target": lilv.lilv_node_as_string(head).replace("file://","",1).replace(bundle,"",1)
         })
-
-    print(ingenarcs)
 
     # plugins
     blocks = plugin.get_value(ingen.block)
