@@ -46,6 +46,9 @@ ingen:canvasY %f
         self.set("/", "<http://portalmod.com/ns/modpedal#screenshot>", "<screenshot.png>", callback)
         self.set("/", "<http://portalmod.com/ns/modpedal#thumbnail>", "<thumbnail.png>", callback)
 
+    def set_pedalboard_name(self, name, callback=lambda r:r):
+        self.set("/", "<http://portalmod.com/ns/modpedal#name>", '"%s"' % name, callback)
+
     def set_pedalboard_size(self, width, height, callback=lambda r:r):
         self.set("/", "<http://portalmod.com/ns/modpedal#width>", width, callback)
         self.set("/", "<http://portalmod.com/ns/modpedal#height>", height, callback)

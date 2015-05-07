@@ -211,6 +211,7 @@ class Session(object):
         remove_all_plugins()
 
     def save_pedalboard(self, title, asNew):
+        self.host.set_pedalboard_name(title)
         bundlepath = os.path.expanduser("~/.lv2/testing.ingen")
         if self._save_waiter is not None:
             self._save_waiter()
