@@ -358,7 +358,7 @@ JqueryClass('pedalboard', {
         /*
          * Unserialization will first call all application callbacks and after everything is done,
          * build the pedalboard in screen.
-         * To do that, it takes two queues to work on (instances and connections), and as it's working
+         * To do that, it takes 3 queues to work on (plugins, hw-ports, and connections), and as it's working
          * on them, it queues actions to be done when everything is ready.
          * To work on the instances and connections queues, it uses two asynchronous recursive functions
          * that will process next element element and gives itself as callback for the application.
@@ -381,7 +381,6 @@ JqueryClass('pedalboard', {
         }
 
         var addressingErrors = []
-        //var instanceNameIndex = {}
 
         // Queue closures to all actions needed after everything is loaded
         var finalActions = []
@@ -394,8 +393,7 @@ JqueryClass('pedalboard', {
                 verboseErrors = []
                 var error
                 for (var i = 0; i < addressingErrors.length; i++) {
-                    //error = addressingErrors[i]
-                    //verboseErrors.push(instanceNameIndex[error[0]] + "/" + error[1])
+                    verboseErrors.push(addressingErrors[i])
                 }
                 message = 'The following parameters could not be addressed: ' + verboseErrors.join(', ')
                 new Notification('warn', message)
@@ -411,7 +409,7 @@ JqueryClass('pedalboard', {
                 ourCallback()
         }
 
-        var loadPlugin, connect
+        var loadPlugin, createHardwarePorts, connect
 
         // Loads the next plugin in queue. Gets as parameter a data structure containing
         // information on all plugins
@@ -419,18 +417,18 @@ JqueryClass('pedalboard', {
 
             var plugin = data.instances.pop()
             if (plugin == null)
-            // Queue is empty, let's load connections now
-                return connect()
+                // Queue is empty, let's create the hardware ports now
+                return createHardwarePorts()
 
             var pluginData = pluginsData[plugin.url]
             var instance   = self.pedalboard('generateInstance', pluginData.url)
             console.log(instance)
-            //instanceNameIndex[plugin.instance] = pluginData.name
 
             self.data('pluginLoad')(plugin.url, instance, plugin.x, plugin.y,
                 function (ok) {
                     if (!ok)
                         return
+                    // TODO
                     for (var symbol in plugin.values) {
                         value = plugin.values[symbol]
                         self.data('pluginParameterChange')(instance+"/"+symbol, value,
@@ -452,15 +450,37 @@ JqueryClass('pedalboard', {
                 })
         }
 
+        // Create needed hardware ports
+        createHardwarePorts = function () {
+            // TODO - add ports as needed
+            var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
+            var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
+            var outputM = $('<div class="hardware-output" title="Hardware MIDI Input">')
+            var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
+            var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
+            var inputM = $('<div class="hardware-input" title="Hardware MIDI Output">')
+
+            self.pedalboard('addHardwareOutput', outputL, 'audio_in_1', 'audio')
+            self.pedalboard('addHardwareOutput', outputR, 'audio_in_2', 'audio')
+            self.pedalboard('addHardwareOutput', outputM, 'control_in', 'midi')
+            self.pedalboard('addHardwareInput', inputL, 'audio_out_1', 'audio')
+            self.pedalboard('addHardwareInput', inputR, 'audio_out_2', 'audio')
+            self.pedalboard('addHardwareInput', inputM, 'control_out', 'midi')
+
+            // Queue is empty, let's load connections now
+            self.pedalboard('positionHardwarePorts')
+            return connect()
+        }
+
         // Loads next connection in queue
         var connect = function () {
-            var con = data.connections.pop()
-            if (con == null)
-            // Queue is empty, let's load everything
+            var conn = data.connections.pop()
+            if (conn == null)
+                // Queue is empty, let's load everything
                 return finish()
 
-            var source = con[0]
-            var target = con[1]
+            var source = conn.source
+            var target = conn.target
 
             self.data('portConnect')(source, target,
                 function (ok) {
@@ -470,17 +490,11 @@ JqueryClass('pedalboard', {
                         var plugins = $.extend({
                             'system': self
                         }, self.data('plugins'))
-                        /*
-                        var orig = plugins[fromInstance]
-                        var dest = plugins[toInstance]
-                        if (!orig || !dest)
-                            return
-                        var output = orig.find('[mod-port-symbol=' + fromSymbol + ']')
-                        var input = dest.find('[mod-port-symbol=' + toSymbol + ']')
 
-                        var jack = output.find('[mod-role=output-jack]')
-                        self.pedalboard('connect', jack, input)
-                        */
+                        var output = $('[mod-port="' + source + '"]')
+                        var  input = $('[mod-port="' + target + '"]')
+
+                        self.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                     })
                     connect()
                 })

@@ -8,7 +8,7 @@
 		  {{/video}}
                   {{^video}}
                     <a class="js-pedalboard-{{id}}">
-                        <img src="{{thumbnail_href}}" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
+                        <img src="{{screenshot_href}}" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
                     </a>
                   {{/video}}
                 </p>
@@ -27,6 +27,23 @@
                             <span>{{hardware_connections.audio_outputs}}</span>
                         </div>
                     </div>
+                    <div class="spec clearfix">
+                        <!-- FIXME icon for MIDI in and out is the same-->
+                        <img src="img/cloud/icn-techspecs-midiin.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.midi_inputs}}</span>
+                        </div>
+                    </div>
+                    <div class="spec clearfix">
+                        <!-- FIXME icon for MIDI in and out is the same-->
+                        <img src="img/cloud/icn-techspecs-midiin.png"/>
+                        <div class="number clearfix">
+                            <div class="arrow-left"></div>
+                            <span>{{hardware_connections.midi_outputs}}</span>
+                        </div>
+                    </div>
+                    <!--
                     <div class="spec clearfix">
                         <img src="img/cloud/icn-techspecs-rotary.png"/>
                         <div class="number clearfix">
@@ -48,13 +65,7 @@
                             <span>{{hardware_connections.pedal_addressings}}</span>
                         </div>
                     </div>
-                    <div class="spec clearfix">
-                        <img src="img/cloud/icn-techspecs-midiin.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.midi_inputs}}</span>
-                        </div>
-                    </div>
+                    -->
                 </div>
 		<button class="pedalboard-load btn btn-primary js-pedalboard-{{id}}">Try</button>
                 <!--<div class="description">{{description}}</div>-->

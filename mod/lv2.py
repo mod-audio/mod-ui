@@ -41,8 +41,8 @@ pset = NS("http://lv2plug.in/ns/ext/presets#")
 midi = NS("http://lv2plug.in/ns/ext/midi#")
 pprops = NS("http://lv2plug.in/ns/ext/port-props#")
 time = NS("http://lv2plug.in/ns/ext/time#")
-mod = NS("http://portalmod.com/ns/mod#")
 modgui = NS("http://portalmod.com/ns/modgui#")
+modpedal = NS("http://portalmod.com/ns/modpedal#")
 
 def get_category(nodes):
     category_indexes = {
@@ -134,36 +134,142 @@ def get_pedalboard_info(bundle):
 
     # define the needed stuff
     rdf = NS(lilv.LILV_NS_RDF, world)
-    lv2core = NS(lilv.LILV_NS_LV2, world)
     ingen = NS('http://drobilla.net/ns/ingen#', world)
-    schema = NS("http://schema.org/", world)
+    lv2core = NS(lilv.LILV_NS_LV2, world)
+    modpedal = NS("http://portalmod.com/ns/modpedal#", world)
 
     # check if the plugin is a pedalboard
     def fill_in_type(node):
         return node.as_string()
     plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
 
-    if "http://portalmod.com/ns/mod#Pedalboard" not in plugin_types:
+    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
         raise Exception('get_info_from_lv2_bundle(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     # let's get all the info now
-    ingenplugins = []
+    ingenarcs   = []
+    ingenblocks = []
 
     info = {
-        'name':   plugin.get_name().as_string(),
+        'name':   plugin.get_value(modpedal.name).get_first().as_string(),
         'author': plugin.get_author_name().as_string() or '', # Might be empty
         'uri':    plugin.get_uri().as_string(),
-        'size': {
-            'width':  plugin.get_value(schema.width).get_first().as_int(),
-            'height': plugin.get_value(schema.height).get_first().as_int(),
+        'hardware': {
+            # we save this info later
+            'audio': {
+                'ins': 0,
+                'outs': 0
+             },
+            'cv': {
+                'ins': 0,
+                'outs': 0
+             },
+            'midi': {
+                'ins': 0,
+                'outs': 0
+             }
         },
-        'screenshot': os.path.basename(plugin.get_value(schema.screenshot).get_first().as_string()),
-        'thumbnail':  os.path.basename(plugin.get_value(schema.thumbnail).get_first().as_string()),
-        'plugins':    [] # we save this info later
+        'size': {
+            'width':  plugin.get_value(modpedal.width).get_first().as_int(),
+            'height': plugin.get_value(modpedal.height).get_first().as_int(),
+        },
+        'screenshot': os.path.basename(plugin.get_value(modpedal.screenshot).get_first().as_string()),
+        'thumbnail':  os.path.basename(plugin.get_value(modpedal.thumbnail).get_first().as_string()),
+        'connections': [], # we save this info later
+        'plugins':     []  # we save this info later
     }
 
-    blocks = plugin.get_value(ingen.block)
+    # connections
+    arcs = plugin.get_value(ingen.arc)
+    it = arcs.begin()
+    while not arcs.is_end(it):
+        arc = arcs.get(it)
+        it  = arcs.next(it)
 
+        if arc.me is None:
+            continue
+
+        head = lilv.lilv_world_get(world.me, arc.me, ingen.head.me, None)
+        tail = lilv.lilv_world_get(world.me, arc.me, ingen.tail.me, None)
+
+        if head is None or tail is None:
+            continue
+
+        ingenarcs.append({
+            "source": lilv.lilv_node_as_string(tail).replace("file://","",1).replace(bundle,"",1),
+            "target": lilv.lilv_node_as_string(head).replace("file://","",1).replace(bundle,"",1)
+        })
+
+    # hardware ports
+    handled_port_uris = []
+    ports = plugin.get_value(lv2core.port)
+    it = ports.begin()
+    while not ports.is_end(it):
+        port = ports.get(it)
+        it   = ports.next(it)
+
+        if port.me is None:
+            continue
+
+        # check if we already handled this port
+        port_uri = port.as_uri()
+        if port_uri in handled_port_uris:
+            continue
+        handled_port_uris.append(port_uri)
+
+        # get types
+        port_types = lilv.lilv_world_find_nodes(world.me, port.me, rdf.type_.me, None)
+
+        if port_types is None:
+            continue
+
+        portDir  = "" # input or output
+        portType = "" # atom, audio or cv
+
+        it2 = lilv.lilv_nodes_begin(port_types)
+        while not lilv.lilv_nodes_is_end(port_types, it2):
+            port_type = lilv.lilv_nodes_get(port_types, it2)
+            it2 = lilv.lilv_nodes_next(port_types, it2)
+
+            if port_type is None:
+                continue
+
+            port_type_uri = lilv.lilv_node_as_uri(port_type)
+
+            if port_type_uri == "http://lv2plug.in/ns/lv2core#InputPort":
+                portDir = "input"
+            elif port_type_uri == "http://lv2plug.in/ns/lv2core#OutputPort":
+                portDir = "output"
+            elif port_type_uri == "http://lv2plug.in/ns/lv2core#AudioPort":
+                portType = "audio"
+            elif port_type_uri == "http://lv2plug.in/ns/lv2core#CVPort":
+                portType = "cv"
+            elif port_type_uri == "http://lv2plug.in/ns/ext/atom#AtomPort":
+                portType = "atom"
+
+        if not (portDir or portType):
+            continue
+
+        if portType == "audio":
+            if portDir == "input":
+                info['hardware']['audio']['ins'] += 1
+            else:
+                info['hardware']['audio']['outs'] += 1
+
+        elif portType == "atom":
+            if portDir == "input":
+                info['hardware']['midi']['ins'] += 1
+            else:
+                info['hardware']['midi']['outs'] += 1
+
+        elif portType == "cv":
+            if portDir == "input":
+                info['hardware']['cv']['ins'] += 1
+            else:
+                info['hardware']['cv']['outs'] += 1
+
+    # plugins
+    blocks = plugin.get_value(ingen.block)
     it = blocks.begin()
     while not blocks.is_end(it):
         block = blocks.get(it)
@@ -176,11 +282,22 @@ def get_pedalboard_info(bundle):
         protouri2 = lilv.lilv_world_get(world.me, block.me, ingen.prototype.me, None)
 
         if protouri1 is not None:
-            ingenplugins.append(lilv.lilv_node_as_uri(protouri1))
+            proto = protouri1
         elif protouri2 is not None:
-            ingenplugins.append(lilv.lilv_node_as_uri(protouri2))
+            proto = protouri2
+        else:
+            continue
 
-    info['plugins'] = ingenplugins
+        uri = lilv.lilv_node_as_uri(proto)
+
+        ingenblocks.append({
+            "uri": uri,
+            "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasX.me, None)),
+            "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasY.me, None))
+        })
+
+    info['connections'] = ingenarcs
+    info['plugins']     = ingenblocks
 
     return info
 
@@ -194,19 +311,23 @@ def get_pedalboards():
         return list(LILV_FOREACH(presets, get_preset_data))
 
     pedalboards = []
-    tester = mod.Pedalboard
 
     for plugin in PLUGINS:
-        t = plugin.get_value(tester).get_first()
+        # check if the plugin is a pedalboard
+        def fill_in_type(node):
+            return node.as_string()
+        plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
 
-        if t.me is None:
+        if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
             continue
 
-        name = plugin.get_name().as_string()
-        uri  = plugin.get_uri().as_string()
-        thum = plugin.get_value(schema.thumbnail).get_first().as_string()
-
-        pedalboards.append((name, uri, thum, get_presets(plugin)))
+        pedalboards.append({
+            'uri': plugin.get_uri().as_string(),
+            'name': plugin.get_value(modpedal.name).get_first().as_string(),
+            'screenshot': plugin.get_value(modpedal.screenshot).get_first().as_string(),
+            'thumbnail': plugin.get_value(modpedal.thumbnail).get_first().as_string(),
+            'presets': get_presets(plugin)
+        })
 
     return pedalboards
 

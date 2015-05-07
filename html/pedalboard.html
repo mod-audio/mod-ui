@@ -75,21 +75,6 @@
              }
           })
 
-          // Add hardware ports
-          var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
-          var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
-          var outputM = $('<div class="hardware-output" title="Hardware MIDI Input">')
-          var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
-          var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
-
-          el.pedalboard('addHardwareOutput', outputL, 'capture_1', 'audio')
-          el.pedalboard('addHardwareOutput', outputR, 'capture_2', 'audio')
-          el.pedalboard('addHardwareOutput', outputM, 'capture_3', 'midi')
-          el.pedalboard('addHardwareInput', inputL, 'playback_1', 'audio')
-          el.pedalboard('addHardwareInput', inputR, 'playback_2', 'audio')
-
-          el.pedalboard('positionHardwarePorts')
-
           console.log(PEDALBOARD_DATA)
           el.pedalboard('unserialize', PEDALBOARD_DATA)
       })
