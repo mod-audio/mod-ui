@@ -283,12 +283,12 @@ def get_pedalboard_info(bundle):
 
         if protouri1 is not None:
             proto = protouri1
-            uri   = lilv.lilv_node_as_uri(protouri1)
         elif protouri2 is not None:
             proto = protouri2
-            uri   = lilv.lilv_node_as_uri(protouri2)
         else:
             continue
+
+        uri = lilv.lilv_node_as_uri(proto)
 
         ingenblocks.append({
             "uri": uri,
