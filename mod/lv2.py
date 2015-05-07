@@ -201,6 +201,7 @@ def get_pedalboard_info(bundle):
         })
 
     # hardware ports
+    handled_port_uris = []
     ports = plugin.get_value(lv2core.port)
     it = ports.begin()
     while not ports.is_end(it):
@@ -210,6 +211,13 @@ def get_pedalboard_info(bundle):
         if port.me is None:
             continue
 
+        # check if we already handled this port
+        port_uri = port.as_uri()
+        if port_uri in handled_port_uris:
+            continue
+        handled_port_uris.append(port_uri)
+
+        # get types
         port_types = lilv.lilv_world_find_nodes(world.me, port.me, rdf.type_.me, None)
 
         if port_types is None:
@@ -217,8 +225,6 @@ def get_pedalboard_info(bundle):
 
         portDir  = "" # input or output
         portType = "" # atom, audio or cv
-
-        # FIXME - needs to be hardware ports only!
 
         it2 = lilv.lilv_nodes_begin(port_types)
         while not lilv.lilv_nodes_is_end(port_types, it2):
@@ -241,26 +247,26 @@ def get_pedalboard_info(bundle):
             elif port_type_uri == "http://lv2plug.in/ns/ext/atom#AtomPort":
                 portType = "atom"
 
-            if not (portDir or portType):
-                continue
+        if not (portDir or portType):
+            continue
 
-            if portType == "audio":
-                if portDir == "input":
-                    info['hardware']['audio']['ins'] += 1
-                else:
-                    info['hardware']['audio']['outs'] += 1
+        if portType == "audio":
+            if portDir == "input":
+                info['hardware']['audio']['ins'] += 1
+            else:
+                info['hardware']['audio']['outs'] += 1
 
-            elif portType == "atom":
-                if portDir == "input":
-                    info['hardware']['midi']['ins'] += 1
-                else:
-                    info['hardware']['midi']['outs'] += 1
+        elif portType == "atom":
+            if portDir == "input":
+                info['hardware']['midi']['ins'] += 1
+            else:
+                info['hardware']['midi']['outs'] += 1
 
-            elif portType == "cv":
-                if portDir == "input":
-                    info['hardware']['cv']['ins'] += 1
-                else:
-                    info['hardware']['cv']['outs'] += 1
+        elif portType == "cv":
+            if portDir == "input":
+                info['hardware']['cv']['ins'] += 1
+            else:
+                info['hardware']['cv']['outs'] += 1
 
     # plugins
     blocks = plugin.get_value(ingen.block)
@@ -292,8 +298,6 @@ def get_pedalboard_info(bundle):
 
     info['connections'] = ingenarcs
     info['plugins']     = ingenblocks
-
-    print(info)
 
     return info
 
