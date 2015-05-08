@@ -62,7 +62,7 @@ JqueryClass('shareBox', {
         }, options)
 
         self.data(options)
-        self.data('pedalboard', {})
+        self.data('bundlepath', '')
         self.data('recordedData', null)
 
 
@@ -250,9 +250,9 @@ JqueryClass('shareBox', {
         var self = $(this)
         var step = self.data('step')
         var data = {
-            pedalboard: self.data('pedalboard'),
-            title: self.find('input[type=text]').val(),
-            description: self.find('textarea').val()
+            bundlepath: self.data('bundlepath'),
+            description: self.find('textarea').val(),
+            title: self.find('input[type=text]').val()
         }
         $('#record-share').attr('disabled', true)
         if (step == 4) {
@@ -285,10 +285,10 @@ JqueryClass('shareBox', {
         }
     },
 
-    open: function (uid, title, pedalboard) {
+    open: function (bundlepath, title) {
         var self = $(this)
         self.shareBox('showStep', 1)
-        self.data('pedalboard', pedalboard)
+        self.data('bundlepath', bundlepath)
         self.find('input[type=text]').val(title)
         var text = self.find('textarea')
         text.val('').focus()

@@ -65,7 +65,7 @@ function RegistrationWindow(options) {
             url: SITEURLNEW + '/users',
             method: 'POST',
             data: JSON.stringify(data),
-            headers : { 'Content-Type' : 'application/json' },
+            headers: { 'Content-Type' : 'application/json' },
             success: function (/*result*/) {
                 /*if (!result.ok) {
                     self.error(result.error)

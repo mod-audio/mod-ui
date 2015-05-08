@@ -60,8 +60,8 @@ JqueryClass('socialWindow', {
             if (page == 0)
                 canvas.find('li.feed').remove()
             var content = self.socialWindow('renderFeed', pedalboards, canvas)
-            canvas.find('li.more').appendTo(canvas) // always last item
-            self.find('button').show()
+            //canvas.find('li.more').appendTo(canvas) // always last item
+            //self.find('button').show()
             self.window('open')
         })
     },
@@ -75,29 +75,34 @@ JqueryClass('socialWindow', {
 
     renderFeed: function (pedalboards, canvas) {
         var self = $(this)
-        var pb, i, context, content;
         var pbLoad = function (pb_url) {
             return function () {
                 self.data('loadPedalboard')(pb_url)
             }
         }
-        for (i = 0; i < pedalboards.length; i++) {
-            pb = pedalboards[i]
+
+        function renderNextPedalboard(pedalboards) {
+            if (pedalboards.length == 0)
+                return
+
+            var pb = pedalboards.pop()
             console.log(pb)
+
             // FIXME
             desktop.userSession.getUserData(pb.user_id, function (data) {
-                context = {
+                var context = {
                     cloud:       SITEURLNEW,
                     avatar_href: data.avatar_href,
                     user_name:   data.name
                 }
+                console.log(i)
                 // FIXME broken
                 //pb.created = renderTime(new Date(pb.created * 1000))
 
                 $.extend(context, pb)
 
-                content = $(Mustache.render(TEMPLATES.cloud_feed, context))
-                content.find('.js-pedalboard-' + pb['id']).click(pbLoad(pb.file_href))
+                var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
+                content.find('.js-pedalboard-' + pb.id).click(pbLoad(pb.file_href))
                 content.find('div.spec').each(function () {
                     var spec = $(this)
                     if (parseInt(spec.find('span').html()) == 0) {
@@ -105,8 +110,12 @@ JqueryClass('socialWindow', {
                     }
                 });
                 content.appendTo(canvas)
+
+                renderNextPedalboard(pedalboards)
             })
         }
+
+        renderNextPedalboard(pedalboards.reverse())
     },
 
     showSearch: function () {},

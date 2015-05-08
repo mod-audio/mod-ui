@@ -323,8 +323,8 @@ function Desktop(elements) {
         userSession: self.userSession,
         getFeed: function (page, callback) {
             $.ajax({
-                url: SITEURLNEW + '/pedalboards/?top=2', // TESTING
-                headers : { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                url: SITEURLNEW + '/pedalboards/',
+                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
                 success: function (pedalboards) {
                     callback(pedalboards)
                 },
@@ -337,7 +337,7 @@ function Desktop(elements) {
         },
         loadPedalboard: function (pb_url) {
             self.reset(function () {
-                transfer = new SimpleTransference(pb_url, '/pedalboard/load_web', 'pedalboard.tar.gz')
+                transfer = new SimpleTransference(pb_url, '/pedalboard/load_web/')
 
                 transfer.reportFinished = function () {
                     self.pedalboardModified = true
@@ -452,18 +452,20 @@ function Desktop(elements) {
         recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
         share: function (data, callback) {
-            $.ajax({
-                url: SITEURL + '/pedalboard/videoshare/' + self.userSession.user_id,
-                method: 'POST',
-                data: JSON.stringify(data),
-                success: function (resp) {
-                    callback(resp.ok, resp.error)
-                },
-                error: function () {
-                    new Notification('error', "Can't share pedalboard")
-                },
-                dataType: 'json'
-            })
+            transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
+                                              SITEURLNEW + '/pedalboards/upload/',
+                                              { to_args: { headers:
+                                              { 'Authorization' : 'MOD ' + self.userSession.access_token }
+                                              }})
+
+            transfer.reportFinished = function () {
+                callback(true)
+            }
+            transfer.reportError = function (error) {
+                new Notification('error', "Can't share pedalboard")
+            }
+
+            transfer.start()
         },
     })
 

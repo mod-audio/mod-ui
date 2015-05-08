@@ -96,7 +96,7 @@ function UserSession(options) {
                         $.ajax({
                             url: '/tokens/save/',
                             type: 'POST',
-                            headers : { 'Content-Type' : 'application/json' },
+                            headers: { 'Content-Type' : 'application/json' },
                             data: JSON.stringify(resp2),
                             dataType: 'json'
                         })

@@ -57,6 +57,7 @@ $.ajaxTransport("+binary", function(options, originalOptions, jqXHR){
     }
 });
 
+// DEPRECATED! DO NOT USE THIS
 function Transference(from, to, filename) {
     this.origin = from.replace(/\/?$/, '/')
     this.destination = to.replace(/\/?$/, '/')
@@ -256,10 +257,12 @@ function Transference(from, to, filename) {
     this.reportError = function (error) {}
 }
 
-function SimpleTransference(from, to, filename) {
+function SimpleTransference(from, to, options) {
     this.origin = from.replace(/\/?$/, '/')
     this.destination = to.replace(/\/?$/, '/')
-    this.file = filename
+    this.options = $.extend({ from_args: {},
+                              to_args: {}
+                            }, options)
 
     this.request = null;
 
@@ -267,7 +270,7 @@ function SimpleTransference(from, to, filename) {
 
     this.start = function () {
         console.log("[TRANSFERENCE] starting download...")
-        var req = $.ajax({
+        var req = $.ajax($.extend({
             type: 'GET',
             url: self.origin,
             success: self.upload,
@@ -275,23 +278,24 @@ function SimpleTransference(from, to, filename) {
             error: function (resp) {
                 self.abort(resp.statusText)
             }
-        })
+        }, self.options.from_args))
         self.request = req
     }
 
     this.upload = function (file) {
-        console.log("[TRANSFERENCE] fownload finished, starting upload to " + self.destination)
-        var req = $.ajax({
-            'method': 'POST',
-            'url': self.destination,
-            'data': file,
-            'contentType': file.type,
-            'success': self.success,
-            'processData': false,
-            'error': function (resp) {
+        console.log("[TRANSFERENCE] download finished, starting upload to " + self.destination)
+        var req = $.ajax($.extend({
+            method: 'POST',
+            url: self.destination,
+            data: file,
+            contentType: file.type,
+            success: self.success,
+            processData: false,
+            error: function (resp) {
                 self.abort(resp.statusText)
-            }
-        })
+            },
+            cache: false
+        }, self.options.to_args))
         self.request = req
     }
 

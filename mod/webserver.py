@@ -690,6 +690,30 @@ class PedalboardSave(web.RequestHandler):
         self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
         self.finish()
 
+class PedalboardPackBundle(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        parentpath = os.path.abspath(os.path.join(bundlepath, ".."))
+        bundledir  = bundlepath.replace(parentpath, "").replace(os.sep, "")
+        tmpfile    = "/tmp/upload-pedalboard.tar.gz"
+
+        oldcwd = os.getcwd()
+        os.chdir(parentpath) # hmm, is there os.path.parent() ?
+
+        # FIXME - don't use external tools!
+        os.system("tar -cvzf %s %s" % (tmpfile, bundledir))
+
+        os.chdir(oldcwd)
+
+        with open(tmpfile, 'rb') as fd:
+            self.write(fd.read())
+
+        self.finish()
+
+        #os.remove(tmpfile)
+
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?
     destination_dir = os.path.expanduser("~/.lv2/") # FIXME cross-platform, perhaps lookup in LV2_PATH
@@ -1210,6 +1234,7 @@ application = web.Application(
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
             (r"/pedalboard/save", PedalboardSave),
+            (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
