@@ -119,6 +119,7 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
 
+        self._load_pb_hack = None
         self._save_waiter = None
 
     def reconnect(self):
@@ -221,6 +222,10 @@ class Session(object):
         os.system("sed -i 's|<ingen:/root/screenshot.png>|<screenshot.png>|' ~/.lv2/testing.ingen/testing.ttl")
         os.system("sed -i 's|<ingen:/root/thumbnail.png>|<thumbnail.png>|' ~/.lv2/testing.ingen/testing.ttl")
         return bundlepath
+
+    def load_pedalboard(self, bundlepath):
+        if self._load_pb_hack is not None:
+            self._load_pb_hack(bundlepath)
 
     def setup_monitor(self):
         if self.monitor_server is None:

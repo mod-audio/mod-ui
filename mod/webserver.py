@@ -690,21 +690,27 @@ class PedalboardSave(web.RequestHandler):
         self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
         self.finish()
 
-class PedalboardLoadWeb(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def post(self):
-        url = self.get_argument('url')
+class PedalboardLoadWeb(SimpleFileReceiver):
+    remote_public_key = CLOUD_PUB # needed?
+    destination_dir = os.path.expanduser("~/.lv2/") # FIXME cross-platform, perhaps lookup in LV2_PATH
 
-        # TODO:
-        # 1. download file
-        # 2. extract to ~/.lv2 (careful not overriding any existing pb)
-        # 3. make lv2.W load the new bundle
-        # 4. load the pb (via ingen or mod-app hacks)
+    def process_file(self, data, callback=lambda:None):
+        filename = os.path.join(self.destination_dir, data['filename'])
 
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True }, default=json_handler))
-        self.finish()
+        if not os.path.exists(filename):
+            callback()
+            return
+
+        # FIXME - don't use external tools!
+        from subprocess import getoutput
+        tar_output = getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
+        bundlepath = os.path.join(self.destination_dir, tar_output.strip().split("\n", 1)[0])
+
+        if os.path.exists(bundlepath):
+            SESSION.load_pedalboard(bundlepath)
+
+        os.remove(filename)
+        callback()
 
 class PedalboardLoad(web.RequestHandler):
     @web.asynchronous
@@ -1204,7 +1210,7 @@ application = web.Application(
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
             (r"/pedalboard/save", PedalboardSave),
-            (r"/pedalboard/load_web", PedalboardLoadWeb),
+            (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
             (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
             (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),

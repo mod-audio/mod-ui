@@ -338,21 +338,17 @@ function Desktop(elements) {
         },
         loadPedalboard: function (pb_url) {
             self.reset(function () {
-                $.ajax({
-                    url: '/pedalboard/load_web',
-                    type: 'POST',
-                    data: {
-                        url: pb_url
-                    },
-                    success: function () {
-                        self.pedalboardModified = true
-                        self.windowManager.closeWindows()
-                    },
-                    error: function () {
-                        new Bug("Couldn't load pedalboard")
-                    },
-                    dataType: 'json'
-                });
+                transfer = new SimpleTransference(pb_url, '/pedalboard/load_web', 'pedalboard.tar.gz')
+
+                transfer.reportFinished = function () {
+                    self.pedalboardModified = true
+                    self.windowManager.closeWindows()
+                }
+                transfer.reportError = function (error) {
+                    new Bug("Couldn't load pedalboard, reason:<br/>" + error)
+                }
+
+                transfer.start()
             })
         },
         trigger: elements.socialTrigger,
