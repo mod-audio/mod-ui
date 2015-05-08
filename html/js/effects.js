@@ -721,7 +721,7 @@ JqueryClass('cloudPluginBox', {
         $.ajax({
             'method': 'GET',
             'url': NEW_CLOUD_API,
-            'data': query,
+            'data': {'search': query.term},
             'success': function (plugins) {
                 results.cloud = plugins
                 if (results.local != null)
@@ -772,7 +772,7 @@ JqueryClass('cloudPluginBox', {
         $.ajax({
             'method': 'GET',
             'url': NEW_CLOUD_API,
-            'data': query,
+            'data': {'search': query.term},
             'success': function (plugins) {
                 results.cloud = plugins
                 if (results.local != null)
