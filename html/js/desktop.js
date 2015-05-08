@@ -173,8 +173,7 @@ function Desktop(elements) {
 
     this.isApp = false
     this.title = ''
-
-    // Indicates that pedalboard is in an unsaved state
+    this.pedalboardBundle = null
     this.pedalboardModified = false
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
@@ -364,8 +363,9 @@ function Desktop(elements) {
                     asNew: asNew ? 1 : 0
                 },
                 success: function (result) {
-                    if (result.ok)
-                        callback(true, result.bundlepath)
+                    if (result.ok) {
+                        callback(true, result.bundlepath, title)
+                    }
                     else
                         callback(false, result.error)
                 },
@@ -395,12 +395,9 @@ function Desktop(elements) {
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {
-                self.pedalboard.pedalboard('serialize',
-                    function (pedalboard) {
-                        if (!self.pedalboardId)
-                            return new Notification('warn', 'Nothing to share', 1500)
-                        elements.shareWindow.shareBox('open', self.pedalboardId, self.title, pedalboard)
-                    })
+                if (!self.pedalboardBundle)
+                    return new Notification('warn', 'Nothing to share', 1500)
+                elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
             })
         }
         if (self.pedalboardModified) {
@@ -777,7 +774,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             if (!confirm(sprintf('The pedalboard "%s" will be permanently removed! Confirm?', pedalboard.title)))
                 return
             $.ajax({
-                url: '/pedalboard/remove/' + pedalboard._id,
+                url: '/pedalboard/remove/' + pedalboard.pedalboardBundle,
                 success: function () {
                     new Notification("info", sprintf('Pedalboard "%s" removed', pedalboard.title), 1000)
                     callback()
@@ -790,7 +787,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             if (!AUTO_CLOUD_BACKUP)
                 return
             $.ajax({
-                url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.user_id + '/' + pedalboard._id,
+                url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.user_id + '/' + pedalboard.pedalboardBundle,
                 method: 'POST'
             })
         },
@@ -800,6 +797,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 type: 'GET',
                 success: function (pedalboard) {
                     self.reset(function () {
+                        /*
                         self.pedalboard.pedalboard('unserialize', pedalboard,
                             function () {
                                 self.pedalboardId = pedalboard._id
@@ -808,6 +806,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                                 self.pedalboardModified = false
                                 callback()
                             }, true)
+                        */
                     })
                 },
                 error: function () {
@@ -878,29 +877,33 @@ Desktop.prototype.reset = function (callback, warn) {
     if (this.pedalboardModified && (warn === undefined || warn))
         if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
             return
-    this.pedalboardId = null
     this.title = ''
+    this.pedalboardBundle = null
     this.pedalboardModified = false
     this.pedalboard.pedalboard('reset', callback)
 }
 
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
-    self.pedalboard.pedalboard('serialize',
-        function (pedalboard) {
-            self.saveBox.saveBox('save', self.title, asNew, pedalboard, self.userSession.user_id,
-                function (uid, title) {
-                    self.pedalboardId = uid
+//     self.pedalboard.pedalboard('serialize',
+//         function (pedalboard) {
+            self.saveBox.saveBox('save', self.title, asNew,
+                function (ok, errorOrPath, title) {
+                    if (!ok) {
+                        new Error(errorOrPath)
+                        return
+                    }
                     self.title = title
-                    self.titleBox.text(title)
+                    self.pedalboardBundle = errorOrPath
                     self.pedalboardModified = false
-                    new Notification("info",
-                        sprintf('Pedalboard "%s" saved', title),
-                        2000)
+                    self.titleBox.text(title)
+
+                    new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
+
                     if (callback)
                         callback()
                 })
-        })
+//         })
 }
 
 Desktop.prototype.shareCurrentPedalboard = function (callback) {
@@ -913,7 +916,7 @@ JqueryClass('saveBox', {
 
         options = $.extend({
             save: function (title, asNew, callback) {
-                callback(true)
+                callback(false, "Not Implemented")
             }
         }, options)
 
@@ -941,12 +944,10 @@ JqueryClass('saveBox', {
         return self
     },
 
-    save: function (title, asNew, serialized, sessionId, callback) {
+    save: function (title, asNew, callback) {
         var self = $(this)
         self.find('input').val(title)
         self.data('asNew', asNew)
-        self.data('serialized', serialized)
-        self.data('sid', sessionId)
         self.data('callback', callback)
         if (title && !asNew)
             self.saveBox('send')
@@ -961,35 +962,38 @@ JqueryClass('saveBox', {
     },
 
     send: function () {
-        var self = $(this)
+        var self  = $(this)
         var title = self.find('input').val()
         var asNew = self.data('asNew')
 
         self.data('save')(title, asNew,
-            function (id, error) {
-                if (id) {
-                    self.hide()
-                    self.data('callback')(id, title)
-                        // Now make automatic backup at cloud
-                    var pedalboard = self.data('serialized')
-                    var sid = self.data('sid')
-                    self.data('serialized', null)
-                    if (!AUTO_CLOUD_BACKUP)
-                        return
-                    $.ajax({
-                        url: SITEURL + '/pedalboard/backup/' + sid,
-                        method: 'POST',
-                        data: {
-                            id: id,
-                            title: title,
-                            pedalboard: JSON.stringify(pedalboard)
-                        },
-                    })
-                } else {
+            function (ok, errorOrPath, realTitle) {
+                if (! ok) {
                     // TODO error handling here, the Notification does not work well
                     // with popup
-                    alert(error)
+                    alert(errorOrPath)
                 }
+
+                self.hide()
+                self.data('callback')(true, errorOrPath, realTitle)
+
+                // Now make automatic backup at cloud
+                /*
+                var pedalboard = self.data('serialized')
+                var sid = self.data('sid')
+                self.data('serialized', null)
+                if (!AUTO_CLOUD_BACKUP)
+                    return
+                $.ajax({
+                    url: SITEURL + '/pedalboard/backup/' + sid,
+                    method: 'POST',
+                    data: {
+                        id: id,
+                        title: title,
+                        pedalboard: JSON.stringify(pedalboard)
+                    },
+                })
+                */
             })
         return
     }
