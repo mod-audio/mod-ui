@@ -203,25 +203,29 @@ class IngenAsync(Interface):
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
                 bnode       = i[0]
                 subject     = msg_model.value(bnode, NS.patch.subject)
-                body = msg_model.value(bnode, NS.patch.body)
+                body        = msg_model.value(bnode, NS.patch.body)
+                msg_type    = msg_model.value(body,  NS.rdf.type)
 
                 # Put for port, we set the value
-                if msg_model.value(body, NS.rdf.type) == NS.lv2.ControlPort:
+                if msg_type == NS.lv2.ControlPort:
+                    value = msg_model.value(body, NS.ingen.value)
+                    if value is None:
+                        continue
                     sub = subject.toPython().split("/")
                     instance = sub[-2]
                     port = sub[-1]
-                    value = msg_model.value(body, NS.ingen.value).toPython()
-                    self.port_value_callback(instance, port, value)
+                    self.port_value_callback(instance, port, value.toPython())
                 # Put for a plugin
-                elif (msg_model.value(body, NS.rdf.type) == NS.ingen.Block and
-                         msg_model.value(body, NS.lv2.prototype)):
+                elif msg_type == NS.ingen.Block:
+                    protouri = msg_model.value(body, NS.lv2.prototype)
+                    if protouri is None:
+                        continue
                     instance = subject.toPython().split("/")[-1]
-                    uri = msg_model.value(body, NS.lv2.prototype).toPython()
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
-                    self.plugin_add_callback(instance, uri, x or 0, y or 0)
+                    self.plugin_add_callback(instance, protouri.toPython(), x or 0, y or 0)
                 # New port connection
-                elif msg_model.value(body, NS.rdf.type) == NS.ingen.Arc:
+                elif msg_type == NS.ingen.Arc:
                     head = msg_model.value(body, NS.ingen.head).toPython().split("/")
                     tail = msg_model.value(body, NS.ingen.tail).toPython().split("/")
                     instance_a = head[-2]
