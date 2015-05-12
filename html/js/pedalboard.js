@@ -1023,12 +1023,26 @@ JqueryClass('pedalboard', {
     // TODO: check with ingen if instance does not exist
     generateInstance: function (url) {
         var self = $(this)
-        url = url.split("/")
-        var instance = url[url.length-1]
-        instance = instance.split("#")[instance.split("#").length-1]
-        var re = /[^_a-zA-Z0-9]*/
-        instance = instance.replace(re, "_")
-        if (!isNaN(instance[0])) // instance names cant start with numbers
+        // copied from ingen's algorithm to get a valid instance symbol
+        var last_uri_delim = function (s) {
+            for (var i = s.length-1; i > 0; --i) {
+                switch(s[i]) {
+                    case '/': case '?': case '#': case ':':
+                        return i
+                }
+            }
+            return -1
+        }
+        var re = /[^_a-zA-Z0-9]+/g
+        var instance = url
+        var last_delim = last_uri_delim(instance)
+        while (last_delim != -1 &&
+                !instance.substr(last_delim, instance.length-1).match(/[a-zA-Z0-9]/)) {
+            instance = instance.substr(0, last_delim)
+            last_delim = last_uri_delim(instance)
+        }
+        instance = instance.substr(last_delim+1, instance.length-1).replace(re, "_")
+        if (instance[0].match(/[0-9]/)) // instance names cant start with numbers
             instance = "_" + instance
         var i = 1;
         if (instance in self.data('plugins')) {
