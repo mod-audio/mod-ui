@@ -22,7 +22,7 @@ from os.path import exists, join
 from tornado.ioloop import IOLoop
 from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,
                           PLUGIN_LIBRARY_DIR, PLUGIN_INSTALLATION_TMP_DIR)
-from mod import indexing
+from mod import indexing, lv2
 
 def install_bundle(uid, callback):
     filename = join(PLUGIN_INSTALLATION_TMP_DIR, '%s' % uid)
@@ -55,27 +55,14 @@ def install_all_bundles():
 
     # TODO - rewrite for new API without modcommon
 
-    #for package in os.listdir(plugin_dir):
-        #bundle_path = join(PLUGIN_LIBRARY_DIR, package)
-        #if os.path.exists(bundle_path):
-            #uninstall_bundle(package)
-        #shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
-        #bundle = lv2.Bundle(bundle_path)
-        #effects += extract_effects_from_bundle(bundle)
-
+    for package in os.listdir(plugin_dir):
+        bundle_path = join(PLUGIN_LIBRARY_DIR, package)
+        if os.path.exists(bundle_path):
+            uninstall_bundle(package)
+        shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
+        lv2.add_bundle_to_lilv_world(join(PLUGIN_LIBRARY_DIR, package))
+        #effects += []
     return effects
-
-def extract_effects_from_bundle(bundle):
-    index = indexing.EffectIndex()
-    effects = []
-    for data in bundle.data['plugins'].values():
-        remove_old_version(data['url'])
-        index.add(data)
-        effect_path = join(EFFECT_DIR, data['_id'])
-        open(effect_path, 'w').write(json.dumps(data))
-        effects.append(data['_id'])
-    return effects
-
 
 def remove_old_version(url):
     """

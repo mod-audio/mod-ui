@@ -331,6 +331,13 @@ def get_pedalboards():
 
     return pedalboards
 
+def add_bundle_to_lilv_world(bundle_path):
+    if not bundle_path.startswith("file://"):
+        bundle_path = "file://" + bundle_path
+    if not bundle_path.endswith("/"):
+        bundle_path += "/"
+    W.load_bundle(bundle_path)
+
 class PluginSerializer(object):
     def __init__(self, uri=None, plugin=None):
         if plugin:
