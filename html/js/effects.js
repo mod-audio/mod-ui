@@ -29,8 +29,6 @@
  *            displayed
  */
 
-var NEW_CLOUD_API = "http://social.dev.portalmod.com/api/lv2/plugins"
-
 JqueryClass('effectBox', {
     init: function (options) {
         var self = $(this)
@@ -720,7 +718,7 @@ JqueryClass('cloudPluginBox', {
 
         $.ajax({
             'method': 'GET',
-            'url': NEW_CLOUD_API,
+            'url': SITEURLNEW + "/lv2/plugins",
             'data': {'search': query.term},
             'success': function (plugins) {
                 results.cloud = plugins
@@ -771,7 +769,7 @@ JqueryClass('cloudPluginBox', {
 
         $.ajax({
             'method': 'GET',
-            'url': NEW_CLOUD_API,
+            'url': SITEURLNEW + "/lv2/plugins",
             'data': {'search': query.term},
             'success': function (plugins) {
                 results.cloud = plugins
@@ -861,7 +859,6 @@ JqueryClass('cloudPluginBox', {
 
     showPluginInfo: function (plugin) {
         var self = $(this)
-        console.log(plugin)
         var urle = escape(plugin.url)
         var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
         var screenshot_href = plugin.screenshot_href ? plugin.screenshot_href : "/effect/image/screenshot.png?url=" + urle
@@ -900,7 +897,7 @@ JqueryClass('cloudPluginBox', {
                 // Install plugin
                 self.data('installPlugin')(plugin, function (plugin) {
                     if (plugin) {
-                        plugins[index].installedVersion = plugins[index].latestVersion
+                        plugin.installedVersion = plugin.latestVersion
                         if (info.is(':visible')) {
                             info.remove()
                             self.cloudPluginBox('showPluginInfo', plugin)
@@ -933,7 +930,7 @@ JqueryClass('cloudPluginBox', {
             checkVersion()
         else {
             $.ajax({
-                url: NEW_CLOUD_API,
+                url: SITEURLNEW + "/lv2/plugins",
                 data: {
                     url: plugin.url
                 },
@@ -967,6 +964,7 @@ JqueryClass('cloudPluginBox', {
         var urle = escape(plugin.url)
         var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
         var plugin_data = {
+            id: plugin.id || plugin._id,
             thumbnail_href: thumbnail_href,
             urle: urle,
             status: plugin.status,

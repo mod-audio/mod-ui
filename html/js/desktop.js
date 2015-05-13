@@ -834,6 +834,26 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
         trigger: trigger,
         windowManager: this.windowManager,
         list: self.cloudPluginListFunction,
+        removePlugin: function (plugin, callback) {
+            if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
+                return
+            $.ajax({
+                url: '/package/' + plugin.package + '/uninstall',
+                method: 'POST',
+                success: callback,
+                error: function () {
+                    new Notification('error', "Could not uninstall " + plugin.package)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+        upgradePlugin: function (plugin, callback) {
+            self.installationQueue.install(plugin.url, callback)
+        },
+        installPlugin: function (plugin, callback) {
+            self.installationQueue.install(plugin.url, callback)
+        }
     })
 }
 Desktop.prototype.makeBankBox = function (el, trigger) {

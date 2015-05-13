@@ -90,13 +90,14 @@ class SimpleFileReceiver(web.RequestHandler):
     def post(self, sessionid=None, chunk_number=None):
         # self.result can be set by subclass in process_file,
         # so that answer will be returned to browser
+        self.result = None
         name = str(uuid.uuid4())
         fh = open(os.path.join(self.destination_dir, name), 'wb')
         fh.write(self.request.body)
         fh.close()
         data = dict(filename=name)
         yield gen.Task(self.process_file, data)
-        info = {'ok': True}
+        info = {'ok': True, 'result': self.result}
         self.write(json.dumps(info))
         self.finish()
 

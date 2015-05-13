@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -41,13 +41,14 @@ function InstallationQueue() {
         }
 
         $.ajax({
-            'url': SITEURL + '/effect/get/?url=' + escape(effectUrl),
-            'success': function (effect) {
-                if (!effect) {
+            'url': SITEURLNEW + '/lv2/plugins?url=' + escape(effectUrl),
+            'success': function (effects) {
+                if (effects.length == 0) {
                     new Notification('error', sprintf("Can't find effect %s to install", effectUrl))
                     if (queue.length == 0)
                         notification.close()
                 }
+                var effect = effects[0]
                 queue.push(effect)
                 callbacks.push(callback)
                 if (queue.length == 1)
@@ -75,7 +76,7 @@ function InstallationQueue() {
         var effect = queue[0]
         var callback = callbacks[0]
         var finish = function () {
-            var status = $('[mod-role=available-plugin][mod-plugin-id=' + effect._id + '] .status')
+            var status = $('[mod-role=cloud-plugin][mod-plugin-id=' + effect.id + '] .status')
             status.removeClass('installed')
             status.removeClass('outdated')
             status.removeClass('blocked')
@@ -102,20 +103,20 @@ function InstallationQueue() {
             return
         }
 
-        var installationMsg = 'Installing package ' + effect['package'] + ' (contains ' + effect.name + ')'
+        var installationMsg = 'Installing package ' + effect['name'] + ' (contains ' + effect.name + ')'
         notification.html(installationMsg)
         notification.type('warning')
         notification.bar(1)
 
-        var trans = new Transference(SITEURL + '/effect/install',
-            '/effect/install',
-            effect['package_id'])
+        var trans = new SimpleTransference(effect['bundle_file_href'],
+            '/effect/install')
 
         trans.reportStatus = function (status) {
             notification.bar(status.percent)
         }
 
         trans.reportFinished = function (result) {
+            console.log(result)
             notification.html(installationMsg + ' - OK!')
             notification.bar(100)
             notification.type('success')
