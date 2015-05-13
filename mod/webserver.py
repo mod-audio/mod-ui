@@ -271,7 +271,10 @@ class Searcher(tornado.web.RequestHandler):
     def list(self):
         result = []
         for entry in self.index.every():
-            entry.update(self.get_object(entry['id']))
+            obj = self.get_object(entry['id'])
+            if obj is None:
+                continue
+            entry.update(obj)
             result.append(entry)
         return result
 

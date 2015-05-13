@@ -65,8 +65,8 @@ class Index(object):
             return self.index.searcher()
         except Exception as e:
             self.reindex()
-            self.index.searcher()
-    
+            return self.index.searcher()
+
     def indexable(self, obj):
         return True
 
