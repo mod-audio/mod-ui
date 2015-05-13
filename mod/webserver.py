@@ -725,6 +725,9 @@ class PedalboardLoadWeb(SimpleFileReceiver):
             callback()
             return
 
+        if not os.path.exists(self.destination_dir):
+            os.mkdir(self.destination_dir)
+
         # FIXME - don't use external tools!
         from subprocess import getoutput
         tar_output = getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
