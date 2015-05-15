@@ -291,21 +291,25 @@ function Desktop(elements) {
         })
     }
 
-    this.prepareForApp = function () {
+    this.prepareForApp = function (usingDesktop) {
         self.isApp = true
-        $('#mod-pedalboard').hide()
         $('#mod-bank').hide()
         $('#mod-bluetooth').hide()
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
-        $('#pedalboard-actions').hide()
-        $("#pedalboard-dashboard").parent().css({
-            'top': '0px'
-        })
-        $('#zoom-controllers').css({
-            'top': '3px',
-            'right': '3px'
-        })
+
+        if (usingDesktop)
+        {
+            $('#mod-pedalboard').hide()
+            $('#pedalboard-actions').hide()
+            $("#pedalboard-dashboard").parent().css({
+                'top': '0px'
+            })
+            $('#zoom-controllers').css({
+                'top': '3px',
+                'right': '3px'
+            })
+        }
     }
 
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
