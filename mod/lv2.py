@@ -331,12 +331,19 @@ def get_pedalboards():
 
     return pedalboards
 
-def add_bundle_to_lilv_world(bundle_path):
-    if not bundle_path.startswith("file://"):
-        bundle_path = "file://" + bundle_path
-    if not bundle_path.endswith("/"):
-        bundle_path += "/"
-    W.load_bundle(bundle_path)
+def add_bundle_to_lilv_world(bundlepath):
+    # lilv wants the last character as the separator
+    if not bundlepath.endswith(os.sep):
+        bundlepath += os.sep
+
+    # convert bundle string into a lilv node
+    bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
+
+    # load the bundle
+    W.load_bundle(bundlenode)
+
+    # free bundlenode, no longer needed
+    lilv.lilv_node_free(bundlenode)
 
 class PluginSerializer(object):
     def __init__(self, uri=None, plugin=None):
