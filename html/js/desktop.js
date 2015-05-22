@@ -298,7 +298,7 @@ function Desktop(elements) {
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
 
-        if (usingDesktop)
+        if (usingDesktop || true)
         {
             $('#mod-pedalboard').hide()
             $('#pedalboard-actions').hide()
