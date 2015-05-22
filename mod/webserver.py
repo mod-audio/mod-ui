@@ -92,6 +92,8 @@ class SimpleFileReceiver(web.RequestHandler):
         # so that answer will be returned to browser
         self.result = None
         name = str(uuid.uuid4())
+        if not os.path.exists(self.destination_dir):
+            os.mkdir(self.destination_dir)
         fh = open(os.path.join(self.destination_dir, name), 'wb')
         fh.write(self.request.body)
         fh.close()
