@@ -185,7 +185,24 @@ JqueryClass('pedalboard', {
             },
         })
         self.data('background', bg)
-
+        
+        // Create a blank SVG containing some fancy f/x for later use
+        self.svg({ onLoad: function (svg) {
+            var _svg = svg._svg;
+            _svg.setAttribute("id", "styleSVG");
+            var defs = svg.defs();
+            for (var i = 1; i <= 20; i+=1) {
+                var filter = document.createElementNS("http://www.w3.org/2000/svg", 'filter');
+                filter.setAttribute("id", "blur_" + i);
+                filter.setAttribute("x", "0");
+                filter.setAttribute("y", "0");
+                var blur = document.createElementNS("http://www.w3.org/2000/svg", 'feGaussianBlur');
+                blur.setAttribute("stdDeviation", i / 10);
+                filter.appendChild(blur);
+                defs.appendChild(filter);
+            }
+        }});
+        
         // Dragging the pedalboard move the view area
         self.mousedown(function (e) {
                 self.pedalboard('drag', e)
@@ -1316,13 +1333,12 @@ JqueryClass('pedalboard', {
         var fromInstance = output.data('instance')
         var fromSymbol = output.data('symbol')
         var portType = output.data('portType')
-
+        
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
             var toInstance = input.data('instance')
             var toSymbol = input.data('symbol')
             var ok
-
             // Do not highlight if this output and input are already connected
             ok = !connections.connected(fromInstance, fromSymbol, toInstance, toSymbol)
                 // Neither if output and input belong to same instance
@@ -1440,7 +1456,7 @@ JqueryClass('pedalboard', {
     spawnJack: function (output) {
         var self = $(this)
         var jack = $('<div>').appendTo(output)
-
+        
         jack.attr('mod-role', 'output-jack')
         jack.addClass('mod-output-jack')
         jack.addClass('jack-disconnected')
@@ -1456,7 +1472,13 @@ JqueryClass('pedalboard', {
         // jack's cable.
         // The cable is composed by three lines with different style: one for the cable,
         // one for the background shadow and one for the reflecting light.
-        var canvas = $('<div>')
+        var canvas = $('<div>');
+        
+        if (output.attr("class").search("mod-audio-") >= 0)
+            canvas.addClass("mod-audio");
+        else if (output.attr("class").search("mod-midi-") >= 0)
+            canvas.addClass("mod-midi");
+            
         canvas.css({
             width: '100%',
             height: '100%',
@@ -1581,14 +1603,14 @@ JqueryClass('pedalboard', {
             // P3 (xo, yo) - the destination point
             // P1 (xo - deltaX, yi) and P2 (xi + deltaX, yo): define the curve
             // Gets origin and destination coordinates
-            var xi = source.offset().left / scale - self.offset().left / scale // + source.width()
+            var xi = source.offset().left / scale - self.offset().left / scale + source.width()
             var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
             var xo = jack.offset().left / scale - self.offset().left / scale
             var yo = jack.offset().top / scale - self.offset().top / scale + jack.height() / 2
-            if (source.hasClass("mod-audio-output"))
-                self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
-            else
-                self.pedalboard('drawBezier', jack.data('canvas'), xi+9, yi, xo, yo, '')
+            //if (source.hasClass("mod-audio-output"))
+                //self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
+            //else
+            self.pedalboard('drawBezier', jack.data('canvas'), xi, yi, xo, yo, '')
         }, 0)
     },
 
@@ -1800,22 +1822,22 @@ JqueryClass('pedalboard', {
             self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
             self.trigger('modified')
         } else {
-            // UGLY WORKAROUND :(
-            if (output.hasClass("mod-audio-output") && !output.hasClass("hardware-output"))
-                jack.css({
-                    top: 12,
-                    left: 0
-                })
-            else if (output.hasClass("mod-midi-output") && output.hasClass("hardware-output"))
-                jack.css({
-                    top: -15,
-                    left: 0
-                })
-            else
-                jack.css({
-                    top: 0,
-                    left: 0
-                })
+            //// UGLY WORKAROUND :(
+            //if (output.hasClass("mod-audio-output") && !output.hasClass("hardware-output"))
+                //jack.css({
+                    //top: 12,
+                    //left: 0
+                //})
+            //else if (output.hasClass("mod-midi-output") && output.hasClass("hardware-output"))
+                //jack.css({
+                    //top: -15,
+                    //left: 0
+                //})
+            //else
+            jack.css({
+                top: 0,
+                left: 0
+            })
         }
         if (self.data('connectionManager').origIndex[output.attr('mod-port')] &&
              self.data('connectionManager').origIndex[output.attr('mod-port')].length == 1) {
