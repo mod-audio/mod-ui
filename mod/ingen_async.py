@@ -270,21 +270,21 @@ class IngenAsync(Interface):
         return self._send('''
 []
  	a patch:Get ;
- 	patch:subject <ingen:/engine> .
+ 	patch:subject </engine/> .
 ''',  callback)
 
     def get(self, path, callback=lambda r:r):
         return self._send('''
 []
  	a patch:Get ;
- 	patch:subject <ingen:/root%s> .
+ 	patch:subject </graph%s> .
 ''' % path, callback)
 
     def put(self, path, body, callback=lambda r:r):
         return self._send('''
 []
  	a patch:Put ;
- 	patch:subject <ingen:/root%s> ;
+ 	patch:subject </graph%s> ;
  	patch:body [
 %s
 	] .
@@ -294,7 +294,7 @@ class IngenAsync(Interface):
         x = '''
 []
 	a patch:Set ;
-	patch:subject <ingen:/root%s> ;
+	patch:subject </graph%s> ;
         patch:property %s ;
 	patch:value %s .
 ''' % (path, prop, value)
@@ -307,8 +307,8 @@ class IngenAsync(Interface):
 	patch:subject <> ;
 	patch:body [
 		a ingen:Arc ;
-		ingen:tail <ingen:/root%s> ;
-		ingen:head <ingen:/root%s> ;
+		ingen:tail </graph%s> ;
+		ingen:head </graph%s> ;
 	] .
 ''' % (tail, head), callback)
 
@@ -318,8 +318,8 @@ class IngenAsync(Interface):
 	a patch:Delete ;
 	patch:body [
 		a ingen:Arc ;
-		ingen:tail <ingen:/root%s> ;
-		ingen:head <ingen:/root%s> ;
+		ingen:tail </graph%s> ;
+		ingen:head </graph%s> ;
 	] .
 ''' % (tail, head), callback)
 
@@ -327,15 +327,15 @@ class IngenAsync(Interface):
         return self._send('''
 []
 	a patch:Delete ;
-	patch:subject <ingen:/root%s> .
+	patch:subject </graph%s> .
 ''' % path, callback)
 
     def move(self, source, target, callback=lambda r: r):
         return self._send('''
 []
         a patch:Move ;
-        patch:subject <ingen:/root%s> ;
-        patch:destination <ingen:/root%s> .
+        patch:subject </graph%s> ;
+        patch:destination </graph%s> .
 ''' % (source, target), callback)
 
     def patch(self, path, remove, add, callback=lambda r:r):
@@ -350,7 +350,7 @@ class IngenAsync(Interface):
         return self._send('''
 []
         a patch:Patch ;
-        patch:subject <ingen:/root%s> ;
+        patch:subject </graph%s> ;
         patch:remove [
             %s
         ] ;
