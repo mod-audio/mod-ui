@@ -1253,7 +1253,6 @@ JqueryClass('pedalboard', {
     drawPluginJacks: function (plugin) {
         var self = $(this)
         var myjacks = []
-
         self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
             myjacks.push($(jack.data('svg')._container))
         })
@@ -1960,21 +1959,12 @@ function ConnectionManager() {
 
         // TODO: change the architecture so we don't need to keep this other index
         // and this 'system' HACK
-        var from = fromPort.split("/")
-        if (from.length == 1)
-            var instance = ':system:'
-        else
-            var instance = from[0]
+        var instance = fromPort.substring(0, fromPort.lastIndexOf("/"))
         if (self.origByInstanceIndex[instance] == null)
             self.origByInstanceIndex[instance] = {}
         self._addToIndex(self.origByInstanceIndex[instance], fromPort, toPort, jack)
 
-        var to = toPort.split("/")
-        if (to.length == 1)
-            var instance = ':system:'
-        else
-            var instance = to[0]
-
+        instance = toPort.substring(0, toPort.lastIndexOf("/"))
         if (self.destByInstanceIndex[instance] == null)
             self.destByInstanceIndex[instance] = {}
         self._addToIndex(self.destByInstanceIndex[instance], toPort, fromPort, jack)
@@ -1987,19 +1977,11 @@ function ConnectionManager() {
 
         // TODO: change the architecture so we don't need to keep this other index
         // and this 'system' HACK
-        var from = fromPort.split("/")
-        if (from.length == 1)
-            var instance = ':system:'
-        else
-            var instance = from[0]
+        var instance = fromPort.substring(0, fromPort.lastIndexOf("/"))
         if (self.origByInstanceIndex[instance] != null)
             self._removeFromIndex(self.origByInstanceIndex[instance], fromPort, toPort)
 
-        var to = toPort.split("/")
-        if (to.length == 1)
-            var instance = ':system:'
-        else
-            var instance = to[0]
+        instance = toPort.substring(0, toPort.lastIndexOf("/"))
         if (self.destByInstanceIndex[instance] != null)
             self._removeFromIndex(self.destByInstanceIndex[instance], toPort, fromPort)
     }
