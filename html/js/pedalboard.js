@@ -1045,6 +1045,7 @@ JqueryClass('pedalboard', {
         if (instance[0].match(/[0-9]/)) // instance names cant start with numbers
             instance = "_" + instance
         var i = 1;
+        instance = '/graph/' + instance
         if (instance in self.data('plugins')) {
             instance = instance + "_1"
             while (instance in self.data('plugins')) {
@@ -1052,7 +1053,7 @@ JqueryClass('pedalboard', {
                 instance = instance.slice(0, -1) + i
             }
         }
-        return '/graph/' + instance
+        return instance
     },
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
