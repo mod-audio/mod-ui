@@ -277,14 +277,14 @@ class IngenAsync(Interface):
         return self._send('''
 []
  	a patch:Get ;
- 	patch:subject </graph%s> .
+ 	patch:subject <%s> .
 ''' % path, callback)
 
     def put(self, path, body, callback=lambda r:r):
         return self._send('''
 []
  	a patch:Put ;
- 	patch:subject </graph%s> ;
+ 	patch:subject <%s> ;
  	patch:body [
 %s
 	] .
@@ -294,7 +294,7 @@ class IngenAsync(Interface):
         x = '''
 []
 	a patch:Set ;
-	patch:subject </graph%s> ;
+	patch:subject <%s> ;
         patch:property %s ;
 	patch:value %s .
 ''' % (path, prop, value)
@@ -307,8 +307,8 @@ class IngenAsync(Interface):
 	patch:subject <> ;
 	patch:body [
 		a ingen:Arc ;
-		ingen:tail </graph%s> ;
-		ingen:head </graph%s> ;
+		ingen:tail <%s> ;
+		ingen:head <%s> ;
 	] .
 ''' % (tail, head), callback)
 
@@ -318,8 +318,8 @@ class IngenAsync(Interface):
 	a patch:Delete ;
 	patch:body [
 		a ingen:Arc ;
-		ingen:tail </graph%s> ;
-		ingen:head </graph%s> ;
+		ingen:tail <%s> ;
+		ingen:head <%s> ;
 	] .
 ''' % (tail, head), callback)
 
@@ -327,15 +327,15 @@ class IngenAsync(Interface):
         return self._send('''
 []
 	a patch:Delete ;
-	patch:subject </graph%s> .
+	patch:subject <%s> .
 ''' % path, callback)
 
     def move(self, source, target, callback=lambda r: r):
         return self._send('''
 []
         a patch:Move ;
-        patch:subject </graph%s> ;
-        patch:destination </graph%s> .
+        patch:subject <%s> ;
+        patch:destination <%s> .
 ''' % (source, target), callback)
 
     def patch(self, path, remove, add, callback=lambda r:r):
@@ -350,7 +350,7 @@ class IngenAsync(Interface):
         return self._send('''
 []
         a patch:Patch ;
-        patch:subject </graph%s> ;
+        patch:subject <%s> ;
         patch:remove [
             %s
         ] ;

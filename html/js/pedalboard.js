@@ -1052,7 +1052,7 @@ JqueryClass('pedalboard', {
                 instance = instance.slice(0, -1) + i
             }
         }
-        return instance
+        return '/graph/' + instance
     },
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the

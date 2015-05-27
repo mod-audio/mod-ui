@@ -645,7 +645,6 @@ class AtomWebSocket(websocket.WebSocketHandler):
 
 class EffectPosition(web.RequestHandler):
     def get(self, instance):
-        instance = instance
         x = int(float(self.get_argument('x')))
         y = int(float(self.get_argument('y')))
         SESSION.effect_position(instance, x, y)
@@ -1222,21 +1221,21 @@ application = web.Application(
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/resources/(.*)", EffectResource),
 
-            (r"/effect/add/([A-Za-z0-9_]+)/?", EffectAdd),
+            (r"/effect/add/([A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulkData),
-            (r"/effect/remove/([A-Za-z0-9_]+)", EffectRemove),
-            (r"/effect/connect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectConnect),
-            (r"/effect/disconnect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectDisconnect),
-            (r"/effect/preset/load/([A-Za-z0-9_]+)", EffectPresetLoad),
-            (r"/effect/parameter/set/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterSet),
-            (r"/effect/parameter/get/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterGet),
-            (r"/effect/parameter/address/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterAddress),
-            (r"/effect/bypass/([A-Za-z0-9_]+),(\d+)", EffectBypass),
-            (r"/effect/bypass/address/([A-Za-z0-9_]),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+            (r"/effect/remove/([A-Za-z0-9_/]+[^/])/?", EffectRemove),
+            (r"/effect/connect/([A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
+            (r"/effect/disconnect/([A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
+            (r"/effect/preset/load/([A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
+            (r"/effect/parameter/set/([A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
+            (r"/effect/parameter/get//([A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
+            (r"/effect/parameter/address//([A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/bypass/([A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
+            (r"/effect/bypass/address/([A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
-            (r"/effect/position/([A-Za-z0-9_]+)/?", EffectPosition),
+            (r"/effect/position/([A-Za-z0-9_/]+[^/])/?", EffectPosition),
             (r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),

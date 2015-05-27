@@ -127,7 +127,7 @@ class Session(object):
 
     def websocket_opened(self, ws):
         self.websockets.append(ws)
-        self.host.get("/")
+        self.host.get("/graph")
 
     @gen.engine
     def host_callback(self):
