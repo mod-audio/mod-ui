@@ -312,21 +312,24 @@ def get_pedalboards():
 
     pedalboards = []
 
-    for plugin in PLUGINS:
+    for pedalboard in PLUGINS:
         # check if the plugin is a pedalboard
         def fill_in_type(node):
             return node.as_string()
-        plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
+        plugin_types = [i for i in LILV_FOREACH(pedalboard.get_value(rdf.type_), fill_in_type)]
 
         if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
             continue
 
         pedalboards.append({
-            'uri': plugin.get_uri().as_string(),
-            'name': plugin.get_value(modpedal.name).get_first().as_string(),
-            'screenshot': plugin.get_value(modpedal.screenshot).get_first().as_string(),
-            'thumbnail': plugin.get_value(modpedal.thumbnail).get_first().as_string(),
-            'presets': get_presets(plugin)
+            'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
+            'uri':  pedalboard.get_uri().as_string(),
+            'name': pedalboard.get_value(modpedal.name).get_first().as_string(),
+            'screenshot': lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.screenshot).get_first().as_string()),
+            'thumbnail':  lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.thumbnail).get_first().as_string()),
+            'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),
+            'height': pedalboard.get_value(modpedal.height).get_first().as_int(),
+            'presets': get_presets(pedalboard)
         })
 
     return pedalboards

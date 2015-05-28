@@ -49,15 +49,16 @@ class Pedalboard(object):
             width = 0
             height = 0
         self.data = {
-            '_id': None,
-            'metadata': {
-                'title': '',
-                'tstamp': None,
-                },
-            'width': width,
-            'height': height,
             'instances': {},
             'connections': [],
+            'metadata': {
+                'title':      "",
+                'thumbnail':  "",
+                'tstamp':     None,
+            },
+            'uri':    "",
+            'width':  width,
+            'height': height
             }
         self.init_addressings()
 

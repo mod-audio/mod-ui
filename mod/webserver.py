@@ -57,7 +57,7 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lv2 import get_pedalboard_info
+from mod.lv2 import get_pedalboard_info, get_pedalboards
 from mod.screenshot import ScreenshotGenerator, generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
@@ -273,8 +273,6 @@ class Searcher(tornado.web.RequestHandler):
 
     def list(self):
         result = []
-        if self.index is None:
-            return result
         for entry in self.index.every():
             obj = self.get_object(entry['id'])
             if obj is None:
@@ -653,14 +651,6 @@ class EffectPosition(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
 
-class PedalboardSize(web.RequestHandler):
-    def get(self):
-        width = int(self.get_argument('width'))
-        height = int(self.get_argument('height'))
-        SESSION.pedalboard_size(width, height)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
-
 class PackageEffectList(web.RequestHandler):
     def get(self, package):
         index = indexing.EffectIndex()
@@ -676,6 +666,24 @@ class PackageUninstall(web.RequestHandler):
 
 class PedalboardSearcher(Searcher):
     index = None
+
+    def list(self):
+        result = []
+        pedals = get_pedalboards()
+        for pedal in pedals:
+            result.append({
+                'instances': {},
+                'connections': [],
+                'metadata': {
+                    'title':     pedal['name'],
+                    'thumbnail': pedal['thumbnail'],
+                    'tstamp':    None,
+                },
+                'uri':    pedal['uri'],
+                'width':  pedal['width'],
+                'height': pedal['height']
+            })
+        return result
 
 class PedalboardSave(web.RequestHandler):
     @web.asynchronous
@@ -787,6 +795,14 @@ class PedalboardScreenshot(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
         self.finish()
+
+class PedalboardSize(web.RequestHandler):
+    def get(self):
+        width = int(self.get_argument('width'))
+        height = int(self.get_argument('height'))
+        SESSION.pedalboard_size(width, height)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
 
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
@@ -1252,9 +1268,9 @@ application = web.Application(
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
-            (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
-            (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
-            (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),
+            (r"/pedalboard/load/?", PedalboardLoad),
+            (r"/pedalboard/remove/?", PedalboardRemove),
+            (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
 
             (r"/banks/?", BankLoad),
@@ -1299,7 +1315,7 @@ application = web.Application(
 
             (r"/websocket/?$", AtomWebSocket),
 
-            #(r"/pedalboards/(.*)", web.StaticFileHandler, {"path": PEDALBOARD_SCREENSHOT_DIR}), # TODO
+            (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": "/"}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
             debug=LOG, **settings)
