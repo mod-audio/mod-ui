@@ -41,9 +41,6 @@ PLUGIN_LIBRARY_DIR = os.environ.get('MOD_PLUGIN_LIBRARY_DIR', join(DATA_DIR, '..
 PLUGIN_INSTALLATION_TMP_DIR = os.environ.get('MOD_PLUGIN_INSTALLATION_DIR', join(DATA_DIR, 'lib_tmp'))
 INDEX_PATH = os.environ.get('MOD_INDEX_PATH', join(DATA_DIR, 'effects.index'))
 EFFECT_DIR = os.environ.get('MOD_EFFECT_DIR', join(DATA_DIR, 'effects'))
-PEDALBOARD_DIR = os.environ.get('MOD_PEDALBOARD_DIR', join(DATA_DIR, 'pedalboards'))
-PEDALBOARD_BINARY_DIR = join(PEDALBOARD_DIR, 'binary')
-PEDALBOARD_INDEX_PATH = os.environ.get('MOD_PEDALBOARD_INDEX_PATH', join(DATA_DIR, 'pedalboards.index'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/effects'))
@@ -158,8 +155,6 @@ DEFAULT_JACK_BUFSIZE = int(os.environ.get('MOD_DEFAULT_JACK_BUFSIZE', 128))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 
-for dirname in (PEDALBOARD_BINARY_DIR,
-                PLUGIN_INSTALLATION_TMP_DIR,
-		HARDWARE_DIR):
+for dirname in (PLUGIN_INSTALLATION_TMP_DIR, HARDWARE_DIR):
     if not os.path.exists(dirname):
         os.makedirs(dirname)

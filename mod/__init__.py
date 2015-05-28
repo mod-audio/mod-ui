@@ -73,15 +73,13 @@ def ensure_index_sync(index, dirname):
         index.reindex()
 
 def check_environment(callback):
-    from mod.settings import (EFFECT_DIR, PEDALBOARD_DIR,
-                              HARDWARE_DIR, INDEX_PATH,
-                              PEDALBOARD_INDEX_PATH, DEVICE_SERIAL, DEVICE_MODEL,
+    from mod.settings import (EFFECT_DIR, HARDWARE_DIR, INDEX_PATH,
+                              DEVICE_SERIAL, DEVICE_MODEL,
                               DOWNLOAD_TMP_DIR, BANKS_JSON_FILE, HTML_DIR)
     from mod import indexing
     from mod.session import SESSION
 
-    for dirname in (EFFECT_DIR, PEDALBOARD_DIR,
-                    HARDWARE_DIR, DOWNLOAD_TMP_DIR):
+    for dirname in (EFFECT_DIR, HARDWARE_DIR, DOWNLOAD_TMP_DIR):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
@@ -92,7 +90,6 @@ def check_environment(callback):
 
     # Index creation will check consistency and rebuild index if necessary
     effect_index = indexing.EffectIndex()
-    pedal_index = indexing.PedalboardIndex()
 
     # Migrations. Since we don't have a migration mechanism, let's do it here
     # TODO Migration system where we'll have migration scripts that will be marked as
@@ -111,7 +108,6 @@ def check_environment(callback):
         open(path, 'w').write(json.dumps(metadata))
     # TODO check if all pedalboards in banks database really exist, otherwise remove them from banks
     ensure_index_sync(effect_index, EFFECT_DIR)
-    ensure_index_sync(pedal_index, PEDALBOARD_DIR)
 
     # TEMPORARIO, APENAS NO DESENVOLVIMENTO
     if os.path.exists(DEVICE_SERIAL) and not os.path.exists(DEVICE_MODEL):
@@ -134,14 +130,12 @@ def rebuild_database(modguis_only = False, callback = None):
       - Remove effect json files and parse TTL files again
       - Rebuild effect and pedalboard indexes
     """
-    from mod.settings import (EFFECT_DIR, INDEX_PATH, PEDALBOARD_INDEX_PATH)
-    from mod.indexing import EffectIndex, PedalboardIndex
+    from mod.settings import (EFFECT_DIR, INDEX_PATH)
+    from mod.indexing import EffectIndex
     from mod.lv2 import PluginSerializer, PLUGINS
 
     if os.path.exists(INDEX_PATH):
         shutil.rmtree(INDEX_PATH)
-    if os.path.exists(PEDALBOARD_INDEX_PATH):
-        shutil.rmtree(PEDALBOARD_INDEX_PATH)
     if os.path.exists(EFFECT_DIR):
         shutil.rmtree(EFFECT_DIR)
     os.mkdir(EFFECT_DIR)
@@ -164,7 +158,6 @@ def rebuild_database(modguis_only = False, callback = None):
         callback(100.0, "")
 
     # The index will be rebuilt just by instantiating it
-    PedalboardIndex()
+    #PedalboardIndex()
     EffectIndex()
-
 

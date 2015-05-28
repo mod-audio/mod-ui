@@ -16,8 +16,7 @@
 
 import os, json, logging, copy
 from datetime import datetime
-from mod.settings import (PEDALBOARD_DIR, PEDALBOARD_INDEX_PATH,
-                          INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
+from mod.settings import (INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
 
 from mod import json_handler
 from mod.bank import remove_pedalboard_from_banks
@@ -74,15 +73,15 @@ class Pedalboard(object):
             data['instances'][instance['instanceId']] = instance
         self.data = data
 
-    def load(self, uid):
-        try:
-            fh = open(os.path.join(PEDALBOARD_DIR, str(uid)))
-        except IOError:
-            logging.error('[pedalboard] Unknown pedalboard %s' % uid)
-            return self.clear()
-        self.unserialize(json.load(fh))
-        fh.close()
-        self.load_addressings()
+    #def load(self, uid):
+        #try:
+            #fh = open(os.path.join(PEDALBOARD__DIR, str(uid)))
+        #except IOError:
+            #logging.error('[pedalboard] Unknown pedalboard %s' % uid)
+            #return self.clear()
+        #self.unserialize(json.load(fh))
+        #fh.close()
+        #self.load_addressings()
 
     def load_addressings(self):
         self.init_addressings()
@@ -97,36 +96,36 @@ class Pedalboard(object):
                 except KeyError:
                     self.data['instances'][addressing['instance_id']]['addressing'].pop(addressing['port_id'])
 
-    def save(self, title=None, as_new=False):
-        if as_new or not self.data['_id']:
-            self.data['_id'] = "RANDOM"
-        if title is not None:
-            self.set_title(title)
+    #def save(self, title=None, as_new=False):
+        #if as_new or not self.data['_id']:
+            #self.data['_id'] = "RANDOM"
+        #if title is not None:
+            #self.set_title(title)
 
-        title = self.data['metadata']['title']
+        #title = self.data['metadata']['title']
 
-        if not title:
-            raise self.ValidationError("Title cannot be empty")
+        #if not title:
+            #raise self.ValidationError("Title cannot be empty")
 
-        index = indexing.PedalboardIndex()
-        try:
-            existing = next(index.find(title=title))
-            assert existing['id'] == str(self.data['_id'])
-        except StopIteration:
-            pass
-        except AssertionError:
-            raise self.ValidationError('Pedalboard "%s" already exists' % title)
+        #index = indexing.PedalboardIndex()
+        #try:
+            #existing = next(index.find(title=title))
+            #assert existing['id'] == str(self.data['_id'])
+        #except StopIteration:
+            #pass
+        #except AssertionError:
+            #raise self.ValidationError('Pedalboard "%s" already exists' % title)
 
-        fh = open(os.path.join(PEDALBOARD_DIR, str(self.data['_id'])), 'w')
-        self.data['metadata']['tstamp'] = datetime.now()
-        serialized = self.serialize()
-        fh.write(json.dumps(serialized, default=json_handler))
-        fh.close()
+        #fh = open(os.path.join(PEDALBOARD__DIR, str(self.data['_id'])), 'w')
+        #self.data['metadata']['tstamp'] = datetime.now()
+        #serialized = self.serialize()
+        #fh.write(json.dumps(serialized, default=json_handler))
+        #fh.close()
 
-        index = indexing.PedalboardIndex()
-        index.add(self.data)
+        #index = indexing.PedalboardIndex()
+        #index.add(self.data)
 
-        return self.data['_id']
+        #return self.data['_id']
 
     def _port_to_list(self, port):
         port = port.split(':')
@@ -299,15 +298,15 @@ class Pedalboard(object):
             bufsize = max(effect['bufsize'], minimum)
         return bufsize
 
-def remove_pedalboard(uid):
-    # Delete pedalboard file
-    fname = os.path.join(PEDALBOARD_DIR, str(uid))
-    if not os.path.exists(fname):
-        return False
-    os.remove(fname)
+#def remove_pedalboard(uid):
+    ## Delete pedalboard file
+    #fname = os.path.join(PEDALBOARD__DIR, str(uid))
+    #if not os.path.exists(fname):
+        #return False
+    #os.remove(fname)
 
-    # Remove from index
-    index = indexing.PedalboardIndex()
-    index.delete(uid)
+    ## Remove from index
+    #index = indexing.PedalboardIndex()
+    #index.delete(uid)
 
-    return remove_pedalboard_from_banks(uid)
+    #return remove_pedalboard_from_banks(uid)

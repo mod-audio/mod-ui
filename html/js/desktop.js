@@ -300,7 +300,8 @@ function Desktop(elements) {
 
         if (usingDesktop || true)
         {
-            $('#mod-pedalboard').hide()
+            // TESTING
+            //$('#mod-pedalboard').hide()
             $('#pedalboard-actions').hide()
             $("#pedalboard-dashboard").parent().css({
                 'top': '0px'

@@ -37,7 +37,7 @@ from glob import glob
 
 from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
-                          PEDALBOARD_DIR, CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
+                          CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           PLUGIN_INSTALLATION_TMP_DIR, DEFAULT_ICON_TEMPLATE,
                           DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -54,7 +54,7 @@ from mod import indexing, jsoncall, json_handler
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
-from mod.pedalboard import Pedalboard, remove_pedalboard
+from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
 from mod.lv2 import get_pedalboard_info
@@ -273,6 +273,8 @@ class Searcher(tornado.web.RequestHandler):
 
     def list(self):
         result = []
+        if self.index is None:
+            return result
         for entry in self.index.every():
             obj = self.get_object(entry['id'])
             if obj is None:
@@ -673,7 +675,7 @@ class PackageUninstall(web.RequestHandler):
         self.write(json.dumps(result, default=json_handler))
 
 class PedalboardSearcher(Searcher):
-    index = indexing.PedalboardIndex()
+    index = None
 
 class PedalboardSave(web.RequestHandler):
     @web.asynchronous
@@ -754,8 +756,13 @@ class PedalboardLoad(web.RequestHandler):
         self.finish()
 
 class PedalboardRemove(web.RequestHandler):
-    def get(self, uid):
-        remove_pedalboard(uid)
+    def get(self, bundlepath):
+        # there's 4 steps to this:
+        # 1 - remove the bundle from disk
+        # 2 - remove the bundle from our lv2 lilv world
+        # 3 - remove references to the bundle in banks
+        # 4 - tell ingen the bundle (plugin) is gone
+        pass
 
 class PedalboardScreenshot(web.RequestHandler):
     @web.asynchronous
@@ -814,7 +821,8 @@ class BankLoad(web.RequestHandler):
             pedalboards = []
             for pedalboard in bank['pedalboards']:
                 try:
-                    full_pedalboard = open(os.path.join(PEDALBOARD_DIR, pedalboard['id'])).read()
+                    #full_pedalboard = open(os.path.join(PEDALBOARD__DIR, pedalboard['id'])).read()
+                    TODO
                 except IOError:
                     # Remove from banks pedalboards that have been removed
                     continue
