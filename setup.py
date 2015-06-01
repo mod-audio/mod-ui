@@ -42,7 +42,7 @@ setup(name = 'mod',
                     ('html/css', glob.glob('html/css/*.css')),
                     ('html/js', glob.glob('html/js/*.js')),
                     ('html/js/lib', glob.glob('html/js/lib/*.js')),
-                    ('tools', 'screenshot.js'),
+                    ('tools', 'tools/screenshot.js'),
           ],
       install_requires = ['tornado', 'whoosh'],
       classifiers = [
