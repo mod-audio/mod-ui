@@ -1,0 +1,79 @@
+<div class="mod-pedal-settings">
+    <header class="clearfix">
+        <h1 class="alignleft">{{effect.name}}</h1>
+        <button class="js-close alignright btn btn-danger">Close</button>
+    </header>
+    <div class="mod-presets clearfix">
+        <select  mod-role="presets">
+            <option value="">---</option>
+            {{#effect.preset_list}}
+            <option mod-role="preset-label" value="{{uri}}">{{label}}</option>
+            {{/effect.preset_list}}
+        </select>
+    </div>
+    <div class="mod-controls clearfix">
+        <div class="mod-control-group clearfix">
+                <div class="mod-switch bypass">
+                    <span class="mod-switch-title">ON/OFF</span>
+                    <div class="mod-light on" mod-role="bypass-light"></div>
+                    <div class="mod-switch-image" mod-role="bypass"></div>
+                    <div class="mod-address" mod-role="bypass-address"></div>
+                </div>
+            {{#effect.ports.control.input}}
+                {{#enumeration}}
+                <div class="mod-enumerated">
+                    <span class="mod-enumerated-title">{{name}}</span>
+                    <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                    <div class="mod-enumerated-list" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="custom-select">
+                        {{#scalePoints}}
+                        <div mod-role="enumeration-option" mod-port-value="{{value}}">{{label}}</div>
+                        {{/scalePoints}}
+                    </div>
+                </div>
+                {{/enumeration}}
+            {{/effect.ports.control.input}}
+
+            {{#effect.ports.control.input}}
+                {{^enumeration}}
+                {{^trigger}}
+		            {{^toggled}}
+                <div class="mod-knob">
+                    <span class="mod-knob-title">{{name}}</span>
+                    <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
+                    <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
+                    <span class="mod-knob-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
+                    <div class="mod-knob-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                    <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                </div>
+		{{/toggled}}
+		{{#toggled}}
+                <div class="mod-switch">
+                    <span class="mod-switch-title">{{name}}</span>
+                    <div class="mod-switch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                    <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                </div>
+		{{/toggled}}
+    {{/trigger}}
+    {{#trigger}}
+                <div class="mod-switch">
+                    <span class="mod-switch-title">{{name}}</span>
+                    <div class="mod-footswitch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                    <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                </div>
+    {{/trigger}}
+                {{/enumeration}}
+
+                <!-- SLIDER
+                <div class="mod-slider">
+                    <span class="mod-slider-title">{{name}}</span>
+                    <span class="mod-slider-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
+                    <span class="mod-slider-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
+                    <span class="mod-slider-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
+                    <div class="mod-slider-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                    <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                </div>
+                -->
+            {{/effect.ports.control.input}}
+        </div>
+    </div>
+</div>
