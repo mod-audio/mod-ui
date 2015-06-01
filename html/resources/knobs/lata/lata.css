@@ -1,0 +1,108 @@
+/* STYLES FOR THE BOXY KNOB */
+
+/* = KNOBS
+================================================ */
+.mod-pedal-lata .mod-control-group {
+    height:141px;
+    left:0;
+    position:absolute;
+    right:0;
+    text-align:center;
+    top:36px;
+}
+
+.mod-pedal-lata .mod-control-group .mod-knob {
+    display:inline-block;
+    height:100px;
+    position:relative;
+    text-align:center;
+    width:79px;
+}
+
+.mod-pedal-lata .mod-control-group .mod-knob .mod-knob-image { 
+    background-image:url(lata.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    background-size:auto 79px;
+    height:79px;
+    position:relative;
+    overflow:hidden;
+    width:79px;
+}
+
+.mod-pedal-lata.mod-blue .mod-control-group .mod-knob > span.mod-knob-title { 
+    color:black;
+}
+
+.mod-pedal-lata.mod-brown .mod-control-group .mod-knob > span.mod-knob-title {
+    color:white;
+}
+
+.mod-pedal-lata.mod-cream .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+}
+
+.mod-pedal-lata.mod-darkblue .mod-control-group .mod-knob > span.mod-knob-title {
+    color:white;
+}
+
+.mod-pedal-lata.mod-gray .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+}
+
+.mod-pedal-lata.mod-green .mod-control-group .mod-knob > span.mod-knob-title {
+    color:white;
+}
+
+.mod-pedal-lata.mod-orange .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+}
+
+.mod-pedal-lata.mod-purple .mod-control-group .mod-knob > span.mod-knob-title {
+    color:white;
+}
+
+.mod-pedal-lata.mod-red .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+}
+
+.mod-pedal-lata.mod-white .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+}
+
+.mod-pedal-lata.mod-yellow .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+}
+
+.mod-pedal-lata .mod-control-group .mod-knob > span.mod-knob-title {
+    bottom:6px;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    left:0;
+    line-height:1;
+    margin:0;
+    overflow:hidden;
+    padding:0;
+    position:absolute;
+    right:0;
+    text-transform:uppercase;
+}
+
+.mod-pedal-lata .mod-control-group {
+    margin:20px;
+    position:relative;
+    text-align:center;
+    z-index:30;
+}
+
+.mod-pedal-lata.mod-seven-knobs .mod-control-group,
+.mod-pedal-lata.mod-eight-knobs .mod-control-group {
+    margin:0 6px;
+}
+
+.mod-pedal-lata.mod-seven-knobs .mod-control-group .mod-knob,
+.mod-pedal-lata.mod-eight-knobs .mod-control-group .mod-knob {
+    display:inline-block;
+}
