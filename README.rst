@@ -12,6 +12,9 @@ The following packages will be required::
 
     $ sudo apt-get install python-virtualenv python3-pip python3-dev git zlib1g:amd64 build-essential
 
+You also need to install `python3-lilv` from KXStudio repositories. Please, follow
+the [KXStudio instructions](http://kxstudio.sourceforge.net/Repositories).
+
 Start by cloning the repository::
 
     $ git clone --recursive https://github.com/portalmod/mod-ui.git
