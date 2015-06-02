@@ -68,8 +68,7 @@ EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.js
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
-ROOT = os.path.dirname(os.path.realpath(__file__))
-HTML_DIR = os.environ.get('MOD_HTML_DIR', join(ROOT, '../html/'))
+HTML_DIR = os.environ.get('MOD_HTML_DIR', join(sys.prefix, 'share/mod/html/'))
 
 DEFAULT_ICON_TEMPLATE = join(HTML_DIR, 'resources/templates/pedal-default.html')
 DEFAULT_SETTINGS_TEMPLATE = join(HTML_DIR, 'resources/settings.html')
@@ -82,7 +81,7 @@ BLUETOOTH_PIN = os.environ.get('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pi
 
 PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(ROOT, '../tools/screenshot.js'))
+SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(sys.prefix, 'share/mod/screenshot.js'))
 
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350
