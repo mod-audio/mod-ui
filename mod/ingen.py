@@ -46,6 +46,12 @@ ingen:canvasY %f
         self.set("/graph", "<http://portalmod.com/ns/modpedal#screenshot>", "<ingen:/screenshot.png>", callback)
         self.set("/graph", "<http://portalmod.com/ns/modpedal#thumbnail>", "<ingen:/thumbnail.png>", callback)
 
+    def load(self, bundlepath, callback=lambda r:r):
+        self.copy("<file://%s>" % bundlepath, "/graph", callback)
+
+    def save(self, bundlepath, callback=lambda r:r):
+        self.copy("/graph", "<file://%s>" % bundlepath, callback)
+
     def set_pedalboard_name(self, name, callback=lambda r:r):
         self.set("/graph", "<http://portalmod.com/ns/modpedal#name>", '"%s"' % name, callback)
 

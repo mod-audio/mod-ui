@@ -323,6 +323,14 @@ class IngenAsync(Interface):
 	] .
 ''' % (tail, head), callback)
 
+    def copy(self, source, target, callback=lambda r: r):
+        return self._send('''
+[]
+	a patch:Copy ;
+        patch:subject <%s> ;
+        patch:destination <%s> .
+''' % (source, target), callback)
+
     def delete(self, path, callback=lambda r: r):
         return self._send('''
 []
