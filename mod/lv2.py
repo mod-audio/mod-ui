@@ -8,6 +8,29 @@ W = lilv.World()
 W.load_all()
 
 PLUGINS = W.get_all_plugins()
+BUNDLES = []
+
+# Make a list of all installed bundles
+for p in PLUGINS:
+    bundles = lilv.lilv_plugin_get_data_uris(p.me)
+
+    it = lilv.lilv_nodes_begin(bundles)
+    while not lilv.lilv_nodes_is_end(bundles, it):
+        bundle = lilv.lilv_nodes_get(bundles, it)
+        it     = lilv.lilv_nodes_next(bundles, it)
+
+        if bundle is None:
+            continue
+        if not lilv.lilv_node_is_uri(bundle):
+            continue
+
+        bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+
+        if not bundle.endswith(os.sep):
+            bundle += os.sep
+
+        if bundle not in BUNDLES:
+            BUNDLES.append(bundle)
 
 class NS(object):
     def __init__(self, base, world=W):
@@ -340,6 +363,10 @@ def add_bundle_to_lilv_world(bundlepath):
     if not bundlepath.endswith(os.sep):
         bundlepath += os.sep
 
+    # safety check
+    if bundlepath in BUNDLES:
+        return
+
     # convert bundle string into a lilv node
     bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
 
@@ -348,6 +375,9 @@ def add_bundle_to_lilv_world(bundlepath):
 
     # free bundlenode, no longer needed
     lilv.lilv_node_free(bundlenode)
+
+    # add to world
+    BUNDLES.append(bundlepath)
 
 class PluginSerializer(object):
     def __init__(self, uri=None, plugin=None):

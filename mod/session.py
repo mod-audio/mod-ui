@@ -36,6 +36,7 @@ from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 #from mod.host import Host
 from mod.ingen import Host
+from mod.lv2 import add_bundle_to_lilv_world
 from mod.clipmeter import Clipmeter
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
@@ -160,6 +161,7 @@ class Session(object):
                 self.instances.append(instance)
 
         def pedal_save_cb(bundlepath):
+            add_bundle_to_lilv_world(bundlepath)
             self.screenshot_generator.schedule_screenshot(bundlepath)
 
         def delete_cb(instance):
