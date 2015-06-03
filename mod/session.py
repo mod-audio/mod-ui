@@ -110,6 +110,7 @@ class Session(object):
 
         self.recorder = Recorder()
         self.player = Player()
+        self.bundlepath = None
         self.mute_state = True
         self.recording = None
         self.instances = []
@@ -211,16 +212,17 @@ class Session(object):
                 callback(r)
         remove_all_plugins()
 
-    def save_pedalboard(self, title, asNew):
+    def save_pedalboard(self, bundlepath, title, callback):
+        def callback2(ok):
+            self.bundlepath = bundlepath if ok else None
+            callback(ok)
+
         self.host.set_pedalboard_name(title)
-        bundlepath = os.path.expanduser("~/.lv2/testing.ingen")
-        if self._save_waiter is not None:
-            self._save_waiter()
-        if not os.path.exists(bundlepath):
-            raise Pedalboard.ValidationError("failed to find testing pedalboard, did you save it like I asked?")
-        return bundlepath
+        self.host.save(bundlepath, callback2)
 
     def load_pedalboard(self, bundlepath):
+        # TODO
+        self.bundlepath = bundlepath
         if self._load_pb_hack is not None:
             self._load_pb_hack(bundlepath)
 

@@ -690,20 +690,37 @@ class PedalboardSave(web.RequestHandler):
     @gen.engine
     def post(self):
         title = self.get_argument('title')
-        as_new = bool(int(self.get_argument('asNew')))
+        asNew = bool(int(self.get_argument('asNew')))
 
-        try:
-            bundlepath = SESSION.save_pedalboard(title, as_new)
-        except Pedalboard.ValidationError as e:
-            self.write(json.dumps({ 'ok': False, 'error': str(e) }))
+        if SESSION.bundlepath is not None and not asNew:
+            bundlepath = SESSION.bundlepath
+        else:
+            from random import randint
+            bundlepath = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+
+            while True:
+                # generate a random filename based on title
+                trypath = os.path.join(bundlepath, "%s-%i.ingen" % (title, randint(1,99999))) # s/.ingen/.pedalboard/
+                if os.path.exists(trypath):
+                    continue
+                bundlepath = trypath
+                break
+
+        def callback(ok):
+            if ok:
+                # FIXME: callback is called before bundle is ready
+                from time import sleep
+                sleep(1)
+
+                SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
+                self.set_header('Content-Type', 'application/json')
+                self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
+            else:
+                self.write(json.dumps({ 'ok': False, 'error': "Failed" })) # TODO more descriptive error?
+
             self.finish()
-            return
 
-        SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
-
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
-        self.finish()
+        SESSION.save_pedalboard(bundlepath, title, callback)
 
 class PedalboardPackBundle(web.RequestHandler):
     @web.asynchronous
