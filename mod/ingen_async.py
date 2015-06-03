@@ -172,9 +172,9 @@ class IngenAsync(object):
             # Checks for Copy messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Copy]):
                 bnode   = i[0]
-                subject = msg_model.value(bnode, NS.patch.subject).toPython()
+                subject = msg_model.value(bnode, NS.patch.subject).toPython().replace(self.proto_base,"",1)
 
-                if subject == "unix:///graph/":
+                if subject == "/graph/":
                     bundlepath = os.path.dirname(msg_model.value(bnode, NS.patch.destination).toPython())
                     self.save_callback(bundlepath.replace("file://","",1)) # FIXME ?
 

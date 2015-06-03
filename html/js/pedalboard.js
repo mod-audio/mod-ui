@@ -460,12 +460,12 @@ JqueryClass('pedalboard', {
             var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
             var inputM = $('<div class="hardware-input" title="Hardware MIDI Output">')
 
-            self.pedalboard('addHardwareOutput', outputL, 'audio_in_1', 'audio')
-            self.pedalboard('addHardwareOutput', outputR, 'audio_in_2', 'audio')
-            self.pedalboard('addHardwareOutput', outputM, 'control_in', 'midi')
-            self.pedalboard('addHardwareInput', inputL, 'audio_out_1', 'audio')
-            self.pedalboard('addHardwareInput', inputR, 'audio_out_2', 'audio')
-            self.pedalboard('addHardwareInput', inputM, 'control_out', 'midi')
+            self.pedalboard('addHardwareOutput', outputL, '/graph/audio_in_1', 'audio')
+            self.pedalboard('addHardwareOutput', outputR, '/graph/audio_in_2', 'audio')
+            self.pedalboard('addHardwareOutput', outputM, '/graph/control_in', 'midi')
+            self.pedalboard('addHardwareInput', inputL, '/graph/audio_out_1', 'audio')
+            self.pedalboard('addHardwareInput', inputR, '/graph/audio_out_2', 'audio')
+            self.pedalboard('addHardwareInput', inputM, '/graph/control_out', 'midi')
 
             // Queue is empty, let's load connections now
             self.pedalboard('positionHardwarePorts')
