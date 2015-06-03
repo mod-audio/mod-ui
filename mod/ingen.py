@@ -27,20 +27,6 @@ except ImportError:
     from io import StringIO as StringIO
 
 class Host(IngenAsync):
-
-    def add(self, uri, instance, x, y, callback=lambda r: r):
-        self.put(instance, """a ingen:Block ;
-<http://lv2plug.in/ns/lv2core#prototype> <%s> ;
-ingen:canvasX %f ;
-ingen:canvasY %f
-""" % (uri, float(x), float(y)), callback)
-
-    def connect(self, tail, head, callback=lambda r: r):
-        return IngenAsync.connect(self, "%s" % tail, "%s" % head, callback)
-
-    def disconnect(self, tail, head, callback=lambda r: r):
-        return IngenAsync.disconnect(self, "%s" % tail, "%s" % head, callback)
-
     def initial_setup(self, callback=lambda r:r):
         self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://portalmod.com/ns/modpedal#Pedalboard>", callback)
         self.set("/graph", "<http://portalmod.com/ns/modpedal#screenshot>", "<ingen:/screenshot.png>", callback)
@@ -63,16 +49,16 @@ ingen:canvasY %f
         self.set(instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
         self.set(instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
 
-    def param_get(self, port, callback=lambda result: None):
+    def param_get(self, port, callback=lambda r:r):
         callback(1)
 
-    def param_set(self, port, value, callback=lambda result: None):
+    def param_set(self, port, value, callback=lambda r:r):
         self.set(port, "ingen:value", value, callback)
 
-    def preset_load(self, instance, uri, callback=lambda result: None):
+    def preset_load(self, instance, uri, callback=lambda r:r):
         self.set(instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
-    def remove(self, instance, callback=lambda result: None):
+    def remove(self, instance, callback=lambda r:r):
         self.delete(instance, callback)
 
     def cpu_load(self, callback=lambda r:r):
@@ -96,9 +82,9 @@ ingen:canvasY %f
             callback(False)
             return
 
-        import random
+        from random import randint
         x = 5.0 if mode == "Input" else 2300.0
-        y = random.randint(50,250)
+        y = randint(50,250)
 
         if typ == "MIDI":
             portyp = "<http://lv2plug.in/ns/ext/atom#AtomPort>"

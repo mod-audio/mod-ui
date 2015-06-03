@@ -36,23 +36,6 @@ class NS:
     presets     = rdflib.Namespace('http://lv2plug.in/ns/ext/presets#')
     parameters  = rdflib.Namespace('http://lv2plug.in/ns/ext/parameters#')
 
-class Interface:
-    'The core Ingen interface'
-    def put(self, path, body):
-        pass
-
-    def set(self, path, body):
-        pass
-
-    def connect(self, tail, head):
-        pass
-
-    def disconnect(self, tail, head):
-        pass
-
-    def delete(self, path):
-        pass
-
 class Error(Exception):
     def __init__(self, msg, cause):
         Exception.__init__(self, '%s; cause: %s' % (msg, cause))
@@ -86,7 +69,7 @@ def ingen_bundle_path():
             return bundle
     return None
 
-class IngenAsync(Interface):
+class IngenAsync(object):
     def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None):
         self.msg_id      = 1
         self.server_base = uri + '/'
@@ -266,67 +249,37 @@ class IngenAsync(Interface):
 
         raise Error(fmt, cause)
 
-    def get_engine_info(self, callback=lambda r:r):
-        return self._send('''
-[]
- 	a patch:Get ;
- 	patch:subject </engine/> .
-''',  callback)
+    # abstract methods
 
     def get(self, path, callback=lambda r:r):
         return self._send('''
 []
- 	a patch:Get ;
- 	patch:subject <%s> .
+        a patch:Get ;
+        patch:subject <%s> .
 ''' % path, callback)
-
-    def put(self, path, body, callback=lambda r:r):
-        return self._send('''
-[]
- 	a patch:Put ;
- 	patch:subject <%s> ;
- 	patch:body [
-%s
-	] .
-''' % (path, body), callback)
 
     def set(self, path, prop, value, callback=lambda r:r):
         x = '''
 []
-	a patch:Set ;
-	patch:subject <%s> ;
+        a patch:Set ;
+        patch:subject <%s> ;
         patch:property %s ;
-	patch:value %s .
+        patch:value %s .
 ''' % (path, prop, value)
         return self._send(x, callback)
 
-    def connect(self, tail, head, callback=lambda r: r):
+    def put(self, path, body, callback=lambda r:r):
         return self._send('''
 []
-	a patch:Put ;
-	patch:subject <> ;
-	patch:body [
-		a ingen:Arc ;
-		ingen:tail <%s> ;
-		ingen:head <%s> ;
-	] .
-''' % (tail, head), callback)
-
-    def disconnect(self, tail, head, callback=lambda r: r):
-        return self._send('''
-[]
-	a patch:Delete ;
-	patch:body [
-		a ingen:Arc ;
-		ingen:tail <%s> ;
-		ingen:head <%s> ;
-	] .
-''' % (tail, head), callback)
+        a patch:Put ;
+        patch:subject <%s> ;
+        patch:body [ %s ] .
+''' % (path, body), callback)
 
     def copy(self, source, target, callback=lambda r: r):
         return self._send('''
 []
-	a patch:Copy ;
+        a patch:Copy ;
         patch:subject <%s> ;
         patch:destination <%s> .
 ''' % (source, target), callback)
@@ -334,8 +287,8 @@ class IngenAsync(Interface):
     def delete(self, path, callback=lambda r: r):
         return self._send('''
 []
-	a patch:Delete ;
-	patch:subject <%s> .
+        a patch:Delete ;
+        patch:subject <%s> .
 ''' % path, callback)
 
     def move(self, source, target, callback=lambda r: r):
@@ -359,13 +312,49 @@ class IngenAsync(Interface):
 []
         a patch:Patch ;
         patch:subject <%s> ;
-        patch:remove [
-            %s
-        ] ;
-        patch:add [
-            %s
-        ] .
+        patch:remove [ %s ] ;
+        patch:add [ %s ] .
 ''' % (path, remove_str, add_str), callback)
+
+    # custom methods
+
+    def add(self, uri, instance, x, y, callback=lambda r: r):
+        self.put(instance, '''
+        a ingen:Block ;
+        <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+        ingen:canvasX %f ;
+        ingen:canvasY %f
+''' % (uri, float(x), float(y)), callback)
+
+    def connect(self, tail, head, callback=lambda r: r):
+        return self._send('''
+[]
+        a patch:Put ;
+        patch:subject <> ;
+        patch:body [
+                a ingen:Arc ;
+                ingen:tail <%s> ;
+                ingen:head <%s> ;
+        ] .
+''' % (tail, head), callback)
+
+    def disconnect(self, tail, head, callback=lambda r: r):
+        return self._send('''
+[]
+        a patch:Delete ;
+        patch:body [
+                a ingen:Arc ;
+                ingen:tail <%s> ;
+                ingen:head <%s> ;
+        ] .
+''' % (tail, head), callback)
+
+    def get_engine_info(self, callback=lambda r:r):
+        return self._send('''
+[]
+        a patch:Get ;
+        patch:subject </engine/> .
+''',  callback)
 
 if __name__ == "__main__":
     h = IngenAsync()
