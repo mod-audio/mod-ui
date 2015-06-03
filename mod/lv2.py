@@ -133,6 +133,7 @@ def get_pedalboard_info(bundle):
         raise Exception('get_info_from_lv2_bundle(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
 
     # define the needed stuff
+    doap = NS(lilv.LILV_NS_DOAP, world)
     rdf = NS(lilv.LILV_NS_RDF, world)
     ingen = NS('http://drobilla.net/ns/ingen#', world)
     lv2core = NS(lilv.LILV_NS_LV2, world)
@@ -151,7 +152,7 @@ def get_pedalboard_info(bundle):
     ingenblocks = []
 
     info = {
-        'name':   plugin.get_value(modpedal.name).get_first().as_string(),
+        'name':   plugin.get_value(doap.name).get_first().as_string(),
         'author': plugin.get_author_name().as_string() or '', # Might be empty
         'uri':    plugin.get_uri().as_string(),
         'hardware': {
@@ -324,7 +325,7 @@ def get_pedalboards():
         pedalboards.append({
             'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
             'uri':  pedalboard.get_uri().as_string(),
-            'name': pedalboard.get_value(modpedal.name).get_first().as_string(),
+            'name': pedalboard.get_value(doap.name).get_first().as_string(),
             'screenshot': lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.screenshot).get_first().as_string()),
             'thumbnail':  lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.thumbnail).get_first().as_string()),
             'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),
