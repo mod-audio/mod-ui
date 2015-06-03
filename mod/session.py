@@ -135,7 +135,9 @@ class Session(object):
     def host_callback(self):
         self.host_initialized = True
 
-        def port_value_cb(instance, port, value):
+        def port_value_cb(port, value):
+            instance = "/".join(port.split("/")[:-1])
+            port = port.split("/")[-1]
             instance_id = self.instance_mapper.map(instance)
             if self._pedalboard.data['instances'].get(instance_id, False):
                 self._pedalboard.parameter_set(instance_id, port, value)
@@ -158,10 +160,10 @@ class Session(object):
             if instance in self.instances:
                 self.instances.remove(instance)
 
-        def connection_add_cb(instance_a, port_a, instance_b, port_b):
+        def connection_add_cb(port_a, port_b):
             pass
 
-        def connection_delete_cb(instance_a, port_a, instance_b, port_b):
+        def connection_delete_cb(port_a, port_b):
             pass
 
         def msg_cb(msg):

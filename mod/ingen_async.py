@@ -73,6 +73,7 @@ class IngenAsync(object):
     def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None):
         self.msg_id      = 1
         self.server_base = uri + '/'
+        self.proto_base = "mod://"
         self.uri = uri
         self.model       = rdflib.Graph()
         self.ns_manager  = rdflib.namespace.NamespaceManager(self.model)
@@ -120,7 +121,7 @@ class IngenAsync(object):
             self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
             msg_model.namespace_manager = self.ns_manager
-            msg_model.parse(StringIO(msg_str), self.server_base, format='n3')
+            msg_model.parse(StringIO(msg_str), self.proto_base, format='n3')# self.server_base, format='n3')
 
             # Handle responses if any
             """"
@@ -165,7 +166,7 @@ class IngenAsync(object):
                 if NS.ingen.canvasX in msg_model.predicates(add_node) and NS.ingen.canvasY in msg_model.predicates(add_node):
                     x = msg_model.value(add_node, NS.ingen.canvasX).toPython()
                     y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
-                    self.position_callback(subject.toPython().split("/")[-1], x, y)
+                    self.position_callback(subject.partition(self.proto_base)[-1], x, y)
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
@@ -174,11 +175,9 @@ class IngenAsync(object):
 
                 # Setting a port value
                 if msg_model.value(bnode, NS.patch.property) == NS.ingen.value:
-                    sub = subject.toPython().split("/")
-                    instance = sub[-2]
-                    port = sub[-1]
+                    port = subject.partition(self.proto_base)[-1]
                     value = msg_model.value(bnode, NS.patch.value).toPython()
-                    self.port_value_callback(instance, port, value)
+                    self.port_value_callback(port, value)
                 elif msg_model.value(bnode, NS.patch.property) == NS.parameters.sampleRate:
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.samplerate_value_callback(value)
@@ -194,34 +193,28 @@ class IngenAsync(object):
                     value = msg_model.value(body, NS.ingen.value)
                     if value is None:
                         continue
-                    sub = subject.toPython().split("/")
-                    instance = sub[-2]
-                    port = sub[-1]
-                    self.port_value_callback(instance, port, value.toPython())
+                    port = subject.partition(self.proto_base)[-1]
+                    self.port_value_callback(port, value.toPython())
                 # Put for a plugin
                 elif msg_type == NS.ingen.Block:
                     protouri = msg_model.value(body, NS.lv2.prototype)
                     if protouri is None:
                         continue
-                    instance = subject.toPython().split("/")[-1]
+                    instance = subject.partition(self.proto_base)[-1]
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
                     self.plugin_add_callback(instance, protouri.toPython(), x or 0, y or 0)
                 # New port connection
                 elif msg_type == NS.ingen.Arc:
-                    head = msg_model.value(body, NS.ingen.head).toPython().split("/")
-                    tail = msg_model.value(body, NS.ingen.tail).toPython().split("/")
-                    instance_a = head[-2]
-                    port_a = head[-1]
-                    instance_b = tail[-2]
-                    port_b = tail[-1]
-                    self.connection_add_callback(instance_a, port_a, instance_b, port_b)
+                    head = msg_model.value(body, NS.ingen.head).partition(self.proto_base)[-1]
+                    tail = msg_model.value(body, NS.ingen.tail).partition(self.proto_base)[-1]
+                    self.connection_add_callback(head, tail)
             # Delete msgs
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Delete]):
                 bnode       = i[0]
                 subject     = msg_model.value(bnode, NS.patch.subject)
                 if subject:
-                    self.delete_callback(subject.toPython().split("/")[-1])
+                    self.delete_callback(subject.partition(self.proto_base)[-1])
 
         self._reading = True
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
