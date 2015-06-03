@@ -50,7 +50,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           )
 
 
-from mod import indexing, jsoncall, json_handler
+from mod import indexing, jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
@@ -692,34 +692,73 @@ class PedalboardSave(web.RequestHandler):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
 
-        if SESSION.bundlepath is not None and not asNew:
+        titlesym = symbolify(title)
+
+        # Save over existing bundlepath
+        if SESSION.bundlepath and os.path.exists(SESSION.bundlepath): # and not asNew: # FIXME: asNew is always set
             bundlepath = SESSION.bundlepath
+
+        # Save new
         else:
-            from random import randint
-            bundlepath = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+            lv2path = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
 
-            while True:
-                # generate a random filename based on title
-                trypath = os.path.join(bundlepath, "%s-%i.ingen" % (title, randint(1,99999))) # s/.ingen/.pedalboard/
-                if os.path.exists(trypath):
-                    continue
-                bundlepath = trypath
-                break
+            # if trypath already exists, generate a random bundlepath based on title
+            if os.path.exists(trypath):
+                from random import randint
 
-        def callback(ok):
-            if ok:
-                # FIXME: callback is called before bundle is ready
-                from time import sleep
-                sleep(1)
+                while True:
+                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+                    if os.path.exists(trypath):
+                        continue
+                    bundlepath = trypath
+                    break
 
-                SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
-                self.set_header('Content-Type', 'application/json')
-                self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
+            # trypath doesn't exist yet, use it
             else:
-                self.write(json.dumps({ 'ok': False, 'error': "Failed" })) # TODO more descriptive error?
+                bundlepath = trypath
 
+                # just in case..
+                if not os.path.exists(lv2path):
+                    os.mkdir(lv2path)
+
+            os.mkdir(bundlepath)
+
+        # callback for when ingen is done doing its business
+        def callback(ok):
+            if not ok:
+                self.write(json.dumps({ 'ok': False, 'error': "Failed" })) # TODO more descriptive error?
+                self.finish()
+                return
+
+            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
+            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fd:
+                fd.write('''\
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pedal: <http://portalmod.com/ns/modpedal#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<%s.ttl>
+    lv2:prototype ingen:GraphPrototype ;
+    a lv2:Plugin ,
+        pedal:Pedalboard ;
+    rdfs:seeAlso <%s.ttl> .
+''' % (titlesym, titlesym))
+
+            # FIXME: callback is called before bundle is ready
+            from time import sleep
+            sleep(1)
+
+            # Generate screenshot for this bundle
+            SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
+
+            # All ok!
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
             self.finish()
 
+        # Ask ingen to save
         SESSION.save_pedalboard(bundlepath, title, callback)
 
 class PedalboardPackBundle(web.RequestHandler):

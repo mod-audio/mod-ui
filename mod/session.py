@@ -30,6 +30,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
                           INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS, INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           DEFAULT_JACK_BUFSIZE)
+from mod import symbolify
 from mod.development import FakeHost, FakeHMI
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
@@ -218,7 +219,7 @@ class Session(object):
             callback(ok)
 
         self.host.set_pedalboard_name(title)
-        self.host.save(bundlepath, callback2)
+        self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), callback2)
 
     def load_pedalboard(self, bundlepath):
         # TODO

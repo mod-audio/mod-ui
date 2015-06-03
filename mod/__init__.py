@@ -161,3 +161,7 @@ def rebuild_database(modguis_only = False, callback = None):
     #PedalboardIndex()
     EffectIndex()
 
+# Turn any string into a LV2 compatible symbol
+def symbolify(name):
+    # TODO
+    return name
