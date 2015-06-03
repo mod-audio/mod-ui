@@ -912,25 +912,23 @@ Desktop.prototype.reset = function (callback, warn) {
 
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
-//     self.pedalboard.pedalboard('serialize',
-//         function (pedalboard) {
-            self.saveBox.saveBox('save', self.title, asNew,
-                function (ok, errorOrPath, title) {
-                    if (!ok) {
-                        new Error(errorOrPath)
-                        return
-                    }
-                    self.title = title
-                    self.pedalboardBundle = errorOrPath
-                    self.pedalboardModified = false
-                    self.titleBox.text(title)
+    self.saveBox.saveBox('save', self.title, asNew,
+        function (ok, errorOrPath, title) {
+            if (!ok) {
+                new Error(errorOrPath)
+                return
+            }
 
-                    new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
+            self.title = title
+            self.pedalboardBundle = errorOrPath
+            self.pedalboardModified = false
+            self.titleBox.text(title)
 
-                    if (callback)
-                        callback()
-                })
-//         })
+            new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
+
+            if (callback)
+                callback()
+        })
 }
 
 Desktop.prototype.shareCurrentPedalboard = function (callback) {

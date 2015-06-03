@@ -491,8 +491,8 @@ JqueryClass('pedalboard', {
                             'system': self
                         }, self.data('plugins'))
 
-                        var output = $('[mod-port="' + source + '"]')
-                        var  input = $('[mod-port="' + target + '"]')
+                        var output = $('[mod-port="/graph/' + source + '"]')
+                        var  input = $('[mod-port="/graph/' + target + '"]')
 
                         self.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                     })

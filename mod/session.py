@@ -40,6 +40,7 @@ from mod.clipmeter import Clipmeter
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
+from mod.screenshot import ScreenshotGenerator
 from mod.indexing import EffectIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 
@@ -116,13 +117,15 @@ class Session(object):
         self.recording = None
         self.instances = []
         self.instance_mapper = InstanceIdMapper()
+        self.screenshot_generator = ScreenshotGenerator()
+
         self.engine_samplerate = 48000 # default value
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
 
         self._load_pb_hack = None
-        self._save_waiter = None
+        self._app_save_callback = None
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)
@@ -155,6 +158,9 @@ class Session(object):
             if not instance in self.instances:
                 self._pedalboard.add_instance(uri, self.instance_mapper.map(instance), x=x, y=y)
                 self.instances.append(instance)
+
+        def pedal_save_cb(bundlepath):
+            self.screenshot_generator.schedule_screenshot(bundlepath)
 
         def delete_cb(instance):
             if instance in self.instances:
@@ -197,6 +203,7 @@ class Session(object):
         self.host.port_value_callback = port_value_cb
         self.host.plugin_add_callback = plugin_add_cb
         self.host.delete_callback = delete_cb
+        self.host.save_callback = pedal_save_cb
         self.host.connection_add_callback = connection_add_cb
         self.host.connection_delete_callback = connection_delete_cb
 
@@ -219,6 +226,9 @@ class Session(object):
         def callback2(ok):
             self.bundlepath = bundlepath if ok else None
             callback(ok)
+
+            if self._app_save_callback is not None:
+                self._app_save_callback(ok, bundlepath, title)
 
         self.host.set_pedalboard_name(title)
         self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), callback2)

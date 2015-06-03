@@ -83,6 +83,7 @@ class IngenAsync(object):
         self.position_callback = lambda instance,x,y: None
         self.port_value_callback = lambda instance,port,value: None
         self.delete_callback = lambda subject: None
+        self.save_callback = lambda bundlepath: None
         self.msg_callback = lambda msg: None
 
         for (k, v) in NS.__dict__.items():
@@ -168,6 +169,15 @@ class IngenAsync(object):
                     y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
                     self.position_callback(subject.partition(self.proto_base)[-1], x, y)
 
+            # Checks for Copy messages
+            for i in msg_model.triples([None, NS.rdf.type, NS.patch.Copy]):
+                bnode   = i[0]
+                subject = msg_model.value(bnode, NS.patch.subject).toPython()
+
+                if subject == "unix:///graph/":
+                    bundlepath = os.path.dirname(msg_model.value(bnode, NS.patch.destination).toPython())
+                    self.save_callback(bundlepath.replace("file://","",1)) # FIXME ?
+
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
                 bnode       = i[0]
@@ -181,6 +191,7 @@ class IngenAsync(object):
                 elif msg_model.value(bnode, NS.patch.property) == NS.parameters.sampleRate:
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.samplerate_value_callback(value)
+
             # Put messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
                 bnode       = i[0]

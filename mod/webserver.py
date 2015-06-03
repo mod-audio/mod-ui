@@ -58,13 +58,11 @@ from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
 from mod.lv2 import get_pedalboard_info, get_pedalboards
-from mod.screenshot import ScreenshotGenerator, generate_screenshot, resize_image
+from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
-
-SCREENSHOT_GENERATOR = ScreenshotGenerator()
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -742,16 +740,10 @@ class PedalboardSave(web.RequestHandler):
 <%s.ttl>
     lv2:prototype ingen:GraphPrototype ;
     a lv2:Plugin ,
+        ingen:Graph ,
         pedal:Pedalboard ;
     rdfs:seeAlso <%s.ttl> .
 ''' % (titlesym, titlesym))
-
-            # FIXME: callback is called before bundle is ready
-            from time import sleep
-            sleep(1)
-
-            # Generate screenshot for this bundle
-            SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
 
             # All ok!
             self.set_header('Content-Type', 'application/json')
