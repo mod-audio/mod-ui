@@ -693,7 +693,7 @@ class PedalboardSave(web.RequestHandler):
         titlesym = symbolify(title)
 
         # Save over existing bundlepath
-        if SESSION.bundlepath and os.path.exists(SESSION.bundlepath): # and not asNew: # FIXME: asNew is always set
+        if SESSION.bundlepath and os.path.exists(SESSION.bundlepath) and os.path.isdir(SESSION.bundlepath) and not asNew:
             bundlepath = SESSION.bundlepath
 
         # Save new
