@@ -1898,24 +1898,27 @@ JqueryClass('pedalboard', {
         if (jacks.length < 2 || input.data('expanded'))
             return
         var wrapper = $('<div class="mod-pedal-input-wrapper">')
-        var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
-        wrapper.height(jacks.length * 40 + 10)
+        //var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
         var jack
         wrapper.appendTo(input)
         wrapper.css('top', (input.height() - wrapper.height()) / 2)
-        arrow.css('top', wrapper.height() / 2 - 12)
-        var jack
+        //arrow.css('top', wrapper.height() / 2 - 12)
+        var jack;
+        var h = 0;
         for (var i = 0; i < jacks.length; i++) {
-            jack = $(jacks[i])
+            jack = $(jacks[i]);
+            h = jack.height();
+            w = jack.width();
             jack.css({
                 position: 'absolute',
-                height: 30,
-                marginTop: -wrapper.height() / 2 + jack.height() / 2 + 40 * i + 10,
-                width: wrapper.width(),
+                marginTop: -wrapper.height() / 2 + h / 2 + h * i,
             })
+            h = jack.height();
             self.pedalboard('drawJack', jack)
             jack.draggable('enable')
         }
+        wrapper.innerHeight(jacks.length * h);
+        wrapper.css("width", w);
         wrapper.click(function () {
             self.pedalboard('colapseInput', input)
             return false

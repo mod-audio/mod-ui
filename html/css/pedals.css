@@ -86,17 +86,17 @@
 /* = INPUT
 ================================================ */
 .mod-pedal-input-wrapper {
-    background:#000;
-    border-radius:4px;
+    background: rgba(0, 0, 0, 0.8);
     height:100px;
-    left:-21px;
     position:relative;
-    width:47px;
     z-index:35;
+    padding: 0 10px;
+    margin-left: -10px;
 }
 
 .mod-pedal-input-wrapper .mod-pedal-input-arrow {
     /* Attention: pedalboard.js has hardcoded value related to this height */
+/*
     border-bottom:12px solid transparent;
     border-left:12px solid #000;
     border-top:12px solid transparent;
@@ -105,6 +105,7 @@
     right:-12px;
     top:39px;
     width:0; 
+*/
 }
 
 .mod-pedal .mod-pedal-input {
@@ -118,12 +119,13 @@
     position: relative;
     margin-top: 10px;
 }
-/*
+
 .mod-input.expanded .mod-output-jack {
-    background-image:url(../img/jack-expanded.png) !important;
-    margin-left: -21px !important;
+    background-image:url(../img/audio-jack.png) !important;
+    height: 40px;
 }
 
+/*
 .mod-pedal .mod-pedal-input {
     height:170px;
     left:-28px;
