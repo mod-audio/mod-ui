@@ -762,6 +762,9 @@ class PedalboardPackBundle(web.RequestHandler):
         bundledir  = bundlepath.replace(parentpath, "").replace(os.sep, "")
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
 
+        # make sure the screenshot is ready before proceeding
+        SESSION.screenshot_generator.wait_for_pending_jobs()
+
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
 
@@ -775,7 +778,7 @@ class PedalboardPackBundle(web.RequestHandler):
 
         self.finish()
 
-        #os.remove(tmpfile)
+        os.remove(tmpfile)
 
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?

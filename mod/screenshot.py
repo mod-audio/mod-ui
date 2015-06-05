@@ -104,3 +104,8 @@ class ScreenshotGenerator(object):
             self.process_next()
 
         generate_screenshot(bundlepath, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
+
+    def wait_for_pending_jobs(self):
+        from time import sleep
+        while self.processing:
+            sleep(0.5)

@@ -417,17 +417,6 @@ function Desktop(elements) {
 
     elements.shareWindow.shareBox({
         userSession: self.userSession,
-        takeScreenshot: function (uid, callback) {
-            $.ajax({
-                url: '/pedalboard/screenshot/' + uid,
-                success: callback,
-                error: function () {
-                    new Bug("Can't generate screenshot")
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
         recordStart: ajaxFactory('/recording/start', "Can't record. Probably a connection problem."),
         recordStop: ajaxFactory('/recording/stop', "Can't stop record. Probably a connection problem. Please try stopping again"),
         playStart: function (startCallback, stopCallback) {
