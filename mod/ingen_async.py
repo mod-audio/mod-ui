@@ -330,6 +330,17 @@ class IngenAsync(object):
         ingen:canvasY %f
 ''' % (uri, float(x), float(y)), callback)
 
+    def add_bundle(self, bundle, callback=lambda r: r):
+        return False # FIXME, this is not right..
+        return self._send('''
+[]
+        a patch:Put ;
+        patch:subject <%s> ;
+        patch:body [
+                a atom:Path
+        ] .
+''' % bundle, callback)
+
     def connect(self, tail, head, callback=lambda r: r):
         return self._send('''
 []

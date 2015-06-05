@@ -365,7 +365,7 @@ def add_bundle_to_lilv_world(bundlepath):
 
     # safety check
     if bundlepath in BUNDLES:
-        return
+        return False
 
     # convert bundle string into a lilv node
     bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
@@ -378,6 +378,7 @@ def add_bundle_to_lilv_world(bundlepath):
 
     # add to world
     BUNDLES.append(bundlepath)
+    return True
 
 class PluginSerializer(object):
     def __init__(self, uri=None, plugin=None):

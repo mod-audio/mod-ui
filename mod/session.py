@@ -161,7 +161,8 @@ class Session(object):
                 self.instances.append(instance)
 
         def pedal_save_cb(bundlepath):
-            add_bundle_to_lilv_world(bundlepath)
+            if add_bundle_to_lilv_world(bundlepath):
+                self.host.add_bundle(bundlepath)
             self.screenshot_generator.schedule_screenshot(bundlepath)
 
         def delete_cb(instance):
