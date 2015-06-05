@@ -175,6 +175,7 @@ function Desktop(elements) {
     this.title = ''
     this.pedalboardBundle = null
     this.pedalboardModified = false
+    this.pedalboardSavable = false
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function () {
@@ -346,6 +347,7 @@ function Desktop(elements) {
 
                 transfer.reportFinished = function () {
                     self.pedalboardModified = true
+                    self.pedalboardSavable = true
                     self.windowManager.closeWindows()
                 }
                 transfer.reportError = function (error) {
@@ -744,6 +746,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
     // Bind events
     el.bind('modified', function () {
         self.pedalboardModified = true
+        self.pedalboardSavable = true
     })
     el.bind('dragStart', function () {
         self.windowManager.closeWindows()
@@ -788,6 +791,8 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             })
         },
         load: function (pedalboardId, callback) {
+            return new Bug("Not implemented yet")
+
             $.ajax({
                 url: '/pedalboard/get/' + pedalboardId,
                 type: 'GET',
@@ -896,11 +901,18 @@ Desktop.prototype.reset = function (callback, warn) {
     this.title = ''
     this.pedalboardBundle = null
     this.pedalboardModified = false
+    self.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
 }
 
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
+
+    if (!self.pedalboardSavable) {
+        new Notification('warn', 'Nothing to save', 1500)
+        return
+    }
+
     self.saveBox.saveBox('save', self.title, asNew,
         function (ok, errorOrPath, title) {
             if (!ok) {
@@ -911,6 +923,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.title = title
             self.pedalboardBundle = errorOrPath
             self.pedalboardModified = false
+            self.pedalboardSavable = true
             self.titleBox.text(title)
 
             new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
