@@ -1313,22 +1313,15 @@ JqueryClass('pedalboard', {
         }
 
         var output = jack.data('origin')
-        var fromInstance = output.data('instance')
-        var fromSymbol = output.data('symbol')
+        var fromPort = output.attr('mod-port')
         var portType = output.data('portType')
-
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
-            var toInstance = input.data('instance')
-            var toSymbol = input.data('symbol')
+            var toPort = input.attr('mod-port')
             var ok
 
             // Do not highlight if this output and input are already connected
-            ok = !connections.connected(fromInstance, fromSymbol, toInstance, toSymbol)
-                // Neither if output and input belong to same instance
-            if (toInstance >= 0) // do not check this on hardware ports
-                ok = ok && (fromInstance != toInstance)
-
+            ok = !connections.connected(fromPort, toPort)
             if (ok) {
                 input.addClass('input-connecting')
             }
@@ -1710,6 +1703,10 @@ JqueryClass('pedalboard', {
 
         var previousInput = jack.data('destination')
 
+        // If output is already connected to this input through another jack, abort connection
+        if (self.pedalboard('connected', output, input))
+            return self.pedalboard('disconnect', jack)
+
         // If this jack is already connected to this output, keep connection
         // This means user just took a connected jack, dragged around and dropped
         // in the same input
@@ -1746,7 +1743,6 @@ JqueryClass('pedalboard', {
     connect: function (jack, input) {
         var self = $(this)
         var output = jack.data('origin')
-
        // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input))
             return self.pedalboard('disconnect', jack)
