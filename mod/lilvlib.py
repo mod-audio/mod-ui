@@ -4,6 +4,7 @@
 # ------------------------------------------------------------------------------------------------------------
 # Imports
 
+import json
 import lilv
 import os
 
@@ -141,32 +142,32 @@ def get_pedalboard_info(bundle):
     ingenblocks = []
 
     info = {
-        'name':   plugin.get_name().as_string(),
-        'uri':    plugin.get_uri().as_string(),
+        'name'  : plugin.get_name().as_string(),
+        'uri'   : plugin.get_uri().as_string(),
         'author': plugin.get_author_name().as_string() or "", # Might be empty
         'hardware': {
             # we save this info later
             'audio': {
-                'ins': 0,
+                'ins' : 0,
                 'outs': 0
              },
             'cv': {
-                'ins': 0,
+                'ins' : 0,
                 'outs': 0
              },
             'midi': {
-                'ins': 0,
+                'ins' : 0,
                 'outs': 0
              }
         },
         'size': {
-            'width':  plugin.get_value(modpedal.width).get_first().as_int(),
+            'width' : plugin.get_value(modpedal.width).get_first().as_int(),
             'height': plugin.get_value(modpedal.height).get_first().as_int(),
         },
-        'screenshot': os.path.basename(plugin.get_value(modpedal.screenshot).get_first().as_string()),
-        'thumbnail':  os.path.basename(plugin.get_value(modpedal.thumbnail).get_first().as_string()),
+        'screenshot' : os.path.basename(plugin.get_value(modpedal.screenshot).get_first().as_string()),
+        'thumbnail'  : os.path.basename(plugin.get_value(modpedal.thumbnail).get_first().as_string()),
         'connections': [], # we save this info later
-        'plugins':     []  # we save this info later
+        'plugins'    : []  # we save this info later
     }
 
     # connections
@@ -349,15 +350,32 @@ def get_plugins_info(bundles):
         bundleuri = plugin.get_bundle_uri().as_string()
         microver  = plugin.get_value(lv2core.microVersion).get_first()
         minorver  = plugin.get_value(lv2core.minorVersion).get_first()
+        modguigui = plugin.get_value(modgui.gui).get_first()
+
+        if modguigui.me is not None:
+            modgui_scrn  = world.find_nodes(modguigui.me, modgui.screenshot      .me, None).get_first()
+            modgui_thumb = world.find_nodes(modguigui.me, modgui.thumbnail       .me, None).get_first()
+            modgui_icon  = world.find_nodes(modguigui.me, modgui.iconTemplate    .me, None).get_first()
+            modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
+            modgui_data  = world.find_nodes(modguigui.me, modgui.templateData    .me, None).get_first()
 
         return {
-            'name':   plugin.get_name().as_string(),
-            'uri':    plugin.get_uri().as_string(),
+            'name': plugin.get_name().as_string(),
+            'uri' : plugin.get_uri().as_string(),
             'author': {
-                'name':     plugin.get_author_name().as_string() or "",
-                'email':    plugin.get_author_email().as_string() or "",
+                'name'    : plugin.get_author_name().as_string() or "",
+                'email'   : plugin.get_author_email().as_string() or "",
                 'homepage': plugin.get_author_homepage().as_string() or ""
             },
+
+            'gui': {
+                'screenshot'      : lilv.lilv_uri_to_path(modgui_scrn .as_string()) if modgui_scrn .me else "",
+                'thumbnail'       : lilv.lilv_uri_to_path(modgui_thumb.as_string()) if modgui_thumb.me else "",
+                'iconTemplate'    : lilv.lilv_uri_to_path(modgui_icon .as_string()) if modgui_icon .me else "",
+                'settingsTemplate': lilv.lilv_uri_to_path(modgui_setts.as_string()) if modgui_setts.me else "",
+                'templateData'    :
+                    json.load(open(lilv.lilv_uri_to_path(modgui_data.as_string()), 'r')) if modgui_data.me else {},
+            } if modguigui.me is not None else {},
 
             'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string()),
             'category': get_category(plugin.get_value(rdf.type_)),
@@ -375,6 +393,7 @@ def get_plugins_info(bundles):
 # ------------------------------------------------------------------------------------------------------------
 
 #import sys
-#for i in get_plugins_info(sys.argv[1:]): print(i)
+#get_plugins_info(sys.argv[1:])
+#for i in get_plugins_info(sys.argv[1:]): print(i['gui'])
 
 # ------------------------------------------------------------------------------------------------------------
