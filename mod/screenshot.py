@@ -5,12 +5,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ except ImportError:
     from PIL import Image
 
 from tornado import ioloop
-from mod.lv2 import get_pedalboard_info
+from mod.lilvlib import get_pedalboard_info
 from mod.settings import (DEVICE_WEBSERVER_PORT,
                           PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)

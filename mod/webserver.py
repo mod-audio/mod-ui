@@ -57,7 +57,8 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lv2 import get_pedalboard_info, get_pedalboards
+from mod.lilvlib import get_pedalboard_info
+from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
