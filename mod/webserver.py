@@ -50,21 +50,20 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           )
 
 
-from mod import indexing, jsoncall, json_handler
+from mod import indexing, jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lv2 import get_pedalboard_info, get_pedalboards
-from mod.screenshot import ScreenshotGenerator, generate_screenshot, resize_image
+from mod.lilvlib import get_pedalboard_info
+from mod.lv2 import get_pedalboards
+from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
-
-SCREENSHOT_GENERATOR = ScreenshotGenerator()
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -690,20 +689,70 @@ class PedalboardSave(web.RequestHandler):
     @gen.engine
     def post(self):
         title = self.get_argument('title')
-        as_new = bool(int(self.get_argument('asNew')))
+        asNew = bool(int(self.get_argument('asNew')))
 
-        try:
-            bundlepath = SESSION.save_pedalboard(title, as_new)
-        except Pedalboard.ValidationError as e:
-            self.write(json.dumps({ 'ok': False, 'error': str(e) }))
+        titlesym = symbolify(title)
+
+        # Save over existing bundlepath
+        if SESSION.bundlepath and os.path.exists(SESSION.bundlepath) and os.path.isdir(SESSION.bundlepath) and not asNew:
+            bundlepath = SESSION.bundlepath
+
+        # Save new
+        else:
+            lv2path = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
+
+            # if trypath already exists, generate a random bundlepath based on title
+            if os.path.exists(trypath):
+                from random import randint
+
+                while True:
+                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+                    if os.path.exists(trypath):
+                        continue
+                    bundlepath = trypath
+                    break
+
+            # trypath doesn't exist yet, use it
+            else:
+                bundlepath = trypath
+
+                # just in case..
+                if not os.path.exists(lv2path):
+                    os.mkdir(lv2path)
+
+            os.mkdir(bundlepath)
+
+        # callback for when ingen is done doing its business
+        def callback(ok):
+            if not ok:
+                self.write(json.dumps({ 'ok': False, 'error': "Failed" })) # TODO more descriptive error?
+                self.finish()
+                return
+
+            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
+            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fd:
+                fd.write('''\
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pedal: <http://portalmod.com/ns/modpedal#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<%s.ttl>
+    lv2:prototype ingen:GraphPrototype ;
+    a lv2:Plugin ,
+        ingen:Graph ,
+        pedal:Pedalboard ;
+    rdfs:seeAlso <%s.ttl> .
+''' % (titlesym, titlesym))
+
+            # All ok!
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
             self.finish()
-            return
 
-        SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
-
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
-        self.finish()
+        # Ask ingen to save
+        SESSION.save_pedalboard(bundlepath, title, callback)
 
 class PedalboardPackBundle(web.RequestHandler):
     @web.asynchronous
@@ -713,6 +762,9 @@ class PedalboardPackBundle(web.RequestHandler):
         parentpath = os.path.abspath(os.path.join(bundlepath, ".."))
         bundledir  = bundlepath.replace(parentpath, "").replace(os.sep, "")
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
+
+        # make sure the screenshot is ready before proceeding
+        SESSION.screenshot_generator.wait_for_pending_jobs()
 
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
@@ -727,7 +779,7 @@ class PedalboardPackBundle(web.RequestHandler):
 
         self.finish()
 
-        #os.remove(tmpfile)
+        os.remove(tmpfile)
 
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?

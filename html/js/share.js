@@ -30,10 +30,6 @@ JqueryClass('shareBox', {
             userSession: {
                 'sid': ''
             },
-            // Generates a screenshot of pedalboard with given uid and calls callback with b64encoded data
-            takeScreenshot: function (uid, callback) {
-                callback('')
-            },
 
             recordStart: function (callback) {
                 callback()

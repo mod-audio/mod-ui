@@ -36,23 +36,6 @@ class NS:
     presets     = rdflib.Namespace('http://lv2plug.in/ns/ext/presets#')
     parameters  = rdflib.Namespace('http://lv2plug.in/ns/ext/parameters#')
 
-class Interface:
-    'The core Ingen interface'
-    def put(self, path, body):
-        pass
-
-    def set(self, path, body):
-        pass
-
-    def connect(self, tail, head):
-        pass
-
-    def disconnect(self, tail, head):
-        pass
-
-    def delete(self, path):
-        pass
-
 class Error(Exception):
     def __init__(self, msg, cause):
         Exception.__init__(self, '%s; cause: %s' % (msg, cause))
@@ -86,10 +69,11 @@ def ingen_bundle_path():
             return bundle
     return None
 
-class IngenAsync(Interface):
+class IngenAsync(object):
     def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None):
         self.msg_id      = 1
         self.server_base = uri + '/'
+        self.proto_base = "mod://"
         self.uri = uri
         self.model       = rdflib.Graph()
         self.ns_manager  = rdflib.namespace.NamespaceManager(self.model)
@@ -99,6 +83,7 @@ class IngenAsync(Interface):
         self.position_callback = lambda instance,x,y: None
         self.port_value_callback = lambda instance,port,value: None
         self.delete_callback = lambda subject: None
+        self.save_callback = lambda bundlepath: None
         self.msg_callback = lambda msg: None
 
         for (k, v) in NS.__dict__.items():
@@ -137,7 +122,7 @@ class IngenAsync(Interface):
             self.msg_callback(msg_str)
             msg_model = rdflib.Graph()
             msg_model.namespace_manager = self.ns_manager
-            msg_model.parse(StringIO(msg_str), self.server_base, format='n3')
+            msg_model.parse(StringIO(msg_str), self.proto_base, format='n3')# self.server_base, format='n3')
 
             # Handle responses if any
             """"
@@ -182,7 +167,16 @@ class IngenAsync(Interface):
                 if NS.ingen.canvasX in msg_model.predicates(add_node) and NS.ingen.canvasY in msg_model.predicates(add_node):
                     x = msg_model.value(add_node, NS.ingen.canvasX).toPython()
                     y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
-                    self.position_callback(subject.toPython().split("/")[-1], x, y)
+                    self.position_callback(subject.partition(self.proto_base)[-1], x, y)
+
+            # Checks for Copy messages
+            for i in msg_model.triples([None, NS.rdf.type, NS.patch.Copy]):
+                bnode   = i[0]
+                subject = msg_model.value(bnode, NS.patch.subject).toPython().replace(self.proto_base,"",1)
+
+                if subject == "/graph/":
+                    bundlepath = os.path.dirname(msg_model.value(bnode, NS.patch.destination).toPython())
+                    self.save_callback(bundlepath.replace("file://","",1)) # FIXME ?
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
@@ -191,14 +185,13 @@ class IngenAsync(Interface):
 
                 # Setting a port value
                 if msg_model.value(bnode, NS.patch.property) == NS.ingen.value:
-                    sub = subject.toPython().split("/")
-                    instance = sub[-2]
-                    port = sub[-1]
+                    port = subject.partition(self.proto_base)[-1]
                     value = msg_model.value(bnode, NS.patch.value).toPython()
-                    self.port_value_callback(instance, port, value)
+                    self.port_value_callback(port, value)
                 elif msg_model.value(bnode, NS.patch.property) == NS.parameters.sampleRate:
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.samplerate_value_callback(value)
+
             # Put messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
                 bnode       = i[0]
@@ -211,34 +204,28 @@ class IngenAsync(Interface):
                     value = msg_model.value(body, NS.ingen.value)
                     if value is None:
                         continue
-                    sub = subject.toPython().split("/")
-                    instance = sub[-2]
-                    port = sub[-1]
-                    self.port_value_callback(instance, port, value.toPython())
+                    port = subject.partition(self.proto_base)[-1]
+                    self.port_value_callback(port, value.toPython())
                 # Put for a plugin
                 elif msg_type == NS.ingen.Block:
                     protouri = msg_model.value(body, NS.lv2.prototype)
                     if protouri is None:
                         continue
-                    instance = subject.toPython().split("/")[-1]
+                    instance = subject.partition(self.proto_base)[-1]
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
                     self.plugin_add_callback(instance, protouri.toPython(), x or 0, y or 0)
                 # New port connection
                 elif msg_type == NS.ingen.Arc:
-                    head = msg_model.value(body, NS.ingen.head).toPython().split("/")
-                    tail = msg_model.value(body, NS.ingen.tail).toPython().split("/")
-                    instance_a = head[-2]
-                    port_a = head[-1]
-                    instance_b = tail[-2]
-                    port_b = tail[-1]
-                    self.connection_add_callback(instance_a, port_a, instance_b, port_b)
+                    head = msg_model.value(body, NS.ingen.head).partition(self.proto_base)[-1]
+                    tail = msg_model.value(body, NS.ingen.tail).partition(self.proto_base)[-1]
+                    self.connection_add_callback(head, tail)
             # Delete msgs
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Delete]):
                 bnode       = i[0]
                 subject     = msg_model.value(bnode, NS.patch.subject)
                 if subject:
-                    self.delete_callback(subject.toPython().split("/")[-1])
+                    self.delete_callback(subject.partition(self.proto_base)[-1])
 
         self._reading = True
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
@@ -266,68 +253,46 @@ class IngenAsync(Interface):
 
         raise Error(fmt, cause)
 
-    def get_engine_info(self, callback=lambda r:r):
-        return self._send('''
-[]
- 	a patch:Get ;
- 	patch:subject </engine/> .
-''',  callback)
+    # abstract methods
 
     def get(self, path, callback=lambda r:r):
         return self._send('''
 []
- 	a patch:Get ;
- 	patch:subject <%s> .
+        a patch:Get ;
+        patch:subject <%s> .
 ''' % path, callback)
-
-    def put(self, path, body, callback=lambda r:r):
-        return self._send('''
-[]
- 	a patch:Put ;
- 	patch:subject <%s> ;
- 	patch:body [
-%s
-	] .
-''' % (path, body), callback)
 
     def set(self, path, prop, value, callback=lambda r:r):
         x = '''
 []
-	a patch:Set ;
-	patch:subject <%s> ;
+        a patch:Set ;
+        patch:subject <%s> ;
         patch:property %s ;
-	patch:value %s .
+        patch:value %s .
 ''' % (path, prop, value)
         return self._send(x, callback)
 
-    def connect(self, tail, head, callback=lambda r: r):
+    def put(self, path, body, callback=lambda r:r):
         return self._send('''
 []
-	a patch:Put ;
-	patch:subject <> ;
-	patch:body [
-		a ingen:Arc ;
-		ingen:tail <%s> ;
-		ingen:head <%s> ;
-	] .
-''' % (tail, head), callback)
+        a patch:Put ;
+        patch:subject <%s> ;
+        patch:body [ %s ] .
+''' % (path, body), callback)
 
-    def disconnect(self, tail, head, callback=lambda r: r):
+    def copy(self, source, target, callback=lambda r: r):
         return self._send('''
 []
-	a patch:Delete ;
-	patch:body [
-		a ingen:Arc ;
-		ingen:tail <%s> ;
-		ingen:head <%s> ;
-	] .
-''' % (tail, head), callback)
+        a patch:Copy ;
+        patch:subject <%s> ;
+        patch:destination <%s> .
+''' % (source, target), callback)
 
     def delete(self, path, callback=lambda r: r):
         return self._send('''
 []
-	a patch:Delete ;
-	patch:subject <%s> .
+        a patch:Delete ;
+        patch:subject <%s> .
 ''' % path, callback)
 
     def move(self, source, target, callback=lambda r: r):
@@ -351,13 +316,60 @@ class IngenAsync(Interface):
 []
         a patch:Patch ;
         patch:subject <%s> ;
-        patch:remove [
-            %s
-        ] ;
-        patch:add [
-            %s
-        ] .
+        patch:remove [ %s ] ;
+        patch:add [ %s ] .
 ''' % (path, remove_str, add_str), callback)
+
+    # custom methods
+
+    def add(self, uri, instance, x, y, callback=lambda r: r):
+        self.put(instance, '''
+        a ingen:Block ;
+        <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+        ingen:canvasX %f ;
+        ingen:canvasY %f
+''' % (uri, float(x), float(y)), callback)
+
+    def add_bundle(self, bundle, callback=lambda r: r):
+        return False # FIXME, this is not right..
+        return self._send('''
+[]
+        a patch:Put ;
+        patch:subject <%s> ;
+        patch:body [
+                a atom:Path
+        ] .
+''' % bundle, callback)
+
+    def connect(self, tail, head, callback=lambda r: r):
+        return self._send('''
+[]
+        a patch:Put ;
+        patch:subject <> ;
+        patch:body [
+                a ingen:Arc ;
+                ingen:tail <%s> ;
+                ingen:head <%s> ;
+        ] .
+''' % (tail, head), callback)
+
+    def disconnect(self, tail, head, callback=lambda r: r):
+        return self._send('''
+[]
+        a patch:Delete ;
+        patch:body [
+                a ingen:Arc ;
+                ingen:tail <%s> ;
+                ingen:head <%s> ;
+        ] .
+''' % (tail, head), callback)
+
+    def get_engine_info(self, callback=lambda r:r):
+        return self._send('''
+[]
+        a patch:Get ;
+        patch:subject </engine/> .
+''',  callback)
 
 if __name__ == "__main__":
     h = IngenAsync()

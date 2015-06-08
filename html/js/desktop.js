@@ -175,6 +175,7 @@ function Desktop(elements) {
     this.title = ''
     this.pedalboardBundle = null
     this.pedalboardModified = false
+    this.pedalboardSavable = false
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function () {
@@ -346,6 +347,7 @@ function Desktop(elements) {
 
                 transfer.reportFinished = function () {
                     self.pedalboardModified = true
+                    self.pedalboardSavable = true
                     self.windowManager.closeWindows()
                 }
                 transfer.reportError = function (error) {
@@ -417,17 +419,6 @@ function Desktop(elements) {
 
     elements.shareWindow.shareBox({
         userSession: self.userSession,
-        takeScreenshot: function (uid, callback) {
-            $.ajax({
-                url: '/pedalboard/screenshot/' + uid,
-                success: callback,
-                error: function () {
-                    new Bug("Can't generate screenshot")
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
         recordStart: ajaxFactory('/recording/start', "Can't record. Probably a connection problem."),
         recordStop: ajaxFactory('/recording/stop', "Can't stop record. Probably a connection problem. Please try stopping again"),
         playStart: function (startCallback, stopCallback) {
@@ -755,6 +746,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
     // Bind events
     el.bind('modified', function () {
         self.pedalboardModified = true
+        self.pedalboardSavable = true
     })
     el.bind('dragStart', function () {
         self.windowManager.closeWindows()
@@ -799,6 +791,8 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             })
         },
         load: function (pedalboardId, callback) {
+            return new Bug("Not implemented yet")
+
             $.ajax({
                 url: '/pedalboard/get/' + pedalboardId,
                 type: 'GET',
@@ -907,30 +901,36 @@ Desktop.prototype.reset = function (callback, warn) {
     this.title = ''
     this.pedalboardBundle = null
     this.pedalboardModified = false
+    self.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
 }
 
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
-//     self.pedalboard.pedalboard('serialize',
-//         function (pedalboard) {
-            self.saveBox.saveBox('save', self.title, asNew,
-                function (ok, errorOrPath, title) {
-                    if (!ok) {
-                        new Error(errorOrPath)
-                        return
-                    }
-                    self.title = title
-                    self.pedalboardBundle = errorOrPath
-                    self.pedalboardModified = false
-                    self.titleBox.text(title)
 
-                    new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
+    if (!self.pedalboardSavable) {
+        new Notification('warn', 'Nothing to save', 1500)
+        return
+    }
 
-                    if (callback)
-                        callback()
-                })
-//         })
+    self.saveBox.saveBox('save', self.title, asNew,
+        function (ok, errorOrPath, title) {
+            if (!ok) {
+                new Error(errorOrPath)
+                return
+            }
+
+            self.title = title
+            self.pedalboardBundle = errorOrPath
+            self.pedalboardModified = false
+            self.pedalboardSavable = true
+            self.titleBox.text(title)
+
+            new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
+
+            if (callback)
+                callback()
+        })
 }
 
 Desktop.prototype.shareCurrentPedalboard = function (callback) {
