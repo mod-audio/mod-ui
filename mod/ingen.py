@@ -27,47 +27,39 @@ except ImportError:
     from io import StringIO as StringIO
 
 class Host(IngenAsync):
-
-    def add(self, uri, instance, x, y, callback=lambda r: r):
-        self.put("/%s" % instance, """a ingen:Block ;
-<http://lv2plug.in/ns/lv2core#prototype> <%s> ;
-ingen:canvasX %f ;
-ingen:canvasY %f
-""" % (uri, float(x), float(y)), callback)
-
-    def connect(self, tail, head, callback=lambda r: r):
-        return IngenAsync.connect(self, "/%s" % tail, "/%s" % head, callback)
-
-    def disconnect(self, tail, head, callback=lambda r: r):
-        return IngenAsync.disconnect(self, "/%s" % tail, "/%s" % head, callback)
-
     def initial_setup(self, callback=lambda r:r):
-        self.set("/", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://portalmod.com/ns/modpedal#Pedalboard>", callback)
-        self.set("/", "<http://portalmod.com/ns/modpedal#screenshot>", "<screenshot.png>", callback)
-        self.set("/", "<http://portalmod.com/ns/modpedal#thumbnail>", "<thumbnail.png>", callback)
+        self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://portalmod.com/ns/modpedal#Pedalboard>", callback)
+        self.set("/graph", "<http://portalmod.com/ns/modpedal#screenshot>", "<ingen:/screenshot.png>", callback)
+        self.set("/graph", "<http://portalmod.com/ns/modpedal#thumbnail>", "<ingen:/thumbnail.png>", callback)
+
+    def load(self, bundlepath, callback=lambda r:r):
+        self.copy("file://%s" % bundlepath, "/graph", callback)
+
+    def save(self, bundlepath, callback=lambda r:r):
+        self.copy("/graph", "file://%s" % bundlepath, callback)
 
     def set_pedalboard_name(self, name, callback=lambda r:r):
-        self.set("/", "<http://portalmod.com/ns/modpedal#name>", '"%s"' % name, callback)
+        self.set("/graph", "doap:name", '"%s"' % name, callback)
 
     def set_pedalboard_size(self, width, height, callback=lambda r:r):
-        self.set("/", "<http://portalmod.com/ns/modpedal#width>", width, callback)
-        self.set("/", "<http://portalmod.com/ns/modpedal#height>", height, callback)
+        self.set("/graph", "<http://portalmod.com/ns/modpedal#width>", width, callback)
+        self.set("/graph", "<http://portalmod.com/ns/modpedal#height>", height, callback)
 
     def set_position(self, instance, x, y, callback=lambda r:r):
-        self.set("/%s" % instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
-        self.set("/%s" % instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
+        self.set(instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
+        self.set(instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
 
-    def param_get(self, port, callback=lambda result: None):
+    def param_get(self, port, callback=lambda r:r):
         callback(1)
 
-    def param_set(self, port, value, callback=lambda result: None):
-        self.set("/%s" % port, "ingen:value", value, callback)
+    def param_set(self, port, value, callback=lambda r:r):
+        self.set(port, "ingen:value", value, callback)
 
-    def preset_load(self, instance, uri, callback=lambda result: None):
-        self.set("/%s" % instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
+    def preset_load(self, instance, uri, callback=lambda r:r):
+        self.set(instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
-    def remove(self, instance, callback=lambda result: None):
-        self.delete("/%s" % instance, callback)
+    def remove(self, instance, callback=lambda r:r):
+        self.delete(instance, callback)
 
     def cpu_load(self, callback=lambda r:r):
         callback({'ok': True, 'value': 50})
@@ -77,7 +69,7 @@ ingen:canvasY %f
 
     def bypass(self, instance, value, callback=lambda r:r):
         value = "true" if value == 0 else "false"
-        self.set("/%s" % instance, "ingen:enabled", value, callback)
+        self.set(instance, "ingen:enabled", value, callback)
 
     def add_external_port(self, name, mode, typ, callback=lambda r:r):
         # mode should be Input or Output
@@ -90,9 +82,9 @@ ingen:canvasY %f
             callback(False)
             return
 
-        import random
+        from random import randint
         x = 5.0 if mode == "Input" else 2300.0
-        y = random.randint(50,250)
+        y = randint(50,250)
 
         if typ == "MIDI":
             portyp = "<http://lv2plug.in/ns/ext/atom#AtomPort>"
@@ -113,4 +105,4 @@ ingen:canvasY %f
         %s
         """ % (x, y, name, mode, portyp, extra)
 
-        self.put("/%s" % name.replace(" ", "_").lower(), msg, callback)
+        self.put("/graph/%s" % name.replace(" ", "_").lower(), msg, callback)

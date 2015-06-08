@@ -37,7 +37,7 @@ from glob import glob
 
 from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
-                          PEDALBOARD_DIR, CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
+                          CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           PLUGIN_INSTALLATION_TMP_DIR, DEFAULT_ICON_TEMPLATE,
                           DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -50,21 +50,20 @@ from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
                           )
 
 
-from mod import indexing, jsoncall, json_handler
+from mod import indexing, jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
-from mod.pedalboard import Pedalboard, remove_pedalboard
+from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lv2 import get_pedalboard_info
-from mod.screenshot import ScreenshotGenerator, generate_screenshot, resize_image
+from mod.lilvlib import get_pedalboard_info
+from mod.lv2 import get_pedalboards
+from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
-
-SCREENSHOT_GENERATOR = ScreenshotGenerator()
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -645,18 +644,9 @@ class AtomWebSocket(websocket.WebSocketHandler):
 
 class EffectPosition(web.RequestHandler):
     def get(self, instance):
-        instance = instance
         x = int(float(self.get_argument('x')))
         y = int(float(self.get_argument('y')))
         SESSION.effect_position(instance, x, y)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
-
-class PedalboardSize(web.RequestHandler):
-    def get(self):
-        width = int(self.get_argument('width'))
-        height = int(self.get_argument('height'))
-        SESSION.pedalboard_size(width, height)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
 
@@ -674,27 +664,95 @@ class PackageUninstall(web.RequestHandler):
         self.write(json.dumps(result, default=json_handler))
 
 class PedalboardSearcher(Searcher):
-    index = indexing.PedalboardIndex()
+    index = None
+
+    def list(self):
+        result = []
+        pedals = get_pedalboards()
+        for pedal in pedals:
+            result.append({
+                'instances': {},
+                'connections': [],
+                'metadata': {
+                    'title':     pedal['name'],
+                    'thumbnail': pedal['thumbnail'],
+                    'tstamp':    None,
+                },
+                'uri':    pedal['uri'],
+                'width':  pedal['width'],
+                'height': pedal['height']
+            })
+        return result
 
 class PedalboardSave(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
         title = self.get_argument('title')
-        as_new = bool(int(self.get_argument('asNew')))
+        asNew = bool(int(self.get_argument('asNew')))
 
-        try:
-            bundlepath = SESSION.save_pedalboard(title, as_new)
-        except Pedalboard.ValidationError as e:
-            self.write(json.dumps({ 'ok': False, 'error': str(e) }))
+        titlesym = symbolify(title)
+
+        # Save over existing bundlepath
+        if SESSION.bundlepath and os.path.exists(SESSION.bundlepath) and os.path.isdir(SESSION.bundlepath) and not asNew:
+            bundlepath = SESSION.bundlepath
+
+        # Save new
+        else:
+            lv2path = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
+
+            # if trypath already exists, generate a random bundlepath based on title
+            if os.path.exists(trypath):
+                from random import randint
+
+                while True:
+                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+                    if os.path.exists(trypath):
+                        continue
+                    bundlepath = trypath
+                    break
+
+            # trypath doesn't exist yet, use it
+            else:
+                bundlepath = trypath
+
+                # just in case..
+                if not os.path.exists(lv2path):
+                    os.mkdir(lv2path)
+
+            os.mkdir(bundlepath)
+
+        # callback for when ingen is done doing its business
+        def callback(ok):
+            if not ok:
+                self.write(json.dumps({ 'ok': False, 'error': "Failed" })) # TODO more descriptive error?
+                self.finish()
+                return
+
+            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
+            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fd:
+                fd.write('''\
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pedal: <http://portalmod.com/ns/modpedal#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<%s.ttl>
+    lv2:prototype ingen:GraphPrototype ;
+    a lv2:Plugin ,
+        ingen:Graph ,
+        pedal:Pedalboard ;
+    rdfs:seeAlso <%s.ttl> .
+''' % (titlesym, titlesym))
+
+            # All ok!
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
             self.finish()
-            return
 
-        SCREENSHOT_GENERATOR.schedule_screenshot(bundlepath)
-
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
-        self.finish()
+        # Ask ingen to save
+        SESSION.save_pedalboard(bundlepath, title, callback)
 
 class PedalboardPackBundle(web.RequestHandler):
     @web.asynchronous
@@ -704,6 +762,9 @@ class PedalboardPackBundle(web.RequestHandler):
         parentpath = os.path.abspath(os.path.join(bundlepath, ".."))
         bundledir  = bundlepath.replace(parentpath, "").replace(os.sep, "")
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
+
+        # make sure the screenshot is ready before proceeding
+        SESSION.screenshot_generator.wait_for_pending_jobs()
 
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
@@ -718,7 +779,7 @@ class PedalboardPackBundle(web.RequestHandler):
 
         self.finish()
 
-        #os.remove(tmpfile)
+        os.remove(tmpfile)
 
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?
@@ -755,8 +816,13 @@ class PedalboardLoad(web.RequestHandler):
         self.finish()
 
 class PedalboardRemove(web.RequestHandler):
-    def get(self, uid):
-        remove_pedalboard(uid)
+    def get(self, bundlepath):
+        # there's 4 steps to this:
+        # 1 - remove the bundle from disk
+        # 2 - remove the bundle from our lv2 lilv world
+        # 3 - remove references to the bundle in banks
+        # 4 - tell ingen the bundle (plugin) is gone
+        pass
 
 class PedalboardScreenshot(web.RequestHandler):
     @web.asynchronous
@@ -781,6 +847,14 @@ class PedalboardScreenshot(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
         self.finish()
+
+class PedalboardSize(web.RequestHandler):
+    def get(self):
+        width = int(self.get_argument('width'))
+        height = int(self.get_argument('height'))
+        SESSION.pedalboard_size(width, height)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
 
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
@@ -815,7 +889,8 @@ class BankLoad(web.RequestHandler):
             pedalboards = []
             for pedalboard in bank['pedalboards']:
                 try:
-                    full_pedalboard = open(os.path.join(PEDALBOARD_DIR, pedalboard['id'])).read()
+                    #full_pedalboard = open(os.path.join(PEDALBOARD__DIR, pedalboard['id'])).read()
+                    TODO
                 except IOError:
                     # Remove from banks pedalboards that have been removed
                     continue
@@ -1222,21 +1297,21 @@ application = web.Application(
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/resources/(.*)", EffectResource),
 
-            (r"/effect/add/([A-Za-z0-9_]+)/?", EffectAdd),
+            (r"/effect/add/([A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulkData),
-            (r"/effect/remove/([A-Za-z0-9_]+)", EffectRemove),
-            (r"/effect/connect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectConnect),
-            (r"/effect/disconnect/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?),([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectDisconnect),
-            (r"/effect/preset/load/([A-Za-z0-9_]+)", EffectPresetLoad),
-            (r"/effect/parameter/set/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterSet),
-            (r"/effect/parameter/get/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterGet),
-            (r"/effect/parameter/address/([A-Za-z0-9_]+(?:/[A-Za-z0-9_]+)?)", EffectParameterAddress),
-            (r"/effect/bypass/([A-Za-z0-9_]+),(\d+)", EffectBypass),
-            (r"/effect/bypass/address/([A-Za-z0-9_]),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+            (r"/effect/remove/([A-Za-z0-9_/]+[^/])/?", EffectRemove),
+            (r"/effect/connect/([A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
+            (r"/effect/disconnect/([A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
+            (r"/effect/preset/load/([A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
+            (r"/effect/parameter/set/([A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
+            (r"/effect/parameter/get//([A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
+            (r"/effect/parameter/address//([A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/bypass/([A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
+            (r"/effect/bypass/address/([A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
-            (r"/effect/position/([A-Za-z0-9_]+)/?", EffectPosition),
+            (r"/effect/position/([A-Za-z0-9_/]+[^/])/?", EffectPosition),
             (r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
@@ -1245,9 +1320,9 @@ application = web.Application(
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
-            (r"/pedalboard/load/([0-9a-f]+)/?", PedalboardLoad),
-            (r"/pedalboard/remove/([0-9a-f]+)/?", PedalboardRemove),
-            (r"/pedalboard/screenshot/([0-9a-f]+)/?", PedalboardScreenshot),
+            (r"/pedalboard/load/?", PedalboardLoad),
+            (r"/pedalboard/remove/?", PedalboardRemove),
+            (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
 
             (r"/banks/?", BankLoad),
@@ -1292,7 +1367,7 @@ application = web.Application(
 
             (r"/websocket/?$", AtomWebSocket),
 
-            #(r"/pedalboards/(.*)", web.StaticFileHandler, {"path": PEDALBOARD_SCREENSHOT_DIR}), # TODO
+            (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": "/"}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
             debug=LOG, **settings)

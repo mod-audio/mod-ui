@@ -24,7 +24,7 @@ from whoosh.qparser import MultifieldParser
 from whoosh import sorting
 
 from mod import json_handler
-from mod.settings import INDEX_PATH, EFFECT_DIR, PEDALBOARD_INDEX_PATH, PEDALBOARD_DIR
+from mod.settings import INDEX_PATH, EFFECT_DIR
 
 class Index(object):
     @property
@@ -36,9 +36,11 @@ class Index(object):
     @property
     def data_source(self):
         raise NotImplemented
-    
+
     def __init__(self):
-        if not os.path.exists(self.index_path):
+        if self.index_path is None:
+            pass
+        elif not os.path.exists(self.index_path):
             os.mkdir(self.index_path)
             self.reindex()
         else:
@@ -195,27 +197,27 @@ class EffectIndex(Index):
     def indexable(self, obj):
         return not obj.get('hidden')
 
-class PedalboardIndex(Index):
-    index_path = PEDALBOARD_INDEX_PATH
-    data_source = PEDALBOARD_DIR
+#class PedalboardIndex(Index):
+    #index_path = PEDALBOARD__INDEX_PATH
+    #data_source = PEDALBOARD__DIR
 
-    schema = Schema(id=ID(unique=True, stored=True),
-                    title=ID(unique=True, stored=True),
-                    title_words=NGRAMWORDS(minsize=3, maxsize=5, stored=True),
-                    description=TEXT,
-                    )
+    #schema = Schema(id=ID(unique=True, stored=True),
+                    #title=ID(unique=True, stored=True),
+                    #title_words=NGRAMWORDS(minsize=3, maxsize=5, stored=True),
+                    #description=TEXT,
+                    #)
 
-    term_fields = ['title_words', 'description']
+    #term_fields = ['title_words', 'description']
 
-    def add(self, pedalboard):
-        if not self.indexable(pedalboard):
-            return
-        data = pedalboard['metadata']
-        data['_id'] = pedalboard['_id']
-        data = self.schemed_data(data)
-        data['title_words'] = data['title']
+    #def add(self, pedalboard):
+        #if not self.indexable(pedalboard):
+            #return
+        #data = pedalboard['metadata']
+        #data['_id'] = pedalboard['_id']
+        #data = self.schemed_data(data)
+        #data['title_words'] = data['title']
 
-        writer = self.index.writer()
-        writer.update_document(**data)
-        writer.commit()
+        #writer = self.index.writer()
+        #writer.update_document(**data)
+        #writer.commit()
 

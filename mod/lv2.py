@@ -2,12 +2,37 @@ import os, hashlib, re, random, shutil, subprocess
 import lilv
 import hashlib
 
+from mod.lilvlib import LILV_FOREACH, get_category, get_port_unit
+
 # LILV stuff
 
 W = lilv.World()
 W.load_all()
 
 PLUGINS = W.get_all_plugins()
+BUNDLES = []
+
+# Make a list of all installed bundles
+for p in PLUGINS:
+    bundles = lilv.lilv_plugin_get_data_uris(p.me)
+
+    it = lilv.lilv_nodes_begin(bundles)
+    while not lilv.lilv_nodes_is_end(bundles, it):
+        bundle = lilv.lilv_nodes_get(bundles, it)
+        it     = lilv.lilv_nodes_next(bundles, it)
+
+        if bundle is None:
+            continue
+        if not lilv.lilv_node_is_uri(bundle):
+            continue
+
+        bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+
+        if not bundle.endswith(os.sep):
+            bundle += os.sep
+
+        if bundle not in BUNDLES:
+            BUNDLES.append(bundle)
 
 class NS(object):
     def __init__(self, base, world=W):
@@ -21,13 +46,6 @@ class NS(object):
         if attr not in self._cache:
             self._cache[attr] = lilv.Node(self.world.new_uri(self.base+attr))
         return self._cache[attr]
-
-def LILV_FOREACH(collection, func):
-    l = []
-    itr = collection.begin()
-    while itr:
-        yield func(collection.get(itr))
-        itr = collection.next(itr)
 
 doap = NS(lilv.LILV_NS_DOAP)
 foaf = NS(lilv.LILV_NS_FOAF)
@@ -44,263 +62,6 @@ time = NS("http://lv2plug.in/ns/ext/time#")
 modgui = NS("http://portalmod.com/ns/modgui#")
 modpedal = NS("http://portalmod.com/ns/modpedal#")
 
-def get_category(nodes):
-    category_indexes = {
-        'DelayPlugin': ['Delay'],
-        'DistortionPlugin': ['Distortion'],
-        'WaveshaperPlugin': ['Distortion', 'Waveshaper'],
-        'DynamicsPlugin': ['Dynamics'],
-        'AmplifierPlugin': ['Dynamics', 'Amplifier'],
-        'CompressorPlugin': ['Dynamics', 'Compressor'],
-        'ExpanderPlugin': ['Dynamics', 'Expander'],
-        'GatePlugin': ['Dynamics', 'Gate'],
-        'LimiterPlugin': ['Dynamics', 'Limiter'],
-        'FilterPlugin': ['Filter'],
-        'AllpassPlugin': ['Filter', 'Allpass'],
-        'BandpassPlugin': ['Filter', 'Bandpass'],
-        'CombPlugin': ['Filter', 'Comb'],
-        'EQPlugin': ['Filter', 'Equaliser'],
-        'MultiEQPlugin': ['Filter', 'Equaliser', 'Multiband'],
-        'ParaEQPlugin': ['Filter', 'Equaliser', 'Parametric'],
-        'HighpassPlugin': ['Filter', 'Highpass'],
-        'LowpassPlugin': ['Filter', 'Lowpass'],
-        'GeneratorPlugin': ['Generator'],
-        'ConstantPlugin': ['Generator', 'Constant'],
-        'InstrumentPlugin': ['Generator', 'Instrument'],
-        'OscillatorPlugin': ['Generator', 'Oscillator'],
-        'ModulatorPlugin': ['Modulator'],
-        'ChorusPlugin': ['Modulator', 'Chorus'],
-        'FlangerPlugin': ['Modulator', 'Flanger'],
-        'PhaserPlugin': ['Modulator', 'Phaser'],
-        'ReverbPlugin': ['Reverb'],
-        'SimulatorPlugin': ['Simulator'],
-        'SpatialPlugin': ['Spatial'],
-        'SpectralPlugin': ['Spectral'],
-        'PitchPlugin': ['Spectral', 'Pitch Shifter'],
-        'UtilityPlugin': ['Utility'],
-        'AnalyserPlugin': ['Utility', 'Analyser'],
-        'ConverterPlugin': ['Utility', 'Converter'],
-        'FunctionPlugin': ['Utility', 'Function'],
-        'MixerPlugin': ['Utility', 'Mixer'],
-    }
-
-    def fill_in_category(node):
-        category = node.as_string().replace("http://lv2plug.in/ns/lv2core#","")
-        if category in category_indexes.keys():
-            return category_indexes[category]
-        return []
-    return [cat for catlist in LILV_FOREACH(nodes, fill_in_category) for cat in catlist]
-
-# Get info from an lv2 bundle
-# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
-def get_pedalboard_info(bundle):
-    # lilv wants the last character as the separator
-    if not bundle.endswith(os.sep):
-        bundle += os.sep
-
-    # Create our own unique lilv world
-    # We'll load a single bundle and get all plugins from it
-    world = lilv.World()
-
-    # this is needed when loading specific bundles instead of load_all
-    # (these functions are not exposed via World yet)
-    lilv.lilv_world_load_specifications(world.me)
-    lilv.lilv_world_load_plugin_classes(world.me)
-
-    # convert bundle string into a lilv node
-    bundlenode = lilv.lilv_new_file_uri(world.me, None, bundle)
-
-    # load the bundle
-    world.load_bundle(bundlenode)
-
-    # free bundlenode, no longer needed
-    lilv.lilv_node_free(bundlenode)
-
-    # get all plugins in the bundle
-    plugins = world.get_all_plugins()
-
-    # make sure the bundle includes 1 and only 1 plugin (the pedalboard)
-    if plugins.size() != 1:
-        raise Exception('get_info_from_lv2_bundle(%s) - bundle has 0 or > 1 plugin'.format(bundle))
-
-    # no indexing in python-lilv yet, just get the first item
-    plugin = None
-    for p in plugins:
-        plugin = p
-        break
-
-    if plugin is None:
-        raise Exception('get_info_from_lv2_bundle(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
-
-    # define the needed stuff
-    rdf = NS(lilv.LILV_NS_RDF, world)
-    ingen = NS('http://drobilla.net/ns/ingen#', world)
-    lv2core = NS(lilv.LILV_NS_LV2, world)
-    modpedal = NS("http://portalmod.com/ns/modpedal#", world)
-
-    # check if the plugin is a pedalboard
-    def fill_in_type(node):
-        return node.as_string()
-    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
-
-    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
-        raise Exception('get_info_from_lv2_bundle(%s) - plugin has no mod:Pedalboard type'.format(bundle))
-
-    # let's get all the info now
-    ingenarcs   = []
-    ingenblocks = []
-
-    info = {
-        'name':   plugin.get_value(modpedal.name).get_first().as_string(),
-        'author': plugin.get_author_name().as_string() or '', # Might be empty
-        'uri':    plugin.get_uri().as_string(),
-        'hardware': {
-            # we save this info later
-            'audio': {
-                'ins': 0,
-                'outs': 0
-             },
-            'cv': {
-                'ins': 0,
-                'outs': 0
-             },
-            'midi': {
-                'ins': 0,
-                'outs': 0
-             }
-        },
-        'size': {
-            'width':  plugin.get_value(modpedal.width).get_first().as_int(),
-            'height': plugin.get_value(modpedal.height).get_first().as_int(),
-        },
-        'screenshot': os.path.basename(plugin.get_value(modpedal.screenshot).get_first().as_string()),
-        'thumbnail':  os.path.basename(plugin.get_value(modpedal.thumbnail).get_first().as_string()),
-        'connections': [], # we save this info later
-        'plugins':     []  # we save this info later
-    }
-
-    # connections
-    arcs = plugin.get_value(ingen.arc)
-    it = arcs.begin()
-    while not arcs.is_end(it):
-        arc = arcs.get(it)
-        it  = arcs.next(it)
-
-        if arc.me is None:
-            continue
-
-        head = lilv.lilv_world_get(world.me, arc.me, ingen.head.me, None)
-        tail = lilv.lilv_world_get(world.me, arc.me, ingen.tail.me, None)
-
-        if head is None or tail is None:
-            continue
-
-        ingenarcs.append({
-            "source": lilv.lilv_node_as_string(tail).replace("file://","",1).replace(bundle,"",1),
-            "target": lilv.lilv_node_as_string(head).replace("file://","",1).replace(bundle,"",1)
-        })
-
-    # hardware ports
-    handled_port_uris = []
-    ports = plugin.get_value(lv2core.port)
-    it = ports.begin()
-    while not ports.is_end(it):
-        port = ports.get(it)
-        it   = ports.next(it)
-
-        if port.me is None:
-            continue
-
-        # check if we already handled this port
-        port_uri = port.as_uri()
-        if port_uri in handled_port_uris:
-            continue
-        handled_port_uris.append(port_uri)
-
-        # get types
-        port_types = lilv.lilv_world_find_nodes(world.me, port.me, rdf.type_.me, None)
-
-        if port_types is None:
-            continue
-
-        portDir  = "" # input or output
-        portType = "" # atom, audio or cv
-
-        it2 = lilv.lilv_nodes_begin(port_types)
-        while not lilv.lilv_nodes_is_end(port_types, it2):
-            port_type = lilv.lilv_nodes_get(port_types, it2)
-            it2 = lilv.lilv_nodes_next(port_types, it2)
-
-            if port_type is None:
-                continue
-
-            port_type_uri = lilv.lilv_node_as_uri(port_type)
-
-            if port_type_uri == "http://lv2plug.in/ns/lv2core#InputPort":
-                portDir = "input"
-            elif port_type_uri == "http://lv2plug.in/ns/lv2core#OutputPort":
-                portDir = "output"
-            elif port_type_uri == "http://lv2plug.in/ns/lv2core#AudioPort":
-                portType = "audio"
-            elif port_type_uri == "http://lv2plug.in/ns/lv2core#CVPort":
-                portType = "cv"
-            elif port_type_uri == "http://lv2plug.in/ns/ext/atom#AtomPort":
-                portType = "atom"
-
-        if not (portDir or portType):
-            continue
-
-        if portType == "audio":
-            if portDir == "input":
-                info['hardware']['audio']['ins'] += 1
-            else:
-                info['hardware']['audio']['outs'] += 1
-
-        elif portType == "atom":
-            if portDir == "input":
-                info['hardware']['midi']['ins'] += 1
-            else:
-                info['hardware']['midi']['outs'] += 1
-
-        elif portType == "cv":
-            if portDir == "input":
-                info['hardware']['cv']['ins'] += 1
-            else:
-                info['hardware']['cv']['outs'] += 1
-
-    # plugins
-    blocks = plugin.get_value(ingen.block)
-    it = blocks.begin()
-    while not blocks.is_end(it):
-        block = blocks.get(it)
-        it    = blocks.next(it)
-
-        if block.me is None:
-            continue
-
-        protouri1 = lilv.lilv_world_get(world.me, block.me, lv2core.prototype.me, None)
-        protouri2 = lilv.lilv_world_get(world.me, block.me, ingen.prototype.me, None)
-
-        if protouri1 is not None:
-            proto = protouri1
-        elif protouri2 is not None:
-            proto = protouri2
-        else:
-            continue
-
-        uri = lilv.lilv_node_as_uri(proto)
-
-        ingenblocks.append({
-            "uri": uri,
-            "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasX.me, None)),
-            "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasY.me, None))
-        })
-
-    info['connections'] = ingenarcs
-    info['plugins']     = ingenblocks
-
-    return info
-
 def get_pedalboards():
     def get_presets(p):
         presets = p.get_related(pset.Preset)
@@ -312,21 +73,24 @@ def get_pedalboards():
 
     pedalboards = []
 
-    for plugin in PLUGINS:
+    for pedalboard in PLUGINS:
         # check if the plugin is a pedalboard
         def fill_in_type(node):
             return node.as_string()
-        plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
+        plugin_types = [i for i in LILV_FOREACH(pedalboard.get_value(rdf.type_), fill_in_type)]
 
         if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
             continue
 
         pedalboards.append({
-            'uri': plugin.get_uri().as_string(),
-            'name': plugin.get_value(modpedal.name).get_first().as_string(),
-            'screenshot': plugin.get_value(modpedal.screenshot).get_first().as_string(),
-            'thumbnail': plugin.get_value(modpedal.thumbnail).get_first().as_string(),
-            'presets': get_presets(plugin)
+            'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
+            'name': pedalboard.get_name().as_string(),
+            'uri':  pedalboard.get_uri().as_string(),
+            'screenshot': lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.screenshot).get_first().as_string()),
+            'thumbnail':  lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.thumbnail).get_first().as_string()),
+            'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),
+            'height': pedalboard.get_value(modpedal.height).get_first().as_int(),
+            'presets': get_presets(pedalboard)
         })
 
     return pedalboards
@@ -336,6 +100,10 @@ def add_bundle_to_lilv_world(bundlepath):
     if not bundlepath.endswith(os.sep):
         bundlepath += os.sep
 
+    # safety check
+    if bundlepath in BUNDLES:
+        return False
+
     # convert bundle string into a lilv node
     bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
 
@@ -344,6 +112,10 @@ def add_bundle_to_lilv_world(bundlepath):
 
     # free bundlenode, no longer needed
     lilv.lilv_node_free(bundlenode)
+
+    # add to world
+    BUNDLES.append(bundlepath)
+    return True
 
 class PluginSerializer(object):
     def __init__(self, uri=None, plugin=None):
@@ -358,7 +130,7 @@ class PluginSerializer(object):
 
         self.data = dict(
                 _id="",
-                binary=p.get_library_uri().as_string().replace("file://", ""),
+                binary=(p.get_library_uri().as_string() or "").replace("file://", ""),
                 brand="",
                 bufsize=128,
                 category=get_category(p.get_value(rdf.type_)),
@@ -553,11 +325,22 @@ class PluginSerializer(object):
         if unit is not None:
             unit_dict = {}
             unit_node = lilv.Nodes(unit).get_first()
-            unit_dict['label'] = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
-            unit_dict['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
-            unit_dict['symbol'] = W.find_nodes(unit_node.me, rdfs.symbol.me, None).get_first().as_string()
-            if unit_dict['label'] and unit_dict['render'] and unit_dict['symbol']:
-                d['unit'] = unit_dict
+            unit_uri  = unit_node.as_string()
+
+            # using pre-existing lv2 unit
+            if unit_uri is not None and unit_uri.startswith("http://lv2plug.in/ns/extensions/units#"):
+                ulabel, urender, usymbol = get_port_unit(unit_uri.replace("http://lv2plug.in/ns/extensions/units#","",1))
+                unit_dict['label']  = ulabel
+                unit_dict['render'] = urender
+                unit_dict['symbol'] = usymbol
+
+            # using custom unit
+            else:
+                unit_dict['label']  = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
+                unit_dict['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
+                unit_dict['symbol'] = W.find_nodes(unit_node.me, units.symbol.me, None).get_first().as_string()
+
+            d['unit'] = unit_dict
         return d
 
     def has_modgui(self):

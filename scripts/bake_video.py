@@ -18,7 +18,7 @@ os.environ['MOD_SCREENSHOT_JS'] = join(ROOT, 'screenshot.js')
 
 sys.path = [ os.path.dirname(os.path.realpath(__file__)) + '/..' ] + sys.path
 
-from mod.settings import PHANTOM_BINARY, SCREENSHOT_JS, PEDALBOARD_DIR
+from mod.settings import PHANTOM_BINARY, SCREENSHOT_JS
 from mod.screenshot import resize_image
 
 record = json.loads(open('/tmp/record.json').read())
@@ -36,7 +36,8 @@ def make_screenshot(pedalboard, start_time, end_time, n=0):
     width=pedalboard.get('width', 1920)
     height=pedalboard.get('height', 1080)
 
-    open(join(PEDALBOARD_DIR, 'tmp'), 'w').write(json.dumps(pedalboard))
+    # FIXME
+    open(join(PEDALBOARD__DIR, 'tmp'), 'w').write(json.dumps(pedalboard))
     path = 'shot.png'
     proc = subprocess.Popen([ PHANTOM_BINARY, 
                               SCREENSHOT_JS,

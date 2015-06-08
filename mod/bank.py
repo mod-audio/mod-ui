@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, json
-from mod.settings import PEDALBOARD_DIR, BANKS_JSON_FILE
+from mod.settings import BANKS_JSON_FILE
 
 def save_banks(banks):
     fh = open(BANKS_JSON_FILE, 'w')
@@ -33,28 +33,31 @@ def list_banks():
     return banks
 
 def save_last_pedalboard(bank_id, pedalboard_number):
-    if bank_id is not None:
-        fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'w')
-        fh.write(json.dumps({'pedalboard':pedalboard_number, 'bank':bank_id}))
-        fh.close()
+    return # TODO
+    #if bank_id is not None:
+        #fh = open(os.path.join(PEDALBOARD__DIR, '../last.json'), 'w')
+        #fh.write(json.dumps({'pedalboard':pedalboard_number, 'bank':bank_id}))
+        #fh.close()
 
 def get_last_bank_and_pedalboard():
-    try:
-        fh = open(os.path.join(PEDALBOARD_DIR, '../last.json'), 'r')
-    except IOError:
-        return (None, None)
+    return (None, None)
 
-    j = json.load(fh)
-    fh.close()
-    pid = j['pedalboard']
-    bid = j['bank']
-    try:
-        pid = int(pid)
-    except ValueError: 
-        # This will happen after upgrade, because last.json will have old structure
-        return (None, None)
+    #try:
+        #fh = open(os.path.join(PEDALBOARD__DIR, '../last.json'), 'r')
+    #except IOError:
+        #return (None, None)
 
-    return (bid, pid)
+    #j = json.load(fh)
+    #fh.close()
+    #pid = j['pedalboard']
+    #bid = j['bank']
+    #try:
+        #pid = int(pid)
+    #except ValueError: 
+        ## This will happen after upgrade, because last.json will have old structure
+        #return (None, None)
+
+    #return (bid, pid)
 
 def remove_pedalboard_from_banks(uid):
     # Remove from banks, and remove empty banks afterwards

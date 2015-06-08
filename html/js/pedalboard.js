@@ -477,12 +477,12 @@ JqueryClass('pedalboard', {
             var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
             var inputM = $('<div class="hardware-input" title="Hardware MIDI Output">')
 
-            self.pedalboard('addHardwareOutput', outputL, 'audio_in_1', 'audio')
-            self.pedalboard('addHardwareOutput', outputR, 'audio_in_2', 'audio')
-            self.pedalboard('addHardwareOutput', outputM, 'control_in', 'midi')
-            self.pedalboard('addHardwareInput', inputL, 'audio_out_1', 'audio')
-            self.pedalboard('addHardwareInput', inputR, 'audio_out_2', 'audio')
-            self.pedalboard('addHardwareInput', inputM, 'control_out', 'midi')
+            self.pedalboard('addHardwareOutput', outputL, '/graph/audio_in_1', 'audio')
+            self.pedalboard('addHardwareOutput', outputR, '/graph/audio_in_2', 'audio')
+            self.pedalboard('addHardwareOutput', outputM, '/graph/control_in', 'midi')
+            self.pedalboard('addHardwareInput', inputL, '/graph/audio_out_1', 'audio')
+            self.pedalboard('addHardwareInput', inputR, '/graph/audio_out_2', 'audio')
+            self.pedalboard('addHardwareInput', inputM, '/graph/control_out', 'midi')
 
             // Queue is empty, let's load connections now
             self.pedalboard('positionHardwarePorts')
@@ -508,8 +508,8 @@ JqueryClass('pedalboard', {
                             'system': self
                         }, self.data('plugins'))
 
-                        var output = $('[mod-port="' + source + '"]')
-                        var  input = $('[mod-port="' + target + '"]')
+                        var output = $('[mod-port="/graph/' + source + '"]')
+                        var  input = $('[mod-port="/graph/' + target + '"]')
 
                         self.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                     })
@@ -1062,6 +1062,7 @@ JqueryClass('pedalboard', {
         if (instance[0].match(/[0-9]/)) // instance names cant start with numbers
             instance = "_" + instance
         var i = 1;
+        instance = '/graph/' + instance
         if (instance in self.data('plugins')) {
             instance = instance + "_1"
             while (instance in self.data('plugins')) {
@@ -1270,7 +1271,6 @@ JqueryClass('pedalboard', {
     drawPluginJacks: function (plugin) {
         var self = $(this)
         var myjacks = []
-
         self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
             myjacks.push($(jack.data('svg')._container))
         })
@@ -1330,21 +1330,14 @@ JqueryClass('pedalboard', {
         }
 
         var output = jack.data('origin')
-        var fromInstance = output.data('instance')
-        var fromSymbol = output.data('symbol')
+        var fromPort = output.attr('mod-port')
         var portType = output.data('portType')
-        
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
-            var toInstance = input.data('instance')
-            var toSymbol = input.data('symbol')
+            var toPort = input.attr('mod-port')
             var ok
             // Do not highlight if this output and input are already connected
-            ok = !connections.connected(fromInstance, fromSymbol, toInstance, toSymbol)
-                // Neither if output and input belong to same instance
-            if (toInstance >= 0) // do not check this on hardware ports
-                ok = ok && (fromInstance != toInstance)
-
+            ok = !connections.connected(fromPort, toPort)
             if (ok) {
                 input.addClass('input-connecting')
             }
@@ -1732,6 +1725,10 @@ JqueryClass('pedalboard', {
 
         var previousInput = jack.data('destination')
 
+        // If output is already connected to this input through another jack, abort connection
+        if (self.pedalboard('connected', output, input))
+            return self.pedalboard('disconnect', jack)
+
         // If this jack is already connected to this output, keep connection
         // This means user just took a connected jack, dragged around and dropped
         // in the same input
@@ -1768,7 +1765,6 @@ JqueryClass('pedalboard', {
     connect: function (jack, input) {
         var self = $(this)
         var output = jack.data('origin')
-
        // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input))
             return self.pedalboard('disconnect', jack)
@@ -1840,7 +1836,7 @@ JqueryClass('pedalboard', {
             })
         }
         if (self.data('connectionManager').origIndex[output.attr('mod-port')] &&
-             self.data('connectionManager').origIndex[output.attr('mod-port')].length == 1) {
+             Object.keys(self.data('connectionManager').origIndex[output.attr('mod-port')]).length == 1) {
             output.addClass('output-disconnected')
             output.removeClass('output-connected')
         }
@@ -1985,21 +1981,12 @@ function ConnectionManager() {
 
         // TODO: change the architecture so we don't need to keep this other index
         // and this 'system' HACK
-        var from = fromPort.split("/")
-        if (from.length == 1)
-            var instance = ':system:'
-        else
-            var instance = from[0]
+        var instance = fromPort.substring(0, fromPort.lastIndexOf("/"))
         if (self.origByInstanceIndex[instance] == null)
             self.origByInstanceIndex[instance] = {}
         self._addToIndex(self.origByInstanceIndex[instance], fromPort, toPort, jack)
 
-        var to = toPort.split("/")
-        if (to.length == 1)
-            var instance = ':system:'
-        else
-            var instance = to[0]
-
+        instance = toPort.substring(0, toPort.lastIndexOf("/"))
         if (self.destByInstanceIndex[instance] == null)
             self.destByInstanceIndex[instance] = {}
         self._addToIndex(self.destByInstanceIndex[instance], toPort, fromPort, jack)
@@ -2012,19 +1999,11 @@ function ConnectionManager() {
 
         // TODO: change the architecture so we don't need to keep this other index
         // and this 'system' HACK
-        var from = fromPort.split("/")
-        if (from.length == 1)
-            var instance = ':system:'
-        else
-            var instance = from[0]
+        var instance = fromPort.substring(0, fromPort.lastIndexOf("/"))
         if (self.origByInstanceIndex[instance] != null)
             self._removeFromIndex(self.origByInstanceIndex[instance], fromPort, toPort)
 
-        var to = toPort.split("/")
-        if (to.length == 1)
-            var instance = ':system:'
-        else
-            var instance = to[0]
+        instance = toPort.substring(0, toPort.lastIndexOf("/"))
         if (self.destByInstanceIndex[instance] != null)
             self._removeFromIndex(self.destByInstanceIndex[instance], toPort, fromPort)
     }

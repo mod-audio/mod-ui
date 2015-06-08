@@ -30,15 +30,18 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
                           INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS, INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           DEFAULT_JACK_BUFSIZE)
+from mod import symbolify
 from mod.development import FakeHost, FakeHMI
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
 #from mod.host import Host
 from mod.ingen import Host
+from mod.lv2 import add_bundle_to_lilv_world
 from mod.clipmeter import Clipmeter
 from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
+from mod.screenshot import ScreenshotGenerator
 from mod.indexing import EffectIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 
@@ -110,30 +113,35 @@ class Session(object):
 
         self.recorder = Recorder()
         self.player = Player()
+        self.bundlepath = None
         self.mute_state = True
         self.recording = None
         self.instances = []
         self.instance_mapper = InstanceIdMapper()
+        self.screenshot_generator = ScreenshotGenerator()
+
         self.engine_samplerate = 48000 # default value
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
 
         self._load_pb_hack = None
-        self._save_waiter = None
+        self._app_save_callback = None
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)
 
     def websocket_opened(self, ws):
         self.websockets.append(ws)
-        self.host.get("/")
+        self.host.get("/graph")
 
     @gen.engine
     def host_callback(self):
         self.host_initialized = True
 
-        def port_value_cb(instance, port, value):
+        def port_value_cb(port, value):
+            instance = "/".join(port.split("/")[:-1])
+            port = port.split("/")[-1]
             instance_id = self.instance_mapper.map(instance)
             if self._pedalboard.data['instances'].get(instance_id, False):
                 self._pedalboard.parameter_set(instance_id, port, value)
@@ -152,14 +160,19 @@ class Session(object):
                 self._pedalboard.add_instance(uri, self.instance_mapper.map(instance), x=x, y=y)
                 self.instances.append(instance)
 
+        def pedal_save_cb(bundlepath):
+            if add_bundle_to_lilv_world(bundlepath):
+                self.host.add_bundle(bundlepath)
+            self.screenshot_generator.schedule_screenshot(bundlepath)
+
         def delete_cb(instance):
             if instance in self.instances:
                 self.instances.remove(instance)
 
-        def connection_add_cb(instance_a, port_a, instance_b, port_b):
+        def connection_add_cb(port_a, port_b):
             pass
 
-        def connection_delete_cb(instance_a, port_a, instance_b, port_b):
+        def connection_delete_cb(port_a, port_b):
             pass
 
         def msg_cb(msg):
@@ -193,6 +206,7 @@ class Session(object):
         self.host.port_value_callback = port_value_cb
         self.host.plugin_add_callback = plugin_add_cb
         self.host.delete_callback = delete_cb
+        self.host.save_callback = pedal_save_cb
         self.host.connection_add_callback = connection_add_cb
         self.host.connection_delete_callback = connection_delete_cb
 
@@ -211,19 +225,20 @@ class Session(object):
                 callback(r)
         remove_all_plugins()
 
-    def save_pedalboard(self, title, asNew):
+    def save_pedalboard(self, bundlepath, title, callback):
+        def callback2(ok):
+            self.bundlepath = bundlepath if ok else None
+            callback(ok)
+
+            if self._app_save_callback is not None:
+                self._app_save_callback(ok, bundlepath, title)
+
         self.host.set_pedalboard_name(title)
-        bundlepath = os.path.expanduser("~/.lv2/testing.ingen")
-        if self._save_waiter is not None:
-            self._save_waiter()
-        if not os.path.exists(bundlepath):
-            raise Pedalboard.ValidationError("failed to find testing pedalboard, did you save it like I asked?")
-        # FIXME
-        os.system("sed -i 's|<ingen:/root/screenshot.png>|<screenshot.png>|' ~/.lv2/testing.ingen/testing.ttl")
-        os.system("sed -i 's|<ingen:/root/thumbnail.png>|<thumbnail.png>|' ~/.lv2/testing.ingen/testing.ttl")
-        return bundlepath
+        self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), callback2)
 
     def load_pedalboard(self, bundlepath):
+        # TODO
+        self.bundlepath = bundlepath
         if self._load_pb_hack is not None:
             self._load_pb_hack(bundlepath)
 

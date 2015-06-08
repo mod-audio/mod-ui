@@ -25,15 +25,5 @@ def clean(path):
         else:
             shutil.rmtree(fname)
 
-clean(settings.PEDALBOARD_DIR)
-
-if os.path.exists(settings.PEDALBOARD_INDEX_PATH):
-    shutil.rmtree(settings.PEDALBOARD_INDEX_PATH)
-
 if os.path.exists(settings.BANKS_BINARY_FILE):
     os.remove(settings.BANKS_BINARY_FILE)
-
-if not os.path.exists(settings.PEDALBOARD_BINARY_DIR):
-    os.mkdir(settings.PEDALBOARD_BINARY_DIR)
-
-    

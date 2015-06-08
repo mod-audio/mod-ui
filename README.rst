@@ -10,7 +10,7 @@ There are instructions for installing in a 64-bit Debian based Linux environment
 
 The following packages will be required::
 
-    $ sudo apt-get install python-virtualenv python-pip python-dev git zlib1g:amd64 build-essential
+    $ sudo apt-get install python-virtualenv python3-pip python3-dev git zlib1g:amd64 build-essential
 
 Start by cloning the repository::
 
@@ -28,7 +28,7 @@ Create the symlink below, that is required by PIL for PNG support::
 
 Install python requirements::
 
-    $ pip install -r requirements.txt
+    $ pip3 install -r requirements.txt
 
 Download PhantomJS::
 
