@@ -2,7 +2,7 @@ import os, hashlib, re, random, shutil, subprocess
 import lilv
 import hashlib
 
-from mod.lilvlib import LILV_FOREACH
+from mod.lilvlib import LILV_FOREACH, get_port_unit
 
 # LILV stuff
 
@@ -325,11 +325,22 @@ class PluginSerializer(object):
         if unit is not None:
             unit_dict = {}
             unit_node = lilv.Nodes(unit).get_first()
-            unit_dict['label'] = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
-            unit_dict['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
-            unit_dict['symbol'] = W.find_nodes(unit_node.me, rdfs.symbol.me, None).get_first().as_string()
-            if unit_dict['label'] and unit_dict['render'] and unit_dict['symbol']:
-                d['unit'] = unit_dict
+            unit_uri  = unit_node.as_string()
+
+            # using pre-existing lv2 unit
+            if unit_uri is not None and unit_uri.startswith("http://lv2plug.in/ns/extensions/units#"):
+                ulabel, urender, usymbol = get_port_unit(unit_uri.replace("http://lv2plug.in/ns/extensions/units#","",1))
+                unit_dict['label']  = ulabel
+                unit_dict['render'] = urender
+                unit_dict['symbol'] = usymbol
+
+            # using custom unit
+            else:
+                unit_dict['label']  = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
+                unit_dict['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
+                unit_dict['symbol'] = W.find_nodes(unit_node.me, units.symbol.me, None).get_first().as_string()
+
+            d['unit'] = unit_dict
         return d
 
     def has_modgui(self):

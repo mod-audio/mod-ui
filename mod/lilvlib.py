@@ -79,6 +79,52 @@ def get_category(nodes):
         return []
     return [cat for catlist in LILV_FOREACH(nodes, fill_in_category) for cat in catlist]
 
+def get_port_data(port, subj):
+    nodes = port.get_value(subj.me)
+    data  = []
+
+    it = lilv.lilv_nodes_begin(nodes)
+    while not lilv.lilv_nodes_is_end(nodes, it):
+        dat = lilv.lilv_nodes_get(nodes, it)
+        it  = lilv.lilv_nodes_next(nodes, it)
+        if data is None:
+            continue
+        data.append(lilv.lilv_node_as_string(dat))
+
+    return data
+
+def get_port_unit(miniuri):
+  # using label, render, symbol
+  units = {
+      's': ["seconds", "%f s", "s"],
+      'ms': ["milliseconds", "%f ms", "ms"],
+      'min': ["minutes", "%f mins", "min"],
+      'bar': ["bars", "%f bars", "bars"],
+      'beat': ["beats", "%f beats", "beats"],
+      'frame': ["audio frames", "%f frames", "frames"],
+      'm': ["metres", "%f m", "m"],
+      'cm': ["centimetres", "%f cm", "cm"],
+      'mm': ["millimetres", "%f mm", "mm"],
+      'km': ["kilometres", "%f km", "km"],
+      'inch': ["inches", """%f\"""", "in"],
+      'mile': ["miles", "%f mi", "mi"],
+      'db': ["decibels", "%f dB", "dB"],
+      'pc': ["percent", "%f%%", "%"],
+      'coef': ["coefficient", "* %f", ""],
+      'hz': ["hertz", "%f Hz", "Hz"],
+      'khz': ["kilohertz", "%f kHz", "kHz"],
+      'mhz': ["megahertz", "%f MHz", "MHz"],
+      'bpm': ["beats per minute", "%f BPM", "BPM"],
+      'oct': ["octaves", "%f octaves", "oct"],
+      'cent': ["cents", "%f ct", "ct"],
+      'semitone12TET': ["semitones", "%f semi", "semi"],
+      'degree': ["degrees", "%f deg", "deg"],
+      'midiNote': ["MIDI note", "MIDI note %d", "note"],
+  }
+  if miniuri in units.keys():
+      return units[miniuri]
+  return ("","","")
+
 # ------------------------------------------------------------------------------------------------------------
 # get_pedalboard_info
 
@@ -343,9 +389,67 @@ def get_plugins_info(bundles):
     rdf     = NS(world, lilv.LILV_NS_RDF)
     rdfs    = NS(world, lilv.LILV_NS_RDFS)
     lv2core = NS(world, lilv.LILV_NS_LV2)
+    pprops  = NS(world, "http://lv2plug.in/ns/ext/port-props#")
+    units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
     modgui  = NS(world, "http://portalmod.com/ns/modgui#")
 
-    # the function that does all the work
+    # function for filling port info
+    def fill_port_info(plugin, port):
+        global index
+        index += 1
+
+        # port types
+        types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
+
+        # unit block
+        uunit = lilv.lilv_nodes_get_first(port.get_value(units.unit.me))
+
+        # contains unit
+        if uunit is not None:
+            uuri = lilv.lilv_node_as_uri(uunit)
+
+            # using pre-existing lv2 unit
+            if uuri is not None and uuri.startswith("http://lv2plug.in/ns/extensions/units#"):
+                ulabel, urender, usymbol = get_port_unit(uuri.replace("http://lv2plug.in/ns/extensions/units#","",1))
+
+            # using custom unit
+            else:
+                xlabel  = world.find_nodes(uunit, rdfs  .label.me, None).get_first()
+                xrender = world.find_nodes(uunit, units.render.me, None).get_first()
+                xsymbol = world.find_nodes(uunit, units.symbol.me, None).get_first()
+
+                ulabel  = xlabel .as_string() if xlabel .me else ""
+                urender = xrender.as_string() if xrender.me else ""
+                usymbol = xsymbol.as_string() if xsymbol.me else ""
+
+        # no unit
+        else:
+            ulabel  = ""
+            urender = ""
+            usymbol = ""
+
+        return {
+            'index' : index,
+            'name'  : lilv.lilv_node_as_string(port.get_name()),
+            'symbol': lilv.lilv_node_as_string(port.get_symbol()),
+            'type'  : types,
+            'range' : {
+                'default': lilv.lilv_node_as_float(lilv.lilv_nodes_get_first(port.get_value(lv2core.default.me))),
+                'minimum': lilv.lilv_node_as_float(lilv.lilv_nodes_get_first(port.get_value(lv2core.minimum.me))),
+                'maximum': lilv.lilv_node_as_float(lilv.lilv_nodes_get_first(port.get_value(lv2core.maximum.me))),
+            } if ("Control", "Input") == types else {},
+            'units' : {
+                'label' : ulabel,
+                'render': urender,
+                'symbol': usymbol,
+            } if "Control" in types and (ulabel or urender or usymbol) else {},
+            'designation': (get_port_data(port, lv2core.designation) or [None])[0],
+            'properties' : [typ.rsplit("#",1)[-1] for typ in get_port_data(port, lv2core.portProperty)],
+            'rangeSteps' : (get_port_data(port, pprops.rangeSteps) or [None])[0],
+            "scalePoints": [],
+        }
+
+    # function for filling plugin info
     def fill_plugin_info(plugin):
         bundleuri = plugin.get_bundle_uri().as_string()
         microver  = plugin.get_value(lv2core.microVersion).get_first()
@@ -359,14 +463,19 @@ def get_plugins_info(bundles):
             modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
             modgui_data  = world.find_nodes(modguigui.me, modgui.templateData    .me, None).get_first()
 
+        global index
+        index = -1
+
         return {
             'name': plugin.get_name().as_string(),
             'uri' : plugin.get_uri().as_string(),
             'author': {
                 'name'    : plugin.get_author_name().as_string() or "",
-                'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
                 'homepage': plugin.get_author_homepage().as_string() or "",
+                'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
             },
+
+            'ports': [fill_port_info(plugin, p) for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports()))],
 
             'gui': {
                 'screenshot'      : lilv.lilv_uri_to_path(modgui_scrn .as_string()) if modgui_scrn .me else "",
@@ -395,6 +504,7 @@ def get_plugins_info(bundles):
 if __name__ == '__main__':
     from sys import argv
     from pprint import pprint
+    #get_plugins_info(argv[1:])
     for i in get_plugins_info(argv[1:]): pprint(i)
 
 # ------------------------------------------------------------------------------------------------------------
