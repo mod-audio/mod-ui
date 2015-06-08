@@ -405,7 +405,7 @@ def get_plugins_info(bundles):
         uunit = lilv.lilv_nodes_get_first(port.get_value(units.unit.me))
 
         # contains unit
-        if uunit is not None:
+        if "Control" in types and uunit is not None:
             uuri = lilv.lilv_node_as_uri(uunit)
 
             # using pre-existing lv2 unit
