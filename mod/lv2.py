@@ -2,7 +2,7 @@ import os, hashlib, re, random, shutil, subprocess
 import lilv
 import hashlib
 
-from mod.lilvlib import LILV_FOREACH, get_port_unit
+from mod.lilvlib import LILV_FOREACH, get_category, get_port_unit
 
 # LILV stuff
 
@@ -130,7 +130,7 @@ class PluginSerializer(object):
 
         self.data = dict(
                 _id="",
-                binary=p.get_library_uri().as_string().replace("file://", ""),
+                binary=(p.get_library_uri().as_string() or "").replace("file://", ""),
                 brand="",
                 bufsize=128,
                 category=get_category(p.get_value(rdf.type_)),
