@@ -350,7 +350,7 @@ def get_plugins_info(bundles):
         bundleuri = plugin.get_bundle_uri().as_string()
         microver  = plugin.get_value(lv2core.microVersion).get_first()
         minorver  = plugin.get_value(lv2core.minorVersion).get_first()
-        modguigui = plugin.get_value(modgui.gui).get_first()
+        modguigui = plugin.get_value(modgui.gui).get_first(),
 
         if modguigui.me is not None:
             modgui_scrn  = world.find_nodes(modguigui.me, modgui.screenshot      .me, None).get_first()
@@ -392,8 +392,9 @@ def get_plugins_info(bundles):
 
 # ------------------------------------------------------------------------------------------------------------
 
-#import sys
+#from sys import argv
+#from pprint import pprint
 #get_plugins_info(sys.argv[1:])
-#for i in get_plugins_info(sys.argv[1:]): print(i['gui'])
+#for i in get_plugins_info(argv[1:]): pprint(i)
 
 # ------------------------------------------------------------------------------------------------------------
