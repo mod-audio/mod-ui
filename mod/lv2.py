@@ -84,8 +84,8 @@ def get_pedalboards():
 
         pedalboards.append({
             'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
+            'name': pedalboard.get_name().as_string(),
             'uri':  pedalboard.get_uri().as_string(),
-            'name': pedalboard.get_value(doap.name).get_first().as_string(),
             'screenshot': lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.screenshot).get_first().as_string()),
             'thumbnail':  lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.thumbnail).get_first().as_string()),
             'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),

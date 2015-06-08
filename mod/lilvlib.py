@@ -111,7 +111,7 @@ def get_pedalboard_info(bundle):
 
     # make sure the bundle includes 1 and only 1 plugin (the pedalboard)
     if plugins.size() != 1:
-        raise Exception('get_info_from_lv2_bundle(%s) - bundle has 0 or > 1 plugin'.format(bundle))
+        raise Exception('get_pedalboard_info(%s) - bundle has 0 or > 1 plugin'.format(bundle))
 
     # no indexing in python-lilv yet, just get the first item
     plugin = None
@@ -120,10 +120,9 @@ def get_pedalboard_info(bundle):
         break
 
     if plugin is None:
-        raise Exception('get_info_from_lv2_bundle(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
+        raise Exception('get_pedalboard_info(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
 
     # define the needed stuff
-    doap     = NS(world, lilv.LILV_NS_DOAP)
     rdf      = NS(world, lilv.LILV_NS_RDF)
     lv2core  = NS(world, lilv.LILV_NS_LV2)
     ingen    = NS(world, "http://drobilla.net/ns/ingen#")
@@ -135,16 +134,16 @@ def get_pedalboard_info(bundle):
     plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
 
     if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
-        raise Exception('get_info_from_lv2_bundle(%s) - plugin has no mod:Pedalboard type'.format(bundle))
+        raise Exception('get_pedalboard_info(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     # let's get all the info now
     ingenarcs   = []
     ingenblocks = []
 
     info = {
-        'name':   plugin.get_value(doap.name).get_first().as_string(),
-        'author': plugin.get_author_name().as_string() or '', # Might be empty
+        'name':   plugin.get_name().as_string(),
         'uri':    plugin.get_uri().as_string(),
+        'author': plugin.get_author_name().as_string() or "", # Might be empty
         'hardware': {
             # we save this info later
             'audio': {
@@ -289,7 +288,7 @@ def get_pedalboard_info(bundle):
             "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasX.me, None)),
             "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasY.me, None)),
             "microVersion": lilv.lilv_node_as_int(microver) if microver else 0,
-            "minorVersion": lilv.lilv_node_as_int(minorver) if minorver else 0
+            "minorVersion": lilv.lilv_node_as_int(minorver) if minorver else 0,
         })
 
     info['connections'] = ingenarcs
@@ -298,13 +297,84 @@ def get_pedalboard_info(bundle):
     return info
 
 # ------------------------------------------------------------------------------------------------------------
-# get_plugin_info
+# get_plugins_info
 
-# TODO
+# Get plugin-related info from a list of lv2 bundles
+# @a bundles is a list of strings, consisting of directories in the filesystem (absolute pathnames).
+def get_plugins_info(bundles):
+    # if empty, do nothing
+    if len(bundles) == 0:
+        raise Exception('get_plugins_info() - no bundles provided')
+
+    # Create our own unique lilv world
+    # We'll load the selected bundles and get all plugins from it
+    world = lilv.World()
+
+    # this is needed when loading specific bundles instead of load_all
+    # (these functions are not exposed via World yet)
+    lilv.lilv_world_load_specifications(world.me)
+    lilv.lilv_world_load_plugin_classes(world.me)
+
+    # load all bundles
+    for bundle in bundles:
+        # lilv wants the last character as the separator
+        if not bundle.endswith(os.sep):
+            bundle += os.sep
+
+        # convert bundle string into a lilv node
+        bundlenode = lilv.lilv_new_file_uri(world.me, None, bundle)
+
+        # load the bundle
+        world.load_bundle(bundlenode)
+
+        # free bundlenode, no longer needed
+        lilv.lilv_node_free(bundlenode)
+
+    # get all plugins available in the selected bundles
+    plugins = world.get_all_plugins()
+
+    # make sure the bundles include something
+    if plugins.size() == 0:
+        raise Exception('get_plugins_info() - selected bundles have no plugins')
+
+    # define the needed stuff
+    doap    = NS(world, lilv.LILV_NS_DOAP)
+    rdf     = NS(world, lilv.LILV_NS_RDF)
+    rdfs    = NS(world, lilv.LILV_NS_RDFS)
+    lv2core = NS(world, lilv.LILV_NS_LV2)
+    modgui  = NS(world, "http://portalmod.com/ns/modgui#")
+
+    # the function that does all the work
+    def fill_plugin_info(plugin):
+        bundleuri = plugin.get_bundle_uri().as_string()
+        microver  = plugin.get_value(lv2core.microVersion).get_first()
+        minorver  = plugin.get_value(lv2core.minorVersion).get_first()
+
+        return {
+            'name':   plugin.get_name().as_string(),
+            'uri':    plugin.get_uri().as_string(),
+            'author': {
+                'name':     plugin.get_author_name().as_string() or "",
+                'email':    plugin.get_author_email().as_string() or "",
+                'homepage': plugin.get_author_homepage().as_string() or ""
+            },
+
+            'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string()),
+            'category': get_category(plugin.get_value(rdf.type_)),
+            'license' : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
+
+            'description'  : plugin.get_value(rdfs.comment).get_first().as_string() or "",
+            'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
+            'microVersion' : microver.as_int() if microver.me else 0,
+            'minorVersion' : minorver.as_int() if minorver.me else 0,
+        }
+
+    # return all the info
+    return [fill_plugin_info(p) for p in plugins]
 
 # ------------------------------------------------------------------------------------------------------------
 
 #import sys
-#print(get_pedalboard_info(sys.argv[1]))
+#for i in get_plugins_info(sys.argv[1:]): print(i)
 
 # ------------------------------------------------------------------------------------------------------------
