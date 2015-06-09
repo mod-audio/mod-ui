@@ -347,7 +347,7 @@ def get_pedalboard_info(bundle):
 # get_plugin_info
 
 # Get info from a lilv plugin
-# This is used in get_plugins_info below and MOD.SDK
+# This is used in get_plugins_info below and MOD-SDK
 
 def get_plugin_info(world, plugin):
     # define the needed stuff
@@ -359,6 +359,9 @@ def get_plugin_info(world, plugin):
     units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
     modgui  = NS(world, "http://portalmod.com/ns/modgui#")
 
+    global index
+    index = -1
+
     # function for filling port info
     def fill_port_info(plugin, port):
         global index
@@ -367,43 +370,54 @@ def get_plugin_info(world, plugin):
         # port types
         types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
 
+        # port value ranges
+        ranges = {}
+
         # unit block
         uunit = lilv.lilv_nodes_get_first(port.get_value(units.unit.me))
 
         # contains unit
-        if "Control" in types and uunit is not None:
-            uuri = lilv.lilv_node_as_uri(uunit)
+        if "Control" in types:
+            if uunit is not None:
+                uuri = lilv.lilv_node_as_uri(uunit)
 
-            # using pre-existing lv2 unit
-            if uuri is not None and uuri.startswith("http://lv2plug.in/ns/extensions/units#"):
-                ulabel, urender, usymbol = get_port_unit(uuri.replace("http://lv2plug.in/ns/extensions/units#","",1))
+                # using pre-existing lv2 unit
+                if uuri is not None and uuri.startswith("http://lv2plug.in/ns/extensions/units#"):
+                    ulabel, urender, usymbol = get_port_unit(uuri.replace("http://lv2plug.in/ns/extensions/units#","",1))
 
-            # using custom unit
+                # using custom unit
+                else:
+                    xlabel  = world.find_nodes(uunit, rdfs  .label.me, None).get_first()
+                    xrender = world.find_nodes(uunit, units.render.me, None).get_first()
+                    xsymbol = world.find_nodes(uunit, units.symbol.me, None).get_first()
+
+                    ulabel  = xlabel .as_string() if xlabel .me else ""
+                    urender = xrender.as_string() if xrender.me else ""
+                    usymbol = xsymbol.as_string() if xsymbol.me else ""
+
+            # no unit
             else:
-                xlabel  = world.find_nodes(uunit, rdfs  .label.me, None).get_first()
-                xrender = world.find_nodes(uunit, units.render.me, None).get_first()
-                xsymbol = world.find_nodes(uunit, units.symbol.me, None).get_first()
+                ulabel  = ""
+                urender = ""
+                usymbol = ""
 
-                ulabel  = xlabel .as_string() if xlabel .me else ""
-                urender = xrender.as_string() if xrender.me else ""
-                usymbol = xsymbol.as_string() if xsymbol.me else ""
+            xdefault = lilv.lilv_nodes_get_first(port.get_value(lv2core.default.me))
+            xminimum = lilv.lilv_nodes_get_first(port.get_value(lv2core.minimum.me))
+            xmaximum = lilv.lilv_nodes_get_first(port.get_value(lv2core.maximum.me))
 
-        # no unit
-        else:
-            ulabel  = ""
-            urender = ""
-            usymbol = ""
+            if xminimum is not None and xmaximum is not None:
+                ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
+                ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
+
+                if xdefault is not None:
+                    ranges['default'] = lilv.lilv_node_as_float(xdefault)
 
         return {
             'index' : index,
             'name'  : lilv.lilv_node_as_string(port.get_name()),
             'symbol': lilv.lilv_node_as_string(port.get_symbol()),
             'type'  : types,
-            'range' : {
-                'default': lilv.lilv_node_as_float(lilv.lilv_nodes_get_first(port.get_value(lv2core.default.me))),
-                'minimum': lilv.lilv_node_as_float(lilv.lilv_nodes_get_first(port.get_value(lv2core.minimum.me))),
-                'maximum': lilv.lilv_node_as_float(lilv.lilv_nodes_get_first(port.get_value(lv2core.maximum.me))),
-            } if ("Control", "Input") == types else {},
+            'range' : ranges,
             'units' : {
                 'label' : ulabel,
                 'render': urender,
@@ -427,8 +441,13 @@ def get_plugin_info(world, plugin):
         modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
         modgui_data  = world.find_nodes(modguigui.me, modgui.templateData    .me, None).get_first()
 
-    global index
-    index = -1
+        templateData = {}
+
+        if modgui_data.me:
+            templateFile = lilv.lilv_uri_to_path(modgui_data.as_string())
+            if os.path.exists(templateFile):
+                with open(templateFile, 'r') as fd:
+                    templateData = json.load(fd)
 
     return {
         'name': plugin.get_name().as_string(),
@@ -446,11 +465,10 @@ def get_plugin_info(world, plugin):
             'thumbnail'       : lilv.lilv_uri_to_path(modgui_thumb.as_string()) if modgui_thumb.me else "",
             'iconTemplate'    : lilv.lilv_uri_to_path(modgui_icon .as_string()) if modgui_icon .me else "",
             'settingsTemplate': lilv.lilv_uri_to_path(modgui_setts.as_string()) if modgui_setts.me else "",
-            'templateData'    :
-                json.load(open(lilv.lilv_uri_to_path(modgui_data.as_string()), 'r')) if modgui_data.me else {},
+            'templateData'    : templateData,
         } if modguigui.me is not None else {},
 
-        'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string()),
+        'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string() or ""),
         'category': get_category(plugin.get_value(rdf.type_)),
         'license' : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
 
