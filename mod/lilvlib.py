@@ -126,6 +126,19 @@ def get_port_unit(miniuri):
   return ("","","")
 
 # ------------------------------------------------------------------------------------------------------------
+# get_dirname
+
+def get_bundle_dirname(bundleuri):
+    bundle = lilv.lilv_uri_to_path(bundleuri)
+
+    if not os.path.exists(bundle):
+        raise IOError(bundleuri)
+    if os.path.isfile(bundle):
+        bundle = os.path.dirname(bundle)
+
+    return bundle
+
+# ------------------------------------------------------------------------------------------------------------
 # get_pedalboard_info
 
 # Get info from an lv2 bundle

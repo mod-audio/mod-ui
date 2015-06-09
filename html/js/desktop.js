@@ -790,31 +790,31 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 method: 'POST'
             })
         },
-        load: function (pedalboardId, callback) {
-            return new Bug("Not implemented yet")
-
-            $.ajax({
-                url: '/pedalboard/get/' + pedalboardId,
-                type: 'GET',
-                success: function (pedalboard) {
-                    self.reset(function () {
-                        /*
-                        self.pedalboard.pedalboard('unserialize', pedalboard,
-                            function () {
-                                self.pedalboardId = pedalboard._id
-                                self.title = pedalboard.metadata.title
-                                self.titleBox.text(self.title)
-                                self.pedalboardModified = false
-                                callback()
-                            }, true)
-                        */
-                    })
-                },
-                error: function () {
-                    new Bug("Couldn't load pedalboard")
-                },
-                cache: false,
-                dataType: 'json'
+        load: function (uri, callback) {
+            self.reset(function () {
+                $.ajax({
+                    url: '/pedalboard/load_bundle/',
+                    type: 'POST',
+                    data: {
+                        uri: uri
+                    },
+                    success: function (resp) {
+                        console.log(resp)
+                        if (! resp.ok) {
+                            return
+                        }
+                        self.title = resp.name
+                        self.pedalboardBundle = resp.bundlepath
+                        self.pedalboardModified = false
+                        self.pedalboardSavable = true
+                        self.titleBox.text(resp.name)
+                    },
+                    error: function () {
+                        new Bug("Couldn't load pedalboard")
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             })
         },
         duplicate: function (pedalboard, callback) {

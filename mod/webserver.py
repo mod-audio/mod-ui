@@ -57,7 +57,7 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_pedalboard_info
+from mod.lilvlib import get_bundle_dirname, get_pedalboard_info
 from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
@@ -781,6 +781,31 @@ class PedalboardPackBundle(web.RequestHandler):
 
         os.remove(tmpfile)
 
+class PedalboardLoadBundle(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        print("load bundle called")
+        bundlepath = get_bundle_dirname(self.get_argument("uri"))
+        print(bundlepath)
+
+        #try:
+        pedalboard = get_pedalboard_info(bundlepath)
+        #except:
+            #self.set_header('Content-Type', 'application/json')
+            #self.write(json.dumps({ 'ok': False }))
+            #self.finish()
+            #return
+
+        SESSION.host.load(bundlepath)
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps({
+            'ok':   True,
+            'name': pedalboard['name']
+        }))
+        self.finish()
+
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?
     destination_dir = os.path.expanduser("~/.lv2/") # FIXME cross-platform, perhaps lookup in LV2_PATH
@@ -1319,6 +1344,7 @@ application = web.Application(
 
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
+            (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/load/?", PedalboardLoad),
             (r"/pedalboard/remove/?", PedalboardRemove),
