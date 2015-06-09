@@ -344,46 +344,12 @@ def get_pedalboard_info(bundle):
     return info
 
 # ------------------------------------------------------------------------------------------------------------
-# get_plugins_info
+# get_plugin_info
 
-# Get plugin-related info from a list of lv2 bundles
-# @a bundles is a list of strings, consisting of directories in the filesystem (absolute pathnames).
-def get_plugins_info(bundles):
-    # if empty, do nothing
-    if len(bundles) == 0:
-        raise Exception('get_plugins_info() - no bundles provided')
+# Get info from a lilv plugin
+# This is used in get_plugins_info below and MOD.SDK
 
-    # Create our own unique lilv world
-    # We'll load the selected bundles and get all plugins from it
-    world = lilv.World()
-
-    # this is needed when loading specific bundles instead of load_all
-    # (these functions are not exposed via World yet)
-    lilv.lilv_world_load_specifications(world.me)
-    lilv.lilv_world_load_plugin_classes(world.me)
-
-    # load all bundles
-    for bundle in bundles:
-        # lilv wants the last character as the separator
-        if not bundle.endswith(os.sep):
-            bundle += os.sep
-
-        # convert bundle string into a lilv node
-        bundlenode = lilv.lilv_new_file_uri(world.me, None, bundle)
-
-        # load the bundle
-        world.load_bundle(bundlenode)
-
-        # free bundlenode, no longer needed
-        lilv.lilv_node_free(bundlenode)
-
-    # get all plugins available in the selected bundles
-    plugins = world.get_all_plugins()
-
-    # make sure the bundles include something
-    if plugins.size() == 0:
-        raise Exception('get_plugins_info() - selected bundles have no plugins')
-
+def get_plugin_info(world, plugin):
     # define the needed stuff
     doap    = NS(world, lilv.LILV_NS_DOAP)
     rdf     = NS(world, lilv.LILV_NS_RDF)
@@ -449,55 +415,94 @@ def get_plugins_info(bundles):
             "scalePoints": [],
         }
 
-    # function for filling plugin info
-    def fill_plugin_info(plugin):
-        bundleuri = plugin.get_bundle_uri().as_string()
-        microver  = plugin.get_value(lv2core.microVersion).get_first()
-        minorver  = plugin.get_value(lv2core.minorVersion).get_first()
-        modguigui = plugin.get_value(modgui.gui).get_first()
+    bundleuri = plugin.get_bundle_uri().as_string()
+    microver  = plugin.get_value(lv2core.microVersion).get_first()
+    minorver  = plugin.get_value(lv2core.minorVersion).get_first()
+    modguigui = plugin.get_value(modgui.gui).get_first()
 
-        if modguigui.me is not None:
-            modgui_scrn  = world.find_nodes(modguigui.me, modgui.screenshot      .me, None).get_first()
-            modgui_thumb = world.find_nodes(modguigui.me, modgui.thumbnail       .me, None).get_first()
-            modgui_icon  = world.find_nodes(modguigui.me, modgui.iconTemplate    .me, None).get_first()
-            modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
-            modgui_data  = world.find_nodes(modguigui.me, modgui.templateData    .me, None).get_first()
+    if modguigui.me is not None:
+        modgui_scrn  = world.find_nodes(modguigui.me, modgui.screenshot      .me, None).get_first()
+        modgui_thumb = world.find_nodes(modguigui.me, modgui.thumbnail       .me, None).get_first()
+        modgui_icon  = world.find_nodes(modguigui.me, modgui.iconTemplate    .me, None).get_first()
+        modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
+        modgui_data  = world.find_nodes(modguigui.me, modgui.templateData    .me, None).get_first()
 
-        global index
-        index = -1
+    global index
+    index = -1
 
-        return {
-            'name': plugin.get_name().as_string(),
-            'uri' : plugin.get_uri().as_string(),
-            'author': {
-                'name'    : plugin.get_author_name().as_string() or "",
-                'homepage': plugin.get_author_homepage().as_string() or "",
-                'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
-            },
+    return {
+        'name': plugin.get_name().as_string(),
+        'uri' : plugin.get_uri().as_string(),
+        'author': {
+            'name'    : plugin.get_author_name().as_string() or "",
+            'homepage': plugin.get_author_homepage().as_string() or "",
+            'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
+        },
 
-            'ports': [fill_port_info(plugin, p) for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports()))],
+        'ports': [fill_port_info(plugin, p) for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports()))],
 
-            'gui': {
-                'screenshot'      : lilv.lilv_uri_to_path(modgui_scrn .as_string()) if modgui_scrn .me else "",
-                'thumbnail'       : lilv.lilv_uri_to_path(modgui_thumb.as_string()) if modgui_thumb.me else "",
-                'iconTemplate'    : lilv.lilv_uri_to_path(modgui_icon .as_string()) if modgui_icon .me else "",
-                'settingsTemplate': lilv.lilv_uri_to_path(modgui_setts.as_string()) if modgui_setts.me else "",
-                'templateData'    :
-                    json.load(open(lilv.lilv_uri_to_path(modgui_data.as_string()), 'r')) if modgui_data.me else {},
-            } if modguigui.me is not None else {},
+        'gui': {
+            'screenshot'      : lilv.lilv_uri_to_path(modgui_scrn .as_string()) if modgui_scrn .me else "",
+            'thumbnail'       : lilv.lilv_uri_to_path(modgui_thumb.as_string()) if modgui_thumb.me else "",
+            'iconTemplate'    : lilv.lilv_uri_to_path(modgui_icon .as_string()) if modgui_icon .me else "",
+            'settingsTemplate': lilv.lilv_uri_to_path(modgui_setts.as_string()) if modgui_setts.me else "",
+            'templateData'    :
+                json.load(open(lilv.lilv_uri_to_path(modgui_data.as_string()), 'r')) if modgui_data.me else {},
+        } if modguigui.me is not None else {},
 
-            'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string()),
-            'category': get_category(plugin.get_value(rdf.type_)),
-            'license' : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
+        'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string()),
+        'category': get_category(plugin.get_value(rdf.type_)),
+        'license' : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
 
-            'description'  : plugin.get_value(rdfs.comment).get_first().as_string() or "",
-            'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
-            'microVersion' : microver.as_int() if microver.me else 0,
-            'minorVersion' : minorver.as_int() if minorver.me else 0,
-        }
+        'description'  : plugin.get_value(rdfs.comment).get_first().as_string() or "",
+        'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
+        'microVersion' : microver.as_int() if microver.me else 0,
+        'minorVersion' : minorver.as_int() if minorver.me else 0,
+    }
+
+# ------------------------------------------------------------------------------------------------------------
+# get_plugins_info
+
+# Get plugin-related info from a list of lv2 bundles
+# @a bundles is a list of strings, consisting of directories in the filesystem (absolute pathnames).
+def get_plugins_info(bundles):
+    # if empty, do nothing
+    if len(bundles) == 0:
+        raise Exception('get_plugins_info() - no bundles provided')
+
+    # Create our own unique lilv world
+    # We'll load the selected bundles and get all plugins from it
+    world = lilv.World()
+
+    # this is needed when loading specific bundles instead of load_all
+    # (these functions are not exposed via World yet)
+    lilv.lilv_world_load_specifications(world.me)
+    lilv.lilv_world_load_plugin_classes(world.me)
+
+    # load all bundles
+    for bundle in bundles:
+        # lilv wants the last character as the separator
+        if not bundle.endswith(os.sep):
+            bundle += os.sep
+
+        # convert bundle string into a lilv node
+        bundlenode = lilv.lilv_new_file_uri(world.me, None, bundle)
+
+        # load the bundle
+        world.load_bundle(bundlenode)
+
+        # free bundlenode, no longer needed
+        lilv.lilv_node_free(bundlenode)
+
+    # get all plugins available in the selected bundles
+    plugins = world.get_all_plugins()
+
+    # make sure the bundles include something
+    if plugins.size() == 0:
+        raise Exception('get_plugins_info() - selected bundles have no plugins')
 
     # return all the info
-    return [fill_plugin_info(p) for p in plugins]
+    return [get_plugin_info(world, p) for p in plugins]
 
 # ------------------------------------------------------------------------------------------------------------
 
