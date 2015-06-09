@@ -413,12 +413,12 @@ def get_plugin_info(world, plugin):
                     ranges['default'] = lilv.lilv_node_as_float(xdefault)
 
         return {
-            'index' : index,
-            'name'  : lilv.lilv_node_as_string(port.get_name()),
-            'symbol': lilv.lilv_node_as_string(port.get_symbol()),
-            'type'  : types,
-            'range' : ranges,
-            'units' : {
+            'index'  : index,
+            'name'   : lilv.lilv_node_as_string(port.get_name()),
+            'symbol' : lilv.lilv_node_as_string(port.get_symbol()),
+            'type'   : types,
+            'ranges' : ranges,
+            'units'  : {
                 'label' : ulabel,
                 'render': urender,
                 'symbol': usymbol,
@@ -435,19 +435,37 @@ def get_plugin_info(world, plugin):
     modguigui = plugin.get_value(modgui.gui).get_first()
 
     if modguigui.me is not None:
-        modgui_scrn  = world.find_nodes(modguigui.me, modgui.screenshot      .me, None).get_first()
-        modgui_thumb = world.find_nodes(modguigui.me, modgui.thumbnail       .me, None).get_first()
-        modgui_icon  = world.find_nodes(modguigui.me, modgui.iconTemplate    .me, None).get_first()
-        modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
-        modgui_data  = world.find_nodes(modguigui.me, modgui.templateData    .me, None).get_first()
+        modgui_resdir = world.find_nodes(modguigui.me, modgui.resourcesDirectory.me, None).get_first()
+        modgui_scrn   = world.find_nodes(modguigui.me, modgui.screenshot        .me, None).get_first()
+        modgui_thumb  = world.find_nodes(modguigui.me, modgui.thumbnail         .me, None).get_first()
+        modgui_icon   = world.find_nodes(modguigui.me, modgui.iconTemplate      .me, None).get_first()
+        modgui_setts  = world.find_nodes(modguigui.me, modgui.settingsTemplate  .me, None).get_first()
+        modgui_data   = world.find_nodes(modguigui.me, modgui.templateData      .me, None).get_first()
 
+        iconTemplate = ""
+        settingsTmpl = ""
         templateData = {}
+
+        if modgui_icon.me:
+            iconFile = lilv.lilv_uri_to_path(modgui_icon.as_string())
+            if os.path.exists(iconFile):
+                with open(iconFile, 'r') as fd:
+                    iconTemplate = fd.read()
+            del iconFile
+
+        if modgui_setts.me:
+            settingsFile = lilv.lilv_uri_to_path(modgui_setts.as_string())
+            if os.path.exists(settingsFile):
+                with open(settingsFile, 'r') as fd:
+                    settingsTmpl = fd.read()
+            del settingsFile
 
         if modgui_data.me:
             templateFile = lilv.lilv_uri_to_path(modgui_data.as_string())
             if os.path.exists(templateFile):
                 with open(templateFile, 'r') as fd:
                     templateData = json.load(fd)
+            del templateFile
 
     return {
         'name': plugin.get_name().as_string(),
@@ -461,11 +479,12 @@ def get_plugin_info(world, plugin):
         'ports': [fill_port_info(plugin, p) for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports()))],
 
         'gui': {
-            'screenshot'      : lilv.lilv_uri_to_path(modgui_scrn .as_string()) if modgui_scrn .me else "",
-            'thumbnail'       : lilv.lilv_uri_to_path(modgui_thumb.as_string()) if modgui_thumb.me else "",
-            'iconTemplate'    : lilv.lilv_uri_to_path(modgui_icon .as_string()) if modgui_icon .me else "",
-            'settingsTemplate': lilv.lilv_uri_to_path(modgui_setts.as_string()) if modgui_setts.me else "",
-            'templateData'    : templateData,
+            'resourcesDirectory': lilv.lilv_uri_to_path(modgui_resdir.as_string()) if modgui_resdir.me else "",
+            'screenshot'        : lilv.lilv_uri_to_path(modgui_scrn  .as_string()) if modgui_scrn  .me else "",
+            'thumbnail'         : lilv.lilv_uri_to_path(modgui_thumb .as_string()) if modgui_thumb .me else "",
+            'iconTemplate'      : iconTemplate,
+            'settingsTemplate'  : settingsTmpl,
+            'templateData'      : templateData,
         } if modguigui.me is not None else {},
 
         'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string() or ""),
