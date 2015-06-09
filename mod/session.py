@@ -125,7 +125,6 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
 
-        self._load_pb_hack = None
         self._app_save_callback = None
 
     def reconnect(self):
@@ -237,10 +236,8 @@ class Session(object):
         self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), callback2)
 
     def load_pedalboard(self, bundlepath):
-        # TODO
         self.bundlepath = bundlepath
-        if self._load_pb_hack is not None:
-            self._load_pb_hack(bundlepath)
+        self.host.load(bundlepath)
 
     def setup_monitor(self):
         if self.monitor_server is None:
