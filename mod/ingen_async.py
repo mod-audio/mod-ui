@@ -15,6 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from tornado import iostream, ioloop
+from mod.lilvlib import get_bundle_dirname
 
 import os
 import rdflib
@@ -174,9 +175,9 @@ class IngenAsync(object):
                 bnode   = i[0]
                 subject = msg_model.value(bnode, NS.patch.subject).toPython().replace(self.proto_base,"",1)
 
-                if subject == "/graph/":
-                    bundlepath = os.path.dirname(msg_model.value(bnode, NS.patch.destination).toPython())
-                    self.save_callback(bundlepath.replace("file://","",1)) # FIXME ?
+                if subject in ("/graph", "/graph/"):
+                    bundlepath = get_bundle_dirname(msg_model.value(bnode, NS.patch.destination).toPython())
+                    self.save_callback(bundlepath)
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):

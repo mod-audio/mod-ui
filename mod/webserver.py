@@ -785,17 +785,15 @@ class PedalboardLoadBundle(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        print("load bundle called")
         bundlepath = get_bundle_dirname(self.get_argument("uri"))
-        print(bundlepath)
 
-        #try:
-        pedalboard = get_pedalboard_info(bundlepath)
-        #except:
-            #self.set_header('Content-Type', 'application/json')
-            #self.write(json.dumps({ 'ok': False }))
-            #self.finish()
-            #return
+        try:
+            pedalboard = get_pedalboard_info(bundlepath)
+        except Exception as e:
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({ 'ok': False, 'error': str(e).split(") - ",1)[-1] }))
+            self.finish()
+            return
 
         SESSION.host.load(bundlepath)
 
@@ -831,22 +829,14 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         os.remove(filename)
         callback()
 
-class PedalboardLoad(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(res, default=json_handler))
-        self.finish()
-
 class PedalboardRemove(web.RequestHandler):
     def get(self, bundlepath):
-        # there's 4 steps to this:
+        # there's 5 steps to this:
         # 1 - remove the bundle from disk
         # 2 - remove the bundle from our lv2 lilv world
         # 3 - remove references to the bundle in banks
-        # 4 - tell ingen the bundle (plugin) is gone
+        # 4 - delete all presets of the pedaloard
+        # 5 - tell ingen the bundle (plugin) is gone
         pass
 
 class PedalboardScreenshot(web.RequestHandler):
@@ -1346,7 +1336,6 @@ application = web.Application(
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
-            (r"/pedalboard/load/?", PedalboardLoad),
             (r"/pedalboard/remove/?", PedalboardRemove),
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),

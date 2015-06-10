@@ -678,22 +678,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pedalboardLoad: function (uid, callback) {
-            $.ajax({
-                url: '/pedalboard/load/' + uid,
-                type: 'GET',
-                contentType: 'application/json',
-                success: function (result) {
-                    if (result !== true) {
-                        new Notification('error', "Error loading pedalboard");
-                    }
-                    callback(!!result);
-                },
-                cache: false,
-                dataType: 'json'
-            });
-        },
-
         getPluginsData: function (urls, callback) {
             $.ajax({
                 url: '/effect/bulk/',
