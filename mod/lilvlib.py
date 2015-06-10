@@ -126,7 +126,7 @@ def get_port_unit(miniuri):
   return ("","","")
 
 # ------------------------------------------------------------------------------------------------------------
-# get_dirname
+# get_bundle_dirname
 
 def get_bundle_dirname(bundleuri):
     bundle = lilv.lilv_uri_to_path(bundleuri)
@@ -355,6 +355,66 @@ def get_pedalboard_info(bundle):
     info['plugins']     = ingenblocks
 
     return info
+
+# ------------------------------------------------------------------------------------------------------------
+# get_pedalboard_name
+
+# Faster version of get_pedalboard_info when we just need to know the pedalboard name
+# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
+def get_pedalboard_name(bundle):
+    # lilv wants the last character as the separator
+    if not bundle.endswith(os.sep):
+        bundle += os.sep
+
+    # Create our own unique lilv world
+    # We'll load a single bundle and get all plugins from it
+    world = lilv.World()
+
+    # this is needed when loading specific bundles instead of load_all
+    # (these functions are not exposed via World yet)
+    lilv.lilv_world_load_specifications(world.me)
+    lilv.lilv_world_load_plugin_classes(world.me)
+
+    # convert bundle string into a lilv node
+    bundlenode = lilv.lilv_new_file_uri(world.me, None, bundle)
+
+    # load the bundle
+    world.load_bundle(bundlenode)
+
+    # free bundlenode, no longer needed
+    lilv.lilv_node_free(bundlenode)
+
+    # get all plugins in the bundle
+    plugins = world.get_all_plugins()
+
+    # make sure the bundle includes 1 and only 1 plugin (the pedalboard)
+    if plugins.size() != 1:
+        raise Exception('get_pedalboard_info(%s) - bundle has 0 or > 1 plugin'.format(bundle))
+
+    # no indexing in python-lilv yet, just get the first item
+    plugin = None
+    for p in plugins:
+        plugin = p
+        break
+
+    if plugin is None:
+        raise Exception('get_pedalboard_info(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
+
+    # define the needed stuff
+    rdf      = NS(world, lilv.LILV_NS_RDF)
+    lv2core  = NS(world, lilv.LILV_NS_LV2)
+    ingen    = NS(world, "http://drobilla.net/ns/ingen#")
+    modpedal = NS(world, "http://portalmod.com/ns/modpedal#")
+
+    # check if the plugin is a pedalboard
+    def fill_in_type(node):
+        return node.as_string()
+    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
+
+    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
+        raise Exception('get_pedalboard_info(%s) - plugin has no mod:Pedalboard type'.format(bundle))
+
+    return plugin.get_name().as_string()
 
 # ------------------------------------------------------------------------------------------------------------
 # get_plugin_info

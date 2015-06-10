@@ -57,7 +57,7 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_bundle_dirname, get_pedalboard_info
+from mod.lilvlib import get_bundle_dirname, get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
@@ -788,19 +788,19 @@ class PedalboardLoadBundle(web.RequestHandler):
         bundlepath = get_bundle_dirname(self.get_argument("uri"))
 
         try:
-            pedalboard = get_pedalboard_info(bundlepath)
+            name = get_pedalboard_name(bundlepath)
         except Exception as e:
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps({ 'ok': False, 'error': str(e).split(") - ",1)[-1] }))
             self.finish()
             return
 
-        SESSION.host.load(bundlepath)
+        SESSION.load_pedalboard(bundlepath, name)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({
             'ok':   True,
-            'name': pedalboard['name']
+            'name': name
         }))
         self.finish()
 
@@ -823,8 +823,13 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         tar_output = getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
         bundlepath = os.path.join(self.destination_dir, tar_output.strip().split("\n", 1)[0])
 
-        if os.path.exists(bundlepath):
-            SESSION.load_pedalboard(bundlepath)
+        if not os.path.exists(bundlepath):
+            raise IOError(bundlepath)
+
+        # make sure pedalboard is valid
+        name = get_pedalboard_name(bundlepath)
+
+        SESSION.load_pedalboard(bundlepath, name)
 
         os.remove(filename)
         callback()
