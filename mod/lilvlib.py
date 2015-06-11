@@ -401,10 +401,7 @@ def get_pedalboard_name(bundle):
         raise Exception('get_pedalboard_info(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
 
     # define the needed stuff
-    rdf      = NS(world, lilv.LILV_NS_RDF)
-    lv2core  = NS(world, lilv.LILV_NS_LV2)
-    ingen    = NS(world, "http://drobilla.net/ns/ingen#")
-    modpedal = NS(world, "http://portalmod.com/ns/modpedal#")
+    rdf = NS(world, lilv.LILV_NS_RDF)
 
     # check if the plugin is a pedalboard
     def fill_in_type(node):
@@ -436,7 +433,7 @@ def get_plugin_info(world, plugin):
     index = -1
 
     # function for filling port info
-    def fill_port_info(plugin, port):
+    def fill_port_info(port):
         global index
         index += 1
 
