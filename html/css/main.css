@@ -3,7 +3,7 @@ html, body {
 }
 
 body {
-    background:#393939;
+    background:#393939 url(../img/background_coal.png);
     font-family:Helvetica,Arial,Sans-serif;
     min-width:1024px;
 }
@@ -451,7 +451,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
 
 /* Effects List */
 #plugins-library #plugins-list {
-    background:#000;
+    background: rgba(0, 0, 0, 0.66);
     height:140px;
     overflow:hidden;
     position:relative;
@@ -1588,4 +1588,3 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
 .actions {
     z-index:20;
 }
-
