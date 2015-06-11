@@ -1395,8 +1395,8 @@ application = web.Application(
 def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-        if LOG:
-            tornado.options.parse_command_line()
+        #if LOG:
+            #tornado.options.parse_command_line()
         JackXRun.connect()
 
     def check():
