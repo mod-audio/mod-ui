@@ -879,6 +879,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
             success: function (resp) {
                 console.log(resp)
                 if (! resp.ok) {
+                    callback(false)
                     return
                 }
                 self.title = resp.name
@@ -886,6 +887,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardModified = false
                 self.pedalboardSavable = true
                 self.titleBox.text(resp.name)
+                callback(true)
             },
             error: function () {
                 new Bug("Couldn't load pedalboard")
