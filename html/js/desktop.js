@@ -775,8 +775,8 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 method: 'POST'
             })
         },
-        load: function (uri, callback) {
-            self.loadPedalboard(uri, callback)
+        load: function (bundlepath, callback) {
+            self.loadPedalboard(bundlepath, callback)
         },
         duplicate: function (pedalboard, callback) {
             // This does not work, because api has changed
@@ -866,7 +866,7 @@ Desktop.prototype.reset = function (callback) {
     this.pedalboard.pedalboard('reset', callback)
 }
 
-Desktop.prototype.loadPedalboard = function (uri, callback) {
+Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
     var self = this
 
     self.reset(function () {
@@ -874,7 +874,7 @@ Desktop.prototype.loadPedalboard = function (uri, callback) {
             url: '/pedalboard/load_bundle/',
             type: 'POST',
             data: {
-                uri: uri
+                bundlepath: bundlepath
             },
             success: function (resp) {
                 console.log(resp)

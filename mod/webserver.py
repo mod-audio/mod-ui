@@ -57,7 +57,7 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_bundle_dirname, get_pedalboard_info, get_pedalboard_name
+from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
@@ -671,15 +671,16 @@ class PedalboardSearcher(Searcher):
         pedals = get_pedalboards()
         for pedal in pedals:
             result.append({
-                'instances': {},
+                'instances'  : {},
                 'connections': [],
-                'metadata': {
-                    'title':     pedal['name'],
+                'metadata'   : {
+                    'title'    : pedal['name'],
                     'thumbnail': pedal['thumbnail'],
-                    'tstamp':    None,
+                    'tstamp'   : None,
                 },
-                'uri':    pedal['uri'],
-                'width':  pedal['width'],
+                'uri'   : pedal['uri'],
+                'bundle': pedal['bundlepath'],
+                'width' : pedal['width'],
                 'height': pedal['height']
             })
         return result
@@ -785,7 +786,7 @@ class PedalboardLoadBundle(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        bundlepath = get_bundle_dirname(self.get_argument("uri"))
+        bundlepath = self.get_argument("bundlepath")
 
         try:
             name = get_pedalboard_name(bundlepath)
