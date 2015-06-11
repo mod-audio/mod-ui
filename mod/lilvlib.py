@@ -429,14 +429,8 @@ def get_plugin_info(world, plugin):
     units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
     modgui  = NS(world, "http://portalmod.com/ns/modgui#")
 
-    global index
-    index = -1
-
     # function for filling port info
     def fill_port_info(port):
-        global index
-        index += 1
-
         # port types
         types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
 
@@ -483,7 +477,6 @@ def get_plugin_info(world, plugin):
                     ranges['default'] = lilv.lilv_node_as_float(xdefault)
 
         return (types, {
-            'index'  : index,
             'name'   : lilv.lilv_node_as_string(port.get_name()),
             'symbol' : lilv.lilv_node_as_string(port.get_symbol()),
             'ranges' : ranges,
@@ -536,13 +529,17 @@ def get_plugin_info(world, plugin):
                     templateData = json.load(fd)
             del templateFile
 
+    index = 0
     ports = {
         'audio':   { 'input': [], 'output': [] },
         'control': { 'input': [], 'output': [] }
     }
 
     for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports())):
-        types, info = fill_port_info(plugin, p)
+        types, info = fill_port_info(p)
+
+        info['index'] = index
+        index += 1
 
         isInput = "Input" in types
         types.remove("Input" if isInput else "Output")
