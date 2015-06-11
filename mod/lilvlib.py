@@ -485,11 +485,10 @@ def get_plugin_info(world, plugin):
                 if xdefault is not None:
                     ranges['default'] = lilv.lilv_node_as_float(xdefault)
 
-        return {
+        return (types, {
             'index'  : index,
             'name'   : lilv.lilv_node_as_string(port.get_name()),
             'symbol' : lilv.lilv_node_as_string(port.get_symbol()),
-            'type'   : types,
             'ranges' : ranges,
             'units'  : {
                 'label' : ulabel,
@@ -500,7 +499,7 @@ def get_plugin_info(world, plugin):
             'properties' : [typ.rsplit("#",1)[-1] for typ in get_port_data(port, lv2core.portProperty)],
             'rangeSteps' : (get_port_data(port, pprops.rangeSteps) or [None])[0],
             "scalePoints": [],
-        }
+        })
 
     bundleuri = plugin.get_bundle_uri().as_string()
     microver  = plugin.get_value(lv2core.microVersion).get_first()
@@ -540,6 +539,28 @@ def get_plugin_info(world, plugin):
                     templateData = json.load(fd)
             del templateFile
 
+    ports = {
+        'audio':   { 'input': [], 'output': [] },
+        'control': { 'input': [], 'output': [] }
+    }
+
+    for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports())):
+        types, info = fill_port_info(plugin, p)
+
+        isInput = "Input" in types
+        types.remove("Input" if isInput else "Output")
+
+        # FIXME: this is needed by SDK, but it's not pretty
+        if "Control" in types:
+            info['enumeration'] = bool("enumeration" in info['properties'])
+            info['trigger'    ] = bool("trigger"     in info['properties'])
+            info['toggled'    ] = bool("toggled"     in info['properties'])
+
+        for typ in [typl.lower() for typl in types]:
+            if typ not in ports.keys():
+                ports[typ] = { 'input': [], 'output': [] }
+            ports[typ]["input" if isInput else "output"].append(info)
+
     return {
         'name': plugin.get_name().as_string(),
         'uri' : plugin.get_uri().as_string(),
@@ -549,7 +570,7 @@ def get_plugin_info(world, plugin):
             'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
         },
 
-        'ports': [fill_port_info(plugin, p) for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports()))],
+        'ports': ports,
 
         'gui': {
             'resourcesDirectory': lilv.lilv_uri_to_path(modgui_resdir.as_string()) if modgui_resdir.me else "",
