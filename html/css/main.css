@@ -3,7 +3,7 @@ html, body {
 }
 
 body {
-    background:#393939 url(../img/background_coal.png);
+    background:#393939;
     font-family:Helvetica,Arial,Sans-serif;
     min-width:1024px;
 }
