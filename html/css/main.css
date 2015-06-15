@@ -111,13 +111,13 @@ body {
 
 #main-menu #mod-cloud-plugins {
     background-image:url(../img/menu-icons-sprite.png);
-    background-position:-45px bottom;
+    background-position:-315px bottom;
     background-repeat:no-repeat;
 }
 #main-menu #mod-cloud-plugins:hover,
 #main-menu #mod-cloud-plugins.selected {
     background-color:#000;
-    background-position:-45px top;
+    background-position:-315px top;
 }
 
 /* Pedalboards */
