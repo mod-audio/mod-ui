@@ -446,7 +446,8 @@ function GUI(effect, options) {
         var i, port, control, symbol
         var data = $.extend({}, options.gui.templateData)
         data.effect = options
-        data.ns = '?url=' + escape(options.url)
+        data.ns  = '?url=' + escape(options.url)
+        data.cns = '_' + escape(options.url).split("/").join("_").split("%").join("_").split(".").join("_")
         if (!data.controls)
             return data
         var controlIndex = {}

@@ -444,9 +444,9 @@ class EffectStylesheet(EffectSearcher):
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
-
         content = open(path).read()
-        context = { 'ns': '?url=%s' % effect['url'] }
+        context = { 'ns' : '?url=%s' % effect['url'],
+                    'cns': '_%s' % effect['url'].replace("/","_").replace("%","_").replace(".","_") }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))
