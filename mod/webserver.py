@@ -397,8 +397,9 @@ class EffectResource(web.StaticFileHandler, EffectSearcher):
 
             super(EffectResource, self).initialize(document_root)
             super(EffectResource, self).get(path)
+
         except web.HTTPError as e:
-            if (not e.status_code == 404):
+            if e.status_code != 404:
                 raise e
             super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
             super(EffectResource, self).get(path)
@@ -445,7 +446,7 @@ class EffectStylesheet(EffectSearcher):
 
 
         content = open(path).read()
-        context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
+        context = { 'ns': '?url=%s' % effect['url'] }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))

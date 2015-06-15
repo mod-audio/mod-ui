@@ -36,7 +36,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
 
     if (effect.gui.stylesheet && !loadedCSSs[effect.url]) {
         cssLoaded = false
-        var cssUrl = baseUrl + '/effect/stylesheet.css?url=' + escape(effect.url) + '&bundle=' + escape(effect.package)
+        var cssUrl = baseUrl + '/effect/stylesheet.css?url=' + escape(effect.url)
         $.get(cssUrl, function (data) {
             $('<style type="text/css">').text(data).appendTo($('head'))
             loadedCSSs[effect.url] = true
@@ -50,7 +50,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             gui.jsCallback = loadedJSs[effect.url]
         } else {
             jsLoaded = false
-            var jsUrl = baseUrl + '/effect/gui.js?url=' + escape(effect.url) + '&bundle=' + escape(effect.package)
+            var jsUrl = baseUrl + '/effect/gui.js?url=' + escape(effect.url)
             $.ajax({
                 url: jsUrl,
                 success: function (code) {
@@ -446,7 +446,7 @@ function GUI(effect, options) {
         var i, port, control, symbol
         var data = $.extend({}, options.gui.templateData)
         data.effect = options
-        data.ns = '?bundle=' + options.package + '&url=' + escape(options.url)
+        data.ns = '?url=' + escape(options.url)
         if (!data.controls)
             return data
         var controlIndex = {}
