@@ -125,8 +125,7 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
 
-        self._load_pb_hack = None
-        self._app_save_callback = None
+        self._pedal_changed_callback = None
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)
@@ -217,6 +216,8 @@ class Session(object):
         self.hmi_initialized = True
 
     def reset(self, callback):
+        self.bundlepath = None
+
         gen = iter(copy.deepcopy(self.instances))
         def remove_all_plugins(r=True):
             try:
@@ -225,22 +226,26 @@ class Session(object):
                 callback(r)
         remove_all_plugins()
 
+        if self._pedal_changed_callback is not None:
+            self._pedal_changed_callback(True, "", "")
+
     def save_pedalboard(self, bundlepath, title, callback):
         def callback2(ok):
             self.bundlepath = bundlepath if ok else None
             callback(ok)
 
-            if self._app_save_callback is not None:
-                self._app_save_callback(ok, bundlepath, title)
+            if self._pedal_changed_callback is not None:
+                self._pedal_changed_callback(ok, bundlepath, title)
 
         self.host.set_pedalboard_name(title)
         self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), callback2)
 
-    def load_pedalboard(self, bundlepath):
-        # TODO
+    def load_pedalboard(self, bundlepath, name):
         self.bundlepath = bundlepath
-        if self._load_pb_hack is not None:
-            self._load_pb_hack(bundlepath)
+        self.host.load(bundlepath)
+
+        if self._pedal_changed_callback is not None:
+            self._pedal_changed_callback(True, bundlepath, name)
 
     def setup_monitor(self):
         if self.monitor_server is None:

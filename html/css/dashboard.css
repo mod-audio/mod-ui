@@ -9,6 +9,7 @@
 }
 
 #pedalboard-dashboard {
+    background:#393939 url(../img/background.jpg);
     position: absolute;
     top: 35px;
     left: 0;

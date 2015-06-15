@@ -57,7 +57,7 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_pedalboard_info
+from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
@@ -671,15 +671,16 @@ class PedalboardSearcher(Searcher):
         pedals = get_pedalboards()
         for pedal in pedals:
             result.append({
-                'instances': {},
+                'instances'  : {},
                 'connections': [],
-                'metadata': {
-                    'title':     pedal['name'],
+                'metadata'   : {
+                    'title'    : pedal['name'],
                     'thumbnail': pedal['thumbnail'],
-                    'tstamp':    None,
+                    'tstamp'   : None,
                 },
-                'uri':    pedal['uri'],
-                'width':  pedal['width'],
+                'uri'   : pedal['uri'],
+                'bundle': pedal['bundlepath'],
+                'width' : pedal['width'],
                 'height': pedal['height']
             })
         return result
@@ -781,6 +782,29 @@ class PedalboardPackBundle(web.RequestHandler):
 
         os.remove(tmpfile)
 
+class PedalboardLoadBundle(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        bundlepath = self.get_argument("bundlepath")
+
+        try:
+            name = get_pedalboard_name(bundlepath)
+        except Exception as e:
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({ 'ok': False, 'error': str(e).split(") - ",1)[-1] }))
+            self.finish()
+            return
+
+        SESSION.load_pedalboard(bundlepath, name)
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps({
+            'ok':   True,
+            'name': name
+        }))
+        self.finish()
+
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?
     destination_dir = os.path.expanduser("~/.lv2/") # FIXME cross-platform, perhaps lookup in LV2_PATH
@@ -800,28 +824,25 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         tar_output = getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
         bundlepath = os.path.join(self.destination_dir, tar_output.strip().split("\n", 1)[0])
 
-        if os.path.exists(bundlepath):
-            SESSION.load_pedalboard(bundlepath)
+        if not os.path.exists(bundlepath):
+            raise IOError(bundlepath)
+
+        # make sure pedalboard is valid
+        name = get_pedalboard_name(bundlepath)
+
+        SESSION.load_pedalboard(bundlepath, name)
 
         os.remove(filename)
         callback()
 
-class PedalboardLoad(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(res, default=json_handler))
-        self.finish()
-
 class PedalboardRemove(web.RequestHandler):
     def get(self, bundlepath):
-        # there's 4 steps to this:
+        # there's 5 steps to this:
         # 1 - remove the bundle from disk
         # 2 - remove the bundle from our lv2 lilv world
         # 3 - remove references to the bundle in banks
-        # 4 - tell ingen the bundle (plugin) is gone
+        # 4 - delete all presets of the pedaloard
+        # 5 - tell ingen the bundle (plugin) is gone
         pass
 
 class PedalboardScreenshot(web.RequestHandler):
@@ -1319,8 +1340,8 @@ application = web.Application(
 
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
+            (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
-            (r"/pedalboard/load/?", PedalboardLoad),
             (r"/pedalboard/remove/?", PedalboardRemove),
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
@@ -1375,8 +1396,8 @@ application = web.Application(
 def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-        if LOG:
-            tornado.options.parse_command_line()
+        #if LOG:
+            #tornado.options.parse_command_line()
         JackXRun.connect()
 
     def check():

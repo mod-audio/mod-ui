@@ -89,11 +89,6 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
-            // Loads a pedalboard
-            pedalboardLoad: function (uid, callback) {
-                callback(true)
-            },
-
             // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
             // indexed by URL
             getPluginsData: function (plugins, callback) {
@@ -110,8 +105,9 @@ JqueryClass('pedalboard', {
 
         }, options)
 
-        self.pedalboard('wrapApplicationFunctions', options, ['pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
-            'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad', 'pluginMove'
+        self.pedalboard('wrapApplicationFunctions', options, [
+            'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
+            'portConnect', 'portDisconnect', 'reset', 'pluginMove'
         ])
 
         self.data(options)
@@ -421,7 +417,7 @@ JqueryClass('pedalboard', {
                 self.pedalboard('adapt')
             }, 1)
             if (loadPedalboardAtOnce)
-                self.data('pedalboardLoad')(data._id, ourCallback)
+                ourCallback(true) // FIXME?
             else
                 ourCallback()
         }
@@ -1332,6 +1328,7 @@ JqueryClass('pedalboard', {
         var output = jack.data('origin')
         var fromPort = output.attr('mod-port')
         var portType = output.data('portType')
+        
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
             var toPort = input.attr('mod-port')

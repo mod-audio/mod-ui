@@ -398,7 +398,6 @@ function Desktop(elements) {
         self.disconnect()
     })
 
-
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {
@@ -656,17 +655,19 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 url: '/reset',
                 success: function (resp) {
                     if (!resp)
-                        return new Notification('error',
-                            "Couldn't reset pedalboard")
-
+                        return new Notification('error', "Couldn't reset pedalboard")
                     /*
-			   var dialog = self.data('shareDialog')
-			   dialog.find('.js-title').val('')
-			   dialog.find('.js-tags').tagField('val', [])
-			   dialog.find('.js-musics').tagField('val', [])
-			   dialog.find('.js-description').val('')
-			 */
+                    var dialog = self.data('shareDialog')
+                    dialog.find('.js-title').val('')
+                    dialog.find('.js-tags').tagField('val', [])
+                    dialog.find('.js-musics').tagField('val', [])
+                    dialog.find('.js-description').val('')
+                    */
 
+                    self.title = ''
+                    self.pedalboardBundle = null
+                    self.pedalboardModified = false
+                    self.pedalboardSavable = false
                     self.titleBox.text('Untitled')
 
                     callback(true)
@@ -676,22 +677,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 },
                 cache: false
             })
-        },
-
-        pedalboardLoad: function (uid, callback) {
-            $.ajax({
-                url: '/pedalboard/load/' + uid,
-                type: 'GET',
-                contentType: 'application/json',
-                success: function (result) {
-                    if (result !== true) {
-                        new Notification('error', "Error loading pedalboard");
-                    }
-                    callback(!!result);
-                },
-                cache: false,
-                dataType: 'json'
-            });
         },
 
         getPluginsData: function (urls, callback) {
@@ -790,32 +775,8 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 method: 'POST'
             })
         },
-        load: function (pedalboardId, callback) {
-            return new Bug("Not implemented yet")
-
-            $.ajax({
-                url: '/pedalboard/get/' + pedalboardId,
-                type: 'GET',
-                success: function (pedalboard) {
-                    self.reset(function () {
-                        /*
-                        self.pedalboard.pedalboard('unserialize', pedalboard,
-                            function () {
-                                self.pedalboardId = pedalboard._id
-                                self.title = pedalboard.metadata.title
-                                self.titleBox.text(self.title)
-                                self.pedalboardModified = false
-                                callback()
-                            }, true)
-                        */
-                    })
-                },
-                error: function () {
-                    new Bug("Couldn't load pedalboard")
-                },
-                cache: false,
-                dataType: 'json'
-            })
+        load: function (bundlepath, callback) {
+            self.loadPedalboard(bundlepath, callback)
         },
         duplicate: function (pedalboard, callback) {
             // This does not work, because api has changed
@@ -894,15 +855,47 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
     })
 }
 
-Desktop.prototype.reset = function (callback, warn) {
-    if (this.pedalboardModified && (warn === undefined || warn))
+Desktop.prototype.reset = function (callback) {
+    if (this.pedalboardModified)
         if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
             return
     this.title = ''
     this.pedalboardBundle = null
     this.pedalboardModified = false
-    self.pedalboardSavable = false
+    this.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
+}
+
+Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
+    var self = this
+
+    self.reset(function () {
+        $.ajax({
+            url: '/pedalboard/load_bundle/',
+            type: 'POST',
+            data: {
+                bundlepath: bundlepath
+            },
+            success: function (resp) {
+                console.log(resp)
+                if (! resp.ok) {
+                    callback(false)
+                    return
+                }
+                self.title = resp.name
+                self.pedalboardBundle = resp.bundlepath
+                self.pedalboardModified = false
+                self.pedalboardSavable = true
+                self.titleBox.text(resp.name)
+                callback(true)
+            },
+            error: function () {
+                new Bug("Couldn't load pedalboard")
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    })
 }
 
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
