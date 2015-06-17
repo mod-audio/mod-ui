@@ -948,3 +948,177 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background-color: #292929;
     border-radius: 5px;
 }
+
+
+
+
+.preset-manager {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transition: all 0.3s;
+    width: 100%;
+    pointer-events: none;
+    touch-callout: none;
+    user-select: none;
+    user-drag: none;
+    -webkit-pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+}
+.preset-manager.active {
+    background: rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    touch-callout: auto;
+    user-select: auto;
+    user-drag: auto;
+    -webkit-pointer-events: auto;
+    -webkit-touch-callout: auto;
+    -webkit-user-select: auto;
+    -webkit-user-drag: auto;
+    height: 100%;
+}
+.preset-manager .preset-manager-entry {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 4em;
+    line-height: 1.5em;
+    opacity: 0.33;
+    width: calc(100% - 55px);
+    height: 1.5em;
+    box-sizing: border-box;
+    outline: 0;
+    box-shadow: none !important;
+    text-shadow: 0 2px 5px black;
+    font-family: 'Ek Mukta', sans-serif;
+    font-weight: 100;
+    transition: all 0.3s;
+    box-sizing: border-box;
+    vertical-align: middle;
+    padding: 0;
+    margin: 0;
+    margin-left: 10px;
+    pointer-events: none;
+    touch-callout: none;
+    user-select: none;
+    user-drag: none;
+    -webkit-pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+}
+.preset-manager.active .preset-manager-entry {
+    opacity: 1;
+    pointer-events: auto;
+    touch-callout: auto;
+    user-select: auto;
+    user-drag: auto;
+    -webkit-pointer-events: auto;
+    -webkit-touch-callout: auto;
+    -webkit-user-select: auto;
+    -webkit-user-drag: auto;
+}
+.preset-manager .preset-manager-button {
+    background-color: transparent;
+    background-position: 0% 50%;
+    background-repeat: no-repeat;
+    height: 0px;
+    line-height: 0px;
+    padding: 0 10px 0 42px;
+    color: white;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: inline-block;
+    overflow: hidden;
+    opacity: 0.8;
+    transition: all 0.3s;
+    min-width: 40px;
+}
+.preset-manager .preset-manager-button:hover,
+.preset-manager .preset-manager-button.prelight {
+    background-color: rgba(255, 255, 255, 0.2);
+    opacity: 1;
+}
+.preset-manager.active .preset-manager-button {
+    height: 3em;
+    line-height: 3em;
+}
+.preset-manager .preset-manager-settings {
+    background-image: url(../img/icons/settings.png);
+    height: 3em;
+    padding: 0;
+    pointer-events: auto;
+    touch-callout: auto;
+    user-select: auto;
+    user-drag: auto;
+    -webkit-pointer-events: auto;
+    -webkit-touch-callout: auto;
+    -webkit-user-select: auto;
+    -webkit-user-drag: auto;
+}
+.preset-manager .preset-manager-save {
+    background-image: url(../img/icons/save.png);
+}
+.preset-manager .preset-manager-load {
+    background-image: url(../img/icons/load.png);
+}
+.preset-manager .preset-manager-bind {
+    background-image: url(../img/icons/bind.png);
+}
+.preset-manager .preset-manager-clear {
+    background-image: url(../img/icons/clear.png);
+}
+.preset-manager .preset-manager-message {
+    
+}
+
+.preset-manager .preset-manager-list {
+    height: 0px;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+.preset-manager.active .preset-manager-list {
+    height: calc(100% - 9em);
+}
+.preset-manager .preset-manager-preset {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    box-sizing: border-box;
+    padding: 10px;
+}
+.preset-manager .preset-manager-preset:after {
+    content: "."; 
+    visibility: hidden; 
+    display: block; 
+    height: 0; 
+    clear: both;
+}
+.preset-manager .preset-manager-preset .preset-manager-preset-icon {
+    float: left;
+    width: 60px;
+    height: auto;
+    transition: all 0.3s;
+    margin-right: 10px;
+}
+.preset-manager .preset-manager-preset:hover .preset-manager-preset-icon {
+    width: 120px;
+}
+.preset-manager .preset-manager-preset .preset-manager-preset-title {
+    color: white;
+    font-size: 2em;
+}
+.preset-manager .preset-manager-preset .preset-manager-preset-description {
+    
+}
+.preset-manager .preset-manager-preset .preset-manager-preset-delete {
+    
+}
+.preset-manager .preset-manager-preset .preset-manager-preset-bind {
+    
+}

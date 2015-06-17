@@ -21,13 +21,13 @@ function Desktop(elements) {
     // The elements below are expected to be all defined in HTML and passed as parameter
     elements = $.extend({
         titleBox: $('<div>'),
-        pedalboard: $('<div>'),
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
         rec: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
+        presetManager: $('<div>'),
         resetButton: $('<div>'),
         disconnectButton: $('<div>'),
         effectBox: $('<div>'),
@@ -397,7 +397,9 @@ function Desktop(elements) {
     elements.disconnectButton.click(function () {
         self.disconnect()
     })
-
+    
+    this.presetManager = new presetManager(elements.presetManager, '/pedalboard/list')
+    
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {

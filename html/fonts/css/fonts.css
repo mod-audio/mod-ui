@@ -1,0 +1,56 @@
+@font-face {
+  font-family: 'Ek Mukta';
+  font-weight: 200;
+  font-style: normal;
+  src: url('/fonts/Ek-Mukta-200/Ek-Mukta-200.eot');
+  src: url('/fonts/Ek-Mukta-200/Ek-Mukta-200.eot?#iefix') format('embedded-opentype'),
+       local('Ek Mukta ExtraLight'),
+       local('Ek-Mukta-200'),
+       url('/fonts/Ek-Mukta-200/Ek-Mukta-200.woff2') format('woff2'),
+       url('/fonts/Ek-Mukta-200/Ek-Mukta-200.woff') format('woff'),
+       url('/fonts/Ek-Mukta-200/Ek-Mukta-200.ttf') format('truetype'),
+       url('/fonts/Ek-Mukta-200/Ek-Mukta-200.svg#EkMukta') format('svg');
+}
+
+@font-face {
+  font-family: 'Ek Mukta';
+  font-weight: 400;
+  font-style: normal;
+  src: url('/fonts/Ek-Mukta-regular/Ek-Mukta-regular.eot');
+  src: url('/fonts/Ek-Mukta-regular/Ek-Mukta-regular.eot?#iefix') format('embedded-opentype'),
+       local('Ek Mukta'),
+       local('Ek-Mukta-regular'),
+       url('/fonts/Ek-Mukta-regular/Ek-Mukta-regular.woff2') format('woff2'),
+       url('/fonts/Ek-Mukta-regular/Ek-Mukta-regular.woff') format('woff'),
+       url('/fonts/Ek-Mukta-regular/Ek-Mukta-regular.ttf') format('truetype'),
+       url('/fonts/Ek-Mukta-regular/Ek-Mukta-regular.svg#EkMukta') format('svg');
+}
+
+@font-face {
+  font-family: 'Ek Mukta';
+  font-weight: 600;
+  font-style: normal;
+  src: url('/fonts/Ek-Mukta-600/Ek-Mukta-600.eot');
+  src: url('/fonts/Ek-Mukta-600/Ek-Mukta-600.eot?#iefix') format('embedded-opentype'),
+       local('Ek Mukta SemiBold'),
+       local('Ek-Mukta-600'),
+       url('/fonts/Ek-Mukta-600/Ek-Mukta-600.woff2') format('woff2'),
+       url('/fonts/Ek-Mukta-600/Ek-Mukta-600.woff') format('woff'),
+       url('/fonts/Ek-Mukta-600/Ek-Mukta-600.ttf') format('truetype'),
+       url('/fonts/Ek-Mukta-600/Ek-Mukta-600.svg#EkMukta') format('svg');
+}
+
+@font-face {
+  font-family: 'Ek Mukta';
+  font-weight: 700;
+  font-style: normal;
+  src: url('/fonts/Ek-Mukta-700/Ek-Mukta-700.eot');
+  src: url('/fonts/Ek-Mukta-700/Ek-Mukta-700.eot?#iefix') format('embedded-opentype'),
+       local('Ek Mukta Bold'),
+       local('Ek-Mukta-700'),
+       url('/fonts/Ek-Mukta-700/Ek-Mukta-700.woff2') format('woff2'),
+       url('/fonts/Ek-Mukta-700/Ek-Mukta-700.woff') format('woff'),
+       url('/fonts/Ek-Mukta-700/Ek-Mukta-700.ttf') format('truetype'),
+       url('/fonts/Ek-Mukta-700/Ek-Mukta-700.svg#EkMukta') format('svg');
+}
+

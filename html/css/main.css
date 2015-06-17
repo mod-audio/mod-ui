@@ -1,13 +1,16 @@
 html, body {
     height:100%;
+    overflow: hidden;
 }
 
 body {
     background:#393939;
-    font-family:Helvetica,Arial,Sans-serif;
     min-width:1024px;
 }
 
+* {
+    font-family: "Ek Mukta",Helvetica,Arial,Sans-serif;
+}
 #wrapper {
     bottom:0;
     left:0;
