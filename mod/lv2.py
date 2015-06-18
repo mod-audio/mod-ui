@@ -126,11 +126,30 @@ class PluginSerializer(object):
             self.p = PLUGINS.get_by_uri(W.new_uri(uri))
         self.uri = uri
         p = self.p
-        self._modgui = p.get_value(modgui.gui).get_first()
+
+        self._modgui = None
+
+        # find the best modgui
+        guis = p.get_value(modgui.gui)
+        it   = guis.begin()
+        while not guis.is_end(it):
+            gui = guis.get(it)
+            it  = guis.next(it)
+            if gui.me is None:
+                continue
+            resdir = W.find_nodes(gui.me, modgui.resourcesDirectory.me, None).get_first()
+            if resdir.me is None:
+                continue
+            self._modgui = gui
+            if os.path.expanduser("~") in lilv.lilv_uri_to_path(resdir.as_string()):
+                # found a modgui in the home dir, stop here and use it
+                break
+
+        del guis, it
 
         self.data = dict(
                 _id="",
-                binary=(p.get_library_uri().as_string() or "").replace("file://", ""),
+                binary=(lilv.lilv_uri_to_path(p.get_library_uri().as_string() or "")),
                 brand="",
                 bufsize=128,
                 category=get_category(p.get_value(rdf.type_)),
@@ -220,11 +239,11 @@ class PluginSerializer(object):
         return dict(LILV_FOREACH(presets, get_preset_data))
 
     def _get_modgui(self, predicate):
-        if self._modgui.me is None:
+        if self._modgui is None or self._modgui.me is None:
             return ""
         pred = getattr(modgui, predicate)
         n = W.find_nodes(self._modgui.me, pred.me, None).get_first()
-        return n.as_string().replace("file://", "") if n.as_string() is not None else n.as_string()
+        return lilv.lilv_uri_to_path(n.as_string() or "")
 
     def _get_micro_version(self):
         v = self.p.get_value(lv2core.microVersion).get_first().as_string()
@@ -344,7 +363,7 @@ class PluginSerializer(object):
         return d
 
     def has_modgui(self):
-        return self._modgui.me is not None
+        return self._modgui is not None and self._modgui.me is not None
 
     def save_json(self, directory):
         import json
