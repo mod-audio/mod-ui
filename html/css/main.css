@@ -1591,3 +1591,12 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
 .actions {
     z-index:20;
 }
+
+
+/* ANIMATIONS
+===================================================*/
+@keyframes flashlight {
+    0%   { box-shadow: 0 0 0 transparent; }
+    50%  { box-shadow: 0 0 10px white; }
+    100% { box-shadow: 0 0 0 transparent; }
+}

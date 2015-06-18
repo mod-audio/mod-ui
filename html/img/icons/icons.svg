@@ -25,9 +25,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="278.86331"
-     inkscape:cy="859.36389"
+     inkscape:zoom="1"
+     inkscape:cx="624.08234"
+     inkscape:cy="865.52665"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
@@ -515,9 +515,28 @@
        sodipodi:nodetypes="ccccccccccccccccc" />
     <path
        style="fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 616.81445,173.63672 611,175.36133 l -4,4 4,1.59961 0,5.40039 14,7 9,-7 0,-4.86719 4,-2.13281 -4,-4 -5.11523,-1.46094 -0.86133,0.75391 4.48047,1.38672 -7.50391,4.32031 -12.1582,-4.42383 4.83398,-1.54883 -0.86133,-0.75195 z"
+       d="M 616.81445,173.63672 611,175.36133 l -4,4 4,2.00087 0,4.99913 14,7 9,-7 0,-3.99913 4,-3.00087 -4,-4 -5.11523,-1.46094 -0.86133,0.75391 4.48047,1.38672 -7.50391,4.32031 -12.1582,-4.42383 4.83398,-1.54883 z"
        id="path4305"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccccccccccc" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4247"
+       d="M 676.81445,173.63672 671,175.36133 l -4,4 4,2.00087 0,4.99913 14,7 9,-7 0,-3.99913 4,-3.00087 -4,-4 -5.11523,-1.46094 -0.86133,0.75391 4.48047,1.38672 -7.50391,4.32031 -12.1582,-4.42383 4.83398,-1.54883 z"
+       style="fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       sodipodi:nodetypes="ccccccccccccccccc" />
+    <path
+       style="fill:#727272;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
+       d="m 671,181.3622 11.06599,5.53299 2.93401,-6.53299 3,6 6,-4 0,1 -9,6 0,0 -14,-7 z"
+       id="path4249"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccc" />
+    <path
+       sodipodi:nodetypes="cccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path4251"
+       d="m 611,181.3622 11.06599,5.53299 2.93401,-6.53299 3,6 6,-4 0,1 -6.36418,4.24279 L 625,182.3622 l 0,0 -2.45625,5.77188 L 611,182.3622 Z"
+       style="fill:#727272;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
   </g>
   <g
      inkscape:label="Ebene 1"

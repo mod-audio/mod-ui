@@ -1116,9 +1116,22 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 .preset-manager .preset-manager-preset .preset-manager-preset-description {
     
 }
-.preset-manager .preset-manager-preset .preset-manager-preset-delete {
-    
+.preset-manager .preset-manager-preset .preset-manager-button {
+    float: right;
 }
-.preset-manager .preset-manager-preset .preset-manager-preset-bind {
-    
+
+
+.preset-manager-confirm-pane {
+    position:absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+.preset-manager-confirm-pane .preset-manager-confirm-button {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    animation-name: flashlight;
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
 }

@@ -11,6 +11,7 @@
 
 presetManager = function (node, listURL) {
     this.listURL = listURL;
+    this.preset  = false;
     
     this.init = function (node) {
         
@@ -35,6 +36,8 @@ presetManager = function (node, listURL) {
         e.save.click(this.saveClicked.bind(this));
         e.bind.click(this.bindClicked.bind(this));
         e.clear.click(this.clearClicked.bind(this));
+        
+        this.buttonConfirm(e.save, this.saveClicked);
         
         // pre-set local vars
         this.elements = e;
@@ -66,13 +69,29 @@ presetManager = function (node, listURL) {
             e.icon        = $("<img class=preset-manager-preset-icon>").appendTo(e.node);
             e.title       = $("<div class=preset-manager-preset-title>").appendTo(e.node);
             e.description = $("<div class=preset-manager-preset-description>").appendTo(e.node);
-            e.remove      = $("<div class=preset-manager-preset-delete>").appendTo(e.node);
-            e.bind        = $("<div class=preset-manager-preset-bind>").appendTo(e.node);
+            e.load        = $("<div class='preset-manager-button preset-manager-load'>load</div>").appendTo(e.node);
+            e.save        = $("<div class='preset-manager-button preset-manager-save'>save</div>").appendTo(e.node);
+            e.remove      = $("<div class='preset-manager-button preset-manager-clear'>remove</div>").appendTo(e.node);
+            e.bind        = $("<div class='preset-manager-button preset-manager-bind'>bind</div>").appendTo(e.node);
+            
             e.title.text(prs.title);
             e.icon.attr("src", prs.thumbnail);
+            
+            e.node.click((function (prs, that) {
+                return (function (e) { this.presetClicked(prs, e); }).bind(that);
+            })(prs, this));
+            
+            e.node.data("preset", prs);
             prs.elements = e;
-            console.log(prs, presets[p])
+            
         }
+    }
+    
+    this.presetClicked = function (prs, e) {
+        this.preset = prs;
+        //this.elements.entry.val(prs.title);
+        console.log(prs);
+        e.stopPropagation();
     }
     
     this.searchInPresets = function (string) {
@@ -140,23 +159,38 @@ presetManager = function (node, listURL) {
     }
     
     this.entryKeyup = function (e) {
-        
+        console.log("key");
     }
     
     this.loadClicked = function (e) {
-        
+        console.log("load");
     }
     
     this.saveClicked = function (e) {
-        
+        console.log("save");
+        e.stopPropagation();
     }
     
     this.bindClicked = function (e) {
-        
+        console.log("bind");
     }
     
     this.clearClicked = function (e) {
-        
+        console.log("clear");
+    }
+    
+    this.buttonConfirm = function (button, callback) {
+        var that = this;
+        button.click(function (e) {
+            var plane = $("<div class=preset-manager-confirm-pane>").click( function () {
+                //$(this).remove();
+            }).appendTo($(document));
+            var confirm = $("<div class=preset-manager-confirm-button>shure?</div>").click(function (e) {
+                callback.bind(that)(e);
+            }).appendTo(pane).css({width: $(this).outerWidth(), height: $(this).outerHeight(),
+                                   top: $(this).position().top, left: $(this).position().left});
+        });
+        return button;
     }
     
     // bazinga!
