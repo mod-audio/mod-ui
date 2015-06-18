@@ -432,19 +432,45 @@ def get_plugin_info(world, plugin):
     bundleuri = plugin.get_bundle_uri().as_string()
     microver  = plugin.get_value(lv2core.microVersion).get_first()
     minorver  = plugin.get_value(lv2core.minorVersion).get_first()
-    modguigui = plugin.get_value(modgui.gui).get_first()
+    bundle    = lilv.lilv_uri_to_path(bundleuri)
+
+    # --------------------------------------------------------------------------------------------------------
+    # get the proper modgui
+
+    modguigui = None
+
+    nodes = plugin.get_value(modgui.gui)
+    it    = nodes.begin()
+    while not nodes.is_end(it):
+        mgui = nodes.get(it)
+        it   = nodes.next(it)
+        if mgui.me is None:
+            continue
+        resdir = world.find_nodes(mgui.me, modgui.resourcesDirectory.me, None).get_first()
+        if resdir.me is None:
+            continue
+        modguigui = mgui
+        if os.path.expanduser("~") in lilv.lilv_uri_to_path(resdir.as_string()):
+            # found a modgui in the home dir, stop here and use it
+            break
+
+    del nodes, it
 
     # --------------------------------------------------------------------------------------------------------
     # gui
 
     gui = {}
 
-    if modguigui.me is not None:
+    if modguigui is not None and modguigui.me is not None:
         # resourcesDirectory *must* be present
         modgui_resdir = world.find_nodes(modguigui.me, modgui.resourcesDirectory.me, None).get_first()
 
         if modgui_resdir.me is not None:
             gui['resourcesDirectory'] = lilv.lilv_uri_to_path(modgui_resdir.as_string())
+
+            # check if the modgui is outside the main bundle and in the user dir
+            gui['modificableInPlace'] = bool(bundle not in gui['resourcesDirectory'] and
+                                             os.path.expanduser("~") in gui['resourcesDirectory'])
 
             # icon and settings templates
             modgui_icon  = world.find_nodes(modguigui.me, modgui.iconTemplate    .me, None).get_first()
