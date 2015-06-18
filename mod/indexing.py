@@ -220,4 +220,3 @@ class EffectIndex(Index):
         #writer = self.index.writer()
         #writer.update_document(**data)
         #writer.commit()
-
