@@ -9,7 +9,7 @@
 }
 
 #pedalboard-dashboard {
-    background:#393939 url(../img/background.jpg);
+    background:#393939 url(../img/background.jpg) repeat;
     position: absolute;
     top: 35px;
     left: 0;
@@ -303,6 +303,7 @@
 .mod-audio-input {
     background-image: url(../img/audio-input.png);
     background-repeat: no-repeat;
+    background-position: 50% 100%;
     position: absolute;
     width: 88px;
     height: 56px;
@@ -375,6 +376,7 @@
 .mod-midi-input {
     background-image: url(../img/midi-input.png);
     background-repeat: no-repeat;
+    background-position: 50% 100%;
     position: absolute;
     width: 76px;
     height: 56px;
