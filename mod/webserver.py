@@ -397,8 +397,9 @@ class EffectResource(web.StaticFileHandler, EffectSearcher):
 
             super(EffectResource, self).initialize(document_root)
             super(EffectResource, self).get(path)
+
         except web.HTTPError as e:
-            if (not e.status_code == 404):
+            if e.status_code != 404:
                 raise e
             super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
             super(EffectResource, self).get(path)
@@ -443,9 +444,9 @@ class EffectStylesheet(EffectSearcher):
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
-
         content = open(path).read()
-        context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
+        context = { 'ns' : '?url=%s' % effect['url'],
+                    'cns': '_%s' % effect['url'].replace("/","_").replace("%","_").replace(".","_") }
 
         self.set_header('Content-type', 'text/css')
         self.write(pystache.render(content, context))
@@ -663,12 +664,19 @@ class PackageUninstall(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
+global fake_tstamp
+fake_tstamp = 0
+
 class PedalboardSearcher(Searcher):
     index = None
 
     def list(self):
         result = []
         pedals = get_pedalboards()
+
+        global fake_tstamp
+        fake_tstamp += 1
+
         for pedal in pedals:
             result.append({
                 'instances'  : {},
@@ -676,7 +684,7 @@ class PedalboardSearcher(Searcher):
                 'metadata'   : {
                     'title'    : pedal['name'],
                     'thumbnail': pedal['thumbnail'],
-                    'tstamp'   : None,
+                    'tstamp'   : fake_tstamp,
                 },
                 'uri'   : pedal['uri'],
                 'bundle': pedal['bundlepath'],
