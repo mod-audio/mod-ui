@@ -1,100 +1,69 @@
- //pedalboards.append({
-    //'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
-    //'name': pedalboard.get_name().as_string(),
-    //'uri':  pedalboard.get_uri().as_string(),
-    //'screenshot': lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.screenshot).get_first().as_string() or ""),
-    //'thumbnail':  lilv.lilv_uri_to_path(pedalboard.get_value(modpedal.thumbnail).get_first().as_string() or ""),
-    //'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),
-    //'height': pedalboard.get_value(modpedal.height).get_first().as_int(),
-    //'presets': get_presets(pedalboard)
-//})
-
-presetManager = function (node, listURL) {
-    this.listURL = listURL;
-    this.preset  = false;
-    
-    this.init = function (node) {
+JqueryClass("presetManager", {
+    init: function (options) {
+        var self = $(this);
+        options = $.extend({
+            listURL : "",
+            presets: [],
+        }, options);
         
-        // build elements
+        self.html(Mustache.render(TEMPLATES.presets));
         var e = {};
-        e.node     = node.addClass("preset-manager");
-        e.settings = $("<div class='preset-manager-settings preset-manager-button'></div>").appendTo(node);
-        e.entry    = $("<input type=text class=preset-manager-entry>").appendTo(node);
-        e.message  = $("<div class=preset-manager-message>").appendTo(node);
-        e.load     = $("<div class='preset-manager-load preset-manager-button'>load</div>").appendTo(node);
-        e.save     = $("<div class='preset-manager-save preset-manager-button'>save</div>").appendTo(node);
-        e.bind     = $("<div class='preset-manager-bind preset-manager-button'>bind</div>").appendTo(node);
-        e.clear    = $("<div class='preset-manager-clear preset-manager-button'>clear</div>").appendTo(node);
-        e.list     = $("<ul class=preset-manager-list>").appendTo(node);
+        e.entry = self.find(".preset-manager-entry");
+        e.load  = self.find(".preset-manager-button.preset-manager-load");
+        e.save  = self.find(".preset-manager-button.preset-manager-save");
+        e.bind  = self.find(".preset-manager-button.preset-manager-bind");
+        e.list  = self.find(".preset-manager-list");
         
-        // add callbacks
-        e.node.click(this.nodeClicked.bind(this));
-        e.settings.click(this.settingsClicked.bind(this));
-        e.entry.click(this.entryClicked.bind(this));
-        e.entry.keyup(this.entryKeyup.bind(this));
-        e.load.click(this.loadClicked.bind(this));
-        e.save.click(this.saveClicked.bind(this));
-        e.bind.click(this.bindClicked.bind(this));
-        e.clear.click(this.clearClicked.bind(this));
+        e.entry.click(function (e) { self.presetManager("entryClicked", self, e); });
+        e.entry.keyup(function (e) { self.presetManager("entryKeyup", self, e); });
+        e.load.click(function (e) { self.presetManager("loadClicked", self, e); });
+        e.save.click(function (e) { self.presetManager("saveClicked", self, e); });
+        e.bind.click(function (e) { self.presetManager("bindClicked", self, e); });
         
-        this.buttonConfirm(e.save, this.saveClicked);
+        self.addClass("preset-manager");
         
-        // pre-set local vars
-        this.elements = e;
-        this.active   = false;
+        options.elements = e;
+        self.data(options);
         
-        this.setPresetTitle("");
-        this.loadPresets();
-    }
+        self.presetManager("setPresetTitle", "");
+        self.presetManager("loadPresets");
+    },
     
-    this.loadPresets = function () {
-        this.clearPresets();
-        this.callBackend(this.listURL, this.addPresets.bind(this));
-    }
+    loadPresets: function () {
+        var self = $(this);
+        self.presetManager("clearPresets");
+        self.presetManager("callBackend", self.data("listURL"),
+            function (o) { self.presetManager("addPresets", o); } 
+        );
+    },
     
-    this.clearPresets = function () {
-        this.elements.list.empty();
-    }
+    clearPresets: function () {
+        var self = $(this);
+        self.data("elements").list.empty();
+    },
     
-    this.addPresets = function (presets) {
+    addPresets: function (presets) {
+        var self = $(this);
         for (p in presets) {
-            var prs = {
-                title     : presets[p].metadata.title,
-                thumbnail : presets[p].metadata.thumbnail,
-                uri       : presets[p].uri
-            }
-            // tack together
-            var e         = {};
-            e.node        = $("<li class=preset-manager-preset>").appendTo(this.elements.list);
-            e.icon        = $("<img class=preset-manager-preset-icon>").appendTo(e.node);
-            e.title       = $("<div class=preset-manager-preset-title>").appendTo(e.node);
-            e.description = $("<div class=preset-manager-preset-description>").appendTo(e.node);
-            e.load        = $("<div class='preset-manager-button preset-manager-load'>load</div>").appendTo(e.node);
-            e.save        = $("<div class='preset-manager-button preset-manager-save'>save</div>").appendTo(e.node);
-            e.remove      = $("<div class='preset-manager-button preset-manager-clear'>remove</div>").appendTo(e.node);
-            e.bind        = $("<div class='preset-manager-button preset-manager-bind'>bind</div>").appendTo(e.node);
-            
-            e.title.text(prs.title);
-            e.icon.attr("src", prs.thumbnail);
-            
-            e.node.click((function (prs, that) {
-                return (function (e) { this.presetClicked(prs, e); }).bind(that);
-            })(prs, this));
-            
-            e.node.data("preset", prs);
-            prs.elements = e;
-            
+            var li = $("<li>");
+            li.presetEntry({
+                title: presets[p].metadata.title,
+                parent: self.data("elements").list,
+                clickPreset: function (e) { },
+                bindPreset: function (self, e) { },
+                removePreset: function (self, e) { },
+            });
         }
-    }
+    },
     
-    this.presetClicked = function (prs, e) {
-        this.preset = prs;
+    presetClicked: function (prs, e) {
+        preset = prs;
         //this.elements.entry.val(prs.title);
         console.log(prs);
         e.stopPropagation();
-    }
+    },
     
-    this.searchInPresets = function (string) {
+    searchInPresets: function(string) {
         // search for a substring in all preset titles
         for (p in this.presets) {
             if (this.presets.hasOwnProperty(p)) {
@@ -106,93 +75,104 @@ presetManager = function (node, listURL) {
                 }
             }
         }
-    }
+    },
     
-    this.resetPresets = function () {
+    resetPresets: function() {
         for (p in this.presets) {
             if (this.presets.hasOwnProperty(p)) {
                 p.elements.node.slideDown();
                 p.elements.title.text(p.name);
             }
         }
-    }
+    },
     
-    this.setPresetTitle = function (string) {
+    setPresetTitle: function(string) {
         if (string === "")
             string = "untitled";
         if (string === false)
             string = "";
-        this.elements.entry.val(string);
-    }
+        $(this).data("elements").entry.val(string);
+    },
     
     
-    this.callBackend = function (url, callback) {
+    callBackend: function(url, callback) {
         if (!url) return;
         $.ajax({ 'method': 'GET', 'url': url, 'success': callback, 'dataType': 'json' });
-    }
+    },
     
     // event handlers
-    this.nodeClicked = function (e) {
+    deactivate: function(self, e) {
         
-    }
-    this.settingsClicked = function (e) {
-        e.stopPropagation();
-        if (this.active) {
-            this.deactivate();
-            return;
-        }
-        $(document).one("click", this.deactivate.bind(this));
-        this.elements.node.addClass("active");
-        this.active = true;
-        this.elements.entry[0].setSelectionRange(0, 9999);
-    }
-    this.deactivate = function (e) {
-        this.elements.node.removeClass("active");
-        this.active = false;
-        this.elements.entry[0].setSelectionRange(0, 0);
-    }
-    this.entryClicked = function (e) {
-        if (this.active)
-            e.stopPropagation();
-        else
-            e.preventDefault();
-    }
+    },
     
-    this.entryKeyup = function (e) {
+    entryClicked: function(self, e) {
+        
+    },
+    
+    entryKeyup: function(self, e) {
         console.log("key");
-    }
+    },
     
-    this.loadClicked = function (e) {
+    loadClicked: function(self, e) {
         console.log("load");
-    }
+    },
     
-    this.saveClicked = function (e) {
+    saveClicked: function(self, e) {
         console.log("save");
         e.stopPropagation();
-    }
+    },
     
-    this.bindClicked = function (e) {
+    bindClicked: function(self, e) {
         console.log("bind");
-    }
-    
-    this.clearClicked = function (e) {
-        console.log("clear");
-    }
-    
-    this.buttonConfirm = function (button, callback) {
-        var that = this;
-        button.click(function (e) {
-            var plane = $("<div class=preset-manager-confirm-pane>").click( function () {
-                //$(this).remove();
-            }).appendTo($(document));
-            var confirm = $("<div class=preset-manager-confirm-button>shure?</div>").click(function (e) {
-                callback.bind(that)(e);
-            }).appendTo(pane).css({width: $(this).outerWidth(), height: $(this).outerHeight(),
-                                   top: $(this).position().top, left: $(this).position().left});
+    },
+});
+
+
+JqueryClass("presetEntry", {
+    init: function (options) {
+        var self = $(this);
+        $.extend({
+            title: "untitled",
+            parent: $("<ul class=preset-manager-list>"),
+            bind: "",
+            clickPreset: function (e) { },
+            bindPreset: function (self, e) { },
+            removePreset: function (self, e) { },
+        }, options);
+        
+        self.html(Mustache.render(TEMPLATES.preset));
+        var e         = {};
+        e.title       = self.find(".preset-manager-preset-title");
+        e.bindstate   = self.find(".preset-manager-preset-bindstate");
+        e.bind        = self.find(".preset-manager-button.preset-manager-bind");
+        e.remove      = self.find(".preset-manager-button.preset-manager-clear");
+        
+        self.addClass("preset-manager-preset").appendTo(options.parent);
+        
+        self.click(options.clickPreset);
+        e.bind.click( function (e) { options.bindPreset(self, e); });
+        e.remove.click( function (e) {
+            options.removePreset(self, e);
+            self.remove();
         });
-        return button;
-    }
-    
-    // bazinga!
-    this.init(node);
-}
+        options.elements = e;
+        self.data(options);
+        
+        self.presetEntry("setBind", options.bind);
+        self.presetEntry("setTitle", options.title);
+    },
+    setBind: function (bind) {
+        var self = $(this);
+        var e = self.data("elements");
+        if (bind) {
+            e.bindstate.text(bind);
+            self.addClass("bound");
+        } else {
+            e.bindstate.text("(unlinked)");
+            self.removeClass("bound");
+        }
+    },
+    setTitle: function (title) {
+        $(this).data("elements").title.text(title);
+    },
+});

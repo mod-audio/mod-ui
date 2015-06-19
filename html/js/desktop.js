@@ -398,7 +398,9 @@ function Desktop(elements) {
         self.disconnect()
     })
     
-    this.presetManager = new presetManager(elements.presetManager, '/pedalboard/list')
+    this.presetManager = elements.presetManager.presetManager({
+        listURL: '/pedalboard/list',
+    });
     
     elements.shareButton.click(function () {
         var share = function () {
