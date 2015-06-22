@@ -296,7 +296,10 @@ class EffectSearcher(Searcher):
         try:
             url = self.request.arguments['url'][0]
         except (KeyError, IndexError):
-            raise tornado.web.HTTPError(404)
+            try:
+                url = self.request.arguments['uri']
+            except (KeyError, IndexError):
+                raise tornado.web.HTTPError(404)
 
         search = self.index.find(url=url)
         try:
@@ -444,12 +447,34 @@ class EffectStylesheet(EffectSearcher):
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
-        content = open(path).read()
-        context = { 'ns' : '?url=%s' % effect['url'],
-                    'cns': '_%s' % effect['url'].replace("/","_").replace("%","_").replace(".","_") }
+        with open(path, 'rb') as fd:
+            content = fd.read()
+            context = { 'ns' : '?uri=%s' % effect['uri'],
+                        'cns': '_%s' % effect['uri'].replace("/","_").replace("%","_").replace(".","_") }
 
-        self.set_header('Content-type', 'text/css')
-        self.write(pystache.render(content, context))
+            self.set_header('Content-type', 'text/css')
+            self.write(pystache.render(content, context))
+
+class EffectJavascript(EffectSearcher):
+    def get(self):
+        objid = self.get_by_url()
+
+        try:
+            effect = self.get_object(objid)
+        except:
+            raise web.HTTPError(404)
+
+        try:
+            path = effect['gui']['javascript']
+        except:
+            raise web.HTTPError(404)
+
+        if not os.path.exists(path):
+            raise web.HTTPError(404)
+
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'text/javascript')
+            self.write(fd.read())
 
 class EffectAdd(EffectSearcher):
     @web.asynchronous
@@ -1340,6 +1365,7 @@ application = web.Application(
             (r"/effect/bypass/address/([A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
+            (r"/effect/gui.js", EffectJavascript),
             (r"/effect/position/([A-Za-z0-9_/]+[^/])/?", EffectPosition),
             (r"/effect/set/(release)/?", EffectSetLocalVariable),
 

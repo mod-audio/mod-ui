@@ -2,7 +2,7 @@ import os, hashlib, re, random, shutil, subprocess
 import lilv
 import hashlib
 
-from mod.lilvlib import LILV_FOREACH, get_category, get_port_unit
+from mod.lilvlib import LILV_FOREACH, get_category, get_port_unit, get_plugin_info
 
 # LILV stuff
 
@@ -124,246 +124,55 @@ class PluginSerializer(object):
             uri = self.p.get_uri().as_string()
         else:
             self.p = PLUGINS.get_by_uri(W.new_uri(uri))
-        self.uri = uri
-        p = self.p
 
-        self._modgui = None
+        self.data = get_plugin_info(W, self.p)
 
-        # find the best modgui
-        guis = p.get_value(modgui.gui)
-        it   = guis.begin()
-        while not guis.is_end(it):
-            gui = guis.get(it)
-            it  = guis.next(it)
-            if gui.me is None:
-                continue
-            resdir = W.find_nodes(gui.me, modgui.resourcesDirectory.me, None).get_first()
-            if resdir.me is None:
-                continue
-            self._modgui = gui
-            if os.path.expanduser("~") in lilv.lilv_uri_to_path(resdir.as_string()):
-                # found a modgui in the home dir, stop here and use it
-                break
-
-        del guis, it
-
-        self.data = dict(
-                _id="",
-                binary=(lilv.lilv_uri_to_path(p.get_library_uri().as_string() or "")),
-                brand="",
-                bufsize=128,
-                category=get_category(p.get_value(rdf.type_)),
-                description=None,
-                developer=None,
-                gui={},
-                gui_structure={},
-                hidden=False,
-                label="",
-                license=p.get_value(doap.license).get_first().as_string(),
-                maintainer=dict(
-                    homepage=p.get_author_homepage().as_string(),
-                    mbox=p.get_author_email().as_string(),
-                    name=p.get_author_name().as_string()),
-                microVersion=self._get_micro_version(),
-                minorVersion=self._get_minor_version(),
-                name=p.get_name().as_string(),
-                package=os.path.basename(os.path.dirname(p.get_bundle_uri().as_string())),
-                package_id="",
-                ports=self._get_ports(),
-                presets=self._get_presets(),
-                stability="",
-                url=uri,
-                version=None,
-                )
-
-        if self.has_modgui():
-            self.data['gui_structure'] = dict(
-                    iconTemplate=self._get_modgui('iconTemplate'),
-                    resourcesDirectory=self._get_modgui('resourcesDirectory'),
-                    screenshot=self._get_modgui('screenshot'),
-                    settingsTemplate=self._get_modgui('settingsTemplate'),
-                    templateData=self._get_modgui('templateData'),
-                    thumbnail=self._get_modgui('thumbnail')
-                )
-            self.data['gui'] = self._get_gui_data()
-
-        if self.data['license']:
-            self.data['license'] = self.data['license'].split("/")[-1]
         minor = self.data['minorVersion']
         micro = self.data['microVersion']
         self.data['version'] = "%d.%d" % (micro, minor)
 
         if minor == 0 and micro == 0:
-            self.data['stability'] = u'experimental'
-        elif minor % 2 == 0 and micro % 2 == 0:
-            self.data['stability'] = u'stable'
+            self.data['stability'] = "experimental"
+        #elif minor % 2 == 0 and micro % 2 == 0:
+            #self.data['stability'] =
         elif minor % 2 == 0:
-            self.data['stability'] = u'testing'
+            self.data['stability'] = "stable" if micro % 2 == 0 else "testing"
         else:
-            self.data['stability'] = u'unstable'
+            self.data['stability'] = "unstable"
 
-        self.data['_id'] = hashlib.md5(uri.encode("utf-8")).hexdigest()[:24]
+        self.data['presets'] = self._get_presets()
 
-    def _get_file_data(self, fname, html=False, json=False):
-        if fname is not None and os.path.exists(fname):
-            f = open(fname)
-            if html:
-                return re.sub('<!--.+?-->', '', f.read()).strip()
-            if json:
-                import json as js
-                return js.loads(f.read())
-            return f.read()
-        return None
+        # FIXME - remote these later
+        self.data['_id'          ] = hashlib.md5(uri.encode("utf-8")).hexdigest()[:24]
+        self.data['bufsize'      ] = 128
+        self.data['brand'        ] = ""
+        self.data['author'       ] = ""
+        self.data['developer'    ] = ""
+        self.data['hidden'       ] = False
+        self.data['label'        ] = ""
+        self.data['package'      ] = lilv.lilv_uri_to_path(self.p.get_bundle_uri().as_string())
+        self.data['package_id'   ] = ""
+        self.data['url'          ] = self.data['uri']
+        self.data['maintainer'   ] = dict()
+        self.data['gui_structure'] = self.data['gui']
 
-    def _get_gui_data(self):
-        d = dict(
-            iconTemplate=self._get_file_data(self.data['gui_structure']['iconTemplate'], html=True),
-            settingsTemplate=self._get_file_data(self.data['gui_structure']['settingsTemplate'], html=True),
-            templateData=self._get_file_data(self.data['gui_structure']['templateData'], json=True),
-            resourcesDirectory=self.data['gui_structure']['resourcesDirectory'],
-            screenshot=self.data['gui_structure']['screenshot'],
-            thumbnail=self.data['gui_structure']['thumbnail'],
-            stylesheet=self._get_modgui('stylesheet')
-        )
-        return d
+        if self.data['shortname']:
+            self.data['name'     ] = self.data['shortname']
+
+        for port in self.data['ports']['control']['input']:
+            if "units" in port.keys() and port['units']:
+                port['unit'] = port['units']
 
     def _get_presets(self):
         presets = self.p.get_related(pset.Preset)
         def get_preset_data(preset):
             W.load_resource(preset.me)
             label = W.find_nodes(preset.me, rdfs.label.me, None).get_first().as_string()
-            return (preset.as_string(), dict(
-                            uri  = preset.as_string(),
-                            label=label,
-                            ))
+            return (preset.as_string(), { 'uri': preset.as_string(), 'label': label })
         return dict(LILV_FOREACH(presets, get_preset_data))
 
-    def _get_modgui(self, predicate):
-        if self._modgui is None or self._modgui.me is None:
-            return ""
-        pred = getattr(modgui, predicate)
-        n = W.find_nodes(self._modgui.me, pred.me, None).get_first()
-        return lilv.lilv_uri_to_path(n.as_string() or "")
-
-    def _get_micro_version(self):
-        v = self.p.get_value(lv2core.microVersion).get_first().as_string()
-        if v is not None and v.isdigit():
-            return int(v)
-        return 0
-
-    def _get_minor_version(self):
-        v = self.p.get_value(lv2core.minorVersion).get_first().as_string()
-        if v is not None and v.isdigit():
-            return int(v)
-        return 0
-
-    def _get_ports(self):
-        ports = dict(
-                audio=dict(
-                    input=[],
-                    output=[]
-                    ),
-                control=dict(
-                    input=[],
-                    output=[]
-                    ),
-                atom=dict(
-                    input=[],
-                    output=[]
-                    ),
-                midi=dict(
-                    input=[],
-                    output=[]
-                    )
-                )
-        for idx in range(self.p.get_num_ports()):
-            port = self.p.get_port_by_index(idx)
-            port_dict = dict(
-                            index=idx,
-                            name=lilv.Node(port.get_name()).as_string(),
-                            symbol=lilv.Node(port.get_symbol()).as_string()
-                        )
-
-            flow = typ = None
-
-            if port.is_a(lv2core.InputPort.me):
-                flow = 'input'
-            elif port.is_a(lv2core.OutputPort.me):
-                flow = 'output'
-
-            if port.is_a(lv2core.AudioPort.me):
-                typ = 'audio'
-            elif port.is_a(lv2core.ControlPort.me):
-                typ = 'control'
-                port_dict.update(self._get_control_port_data(port))
-            elif port.is_a(atom.AtomPort.me):
-                if port.supports_event(midi.MidiEvent.me) and \
-                        lilv.Nodes(port.get_value(atom.bufferType.me)).get_first() == atom.Sequence:
-                    typ ='midi'
-                else:
-                    typ = 'atom'
-
-            if flow is not None and typ is not None:
-                ports[typ][flow].append(port_dict)
-        return ports
-
-    def _get_control_port_data(self, port):
-        def get_value(pred, typ=None):
-            value = lilv.Nodes(port.get_value(pred)).get_first().as_string()
-            if typ is not None:
-                try:
-                    value = typ(value)
-                except (ValueError, TypeError):
-                    # TODO: should at least warn bad ttl
-                    value = typ()
-            return value
-
-        d = dict(
-            default=get_value(lv2core.default.me, float),
-            minimum=get_value(lv2core.minimum.me, float),
-            maximum=get_value(lv2core.maximum.me, float),
-
-            enumeration=port.has_property(lv2core.enumeration.me),
-            integer=port.has_property(lv2core.integer.me),
-            logarithmic=port.has_property(pprops.logarithmic.me),
-            trigger=port.has_property(pprops.trigger.me),
-            toggled=port.has_property(lv2core.toggled.me),
-            rangeSteps=port.has_property(pprops.rangeSteps.me),
-            sampleRate=port.has_property(lv2core.sampleRate.me),
-            tap_tempo = True if get_value(lv2core.designation.me) == time.beatsPerMinute.as_string() else False,
-            )
-
-        scale_points = lilv.ScalePoints(port.get_scale_points())
-        def get_sp_data(sp):
-            return dict(label=lilv.Node(sp.get_label()).as_string(),
-                    value=float(lilv.Node(sp.get_value()).as_string()))
-        d['scalePoints'] = list(LILV_FOREACH(scale_points, get_sp_data))
-
-        d['unit'] = None
-        unit = port.get_value(units.unit.me)
-        if unit is not None:
-            unit_dict = {}
-            unit_node = lilv.Nodes(unit).get_first()
-            unit_uri  = unit_node.as_string()
-
-            # using pre-existing lv2 unit
-            if unit_uri is not None and unit_uri.startswith("http://lv2plug.in/ns/extensions/units#"):
-                ulabel, urender, usymbol = get_port_unit(unit_uri.replace("http://lv2plug.in/ns/extensions/units#","",1))
-                unit_dict['label']  = ulabel
-                unit_dict['render'] = urender
-                unit_dict['symbol'] = usymbol
-
-            # using custom unit
-            else:
-                unit_dict['label']  = W.find_nodes(unit_node.me, rdfs.label.me, None).get_first().as_string()
-                unit_dict['render'] = W.find_nodes(unit_node.me, units.render.me, None).get_first().as_string()
-                unit_dict['symbol'] = W.find_nodes(unit_node.me, units.symbol.me, None).get_first().as_string()
-
-            d['unit'] = unit_dict
-        return d
-
     def has_modgui(self):
-        return self._modgui is not None and self._modgui.me is not None
+        return bool(self.data['gui'])
 
     def save_json(self, directory):
         import json
