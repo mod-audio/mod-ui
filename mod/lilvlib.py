@@ -425,6 +425,8 @@ def get_plugin_info(world, plugin):
     rdf     = NS(world, lilv.LILV_NS_RDF)
     rdfs    = NS(world, lilv.LILV_NS_RDFS)
     lv2core = NS(world, lilv.LILV_NS_LV2)
+    atom    = NS(world, "http://lv2plug.in/ns/ext/atom#")
+    midi    = NS(world, "http://lv2plug.in/ns/ext/midi#")
     pprops  = NS(world, "http://lv2plug.in/ns/ext/port-props#")
     units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
     modgui  = NS(world, "http://portalmod.com/ns/modgui#")
@@ -433,6 +435,28 @@ def get_plugin_info(world, plugin):
     microver  = plugin.get_value(lv2core.microVersion).get_first()
     minorver  = plugin.get_value(lv2core.minorVersion).get_first()
     bundle    = lilv.lilv_uri_to_path(bundleuri)
+
+    # --------------------------------------------------------------------------------------------------------
+    # author
+
+    author = {
+        'name'    :  plugin.get_author_name().as_string() or "",
+        'homepage':  plugin.get_author_homepage().as_string() or "",
+        'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
+    }
+
+    authordata = plugin.get_value(doap.maintainer).get_first()
+
+    if authordata.me is None:
+        authordata = plugin.get_value(doap.developer).get_first()
+
+    if authordata.me is not None:
+        shortname = world.find_nodes(authordata.me, doap.shortname.me, None).get_first()
+        if shortname.me is not None:
+            author['shortname'] = shortname.as_string()
+        del shortname
+
+    del authordata
 
     # --------------------------------------------------------------------------------------------------------
     # get the proper modgui
@@ -616,14 +640,20 @@ def get_plugin_info(world, plugin):
 
     index = 0
     ports = {
-        'audio':   { 'input': [], 'output': [] },
-        'control': { 'input': [], 'output': [] }
+        'audio'  : { 'input': [], 'output': [] },
+        'control': { 'input': [], 'output': [] },
+        'midi'   : { 'input': [], 'output': [] }
     }
 
     # function for filling port info
     def fill_port_info(port):
         # port types
         types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
+
+        if "Atom" in types \
+            and port.supports_event(midi.MidiEvent.me) \
+            and lilv.Nodes(port.get_value(atom.bufferType.me)).get_first() == atom.Sequence:
+                types.append("MIDI")
 
         # port value ranges
         ranges = {}
@@ -708,18 +738,15 @@ def get_plugin_info(world, plugin):
     return {
         'name': plugin.get_name().as_string() or "",
         'uri' : plugin.get_uri().as_string(),
-        'author': {
-            'name'    : plugin.get_author_name().as_string() or "",
-            'homepage': plugin.get_author_homepage().as_string() or "",
-            'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
-        },
 
-        'ports': ports,
-        'gui'  : gui,
+        'author': author,
+        'gui'   : gui,
+        'ports' : ports,
 
-        'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string() or ""),
-        'category': get_category(plugin.get_value(rdf.type_)),
-        'license' : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
+        'binary'   : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string() or ""),
+        'category' : get_category(plugin.get_value(rdf.type_)),
+        'license'  : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
+        'shortname': plugin.get_value(doap.shortname).get_first().as_string() or "",
 
         'description'  : plugin.get_value(rdfs.comment).get_first().as_string() or "",
         'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
