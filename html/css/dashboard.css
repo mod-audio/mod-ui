@@ -959,14 +959,18 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     z-index: 1000;
     transition: all 0.3s;
     width: 100%;
+/*
     pointer-events: none;
     touch-callout: none;
     user-select: none;
     user-drag: none;
+*/
+/*
     -webkit-pointer-events: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
+*/
 }
 .preset-manager.active {
     background: rgba(0, 0, 0, 0.5);
@@ -1025,8 +1029,8 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background-color: transparent;
     background-position: 0% 50%;
     background-repeat: no-repeat;
-    height: 0px;
-    line-height: 0px;
+    height: 3em;
+    line-height: 3em;
     padding: 0 10px 0 42px;
     color: white;
     cursor: pointer;
@@ -1037,9 +1041,12 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     transition: all 0.3s;
     min-width: 40px;
 }
-.preset-manager .preset-manager-button:hover,
-.preset-manager .preset-manager-button.prelight {
+.preset-manager .preset-manager-button:hover {
     background-color: rgba(255, 255, 255, 0.2);
+    opacity: 1;
+}
+.preset-manager .preset-manager-button.prelight {
+    background-color: rgba(255, 0, 0, 0.25);
     opacity: 1;
 }
 .preset-manager.active .preset-manager-button {

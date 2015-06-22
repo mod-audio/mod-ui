@@ -14,16 +14,18 @@ JqueryClass("presetManager", {
         e.bind  = self.find(".preset-manager-button.preset-manager-bind");
         e.list  = self.find(".preset-manager-list");
         
+        e.save.confirmButton({action: function (e) { self.presetManager("saveClicked", self, e); }});
+        
         e.entry.click(function (e) { self.presetManager("entryClicked", self, e); });
         e.entry.keyup(function (e) { self.presetManager("entryKeyup", self, e); });
         e.load.click(function (e) { self.presetManager("loadClicked", self, e); });
-        e.save.click(function (e) { self.presetManager("saveClicked", self, e); });
+        //e.save.click(function (e) { self.presetManager("saveClicked", self, e); });
         e.bind.click(function (e) { self.presetManager("bindClicked", self, e); });
         
         self.addClass("preset-manager");
         
         options.elements = e;
-        self.data(options);
+        self.data("options", options);
         
         self.presetManager("setPresetTitle", "");
         self.presetManager("loadPresets");
@@ -119,7 +121,6 @@ JqueryClass("presetManager", {
     
     saveClicked: function(self, e) {
         console.log("save");
-        e.stopPropagation();
     },
     
     bindClicked: function(self, e) {
