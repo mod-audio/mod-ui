@@ -251,7 +251,6 @@ JqueryClass('effectBox', {
         if (container.length == 0)
             return
         var plugin = self.data('plugins')[index]
-        plugin.urle = escape(plugin.url)
 
         var rendered = $(Mustache.render(TEMPLATES.plugin, plugin))
 
@@ -347,7 +346,7 @@ JqueryClass('effectBox', {
             if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
                 self.effectBox('getRating', plugin, info.find('.js-rate'))
 
-            self.effectBox('getReviews', plugin.url, info, function () {
+            self.effectBox('getReviews', plugin.uri, info, function () {
 
                 var title = info.find('input[name=title]')
                 var comment = info.find('textarea[name=comment]')
@@ -362,14 +361,14 @@ JqueryClass('effectBox', {
                                 data: JSON.stringify({
                                     'title': title.val(),
                                     'comment': comment.val(),
-                                    'url': plugin.url,
+                                    'uri': plugin.uri,
                                     'version': version(plugin.latestVersion)
                                 }),
                                 success: function (res) {
                                     if (res.ok) {
                                         title.val('')
                                         comment.val('')
-                                        self.effectBox('getReviews', plugin.url, info)
+                                        self.effectBox('getReviews', plugin.uri, info)
                                     } else {
                                         alert(res.error)
                                     }
@@ -397,7 +396,7 @@ JqueryClass('effectBox', {
             $.ajax({
                 url: SITEURL + '/effect/get/',
                 data: {
-                    url: plugin.url
+                    uri: plugin.uri
                 },
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion,
@@ -423,12 +422,12 @@ JqueryClass('effectBox', {
         self.data('info', info)
     },
 
-    getReviews: function (url, info, callback) {
+    getReviews: function (uri, info, callback) {
         var self = $(this)
         $.ajax({
             url: SITEURL + '/effect/reviews/',
             data: {
-                url: url
+                uri: uri
             },
             success: function (comments) {
                 var classes = ['', 'one', 'two', 'three', 'four', 'five']
@@ -468,7 +467,7 @@ JqueryClass('effectBox', {
             $.ajax({
                 url: SITEURL + '/effect/rate/' + userSession.sid,
                 data: JSON.stringify({
-                    url: plugin.url,
+                    uri: plugin.uri,
                     version: plugin.latestVersion,
                     rating: rating
                 }),
@@ -496,7 +495,7 @@ JqueryClass('effectBox', {
         $.ajax({
             url: SITEURL + '/effect/rate/' + userSession.sid + '/mine',
             data: {
-                url: plugin.url
+                uri: plugin.uri
             },
             success: function (rating) {
                 setRate(rating)
@@ -659,7 +658,7 @@ JqueryClass('cloudPluginBox', {
         });
     },
     searchAll: function (query) {
-        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by url.
+        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
 	   Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
 	   All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
 	 */
@@ -672,12 +671,12 @@ JqueryClass('cloudPluginBox', {
             for (i in results.cloud) {
                 plugin = results.cloud[i]
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                if (results.local[plugin.url]) {
-                    plugin.installedVersion = [results.local[plugin.url].minorVersion,
-                        results.local[plugin.url].microVersion,
-                        results.local[plugin.url].release || 0
+                if (results.local[plugin.uri]) {
+                    plugin.installedVersion = [results.local[plugin.uri].minorVersion,
+                        results.local[plugin.uri].microVersion,
+                        results.local[plugin.uri].release || 0
                     ]
-                    delete results.local[plugin.url]
+                    delete results.local[plugin.uri]
                 }
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
@@ -688,8 +687,8 @@ JqueryClass('cloudPluginBox', {
                 }
                 plugins.push(plugin)
             }
-            for (url in results.local) {
-                plugin = results.local[url]
+            for (uri in results.local) {
+                plugin = results.local[uri]
                 plugin.installedVersion = [plugin.minorVersion,
                     plugin.microVersion,
                     plugin.release || 0
@@ -709,7 +708,7 @@ JqueryClass('cloudPluginBox', {
             'success': function (plugins) {
                 results.local = {}
                 for (i in plugins)
-                    results.local[plugins[i].url] = plugins[i]
+                    results.local[plugins[i].uri] = plugins[i]
                 if (results.cloud != null)
                     renderResults()
             },
@@ -730,7 +729,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     searchNotInstalled: function (query) {
-        /* Get an array of plugins from cloud and a dict of installed plugins by url.
+        /* Get an array of plugins from cloud and a dict of installed plugins by uri.
 	   Show only those plugins not installed
 	 */
         var self = $(this)
@@ -744,7 +743,7 @@ JqueryClass('cloudPluginBox', {
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
                 plugin.status = 'blocked'
                 plugin.source = SITEURL.replace(/api\/?$/, '')
-                if (!results.local[plugin.url]) {
+                if (!results.local[plugin.uri]) {
                     plugins.push(plugin)
                 }
             }
@@ -760,7 +759,7 @@ JqueryClass('cloudPluginBox', {
             'success': function (plugins) {
                 results.local = {}
                 for (i in plugins)
-                    results.local[plugins[i].url] = plugins[i]
+                    results.local[plugins[i].uri] = plugins[i]
                 if (results.cloud != null)
                     renderResults()
             },
@@ -859,9 +858,9 @@ JqueryClass('cloudPluginBox', {
 
     showPluginInfo: function (plugin) {
         var self = $(this)
-        var urle = escape(plugin.url)
-        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
-        var screenshot_href = plugin.screenshot_href ? plugin.screenshot_href : "/effect/image/screenshot.png?url=" + urle
+        var uri = escape(plugin.uri)
+        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?uri=" + uri
+        var screenshot_href = plugin.screenshot_href ? plugin.screenshot_href : "/effect/image/screenshot.png?uri=" + uri
 
         var plugin_data = {
             thumbnail_href: thumbnail_href,
@@ -870,7 +869,7 @@ JqueryClass('cloudPluginBox', {
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: "TODO",//plugin.package.replace(/\.lv2$/, ''),
-            urle: urle,
+            uri: uri,
             status: plugin.status,
             author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
             label: plugin.label || plugin.name
@@ -932,7 +931,7 @@ JqueryClass('cloudPluginBox', {
             $.ajax({
                 url: SITEURLNEW + "/lv2/plugins",
                 data: {
-                    url: plugin.url
+                    uri: plugin.uri
                 },
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion,
@@ -961,12 +960,12 @@ JqueryClass('cloudPluginBox', {
     render: function (plugin, canvas) {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
-        var urle = escape(plugin.url)
-        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
+        var uri = escape(plugin.uri)
+        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?uri=" + uri
         var plugin_data = {
             id: plugin.id || plugin._id,
             thumbnail_href: thumbnail_href,
-            urle: urle,
+            uri: uri,
             status: plugin.status,
             author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
             label: plugin.label || plugin.name

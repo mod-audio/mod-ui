@@ -471,8 +471,8 @@ class Session(object):
         #self.browser.send(instance_id, port_id, value)
         self.parameter_set(instance_id, port_id, value, callback)
 
-    def preset_load(self, instance_id, url, callback):
-        self.host.preset_load(instance_id, url, callback)
+    def preset_load(self, instance_id, uri, callback):
+        self.host.preset_load(instance_id, uri, callback)
 
     def parameter_set(self, port, value, callback, loaded=False):
         if port == ":bypass":

@@ -181,7 +181,7 @@ JqueryClass('pedalboard', {
             },
         })
         self.data('background', bg)
-        
+
         // Create a blank SVG containing some fancy f/x for later use
         self.svg({ onLoad: function (svg) {
             var _svg = svg._svg;
@@ -198,7 +198,7 @@ JqueryClass('pedalboard', {
                 defs.appendChild(filter);
             }
         }});
-        
+
         // Dragging the pedalboard move the view area
         self.mousedown(function (e) {
                 self.pedalboard('drag', e)
@@ -341,7 +341,7 @@ JqueryClass('pedalboard', {
             delete preset[':bypass']
             pluginData = {
                 instance: instance,
-                url: plugin.data('url'),
+                uri: plugin.data('uri'),
                 x: (plugin.offset().left - self.offset().left) / scale,
                 y: (plugin.offset().top - self.offset().top) / scale,
                 preset: preset,
@@ -1168,7 +1168,7 @@ JqueryClass('pedalboard', {
 
             self.trigger('modified')
 
-            icon.data('url', pluginData.url)
+            icon.data('uri', pluginData.uri)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
             icon.data('instance', instance)
@@ -1446,7 +1446,7 @@ JqueryClass('pedalboard', {
     spawnJack: function (output) {
         var self = $(this)
         var jack = $('<div>').appendTo(output)
-        
+
         jack.attr('mod-role', 'output-jack')
         jack.addClass('mod-output-jack')
         jack.addClass('jack-disconnected')
@@ -1463,12 +1463,12 @@ JqueryClass('pedalboard', {
         // The cable is composed by three lines with different style: one for the cable,
         // one for the background shadow and one for the reflecting light.
         var canvas = $('<div>');
-        
+
         if (output.attr("class").search("mod-audio-") >= 0)
             canvas.addClass("mod-audio");
         else if (output.attr("class").search("mod-midi-") >= 0)
             canvas.addClass("mod-midi");
-            
+
         canvas.css({
             width: '100%',
             height: '100%',

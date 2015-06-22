@@ -41,7 +41,7 @@ function InstallationQueue() {
         }
 
         $.ajax({
-            'url': SITEURLNEW + '/lv2/plugins?url=' + escape(effectUrl),
+            'url': SITEURLNEW + '/lv2/plugins?uri=' + escape(effectUrl),
             'success': function (effects) {
                 if (effects.length == 0) {
                     new Notification('error', sprintf("Can't find effect %s to install", effectUrl))

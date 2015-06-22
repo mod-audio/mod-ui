@@ -152,7 +152,7 @@ class EffectIndex(Index):
     data_source = EFFECT_DIR
 
     schema = Schema(id=ID(unique=True, stored=True),
-                    url=ID(stored=True),
+                    uri=ID(stored=True),
                     name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
                     brand=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
                     label=NGRAMWORDS(minsize=2, maxsize=4, stored=True),

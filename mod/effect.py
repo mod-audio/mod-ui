@@ -64,14 +64,14 @@ def install_all_bundles():
         #effects += []
     return effects
 
-def remove_old_version(url):
+def remove_old_version(uri):
     """
     This will remove old version of a plugin, although it does not remove the
     ttls and binary.
     TODO: we need to keep track of effect binaries and ttls for cleaning
     """
     index = indexing.EffectIndex()
-    for effect in index.find(url=url):
+    for effect in index.find(uri=uri):
         if index.delete(effect['id']):
             path = join(EFFECT_DIR, effect['id'])
             # File is supposed to always be there,

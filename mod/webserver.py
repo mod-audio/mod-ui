@@ -21,6 +21,7 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
+import lilv
 import time, uuid
 from datetime import timedelta
 from io import StringIO
@@ -57,13 +58,54 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
+from mod.lilvlib import get_pedalboard_info, get_pedalboard_name, get_plugin_info
 from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
+
+global cached_plugins
+cached_plugins = {}
+
+def refresh_world():
+    bundles = []
+    plugins = {}
+
+    world = lilv.World()
+    world.load_all()
+
+    for p in world.get_all_plugins():
+        info   = get_plugin_info(world, p)
+        bnodes = lilv.lilv_plugin_get_data_uris(p.me)
+
+        it = lilv.lilv_nodes_begin(bnodes)
+        while not lilv.lilv_nodes_is_end(bnodes, it):
+            bundle = lilv.lilv_nodes_get(bnodes, it)
+            it     = lilv.lilv_nodes_next(bnodes, it)
+
+            if bundle is None:
+                continue
+            if not lilv.lilv_node_is_uri(bundle):
+                continue
+
+            bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+
+            if not bundle.endswith(os.sep):
+                bundle += os.sep
+
+            if bundle not in bundles:
+                bundles.append(bundle)
+
+        plugins[info['uri']] = info
+
+    del world
+
+    global cached_plugins
+    cached_plugins = plugins
+
+    return bundles
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -166,13 +208,13 @@ class EffectInstaller(SimpleFileReceiver):
             callback()
         install_bundle(data['filename'], on_finish)
 
-class EffectSetLocalVariable(web.RequestHandler):
-    def post(self, var):
-        url = self.get_argument('url')
-        value = self.get_argument(var)
-        index = indexing.EffectIndex()
-        objid = next(index.find(url=url))['id']
-        index.save_local_variable(objid, var, value)
+#class EffectSetLocalVariable(web.RequestHandler):
+    #def post(self, var):
+        #uri = self.get_argument('uri')
+        #value = self.get_argument(var)
+        #index = indexing.EffectIndex()
+        #objid = next(index.find(uri=uri))['id']
+        #index.save_local_variable(objid, var, value)
 
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
@@ -290,52 +332,63 @@ class Searcher(tornado.web.RequestHandler):
             return None
 
 class EffectSearcher(Searcher):
-    index = indexing.EffectIndex()
+    index = None
 
-    def get_by_url(self):
-        try:
-            url = self.request.arguments['url'][0]
-        except (KeyError, IndexError):
-            try:
-                url = self.request.arguments['uri']
-            except (KeyError, IndexError):
-                raise tornado.web.HTTPError(404)
+    def list(self):
+        if len(cached_plugins) == 0:
+            refresh_world()
 
-        search = self.index.find(url=url)
-        try:
-            entry = next(search)
-        except StopIteration:
-            raise tornado.web.HTTPError(404)
+        global cached_plugins
+        return cached_plugins
 
-        return entry['id']
+    #index = indexing.EffectIndex()
 
-    def get(self, action, objid=None):
-        if action == 'get' and objid is None:
-            objid = self.get_by_url()
+    #def get_by_uri(self):
+        #try:
+            #uri = self.request.arguments['uri'][0]
+        #except (KeyError, IndexError):
+            #try:
+                #uri = self.request.arguments['uri']
+            #except (KeyError, IndexError):
+                #raise tornado.web.HTTPError(404)
 
-        super(EffectSearcher, self).get(action, objid)
+        #search = self.index.find(uri=uri)
+        #try:
+            #entry = next(search)
+        #except StopIteration:
+            #raise tornado.web.HTTPError(404)
+
+        #return entry['id']
+
+    #def get(self, action, objid=None):
+        #if action == 'get' and objid is None:
+            #objid = self.get_by_uri()
+
+        #super(EffectSearcher, self).get(action, objid)
 
 class EffectBulkData(EffectSearcher):
     "Gets data of several plugins"
-    def get_effect(self, url):
-        "return true if an effect is installed"
-        search = self.index.find(url=url)
-        try:
-            entry = next(search)
-        except StopIteration:
-            return False
-        try:
-            return self.get_object(entry['id'])
-        except:
-            return None
+    #def get_effect(self, uri):
+        #refresh_world()
+
+        #"return true if an effect is installed"
+        #try:
+            #global cached_plugins
+            #data = cached_plugins[uri]
+        #except:
+            #return None
+
+        #return data
 
     def post(self):
-        urls = self.json_args
+        global cached_plugins
+        if len(cached_plugins) == 0:
+            refresh_world()
+            #data = cached_plugins[uri]
+        uris = self.json_args
         result = {}
-        for url in urls:
-            effect = self.get_effect(url)
-            if effect:
-                result[url] = effect
+        for uri in uris:
+            result[uri] = uri in cached_plugins
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
@@ -358,27 +411,27 @@ class SDKEffectInstaller(EffectInstaller):
 
 # TODO this is an obsolete implementation that does not work in new lv2 specs.
 # it's here for us to remember this should be reimplemented
-class SDKEffectScript(EffectSearcher):
-    def get(self, objid=None):
-        if objid is None:
-            objid = self.get_by_url()
+#class SDKEffectScript(EffectSearcher):
+    #def get(self, objid=None):
+        #if objid is None:
+            #objid = self.get_by_uri()
 
-        try:
-            options = self.get_object(objid)
-        except:
-            raise web.HTTPError(404)
+        #try:
+            #options = self.get_object(objid)
+        #except:
+            #raise web.HTTPError(404)
 
-        try:
-            path = options['configurationFeedback']
-        except KeyError:
-            raise web.HTTPError(404)
+        #try:
+            #path = options['configurationFeedback']
+        #except KeyError:
+            #raise web.HTTPError(404)
 
-        path = path.split(options['package']+'/')[-1]
-        path = os.path.join(PLUGIN_LIBRARY_DIR, options['package'], path)
+        #path = path.split(options['package']+'/')[-1]
+        #path = os.path.join(PLUGIN_LIBRARY_DIR, options['package'], path)
 
-        self.write(open(path, 'rb').read())
+        #self.write(open(path, 'rb').read())
 
-class EffectResource(web.StaticFileHandler, EffectSearcher):
+class EffectResource(web.StaticFileHandler):
 
     def initialize(self):
         # Overrides StaticFileHandler initialize
@@ -386,61 +439,69 @@ class EffectResource(web.StaticFileHandler, EffectSearcher):
 
     def get(self, path):
         try:
-            objid = self.get_by_url()
-
-            try:
-                options = self.get_object(objid)
-            except:
-                raise web.HTTPError(404)
-
-            try:
-                document_root = options['gui']['resourcesDirectory']
-            except:
-                raise web.HTTPError(404)
-
-            super(EffectResource, self).initialize(document_root)
-            super(EffectResource, self).get(path)
-
-        except web.HTTPError as e:
-            if e.status_code != 404:
-                raise e
-            super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
-            super(EffectResource, self).get(path)
-
-class EffectImage(EffectSearcher):
-    def get(self, prop):
-        objid = self.get_by_url()
+            uri = self.get_argument('uri')
+        except:
+            return self.shared_resource(path)
 
         try:
-            options = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
         try:
-            path = options['gui'][prop]
+            root = data['gui']['resourcesDirectory']
         except:
-            try:
-                path = DEFAULT_ICON_IMAGE[prop]
-            except:
-                raise web.HTTPError(404)
+            raise web.HTTPError(404)
+
+        try:
+            super(EffectResource, self).initialize(root)
+            super(EffectResource, self).get(path)
+        except web.HTTPError as e:
+            if e.status_code != 404:
+                raise e
+            self.shared_resource(path)
+        except IOError:
+            raise web.HTTPError(404)
+
+    def shared_resource(self, path):
+        super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
+        super(EffectResource, self).get(path)
+
+class EffectImage(web.RequestHandler):
+    def get(self, image):
+        uri = self.get_argument('uri')
+
+        try:
+            global cached_plugins
+            data = cached_plugins[uri]
+        except:
+            raise web.HTTPError(404)
+
+        try:
+            path = data['gui'][image]
+        except:
+            raise web.HTTPError(404)
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
-        self.set_header('Content-Type', 'image/png')
-        self.write(open(path, 'rb').read())
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'image/png')
+            self.write(fd.read())
 
-class EffectStylesheet(EffectSearcher):
+class EffectStylesheet(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            effect = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
         try:
-            path = effect['gui']['stylesheet']
+            path = data['gui']['stylesheet']
         except:
             raise web.HTTPError(404)
 
@@ -449,23 +510,24 @@ class EffectStylesheet(EffectSearcher):
 
         with open(path, 'rb') as fd:
             content = fd.read()
-            context = { 'ns' : '?uri=%s' % effect['uri'],
-                        'cns': '_%s' % effect['uri'].replace("/","_").replace("%","_").replace(".","_") }
+            context = { 'ns' : '?uri=%s' % data['uri'],
+                        'cns': '_%s' % data['uri'].replace("/","_").replace("%","_").replace(".","_") }
 
             self.set_header('Content-type', 'text/css')
             self.write(pystache.render(content, context))
 
-class EffectJavascript(EffectSearcher):
+class EffectJavascript(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            effect = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
         try:
-            path = effect['gui']['javascript']
+            path = data['gui']['javascript']
         except:
             raise web.HTTPError(404)
 
@@ -480,7 +542,7 @@ class EffectAdd(EffectSearcher):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        objid = self.get_by_url()
+        objid = self.get_by_uri()
 
         try:
             options = self.get_object(objid)
@@ -488,7 +550,7 @@ class EffectAdd(EffectSearcher):
             raise web.HTTPError(404)
         x = self.request.arguments.get('x', [0])[0]
         y = self.request.arguments.get('y', [0])[0]
-        res = yield gen.Task(SESSION.add, options['url'], instance, x, y)
+        res = yield gen.Task(SESSION.add, options['uri'], instance, x, y)
         if self.request.connection.stream.closed():
             return
         if res >= 0:
@@ -502,29 +564,18 @@ class EffectAdd(EffectSearcher):
             self.write(json.dumps(False))
         self.finish()
 
-
-class EffectGet(EffectSearcher):
-    @web.asynchronous
-    @gen.engine
+class EffectGet(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            options = self.get_object(objid)
-            presets = []
-            for k,preset in options['presets'].items():
-                presets.append({'label': preset['label'],
-                                'uri': preset['uri']})
-            options['presets'] = presets
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
-        if self.request.connection.stream.closed():
-            return
-
-        self.write(json.dumps(options, default=json_handler))
-        self.finish()
-
+        self.set_header('Content-type', 'application/json')
+        self.write(json.dumps(data))
 
 class EffectRemove(web.RequestHandler):
     @web.asynchronous
@@ -1061,7 +1112,7 @@ class TemplateHandler(web.RequestHandler):
             else:
                 data += b','
 
-            msg = '{ "url": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
+            msg = '{ "uri": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
             print(msg)
             data += bytes(msg, "utf-8")
 
@@ -1367,7 +1418,7 @@ application = web.Application(
             (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/gui.js", EffectJavascript),
             (r"/effect/position/([A-Za-z0-9_/]+[^/])/?", EffectPosition),
-            (r"/effect/set/(release)/?", EffectSetLocalVariable),
+            #(r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
@@ -1403,7 +1454,7 @@ application = web.Application(
 
             (r"/sdk/sysupdate/?", SDKSysUpdate),
             (r"/sdk/install/?", SDKEffectInstaller),
-            (r"/sdk/get_config_script/?", SDKEffectScript),
+            #(r"/sdk/get_config_script/?", SDKEffectScript),
 
             (r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
             (r"/register/finish/?", RegistrationFinish),
