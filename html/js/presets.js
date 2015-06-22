@@ -24,20 +24,21 @@ JqueryClass("presetManager", {
         
         self.addClass("preset-manager");
         
-        options.elements = e;
         self.data("options", options);
+        self.data("elements", e);
         
         self.presetManager("setPresetTitle", "");
-        self.presetManager("loadPresets");
+        self.presetManager("setPresets", options.presets);
+        //self.presetManager("loadPresets");
     },
     
-    loadPresets: function () {
-        var self = $(this);
-        self.presetManager("clearPresets");
-        self.presetManager("callBackend", self.data("listURL"),
-            function (o) { self.presetManager("addPresets", o); } 
-        );
-    },
+    //loadPresets: function () {
+        //var self = $(this);
+        //self.presetManager("clearPresets");
+        //self.presetManager("callBackend", self.data("listURL"),
+            //function (o) { self.presetManager("addPresets", o); } 
+        //);
+    //},
     
     clearPresets: function () {
         var self = $(this);
@@ -49,13 +50,19 @@ JqueryClass("presetManager", {
         for (p in presets) {
             var li = $("<li>");
             li.presetEntry({
-                title: presets[p].metadata.title,
-                parent: self.data("elements").list,
+                title: presets[p].name,
                 clickPreset: function (e) { },
                 bindPreset: function (self, e) { },
                 removePreset: function (self, e) { },
             });
+            li.appendTo(self.data("elements").list);
         }
+    },
+    
+    setPresets: function (presets) {
+        var self = $(this);
+        self.presetManager("clearPresets");
+        self.presetManager("addPresets", presets);
     },
     
     presetClicked: function (prs, e) {
@@ -134,7 +141,6 @@ JqueryClass("presetEntry", {
         var self = $(this);
         $.extend({
             title: "untitled",
-            parent: $("<ul class=preset-manager-list>"),
             bind: "",
             clickPreset: function (e) { },
             bindPreset: function (self, e) { },
@@ -148,16 +154,17 @@ JqueryClass("presetEntry", {
         e.bind        = self.find(".preset-manager-button.preset-manager-bind");
         e.remove      = self.find(".preset-manager-button.preset-manager-clear");
         
-        self.addClass("preset-manager-preset").appendTo(options.parent);
-        
         self.click(options.clickPreset);
         e.bind.click( function (e) { options.bindPreset(self, e); });
         e.remove.click( function (e) {
             options.removePreset(self, e);
             self.remove();
         });
-        options.elements = e;
-        self.data(options);
+        
+        self.addClass("preset-manager-preset");
+        
+        self.data("options", options);
+        self.data("elements", e);
         
         self.presetEntry("setBind", options.bind);
         self.presetEntry("setTitle", options.title);

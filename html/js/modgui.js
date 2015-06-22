@@ -955,8 +955,9 @@ JqueryClass('confirmButton', {
     init: function (options) {
         var self = $(this);
         options = $.extend({
-            confirm: "Shure?",
+            confirm: true,
             action: function (e) { },
+            question: "Shure?"
         }, options);
         self.data("options", options);
         self.click(function (e) { self.confirmButton("clicked", e); });
@@ -966,9 +967,9 @@ JqueryClass('confirmButton', {
     clicked: function (e) {
         var self = $(this);
         var options = self.data("options");
-        if (!self.hasClass("prelight")) {
+        if (!self.hasClass("prelight") && options.confirm) {
             options.text = self.text();
-            self.addClass("prelight").text(options.confirm);
+            self.addClass("prelight").text(options.question);
             $("body").one("click", function () {
                 self.removeClass("prelight").text(options.text);
             });

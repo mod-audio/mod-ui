@@ -958,7 +958,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     left: 0;
     z-index: 1000;
     transition: all 0.3s;
-    width: 100%;
 /*
     pointer-events: none;
     touch-callout: none;
@@ -982,7 +981,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     -webkit-touch-callout: auto;
     -webkit-user-select: auto;
     -webkit-user-drag: auto;
-    height: 100%;
 }
 .preset-manager .preset-manager-entry {
     background: none;
@@ -1039,7 +1037,9 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     overflow: hidden;
     opacity: 0.8;
     transition: all 0.3s;
-    min-width: 40px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
 }
 .preset-manager .preset-manager-button:hover {
     background-color: rgba(255, 255, 255, 0.2);
@@ -1083,7 +1083,9 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 .preset-manager .preset-manager-list {
+/*
     height: 0px;
+*/
     overflow: hidden;
     margin: 0;
     padding: 0;
@@ -1105,16 +1107,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     display: block; 
     height: 0; 
     clear: both;
-}
-.preset-manager .preset-manager-preset .preset-manager-preset-icon {
-    float: left;
-    width: 60px;
-    height: auto;
-    transition: all 0.3s;
-    margin-right: 10px;
-}
-.preset-manager .preset-manager-preset:hover .preset-manager-preset-icon {
-    width: 120px;
 }
 .preset-manager .preset-manager-preset .preset-manager-preset-title {
     color: white;
