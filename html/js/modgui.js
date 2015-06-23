@@ -54,6 +54,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
         cssLoaded = false
         var cssUrl = baseUrl + '/effect/stylesheet.css?uri=' + escape(effect.uri)
         $.get(cssUrl, function (data) {
+              data = Mustache.render(data, {
+                         ns : '?uri=' + escape(effect.uri),
+                         cns: '_' + escape(effect.uri).split("/").join("_").split("%").join("_").split(".").join("_")
+                     })
             $('<style type="text/css">').text(data).appendTo($('head'))
             loadedCSSs[effect.uri] = true
             cssLoaded = true

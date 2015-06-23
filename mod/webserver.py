@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, re, shutil, sys, pystache
+import os, re, shutil, sys
 import json, socket
 import tornado.ioloop
 import tornado.options
@@ -47,7 +47,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB,
                           PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP,
-                          )
+                          MODGUIS_ONLY)
 
 
 from mod import indexing, jsoncall, json_handler, symbolify
@@ -78,7 +78,7 @@ def refresh_world():
     for p in world.get_all_plugins():
         info = get_plugin_info(world, p)
 
-        if not info['gui']:
+        if MODGUIS_ONLY and not info['gui']:
             continue
 
         plugins[info['uri']] = info
@@ -494,12 +494,8 @@ class EffectStylesheet(web.RequestHandler):
             raise web.HTTPError(404)
 
         with open(path, 'rb') as fd:
-            content = fd.read()
-            context = { 'ns' : '?uri=%s' % data['uri'],
-                        'cns': '_%s' % data['uri'].replace("/","_").replace("%","_").replace(".","_") }
-
             self.set_header('Content-type', 'text/css')
-            self.write(pystache.render(content, context))
+            self.write(fd.read())
 
 class EffectJavascript(web.RequestHandler):
     def get(self):
