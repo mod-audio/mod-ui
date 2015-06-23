@@ -9,7 +9,6 @@ DATA_DIR = join(ROOT, 'dados')
 os.environ['MOD_DEV_ENVIRONMENT'] = os.environ.get("MOD_DEV_ENVIRONMENT", '1')
 os.environ['MOD_DATA_DIR'] = DATA_DIR
 os.environ['MOD_LOG'] = "1"
-os.environ['MOD_PLUGIN_LIBRARY_DIR'] = join(DATA_DIR, 'lib')
 os.environ['MOD_KEY_PATH'] = join(ROOT, 'keys')
 os.environ['MOD_HTML_DIR'] = join(ROOT, 'html')
 os.environ['MOD_DEVICE_WEBSERVER_PORT'] = '8888'
@@ -39,17 +38,17 @@ def make_screenshot(pedalboard, start_time, end_time, n=0):
     # FIXME
     open(join(PEDALBOARD__DIR, 'tmp'), 'w').write(json.dumps(pedalboard))
     path = 'shot.png'
-    proc = subprocess.Popen([ PHANTOM_BINARY, 
+    proc = subprocess.Popen([ PHANTOM_BINARY,
                               SCREENSHOT_JS,
                               'http://localhost:8888/pedalboard.html?uid=tmp',
                               path,
                               '%d' % width, '%d' % height
                               ])
     proc.wait()
-    
+
     img = Image.open(path)
     resize_image(img, width, height)
-    
+
     count = int((end_time - start_time ) * fps)
     template = 'frame_%d.png'
     img.save(template % n)

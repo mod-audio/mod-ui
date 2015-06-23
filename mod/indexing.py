@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,7 +24,6 @@ from whoosh.qparser import MultifieldParser
 from whoosh import sorting
 
 from mod import json_handler
-from mod.settings import INDEX_PATH, EFFECT_DIR
 
 class Index(object):
     @property
@@ -148,11 +147,11 @@ class Index(object):
         return count > 0
 
 class EffectIndex(Index):
-    index_path = INDEX_PATH
-    data_source = EFFECT_DIR
-    
+    index_path = None
+    data_source = None
+
     schema = Schema(id=ID(unique=True, stored=True),
-                    url=ID(stored=True),
+                    uri=ID(stored=True),
                     name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
                     brand=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
                     label=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
@@ -220,4 +219,3 @@ class EffectIndex(Index):
         #writer = self.index.writer()
         #writer.update_document(**data)
         #writer.commit()
-

@@ -86,7 +86,7 @@ $(document).ready(function () {
                                 if (plugins[instance] == null) {
                                     plugins[instance] = {} // register plugin
                                     $.ajax({
-                                        url: '/effect/get?url=' + escape(uri),
+                                        url: '/effect/get?uri=' + escape(uri),
                                         success: function (pluginData) {
                                             desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, parseInt(x), parseInt(y))
                                             $("#pedalboard-dashboard").arrive('[mod-instance="' + instance + '"]', function () {

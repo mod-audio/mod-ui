@@ -10,7 +10,7 @@ There are instructions for installing in a 64-bit Debian based Linux environment
 
 The following packages will be required::
 
-    $ sudo apt-get install python-virtualenv python3-pip python3-dev git zlib1g:amd64 build-essential
+    $ sudo apt-get install python-virtualenv python3-pip python3-dev git build-essential
 
 Start by cloning the repository::
 
@@ -21,10 +21,6 @@ Create a python virtualenv::
 
     $ virtualenv modui-env
     $ source modui-env/bin/activate
-
-Create the symlink below, that is required by PIL for PNG support::
-
-    $ sudo ln -s /usr/lib/x86_64-linux-gnu/libz.so /usr/lib/
 
 Install python requirements::
 

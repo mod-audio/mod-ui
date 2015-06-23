@@ -169,7 +169,7 @@ JqueryClass('pedalboardBox', {
         var rendered = $(Mustache.render(template, pedalboard.metadata))
 
         var load = function () {
-            self.data('load')(pedalboard._id, function () {
+            self.data('load')(pedalboard.bundle, function () {
                 self.window('close')
             })
             return false

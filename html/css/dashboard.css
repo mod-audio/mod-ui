@@ -9,6 +9,7 @@
 }
 
 #pedalboard-dashboard {
+    background:#393939 url(../img/background.jpg) repeat;
     position: absolute;
     top: 35px;
     left: 0;
@@ -248,6 +249,159 @@
 }
 
 
+
+
+/* = CONNECTORS
+================================================ */
+
+/* AUDIO */
+
+.mod-audio-output .mod-output-jack {
+    background-image: url(../img/audio-jack-nconnect.png);
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    position: absolute;
+    width: 128px !important;
+    height: 56px;
+    cursor: pointer;
+}
+.mod-audio-output.output-connected .mod-output-jack {
+    background-image: url(../img/audio-jack.png);
+    background-size: 50%;
+    background-position: 100% 100%;
+    height: 70px;
+}
+.mod-audio-output .mod-output-jack.jack-connecting {
+    background-image: url(../img/audio-jack.png);
+    background-size: 100%;
+    height: 56px;
+}
+
+.mod-audio-output {
+    background-image: url(../img/audio-output.png);
+    background-repeat: no-repeat;
+    position: absolute;
+    width: 87px;
+    height: 56px;
+    left: 0px;
+    z-index: 90;
+}
+.mod-audio-output.output-connecting {
+    background-image: url(../img/audio-output-connected.png);
+}
+.mod-audio-output.output-connected {
+    background-image: url(../img/audio-output-connected.png);
+}
+
+
+.mod-audio-input .mod-output-jack {
+    width: 128px !important;
+    height: 56px;
+    cursor: pointer;
+}
+
+.mod-audio-input {
+    background-image: url(../img/audio-input.png);
+    background-repeat: no-repeat;
+    background-position: 50% 100%;
+    position: absolute;
+    width: 88px;
+    height: 56px;
+    right: 0px;
+    z-index: 90;
+}
+.mod-audio-input.input-connecting {
+    background-image: url(../img/audio-input-connecting.png);
+}
+.mod-audio-input.input-connecting-highlight {
+    background-image: url(../img/audio-input-connecting-highlight.png);
+}
+.mod-audio-input.input-connected {
+    background-image: url(../img/audio-input-connected.png);
+}
+.mod-audio-input.input-connected.input-connecting-highlight {
+    background-image: url(../img/audio-input-connected-highlight.png);
+}
+.mod-audio-input .mod-output-jack.jack-connecting {
+    background-image: url(../img/audio-jack.png);
+}
+
+/* MIDI */
+
+
+.mod-midi-output .mod-output-jack {
+    background-image: url(../img/midi-jack-nconnect.png);
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    position: absolute;
+    width: 78px !important;
+    height: 56px;
+    cursor: pointer;
+}
+.mod-midi-output.output-connected .mod-output-jack {
+    background-image: url(../img/midi-jack.png);
+    background-size: 50%;
+    background-position: 100% 100%;
+    height: 70px;
+}
+.mod-midi-output .mod-output-jack.jack-connecting {
+    background-image: url(../img/midi-jack.png);
+    background-size: 100%;
+    height: 56px;
+}
+
+.mod-midi-output {
+    background-image: url(../img/midi-output.png);
+    background-repeat: no-repeat;
+    position: absolute;
+    width: 78px;
+    height: 56px;
+    left: 0px;
+    z-index: 90;
+}
+.mod-midi-output.output-connecting {
+    background-image: url(../img/midi-output-connected.png);
+}
+.mod-midi-output.output-connected {
+    background-image: url(../img/midi-output-connected.png);
+}
+
+
+.mod-midi-input .mod-output-jack {
+    width: 78px !important;
+    height: 56px;
+    cursor: pointer;
+}
+
+.mod-midi-input {
+    background-image: url(../img/midi-input.png);
+    background-repeat: no-repeat;
+    background-position: 50% 100%;
+    position: absolute;
+    width: 76px;
+    height: 56px;
+    right: 0px;
+    z-index: 90;
+}
+.mod-midi-input.input-connecting {
+    background-image: url(../img/midi-input-connecting.png);
+}
+.mod-midi-input.input-connecting-highlight {
+    background-image: url(../img/midi-input-connecting-highlight.png);
+}
+.mod-midi-input.input-connected {
+    background-image: url(../img/midi-input-connected.png);
+}
+.mod-midi-input.input-connected.input-connecting-highlight {
+    background-image: url(../img/midi-input-connected-highlight.png);
+}
+.mod-midi-input .mod-output-jack.jack-connecting {
+    background-image: url(../img/midi-jack.png);
+}
+
+
+
+
 /* = JACK - HARDWARE AND PEDAL
 ================================================ */
 /*
@@ -258,66 +412,57 @@
 
 /* = HARDWARE - OUTPUT
 ================================================ */
+/*
 .hardware-output {
-    height:18px;
-    left:0px;
-    position:absolute;
-    width:0;
-    z-index:90;
+    background-image: url(../img/output.png);
+    background-repeat: no-repeat;
+    position: absolute;
+    height: 75px;
+    width: 116px;
+    left: 0px;
+    z-index: 90;
 }
-
+.hardware-output.output-connecting {
+    background-image: url(../img/output-connected.png);
+}
 .hardware-output .mod-output-jack {
-    background-image:url(../img/jack-p10.png);
-    background-position:center right;
-    background-repeat:no-repeat;
-    background-size:107px 56px;
-    cursor:pointer;
-    height:18px;
-    position:absolute;
-    width:83px;
+    cursor: pointer;
+    height: 75px;
+    width: 171px;
 }
-
-
-.hardware-output.mod-midi-output .mod-output-jack {
-    top: -15px;
-}
+*/
 
 /* = HARDWARE - INPUT
 ================================================ */
+/*
 .hardware-input {
     background-image:url(../img/input.png);
-    background-position:center right;
     background-repeat:no-repeat;
-    background-size:auto 56px;
-    height:56px;
+    height:75px;
     position:absolute;
-    width:56px;
+    width:117px;
     z-index:100;
 }
 
 .hardware-input.mod-input.mod-midi-input {
     background-image:url(../img/midi-input.png);
+    background-repeat:no-repeat !important;
+    height:75px;
+    width:101px;
 }
 
-.hardware-input.mod-midi-input.input-connected{
+.hardware-input.mod-midi-input.input-connected {
     background-image:url(../img/midi-input-connected.png) !important;
-    background-position:center right !important;
-    background-repeat:no-repeat !important;
-    background-size:auto 45px !important;
-    height:45px !important;
     position:absolute !important;
-    width:67px !important;
     z-index:100 !important;
 }
 
+.mod-input {
+    
+}
 
 .mod-input.input-connecting {
     background-image:url(../img/input-connecting.png) !important;
-    background-position:center right;
-    background-repeat:no-repeat;
-    background-size:auto 56px;
-    height:56px;
-    width:56px;
     z-index:100;
 }
 
@@ -336,35 +481,30 @@
 .mod-audio-output .jack-connecting,
 .mod-audio-input .jack-connecting {
     background-image:url(../img/jack-p10.png);
-    width:107px !important;
-    margin-left: -23px;
+    width:171px !important;
 }
 
 .hardware-input.input-connected {
     background-image:url(../img/input-connected.png);
-    background-position:center right;
-    background-repeat:no-repeat;
-    background-size:auto 56px;
 }
+*/
 
 /* = MIDI Input/Output
 ================================================ */
+/*
 .mod-midi-output .mod-output-jack,
 .mod-midi-input .mod-output-jack {
-    background-image:url(../img/midi-output-jack.png);
-    background-position:center right;
+    background-image:url(../img/midi-output.png);
     background-repeat:no-repeat;
-    background-size:81px 45px;
-    cursor:pointer;
-    height:45px !important;
     position:absolute;
-    width:81px;
+    cursor:pointer;
+    height:75px !important;
+    width:104px;
 }
 
 .mod-midi-output .jack-connecting,
 .mod-midi-input .jack-connecting {
-    background-image:url(../img/midi-output-jack.png) !important;
-    width: 83px !important;
+    background-image:url(../img/midi-output-connecting.png) !important;
 }
 
 .mod-midi-input .jack-connecting {
@@ -376,8 +516,8 @@
     background-position:center right;
     background-repeat:no-repeat;
     background-size:9px 45px;
-    height:45px;
     position:absolute;
+    height:45px;
     width:9px;
     z-index:100;
 }
@@ -387,9 +527,8 @@
     background-position:center right;
     background-repeat:no-repeat;
     background-size:9px 45px;
-    height:45px;
     position:absolute;
-    /*margin-top: 10px;*/
+    height:45px;
     width:9px;
     z-index:100;
 }
@@ -419,6 +558,7 @@
     width:67px !important;
     z-index:100 !important;
 }
+*/
 
 
 /* = PEDAL - dragging dummy icon
@@ -445,9 +585,37 @@
 
 /* = CABLE
 ================================================ */
-svg .shadow { fill:none; stroke:#000; stroke-width:10; z-index:0; }
-svg .cable { fill:none; stroke:#222; stroke-width:8; z-index:0; }
-svg .light { fill:none; stroke:#444; stroke-width:1; z-index:0; -webkit-transform: translateY(2px)}
+svg .shadow {
+    fill: none;
+    stroke: rgba(0,0,0,0.66);
+    stroke-width: 10;
+    z-index: -1;
+    -webkit-transform: translateY(1px);
+}
+svg .cable {
+    fill: none;
+    stroke: #81009A;
+    stroke-width: 7;
+    z-index: 0;
+}
+svg .light {
+    fill: none;
+    stroke: #B248B4;
+    stroke-width: 1.5;
+    z-index: 1;
+    -webkit-transform: translateY(1px);
+}
+
+.mod-midi svg .shadow {
+    stroke: rgba(0,0,0,0.66);
+}
+.mod-midi svg .cable {
+    stroke: #00546C;
+}
+.mod-midi svg .light {
+    stroke: #00A3C4;
+}
+
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
 svg .connecting-cable { fill: none; stroke: #0AA; stroke-width: 8; z-index: 1000; }
 svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000; -webkit-transform: translateY(2px) }
@@ -782,4 +950,3 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background-color: #292929;
     border-radius: 5px;
 }
-

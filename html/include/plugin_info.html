@@ -4,9 +4,9 @@
         <div class="row-fluid clearfix">
             <div class="span10 offset1 clearfix">
                 <div class="span3 screenshot">
-                    <img src="{{source}}/effect/image/screenshot.png?url={{urle}}">
+                    <img src="{{source}}/effect/image/screenshot.png?uri={{uri}}">
                 </div>
-                
+
                 <div class="span9">
                     <header>
                         <h1>{{title}}{{#subtitle}} - <span>{{subtitle}}</span>{{/subtitle}}</h1>
@@ -37,9 +37,9 @@
 			{{#ports.control.input}}
                         <tr>
                           <td>{{name}}</td>
-                          <td>{{default}}</td>
-                          <td>{{minimum}}</td>
-                          <td>{{maximum}}</td>
+                          <td>{{ranges.default}}</td>
+                          <td>{{ranges.minimum}}</td>
+                          <td>{{ranges.maximum}}</td>
                         </tr>
 			{{/ports.control.input}}
                       </table>
@@ -50,7 +50,7 @@
 		    <h1>Reviews</h1>
 		    <article class="review">
 		      <h1>
-			Rate this plugin: 
+			Rate this plugin:
 			<span class="rating js-rate">
 			  <div class="my-rate one"></div>
 			  <div class="my-rate two"></div>
@@ -60,7 +60,7 @@
 			</span>
 		      </h1>
 		    </article>
-		    <!-- 
+		    <!--
 			 <article class="review current-version">
 			   <h1>Average rating for the current version: <span class="rating five"></span> <span class="rating-label">26 Ratings</span></h1>
 			   <div class="detailed">

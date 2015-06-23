@@ -21,6 +21,7 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
+import lilv
 import time, uuid
 from datetime import timedelta
 from io import StringIO
@@ -35,12 +36,11 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
+from mod.settings import (HTML_DIR, CLOUD_PUB,
                           DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
-                          PLUGIN_INSTALLATION_TMP_DIR, DEFAULT_ICON_TEMPLATE,
-                          DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
+                          DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
@@ -57,13 +57,36 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_pedalboard_info
+from mod.lilvlib import get_pedalboard_info, get_pedalboard_name, get_plugin_info
 from mod.lv2 import get_pedalboards
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
+
+global cached_plugins
+cached_plugins = {}
+
+def refresh_world():
+    bundles = []
+    plugins = {}
+
+    world = lilv.World()
+    world.load_all()
+
+    for p in world.get_all_plugins():
+        info = get_plugin_info(world, p)
+
+        if not info['gui']:
+            continue
+
+        plugins[info['uri']] = info
+
+    del world
+
+    global cached_plugins
+    cached_plugins = plugins
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -158,7 +181,7 @@ class BluetoothSetPin(web.RequestHandler):
 
 class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
-    destination_dir = PLUGIN_INSTALLATION_TMP_DIR
+    destination_dir = DOWNLOAD_TMP_DIR
 
     def process_file(self, data, callback=lambda:None):
         def on_finish(result):
@@ -166,13 +189,13 @@ class EffectInstaller(SimpleFileReceiver):
             callback()
         install_bundle(data['filename'], on_finish)
 
-class EffectSetLocalVariable(web.RequestHandler):
-    def post(self, var):
-        url = self.get_argument('url')
-        value = self.get_argument(var)
-        index = indexing.EffectIndex()
-        objid = next(index.find(url=url))['id']
-        index.save_local_variable(objid, var, value)
+#class EffectSetLocalVariable(web.RequestHandler):
+    #def post(self, var):
+        #uri = self.get_argument('uri')
+        #value = self.get_argument(var)
+        #index = indexing.EffectIndex()
+        #objid = next(index.find(uri=uri))['id']
+        #index.save_local_variable(objid, var, value)
 
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
@@ -204,7 +227,7 @@ class SDKSysUpdate(web.RequestHandler):
         self.finish()
 
 # Abstract class
-class Searcher(tornado.web.RequestHandler):
+class Searcher(web.RequestHandler):
     @classmethod
     def urls(cls, path):
         return [
@@ -245,7 +268,7 @@ class Searcher(tornado.web.RequestHandler):
             try:
                 response = self.get_object(objid)
             except:
-                raise tornado.web.HTTPError(404)
+                raise web.HTTPError(404)
 
         if action == 'list':
             response = self.list()
@@ -290,49 +313,64 @@ class Searcher(tornado.web.RequestHandler):
             return None
 
 class EffectSearcher(Searcher):
-    index = indexing.EffectIndex()
+    index = None
 
-    def get_by_url(self):
-        try:
-            url = self.request.arguments['url'][0]
-        except (KeyError, IndexError):
-            raise tornado.web.HTTPError(404)
+    def list(self):
+        global cached_plugins
 
-        search = self.index.find(url=url)
-        try:
-            entry = next(search)
-        except StopIteration:
-            raise tornado.web.HTTPError(404)
+        if len(cached_plugins) == 0:
+            refresh_world()
 
-        return entry['id']
+        return list(cached_plugins.values())
 
-    def get(self, action, objid=None):
-        if action == 'get' and objid is None:
-            objid = self.get_by_url()
+    #index = indexing.EffectIndex()
 
-        super(EffectSearcher, self).get(action, objid)
+    #def get_by_uri(self):
+        #try:
+            #uri = self.request.arguments['uri'][0]
+        #except (KeyError, IndexError):
+            #try:
+                #uri = self.request.arguments['uri']
+            #except (KeyError, IndexError):
+                #raise web.HTTPError(404)
+
+        #search = self.index.find(uri=uri)
+        #try:
+            #entry = next(search)
+        #except StopIteration:
+            #raise web.HTTPError(404)
+
+        #return entry['id']
+
+    #def get(self, action, objid=None):
+        #if action == 'get' and objid is None:
+            #objid = self.get_by_uri()
+
+        #super(EffectSearcher, self).get(action, objid)
 
 class EffectBulkData(EffectSearcher):
     "Gets data of several plugins"
-    def get_effect(self, url):
-        "return true if an effect is installed"
-        search = self.index.find(url=url)
-        try:
-            entry = next(search)
-        except StopIteration:
-            return False
-        try:
-            return self.get_object(entry['id'])
-        except:
-            return None
+    #def get_effect(self, uri):
+        #refresh_world()
+
+        #"return true if an effect is installed"
+        #try:
+            #global cached_plugins
+            #data = cached_plugins[uri]
+        #except:
+            #return None
+
+        #return data
 
     def post(self):
-        urls = self.json_args
+        global cached_plugins
+        if len(cached_plugins) == 0:
+            refresh_world()
+            #data = cached_plugins[uri]
+        uris = self.json_args
         result = {}
-        for url in urls:
-            effect = self.get_effect(url)
-            if effect:
-                result[url] = effect
+        for uri in uris:
+            result[uri] = bool(uri in cached_plugins)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
@@ -347,7 +385,7 @@ class SDKEffectInstaller(EffectInstaller):
     @gen.engine
     def post(self):
         upload = self.request.files['package'][0]
-        open(os.path.join(PLUGIN_INSTALLATION_TMP_DIR, upload['filename']), 'w').write(upload['body'])
+        open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'w').write(upload['body'])
         uid = upload['filename'].replace('.tgz', '')
         res = yield gen.Task(install_bundle, uid)
         self.write(json.dumps({ 'ok': True }))
@@ -355,27 +393,27 @@ class SDKEffectInstaller(EffectInstaller):
 
 # TODO this is an obsolete implementation that does not work in new lv2 specs.
 # it's here for us to remember this should be reimplemented
-class SDKEffectScript(EffectSearcher):
-    def get(self, objid=None):
-        if objid is None:
-            objid = self.get_by_url()
+#class SDKEffectScript(EffectSearcher):
+    #def get(self, objid=None):
+        #if objid is None:
+            #objid = self.get_by_uri()
 
-        try:
-            options = self.get_object(objid)
-        except:
-            raise web.HTTPError(404)
+        #try:
+            #options = self.get_object(objid)
+        #except:
+            #raise web.HTTPError(404)
 
-        try:
-            path = options['configurationFeedback']
-        except KeyError:
-            raise web.HTTPError(404)
+        #try:
+            #path = options['configurationFeedback']
+        #except KeyError:
+            #raise web.HTTPError(404)
 
-        path = path.split(options['package']+'/')[-1]
-        path = os.path.join(PLUGIN_LIBRARY_DIR, options['package'], path)
+        #path = path.split(options['package']+'/')[-1]
+        #path = os.path.join(PLUGIN_LIBRARY__DIR, options['package'], path)
 
-        self.write(open(path, 'rb').read())
+        #self.write(open(path, 'rb').read())
 
-class EffectResource(web.StaticFileHandler, EffectSearcher):
+class EffectResource(web.StaticFileHandler):
 
     def initialize(self):
         # Overrides StaticFileHandler initialize
@@ -383,122 +421,147 @@ class EffectResource(web.StaticFileHandler, EffectSearcher):
 
     def get(self, path):
         try:
-            objid = self.get_by_url()
+            uri = self.get_argument('uri')
+        except:
+            return self.shared_resource(path)
 
-            try:
-                options = self.get_object(objid)
-            except:
-                raise web.HTTPError(404)
+        try:
+            global cached_plugins
+            data = cached_plugins[uri]
+        except:
+            raise web.HTTPError(404)
 
-            try:
-                document_root = options['gui']['resourcesDirectory']
-            except:
-                raise web.HTTPError(404)
+        try:
+            root = data['gui']['resourcesDirectory']
+        except:
+            raise web.HTTPError(404)
 
-            super(EffectResource, self).initialize(document_root)
+        try:
+            super(EffectResource, self).initialize(root)
             super(EffectResource, self).get(path)
         except web.HTTPError as e:
-            if (not e.status_code == 404):
+            if e.status_code != 404:
                 raise e
-            super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
-            super(EffectResource, self).get(path)
+            self.shared_resource(path)
+        except IOError:
+            raise web.HTTPError(404)
 
-class EffectImage(EffectSearcher):
-    def get(self, prop):
-        objid = self.get_by_url()
+    def shared_resource(self, path):
+        super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
+        super(EffectResource, self).get(path)
+
+class EffectImage(web.RequestHandler):
+    def get(self, image):
+        uri = self.get_argument('uri')
 
         try:
-            options = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
         try:
-            path = options['gui'][prop]
+            path = data['gui'][image]
         except:
+            path = None
+
+        if path is None or not os.path.exists(path):
             try:
-                path = DEFAULT_ICON_IMAGE[prop]
+                path = DEFAULT_ICON_IMAGE[image]
             except:
                 raise web.HTTPError(404)
 
-        if not os.path.exists(path):
-            raise web.HTTPError(404)
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'image/png')
+            self.write(fd.read())
 
-        self.set_header('Content-Type', 'image/png')
-        self.write(open(path, 'rb').read())
-
-class EffectStylesheet(EffectSearcher):
+class EffectStylesheet(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            effect = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
         try:
-            path = effect['gui']['stylesheet']
+            path = data['gui']['stylesheet']
         except:
             raise web.HTTPError(404)
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
+        with open(path, 'rb') as fd:
+            content = fd.read()
+            context = { 'ns' : '?uri=%s' % data['uri'],
+                        'cns': '_%s' % data['uri'].replace("/","_").replace("%","_").replace(".","_") }
 
-        content = open(path).read()
-        context = { 'ns': '?url=%s&bundle=%s' % (effect['url'], effect['package']) }
+            self.set_header('Content-type', 'text/css')
+            self.write(pystache.render(content, context))
 
-        self.set_header('Content-type', 'text/css')
-        self.write(pystache.render(content, context))
+class EffectJavascript(web.RequestHandler):
+    def get(self):
+        uri = self.get_argument('uri')
 
-class EffectAdd(EffectSearcher):
+        try:
+            global cached_plugins
+            data = cached_plugins[uri]
+        except:
+            raise web.HTTPError(404)
+
+        try:
+            path = data['gui']['javascript']
+        except:
+            raise web.HTTPError(404)
+
+        if not os.path.exists(path):
+            raise web.HTTPError(404)
+
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'text/javascript')
+            self.write(fd.read())
+
+class EffectAdd(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
+        x   = self.request.arguments.get('x', [0])[0]
+        y   = self.request.arguments.get('y', [0])[0]
 
         try:
-            options = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
-        x = self.request.arguments.get('x', [0])[0]
-        y = self.request.arguments.get('y', [0])[0]
-        res = yield gen.Task(SESSION.add, options['url'], instance, x, y)
+
+        res = yield gen.Task(SESSION.add, uri, instance, x, y)
+
         if self.request.connection.stream.closed():
             return
+
         if res >= 0:
-            options['instance'] = res
-            presets = []
-            for k,preset in options['presets'].items():
-                presets.append({'label': preset['label']})
-            options['presets'] = presets
-            self.write(json.dumps(options, default=json_handler))
+            #options['instance'] = res
+            self.write(json.dumps(data))
         else:
             self.write(json.dumps(False))
+
         self.finish()
 
-
-class EffectGet(EffectSearcher):
-    @web.asynchronous
-    @gen.engine
+class EffectGet(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            options = self.get_object(objid)
-            presets = []
-            for k,preset in options['presets'].items():
-                presets.append({'label': preset['label'],
-                                'uri': preset['uri']})
-            options['presets'] = presets
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
 
-        if self.request.connection.stream.closed():
-            return
-
-        self.write(json.dumps(options, default=json_handler))
-        self.finish()
-
+        self.set_header('Content-type', 'application/json')
+        self.write(json.dumps(data))
 
 class EffectRemove(web.RequestHandler):
     @web.asynchronous
@@ -663,23 +726,31 @@ class PackageUninstall(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
+global fake_tstamp
+fake_tstamp = 0
+
 class PedalboardSearcher(Searcher):
     index = None
 
     def list(self):
         result = []
         pedals = get_pedalboards()
+
+        global fake_tstamp
+        fake_tstamp += 1
+
         for pedal in pedals:
             result.append({
-                'instances': {},
+                'instances'  : {},
                 'connections': [],
-                'metadata': {
-                    'title':     pedal['name'],
+                'metadata'   : {
+                    'title'    : pedal['name'],
                     'thumbnail': pedal['thumbnail'],
-                    'tstamp':    None,
+                    'tstamp'   : fake_tstamp,
                 },
-                'uri':    pedal['uri'],
-                'width':  pedal['width'],
+                'uri'   : pedal['uri'],
+                'bundle': pedal['bundlepath'],
+                'width' : pedal['width'],
                 'height': pedal['height']
             })
         return result
@@ -781,6 +852,29 @@ class PedalboardPackBundle(web.RequestHandler):
 
         os.remove(tmpfile)
 
+class PedalboardLoadBundle(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        bundlepath = self.get_argument("bundlepath")
+
+        try:
+            name = get_pedalboard_name(bundlepath)
+        except Exception as e:
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({ 'ok': False, 'error': str(e).split(") - ",1)[-1] }))
+            self.finish()
+            return
+
+        SESSION.load_pedalboard(bundlepath, name)
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps({
+            'ok':   True,
+            'name': name
+        }))
+        self.finish()
+
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?
     destination_dir = os.path.expanduser("~/.lv2/") # FIXME cross-platform, perhaps lookup in LV2_PATH
@@ -800,28 +894,25 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         tar_output = getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
         bundlepath = os.path.join(self.destination_dir, tar_output.strip().split("\n", 1)[0])
 
-        if os.path.exists(bundlepath):
-            SESSION.load_pedalboard(bundlepath)
+        if not os.path.exists(bundlepath):
+            raise IOError(bundlepath)
+
+        # make sure pedalboard is valid
+        name = get_pedalboard_name(bundlepath)
+
+        SESSION.load_pedalboard(bundlepath, name)
 
         os.remove(filename)
         callback()
 
-class PedalboardLoad(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, pedalboard_id):
-        res = yield gen.Task(SESSION.load_pedalboard, pedalboard_id)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(res, default=json_handler))
-        self.finish()
-
 class PedalboardRemove(web.RequestHandler):
     def get(self, bundlepath):
-        # there's 4 steps to this:
+        # there's 5 steps to this:
         # 1 - remove the bundle from disk
         # 2 - remove the bundle from our lv2 lilv world
         # 3 - remove references to the bundle in banks
-        # 4 - tell ingen the bundle (plugin) is gone
+        # 4 - delete all presets of the pedaloard
+        # 5 - tell ingen the bundle (plugin) is gone
         pass
 
 class PedalboardScreenshot(web.RequestHandler):
@@ -1007,7 +1098,7 @@ class TemplateHandler(web.RequestHandler):
             else:
                 data += b','
 
-            msg = '{ "url": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
+            msg = '{ "uri": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
             print(msg)
             data += bytes(msg, "utf-8")
 
@@ -1311,16 +1402,17 @@ application = web.Application(
             (r"/effect/bypass/address/([A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
+            (r"/effect/gui.js", EffectJavascript),
             (r"/effect/position/([A-Za-z0-9_/]+[^/])/?", EffectPosition),
-            (r"/effect/set/(release)/?", EffectSetLocalVariable),
+            #(r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
+            (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
-            (r"/pedalboard/load/?", PedalboardLoad),
             (r"/pedalboard/remove/?", PedalboardRemove),
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
@@ -1348,7 +1440,7 @@ application = web.Application(
 
             (r"/sdk/sysupdate/?", SDKSysUpdate),
             (r"/sdk/install/?", SDKEffectInstaller),
-            (r"/sdk/get_config_script/?", SDKEffectScript),
+            #(r"/sdk/get_config_script/?", SDKEffectScript),
 
             (r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
             (r"/register/finish/?", RegistrationFinish),
@@ -1375,8 +1467,8 @@ application = web.Application(
 def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-        if LOG:
-            tornado.options.parse_command_line()
+        #if LOG:
+            #tornado.options.parse_command_line()
         JackXRun.connect()
 
     def check():

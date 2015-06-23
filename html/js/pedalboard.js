@@ -48,9 +48,9 @@ JqueryClass('pedalboard', {
             // callback with false value. The pedalboard will silently try to keep consistency, with
             // no garantees. (TODO: do something if consistency can't be achieved)
 
-            // Loads a plugin with given plugin url and instance
+            // Loads a plugin with given plugin uri and instance
             // Application MUST use this instance. Overriding this is mandatory.
-            pluginLoad: function (url, instance, x, y, callback) {
+            pluginLoad: function (uri, instance, x, y, callback) {
                 callback(true)
             },
 
@@ -89,11 +89,6 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
-            // Loads a pedalboard
-            pedalboardLoad: function (uid, callback) {
-                callback(true)
-            },
-
             // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
             // indexed by URL
             getPluginsData: function (plugins, callback) {
@@ -110,8 +105,9 @@ JqueryClass('pedalboard', {
 
         }, options)
 
-        self.pedalboard('wrapApplicationFunctions', options, ['pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
-            'portConnect', 'portDisconnect', 'reset', 'pedalboardLoad', 'pluginMove'
+        self.pedalboard('wrapApplicationFunctions', options, [
+            'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
+            'portConnect', 'portDisconnect', 'reset', 'pluginMove'
         ])
 
         self.data(options)
@@ -185,6 +181,23 @@ JqueryClass('pedalboard', {
             },
         })
         self.data('background', bg)
+
+        // Create a blank SVG containing some fancy f/x for later use
+        self.svg({ onLoad: function (svg) {
+            var _svg = svg._svg;
+            _svg.setAttribute("id", "styleSVG");
+            var defs = svg.defs();
+            for (var i = 1; i <= 20; i+=1) {
+                var filter = document.createElementNS("http://www.w3.org/2000/svg", 'filter');
+                filter.setAttribute("id", "blur_" + i);
+                filter.setAttribute("x", "0");
+                filter.setAttribute("y", "0");
+                var blur = document.createElementNS("http://www.w3.org/2000/svg", 'feGaussianBlur');
+                blur.setAttribute("stdDeviation", i / 10);
+                filter.appendChild(blur);
+                defs.appendChild(filter);
+            }
+        }});
 
         // Dragging the pedalboard move the view area
         self.mousedown(function (e) {
@@ -328,7 +341,7 @@ JqueryClass('pedalboard', {
             delete preset[':bypass']
             pluginData = {
                 instance: instance,
-                url: plugin.data('url'),
+                uri: plugin.data('uri'),
                 x: (plugin.offset().left - self.offset().left) / scale,
                 y: (plugin.offset().top - self.offset().top) / scale,
                 preset: preset,
@@ -404,7 +417,7 @@ JqueryClass('pedalboard', {
                 self.pedalboard('adapt')
             }, 1)
             if (loadPedalboardAtOnce)
-                self.data('pedalboardLoad')(data._id, ourCallback)
+                ourCallback(true) // FIXME?
             else
                 ourCallback()
         }
@@ -420,11 +433,11 @@ JqueryClass('pedalboard', {
                 // Queue is empty, let's create the hardware ports now
                 return createHardwarePorts()
 
-            var pluginData = pluginsData[plugin.url]
-            var instance   = self.pedalboard('generateInstance', pluginData.url)
+            var pluginData = pluginsData[plugin.uri]
+            var instance   = self.pedalboard('generateInstance', pluginData.uri)
             console.log(instance)
 
-            self.data('pluginLoad')(plugin.url, instance, plugin.x, plugin.y,
+            self.data('pluginLoad')(plugin.uri, instance, plugin.x, plugin.y,
                 function (ok) {
                     if (!ok)
                         return
@@ -509,17 +522,17 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var plugins = {}
         for (var i in instances) {
-            plugins[instances[i].url] = 1
+            plugins[instances[i].uri] = 1
         }
-        var urls = Object.keys(plugins)
+        var uris = Object.keys(plugins)
 
         var missingCount = 0
         var installationQueue = self.data('installationQueue')
 
-        var installPlugin = function (url, data) {
+        var installPlugin = function (uri, data) {
             missingCount++
-            installationQueue.install(url, function (pluginData) {
-                data[url] = pluginData
+            installationQueue.install(uri, function (pluginData) {
+                data[uri] = pluginData
                 missingCount--
                 if (missingCount == 0)
                     callback(data)
@@ -527,14 +540,14 @@ JqueryClass('pedalboard', {
         }
 
         var installMissing = function (data) {
-            for (var i in urls)
-                if (data[urls[i]] == null)
-                    installPlugin(urls[i], data)
+            for (var i in uris)
+                if (data[uris[i]] == null)
+                    installPlugin(uris[i], data)
             if (missingCount == 0)
                 callback(data)
         }
 
-        self.data('getPluginsData')(urls, installMissing)
+        self.data('getPluginsData')(uris, installMissing)
     },
 
     // Register hardware inputs and outputs, elements that will be used to represent the audio inputs and outputs
@@ -565,7 +578,7 @@ JqueryClass('pedalboard', {
      * Plugin adding has the following workflow:
      * 1 - Application registers an HTML element as being an available plugin
      * 2 - User drags this element and drops in Pedalboard
-     * 3 - Pedalboard calls a the application callback (pluginLoad option), with plugin url, instanceID and
+     * 3 - Pedalboard calls a the application callback (pluginLoad option), with plugin uri, instanceID and
      *     another callback.
      * 4 - Application loads the plugin with given instance and calls the pedalboard callback,
      *     or communicate error to user
@@ -579,10 +592,10 @@ JqueryClass('pedalboard', {
 
         element.bind('pluginAdded', function (e, position) {
             var waiter = self.data('wait')
-            var instance = self.pedalboard('generateInstance', pluginData.url)
+            var instance = self.pedalboard('generateInstance', pluginData.uri)
             waiter.startPlugin(instance, position)
             var pluginLoad = self.data('pluginLoad')
-            pluginLoad(pluginData.url, instance, position.x, position.y, function () {})
+            pluginLoad(pluginData.uri, instance, position.x, position.y, function () {})
 /*                function () {
                     self.pedalboard('addPlugin', pluginData, instance, position.x, position.y)
                     setTimeout(function () {
@@ -1021,7 +1034,7 @@ JqueryClass('pedalboard', {
 
     // Generate an instance for a new plugin.
     // TODO: check with ingen if instance does not exist
-    generateInstance: function (url) {
+    generateInstance: function (uri) {
         var self = $(this)
         // copied from ingen's algorithm to get a valid instance symbol
         var last_uri_delim = function (s) {
@@ -1034,7 +1047,7 @@ JqueryClass('pedalboard', {
             return -1
         }
         var re = /[^_a-zA-Z0-9]+/g
-        var instance = url
+        var instance = uri
         var last_delim = last_uri_delim(instance)
         while (last_delim != -1 &&
                 !instance.substr(last_delim, instance.length-1).match(/[a-zA-Z0-9]/)) {
@@ -1155,7 +1168,7 @@ JqueryClass('pedalboard', {
 
             self.trigger('modified')
 
-            icon.data('url', pluginData.url)
+            icon.data('uri', pluginData.uri)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
             icon.data('instance', instance)
@@ -1315,11 +1328,11 @@ JqueryClass('pedalboard', {
         var output = jack.data('origin')
         var fromPort = output.attr('mod-port')
         var portType = output.data('portType')
+        
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
             var toPort = input.attr('mod-port')
             var ok
-
             // Do not highlight if this output and input are already connected
             ok = !connections.connected(fromPort, toPort)
             if (ok) {
@@ -1449,7 +1462,13 @@ JqueryClass('pedalboard', {
         // jack's cable.
         // The cable is composed by three lines with different style: one for the cable,
         // one for the background shadow and one for the reflecting light.
-        var canvas = $('<div>')
+        var canvas = $('<div>');
+
+        if (output.attr("class").search("mod-audio-") >= 0)
+            canvas.addClass("mod-audio");
+        else if (output.attr("class").search("mod-midi-") >= 0)
+            canvas.addClass("mod-midi");
+
         canvas.css({
             width: '100%',
             height: '100%',
@@ -1574,14 +1593,14 @@ JqueryClass('pedalboard', {
             // P3 (xo, yo) - the destination point
             // P1 (xo - deltaX, yi) and P2 (xi + deltaX, yo): define the curve
             // Gets origin and destination coordinates
-            var xi = source.offset().left / scale - self.offset().left / scale // + source.width()
+            var xi = source.offset().left / scale - self.offset().left / scale + source.width()
             var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
             var xo = jack.offset().left / scale - self.offset().left / scale
             var yo = jack.offset().top / scale - self.offset().top / scale + jack.height() / 2
-            if (source.hasClass("mod-audio-output"))
-                self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
-            else
-                self.pedalboard('drawBezier', jack.data('canvas'), xi+9, yi, xo, yo, '')
+            //if (source.hasClass("mod-audio-output"))
+                //self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
+            //else
+            self.pedalboard('drawBezier', jack.data('canvas'), xi, yi, xo, yo, '')
         }, 0)
     },
 
@@ -1796,22 +1815,22 @@ JqueryClass('pedalboard', {
             self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
             self.trigger('modified')
         } else {
-            // UGLY WORKAROUND :(
-            if (output.hasClass("mod-audio-output") && !output.hasClass("hardware-output"))
-                jack.css({
-                    top: 12,
-                    left: 0
-                })
-            else if (output.hasClass("mod-midi-output") && output.hasClass("hardware-output"))
-                jack.css({
-                    top: -15,
-                    left: 0
-                })
-            else
-                jack.css({
-                    top: 0,
-                    left: 0
-                })
+            //// UGLY WORKAROUND :(
+            //if (output.hasClass("mod-audio-output") && !output.hasClass("hardware-output"))
+                //jack.css({
+                    //top: 12,
+                    //left: 0
+                //})
+            //else if (output.hasClass("mod-midi-output") && output.hasClass("hardware-output"))
+                //jack.css({
+                    //top: -15,
+                    //left: 0
+                //})
+            //else
+            jack.css({
+                top: 0,
+                left: 0
+            })
         }
         if (self.data('connectionManager').origIndex[output.attr('mod-port')] &&
              Object.keys(self.data('connectionManager').origIndex[output.attr('mod-port')]).length == 1) {
@@ -1872,24 +1891,27 @@ JqueryClass('pedalboard', {
         if (jacks.length < 2 || input.data('expanded'))
             return
         var wrapper = $('<div class="mod-pedal-input-wrapper">')
-        var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
-        wrapper.height(jacks.length * 40 + 10)
+        //var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
         var jack
         wrapper.appendTo(input)
         wrapper.css('top', (input.height() - wrapper.height()) / 2)
-        arrow.css('top', wrapper.height() / 2 - 12)
-        var jack
+        //arrow.css('top', wrapper.height() / 2 - 12)
+        var jack;
+        var h = 0;
         for (var i = 0; i < jacks.length; i++) {
-            jack = $(jacks[i])
+            jack = $(jacks[i]);
+            h = jack.height();
+            w = jack.width();
             jack.css({
                 position: 'absolute',
-                height: 30,
-                marginTop: -wrapper.height() / 2 + jack.height() / 2 + 40 * i + 10,
-                width: wrapper.width(),
+                marginTop: -wrapper.height() / 2 + h / 2 + h * i,
             })
+            h = jack.height();
             self.pedalboard('drawJack', jack)
             jack.draggable('enable')
         }
+        wrapper.innerHeight(jacks.length * h);
+        wrapper.css("width", w);
         wrapper.click(function () {
             self.pedalboard('colapseInput', input)
             return false

@@ -16,7 +16,7 @@
 
 import os, json, logging, copy
 from datetime import datetime
-from mod.settings import (INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
+from mod.settings import BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE
 
 from mod import json_handler
 from mod.bank import remove_pedalboard_from_banks
@@ -138,15 +138,16 @@ class Pedalboard(object):
             pass
         return port
 
-    def add_instance(self, url, instance, bypassed=False, x=0, y=0):
-        self.data['instances'][instance] = { 'url': url,
-                                                'instance': instance,
-                                                'bypassed': bool(bypassed),
-                                                'x': x,
-                                                'y': y,
-                                                'preset': {},
-                                                'addressing': {},
-                                                }
+    def add_instance(self, uri, instance, bypassed=False, x=0, y=0):
+        self.data['instances'][instance] = {
+              'uri': uri,
+              'instance': instance,
+              'bypassed': bool(bypassed),
+              'x': x,
+              'y': y,
+              'preset': {},
+              'addressing': {},
+        }
         return instance
 
     # Remove an instance and returns a list of all affected actuators
@@ -295,7 +296,7 @@ class Pedalboard(object):
         bufsize = minimum
         index = indexing.EffectIndex()
         for instance in self.data['instances'].values():
-            effect  = next(index.find(url=instance['url']))
+            effect  = next(index.find(uri=instance['uri']))
             bufsize = max(effect['bufsize'], minimum)
         return bufsize
 
