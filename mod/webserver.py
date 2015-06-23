@@ -77,26 +77,10 @@ def refresh_world():
     world.load_all()
 
     for p in world.get_all_plugins():
-        info   = get_plugin_info(world, p)
-        bnodes = lilv.lilv_plugin_get_data_uris(p.me)
+        info = get_plugin_info(world, p)
 
-        it = lilv.lilv_nodes_begin(bnodes)
-        while not lilv.lilv_nodes_is_end(bnodes, it):
-            bundle = lilv.lilv_nodes_get(bnodes, it)
-            it     = lilv.lilv_nodes_next(bnodes, it)
-
-            if bundle is None:
-                continue
-            if not lilv.lilv_node_is_uri(bundle):
-                continue
-
-            bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
-
-            if not bundle.endswith(os.sep):
-                bundle += os.sep
-
-            if bundle not in bundles:
-                bundles.append(bundle)
+        if not info['gui']:
+            continue
 
         plugins[info['uri']] = info
 
@@ -104,8 +88,6 @@ def refresh_world():
 
     global cached_plugins
     cached_plugins = plugins
-
-    return bundles
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -340,7 +322,7 @@ class EffectSearcher(Searcher):
         if len(cached_plugins) == 0:
             refresh_world()
 
-        return cached_plugins
+        return list(cached_plugins.values())
 
     #index = indexing.EffectIndex()
 
@@ -542,30 +524,31 @@ class EffectJavascript(web.RequestHandler):
             self.set_header('Content-type', 'text/javascript')
             self.write(fd.read())
 
-class EffectAdd(EffectSearcher):
+class EffectAdd(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        objid = self.get_by_uri()
+        uri = self.get_argument('uri')
+        x   = self.request.arguments.get('x', [0])[0]
+        y   = self.request.arguments.get('y', [0])[0]
 
         try:
-            options = self.get_object(objid)
+            global cached_plugins
+            data = cached_plugins[uri]
         except:
             raise web.HTTPError(404)
-        x = self.request.arguments.get('x', [0])[0]
-        y = self.request.arguments.get('y', [0])[0]
-        res = yield gen.Task(SESSION.add, options['uri'], instance, x, y)
+
+        res = yield gen.Task(SESSION.add, uri, instance, x, y)
+
         if self.request.connection.stream.closed():
             return
+
         if res >= 0:
-            options['instance'] = res
-            presets = []
-            for k,preset in options['presets'].items():
-                presets.append({'label': preset['label']})
-            options['presets'] = presets
-            self.write(json.dumps(options, default=json_handler))
+            #options['instance'] = res
+            self.write(json.dumps(data))
         else:
             self.write(json.dumps(False))
+
         self.finish()
 
 class EffectGet(web.RequestHandler):

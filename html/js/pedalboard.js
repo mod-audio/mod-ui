@@ -48,9 +48,9 @@ JqueryClass('pedalboard', {
             // callback with false value. The pedalboard will silently try to keep consistency, with
             // no garantees. (TODO: do something if consistency can't be achieved)
 
-            // Loads a plugin with given plugin url and instance
+            // Loads a plugin with given plugin uri and instance
             // Application MUST use this instance. Overriding this is mandatory.
-            pluginLoad: function (url, instance, x, y, callback) {
+            pluginLoad: function (uri, instance, x, y, callback) {
                 callback(true)
             },
 
@@ -433,11 +433,11 @@ JqueryClass('pedalboard', {
                 // Queue is empty, let's create the hardware ports now
                 return createHardwarePorts()
 
-            var pluginData = pluginsData[plugin.url]
-            var instance   = self.pedalboard('generateInstance', pluginData.url)
+            var pluginData = pluginsData[plugin.uri]
+            var instance   = self.pedalboard('generateInstance', pluginData.uri)
             console.log(instance)
 
-            self.data('pluginLoad')(plugin.url, instance, plugin.x, plugin.y,
+            self.data('pluginLoad')(plugin.uri, instance, plugin.x, plugin.y,
                 function (ok) {
                     if (!ok)
                         return
@@ -522,17 +522,17 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var plugins = {}
         for (var i in instances) {
-            plugins[instances[i].url] = 1
+            plugins[instances[i].uri] = 1
         }
-        var urls = Object.keys(plugins)
+        var uris = Object.keys(plugins)
 
         var missingCount = 0
         var installationQueue = self.data('installationQueue')
 
-        var installPlugin = function (url, data) {
+        var installPlugin = function (uri, data) {
             missingCount++
-            installationQueue.install(url, function (pluginData) {
-                data[url] = pluginData
+            installationQueue.install(uri, function (pluginData) {
+                data[uri] = pluginData
                 missingCount--
                 if (missingCount == 0)
                     callback(data)
@@ -540,14 +540,14 @@ JqueryClass('pedalboard', {
         }
 
         var installMissing = function (data) {
-            for (var i in urls)
-                if (data[urls[i]] == null)
-                    installPlugin(urls[i], data)
+            for (var i in uris)
+                if (data[uris[i]] == null)
+                    installPlugin(uris[i], data)
             if (missingCount == 0)
                 callback(data)
         }
 
-        self.data('getPluginsData')(urls, installMissing)
+        self.data('getPluginsData')(uris, installMissing)
     },
 
     // Register hardware inputs and outputs, elements that will be used to represent the audio inputs and outputs
@@ -578,7 +578,7 @@ JqueryClass('pedalboard', {
      * Plugin adding has the following workflow:
      * 1 - Application registers an HTML element as being an available plugin
      * 2 - User drags this element and drops in Pedalboard
-     * 3 - Pedalboard calls a the application callback (pluginLoad option), with plugin url, instanceID and
+     * 3 - Pedalboard calls a the application callback (pluginLoad option), with plugin uri, instanceID and
      *     another callback.
      * 4 - Application loads the plugin with given instance and calls the pedalboard callback,
      *     or communicate error to user
@@ -592,10 +592,10 @@ JqueryClass('pedalboard', {
 
         element.bind('pluginAdded', function (e, position) {
             var waiter = self.data('wait')
-            var instance = self.pedalboard('generateInstance', pluginData.url)
+            var instance = self.pedalboard('generateInstance', pluginData.uri)
             waiter.startPlugin(instance, position)
             var pluginLoad = self.data('pluginLoad')
-            pluginLoad(pluginData.url, instance, position.x, position.y, function () {})
+            pluginLoad(pluginData.uri, instance, position.x, position.y, function () {})
 /*                function () {
                     self.pedalboard('addPlugin', pluginData, instance, position.x, position.y)
                     setTimeout(function () {
@@ -1034,7 +1034,7 @@ JqueryClass('pedalboard', {
 
     // Generate an instance for a new plugin.
     // TODO: check with ingen if instance does not exist
-    generateInstance: function (url) {
+    generateInstance: function (uri) {
         var self = $(this)
         // copied from ingen's algorithm to get a valid instance symbol
         var last_uri_delim = function (s) {
@@ -1047,7 +1047,7 @@ JqueryClass('pedalboard', {
             return -1
         }
         var re = /[^_a-zA-Z0-9]+/g
-        var instance = url
+        var instance = uri
         var last_delim = last_uri_delim(instance)
         while (last_delim != -1 &&
                 !instance.substr(last_delim, instance.length-1).match(/[a-zA-Z0-9]/)) {

@@ -193,16 +193,17 @@ JqueryClass('effectBox', {
             'dataType': 'json'
         })
     },
+
     showPlugins: function (plugins) {
         var self = $(this)
         self.effectBox('cleanResults')
         for (var i in plugins) {
-            self.effectBox('getLabelAndAuthor', plugins[i])
+            self.effectBox('fillInShortNames', plugins[i])
         }
         plugins.sort(function (a, b) {
-            if (a.label > b.label)
+            if (a.shortname > b.shortname)
                 return 1
-            if (a.label < b.label)
+            if (a.shortname < b.shortname)
                 return -1
             return 0
         })
@@ -237,13 +238,11 @@ JqueryClass('effectBox', {
         self.effectBox('calculateNavigation')
     },
 
-    getLabelAndAuthor: function (plugin) {
-        // TODO Very dirty, temporary GAMBI
-        if (plugin.gui && plugin.gui.templateData) {
-            plugin.label = plugin.gui.templateData.label
-            plugin.author = plugin.gui.templateData.author
-        }
-        plugin.label = plugin.label || plugin.name
+    fillInShortNames: function (plugin) {
+        if (!plugin.author.shortname)
+            plugin.author.shortname = plugin.author.name
+        if (!plugin.shortname)
+            plugin.shortname = plugin.name
     },
 
     renderPlugin: function (index, container) {
@@ -251,8 +250,17 @@ JqueryClass('effectBox', {
         if (container.length == 0)
             return
         var plugin = self.data('plugins')[index]
+        var uri = escape(plugin.uri)
 
-        var rendered = $(Mustache.render(TEMPLATES.plugin, plugin))
+        var plugin_data = {
+            uri: uri,
+            status: plugin.status,
+            author: plugin.author.shortname,
+            label: plugin.shortname,
+            thumbnail_href: "/effect/image/thumbnail.png?uri=" + uri,
+        }
+
+        var rendered = $(Mustache.render(TEMPLATES.plugin, plugin_data))
 
         self.data('pedalboard').pedalboard('registerAvailablePlugin', rendered, plugin, {
             distance: 5,
@@ -288,7 +296,7 @@ JqueryClass('effectBox', {
         plugin.subtitle = plugin.name.split(/\s*-\s*/)[1]
         plugin.installed_version = version(plugin.installedVersion)
         plugin.latest_version = version(plugin.latestVersion)
-        plugin.package_name = plugin.package.replace(/\.lv2$/, '')
+        plugin.package_name = "TODO" //plugin.package.replace(/\.lv2$/, '')
         plugin.description = (plugin.description || '').replace(/\n/g, '<br\>\n')
 
         var info = $(Mustache.render(TEMPLATES.plugin_info, plugin))
@@ -815,10 +823,16 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
+        // FIXME - remove this later
+        for (var i in plugins) {
+            author = plugins[i].author
+            plugins[i].author = { name: author }
+            self.effectBox('fillInShortNames', plugins[i])
+        }
         plugins.sort(function (a, b) {
-            if (a.label > b.label)
+            if (a.shortname > b.shortname)
                 return 1
-            if (a.label < b.label)
+            if (a.shortname < b.shortname)
                 return -1
             return 0
         })
@@ -859,20 +873,18 @@ JqueryClass('cloudPluginBox', {
     showPluginInfo: function (plugin) {
         var self = $(this)
         var uri = escape(plugin.uri)
-        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?uri=" + uri
-        var screenshot_href = plugin.screenshot_href ? plugin.screenshot_href : "/effect/image/screenshot.png?uri=" + uri
 
         var plugin_data = {
-            thumbnail_href: thumbnail_href,
-            screenshot_href: screenshot_href,
-            category: plugin.category,
+            thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
+            screenshot_href: plugin.screenshot_href || "/effect/image/screenshot.png?uri=" + uri,
+            category: plugin.category[0] || "",
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: "TODO",//plugin.package.replace(/\.lv2$/, ''),
             uri: uri,
             status: plugin.status,
-            author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
-            label: plugin.label || plugin.name
+            author: plugin.author ? (plugin.author.shortname || plugin.author.name) : "",
+            label: plugin.shortname
         }
 
         var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
@@ -961,14 +973,13 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
-        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?uri=" + uri
         var plugin_data = {
             id: plugin.id || plugin._id,
-            thumbnail_href: thumbnail_href,
+            thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
             uri: uri,
             status: plugin.status,
-            author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
-            label: plugin.label || plugin.name
+            author: plugin.author ? (plugin.author.shortname || plugin.author.name) : "",
+            label: plugin.shortname
         }
 
         var rendered = $(Mustache.render(template, plugin_data))
