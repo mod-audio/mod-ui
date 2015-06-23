@@ -130,32 +130,44 @@ JqueryClass('effectBox', {
         //self.effectBox('fold')
         self.effectBox('setCategory', 'All')
         self.effectBox('search')
-
+        
+        self.mouseenter(function () { self.effectBox('mouseEnter'); });
+        $("#main-menu").mouseenter(function () { self.trigger("mouseenter") });
         return self
     },
 
     fold: function () {
         var self = $(this)
-        self.find('.js-effects-list').hide()
+        //self.find('.js-effects-list').hide()
         self.addClass('folded')
-        self.find('.js-effects-fold').hide()
+        //self.find('.js-effects-fold').hide()
     },
 
     unfold: function () {
         var self = $(this)
-        self.find('.js-effects-list').show()
+        //self.find('.js-effects-list').show()
         self.removeClass('folded')
-        self.find('.js-effects-fold').show()
+        //self.find('.js-effects-fold').show()
     },
 
     toggle: function () {
-        var self = $(this)
-        if (self.hasClass('folded'))
+        var self = $(this);
+        if (self.hasClass('auto')) {
+            self.trigger("mouseleave");
             self.effectBox('unfold')
-        else
+        } else
             self.effectBox('fold')
+        self.toggleClass("auto");
     },
-
+    
+    mouseEnter: function (e) {
+        var self = $(this);
+        if (self.hasClass('auto')) {
+            self.one("mouseleave", function () { self.effectBox('fold'); });
+            self.effectBox('unfold');
+        }
+    },
+    
     setCategory: function (category) {
         var self = $(this)
         self.find('ul.js-category-tabs li').removeClass('selected')
