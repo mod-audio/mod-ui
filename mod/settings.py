@@ -37,10 +37,7 @@ DEVICE_PUB = os.environ.get('MOD_DEVICE_PUB', join(KEYPATH, 'device_key.pub'))
 DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL =  os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
-PLUGIN_LIBRARY_DIR = os.environ.get('MOD_PLUGIN_LIBRARY_DIR', join(DATA_DIR, '..', 'plugins'))
 PLUGIN_INSTALLATION_TMP_DIR = os.environ.get('MOD_PLUGIN_INSTALLATION_DIR', join(DATA_DIR, 'lib_tmp'))
-INDEX_PATH = os.environ.get('MOD_INDEX_PATH', join(DATA_DIR, 'effects.index'))
-EFFECT_DIR = os.environ.get('MOD_EFFECT_DIR', join(DATA_DIR, 'effects'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/effects'))
@@ -63,8 +60,6 @@ def get_tty_acm():
 
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', get_tty_acm())
 MANAGER_PORT = 5555
-
-EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 

@@ -36,7 +36,7 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
+from mod.settings import (HTML_DIR, CLOUD_PUB,
                           DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
@@ -246,7 +246,7 @@ class SDKSysUpdate(web.RequestHandler):
         self.finish()
 
 # Abstract class
-class Searcher(tornado.web.RequestHandler):
+class Searcher(web.RequestHandler):
     @classmethod
     def urls(cls, path):
         return [
@@ -287,7 +287,7 @@ class Searcher(tornado.web.RequestHandler):
             try:
                 response = self.get_object(objid)
             except:
-                raise tornado.web.HTTPError(404)
+                raise web.HTTPError(404)
 
         if action == 'list':
             response = self.list()
@@ -335,10 +335,11 @@ class EffectSearcher(Searcher):
     index = None
 
     def list(self):
+        global cached_plugins
+
         if len(cached_plugins) == 0:
             refresh_world()
 
-        global cached_plugins
         return cached_plugins
 
     #index = indexing.EffectIndex()
@@ -350,13 +351,13 @@ class EffectSearcher(Searcher):
             #try:
                 #uri = self.request.arguments['uri']
             #except (KeyError, IndexError):
-                #raise tornado.web.HTTPError(404)
+                #raise web.HTTPError(404)
 
         #search = self.index.find(uri=uri)
         #try:
             #entry = next(search)
         #except StopIteration:
-            #raise tornado.web.HTTPError(404)
+            #raise web.HTTPError(404)
 
         #return entry['id']
 
@@ -388,7 +389,7 @@ class EffectBulkData(EffectSearcher):
         uris = self.json_args
         result = {}
         for uri in uris:
-            result[uri] = uri in cached_plugins
+            result[uri] = bool(uri in cached_plugins)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
@@ -427,7 +428,7 @@ class SDKEffectInstaller(EffectInstaller):
             #raise web.HTTPError(404)
 
         #path = path.split(options['package']+'/')[-1]
-        #path = os.path.join(PLUGIN_LIBRARY_DIR, options['package'], path)
+        #path = os.path.join(PLUGIN_LIBRARY__DIR, options['package'], path)
 
         #self.write(open(path, 'rb').read())
 
@@ -481,10 +482,13 @@ class EffectImage(web.RequestHandler):
         try:
             path = data['gui'][image]
         except:
-            raise web.HTTPError(404)
+            path = None
 
-        if not os.path.exists(path):
-            raise web.HTTPError(404)
+        if path is None or not os.path.exists(path):
+            try:
+                path = DEFAULT_ICON_IMAGE[image]
+            except:
+                raise web.HTTPError(404)
 
         with open(path, 'rb') as fd:
             self.set_header('Content-type', 'image/png')

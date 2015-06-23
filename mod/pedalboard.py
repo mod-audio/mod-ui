@@ -16,7 +16,7 @@
 
 import os, json, logging, copy
 from datetime import datetime
-from mod.settings import (INDEX_PATH, BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE)
+from mod.settings import BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE
 
 from mod import json_handler
 from mod.bank import remove_pedalboard_from_banks

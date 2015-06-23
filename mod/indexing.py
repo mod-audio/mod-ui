@@ -24,7 +24,6 @@ from whoosh.qparser import MultifieldParser
 from whoosh import sorting
 
 from mod import json_handler
-from mod.settings import INDEX_PATH, EFFECT_DIR
 
 class Index(object):
     @property
@@ -148,8 +147,8 @@ class Index(object):
         return count > 0
 
 class EffectIndex(Index):
-    index_path = INDEX_PATH
-    data_source = EFFECT_DIR
+    index_path = None
+    data_source = None
 
     schema = Schema(id=ID(unique=True, stored=True),
                     uri=ID(stored=True),

@@ -20,9 +20,7 @@ import json, os, subprocess, shutil, select
 from hashlib import sha1 as sha
 from os.path import exists, join
 from tornado.ioloop import IOLoop
-from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,
-                          PLUGIN_LIBRARY_DIR, PLUGIN_INSTALLATION_TMP_DIR)
-from mod import indexing, lv2
+from mod.settings import PLUGIN_INSTALLATION_TMP_DIR
 
 def install_bundle(uid, callback):
     filename = join(PLUGIN_INSTALLATION_TMP_DIR, '%s' % uid)
@@ -50,19 +48,7 @@ def install_all_bundles():
     Install all bundles available in installation temp dir into domain's directory
     Returns list of effects installed
     """
-    plugin_dir = PLUGIN_INSTALLATION_TMP_DIR
-    effects = []
-
-    # TODO - rewrite for new API without modcommon
-
-    for package in os.listdir(plugin_dir):
-        bundle_path = join(PLUGIN_LIBRARY_DIR, package)
-        if os.path.exists(bundle_path):
-            uninstall_bundle(package)
-        shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
-        lv2.add_bundle_to_lilv_world(join(PLUGIN_LIBRARY_DIR, package))
-        #effects += []
-    return effects
+    return []
 
 def remove_old_version(uri):
     """
@@ -70,34 +56,12 @@ def remove_old_version(uri):
     ttls and binary.
     TODO: we need to keep track of effect binaries and ttls for cleaning
     """
-    index = indexing.EffectIndex()
-    for effect in index.find(uri=uri):
-        if index.delete(effect['id']):
-            path = join(EFFECT_DIR, effect['id'])
-            # File is supposed to always be there,
-            # but in case it's not, let's have a recoverable state
-            if os.path.exists(path):
-                os.remove(path)
+    return
 
 def uninstall_bundle(package):
     """
     Uninstall a plugin package. Removes the whole bundle directory and
     all effects from filesystem and index
     """
-    path = os.path.join(PLUGIN_LIBRARY_DIR, package)
-    if not os.path.exists(path):
-        return True
-
-    shutil.rmtree(path)
-
-    index = indexing.EffectIndex()
-    for effect in index.find(package=package):
-        index.delete(effect['id'])
-        effect_path = os.path.join(EFFECT_DIR, effect['id'])
-        os.remove(effect_path)
-
-        # TODO do something with broken pedalboards, like removing them from banks
-        # and marking as broken
-
     return True
 
