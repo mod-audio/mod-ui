@@ -37,10 +37,9 @@ DEVICE_PUB = os.environ.get('MOD_DEVICE_PUB', join(KEYPATH, 'device_key.pub'))
 DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL =  os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
-PLUGIN_INSTALLATION_TMP_DIR = os.environ.get('MOD_PLUGIN_INSTALLATION_DIR', join(DATA_DIR, 'lib_tmp'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
-DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/effects'))
+DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp'))
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 
@@ -76,7 +75,7 @@ BLUETOOTH_PIN = os.environ.get('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pi
 
 PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', '/usr/lib/mod-ui/screenshot.js')
+SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', '/usr/share/mod-ui/screenshot.js')
 
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350
@@ -150,6 +149,6 @@ DEFAULT_JACK_BUFSIZE = int(os.environ.get('MOD_DEFAULT_JACK_BUFSIZE', 128))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 
-for dirname in (PLUGIN_INSTALLATION_TMP_DIR, HARDWARE_DIR):
+for dirname in (DOWNLOAD_TMP_DIR, HARDWARE_DIR):
     if not os.path.exists(dirname):
         os.makedirs(dirname)

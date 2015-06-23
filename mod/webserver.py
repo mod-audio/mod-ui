@@ -40,8 +40,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB,
                           DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
-                          PLUGIN_INSTALLATION_TMP_DIR, DEFAULT_ICON_TEMPLATE,
-                          DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
+                          DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
@@ -182,7 +181,7 @@ class BluetoothSetPin(web.RequestHandler):
 
 class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
-    destination_dir = PLUGIN_INSTALLATION_TMP_DIR
+    destination_dir = DOWNLOAD_TMP_DIR
 
     def process_file(self, data, callback=lambda:None):
         def on_finish(result):
@@ -386,7 +385,7 @@ class SDKEffectInstaller(EffectInstaller):
     @gen.engine
     def post(self):
         upload = self.request.files['package'][0]
-        open(os.path.join(PLUGIN_INSTALLATION_TMP_DIR, upload['filename']), 'w').write(upload['body'])
+        open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'w').write(upload['body'])
         uid = upload['filename'].replace('.tgz', '')
         res = yield gen.Task(install_bundle, uid)
         self.write(json.dumps({ 'ok': True }))

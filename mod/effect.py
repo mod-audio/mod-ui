@@ -20,14 +20,14 @@ import json, os, subprocess, shutil, select
 from hashlib import sha1 as sha
 from os.path import exists, join
 from tornado.ioloop import IOLoop
-from mod.settings import PLUGIN_INSTALLATION_TMP_DIR
+from mod.settings import DOWNLOAD_TMP_DIR
 
 def install_bundle(uid, callback):
-    filename = join(PLUGIN_INSTALLATION_TMP_DIR, '%s' % uid)
+    filename = join(DOWNLOAD_TMP_DIR, '%s' % uid)
     assert exists(filename)
-    print("HERE: ", PLUGIN_INSTALLATION_TMP_DIR)
+    print("HERE: ", DOWNLOAD_TMP_DIR)
     proc = subprocess.Popen(['tar','zxf', filename],
-                            cwd=PLUGIN_INSTALLATION_TMP_DIR,
+                            cwd=DOWNLOAD_TMP_DIR,
                             stdout=subprocess.PIPE)
 
 
