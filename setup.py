@@ -12,7 +12,6 @@ setup(name = 'mod',
       entry_points = {
           'console_scripts': [
               'mod-ui = mod.webserver:run',
-              'mod-rebuild-database = mod:rebuild_database',
               ]
           },
       scripts = [
