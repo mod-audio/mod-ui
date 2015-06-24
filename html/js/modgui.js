@@ -369,7 +369,7 @@ function GUI(effect, options) {
                     }
                 })
 
-                if (port.properties.indexOf("enumeration") < 0 && true) { // TODO
+                if (port.properties.indexOf("enumeration") < 0) {
                     // For ports that are not enumerated, we allow
                     // editing the value directly
                     valueField.attr('contenteditable', true)
@@ -530,6 +530,8 @@ function GUI(effect, options) {
         if (!data.controls)
             data.controls = options.gui.ports || {}
 
+        // FIXME - this is a little ugly hack, sorry!
+
         // don't show some special ports
         if (data.effect.ports.control.input)
         {
@@ -539,6 +541,13 @@ function GUI(effect, options) {
                 var port = data.effect.ports.control.input[i]
                 if (shouldSkipPort(port))
                     continue
+
+                port['enumeration'] = port.properties.indexOf("enumeration") >= 0
+                port['integer'    ] = port.properties.indexOf("integer") >= 0
+                port['logarithmic'] = port.properties.indexOf("logarithmic") >= 0
+                port['toggle'     ] = port.properties.indexOf("toggled") >= 0
+                port['trigger'    ] = port.properties.indexOf("trigger") >= 0
+
                 inputs.push(port)
             }
             data.effect.ports.control.input = inputs
@@ -617,7 +626,7 @@ var baseWidget = {
             //port.ranges.minimum = port.ranges.minimum || 0
             //port.ranges.maximum = port.ranges.maximum || 1
             portSteps = 2
-        } else if (port.properties.indexOf("enumeration") >= 0 && false) { // TODO
+        } else if (port.properties.indexOf("enumeration") >= 0) {
             portSteps = port.scalePoints.length
             port.scalePoints.sort(function (a, b) { return a.value - b.value })
         } else {
@@ -633,10 +642,11 @@ var baseWidget = {
         self.data('default',      port.ranges.default)
         self.data('maximum',      port.ranges.maximum)
         self.data('minimum',      port.ranges.minimum)
-        self.data('enumeration',  port.properties.indexOf("enumeration") >= 0 && false) // TODO
+        self.data('enumeration',  port.properties.indexOf("enumeration") >= 0)
         self.data('integer',      port.properties.indexOf("integer") >= 0)
         self.data('logarithmic',  port.properties.indexOf("logarithmic") >= 0)
         self.data('toggle',       port.properties.indexOf("toggled") >= 0)
+        self.data('trigger',      port.properties.indexOf("trigger") >= 0)
         self.data('scalePoints',  port.scalePoints)
 
         if (port.properties.indexOf("logarithmic") >= 0) {
