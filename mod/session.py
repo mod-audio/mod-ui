@@ -139,8 +139,8 @@ class Session(object):
         self.host_initialized = True
 
         def port_value_cb(port, value):
-            instance = "/".join(port.split("/")[:-1])
-            port = port.split("/")[-1]
+            instance = port.rpartition("/")[0]
+            port = port.rpartition("/")[-1]
             instance_id = self.instance_mapper.map(instance)
             if self._pedalboard.data['instances'].get(instance_id, False):
                 self._pedalboard.parameter_set(instance_id, port, value)
@@ -573,8 +573,8 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        instance_id = self.instance_mapper.map(port.split("/")[0])
-        port_id = port.split("/")[1]
+        instance_id = self.instance_mapper.map(port.rpartition("/")[0])
+        port_id = port.rpartition("/")[-1]
         if (hardware_type == -1 and
             hardware_id == -1 and
             actuator_type == -1 and
@@ -589,7 +589,6 @@ class Session(object):
             else:
                 self.hmi.control_rm(instance_id, port_id, callback)
             return
-
         if not loaded:
             old = self._pedalboard.parameter_address(instance_id, port_id,
                                                      addressing_type,
