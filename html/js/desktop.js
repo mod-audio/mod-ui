@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+ * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ function Desktop(elements) {
                 return false
             })
             self.userSession.getUserData(null, function (data) {
-                // FIXME the avatar_href from portalmod server is wrong
+                // FIXME the avatar_href from moddevices server is wrong
                 elements.userAvatar.show().attr('src', data.avatar_href)
                 self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
                 self.netStatus.statusTooltip('status', 'logged')

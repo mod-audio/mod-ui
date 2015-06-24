@@ -59,8 +59,8 @@ pset = NS("http://lv2plug.in/ns/ext/presets#")
 midi = NS("http://lv2plug.in/ns/ext/midi#")
 pprops = NS("http://lv2plug.in/ns/ext/port-props#")
 time = NS("http://lv2plug.in/ns/ext/time#")
-modgui = NS("http://portalmod.com/ns/modgui#")
-modpedal = NS("http://portalmod.com/ns/modpedal#")
+modgui = NS("http://moddevices.com/ns/modgui#")
+modpedal = NS("http://moddevices.com/ns/modpedal#")
 
 def get_pedalboards():
     def get_presets(p):
@@ -79,7 +79,7 @@ def get_pedalboards():
             return node.as_string()
         plugin_types = [i for i in LILV_FOREACH(pedalboard.get_value(rdf.type_), fill_in_type)]
 
-        if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
+        if "http://moddevices.com/ns/modpedal#Pedalboard" not in plugin_types:
             continue
 
         pedalboards.append({

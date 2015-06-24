@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ if os.path.exists("/root/cloud"):
     default_cloud = fh.read().strip()
     fh.close()
 else:
-    default_cloud = 'http://cloud.portalmod.com/'
+    default_cloud = 'http://cloud.moddevices.com/'
 CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', default_cloud)
 if not CLOUD_HTTP_ADDRESS.endswith('/'):
     CLOUD_HTTP_ADDRESS += '/'
@@ -104,7 +104,7 @@ if os.path.exists("/root/repository"):
     default_repo = fh.read().strip()
     fh.close()
 else:
-    default_repo = 'http://packages.portalmod.com/api'
+    default_repo = 'http://packages.moddevices.com/api'
 PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
 
 if os.path.exists("/root/avatar"):
@@ -115,7 +115,7 @@ else:
     default_avatar_url = 'http://gravatar.com/avatar'
 AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
 
-CLIPMETER_URI = "http://portalmod.com/plugins/MOD/clipmeter"
+CLIPMETER_URI = "http://moddevices.com/plugins/MOD/clipmeter"
 CLIPMETER_IN = 9990
 CLIPMETER_OUT = 9991
 CLIPMETER_L = "inl"
@@ -123,7 +123,7 @@ CLIPMETER_R = "inr"
 CLIPMETER_MON_L = "clipl"
 CLIPMETER_MON_R = "clipr"
 
-PEAKMETER_URI = "http://portalmod.com/plugins/MOD/peakmeter"
+PEAKMETER_URI = "http://moddevices.com/plugins/MOD/peakmeter"
 PEAKMETER_IN = 9992
 PEAKMETER_OUT = 9993
 PEAKMETER_L = "inl"

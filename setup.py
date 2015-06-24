@@ -61,5 +61,5 @@ setup(name = 'mod',
           'Operating System :: OS Independent',
           'Programming Language :: Python',
         ],
-      url = 'http://portalmod.com/',
+      url = 'http://moddevices.com/',
 )

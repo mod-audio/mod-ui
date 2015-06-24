@@ -186,14 +186,14 @@ def get_pedalboard_info(bundle):
     rdf      = NS(world, lilv.LILV_NS_RDF)
     lv2core  = NS(world, lilv.LILV_NS_LV2)
     ingen    = NS(world, "http://drobilla.net/ns/ingen#")
-    modpedal = NS(world, "http://portalmod.com/ns/modpedal#")
+    modpedal = NS(world, "http://moddevices.com/ns/modpedal#")
 
     # check if the plugin is a pedalboard
     def fill_in_type(node):
         return node.as_string()
     plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
 
-    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
+    if "http://moddevices.com/ns/modpedal#Pedalboard" not in plugin_types:
         raise Exception('get_pedalboard_info(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     # let's get all the info now
@@ -408,7 +408,7 @@ def get_pedalboard_name(bundle):
         return node.as_string()
     plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
 
-    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
+    if "http://moddevices.com/ns/modpedal#Pedalboard" not in plugin_types:
         raise Exception('get_pedalboard_info(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     return plugin.get_name().as_string()
@@ -429,7 +429,7 @@ def get_plugin_info(world, plugin):
     midi    = NS(world, "http://lv2plug.in/ns/ext/midi#")
     pprops  = NS(world, "http://lv2plug.in/ns/ext/port-props#")
     units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
-    modgui  = NS(world, "http://portalmod.com/ns/modgui#")
+    modgui  = NS(world, "http://moddevices.com/ns/modgui#")
 
     bundleuri = plugin.get_bundle_uri().as_string()
     microver  = plugin.get_value(lv2core.microVersion).get_first()

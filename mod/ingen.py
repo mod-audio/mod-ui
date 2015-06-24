@@ -28,9 +28,9 @@ except ImportError:
 
 class Host(IngenAsync):
     def initial_setup(self, callback=lambda r:r):
-        self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://portalmod.com/ns/modpedal#Pedalboard>", callback)
-        self.set("/graph", "<http://portalmod.com/ns/modpedal#screenshot>", "<ingen:/screenshot.png>", callback)
-        self.set("/graph", "<http://portalmod.com/ns/modpedal#thumbnail>", "<ingen:/thumbnail.png>", callback)
+        self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://moddevices.com/ns/modpedal#Pedalboard>", callback)
+        self.set("/graph", "<http://moddevices.com/ns/modpedal#screenshot>", "<ingen:/screenshot.png>", callback)
+        self.set("/graph", "<http://moddevices.com/ns/modpedal#thumbnail>", "<ingen:/thumbnail.png>", callback)
 
     def load(self, bundlepath, callback=lambda r:r):
         self.copy("file://%s" % bundlepath, "/graph", callback)
@@ -42,8 +42,8 @@ class Host(IngenAsync):
         self.set("/graph", "doap:name", '"%s"' % name, callback)
 
     def set_pedalboard_size(self, width, height, callback=lambda r:r):
-        self.set("/graph", "<http://portalmod.com/ns/modpedal#width>", width, callback)
-        self.set("/graph", "<http://portalmod.com/ns/modpedal#height>", height, callback)
+        self.set("/graph", "<http://moddevices.com/ns/modpedal#width>", width, callback)
+        self.set("/graph", "<http://moddevices.com/ns/modpedal#height>", height, callback)
 
     def set_position(self, instance, x, y, callback=lambda r:r):
         self.set(instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
