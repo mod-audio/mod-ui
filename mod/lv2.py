@@ -127,19 +127,6 @@ class PluginSerializer(object):
 
         self.data = get_plugin_info(W, self.p)
 
-        minor = self.data['minorVersion']
-        micro = self.data['microVersion']
-        self.data['version'] = "%d.%d" % (micro, minor)
-
-        if minor == 0 and micro == 0:
-            self.data['stability'] = "experimental"
-        #elif minor % 2 == 0 and micro % 2 == 0:
-            #self.data['stability'] =
-        elif minor % 2 == 0:
-            self.data['stability'] = "stable" if micro % 2 == 0 else "testing"
-        else:
-            self.data['stability'] = "unstable"
-
         self.data['presets'] = self._get_presets()
 
         # FIXME - remote these later
@@ -155,13 +142,6 @@ class PluginSerializer(object):
         self.data['url'          ] = self.data['uri']
         self.data['maintainer'   ] = dict()
         self.data['gui_structure'] = self.data['gui']
-
-        if self.data['shortname']:
-            self.data['name'     ] = self.data['shortname']
-
-        for port in self.data['ports']['control']['input']:
-            if "units" in port.keys() and port['units']:
-                port['unit'] = port['units']
 
     def _get_presets(self):
         presets = self.p.get_related(pset.Preset)

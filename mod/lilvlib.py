@@ -521,6 +521,15 @@ def get_plugin_info(world, plugin):
     del microver
     del minorver
 
+    version = "%d.%d" % (microVersion, minorVersion)
+
+    if minorVersion == 0 and microVersion == 0:
+        stability = "experimental"
+    elif minorVersion % 2 == 0:
+        stability = "stable" if microVersion % 2 == 0 else "testing"
+    else:
+        stability = "unstable"
+
     # --------------------------------------------------------------------------------------------------------
     # author
 
@@ -947,6 +956,9 @@ def get_plugin_info(world, plugin):
         #'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
         'microVersion' : microVersion,
         'minorVersion' : minorVersion,
+
+        'version'  : version,
+        'stability': stability,
 
         'author ': author,
         'gui'    : gui,
