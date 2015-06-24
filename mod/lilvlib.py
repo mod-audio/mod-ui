@@ -838,6 +838,11 @@ def get_plugin_info(world, plugin):
 
                 if xdefault is not None:
                     ranges['default'] = convfunc(xdefault)
+
+                    if not (ranges['minimum'] <= ranges['default'] <= ranges['maximum']):
+                        ranges['default'] = ranges['minimum']
+                        errors.append("port '%s' default value is out of bounds" % portname)
+
                 else:
                     ranges['default'] = ranges['minimum']
 
