@@ -549,7 +549,7 @@ def get_plugin_info(world, plugin):
         warnings.append("plugin author email is missing")
     elif author['email'].startswith(bundleuri):
         author['email'] = author['email'].replace(bundleuri,"",1)
-        warnings.append("plugin author email entry is 'mailto:' prefix")
+        warnings.append("plugin author email entry is missing 'mailto:' prefix")
 
     authordata = plugin.get_value(doap.maintainer).get_first()
 
@@ -809,26 +809,33 @@ def get_plugin_info(world, plugin):
             and lilv.Nodes(port.get_value(atom.bufferType.me)).get_first() == atom.Sequence:
                 types.append("MIDI")
 
-        # port value ranges
-        ranges = {}
+        # port properties
+        properties = [typ.rsplit("#",1)[-1] for typ in get_port_data(port, lv2core.portProperty)]
+
+        # data
+        ranges      = {}
+        scalepoints = []
 
         # unit block
         ulabel  = ""
         urender = ""
         usymbol = ""
 
-        # control and cv must contain ranges
+        # control and cv must contain ranges, might contain scale points
         if "Control" in types or "CV" in types:
+            isInteger = "integer" in properties
+            convfunc  = lilv.lilv_node_as_int if isInteger else lilv.lilv_node_as_float
+
             xdefault = lilv.lilv_nodes_get_first(port.get_value(lv2core.default.me))
             xminimum = lilv.lilv_nodes_get_first(port.get_value(lv2core.minimum.me))
             xmaximum = lilv.lilv_nodes_get_first(port.get_value(lv2core.maximum.me))
 
             if xminimum is not None and xmaximum is not None:
-                ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
-                ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
+                ranges['minimum'] = convfunc(xminimum)
+                ranges['maximum'] = convfunc(xmaximum)
 
                 if xdefault is not None:
-                    ranges['default'] = lilv.lilv_node_as_float(xdefault)
+                    ranges['default'] = convfunc(xdefault)
                 else:
                     ranges['default'] = ranges['minimum']
 
@@ -836,12 +843,57 @@ def get_plugin_info(world, plugin):
                         errors.append("port '%s' is missing default value" % portname)
 
             else:
-                ranges['minimum'] = 0.0
-                ranges['maximum'] = 1.0
-                ranges['default'] = 0.0
+                if isInteger:
+                    ranges['minimum'] = 0
+                    ranges['maximum'] = 1
+                    ranges['default'] = 0
+                else:
+                    ranges['minimum'] = 0.0
+                    ranges['maximum'] = 1.0
+                    ranges['default'] = 0.0
                 errors.append("port '%s' is missing value ranges" % portname)
 
-        # control ports might contain unit and scale points
+            nodes = port.get_scale_points()
+
+            if nodes is not None:
+                it = lilv.lilv_scale_points_begin(nodes)
+                while not lilv.lilv_scale_points_is_end(nodes, it):
+                    sp = lilv.lilv_scale_points_get(nodes, it)
+                    it = lilv.lilv_scale_points_next(nodes, it)
+
+                    if sp is None:
+                        continue
+
+                    label = lilv.lilv_scale_point_get_label(sp)
+                    value = lilv.lilv_scale_point_get_value(sp)
+
+                    if label is None:
+                        errors.append("a port scalepoint is missing its label")
+                        continue
+
+                    label = lilv.lilv_node_as_string(label) or ""
+
+                    if not label:
+                        errors.append("a port scalepoint is missing its label")
+                        continue
+
+                    if value is None:
+                        errors.append("port scalepoint '%s' is missing its value" % label)
+                        continue
+
+                    value = convfunc(value)
+
+                    if ranges['minimum'] <= value <= ranges['maximum']:
+                        scalepoints.append({'label': label, 'value': value})
+                    else:
+                        errors.append(("port scalepoint '%s' has an out-of-bounds value:\n" % label) +
+                                      ("%d < %d < %d" if isInteger else "%f < %f < %f") % (ranges['minimum'], value, ranges['maximum']))
+
+            if "enumeration" in properties and len(scalepoints) <= 1:
+                errors.append("port '%s' wants to use enumeration but doesn't have enough values" % portname)
+                properties.remove("enumeration")
+
+        # control ports might contain unit
         if "Control" in types:
             uunit = lilv.lilv_nodes_get_first(port.get_value(units.unit.me))
 
@@ -882,8 +934,6 @@ def get_plugin_info(world, plugin):
                     else:
                         errors.append("port '%s' has custom unit with no symbol" % portname)
 
-            # TODO - scale points
-
         return (types, {
             'name'   : portname,
             'symbol' : portsymbol,
@@ -894,9 +944,9 @@ def get_plugin_info(world, plugin):
                 'symbol': usymbol,
             } if "Control" in types and ulabel and urender and usymbol else {},
             'designation': (get_port_data(port, lv2core.designation) or [None])[0],
-            'properties' : [typ.rsplit("#",1)[-1] for typ in get_port_data(port, lv2core.portProperty)],
+            'properties' : properties,
             'rangeSteps' : (get_port_data(port, pprops.rangeSteps) or [None])[0],
-            "scalePoints": [],
+            "scalePoints": scalepoints,
         })
 
     for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports())):
