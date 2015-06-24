@@ -23,7 +23,7 @@ DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
 DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 
 LOG = bool(int(os.environ.get('MOD_LOG', False)))
-MODGUIS_ONLY = bool(int(os.environ.get('MOD_GUIS_ONLY', True)))
+MODGUIS_ONLY = bool(int(os.environ.get('MOD_GUIS_ONLY', False)))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')

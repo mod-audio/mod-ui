@@ -1112,5 +1112,6 @@ if __name__ == '__main__':
     from pprint import pprint
     #get_plugins_info(argv[1:])
     for i in get_plugins_info(argv[1:]): pprint(i)
+    #for i in get_plugins_info(argv[1:]): pprint({'uri':i['uri'],'errors':i['errors'],'warnings':i['warnings']})
 
 # ------------------------------------------------------------------------------------------------------------
