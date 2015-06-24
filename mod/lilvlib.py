@@ -483,7 +483,11 @@ def get_plugin_info(world, plugin):
     shortname = plugin.get_value(doap.shortname).get_first().as_string() or ""
 
     if not shortname:
-        shortname = shortname.split(" - ",1)[0].split(" ",1)[0]
+        shortnames = name.split(" - ",1)[0].split(" ")
+        if shortnames[0].lower() in bundle.lower():
+            shortname = shortnames[-1]
+        else:
+            shortname = shortnames[0]
         warnings.append("plugin shortname is missing")
 
     # --------------------------------------------------------------------------------------------------------
@@ -1017,7 +1021,7 @@ def get_plugin_info(world, plugin):
         'version'  : version,
         'stability': stability,
 
-        'author ': author,
+        'author' : author,
         'gui'    : gui,
         'ports'  : ports,
         'presets': presets,
