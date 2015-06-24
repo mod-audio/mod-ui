@@ -830,18 +830,42 @@ def get_plugin_info(world, plugin):
         # control and cv must contain ranges, might contain scale points
         if "Control" in types or "CV" in types:
             isInteger = "integer" in properties
-            convfunc  = lilv.lilv_node_as_int if isInteger else lilv.lilv_node_as_float
 
             xdefault = lilv.lilv_nodes_get_first(port.get_value(lv2core.default.me))
             xminimum = lilv.lilv_nodes_get_first(port.get_value(lv2core.minimum.me))
             xmaximum = lilv.lilv_nodes_get_first(port.get_value(lv2core.maximum.me))
 
             if xminimum is not None and xmaximum is not None:
-                ranges['minimum'] = convfunc(xminimum)
-                ranges['maximum'] = convfunc(xmaximum)
+                if isInteger:
+                    if lilv.lilv_node_as_string(xminimum).isdigit():
+                        ranges['minimum'] = lilv.lilv_node_as_int(xminimum)
+                    else:
+                        ranges['minimum'] = int(lilv.lilv_node_as_float(xminimum))
+                        errors.append("port '%s' has integer property but minimum value is float" % portname)
+
+                    if lilv.lilv_node_as_string(xmaximum).isdigit():
+                        ranges['maximum'] = lilv.lilv_node_as_int(xmaximum)
+                    else:
+                        ranges['maximum'] = int(lilv.lilv_node_as_float(xmaximum))
+                        errors.append("port '%s' has integer property but maximum value is float" % portname)
+
+                else:
+                    ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
+                    ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
+
+                if ranges['minimum'] >= ranges['maximum']:
+                    ranges['maximum'] = ranges['minimum'] + (1 if isInteger else 0.1)
+                    errors.append("port '%s' minimum value is equal or higher than its maximum" % portname)
 
                 if xdefault is not None:
-                    ranges['default'] = convfunc(xdefault)
+                    if isInteger:
+                        if lilv.lilv_node_as_string(xdefault).isdigit():
+                            ranges['default'] = lilv.lilv_node_as_int(xdefault)
+                        else:
+                            ranges['default'] = int(lilv.lilv_node_as_float(xdefault))
+                            errors.append("port '%s' has integer property but default value is float" % portname)
+                    else:
+                        ranges['default'] = lilv.lilv_node_as_float(xdefault)
 
                     if not (ranges['minimum'] <= ranges['default'] <= ranges['maximum']):
                         ranges['default'] = ranges['minimum']
@@ -892,7 +916,14 @@ def get_plugin_info(world, plugin):
                         errors.append("port scalepoint '%s' is missing its value" % label)
                         continue
 
-                    value = convfunc(value)
+                    if isInteger:
+                        if lilv.lilv_node_as_string(value).isdigit():
+                            value = lilv.lilv_node_as_int(value)
+                        else:
+                            value = lilv.lilv_node_as_float(value)
+                            errors.append("port '%s' has integer property but scalepoint '%s' value is float" % (portname, label))
+                    else:
+                        value = lilv.lilv_node_as_float(value)
 
                     if ranges['minimum'] <= value <= ranges['maximum']:
                         scalepoints.append({'label': label, 'value': value})
