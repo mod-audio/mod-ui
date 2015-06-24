@@ -550,6 +550,8 @@ def get_plugin_info(world, plugin):
     elif author['email'].startswith(bundleuri):
         author['email'] = author['email'].replace(bundleuri,"",1)
         warnings.append("plugin author email entry is missing 'mailto:' prefix")
+    elif author['email'].startswith("mailto:"):
+        author['email'] = author['email'].replace("mailto:","",1)
 
     authordata = plugin.get_value(doap.maintainer).get_first()
 
