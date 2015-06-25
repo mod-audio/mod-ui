@@ -509,14 +509,19 @@ def get_plugin_info(world, plugin):
     shortname = plugin.get_value(doap.shortname).get_first().as_string() or ""
 
     if not shortname:
-        shortnames = name.split(" - ",1)[0].split(" ")
-        if shortnames[0].lower() in bundle.lower():
-            shortname = shortnames[-1]
+        if len(name) <= 12:
+            shortname = name
         else:
-            shortname = shortnames[0]
-        if len(shortname) > 12:
-            shortname = shortname[:12]
-        warnings.append("plugin shortname is missing")
+            shortnames = name.split(" - ",1)[0].split(" ")
+            if shortnames[0].lower() in bundle.lower() and len(shortnames) > 1 and not shortnames[1].startswith(("(","[")):
+                shortname = shortnames[1]
+            else:
+                shortname = shortnames[0]
+
+            if len(shortname) > 12:
+                shortname = shortname[:12]
+
+            warnings.append("plugin shortname is missing")
 
     elif len(shortname) > 12:
         shortname = shortname[:12]
@@ -604,12 +609,13 @@ def get_plugin_info(world, plugin):
 
     if "shortname" not in author.keys():
         author['shortname'] = author['name'].split(" - ",1)[0].split(" ",1)[0]
-        if len(author['shortname']) > 8:
-            author['shortname'] = author['shortname'][:8]
+        author['shortname'] = author['shortname'].rstrip(",").rstrip(";")
+        if len(author['shortname']) > 10:
+            author['shortname'] = author['shortname'][:10]
         warnings.append("plugin author shortname is missing")
 
-    elif len(author['shortname']) > 8:
-        author['shortname'] = author['shortname'][:8]
+    elif len(author['shortname']) > 10:
+        author['shortname'] = author['shortname'][:10]
         errors.append("plugin author shortname has more than 8 characters")
 
     # --------------------------------------------------------------------------------------------------------
