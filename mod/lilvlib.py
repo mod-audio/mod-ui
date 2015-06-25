@@ -41,15 +41,9 @@ def get_short_port_name(portName):
 
     portName = portName.split("/",1)[0].split(" (",1)[0].split(" [",1)[0].strip()
 
-    # remove space if 1st last word is lowercase and the 2nd first is uppercase, or if 2nd is number
-    if " " in portName:
-        name1, name2 = portName.split(" ", 1)
-        if (name1[-1].islower() and name2[0].isupper()) or name2.isdigit():
-            portName = portName.replace(" ", "", 1)
-
     # cut stuff if too big
     if len(portName) > 16:
-        portName = portName.strip("a").strip("e").strip("i").strip("o").strip("u")
+        portName = portName[0] + portName[1:].replace("a","").replace("e","").replace("i","").replace("o","").replace("u","")
 
         if len(portName) > 16:
             portName = portName[:16]
@@ -477,7 +471,7 @@ def get_plugin_info(world, plugin):
         #warnings.append("plugin uri is not a real url")
 
     # --------------------------------------------------------------------------------------------------------
-    # name and shortname
+    # name
 
     name = plugin.get_name().as_string() or ""
 
@@ -528,9 +522,17 @@ def get_plugin_info(world, plugin):
         errors.append("plugin shortname has more than 12 characters")
 
     # --------------------------------------------------------------------------------------------------------
+    # comment
+
+    comment = plugin.get_value(rdfs.comment).get_first().as_string() or ""
+
+    if not comment:
+        errors.append("plugin comment is missing")
+
+    # --------------------------------------------------------------------------------------------------------
     # description
 
-    description = plugin.get_value(rdfs.comment).get_first().as_string() or ""
+    description = plugin.get_value(doap.description).get_first().as_string() or ""
 
     if not description:
         errors.append("plugin description is missing")
@@ -934,6 +936,12 @@ def get_plugin_info(world, plugin):
                     ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
                     ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
 
+                    if is_integer(lilv.lilv_node_as_string(xminimum)):
+                        warnings.append("port '%s' minimum value is an integer" % portname)
+
+                    if is_integer(lilv.lilv_node_as_string(xmaximum)):
+                        warnings.append("port '%s' maximum value is an integer" % portname)
+
                 if ranges['minimum'] >= ranges['maximum']:
                     ranges['maximum'] = ranges['minimum'] + (1 if isInteger else 0.1)
                     errors.append("port '%s' minimum value is equal or higher than its maximum" % portname)
@@ -951,6 +959,9 @@ def get_plugin_info(world, plugin):
                             ranges['default'] = int(ranges['default'])
                     else:
                         ranges['default'] = lilv.lilv_node_as_float(xdefault)
+
+                        if is_integer(lilv.lilv_node_as_string(xdefault)):
+                            warnings.append("port '%s' default value is an integer" % portname)
 
                     if not (ranges['minimum'] <= ranges['default'] <= ranges['maximum']):
                         ranges['default'] = ranges['minimum']
@@ -1012,6 +1023,8 @@ def get_plugin_info(world, plugin):
                                 errors.append("port '%s' has integer property but scalepoint '%s' value has non-zero decimals" % (portname, label))
                             value = int(value)
                     else:
+                        if is_integer(lilv.lilv_node_as_string(value)):
+                            warnings.append("port '%s' scalepoint '%s' value is an integer" % (portname, label))
                         value = lilv.lilv_node_as_float(value)
 
                     if ranges['minimum'] <= value <= ranges['maximum']:
@@ -1135,10 +1148,10 @@ def get_plugin_info(world, plugin):
         'license'  : license,
         'shortname': shortname,
 
-        'description'  : description,
-        #'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
-        'microVersion' : microVersion,
-        'minorVersion' : minorVersion,
+        'comment'     : comment,
+        'description' : description,
+        'microVersion': microVersion,
+        'minorVersion': minorVersion,
 
         'version'  : version,
         'stability': stability,
