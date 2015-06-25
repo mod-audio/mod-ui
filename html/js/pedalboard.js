@@ -435,7 +435,6 @@ JqueryClass('pedalboard', {
 
             var pluginData = pluginsData[plugin.uri]
             var instance   = self.pedalboard('generateInstance', pluginData.uri)
-            console.log(instance)
 
             self.data('pluginLoad')(plugin.uri, instance, plugin.x, plugin.y,
                 function (ok) {
@@ -1328,7 +1327,7 @@ JqueryClass('pedalboard', {
         var output = jack.data('origin')
         var fromPort = output.attr('mod-port')
         var portType = output.data('portType')
-        
+
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
             var input = $(this)
             var toPort = input.attr('mod-port')

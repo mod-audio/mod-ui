@@ -369,7 +369,7 @@ class EffectBulkData(EffectSearcher):
 
         result = {}
         for uri in self.uris:
-            result[uri] = bool(uri in cached_plugins)
+            result[uri] = cached_plugins[uri]
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
@@ -1089,7 +1089,6 @@ class TemplateHandler(web.RequestHandler):
                 data += b','
 
             msg = '{ "uri": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
-            print(msg)
             data += bytes(msg, "utf-8")
 
         data += b'], "connections": ['
@@ -1102,7 +1101,6 @@ class TemplateHandler(web.RequestHandler):
                 data += b','
 
             msg = '{ "source": "%s", "target": "%s" }' % (connection['source'], connection['target'])
-            print(msg)
             data += bytes(msg, "utf-8")
 
         data += b'] } '
