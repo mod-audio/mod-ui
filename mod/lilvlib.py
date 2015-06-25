@@ -8,6 +8,8 @@ import json
 import lilv
 import os
 
+from math import fmod
+
 # ------------------------------------------------------------------------------------------------------------
 # Utilities
 
@@ -32,6 +34,27 @@ class NS(object):
 
 def is_integer(string):
     return string.strip().lstrip("-+").isdigit()
+
+def get_short_port_name(portName):
+    if len(portName) <= 16:
+        return portName
+
+    portName = portName.split("/",1)[0].split(" (",1)[0].split(" [",1)[0].strip()
+
+    # remove space if 1st last word is lowercase and the 2nd first is uppercase, or if 2nd is number
+    if " " in portName:
+        name1, name2 = portName.split(" ", 1)
+        if (name1[-1].islower() and name2[0].isupper()) or name2.isdigit():
+            portName = portName.replace(" ", "", 1)
+
+    # cut stuff if too big
+    if len(portName) > 16:
+        portName = portName.strip("a").strip("e").strip("i").strip("o").strip("u")
+
+        if len(portName) > 16:
+            portName = portName[:16]
+
+    return portName.strip()
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -491,7 +514,13 @@ def get_plugin_info(world, plugin):
             shortname = shortnames[-1]
         else:
             shortname = shortnames[0]
+        if len(shortname) > 12:
+            shortname = shortname[:12]
         warnings.append("plugin shortname is missing")
+
+    elif len(shortname) > 12:
+        shortname = shortname[:12]
+        errors.append("plugin shortname has more than 12 characters")
 
     # --------------------------------------------------------------------------------------------------------
     # description
@@ -575,7 +604,13 @@ def get_plugin_info(world, plugin):
 
     if "shortname" not in author.keys():
         author['shortname'] = author['name'].split(" - ",1)[0].split(" ",1)[0]
+        if len(author['shortname']) > 8:
+            author['shortname'] = author['shortname'][:8]
         warnings.append("plugin author shortname is missing")
+
+    elif len(author['shortname']) > 8:
+        author['shortname'] = author['shortname'][:8]
+        errors.append("plugin author shortname has more than 8 characters")
 
     # --------------------------------------------------------------------------------------------------------
     # get the proper modgui
@@ -795,6 +830,9 @@ def get_plugin_info(world, plugin):
         'midi'   : { 'input': [], 'output': [] }
     }
 
+    portsymbols = []
+    portnames   = []
+
     # function for filling port info
     def fill_port_info(port):
         # base data
@@ -809,6 +847,32 @@ def get_plugin_info(world, plugin):
         if not portsymbol:
             portsymbol = "_%i" % index
             errors.append("port with index %i has no symbol" % index)
+
+        # check for duplicate names
+        if portname in portsymbols:
+            warnings.append("port name '%s' is not unique" % portname)
+        else:
+            portnames.append(portname)
+
+        # check for duplicate symbols
+        if portsymbol in portsymbols:
+            errors.append("port symbol '%s' is not unique" % portsymbol)
+        else:
+            portsymbols.append(portsymbol)
+
+        # short name
+        psname = lilv.lilv_nodes_get_first(port.get_value(doap.shortname.me))
+
+        if psname is not None:
+            psname = lilv.lilv_node_as_uri(psname)
+
+            if len(psname) > 16:
+                psname = psname[:16]
+                errors.append("port '%s' short name has more than 16 characters" % portname)
+
+        else:
+            psname = get_short_port_name(portname)
+            warnings.append("port '%s' has no short name" % portname)
 
         # port types
         types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
@@ -843,14 +907,22 @@ def get_plugin_info(world, plugin):
                     if is_integer(lilv.lilv_node_as_string(xminimum)):
                         ranges['minimum'] = lilv.lilv_node_as_int(xminimum)
                     else:
-                        ranges['minimum'] = int(lilv.lilv_node_as_float(xminimum))
-                        errors.append("port '%s' has integer property but minimum value is float" % portname)
+                        ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
+                        if fmod(ranges['minimum'], 1.0) == 0.0:
+                            warnings.append("port '%s' has integer property but minimum value is float" % portname)
+                        else:
+                            errors.append("port '%s' has integer property but minimum value has non-zero decimals" % portname)
+                        ranges['minimum'] = int(ranges['minimum'])
 
                     if is_integer(lilv.lilv_node_as_string(xmaximum)):
                         ranges['maximum'] = lilv.lilv_node_as_int(xmaximum)
                     else:
-                        ranges['maximum'] = int(lilv.lilv_node_as_float(xmaximum))
-                        errors.append("port '%s' has integer property but maximum value is float" % portname)
+                        ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
+                        if fmod(ranges['maximum'], 1.0) == 0.0:
+                            warnings.append("port '%s' has integer property but maximum value is float" % portname)
+                        else:
+                            errors.append("port '%s' has integer property but maximum value has non-zero decimals" % portname)
+                        ranges['maximum'] = int(ranges['maximum'])
 
                 else:
                     ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
@@ -865,8 +937,12 @@ def get_plugin_info(world, plugin):
                         if is_integer(lilv.lilv_node_as_string(xdefault)):
                             ranges['default'] = lilv.lilv_node_as_int(xdefault)
                         else:
-                            ranges['default'] = int(lilv.lilv_node_as_float(xdefault))
-                            errors.append("port '%s' has integer property but default value is float" % portname)
+                            ranges['default'] = lilv.lilv_node_as_float(xdefault)
+                            if fmod(ranges['default'], 1.0) == 0.0:
+                                warnings.append("port '%s' has integer property but default value is float" % portname)
+                            else:
+                                errors.append("port '%s' has integer property but default value has non-zero decimals" % portname)
+                            ranges['default'] = int(ranges['default'])
                     else:
                         ranges['default'] = lilv.lilv_node_as_float(xdefault)
 
@@ -924,7 +1000,11 @@ def get_plugin_info(world, plugin):
                             value = lilv.lilv_node_as_int(value)
                         else:
                             value = lilv.lilv_node_as_float(value)
-                            errors.append("port '%s' has integer property but scalepoint '%s' value is float" % (portname, label))
+                            if fmod(value, 1.0) == 0.0:
+                                warnings.append("port '%s' has integer property but scalepoint '%s' value is float" % (portname, label))
+                            else:
+                                errors.append("port '%s' has integer property but scalepoint '%s' value has non-zero decimals" % (portname, label))
+                            value = int(value)
                     else:
                         value = lilv.lilv_node_as_float(value)
 
@@ -940,6 +1020,7 @@ def get_plugin_info(world, plugin):
 
         # control ports might contain unit
         if "Control" in types:
+            # unit
             uunit = lilv.lilv_nodes_get_first(port.get_value(units.unit.me))
 
             if uunit is not None:
@@ -992,6 +1073,7 @@ def get_plugin_info(world, plugin):
             'properties' : properties,
             'rangeSteps' : (get_port_data(port, pprops.rangeSteps) or [None])[0],
             "scalePoints": scalepoints,
+            'shortname'  : psname,
         })
 
     for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports())):
@@ -1114,7 +1196,15 @@ if __name__ == '__main__':
     from sys import argv
     from pprint import pprint
     #get_plugins_info(argv[1:])
-    for i in get_plugins_info(argv[1:]): pprint(i)
-    #for i in get_plugins_info(argv[1:]): pprint({'uri':i['uri'],'errors':i['errors'],'warnings':i['warnings']})
+    #for i in get_plugins_info(argv[1:]): pprint(i)
+    for i in get_plugins_info(argv[1:]):
+        i['warnings'].remove('plugin shortname is missing')
+        i['warnings'].remove('plugin author shortname is missing')
+        i['warnings'].remove('no modgui available')
+        pprint({
+            'uri'     : i['uri'],
+            'errors'  : i['errors'],
+            'warnings': i['warnings']
+        })
 
 # ------------------------------------------------------------------------------------------------------------

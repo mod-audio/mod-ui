@@ -6,9 +6,9 @@
     <div class="mod-presets clearfix">
         <select  mod-role="presets">
             <option value="">---</option>
-            {{#effect.preset_list}}
+            {{#effect.presets}}
             <option mod-role="preset-label" value="{{uri}}">{{label}}</option>
-            {{/effect.preset_list}}
+            {{/effect.presets}}
         </select>
     </div>
     <div class="mod-controls clearfix">
@@ -22,7 +22,7 @@
             {{#effect.ports.control.input}}
             {{#enumeration}}
             <div class="mod-enumerated">
-                <span class="mod-enumerated-title">{{name}}</span>
+                <span class="mod-enumerated-title">{{shortname}}</span>
                 <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                 <div class="mod-enumerated-list" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="custom-select">
                     {{#scalePoints}}
@@ -38,7 +38,7 @@
                 {{^trigger}}
                     {{^toggled}}
                     <div class="mod-knob">
-                        <span class="mod-knob-title">{{name}}</span>
+                        <span class="mod-knob-title">{{shortname}}</span>
                         <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
@@ -48,7 +48,7 @@
                     {{/toggled}}
                     {{#toggled}}
                     <div class="mod-switch">
-                        <span class="mod-switch-title">{{name}}</span>
+                        <span class="mod-switch-title">{{shortname}}</span>
                         <div class="mod-switch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                     </div>
@@ -56,7 +56,7 @@
                 {{/trigger}}
                 {{#trigger}}
                 <div class="mod-switch">
-                    <span class="mod-switch-title">{{name}}</span>
+                    <span class="mod-switch-title">{{shortname}}</span>
                     <div class="mod-footswitch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                     <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                 </div>
@@ -65,7 +65,7 @@
 
             <!-- SLIDER
             <div class="mod-slider">
-                <span class="mod-slider-title">{{name}}</span>
+                <span class="mod-slider-title">{{shortname}}</span>
                 <span class="mod-slider-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                 <span class="mod-slider-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
                 <span class="mod-slider-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
