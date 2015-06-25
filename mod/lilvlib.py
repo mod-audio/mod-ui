@@ -30,6 +30,9 @@ class NS(object):
             self._cache[attr] = lilv.Node(self.world.new_uri(self.base+attr))
         return self._cache[attr]
 
+def is_integer(string):
+    return string.strip().lstrip("-+").isdigit()
+
 # ------------------------------------------------------------------------------------------------------------
 
 def get_category(nodes):
@@ -837,13 +840,13 @@ def get_plugin_info(world, plugin):
 
             if xminimum is not None and xmaximum is not None:
                 if isInteger:
-                    if lilv.lilv_node_as_string(xminimum).isdigit():
+                    if is_integer(lilv.lilv_node_as_string(xminimum)):
                         ranges['minimum'] = lilv.lilv_node_as_int(xminimum)
                     else:
                         ranges['minimum'] = int(lilv.lilv_node_as_float(xminimum))
                         errors.append("port '%s' has integer property but minimum value is float" % portname)
 
-                    if lilv.lilv_node_as_string(xmaximum).isdigit():
+                    if is_integer(lilv.lilv_node_as_string(xmaximum)):
                         ranges['maximum'] = lilv.lilv_node_as_int(xmaximum)
                     else:
                         ranges['maximum'] = int(lilv.lilv_node_as_float(xmaximum))
@@ -859,7 +862,7 @@ def get_plugin_info(world, plugin):
 
                 if xdefault is not None:
                     if isInteger:
-                        if lilv.lilv_node_as_string(xdefault).isdigit():
+                        if is_integer(lilv.lilv_node_as_string(xdefault)):
                             ranges['default'] = lilv.lilv_node_as_int(xdefault)
                         else:
                             ranges['default'] = int(lilv.lilv_node_as_float(xdefault))
@@ -917,7 +920,7 @@ def get_plugin_info(world, plugin):
                         continue
 
                     if isInteger:
-                        if lilv.lilv_node_as_string(value).isdigit():
+                        if is_integer(lilv.lilv_node_as_string(value)):
                             value = lilv.lilv_node_as_int(value)
                         else:
                             value = lilv.lilv_node_as_float(value)
