@@ -317,10 +317,6 @@ class EffectSearcher(Searcher):
 
     def list(self):
         global cached_plugins
-
-        if len(cached_plugins) == 0:
-            refresh_world()
-
         return list(cached_plugins.values())
 
     #index = indexing.EffectIndex()
@@ -362,23 +358,21 @@ class EffectBulkData(EffectSearcher):
 
         #return data
 
-    def post(self):
-        global cached_plugins
-        if len(cached_plugins) == 0:
-            refresh_world()
-            #data = cached_plugins[uri]
-        uris = self.json_args
-        result = {}
-        for uri in uris:
-            result[uri] = bool(uri in cached_plugins)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result, default=json_handler))
-
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
-            self.json_args = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+            self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         else:
             raise web.HTTPError(501, 'Content-Type != "application/json"')
+
+    def post(self):
+        global cached_plugins
+
+        result = {}
+        for uri in self.uris:
+            result[uri] = bool(uri in cached_plugins)
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(result))
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
@@ -1470,6 +1464,7 @@ def prepare():
     def check():
         check_environment(lambda result: result)
 
+    refresh_world()
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
