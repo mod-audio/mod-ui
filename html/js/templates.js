@@ -17,8 +17,4 @@
 
 /*
   This file won't be loaded. Instead, the server will deliver the TEMPLATES
-  variable, with all templates needed for the system. The result will be
-  something like:
-
-  TEMPLATES['effect'] = JSON.parse('<div>...</div>')
-  TEMPLATES['pedalboard'] = JSON.parse('...')*/
+  variable, with all templates needed for the system.*/
