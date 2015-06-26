@@ -149,7 +149,7 @@ class Session(object):
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
-                    self.parameter_addressing_load(*act)
+                    #self.parameter_addressing_load(*act)
 
         def position_cb(instance, x, y):
             pass
@@ -224,7 +224,8 @@ class Session(object):
                 self.remove(next(gen), remove_all_plugins)
             except StopIteration:
                 callback(r)
-        remove_all_plugins()
+        self.hmi.control_rm(-1, ":all", remove_all_plugins)
+        #remove_all_plugins()
 
         if self._pedal_changed_callback is not None:
             self._pedal_changed_callback(True, "", "")
@@ -469,7 +470,7 @@ class Session(object):
 
     def hmi_parameter_set(self, instance_id, port_id, value, callback):
         #self.browser.send(instance_id, port_id, value)
-        self.parameter_set(instance_id, port_id, value, callback)
+        self.parameter_set(self.instance_mapper.get_instance(instance_id) + "/" + port_id, value, callback)
 
     def preset_load(self, instance_id, uri, callback):
         self.host.preset_load(instance_id, uri, callback)
