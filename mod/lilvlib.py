@@ -535,7 +535,7 @@ def get_plugin_info(world, plugin):
     description = plugin.get_value(doap.description).get_first().as_string() or ""
 
     if not description:
-        errors.append("plugin description is missing")
+        warnings.append("plugin description is missing")
 
     # --------------------------------------------------------------------------------------------------------
     # version
@@ -801,7 +801,7 @@ def get_plugin_info(world, plugin):
                     break
                 port_indx = world.find_nodes(port, lv2core.index .me, None).get_first()
                 port_symb = world.find_nodes(port, lv2core.symbol.me, None).get_first()
-                port_name = world.find_nodes(port, doap.shortname.me, None).get_first()
+                port_name = world.find_nodes(port, lv2core.name  .me, None).get_first()
 
                 if None in (port_indx.me, port_name.me, port_symb.me):
                     if not errpr:
@@ -872,7 +872,7 @@ def get_plugin_info(world, plugin):
         psname = lilv.lilv_nodes_get_first(port.get_value(doap.shortname.me))
 
         if psname is not None:
-            psname = lilv.lilv_node_as_uri(psname) or ""
+            psname = lilv.lilv_node_as_string(psname) or ""
 
         if not psname:
             psname = get_short_port_name(portname)

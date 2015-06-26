@@ -241,14 +241,15 @@ function GUI(effect, options) {
             port.widgets[i].controlWidget('enable')
     }
 
-    this.render = function (instance, callback) {
+    this.render = function (instance, callback, skipNamespace) {
         var render = function () {
-            if(instance)
+            if (instance)
                 self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
             else
                 self.icon = $('<div class="mod-pedal">')
+
             self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
-                self.getTemplateData(effect)))
+                self.getTemplateData(effect, skipNamespace)))
             self.assignIconFunctionality(self.icon)
             self.assignControlFunctionality(self.icon)
 
@@ -271,7 +272,7 @@ function GUI(effect, options) {
             else
                 self.settings = $('<div class="mod-settings">')
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
-                self.getTemplateData(effect)))
+                self.getTemplateData(effect, skipNamespace)))
             self.assignControlFunctionality(self.settings)
 
             if (! instance) {
@@ -300,7 +301,7 @@ function GUI(effect, options) {
         var render = function () {
             var icon = $('<div class="mod-pedal dummy">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
-                self.getTemplateData(effect)))
+                self.getTemplateData(effect, skipNamespace)))
             callback(icon)
         }
         if (self.dependenciesLoaded) {
@@ -329,8 +330,9 @@ function GUI(effect, options) {
             var control = $(this)
             var symbol = $(this).attr('mod-port-symbol')
             var port = self.controls[symbol]
+            var inst = element.attr('mod-instance')
 
-            control.attr("mod-port", element.attr('mod-instance') + "/" + symbol)
+            control.attr("mod-port", (inst ? inst + "/" : "") + symbol)
             control.addClass("mod-port")
 
             if (port)
@@ -513,11 +515,17 @@ function GUI(effect, options) {
         })
     }
 
-    this.getTemplateData = function (options) {
+    this.getTemplateData = function (options, skipNamespace) {
         var data = $.extend({}, options.gui.templateData)
         data.effect = options
-        data.ns  = '?uri=' + escape(options.uri)
-        data.cns = '_' + escape(options.uri).split("/").join("_").split("%").join("_").split(".").join("_")
+
+        if (skipNamespace) {
+            data.ns  = ''
+            data.cns = ''
+        } else {
+            data.ns  = '?uri=' + escape(options.uri)
+            data.cns = '_' + escape(options.uri).split("/").join("_").split("%").join("_").split(".").join("_")
+        }
 
         // fill fields that might be present on modgui data
         if (!data.author)
