@@ -872,15 +872,15 @@ def get_plugin_info(world, plugin):
         psname = lilv.lilv_nodes_get_first(port.get_value(doap.shortname.me))
 
         if psname is not None:
-            psname = lilv.lilv_node_as_uri(psname)
+            psname = lilv.lilv_node_as_uri(psname) or ""
 
-            if len(psname) > 16:
-                psname = psname[:16]
-                errors.append("port '%s' short name has more than 16 characters" % portname)
-
-        else:
+        if not psname:
             psname = get_short_port_name(portname)
             warnings.append("port '%s' has no short name" % portname)
+
+        elif len(psname) > 16:
+            psname = psname[:16]
+            errors.append("port '%s' short name has more than 16 characters" % portname)
 
         # port types
         types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
