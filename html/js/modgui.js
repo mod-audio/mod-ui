@@ -558,7 +558,7 @@ function GUI(effect, options) {
                 port['enumeration'] = port.properties.indexOf("enumeration") >= 0
                 port['integer'    ] = port.properties.indexOf("integer") >= 0
                 port['logarithmic'] = port.properties.indexOf("logarithmic") >= 0
-                port['toggle'     ] = port.properties.indexOf("toggled") >= 0
+                port['toggled'    ] = port.properties.indexOf("toggled") >= 0
                 port['trigger'    ] = port.properties.indexOf("trigger") >= 0
 
                 inputs.push(port)
@@ -658,7 +658,7 @@ var baseWidget = {
         self.data('enumeration',  port.properties.indexOf("enumeration") >= 0)
         self.data('integer',      port.properties.indexOf("integer") >= 0)
         self.data('logarithmic',  port.properties.indexOf("logarithmic") >= 0)
-        self.data('toggle',       port.properties.indexOf("toggled") >= 0)
+        self.data('toggled',      port.properties.indexOf("toggled") >= 0)
         self.data('trigger',      port.properties.indexOf("trigger") >= 0)
         self.data('scalePoints',  port.scalePoints)
 

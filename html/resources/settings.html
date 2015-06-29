@@ -31,9 +31,6 @@
                 </div>
             </div>
             {{/enumeration}}
-            {{/effect.ports.control.input}}
-
-            {{#effect.ports.control.input}}
             {{^enumeration}}
                 {{^trigger}}
                     {{^toggled}}
@@ -62,17 +59,6 @@
                 </div>
                 {{/trigger}}
             {{/enumeration}}
-
-            <!-- SLIDER
-            <div class="mod-slider">
-                <span class="mod-slider-title">{{shortname}}</span>
-                <span class="mod-slider-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
-                <span class="mod-slider-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
-                <span class="mod-slider-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
-                <div class="mod-slider-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
-                <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
-            </div>
-            -->
             {{/effect.ports.control.input}}
         </div>
     </div>
