@@ -751,19 +751,15 @@ def get_plugin_info(world, plugin):
             modgui_thumb = world.find_nodes(modguigui.me, modgui.thumbnail .me, None).get_first()
 
             if modgui_scrn.me is not None:
-                scrnFile = lilv.lilv_uri_to_path(modgui_scrn.as_string())
-                if os.path.exists(scrnFile):
-                    gui['screenshot'] = scrnFile
-                else:
+                gui['screenshot'] = lilv.lilv_uri_to_path(modgui_scrn.as_string())
+                if not os.path.exists(gui['screenshot']):
                     errors.append("modgui screenshot file is missing")
             else:
                 errors.append("modgui has no screnshot data")
 
             if modgui_thumb.me is not None:
-                thumbFile = lilv.lilv_uri_to_path(modgui_thumb.as_string())
-                if os.path.exists(thumbFile):
-                    gui['thumbnail'] = thumbFile
-                else:
+                gui['thumbnail'] = lilv.lilv_uri_to_path(modgui_thumb.as_string())
+                if not os.path.exists(gui['thumbnail']):
                     errors.append("modgui thumbnail file is missing")
             else:
                 errors.append("modgui has no thumbnail data")
