@@ -220,12 +220,13 @@ class Searcher(web.RequestHandler):
         raise NotImplemented
 
     def get_object(self, objid):
-        path = os.path.join(self.index.data_source, objid)
-        md_path = path + '.metadata'
-        obj = json.loads(open(path).read())
-        if os.path.exists(md_path):
-            obj.update(json.loads(open(md_path).read()))
-        return obj
+        #path = os.path.join(self.index.data_source, objid)
+        #md_path = path + '.metadata'
+        #obj = json.loads(open(path).read())
+        #if os.path.exists(md_path):
+            #obj.update(json.loads(open(md_path).read()))
+        #return obj
+        return None
 
     def get(self, action, objid=None):
         try:
@@ -242,10 +243,10 @@ class Searcher(web.RequestHandler):
         if action == 'get_by':
             response = self.get_by()
         if action == 'get':
-            try:
+            #try:
                 response = self.get_object(objid)
-            except:
-                raise web.HTTPError(404)
+            #except:
+                #raise web.HTTPError(404)
 
         if action == 'list':
             response = self.list()
@@ -253,40 +254,40 @@ class Searcher(web.RequestHandler):
         self.write(json.dumps(response, default=json_handler))
 
     def autocomplete(self):
-        term = str(self.request.arguments.get('term')[0])
+        #term = str(self.request.arguments.get('term')[0])
         result = []
-        for entry in self.index.term_search(term):
-            result.append(entry)
+        #for entry in self.index.term_search(term):
+            #result.append(entry)
         return result
 
     def search(self):
         result = []
-        for entry in self.index.term_search(self.request.arguments):
-            obj = self.get_object(entry['id'])
-            if obj is None:
+        #for entry in self.index.term_search(self.request.arguments):
+            #obj = self.get_object(entry['id'])
+            #if obj is None:
                 # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
-                continue
-            entry.update(obj)
-            result.append(entry)
+                #continue
+            #entry.update(obj)
+            #result.append(entry)
         return result
 
     def list(self):
         result = []
-        for entry in self.index.every():
-            obj = self.get_object(entry['id'])
-            if obj is None:
-                continue
-            entry.update(obj)
-            result.append(entry)
+        #for entry in self.index.every():
+            #obj = self.get_object(entry['id'])
+            #if obj is None:
+                #continue
+            #entry.update(obj)
+            #result.append(entry)
         return result
 
     def get_by(self):
-        query = {}
-        for key in self.request.arguments.keys():
-            query[key] = self.get_argument(key)
-        try:
-            return next(self.index.find(**query))
-        except StopIteration:
+        #query = {}
+        #for key in self.request.arguments.keys():
+            #query[key] = self.get_argument(key)
+        #try:
+            #return next(self.index.find(**query))
+        #except StopIteration:
             return None
 
 class EffectSearcher(Searcher):
@@ -321,19 +322,6 @@ class EffectSearcher(Searcher):
         #super(EffectSearcher, self).get(action, objid)
 
 class EffectBulkData(EffectSearcher):
-    "Gets data of several plugins"
-    #def get_effect(self, uri):
-        #refresh_world()
-
-        #"return true if an effect is installed"
-        #try:
-            #global cached_plugins
-            #data = cached_plugins[uri]
-        #except:
-            #return None
-
-        #return data
-
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
             self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
@@ -676,11 +664,15 @@ class EffectPosition(web.RequestHandler):
         self.write(json.dumps(True))
 
 class PackageEffectList(web.RequestHandler):
-    def get(self, package):
-        index = indexing.EffectIndex()
-        result = list(index.find(package=package))
+    def get(self, bundle):
+        if not bundle.endswith(os.sep):
+            bundle += os.sep
+        result = []
+        for plugin in get_all_plugins():
+            if bundle in plugin['bundles']:
+                result.append(plugin)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result, default=json_handler))
+        self.write(json.dumps(result))
 
 class PackageUninstall(web.RequestHandler):
     def post(self, package):
@@ -1017,16 +1009,18 @@ class TemplateHandler(web.RequestHandler):
 
     def index(self):
         context = {}
-        ei = indexing.EffectIndex()
-        default_icon_template = open(DEFAULT_ICON_TEMPLATE).read()
-        default_settings_template = open(DEFAULT_SETTINGS_TEMPLATE).read()
+
+        with open(DEFAULT_ICON_TEMPLATE) as fd:
+            default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
+
+        with open(DEFAULT_SETTINGS_TEMPLATE) as fd:
+            default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
+
         context = {
-            'effects': ei.every(),
-            'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
-            'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
+            'default_icon_template': default_icon_template,
+            'default_settings_template': default_settings_template,
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(get_hardware()).encode("utf-8")),
-            # 'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
@@ -1036,7 +1030,7 @@ class TemplateHandler(web.RequestHandler):
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
-            }
+        }
         return context
 
     def icon(self):

@@ -666,6 +666,35 @@ def get_plugin_info(world, plugin):
         errors.append("plugin author shortname has more than 8 characters")
 
     # --------------------------------------------------------------------------------------------------------
+    # bundles
+
+    bnodes  = lilv.lilv_plugin_get_data_uris(plugin.me)
+    bundles = []
+
+    it = lilv.lilv_nodes_begin(bnodes)
+    while not lilv.lilv_nodes_is_end(bnodes, it):
+        bnode = lilv.lilv_nodes_get(bnodes, it)
+        it    = lilv.lilv_nodes_next(bnodes, it)
+
+        if bnode is None:
+            continue
+        if not lilv.lilv_node_is_uri(bnode):
+            continue
+
+        bpath = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bnode)))
+
+        if not bpath.endswith(os.sep):
+            bpath += os.sep
+
+        if bpath not in bundles:
+            bundles.append(bpath)
+
+    if bundle not in bundles:
+        bundles.append(bundle)
+
+    del bnodes, it
+
+    # --------------------------------------------------------------------------------------------------------
     # get the proper modgui
 
     modguigui = None
@@ -1198,6 +1227,7 @@ def get_plugin_info(world, plugin):
         'stability': stability,
 
         'author' : author,
+        'bundles': bundles,
         'gui'    : gui,
         'ports'  : ports,
         'presets': presets,
