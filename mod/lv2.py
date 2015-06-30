@@ -4,7 +4,7 @@
 import os
 import lilv
 
-from mod.lilvlib import NS, LILV_FOREACH
+from mod.lilvlib import NS, LILV_FOREACH, plugin_has_modgui
 from mod.lilvlib import get_plugin_info as get_plugin_info2
 from mod.settings import MODGUIS_ONLY
 
@@ -82,10 +82,8 @@ def get_all_plugins():
                 ret.append(PLUGNFO[uri])
             continue
 
-        # TODO - add lilvlib function for checking if a plugin has modgui (instead of full scan)
-
         # skip plugins without modgui if so requested
-        if MODGUIS_ONLY and False:
+        if MODGUIS_ONLY and not plugin_has_modgui(W, p):
             continue
 
         # get new info

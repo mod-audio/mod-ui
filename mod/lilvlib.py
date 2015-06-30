@@ -434,6 +434,51 @@ def get_pedalboard_name(bundle):
     return plugin.get_name().as_string()
 
 # ------------------------------------------------------------------------------------------------------------
+# plugin_has_modgui
+
+# Check if a plugin has modgui
+
+def plugin_has_modgui(world, plugin):
+    # define the needed stuff
+    modgui  = NS(world, "http://moddevices.com/ns/modgui#")
+
+    # --------------------------------------------------------------------------------------------------------
+    # get the proper modgui
+
+    modguigui = None
+
+    nodes = plugin.get_value(modgui.gui)
+    it    = nodes.begin()
+    while not nodes.is_end(it):
+        mgui = nodes.get(it)
+        it   = nodes.next(it)
+        if mgui.me is None:
+            continue
+        resdir = world.find_nodes(mgui.me, modgui.resourcesDirectory.me, None).get_first()
+        if resdir.me is None:
+            continue
+        modguigui = mgui
+        if os.path.expanduser("~") in lilv.lilv_uri_to_path(resdir.as_string()):
+            # found a modgui in the home dir, stop here and use it
+            break
+
+    del nodes, it
+
+    # --------------------------------------------------------------------------------------------------------
+    # check selected modgui
+
+    if modguigui is None or modguigui.me is None:
+        return False
+
+    # resourcesDirectory *must* be present
+    modgui_resdir = world.find_nodes(modguigui.me, modgui.resourcesDirectory.me, None).get_first()
+
+    if modgui_resdir.me is None:
+        return False
+
+    return os.path.exists(lilv.lilv_uri_to_path(modgui_resdir.as_string()))
+
+# ------------------------------------------------------------------------------------------------------------
 # get_plugin_info
 
 # Get info from a lilv plugin
