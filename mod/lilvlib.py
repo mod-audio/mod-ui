@@ -1116,7 +1116,7 @@ def get_plugin_info(world, plugin):
             ports[typ]["input" if isInput else "output"].append(info)
 
     # --------------------------------------------------------------------------------------------------------
-    # done
+    # presets
 
     def get_preset_data(preset):
         world.load_resource(preset.me)

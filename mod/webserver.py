@@ -57,36 +57,13 @@ from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
-from mod.lilvlib import get_pedalboard_info, get_pedalboard_name, get_plugin_info
-from mod.lv2 import get_pedalboards
+from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
+from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
-
-global cached_plugins
-cached_plugins = {}
-
-def refresh_world():
-    bundles = []
-    plugins = {}
-
-    world = lilv.World()
-    world.load_all()
-
-    for p in world.get_all_plugins():
-        info = get_plugin_info(world, p)
-
-        if MODGUIS_ONLY and not info['gui']:
-            continue
-
-        plugins[info['uri']] = info
-
-    del world
-
-    global cached_plugins
-    cached_plugins = plugins
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -316,8 +293,7 @@ class EffectSearcher(Searcher):
     index = None
 
     def list(self):
-        global cached_plugins
-        return list(cached_plugins.values())
+        return get_all_plugins()
 
     #index = indexing.EffectIndex()
 
@@ -365,11 +341,13 @@ class EffectBulkData(EffectSearcher):
             raise web.HTTPError(501, 'Content-Type != "application/json"')
 
     def post(self):
-        global cached_plugins
-
         result = {}
         for uri in self.uris:
-            result[uri] = cached_plugins[uri]
+            try:
+                info = get_plugin_info(uri)
+            except:
+                continue
+            result[uri] = info
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
@@ -420,8 +398,7 @@ class EffectResource(web.StaticFileHandler):
             return self.shared_resource(path)
 
         try:
-            global cached_plugins
-            data = cached_plugins[uri]
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
@@ -449,8 +426,7 @@ class EffectImage(web.RequestHandler):
         uri = self.get_argument('uri')
 
         try:
-            global cached_plugins
-            data = cached_plugins[uri]
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
@@ -474,8 +450,7 @@ class EffectStylesheet(web.RequestHandler):
         uri = self.get_argument('uri')
 
         try:
-            global cached_plugins
-            data = cached_plugins[uri]
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
@@ -496,8 +471,7 @@ class EffectJavascript(web.RequestHandler):
         uri = self.get_argument('uri')
 
         try:
-            global cached_plugins
-            data = cached_plugins[uri]
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
@@ -522,8 +496,7 @@ class EffectAdd(web.RequestHandler):
         y   = self.request.arguments.get('y', [0])[0]
 
         try:
-            global cached_plugins
-            data = cached_plugins[uri]
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
@@ -545,8 +518,7 @@ class EffectGet(web.RequestHandler):
         uri = self.get_argument('uri')
 
         try:
-            global cached_plugins
-            data = cached_plugins[uri]
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
@@ -1462,7 +1434,7 @@ def prepare():
     def check():
         check_environment(lambda result: result)
 
-    refresh_world()
+    lv2_init()
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
