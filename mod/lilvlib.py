@@ -130,7 +130,7 @@ def get_port_unit(miniuri):
       'mile': ["miles", "%f mi", "mi"],
       'db': ["decibels", "%f dB", "dB"],
       'pc': ["percent", "%f%%", "%"],
-      'coef': ["coefficient", "* %f", ""],
+      'coef': ["coefficient", "* %f", "*"],
       'hz': ["hertz", "%f Hz", "Hz"],
       'khz': ["kilohertz", "%f kHz", "kHz"],
       'mhz': ["megahertz", "%f MHz", "MHz"],
@@ -1124,7 +1124,10 @@ def get_plugin_info(world, plugin):
                     ulabel, urender, usymbol = get_port_unit(uuri)
 
                     if not (ulabel and urender and usymbol):
-                        errors.append("port '%s' has unknown lv2 unit (our bug?)" % portname)
+                        errors.append("port '%s' has unknown lv2 unit (our bug?, data is '%s', '%s', '%s')" % (portname,
+                                                                                                               ulabel,
+                                                                                                               urender,
+                                                                                                               usymbol))
 
                 # using custom unit
                 else:
@@ -1280,13 +1283,25 @@ if __name__ == '__main__':
     #get_plugins_info(argv[1:])
     #for i in get_plugins_info(argv[1:]): pprint(i)
     for i in get_plugins_info(argv[1:]):
-        i['warnings'].remove('plugin shortname is missing')
-        i['warnings'].remove('plugin author shortname is missing')
-        i['warnings'].remove('no modgui available')
+        warnings = i['warnings'].copy()
+
+        if 'plugin shortname is missing' in warnings:
+            i['warnings'].remove('plugin shortname is missing')
+
+        if 'plugin author shortname is missing' in warnings:
+            i['warnings'].remove('plugin author shortname is missing')
+
+        if 'no modgui available' in warnings:
+            i['warnings'].remove('no modgui available')
+
+        for warn in warnings:
+            if "has no short name" in warn:
+                i['warnings'].remove(warn)
+
         pprint({
             'uri'     : i['uri'],
             'errors'  : i['errors'],
             'warnings': i['warnings']
-        })
+        }, width=200)
 
 # ------------------------------------------------------------------------------------------------------------

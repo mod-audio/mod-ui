@@ -213,7 +213,7 @@ class Searcher(web.RequestHandler):
             (r"/%s/(get)/([a-z0-9]+)?" % path, cls),
             (r"/%s/(get_by)/?" % path, cls),
             (r"/%s/(list)/?" % path, cls),
-            ]
+        ]
 
     @property
     def index(self):
