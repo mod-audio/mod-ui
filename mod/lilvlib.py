@@ -575,10 +575,10 @@ def get_plugin_info(world, plugin):
     # --------------------------------------------------------------------------------------------------------
     # description
 
-    description = plugin.get_value(doap.description).get_first().as_string() or ""
+    #description = plugin.get_value(doap.description).get_first().as_string() or ""
 
-    if not description:
-        warnings.append("plugin description is missing")
+    #if not description:
+        #warnings.append("plugin description is missing")
 
     # --------------------------------------------------------------------------------------------------------
     # version
@@ -1214,7 +1214,7 @@ def get_plugin_info(world, plugin):
         'shortname': shortname,
 
         'comment'     : comment,
-        'description' : description,
+        #'description' : description,
         'microVersion': microVersion,
         'minorVersion': minorVersion,
 
