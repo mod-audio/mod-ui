@@ -1,76 +1,65 @@
-import os, hashlib, re, random, shutil, subprocess
-import lilv
-import hashlib
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-from mod.lilvlib import LILV_FOREACH, get_category, get_port_unit, get_plugin_info
+import os
+import lilv
+
+from mod.lilvlib import NS, LILV_FOREACH, get_category, get_port_unit, get_plugin_info
 
 # LILV stuff
 
 W = lilv.World()
-W.load_all()
 
-PLUGINS = W.get_all_plugins()
 BUNDLES = []
+PLUGINS = []
 
-# Make a list of all installed bundles
-for p in PLUGINS:
-    bundles = lilv.lilv_plugin_get_data_uris(p.me)
+def init():
+    W.load_all()
+    refresh()
 
-    it = lilv.lilv_nodes_begin(bundles)
-    while not lilv.lilv_nodes_is_end(bundles, it):
-        bundle = lilv.lilv_nodes_get(bundles, it)
-        it     = lilv.lilv_nodes_next(bundles, it)
+def refresh():
+    BUNDLES = []
+    PLUGINS = W.get_all_plugins()
 
-        if bundle is None:
-            continue
-        if not lilv.lilv_node_is_uri(bundle):
-            continue
+    # Make a list of all installed bundles
+    for p in PLUGINS:
+        bundles = lilv.lilv_plugin_get_data_uris(p.me)
 
-        bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+        it = lilv.lilv_nodes_begin(bundles)
+        while not lilv.lilv_nodes_is_end(bundles, it):
+            bundle = lilv.lilv_nodes_get(bundles, it)
+            it     = lilv.lilv_nodes_next(bundles, it)
 
-        if not bundle.endswith(os.sep):
-            bundle += os.sep
+            if bundle is None:
+                continue
+            if not lilv.lilv_node_is_uri(bundle):
+                continue
 
-        if bundle not in BUNDLES:
-            BUNDLES.append(bundle)
+            bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
 
-class NS(object):
-    def __init__(self, base, world=W):
-        self.base = base
-        self.world = world
-        self._cache = {}
+            if not bundle.endswith(os.sep):
+                bundle += os.sep
 
-    def __getattr__(self, attr):
-        if attr.endswith("_"):
-            attr = attr[:-1]
-        if attr not in self._cache:
-            self._cache[attr] = lilv.Node(self.world.new_uri(self.base+attr))
-        return self._cache[attr]
-
-doap = NS(lilv.LILV_NS_DOAP)
-foaf = NS(lilv.LILV_NS_FOAF)
-lilvns = NS(lilv.LILV_NS_LILV)
-lv2core = NS(lilv.LILV_NS_LV2)
-rdf = NS(lilv.LILV_NS_RDF)
-rdfs = NS(lilv.LILV_NS_RDFS)
-atom = NS("http://lv2plug.in/ns/ext/atom#")
-units = NS("http://lv2plug.in/ns/extensions/units#")
-pset = NS("http://lv2plug.in/ns/ext/presets#")
-midi = NS("http://lv2plug.in/ns/ext/midi#")
-pprops = NS("http://lv2plug.in/ns/ext/port-props#")
-time = NS("http://lv2plug.in/ns/ext/time#")
-modgui = NS("http://moddevices.com/ns/modgui#")
-modpedal = NS("http://moddevices.com/ns/modpedal#")
+            if bundle not in BUNDLES:
+                BUNDLES.append(bundle)
 
 def get_pedalboards():
+    # define needed namespaces
+    rdf      = NS(W, lilv.LILV_NS_RDF)
+    rdfs     = NS(W, lilv.LILV_NS_RDFS)
+    pset     = NS(W, "http://lv2plug.in/ns/ext/presets#")
+    modpedal = NS(W, "http://moddevices.com/ns/modpedal#")
+
+    # fill in presets for a plugin
     def get_presets(p):
         presets = p.get_related(pset.Preset)
         def get_preset_data(preset):
             W.load_resource(preset.me)
             label = W.find_nodes(preset.me, rdfs.label.me, None).get_first().as_string()
-            return dict(uri=preset.as_string(), label=label)
+            return { 'uri': preset.as_string(), 'label': label }
         return list(LILV_FOREACH(presets, get_preset_data))
 
+    # check each plugin for a pedalboard type
     pedalboards = []
 
     for pedalboard in PLUGINS:
@@ -82,6 +71,7 @@ def get_pedalboards():
         if "http://moddevices.com/ns/modpedal#Pedalboard" not in plugin_types:
             continue
 
+        # ready
         pedalboards.append({
             'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
             'name': pedalboard.get_name().as_string(),
