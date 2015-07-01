@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,11 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, re, shutil, sys, pystache
+import os, re, shutil, sys
 import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
+import lilv
 import time, uuid
 from datetime import timedelta
 from io import StringIO
@@ -35,19 +36,18 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (HTML_DIR, CLOUD_PUB, PLUGIN_LIBRARY_DIR,
+from mod.settings import (HTML_DIR, CLOUD_PUB,
                           DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
-                          PLUGIN_INSTALLATION_TMP_DIR, DEFAULT_ICON_TEMPLATE,
-                          DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
+                          DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP,
-                          )
+                          MODGUIS_ONLY)
 
 
 from mod import indexing, jsoncall, json_handler, symbolify
@@ -58,7 +58,7 @@ from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
 from mod.hardware import get_hardware
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
-from mod.lv2 import get_pedalboards
+from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
@@ -158,7 +158,7 @@ class BluetoothSetPin(web.RequestHandler):
 
 class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
-    destination_dir = PLUGIN_INSTALLATION_TMP_DIR
+    destination_dir = DOWNLOAD_TMP_DIR
 
     def process_file(self, data, callback=lambda:None):
         def on_finish(result):
@@ -166,13 +166,13 @@ class EffectInstaller(SimpleFileReceiver):
             callback()
         install_bundle(data['filename'], on_finish)
 
-class EffectSetLocalVariable(web.RequestHandler):
-    def post(self, var):
-        url = self.get_argument('url')
-        value = self.get_argument(var)
-        index = indexing.EffectIndex()
-        objid = next(index.find(url=url))['id']
-        index.save_local_variable(objid, var, value)
+#class EffectSetLocalVariable(web.RequestHandler):
+    #def post(self, var):
+        #uri = self.get_argument('uri')
+        #value = self.get_argument(var)
+        #index = indexing.EffectIndex()
+        #objid = next(index.find(uri=uri))['id']
+        #index.save_local_variable(objid, var, value)
 
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
@@ -204,7 +204,7 @@ class SDKSysUpdate(web.RequestHandler):
         self.finish()
 
 # Abstract class
-class Searcher(tornado.web.RequestHandler):
+class Searcher(web.RequestHandler):
     @classmethod
     def urls(cls, path):
         return [
@@ -213,19 +213,20 @@ class Searcher(tornado.web.RequestHandler):
             (r"/%s/(get)/([a-z0-9]+)?" % path, cls),
             (r"/%s/(get_by)/?" % path, cls),
             (r"/%s/(list)/?" % path, cls),
-            ]
+        ]
 
     @property
     def index(self):
         raise NotImplemented
 
     def get_object(self, objid):
-        path = os.path.join(self.index.data_source, objid)
-        md_path = path + '.metadata'
-        obj = json.loads(open(path).read())
-        if os.path.exists(md_path):
-            obj.update(json.loads(open(md_path).read()))
-        return obj
+        #path = os.path.join(self.index.data_source, objid)
+        #md_path = path + '.metadata'
+        #obj = json.loads(open(path).read())
+        #if os.path.exists(md_path):
+            #obj.update(json.loads(open(md_path).read()))
+        #return obj
+        return None
 
     def get(self, action, objid=None):
         try:
@@ -242,10 +243,10 @@ class Searcher(tornado.web.RequestHandler):
         if action == 'get_by':
             response = self.get_by()
         if action == 'get':
-            try:
+            #try:
                 response = self.get_object(objid)
-            except:
-                raise tornado.web.HTTPError(404)
+            #except:
+                #raise web.HTTPError(404)
 
         if action == 'list':
             response = self.list()
@@ -253,101 +254,98 @@ class Searcher(tornado.web.RequestHandler):
         self.write(json.dumps(response, default=json_handler))
 
     def autocomplete(self):
-        term = str(self.request.arguments.get('term')[0])
+        #term = str(self.request.arguments.get('term')[0])
         result = []
-        for entry in self.index.term_search(term):
-            result.append(entry)
+        #for entry in self.index.term_search(term):
+            #result.append(entry)
         return result
 
     def search(self):
         result = []
-        for entry in self.index.term_search(self.request.arguments):
-            obj = self.get_object(entry['id'])
-            if obj is None:
+        #for entry in self.index.term_search(self.request.arguments):
+            #obj = self.get_object(entry['id'])
+            #if obj is None:
                 # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
-                continue
-            entry.update(obj)
-            result.append(entry)
+                #continue
+            #entry.update(obj)
+            #result.append(entry)
         return result
 
     def list(self):
         result = []
-        for entry in self.index.every():
-            obj = self.get_object(entry['id'])
-            if obj is None:
-                continue
-            entry.update(obj)
-            result.append(entry)
+        #for entry in self.index.every():
+            #obj = self.get_object(entry['id'])
+            #if obj is None:
+                #continue
+            #entry.update(obj)
+            #result.append(entry)
         return result
 
     def get_by(self):
-        query = {}
-        for key in self.request.arguments.keys():
-            query[key] = self.get_argument(key)
-        try:
-            return next(self.index.find(**query))
-        except StopIteration:
+        #query = {}
+        #for key in self.request.arguments.keys():
+            #query[key] = self.get_argument(key)
+        #try:
+            #return next(self.index.find(**query))
+        #except StopIteration:
             return None
 
 class EffectSearcher(Searcher):
-    index = indexing.EffectIndex()
+    index = None
 
-    def get_by_url(self):
-        try:
-            url = self.request.arguments['url'][0]
-        except (KeyError, IndexError):
-            raise tornado.web.HTTPError(404)
+    def list(self):
+        return get_all_plugins()
 
-        search = self.index.find(url=url)
-        try:
-            entry = next(search)
-        except StopIteration:
-            raise tornado.web.HTTPError(404)
+    #index = indexing.EffectIndex()
 
-        return entry['id']
+    #def get_by_uri(self):
+        #try:
+            #uri = self.request.arguments['uri'][0]
+        #except (KeyError, IndexError):
+            #try:
+                #uri = self.request.arguments['uri']
+            #except (KeyError, IndexError):
+                #raise web.HTTPError(404)
 
-    def get(self, action, objid=None):
-        if action == 'get' and objid is None:
-            objid = self.get_by_url()
+        #search = self.index.find(uri=uri)
+        #try:
+            #entry = next(search)
+        #except StopIteration:
+            #raise web.HTTPError(404)
 
-        super(EffectSearcher, self).get(action, objid)
+        #return entry['id']
+
+    #def get(self, action, objid=None):
+        #if action == 'get' and objid is None:
+            #objid = self.get_by_uri()
+
+        #super(EffectSearcher, self).get(action, objid)
 
 class EffectBulkData(EffectSearcher):
-    "Gets data of several plugins"
-    def get_effect(self, url):
-        "return true if an effect is installed"
-        search = self.index.find(url=url)
-        try:
-            entry = next(search)
-        except StopIteration:
-            return False
-        try:
-            return self.get_object(entry['id'])
-        except:
-            return None
-
-    def post(self):
-        urls = self.json_args
-        result = {}
-        for url in urls:
-            effect = self.get_effect(url)
-            if effect:
-                result[url] = effect
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result, default=json_handler))
-
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
-            self.json_args = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+            self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         else:
             raise web.HTTPError(501, 'Content-Type != "application/json"')
+
+    def post(self):
+        result = {}
+        for uri in self.uris:
+            try:
+                info = get_plugin_info(uri)
+            except:
+                continue
+            result[uri] = info
+
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(result))
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
     @gen.engine
     def post(self):
         upload = self.request.files['package'][0]
-        open(os.path.join(PLUGIN_INSTALLATION_TMP_DIR, upload['filename']), 'w').write(upload['body'])
+        open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'w').write(upload['body'])
         uid = upload['filename'].replace('.tgz', '')
         res = yield gen.Task(install_bundle, uid)
         self.write(json.dumps({ 'ok': True }))
@@ -355,27 +353,27 @@ class SDKEffectInstaller(EffectInstaller):
 
 # TODO this is an obsolete implementation that does not work in new lv2 specs.
 # it's here for us to remember this should be reimplemented
-class SDKEffectScript(EffectSearcher):
-    def get(self, objid=None):
-        if objid is None:
-            objid = self.get_by_url()
+#class SDKEffectScript(EffectSearcher):
+    #def get(self, objid=None):
+        #if objid is None:
+            #objid = self.get_by_uri()
 
-        try:
-            options = self.get_object(objid)
-        except:
-            raise web.HTTPError(404)
+        #try:
+            #options = self.get_object(objid)
+        #except:
+            #raise web.HTTPError(404)
 
-        try:
-            path = options['configurationFeedback']
-        except KeyError:
-            raise web.HTTPError(404)
+        #try:
+            #path = options['configurationFeedback']
+        #except KeyError:
+            #raise web.HTTPError(404)
 
-        path = path.split(options['package']+'/')[-1]
-        path = os.path.join(PLUGIN_LIBRARY_DIR, options['package'], path)
+        #path = path.split(options['package']+'/')[-1]
+        #path = os.path.join(PLUGIN_LIBRARY__DIR, options['package'], path)
 
-        self.write(open(path, 'rb').read())
+        #self.write(open(path, 'rb').read())
 
-class EffectResource(web.StaticFileHandler, EffectSearcher):
+class EffectResource(web.StaticFileHandler):
 
     def initialize(self):
         # Overrides StaticFileHandler initialize
@@ -383,123 +381,137 @@ class EffectResource(web.StaticFileHandler, EffectSearcher):
 
     def get(self, path):
         try:
-            objid = self.get_by_url()
+            uri = self.get_argument('uri')
+        except:
+            return self.shared_resource(path)
 
-            try:
-                options = self.get_object(objid)
-            except:
-                raise web.HTTPError(404)
+        try:
+            data = get_plugin_info(uri)
+        except:
+            raise web.HTTPError(404)
 
-            try:
-                document_root = options['gui']['resourcesDirectory']
-            except:
-                raise web.HTTPError(404)
+        try:
+            root = data['gui']['resourcesDirectory']
+        except:
+            raise web.HTTPError(404)
 
-            super(EffectResource, self).initialize(document_root)
+        try:
+            super(EffectResource, self).initialize(root)
             super(EffectResource, self).get(path)
-
         except web.HTTPError as e:
             if e.status_code != 404:
                 raise e
-            super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
-            super(EffectResource, self).get(path)
+            self.shared_resource(path)
+        except IOError:
+            raise web.HTTPError(404)
 
-class EffectImage(EffectSearcher):
-    def get(self, prop):
-        objid = self.get_by_url()
+    def shared_resource(self, path):
+        super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
+        super(EffectResource, self).get(path)
+
+class EffectImage(web.RequestHandler):
+    def get(self, image):
+        uri = self.get_argument('uri')
 
         try:
-            options = self.get_object(objid)
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
         try:
-            path = options['gui'][prop]
+            path = data['gui'][image]
         except:
+            path = None
+
+        if path is None or not os.path.exists(path):
             try:
-                path = DEFAULT_ICON_IMAGE[prop]
+                path = DEFAULT_ICON_IMAGE[image]
             except:
                 raise web.HTTPError(404)
 
-        if not os.path.exists(path):
-            raise web.HTTPError(404)
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'image/png')
+            self.write(fd.read())
 
-        self.set_header('Content-Type', 'image/png')
-        self.write(open(path, 'rb').read())
-
-class EffectStylesheet(EffectSearcher):
+class EffectStylesheet(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            effect = self.get_object(objid)
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
         try:
-            path = effect['gui']['stylesheet']
+            path = data['gui']['stylesheet']
         except:
             raise web.HTTPError(404)
 
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
-        content = open(path).read()
-        context = { 'ns' : '?url=%s' % effect['url'],
-                    'cns': '_%s' % effect['url'].replace("/","_").replace("%","_").replace(".","_") }
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'text/css')
+            self.write(fd.read())
 
-        self.set_header('Content-type', 'text/css')
-        self.write(pystache.render(content, context))
+class EffectJavascript(web.RequestHandler):
+    def get(self):
+        uri = self.get_argument('uri')
 
-class EffectAdd(EffectSearcher):
+        try:
+            data = get_plugin_info(uri)
+        except:
+            raise web.HTTPError(404)
+
+        try:
+            path = data['gui']['javascript']
+        except:
+            raise web.HTTPError(404)
+
+        if not os.path.exists(path):
+            raise web.HTTPError(404)
+
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'text/javascript')
+            self.write(fd.read())
+
+class EffectAdd(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
+        x   = self.request.arguments.get('x', [0])[0]
+        y   = self.request.arguments.get('y', [0])[0]
 
         try:
-            options = self.get_object(objid)
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
-        x = self.request.arguments.get('x', [0])[0]
-        y = self.request.arguments.get('y', [0])[0]
-        res = yield gen.Task(SESSION.add, options['url'], instance, x, y)
+
+        res = yield gen.Task(SESSION.add, uri, instance, x, y)
+
         if self.request.connection.stream.closed():
             return
+
         if res >= 0:
-            options['instance'] = res
-            presets = []
-            for k,preset in options['presets'].items():
-                presets.append({'label': preset['label']})
-            options['presets'] = presets
-            self.write(json.dumps(options, default=json_handler))
+            #options['instance'] = res
+            self.write(json.dumps(data))
         else:
             self.write(json.dumps(False))
+
         self.finish()
 
-
-class EffectGet(EffectSearcher):
-    @web.asynchronous
-    @gen.engine
+class EffectGet(web.RequestHandler):
     def get(self):
-        objid = self.get_by_url()
+        uri = self.get_argument('uri')
 
         try:
-            options = self.get_object(objid)
-            presets = []
-            for k,preset in options['presets'].items():
-                presets.append({'label': preset['label'],
-                                'uri': preset['uri']})
-            options['presets'] = presets
+            data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 
-        if self.request.connection.stream.closed():
-            return
-
-        self.write(json.dumps(options, default=json_handler))
-        self.finish()
-
+        self.set_header('Content-type', 'application/json')
+        self.write(json.dumps(data))
 
 class EffectRemove(web.RequestHandler):
     @web.asynchronous
@@ -652,11 +664,15 @@ class EffectPosition(web.RequestHandler):
         self.write(json.dumps(True))
 
 class PackageEffectList(web.RequestHandler):
-    def get(self, package):
-        index = indexing.EffectIndex()
-        result = list(index.find(package=package))
+    def get(self, bundle):
+        if not bundle.endswith(os.sep):
+            bundle += os.sep
+        result = []
+        for plugin in get_all_plugins():
+            if bundle in plugin['bundles']:
+                result.append(plugin)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result, default=json_handler))
+        self.write(json.dumps(result))
 
 class PackageUninstall(web.RequestHandler):
     def post(self, package):
@@ -744,7 +760,7 @@ class PedalboardSave(web.RequestHandler):
                 fd.write('''\
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
-@prefix pedal: <http://portalmod.com/ns/modpedal#> .
+@prefix pedal: <http://moddevices.com/ns/modpedal#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
 <%s.ttl>
@@ -993,16 +1009,18 @@ class TemplateHandler(web.RequestHandler):
 
     def index(self):
         context = {}
-        ei = indexing.EffectIndex()
-        default_icon_template = open(DEFAULT_ICON_TEMPLATE).read()
-        default_settings_template = open(DEFAULT_SETTINGS_TEMPLATE).read()
+
+        with open(DEFAULT_ICON_TEMPLATE) as fd:
+            default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
+
+        with open(DEFAULT_SETTINGS_TEMPLATE) as fd:
+            default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
+
         context = {
-            'effects': ei.every(),
-            'default_icon_template': tornado.escape.squeeze(default_icon_template.replace("'", "\\'")),
-            'default_settings_template': tornado.escape.squeeze(default_settings_template.replace("'", "\\'")),
+            'default_icon_template': default_icon_template,
+            'default_settings_template': default_settings_template,
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(get_hardware()).encode("utf-8")),
-            # 'current_pedalboard': b64encode(json.dumps(SESSION.serialize_pedalboard(), default=json_handler).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',
@@ -1012,7 +1030,7 @@ class TemplateHandler(web.RequestHandler):
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
-            }
+        }
         return context
 
     def icon(self):
@@ -1036,8 +1054,7 @@ class TemplateHandler(web.RequestHandler):
             else:
                 data += b','
 
-            msg = '{ "url": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
-            print(msg)
+            msg = '{ "uri": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
             data += bytes(msg, "utf-8")
 
         data += b'], "connections": ['
@@ -1050,7 +1067,6 @@ class TemplateHandler(web.RequestHandler):
                 data += b','
 
             msg = '{ "source": "%s", "target": "%s" }' % (connection['source'], connection['target'])
-            print(msg)
             data += bytes(msg, "utf-8")
 
         data += b'] } '
@@ -1326,22 +1342,23 @@ application = web.Application(
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/resources/(.*)", EffectResource),
 
-            (r"/effect/add/([A-Za-z0-9_/]+[^/])/?", EffectAdd),
+            (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulkData),
-            (r"/effect/remove/([A-Za-z0-9_/]+[^/])/?", EffectRemove),
-            (r"/effect/connect/([A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
-            (r"/effect/disconnect/([A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
-            (r"/effect/preset/load/([A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
-            (r"/effect/parameter/set/([A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
-            (r"/effect/parameter/get//([A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
-            (r"/effect/parameter/address//([A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
-            (r"/effect/bypass/([A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
-            (r"/effect/bypass/address/([A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+            (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
+            (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
+            (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
+            (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
+            (r"/effect/parameter/set/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
+            (r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
+            (r"/effect/parameter/address/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
+            (r"/effect/bypass/address/*(/[A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
-            (r"/effect/position/([A-Za-z0-9_/]+[^/])/?", EffectPosition),
-            (r"/effect/set/(release)/?", EffectSetLocalVariable),
+            (r"/effect/gui.js", EffectJavascript),
+            (r"/effect/position/*(/[A-Za-z0-9_/]+[^/])/?", EffectPosition),
+            #(r"/effect/set/(release)/?", EffectSetLocalVariable),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
@@ -1377,7 +1394,7 @@ application = web.Application(
 
             (r"/sdk/sysupdate/?", SDKSysUpdate),
             (r"/sdk/install/?", SDKEffectInstaller),
-            (r"/sdk/get_config_script/?", SDKEffectScript),
+            #(r"/sdk/get_config_script/?", SDKEffectScript),
 
             (r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
             (r"/register/finish/?", RegistrationFinish),
@@ -1404,13 +1421,14 @@ application = web.Application(
 def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-        #if LOG:
-            #tornado.options.parse_command_line()
+        if LOG:
+            tornado.log.enable_pretty_logging()
         JackXRun.connect()
 
     def check():
         check_environment(lambda result: result)
 
+    lv2_init()
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)

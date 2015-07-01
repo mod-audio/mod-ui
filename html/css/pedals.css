@@ -7,7 +7,9 @@
 */
     z-index:100;
 }
-
+#pedalboard-dashboard > .mod-pedal > div:first-child { 
+    box-shadow: 8px 24px 50px rgba(0, 0, 0, 0.66), 5px 15px 30px rgba(0, 0, 0, 0.9), 0px 2px 5px black;
+}
 .mod-input .mod-output-jack{
     z-index: 100;
 }
@@ -55,6 +57,7 @@
 /* = AUTHOR AND PLUGIN'S NAME
 ================================================ */
 .mod-pedal .mod-plugin-author,
+.mod-pedal .mod-plugin-brand,
 .mod-pedal .mod-plugin-title {
     z-index:10;
 }
@@ -113,15 +116,19 @@
 .mod-pedal .mod-pedal-input {
     position: absolute;
     top: 106px;
-    left: -72px;
-    width: 87px;
+    left: -88px;
+    width: 88px;
 }
 .mod-pedal .mod-pedal-input .mod-audio-input,
 .mod-pedal .mod-pedal-input .mod-midi-input {
     position: relative;
+/*
     margin-top: 10px;
+*/
 }
-
+.mod-pedal .mod-pedal-input .mod-midi-input {
+    right: -12px;
+}
 .mod-input.expanded .mod-output-jack {
     background-image:url(../img/audio-jack.png) !important;
     height: 40px;
@@ -193,13 +200,15 @@
 .mod-pedal .mod-pedal-output {
     position: absolute;
     top: 106px;
-    right: -69px;
+    right: -87px;
     width: 87px;
 }
 .mod-pedal .mod-pedal-output .mod-audio-output,
 .mod-pedal .mod-pedal-output .mod-midi-output {
     position: relative;
+/*
     margin-top: 10px;
+*/
 }
 
 

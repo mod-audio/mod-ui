@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,16 +20,14 @@ import json, os, subprocess, shutil, select
 from hashlib import sha1 as sha
 from os.path import exists, join
 from tornado.ioloop import IOLoop
-from mod.settings import (INDEX_PATH, EFFECT_DIR, EFFECT_DB_FILE,
-                          PLUGIN_LIBRARY_DIR, PLUGIN_INSTALLATION_TMP_DIR)
-from mod import indexing, lv2
+from mod.settings import DOWNLOAD_TMP_DIR
 
 def install_bundle(uid, callback):
-    filename = join(PLUGIN_INSTALLATION_TMP_DIR, '%s' % uid)
+    filename = join(DOWNLOAD_TMP_DIR, '%s' % uid)
     assert exists(filename)
-    print("HERE: ", PLUGIN_INSTALLATION_TMP_DIR)
+    print("HERE: ", DOWNLOAD_TMP_DIR)
     proc = subprocess.Popen(['tar','zxf', filename],
-                            cwd=PLUGIN_INSTALLATION_TMP_DIR,
+                            cwd=DOWNLOAD_TMP_DIR,
                             stdout=subprocess.PIPE)
 
 
@@ -50,54 +48,20 @@ def install_all_bundles():
     Install all bundles available in installation temp dir into domain's directory
     Returns list of effects installed
     """
-    plugin_dir = PLUGIN_INSTALLATION_TMP_DIR
-    effects = []
+    return []
 
-    # TODO - rewrite for new API without modcommon
-
-    for package in os.listdir(plugin_dir):
-        bundle_path = join(PLUGIN_LIBRARY_DIR, package)
-        if os.path.exists(bundle_path):
-            uninstall_bundle(package)
-        shutil.move(join(plugin_dir, package), PLUGIN_LIBRARY_DIR)
-        lv2.add_bundle_to_lilv_world(join(PLUGIN_LIBRARY_DIR, package))
-        #effects += []
-    return effects
-
-def remove_old_version(url):
+def remove_old_version(uri):
     """
     This will remove old version of a plugin, although it does not remove the
     ttls and binary.
     TODO: we need to keep track of effect binaries and ttls for cleaning
     """
-    index = indexing.EffectIndex()
-    for effect in index.find(url=url):
-        if index.delete(effect['id']):
-            path = join(EFFECT_DIR, effect['id'])
-            # File is supposed to always be there,
-            # but in case it's not, let's have a recoverable state
-            if os.path.exists(path):
-                os.remove(path)
+    return
 
 def uninstall_bundle(package):
     """
     Uninstall a plugin package. Removes the whole bundle directory and
     all effects from filesystem and index
     """
-    path = os.path.join(PLUGIN_LIBRARY_DIR, package)
-    if not os.path.exists(path):
-        return True
-
-    shutil.rmtree(path)
-
-    index = indexing.EffectIndex()
-    for effect in index.find(package=package):
-        index.delete(effect['id'])
-        effect_path = os.path.join(EFFECT_DIR, effect['id'])
-        os.remove(effect_path)
-
-        # TODO do something with broken pedalboards, like removing them from banks
-        # and marking as broken
-
     return True
 

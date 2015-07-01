@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -139,8 +139,8 @@ class Session(object):
         self.host_initialized = True
 
         def port_value_cb(port, value):
-            instance = "/".join(port.split("/")[:-1])
-            port = port.split("/")[-1]
+            instance = port.rpartition("/")[0]
+            port = port.rpartition("/")[-1]
             instance_id = self.instance_mapper.map(instance)
             if self._pedalboard.data['instances'].get(instance_id, False):
                 self._pedalboard.parameter_set(instance_id, port, value)
@@ -149,7 +149,7 @@ class Session(object):
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
-                    self.parameter_addressing_load(*act)
+                    #self.parameter_addressing_load(*act)
 
         def position_cb(instance, x, y):
             pass
@@ -224,7 +224,8 @@ class Session(object):
                 self.remove(next(gen), remove_all_plugins)
             except StopIteration:
                 callback(r)
-        remove_all_plugins()
+        self.hmi.control_rm(-1, ":all", remove_all_plugins)
+        #remove_all_plugins()
 
         if self._pedal_changed_callback is not None:
             self._pedal_changed_callback(True, "", "")
@@ -469,10 +470,10 @@ class Session(object):
 
     def hmi_parameter_set(self, instance_id, port_id, value, callback):
         #self.browser.send(instance_id, port_id, value)
-        self.parameter_set(instance_id, port_id, value, callback)
+        self.parameter_set(self.instance_mapper.get_instance(instance_id) + "/" + port_id, value, callback)
 
-    def preset_load(self, instance_id, url, callback):
-        self.host.preset_load(instance_id, url, callback)
+    def preset_load(self, instance_id, uri, callback):
+        self.host.preset_load(instance_id, uri, callback)
 
     def parameter_set(self, port, value, callback, loaded=False):
         if port == ":bypass":
@@ -573,8 +574,8 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        instance_id = self.instance_mapper.map(port.split("/")[0])
-        port_id = port.split("/")[1]
+        instance_id = self.instance_mapper.map(port.rpartition("/")[0])
+        port_id = port.rpartition("/")[-1]
         if (hardware_type == -1 and
             hardware_id == -1 and
             actuator_type == -1 and
@@ -589,7 +590,6 @@ class Session(object):
             else:
                 self.hmi.control_rm(instance_id, port_id, callback)
             return
-
         if not loaded:
             old = self._pedalboard.parameter_address(instance_id, port_id,
                                                      addressing_type,

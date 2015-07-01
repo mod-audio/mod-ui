@@ -14,32 +14,6 @@
     <!-- DEFAULT -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 
-    <!-- JAPANESE -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/japanese/japanese.css?v={{version}}"/>
-    <link rel="stylesheet" type="text/css" href="resources/knobs/japanese/japanese.css?v={{version}}"/>
-    
-    <!-- BOXY -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/boxy/boxy.css?v={{version}}"/>
-    
-    <!-- LATA -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/lata/lata.css?v={{version}}"/>
-    <link rel="stylesheet" type="text/css" href="resources/knobs/lata/lata.css?v={{version}}"/>
-
-    <!-- BRITISH -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/british/british.css?v={{version}}"/>
-    
-    <!-- HEAD MODEL 001 -->
-    <link rel="stylesheet" type="text/css" href="resources/heads/model-001/model-001.css?v={{version}}"/>
-
-    <!-- COMBO MODEL 001 -->
-    <link rel="stylesheet" type="text/css" href="resources/combos/model-001/model-001.css?v={{version}}"/>
-
-    <!-- RACK MODEL 001 -->
-    <link rel="stylesheet" type="text/css" href="resources/racks/model-001/model-001.css?v={{version}}"/>
-
-    <!-- SLIDER -->
-    <link rel="stylesheet" type="text/css" href="resources/sliders/slider01/slider.css?v={{version}}"/>
-
     <script type="text/javascript">
       // for mod-app control
       var desktop = null
@@ -61,7 +35,7 @@
       {% autoescape None %}
       var TEMPLATES = {}
       SITEURL    = '{{cloud_url}}'.replace(/\/?$/, '/api')
-      SITEURLNEW = "http://api.dev.portalmod.com"
+      SITEURLNEW = "http://api.dev.moddevices.com"
       var SAMPLERATE = {{sampleRate}}
       var NOTIFICATIONS_ENABLED = true
       var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
@@ -333,8 +307,8 @@ $('document').ready(function() {
 					</div>
 				</div>
 				</form>
-			</div>	
-            </div>				
+			</div>
+            </div>
         </div>
         <!-- END PEDALBOARD SHARE WINDOW -->
 
@@ -359,7 +333,7 @@ $('document').ready(function() {
                 <div class="button"></div>
             </div>
             <!-- END PEDALBOARD-SHARING -->
-            
+
         </div>
         <!-- END PEDALBOARD-ACTIONS -->
         
@@ -373,7 +347,7 @@ $('document').ready(function() {
         <div id="pedalboard-dashboard">
         </div>
         <!-- END PEDALBOARD-DASHBOARD -->
-        
+
     </div>
     <!-- END PEDALBOARD -->
 
@@ -438,7 +412,7 @@ $('document').ready(function() {
 
         <!-- EFFECTS OF A CATEGORY -->
         <div id="plugins-list" class="js-effects-list">
-            <div class="nav nav-left"><img src="img/nav-left.png"/></div>
+            <div class="nav nav-left"></div>
             <div id="plugins-results">
                 <div id="plugin-results-wrapper">
                     <div id="effect-content-All" class="plugins-wrapper"></div>
@@ -455,7 +429,7 @@ $('document').ready(function() {
                     <div id="effect-content-Utility" class="plugins-wrapper"></div>
                 </div>
             </div>
-            <div class="nav nav-right"><img src="img/nav-right.png"/></div>
+            <div class="nav nav-right"></div>
         </div>
         <!-- END EFFECTS OF A CATEGORY -->
     </div>
@@ -754,7 +728,7 @@ $('document').ready(function() {
                   <input type="search" placeholder="Search pedalboard" class="bottom top"/>
                   <button type="submit" class="bottom top"></button>
                 </form>
-              </li> 
+              </li>
 	      -->
               <li class="logout"><a id="logout">Logout</a></li>
             </ul>
@@ -796,7 +770,7 @@ $('document').ready(function() {
         <div class="text">New updates are available. Click to upgrade.</div>
     </div>
     <!-- END MOD UPDATE/UPGRADE TOOLTIP -->
-    
+
     <!-- MOD UPDATE/UPGRADE BOX -->
     <div id="mod-upgrade" class="hidden">
         <div class="box">

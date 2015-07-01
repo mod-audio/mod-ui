@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ class HMI(object):
         if data is not None:
             logging.info('[hmi] received <- %s' % repr(data))
             try:
-                msg = Protocol(data)
+                msg = Protocol(data.decode())
             except ProtocolError as e:
                 logging.error('[hmi] error parsing msg %s' % repr(data))
                 self.reply_protocol_error(e.error_code())
@@ -97,7 +97,7 @@ class HMI(object):
 
                     msg.run_cmd(_callback)
         try:
-            self.sp.read_until('\0', self.checker)
+            self.sp.read_until(b'\0', self.checker)
         except serial.SerialException as e:
             logging.error("[hmi] error while reading %s" % e)
 
@@ -105,7 +105,7 @@ class HMI(object):
         try:
             msg = self.queue[0][0] # fist msg on the queue
             logging.info("[hmi] popped from queue: %s" % msg)
-            self.sp.write("%s\0" % str(msg))
+            self.sp.write(bytes(msg, 'utf-8') + b"\0")
             logging.info("[hmi] sending -> %s" % msg)
             self.queue_idle = False
         except IndexError:
@@ -124,7 +124,7 @@ class HMI(object):
                 self.process_queue()
             return
         # is resp, just send
-        self.sp.write("%s\0" % str(msg))
+        self.sp.write(msg.encode('utf-8') + b'\0')
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
         pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))

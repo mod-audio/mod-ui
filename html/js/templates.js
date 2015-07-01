@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+ * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,4 @@
 
 /*
   This file won't be loaded. Instead, the server will deliver the TEMPLATES
-  variable, with all templates needed for the system. The result will be
-  something like:
-
-  TEMPLATES['effect'] = JSON.parse('<div>...</div>')
-  TEMPLATES['pedalboard'] = JSON.parse('...')*/
+  variable, with all templates needed for the system.*/

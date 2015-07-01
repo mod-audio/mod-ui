@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+ * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -144,8 +144,8 @@ function HardwareManager(options) {
         else
             portName = port.name
 
-        var min = form.find('input[name=min]').val(currentAddressing.minimum || port.minimum)
-        var max = form.find('input[name=max]').val(currentAddressing.maximum || port.maximum)
+        var min = form.find('input[name=min]').val(currentAddressing.minimum || port.ranges.minimum)
+        var max = form.find('input[name=max]').val(currentAddressing.maximum || port.ranges.maximum)
         var label = form.find('input[name=label]').val(currentAddressing.label || portName)
 
         var sensibility = form.find('select[name=steps]')

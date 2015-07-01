@@ -1,0 +1,59 @@
+/* = CONTAINER
+================================================ */
+.mod-pedal-default {
+    background-image:url(/resources/pedals/default.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:251px 434px;
+    height:434px;
+    position:absolute;
+    width:251px;
+}
+
+/* = LIGHT ON/OFF
+================================================ */
+.mod-pedal-default .mod-light {
+    background-position:center center;
+    background-repeat:no-repeat;
+    height:32px;
+    left:10px;
+    position:absolute;
+    right:10px;
+    top:200px;
+}
+
+/* = AUDIO PORTS
+================================================ */
+
+.mod-pedal-default .mod-pedal-input {
+/*
+    left: -28px;
+    top: 110px;
+*/
+}
+.mod-pedal-default .mod-pedal-output {
+/*
+    right: -24px;
+    top: 110px;
+*/
+}
+
+/* = FOOTSWITCH
+================================================ */
+.mod-pedal-default .mod-footswitch {
+    background-image:url(/resources/pedals/footswitch.png);
+    background-position:bottom center;
+    background-repeat:no-repeat;
+    background-size:auto 132px;
+    bottom: 100px;
+    cursor:pointer;
+    height:66px;
+    width: 66px;
+    left:13px;
+    margin: auto;
+    position:absolute !important;
+    right:13px;
+}
+.mod-pedal-default .mod-footswitch.on {
+    background-position-y: top !important
+}

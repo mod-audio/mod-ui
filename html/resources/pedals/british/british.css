@@ -1,0 +1,138 @@
+/* STYLES FOR THE british PEDAL */
+
+@import url(../../../fonts/england-hand/stylesheet.css);
+
+/* = CONTAINER
+================================================ */
+.mod-pedal-british {
+    background-position:center center;
+    background-repeat:no-repeat;
+    height:520px;
+    position:absolute;
+    width:279px;
+    border-radius: 18px;
+    border-bottom-right-radius: 90px;
+    border-bottom-left-radius: 90px;
+}
+
+/* = BACKGROUND IMAGES - Colour of the pedal
+================================================ */
+.mod-pedal-british.mod-metallic {
+    background-image:url(metallic.png);
+}
+
+/* = PLUGIN'S AUTHOR
+================================================ */
+.mod-pedal-british .mod-plugin-author {
+    left:30px;
+    position:absolute;
+    right:30px;
+    text-align:center;
+    top:390px;
+}
+
+.mod-pedal-british .mod-plugin-author h1 {
+    color:#777471;
+    font-family:"EnglandHand";
+    font-size:48px;
+    text-shadow:-1px -1px -1px rgba(255,255,255,.1), 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+/* = PLUGIN'S NAME
+================================================ */
+.mod-pedal-british .mod-plugin-name {
+    left:30px;
+    overflow:hidden;
+    position:absolute;
+    right:30px;
+    text-align:right;
+    top:230px;
+}
+
+.mod-pedal-british .mod-plugin-name h1 {
+    color:black;
+    font-family:"Questrial";
+    font-size:24px;
+    line-height:1;
+}
+
+/* = LIGHT ON/OFF
+================================================ */
+.mod-pedal-british .mod-light {
+    height:32px;
+    left:140px;
+    position:absolute;
+    top:20px;
+    width:32px;
+}
+
+/* = FOOTSWITCH
+================================================ */
+.mod-pedal-british .mod-footswitch {
+    background-image:url(footswitch.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:auto 80px;
+    bottom:92px;
+    cursor:pointer;
+    height:155px;
+    left:100px;
+    position:absolute;
+    right:100px;
+}
+
+/* = KNOBS
+================================================ */
+.mod-pedal-british .mod-control-group {
+    height:141px;
+    left:0;
+    margin:0;
+    position:absolute;
+    right:0;
+    text-align:center;
+    top:36px;
+    z-index:30;
+}
+
+.mod-pedal-british .mod-control-group .mod-knob {
+    display:inline-block;
+    height:100px;
+    overflow:hidden;
+    position:relative;
+    text-align:center;
+    width:64px;
+}
+
+.mod-pedal-british .mod-control-group .mod-knob .mod-knob-image { 
+    background-image:url(../../knobs/british/british.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    background-size:auto 64px;
+    height:64px;
+    margin:0 auto;
+    overflow:hidden;
+    position:relative;
+    width:64px;
+}
+
+.mod-pedal-british .mod-control-group .mod-knob > span.mod-knob-title {
+    color:black;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:12px;
+    line-height:1;
+    margin:0;
+    padding:0;
+    text-transform:uppercase;
+}
+
+.mod-pedal-british.mod-seven-knobs .mod-control-group,
+.mod-pedal-british.mod-eight-knobs .mod-control-group {
+    margin:0 6px;
+}
+
+.mod-pedal-british.mod-seven-knobs .mod-control-group .mod-knob,
+.mod-pedal-british.mod-eight-knobs .mod-control-group .mod-knob {
+    display:inline-block;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+ * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -130,32 +130,44 @@ JqueryClass('effectBox', {
         //self.effectBox('fold')
         self.effectBox('setCategory', 'All')
         self.effectBox('search')
-
+        
+        self.mouseenter(function () { self.effectBox('mouseEnter'); });
+        $("#main-menu").mouseenter(function () { self.trigger("mouseenter") });
         return self
     },
 
     fold: function () {
         var self = $(this)
-        self.find('.js-effects-list').hide()
+        //self.find('.js-effects-list').hide()
         self.addClass('folded')
-        self.find('.js-effects-fold').hide()
+        //self.find('.js-effects-fold').hide()
     },
 
     unfold: function () {
         var self = $(this)
-        self.find('.js-effects-list').show()
+        //self.find('.js-effects-list').show()
         self.removeClass('folded')
-        self.find('.js-effects-fold').show()
+        //self.find('.js-effects-fold').show()
     },
 
     toggle: function () {
-        var self = $(this)
-        if (self.hasClass('folded'))
+        var self = $(this);
+        if (self.hasClass('auto')) {
+            self.trigger("mouseleave");
             self.effectBox('unfold')
-        else
+        } else
             self.effectBox('fold')
+        self.toggleClass("auto");
     },
-
+    
+    mouseEnter: function (e) {
+        var self = $(this);
+        if (self.hasClass('auto')) {
+            self.one("mouseleave", function () { self.effectBox('fold'); });
+            self.effectBox('unfold');
+        }
+    },
+    
     setCategory: function (category) {
         var self = $(this)
         self.find('ul.js-category-tabs li').removeClass('selected')
@@ -193,12 +205,10 @@ JqueryClass('effectBox', {
             'dataType': 'json'
         })
     },
+
     showPlugins: function (plugins) {
         var self = $(this)
         self.effectBox('cleanResults')
-        for (var i in plugins) {
-            self.effectBox('getLabelAndAuthor', plugins[i])
-        }
         plugins.sort(function (a, b) {
             if (a.label > b.label)
                 return 1
@@ -237,23 +247,22 @@ JqueryClass('effectBox', {
         self.effectBox('calculateNavigation')
     },
 
-    getLabelAndAuthor: function (plugin) {
-        // TODO Very dirty, temporary GAMBI
-        if (plugin.gui && plugin.gui.templateData) {
-            plugin.label = plugin.gui.templateData.label
-            plugin.author = plugin.gui.templateData.author
-        }
-        plugin.label = plugin.label || plugin.name
-    },
-
     renderPlugin: function (index, container) {
         var self = $(this)
         if (container.length == 0)
             return
         var plugin = self.data('plugins')[index]
-        plugin.urle = escape(plugin.url)
+        var uri = escape(plugin.uri)
 
-        var rendered = $(Mustache.render(TEMPLATES.plugin, plugin))
+        var plugin_data = {
+            uri: uri,
+            status: plugin.status,
+            brand : plugin.brand,
+            label : plugin.label,
+            thumbnail_href: "/effect/image/thumbnail.png?uri=" + uri,
+        }
+
+        var rendered = $(Mustache.render(TEMPLATES.plugin, plugin_data))
 
         self.data('pedalboard').pedalboard('registerAvailablePlugin', rendered, plugin, {
             distance: 5,
@@ -289,7 +298,7 @@ JqueryClass('effectBox', {
         plugin.subtitle = plugin.name.split(/\s*-\s*/)[1]
         plugin.installed_version = version(plugin.installedVersion)
         plugin.latest_version = version(plugin.latestVersion)
-        plugin.package_name = plugin.package.replace(/\.lv2$/, '')
+        plugin.package_name = "TODO" //plugin.package.replace(/\.lv2$/, '')
         plugin.description = (plugin.description || '').replace(/\n/g, '<br\>\n')
 
         var info = $(Mustache.render(TEMPLATES.plugin_info, plugin))
@@ -347,7 +356,7 @@ JqueryClass('effectBox', {
             if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
                 self.effectBox('getRating', plugin, info.find('.js-rate'))
 
-            self.effectBox('getReviews', plugin.url, info, function () {
+            self.effectBox('getReviews', plugin.uri, info, function () {
 
                 var title = info.find('input[name=title]')
                 var comment = info.find('textarea[name=comment]')
@@ -362,14 +371,14 @@ JqueryClass('effectBox', {
                                 data: JSON.stringify({
                                     'title': title.val(),
                                     'comment': comment.val(),
-                                    'url': plugin.url,
+                                    'uri': plugin.uri,
                                     'version': version(plugin.latestVersion)
                                 }),
                                 success: function (res) {
                                     if (res.ok) {
                                         title.val('')
                                         comment.val('')
-                                        self.effectBox('getReviews', plugin.url, info)
+                                        self.effectBox('getReviews', plugin.uri, info)
                                     } else {
                                         alert(res.error)
                                     }
@@ -397,7 +406,7 @@ JqueryClass('effectBox', {
             $.ajax({
                 url: SITEURL + '/effect/get/',
                 data: {
-                    url: plugin.url
+                    uri: plugin.uri
                 },
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion,
@@ -423,12 +432,12 @@ JqueryClass('effectBox', {
         self.data('info', info)
     },
 
-    getReviews: function (url, info, callback) {
+    getReviews: function (uri, info, callback) {
         var self = $(this)
         $.ajax({
             url: SITEURL + '/effect/reviews/',
             data: {
-                url: url
+                uri: uri
             },
             success: function (comments) {
                 var classes = ['', 'one', 'two', 'three', 'four', 'five']
@@ -468,7 +477,7 @@ JqueryClass('effectBox', {
             $.ajax({
                 url: SITEURL + '/effect/rate/' + userSession.sid,
                 data: JSON.stringify({
-                    url: plugin.url,
+                    uri: plugin.uri,
                     version: plugin.latestVersion,
                     rating: rating
                 }),
@@ -496,7 +505,7 @@ JqueryClass('effectBox', {
         $.ajax({
             url: SITEURL + '/effect/rate/' + userSession.sid + '/mine',
             data: {
-                url: plugin.url
+                uri: plugin.uri
             },
             success: function (rating) {
                 setRate(rating)
@@ -659,7 +668,7 @@ JqueryClass('cloudPluginBox', {
         });
     },
     searchAll: function (query) {
-        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by url.
+        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
 	   Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
 	   All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
 	 */
@@ -672,12 +681,12 @@ JqueryClass('cloudPluginBox', {
             for (i in results.cloud) {
                 plugin = results.cloud[i]
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                if (results.local[plugin.url]) {
-                    plugin.installedVersion = [results.local[plugin.url].minorVersion,
-                        results.local[plugin.url].microVersion,
-                        results.local[plugin.url].release || 0
+                if (results.local[plugin.uri]) {
+                    plugin.installedVersion = [results.local[plugin.uri].minorVersion,
+                        results.local[plugin.uri].microVersion,
+                        results.local[plugin.uri].release || 0
                     ]
-                    delete results.local[plugin.url]
+                    delete results.local[plugin.uri]
                 }
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
@@ -688,8 +697,8 @@ JqueryClass('cloudPluginBox', {
                 }
                 plugins.push(plugin)
             }
-            for (url in results.local) {
-                plugin = results.local[url]
+            for (uri in results.local) {
+                plugin = results.local[uri]
                 plugin.installedVersion = [plugin.minorVersion,
                     plugin.microVersion,
                     plugin.release || 0
@@ -709,7 +718,7 @@ JqueryClass('cloudPluginBox', {
             'success': function (plugins) {
                 results.local = {}
                 for (i in plugins)
-                    results.local[plugins[i].url] = plugins[i]
+                    results.local[plugins[i].uri] = plugins[i]
                 if (results.cloud != null)
                     renderResults()
             },
@@ -730,7 +739,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     searchNotInstalled: function (query) {
-        /* Get an array of plugins from cloud and a dict of installed plugins by url.
+        /* Get an array of plugins from cloud and a dict of installed plugins by uri.
 	   Show only those plugins not installed
 	 */
         var self = $(this)
@@ -744,7 +753,7 @@ JqueryClass('cloudPluginBox', {
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
                 plugin.status = 'blocked'
                 plugin.source = SITEURL.replace(/api\/?$/, '')
-                if (!results.local[plugin.url]) {
+                if (!results.local[plugin.uri]) {
                     plugins.push(plugin)
                 }
             }
@@ -760,7 +769,7 @@ JqueryClass('cloudPluginBox', {
             'success': function (plugins) {
                 results.local = {}
                 for (i in plugins)
-                    results.local[plugins[i].url] = plugins[i]
+                    results.local[plugins[i].uri] = plugins[i]
                 if (results.cloud != null)
                     renderResults()
             },
@@ -859,21 +868,19 @@ JqueryClass('cloudPluginBox', {
 
     showPluginInfo: function (plugin) {
         var self = $(this)
-        var urle = escape(plugin.url)
-        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
-        var screenshot_href = plugin.screenshot_href ? plugin.screenshot_href : "/effect/image/screenshot.png?url=" + urle
+        var uri = escape(plugin.uri)
 
         var plugin_data = {
-            thumbnail_href: thumbnail_href,
-            screenshot_href: screenshot_href,
-            category: plugin.category,
+            thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
+            screenshot_href: plugin.screenshot_href || "/effect/image/screenshot.png?uri=" + uri,
+            category: plugin.category[0] || "",
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: "TODO",//plugin.package.replace(/\.lv2$/, ''),
-            urle: urle,
+            uri: uri,
             status: plugin.status,
-            author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
-            label: plugin.label || plugin.name
+            brand : plugin.brand,
+            label : plugin.label
         }
 
         var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
@@ -932,7 +939,7 @@ JqueryClass('cloudPluginBox', {
             $.ajax({
                 url: SITEURLNEW + "/lv2/plugins",
                 data: {
-                    url: plugin.url
+                    uri: plugin.uri
                 },
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion,
@@ -961,15 +968,14 @@ JqueryClass('cloudPluginBox', {
     render: function (plugin, canvas) {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
-        var urle = escape(plugin.url)
-        var thumbnail_href = plugin.thumbnail_href ? plugin.thumbnail_href : "/effect/image/thumbnail.png?url=" + urle
+        var uri = escape(plugin.uri)
         var plugin_data = {
             id: plugin.id || plugin._id,
-            thumbnail_href: thumbnail_href,
-            urle: urle,
+            thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
+            uri: uri,
             status: plugin.status,
-            author: plugin.gui && plugin.gui.templateData ? plugin.gui.templateData.author : plugin.author ? plugin.author : "",
-            label: plugin.label || plugin.name
+            brand : plugin.brand,
+            label : plugin.label
         }
 
         var rendered = $(Mustache.render(template, plugin_data))

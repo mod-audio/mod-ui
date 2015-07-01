@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
 DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 
 LOG = bool(int(os.environ.get('MOD_LOG', False)))
+MODGUIS_ONLY = bool(int(os.environ.get('MOD_GUIS_ONLY', False)))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
@@ -37,13 +38,9 @@ DEVICE_PUB = os.environ.get('MOD_DEVICE_PUB', join(KEYPATH, 'device_key.pub'))
 DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL =  os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
-PLUGIN_LIBRARY_DIR = os.environ.get('MOD_PLUGIN_LIBRARY_DIR', join(DATA_DIR, '..', 'plugins'))
-PLUGIN_INSTALLATION_TMP_DIR = os.environ.get('MOD_PLUGIN_INSTALLATION_DIR', join(DATA_DIR, 'lib_tmp'))
-INDEX_PATH = os.environ.get('MOD_INDEX_PATH', join(DATA_DIR, 'effects.index'))
-EFFECT_DIR = os.environ.get('MOD_EFFECT_DIR', join(DATA_DIR, 'effects'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
-DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp/effects'))
+DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp'))
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 
@@ -64,11 +61,9 @@ def get_tty_acm():
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', get_tty_acm())
 MANAGER_PORT = 5555
 
-EFFECT_DB_FILE = os.environ.get('MOD_EFFECT_DB_FILE', join(DATA_DIR, 'effects.json'))
-
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
-HTML_DIR = os.environ.get('MOD_HTML_DIR', '/usr/share/mod-ui/html/')
+HTML_DIR = os.environ.get('MOD_HTML_DIR', join(sys.prefix, 'share/mod/html/'))
 
 DEFAULT_ICON_TEMPLATE = join(HTML_DIR, 'resources/templates/pedal-default.html')
 DEFAULT_SETTINGS_TEMPLATE = join(HTML_DIR, 'resources/settings.html')
@@ -81,7 +76,7 @@ BLUETOOTH_PIN = os.environ.get('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pi
 
 PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', '/usr/lib/mod-ui/screenshot.js')
+SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(sys.prefix, 'share/mod/screenshot.js'))
 
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350
@@ -98,7 +93,7 @@ if os.path.exists("/root/cloud"):
     default_cloud = fh.read().strip()
     fh.close()
 else:
-    default_cloud = 'http://cloud.portalmod.com/'
+    default_cloud = 'http://cloud.moddevices.com/'
 CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', default_cloud)
 if not CLOUD_HTTP_ADDRESS.endswith('/'):
     CLOUD_HTTP_ADDRESS += '/'
@@ -109,7 +104,7 @@ if os.path.exists("/root/repository"):
     default_repo = fh.read().strip()
     fh.close()
 else:
-    default_repo = 'http://packages.portalmod.com/api'
+    default_repo = 'http://packages.moddevices.com/api'
 PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
 
 if os.path.exists("/root/avatar"):
@@ -120,7 +115,7 @@ else:
     default_avatar_url = 'http://gravatar.com/avatar'
 AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
 
-CLIPMETER_URI = "http://portalmod.com/plugins/MOD/clipmeter"
+CLIPMETER_URI = "http://moddevices.com/plugins/MOD/clipmeter"
 CLIPMETER_IN = 9990
 CLIPMETER_OUT = 9991
 CLIPMETER_L = "inl"
@@ -128,7 +123,7 @@ CLIPMETER_R = "inr"
 CLIPMETER_MON_L = "clipl"
 CLIPMETER_MON_R = "clipr"
 
-PEAKMETER_URI = "http://portalmod.com/plugins/MOD/peakmeter"
+PEAKMETER_URI = "http://moddevices.com/plugins/MOD/peakmeter"
 PEAKMETER_IN = 9992
 PEAKMETER_OUT = 9993
 PEAKMETER_L = "inl"
@@ -155,6 +150,6 @@ DEFAULT_JACK_BUFSIZE = int(os.environ.get('MOD_DEFAULT_JACK_BUFSIZE', 128))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 
-for dirname in (PLUGIN_INSTALLATION_TMP_DIR, HARDWARE_DIR):
+for dirname in (DOWNLOAD_TMP_DIR, HARDWARE_DIR):
     if not os.path.exists(dirname):
         os.makedirs(dirname)

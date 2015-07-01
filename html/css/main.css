@@ -331,6 +331,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     left:0;
     position:absolute;
     right:0;
+    transition: all 0.25s;
 }
 
 /* Fold/Unfold */
@@ -350,16 +351,22 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
 }
 #plugins-library .fold {
     background-color:#000;
-    background-image:url(../img/nav-bottom.png);
+    background-image:url(../img/icons/pinned.png);
     background-position:center center;
     background-repeat:no-repeat;
+    display:block !important;
 }
+/*
 #plugins-library.folded .fold {
     background-color:#000;
     background-image:url(../img/nav-top.png);
     background-position:center center;
     background-repeat:no-repeat;
     display:block !important;
+}
+*/
+#plugins-library.auto .fold {
+    background-image:url(../img/icons/autohide.png);
 }
 
 /* Effects Filter Settings */
@@ -461,15 +468,23 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     width:100%;
 }
 #plugins-library #plugins-list .nav {
+    background: rgba(0, 0, 0, 1) url(../img/nav-left.png) 50% 50% no-repeat;
     cursor:pointer;
     position:absolute;
-    top:50px;
+    top: 0;
+    width: 50px;
+    height: 100%;
+    opacity: 0.66;
+}
+#plugins-library #plugins-list .nav:hover {
+    opacity: 1;
 }
 #plugins-library #plugins-list .nav-left {
-    left:10px;
+    left: 0;
 }
 #plugins-library #plugins-list .nav-right {
-    right:10px;
+    background: rgba(0, 0, 0, 1) url(../img/nav-right.png) 50% 50% no-repeat;
+    right: 0;
 }
 
 #plugins-library #plugins-list #plugins-results {

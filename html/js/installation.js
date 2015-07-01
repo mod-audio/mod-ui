@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+ * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ function InstallationQueue() {
         }
 
         $.ajax({
-            'url': SITEURLNEW + '/lv2/plugins?url=' + escape(effectUrl),
+            'url': SITEURLNEW + '/lv2/plugins?uri=' + escape(effectUrl),
             'success': function (effects) {
                 if (effects.length == 0) {
                     new Notification('error', sprintf("Can't find effect %s to install", effectUrl))

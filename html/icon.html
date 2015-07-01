@@ -13,32 +13,6 @@
     <!-- DEFAULT -->
     <link rel="stylesheet" type="text/css" href="resources/pedals/default.css"/>
 
-    <!-- JAPANESE -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/japanese/japanese.css"/>
-    <link rel="stylesheet" type="text/css" href="resources/knobs/japanese/japanese.css"/>
-
-    <!-- BOXY -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/boxy/boxy.css"/>
-
-    <!-- LATA -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/lata/lata.css"/>
-    <link rel="stylesheet" type="text/css" href="resources/knobs/lata/lata.css"/>
-
-    <!-- BRITISH -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/british/british.css"/>
-
-    <!-- HEAD MODEL 001 -->
-    <link rel="stylesheet" type="text/css" href="resources/heads/model-001/model-001.css"/>
-
-    <!-- COMBO MODEL 001 -->
-    <link rel="stylesheet" type="text/css" href="resources/combos/model-001/model-001.css"/>
-
-    <!-- RACK MODEL 001 -->
-    <link rel="stylesheet" type="text/css" href="resources/racks/model-001/model-001.css"/>
-
-    <!-- SLIDER -->
-    <link rel="stylesheet" type="text/css" href="resources/sliders/slider01/slider.css"/>
-
     <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
     <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
     <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js"></script>
@@ -59,7 +33,7 @@
           if (uri) {
               $.ajax({
                   url: '/effect/get/',
-                  data: { url: uri },
+                  data: { uri: uri },
                   success: function(effect, options) {
                       icongui = new GUI(effect)
                       icongui.render(null, function(icon, settings) {
@@ -79,7 +53,7 @@
 
     <style type="text/css" media="screen">
     body {
-        background: transparent !important;
+        background: transparent;
     }
     body, div {
         -webkit-touch-callout: none;
@@ -95,12 +69,20 @@
     }
     #pedalboard-dashboard {
         top: 0px;
+        background: transparent;
     }
     #pedalboard-dashboard .mod-pedal .mod-drag-handle,
+    #pedalboard-dashboard .mod-pedal .mod-audio-input,
+    #pedalboard-dashboard .mod-pedal .mod-audio-output,
+    #pedalboard-dashboard .mod-pedal .mod-midi-input,
+    #pedalboard-dashboard .mod-pedal .mod-midi-output,
     #pedalboard-dashboard .mod-pedal .mod-pedal-input-image,
     #pedalboard-dashboard .mod-pedal .mod-pedal-output-image {
         display: none;
         visibility: hidden;
+    }
+    #pedalboard-dashboard > .mod-pedal > div:first-child {
+        box-shadow: none;
     }
     </style>
 

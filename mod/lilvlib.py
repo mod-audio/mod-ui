@@ -8,6 +8,8 @@ import json
 import lilv
 import os
 
+from math import fmod
+
 # ------------------------------------------------------------------------------------------------------------
 # Utilities
 
@@ -29,6 +31,24 @@ class NS(object):
         if attr not in self._cache:
             self._cache[attr] = lilv.Node(self.world.new_uri(self.base+attr))
         return self._cache[attr]
+
+def is_integer(string):
+    return string.strip().lstrip("-+").isdigit()
+
+def get_short_port_name(portName):
+    if len(portName) <= 16:
+        return portName
+
+    portName = portName.split("/",1)[0].split(" (",1)[0].split(" [",1)[0].strip()
+
+    # cut stuff if too big
+    if len(portName) > 16:
+        portName = portName[0] + portName[1:].replace("a","").replace("e","").replace("i","").replace("o","").replace("u","")
+
+        if len(portName) > 16:
+            portName = portName[:16]
+
+    return portName.strip()
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -110,7 +130,7 @@ def get_port_unit(miniuri):
       'mile': ["miles", "%f mi", "mi"],
       'db': ["decibels", "%f dB", "dB"],
       'pc': ["percent", "%f%%", "%"],
-      'coef': ["coefficient", "* %f", ""],
+      'coef': ["coefficient", "* %f", "*"],
       'hz': ["hertz", "%f Hz", "Hz"],
       'khz': ["kilohertz", "%f kHz", "kHz"],
       'mhz': ["megahertz", "%f MHz", "MHz"],
@@ -183,17 +203,17 @@ def get_pedalboard_info(bundle):
         raise Exception('get_pedalboard_info(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
 
     # define the needed stuff
-    rdf      = NS(world, lilv.LILV_NS_RDF)
-    lv2core  = NS(world, lilv.LILV_NS_LV2)
-    ingen    = NS(world, "http://drobilla.net/ns/ingen#")
-    modpedal = NS(world, "http://portalmod.com/ns/modpedal#")
+    ns_rdf      = NS(world, lilv.LILV_NS_RDF)
+    ns_lv2core  = NS(world, lilv.LILV_NS_LV2)
+    ns_ingen    = NS(world, "http://drobilla.net/ns/ingen#")
+    ns_modpedal = NS(world, "http://moddevices.com/ns/modpedal#")
 
     # check if the plugin is a pedalboard
     def fill_in_type(node):
         return node.as_string()
-    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
+    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(ns_rdf.type_), fill_in_type)]
 
-    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
+    if "http://moddevices.com/ns/modpedal#Pedalboard" not in plugin_types:
         raise Exception('get_pedalboard_info(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     # let's get all the info now
@@ -220,17 +240,17 @@ def get_pedalboard_info(bundle):
              }
         },
         'size': {
-            'width' : plugin.get_value(modpedal.width).get_first().as_int(),
-            'height': plugin.get_value(modpedal.height).get_first().as_int(),
+            'width' : plugin.get_value(ns_modpedal.width).get_first().as_int(),
+            'height': plugin.get_value(ns_modpedal.height).get_first().as_int(),
         },
-        'screenshot' : os.path.basename(plugin.get_value(modpedal.screenshot).get_first().as_string()),
-        'thumbnail'  : os.path.basename(plugin.get_value(modpedal.thumbnail).get_first().as_string()),
+        'screenshot' : os.path.basename(plugin.get_value(ns_modpedal.screenshot).get_first().as_string()),
+        'thumbnail'  : os.path.basename(plugin.get_value(ns_modpedal.thumbnail).get_first().as_string()),
         'connections': [], # we save this info later
         'plugins'    : []  # we save this info later
     }
 
     # connections
-    arcs = plugin.get_value(ingen.arc)
+    arcs = plugin.get_value(ns_ingen.arc)
     it = arcs.begin()
     while not arcs.is_end(it):
         arc = arcs.get(it)
@@ -239,8 +259,8 @@ def get_pedalboard_info(bundle):
         if arc.me is None:
             continue
 
-        head = lilv.lilv_world_get(world.me, arc.me, ingen.head.me, None)
-        tail = lilv.lilv_world_get(world.me, arc.me, ingen.tail.me, None)
+        head = lilv.lilv_world_get(world.me, arc.me, ns_ingen.head.me, None)
+        tail = lilv.lilv_world_get(world.me, arc.me, ns_ingen.tail.me, None)
 
         if head is None or tail is None:
             continue
@@ -252,7 +272,7 @@ def get_pedalboard_info(bundle):
 
     # hardware ports
     handled_port_uris = []
-    ports = plugin.get_value(lv2core.port)
+    ports = plugin.get_value(ns_lv2core.port)
     it = ports.begin()
     while not ports.is_end(it):
         port = ports.get(it)
@@ -268,7 +288,7 @@ def get_pedalboard_info(bundle):
         handled_port_uris.append(port_uri)
 
         # get types
-        port_types = lilv.lilv_world_find_nodes(world.me, port.me, rdf.type_.me, None)
+        port_types = lilv.lilv_world_find_nodes(world.me, port.me, ns_rdf.type_.me, None)
 
         if port_types is None:
             continue
@@ -319,7 +339,7 @@ def get_pedalboard_info(bundle):
                 info['hardware']['cv']['outs'] += 1
 
     # plugins
-    blocks = plugin.get_value(ingen.block)
+    blocks = plugin.get_value(ns_ingen.block)
     it = blocks.begin()
     while not blocks.is_end(it):
         block = blocks.get(it)
@@ -328,8 +348,8 @@ def get_pedalboard_info(bundle):
         if block.me is None:
             continue
 
-        protouri1 = lilv.lilv_world_get(world.me, block.me, lv2core.prototype.me, None)
-        protouri2 = lilv.lilv_world_get(world.me, block.me, ingen.prototype.me, None)
+        protouri1 = lilv.lilv_world_get(world.me, block.me, ns_lv2core.prototype.me, None)
+        protouri2 = lilv.lilv_world_get(world.me, block.me, ns_ingen.prototype.me, None)
 
         if protouri1 is not None:
             proto = protouri1
@@ -340,13 +360,13 @@ def get_pedalboard_info(bundle):
 
         uri = lilv.lilv_node_as_uri(proto)
 
-        microver = lilv.lilv_world_get(world.me, block.me, lv2core.microVersion.me, None)
-        minorver = lilv.lilv_world_get(world.me, block.me, lv2core.minorVersion.me, None)
+        microver = lilv.lilv_world_get(world.me, block.me, ns_lv2core.microVersion.me, None)
+        minorver = lilv.lilv_world_get(world.me, block.me, ns_lv2core.minorVersion.me, None)
 
         ingenblocks.append({
             "uri": uri,
-            "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasX.me, None)),
-            "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ingen.canvasY.me, None)),
+            "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ns_ingen.canvasX.me, None)),
+            "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ns_ingen.canvasY.me, None)),
             "microVersion": lilv.lilv_node_as_int(microver) if microver else 0,
             "minorVersion": lilv.lilv_node_as_int(minorver) if minorver else 0,
         })
@@ -401,52 +421,276 @@ def get_pedalboard_name(bundle):
         raise Exception('get_pedalboard_info(%s) - failed to get plugin, you are using an old lilv!'.format(bundle))
 
     # define the needed stuff
-    rdf = NS(world, lilv.LILV_NS_RDF)
+    ns_rdf = NS(world, lilv.LILV_NS_RDF)
 
     # check if the plugin is a pedalboard
     def fill_in_type(node):
         return node.as_string()
-    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(rdf.type_), fill_in_type)]
+    plugin_types = [i for i in LILV_FOREACH(plugin.get_value(ns_rdf.type_), fill_in_type)]
 
-    if "http://portalmod.com/ns/modpedal#Pedalboard" not in plugin_types:
+    if "http://moddevices.com/ns/modpedal#Pedalboard" not in plugin_types:
         raise Exception('get_pedalboard_info(%s) - plugin has no mod:Pedalboard type'.format(bundle))
 
     return plugin.get_name().as_string()
 
 # ------------------------------------------------------------------------------------------------------------
-# get_plugin_info
+# plugin_has_modgui
 
-# Get info from a lilv plugin
-# This is used in get_plugins_info below and MOD-SDK
-
-def get_plugin_info(world, plugin):
+# Check if a plugin has modgui
+def plugin_has_modgui(world, plugin):
     # define the needed stuff
-    doap    = NS(world, lilv.LILV_NS_DOAP)
-    rdf     = NS(world, lilv.LILV_NS_RDF)
-    rdfs    = NS(world, lilv.LILV_NS_RDFS)
-    lv2core = NS(world, lilv.LILV_NS_LV2)
-    pprops  = NS(world, "http://lv2plug.in/ns/ext/port-props#")
-    units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
-    modgui  = NS(world, "http://portalmod.com/ns/modgui#")
-
-    bundleuri = plugin.get_bundle_uri().as_string()
-    microver  = plugin.get_value(lv2core.microVersion).get_first()
-    minorver  = plugin.get_value(lv2core.minorVersion).get_first()
-    bundle    = lilv.lilv_uri_to_path(bundleuri)
+    ns_modgui = NS(world, "http://moddevices.com/ns/modgui#")
 
     # --------------------------------------------------------------------------------------------------------
     # get the proper modgui
 
     modguigui = None
 
-    nodes = plugin.get_value(modgui.gui)
+    nodes = plugin.get_value(ns_modgui.gui)
     it    = nodes.begin()
     while not nodes.is_end(it):
         mgui = nodes.get(it)
         it   = nodes.next(it)
         if mgui.me is None:
             continue
-        resdir = world.find_nodes(mgui.me, modgui.resourcesDirectory.me, None).get_first()
+        resdir = world.find_nodes(mgui.me, ns_modgui.resourcesDirectory.me, None).get_first()
+        if resdir.me is None:
+            continue
+        modguigui = mgui
+        if os.path.expanduser("~") in lilv.lilv_uri_to_path(resdir.as_string()):
+            # found a modgui in the home dir, stop here and use it
+            break
+
+    del nodes, it
+
+    # --------------------------------------------------------------------------------------------------------
+    # check selected modgui
+
+    if modguigui is None or modguigui.me is None:
+        return False
+
+    # resourcesDirectory *must* be present
+    modgui_resdir = world.find_nodes(modguigui.me, ns_modgui.resourcesDirectory.me, None).get_first()
+
+    if modgui_resdir.me is None:
+        return False
+
+    return os.path.exists(lilv.lilv_uri_to_path(modgui_resdir.as_string()))
+
+# ------------------------------------------------------------------------------------------------------------
+# get_plugin_info
+
+# Get info from a lilv plugin
+# This is used in get_plugins_info below and MOD-SDK
+def get_plugin_info(world, plugin):
+    # define the needed stuff
+    ns_doap    = NS(world, lilv.LILV_NS_DOAP)
+    ns_rdf     = NS(world, lilv.LILV_NS_RDF)
+    ns_rdfs    = NS(world, lilv.LILV_NS_RDFS)
+    ns_lv2core = NS(world, lilv.LILV_NS_LV2)
+    ns_atom    = NS(world, "http://lv2plug.in/ns/ext/atom#")
+    ns_midi    = NS(world, "http://lv2plug.in/ns/ext/midi#")
+    ns_pprops  = NS(world, "http://lv2plug.in/ns/ext/port-props#")
+    ns_pset    = NS(world, "http://lv2plug.in/ns/ext/presets#")
+    ns_units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
+    ns_mod     = NS(world, "http://moddevices.com/ns/mod#")
+    ns_modgui  = NS(world, "http://moddevices.com/ns/modgui#")
+
+    bundleuri = plugin.get_bundle_uri().as_string()
+    bundle    = lilv.lilv_uri_to_path(bundleuri)
+
+    errors   = []
+    warnings = []
+
+    # --------------------------------------------------------------------------------------------------------
+    # uri
+
+    uri = plugin.get_uri().as_string() or ""
+
+    if not uri:
+        errors.append("plugin uri is missing or invalid")
+    elif uri.startswith("file:"):
+        errors.append("plugin uri is local, and thus not suitable for redistribution")
+    #elif not (uri.startswith("http:") or uri.startswith("https:")):
+        #warnings.append("plugin uri is not a real url")
+
+    # --------------------------------------------------------------------------------------------------------
+    # name
+
+    name = plugin.get_name().as_string() or ""
+
+    if not name:
+        errors.append("plugin name is missing")
+
+    # --------------------------------------------------------------------------------------------------------
+    # binary
+
+    binary = lilv.lilv_uri_to_path(plugin.get_library_uri().as_string() or "")
+
+    if not binary:
+        errors.append("plugin binary is missing")
+
+    # --------------------------------------------------------------------------------------------------------
+    # license
+
+    license = plugin.get_value(ns_doap.license).get_first().as_string() or ""
+
+    if not license:
+        errors.append("plugin license is missing")
+    elif license.startswith(bundleuri):
+        license = license.replace(bundleuri,"",1)
+        warnings.append("plugin license entry is a local path instead of a string")
+
+    # --------------------------------------------------------------------------------------------------------
+    # comment
+
+    comment = plugin.get_value(ns_rdfs.comment).get_first().as_string() or ""
+
+    if not comment:
+        errors.append("plugin comment is missing")
+
+    # --------------------------------------------------------------------------------------------------------
+    # version
+
+    microver = plugin.get_value(ns_lv2core.microVersion).get_first()
+    minorver = plugin.get_value(ns_lv2core.minorVersion).get_first()
+
+    if microver.me is None and minorver.me is None:
+        errors.append("plugin is missing version information")
+        microVersion = 0
+        minorVersion = 0
+
+    else:
+        if microver.me is  None:
+            errors.append("plugin is missing microVersion")
+            microVersion = 0
+        else:
+            microVersion = microver.as_int()
+
+        if minorver.me is None:
+            errors.append("plugin is missing minorVersion")
+            minorVersion = 0
+        else:
+            minorVersion = minorver.as_int()
+
+    del microver
+    del minorver
+
+    version = "%d.%d" % (microVersion, minorVersion)
+
+    if minorVersion == 0 and microVersion == 0:
+        stability = "experimental"
+    elif minorVersion % 2 == 0:
+        stability = "stable" if microVersion % 2 == 0 else "testing"
+    else:
+        stability = "unstable"
+
+    # --------------------------------------------------------------------------------------------------------
+    # author
+
+    author = {
+        'name'    : plugin.get_author_name().as_string() or "",
+        'homepage': plugin.get_author_homepage().as_string() or "",
+        'email'   : plugin.get_author_email().as_string() or "",
+    }
+
+    if not author['name']:
+        errors.append("plugin author name is missing")
+
+    if not author['homepage']:
+        warnings.append("plugin author homepage is missing")
+
+    if not author['email']:
+        warnings.append("plugin author email is missing")
+    elif author['email'].startswith(bundleuri):
+        author['email'] = author['email'].replace(bundleuri,"",1)
+        warnings.append("plugin author email entry is missing 'mailto:' prefix")
+    elif author['email'].startswith("mailto:"):
+        author['email'] = author['email'].replace("mailto:","",1)
+
+    # --------------------------------------------------------------------------------------------------------
+    # brand
+
+    brand = plugin.get_value(ns_mod.brand).get_first().as_string() or ""
+
+    if not brand:
+        brand = author['name'].split(" - ",1)[0].split(" ",1)[0]
+        brand = brand.rstrip(",").rstrip(";")
+        if len(brand) > 10:
+            brand = brand[:10]
+        warnings.append("plugin brand is missing")
+
+    elif len(brand) > 10:
+        brand = brand[:10]
+        errors.append("plugin brand has more than 10 characters")
+
+    # --------------------------------------------------------------------------------------------------------
+    # label
+
+    label = plugin.get_value(ns_mod.label).get_first().as_string() or ""
+
+    if not label:
+        if len(name) <= 16:
+            label = name
+        else:
+            labels = name.split(" - ",1)[0].split(" ")
+            if labels[0].lower() in bundle.lower() and len(labels) > 1 and not labels[1].startswith(("(","[")):
+                label = labels[1]
+            else:
+                label = labels[0]
+
+            if len(label) > 16:
+                label = label[:16]
+
+            warnings.append("plugin label is missing")
+            del labels
+
+    elif len(label) > 16:
+        label = label[:16]
+        errors.append("plugin label has more than 16 characters")
+
+    # --------------------------------------------------------------------------------------------------------
+    # bundles
+
+    bnodes  = lilv.lilv_plugin_get_data_uris(plugin.me)
+    bundles = []
+
+    it = lilv.lilv_nodes_begin(bnodes)
+    while not lilv.lilv_nodes_is_end(bnodes, it):
+        bnode = lilv.lilv_nodes_get(bnodes, it)
+        it    = lilv.lilv_nodes_next(bnodes, it)
+
+        if bnode is None:
+            continue
+        if not lilv.lilv_node_is_uri(bnode):
+            continue
+
+        bpath = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bnode)))
+
+        if not bpath.endswith(os.sep):
+            bpath += os.sep
+
+        if bpath not in bundles:
+            bundles.append(bpath)
+
+    if bundle not in bundles:
+        bundles.append(bundle)
+
+    del bnodes, it
+
+    # --------------------------------------------------------------------------------------------------------
+    # get the proper modgui
+
+    modguigui = None
+
+    nodes = plugin.get_value(ns_modgui.gui)
+    it    = nodes.begin()
+    while not nodes.is_end(it):
+        mgui = nodes.get(it)
+        it   = nodes.next(it)
+        if mgui.me is None:
+            continue
+        resdir = world.find_nodes(mgui.me, ns_modgui.resourcesDirectory.me, None).get_first()
         if resdir.me is None:
             continue
         modguigui = mgui
@@ -461,11 +705,17 @@ def get_plugin_info(world, plugin):
 
     gui = {}
 
-    if modguigui is not None and modguigui.me is not None:
-        # resourcesDirectory *must* be present
-        modgui_resdir = world.find_nodes(modguigui.me, modgui.resourcesDirectory.me, None).get_first()
+    if modguigui is None or modguigui.me is None:
+        warnings.append("no modgui available")
 
-        if modgui_resdir.me is not None:
+    else:
+        # resourcesDirectory *must* be present
+        modgui_resdir = world.find_nodes(modguigui.me, ns_modgui.resourcesDirectory.me, None).get_first()
+
+        if modgui_resdir.me is None:
+            errors.append("modgui has no resourcesDirectory data")
+
+        else:
             gui['resourcesDirectory'] = lilv.lilv_uri_to_path(modgui_resdir.as_string())
 
             # check if the modgui is outside the main bundle and in the user dir
@@ -473,14 +723,18 @@ def get_plugin_info(world, plugin):
                                              os.path.expanduser("~") in gui['resourcesDirectory'])
 
             # icon and settings templates
-            modgui_icon  = world.find_nodes(modguigui.me, modgui.iconTemplate    .me, None).get_first()
-            modgui_setts = world.find_nodes(modguigui.me, modgui.settingsTemplate.me, None).get_first()
+            modgui_icon  = world.find_nodes(modguigui.me, ns_modgui.iconTemplate    .me, None).get_first()
+            modgui_setts = world.find_nodes(modguigui.me, ns_modgui.settingsTemplate.me, None).get_first()
 
-            if modgui_icon.me is not None:
+            if modgui_icon.me is None:
+                errors.append("modgui has no iconTemplate data")
+            else:
                 iconFile = lilv.lilv_uri_to_path(modgui_icon.as_string())
                 if os.path.exists(iconFile):
                     with open(iconFile, 'r') as fd:
                         gui['iconTemplate'] = fd.read()
+                else:
+                    errors.append("modgui iconTemplate file is missing")
                 del iconFile
 
             if modgui_setts.me is not None:
@@ -488,33 +742,38 @@ def get_plugin_info(world, plugin):
                 if os.path.exists(settingsFile):
                     with open(settingsFile, 'r') as fd:
                         gui['settingsTemplate'] = fd.read()
+                else:
+                    errors.append("modgui settingsTemplate file is missing")
                 del settingsFile
 
             # javascript and stylesheet files
-            modgui_script = world.find_nodes(modguigui.me, modgui.javascript.me, None).get_first()
-            modgui_style  = world.find_nodes(modguigui.me, modgui.stylesheet.me, None).get_first()
+            modgui_script = world.find_nodes(modguigui.me, ns_modgui.javascript.me, None).get_first()
+            modgui_style  = world.find_nodes(modguigui.me, ns_modgui.stylesheet.me, None).get_first()
 
             if modgui_script.me is not None:
                 javascriptFile = lilv.lilv_uri_to_path(modgui_script.as_string())
-                gui['javascript'] = javascriptFile
-                #if os.path.exists(javascriptFile):
-                    #with open(javascriptFile, 'r') as fd:
-                        #gui['javascript'] = fd.read()
+                if os.path.exists(javascriptFile):
+                    gui['javascript'] = javascriptFile
+                else:
+                    errors.append("modgui javascript file is missing")
                 del javascriptFile
 
-            if modgui_style.me is not None:
+            if modgui_style.me is None:
+                errors.append("modgui has no stylesheet data")
+            else:
                 stylesheetFile = lilv.lilv_uri_to_path(modgui_style.as_string())
-                gui['stylesheet'] = stylesheetFile
-                #if os.path.exists(stylesheetFile):
-                    #with open(stylesheetFile, 'r') as fd:
-                        #gui['stylesheet'] = fd.read()
+                if os.path.exists(stylesheetFile):
+                    gui['stylesheet'] = stylesheetFile
+                else:
+                    errors.append("modgui stylesheet file is missing")
                 del stylesheetFile
 
             # template data for backwards compatibility
             # FIXME remove later once we got rid of all templateData files
-            modgui_templ = world.find_nodes(modguigui.me, modgui.templateData.me, None).get_first()
+            modgui_templ = world.find_nodes(modguigui.me, ns_modgui.templateData.me, None).get_first()
 
             if modgui_templ.me is not None:
+                warnings.append("modgui is using old deprecated templateData")
                 templFile = lilv.lilv_uri_to_path(modgui_templ.as_string())
                 if os.path.exists(templFile):
                     with open(templFile, 'r') as fd:
@@ -525,7 +784,7 @@ def get_plugin_info(world, plugin):
                         keys = list(data.keys())
 
                         if 'author' in keys:
-                            gui['author'] = data['author']
+                            gui['brand'] = data['author']
                         if 'label' in keys:
                             gui['label'] = data['label']
                         if 'color' in keys:
@@ -546,25 +805,33 @@ def get_plugin_info(world, plugin):
                 del templFile
 
             # screenshot and thumbnail
-            modgui_scrn  = world.find_nodes(modguigui.me, modgui.screenshot.me, None).get_first()
-            modgui_thumb = world.find_nodes(modguigui.me, modgui.thumbnail .me, None).get_first()
+            modgui_scrn  = world.find_nodes(modguigui.me, ns_modgui.screenshot.me, None).get_first()
+            modgui_thumb = world.find_nodes(modguigui.me, ns_modgui.thumbnail .me, None).get_first()
 
             if modgui_scrn.me is not None:
                 gui['screenshot'] = lilv.lilv_uri_to_path(modgui_scrn.as_string())
+                if not os.path.exists(gui['screenshot']):
+                    errors.append("modgui screenshot file is missing")
+            else:
+                errors.append("modgui has no screnshot data")
 
             if modgui_thumb.me is not None:
-                gui['thumbnail' ] = lilv.lilv_uri_to_path(modgui_thumb.as_string())
+                gui['thumbnail'] = lilv.lilv_uri_to_path(modgui_thumb.as_string())
+                if not os.path.exists(gui['thumbnail']):
+                    errors.append("modgui thumbnail file is missing")
+            else:
+                errors.append("modgui has no thumbnail data")
 
             # extra stuff, all optional
-            modgui_author = world.find_nodes(modguigui.me, modgui.author.me, None).get_first()
-            modgui_label  = world.find_nodes(modguigui.me, modgui.label .me, None).get_first()
-            modgui_model  = world.find_nodes(modguigui.me, modgui.model .me, None).get_first()
-            modgui_panel  = world.find_nodes(modguigui.me, modgui.panel .me, None).get_first()
-            modgui_color  = world.find_nodes(modguigui.me, modgui.color .me, None).get_first()
-            modgui_knob   = world.find_nodes(modguigui.me, modgui.knob  .me, None).get_first()
+            modgui_brand = world.find_nodes(modguigui.me, ns_modgui.brand.me, None).get_first()
+            modgui_label = world.find_nodes(modguigui.me, ns_modgui.label.me, None).get_first()
+            modgui_model = world.find_nodes(modguigui.me, ns_modgui.model.me, None).get_first()
+            modgui_panel = world.find_nodes(modguigui.me, ns_modgui.panel.me, None).get_first()
+            modgui_color = world.find_nodes(modguigui.me, ns_modgui.color.me, None).get_first()
+            modgui_knob  = world.find_nodes(modguigui.me, ns_modgui.knob .me, None).get_first()
 
-            if modgui_author.me is not None:
-                gui['author'] = modgui_author.as_string()
+            if modgui_brand.me is not None:
+                gui['brand'] = modgui_brand.as_string()
             if modgui_label.me is not None:
                 gui['label'] = modgui_label.as_string()
             if modgui_model.me is not None:
@@ -577,19 +844,23 @@ def get_plugin_info(world, plugin):
                 gui['knob'] = modgui_knob.as_string()
 
             # ports
+            errpr = False
             ports = []
-            nodes = world.find_nodes(modguigui.me, modgui.port.me, None)
+            nodes = world.find_nodes(modguigui.me, ns_modgui.port.me, None)
             it    = lilv.lilv_nodes_begin(nodes.me)
             while not lilv.lilv_nodes_is_end(nodes.me, it):
                 port = lilv.lilv_nodes_get(nodes.me, it)
                 it   = lilv.lilv_nodes_next(nodes.me, it)
                 if port is None:
                     break
-                port_indx = world.find_nodes(port, lv2core.index .me, None).get_first()
-                port_symb = world.find_nodes(port, lv2core.symbol.me, None).get_first()
-                port_name = world.find_nodes(port, doap.shortname.me, None).get_first()
+                port_indx = world.find_nodes(port, ns_lv2core.index .me, None).get_first()
+                port_symb = world.find_nodes(port, ns_lv2core.symbol.me, None).get_first()
+                port_name = world.find_nodes(port, ns_lv2core.name  .me, None).get_first()
 
                 if None in (port_indx.me, port_name.me, port_symb.me):
+                    if not errpr:
+                        errors.append("modgui has some invalid port data")
+                        errpr = True
                     continue
 
                 ports.append({
@@ -616,70 +887,270 @@ def get_plugin_info(world, plugin):
 
     index = 0
     ports = {
-        'audio':   { 'input': [], 'output': [] },
-        'control': { 'input': [], 'output': [] }
+        'audio'  : { 'input': [], 'output': [] },
+        'control': { 'input': [], 'output': [] },
+        'midi'   : { 'input': [], 'output': [] }
     }
+
+    portsymbols = []
+    portnames   = []
 
     # function for filling port info
     def fill_port_info(port):
-        # port types
-        types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, rdf.type_)]
+        # base data
+        portname = lilv.lilv_node_as_string(port.get_name()) or ""
 
-        # port value ranges
-        ranges = {}
+        if not portname:
+            portname = "_%i" % index
+            errors.append("port with index %i has no name" % index)
+
+        portsymbol = lilv.lilv_node_as_string(port.get_symbol()) or ""
+
+        if not portsymbol:
+            portsymbol = "_%i" % index
+            errors.append("port with index %i has no symbol" % index)
+
+        # check for duplicate names
+        if portname in portsymbols:
+            warnings.append("port name '%s' is not unique" % portname)
+        else:
+            portnames.append(portname)
+
+        # check for duplicate symbols
+        if portsymbol in portsymbols:
+            errors.append("port symbol '%s' is not unique" % portsymbol)
+        else:
+            portsymbols.append(portsymbol)
+
+        # short name
+        psname = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.shortname.me))
+
+        if psname is not None:
+            psname = lilv.lilv_node_as_string(psname) or ""
+
+        if not psname:
+            psname = get_short_port_name(portname)
+            warnings.append("port '%s' has no short name" % portname)
+
+        elif len(psname) > 16:
+            psname = psname[:16]
+            errors.append("port '%s' short name has more than 16 characters" % portname)
+
+        # port types
+        types = [typ.rsplit("#",1)[-1].replace("Port","",1) for typ in get_port_data(port, ns_rdf.type_)]
+
+        if "Atom" in types \
+            and port.supports_event(ns_midi.MidiEvent.me) \
+            and lilv.Nodes(port.get_value(ns_atom.bufferType.me)).get_first() == ns_atom.Sequence:
+                types.append("MIDI")
+
+        # port properties
+        properties = [typ.rsplit("#",1)[-1] for typ in get_port_data(port, ns_lv2core.portProperty)]
+
+        # data
+        ranges      = {}
+        scalepoints = []
 
         # unit block
-        uunit = lilv.lilv_nodes_get_first(port.get_value(units.unit.me))
+        ulabel  = ""
+        urender = ""
+        usymbol = ""
 
-        # contains unit
+        # control and cv must contain ranges, might contain scale points
+        if "Control" in types or "CV" in types:
+            isInteger = "integer" in properties
+
+            xdefault = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.default.me))
+            xminimum = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.minimum.me))
+            xmaximum = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.maximum.me))
+
+            if xminimum is not None and xmaximum is not None:
+                if isInteger:
+                    if is_integer(lilv.lilv_node_as_string(xminimum)):
+                        ranges['minimum'] = lilv.lilv_node_as_int(xminimum)
+                    else:
+                        ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
+                        if fmod(ranges['minimum'], 1.0) == 0.0:
+                            warnings.append("port '%s' has integer property but minimum value is float" % portname)
+                        else:
+                            errors.append("port '%s' has integer property but minimum value has non-zero decimals" % portname)
+                        ranges['minimum'] = int(ranges['minimum'])
+
+                    if is_integer(lilv.lilv_node_as_string(xmaximum)):
+                        ranges['maximum'] = lilv.lilv_node_as_int(xmaximum)
+                    else:
+                        ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
+                        if fmod(ranges['maximum'], 1.0) == 0.0:
+                            warnings.append("port '%s' has integer property but maximum value is float" % portname)
+                        else:
+                            errors.append("port '%s' has integer property but maximum value has non-zero decimals" % portname)
+                        ranges['maximum'] = int(ranges['maximum'])
+
+                else:
+                    ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
+                    ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
+
+                    if is_integer(lilv.lilv_node_as_string(xminimum)):
+                        warnings.append("port '%s' minimum value is an integer" % portname)
+
+                    if is_integer(lilv.lilv_node_as_string(xmaximum)):
+                        warnings.append("port '%s' maximum value is an integer" % portname)
+
+                if ranges['minimum'] >= ranges['maximum']:
+                    ranges['maximum'] = ranges['minimum'] + (1 if isInteger else 0.1)
+                    errors.append("port '%s' minimum value is equal or higher than its maximum" % portname)
+
+                if xdefault is not None:
+                    if isInteger:
+                        if is_integer(lilv.lilv_node_as_string(xdefault)):
+                            ranges['default'] = lilv.lilv_node_as_int(xdefault)
+                        else:
+                            ranges['default'] = lilv.lilv_node_as_float(xdefault)
+                            if fmod(ranges['default'], 1.0) == 0.0:
+                                warnings.append("port '%s' has integer property but default value is float" % portname)
+                            else:
+                                errors.append("port '%s' has integer property but default value has non-zero decimals" % portname)
+                            ranges['default'] = int(ranges['default'])
+                    else:
+                        ranges['default'] = lilv.lilv_node_as_float(xdefault)
+
+                        if is_integer(lilv.lilv_node_as_string(xdefault)):
+                            warnings.append("port '%s' default value is an integer" % portname)
+
+                    if not (ranges['minimum'] <= ranges['default'] <= ranges['maximum']):
+                        ranges['default'] = ranges['minimum']
+                        errors.append("port '%s' default value is out of bounds" % portname)
+
+                else:
+                    ranges['default'] = ranges['minimum']
+
+                    if "Input" in types:
+                        errors.append("port '%s' is missing default value" % portname)
+
+            else:
+                if isInteger:
+                    ranges['minimum'] = 0
+                    ranges['maximum'] = 1
+                    ranges['default'] = 0
+                else:
+                    ranges['minimum'] = 0.0
+                    ranges['maximum'] = 1.0
+                    ranges['default'] = 0.0
+                errors.append("port '%s' is missing value ranges" % portname)
+
+            nodes = port.get_scale_points()
+
+            if nodes is not None:
+                it = lilv.lilv_scale_points_begin(nodes)
+                while not lilv.lilv_scale_points_is_end(nodes, it):
+                    sp = lilv.lilv_scale_points_get(nodes, it)
+                    it = lilv.lilv_scale_points_next(nodes, it)
+
+                    if sp is None:
+                        continue
+
+                    label = lilv.lilv_scale_point_get_label(sp)
+                    value = lilv.lilv_scale_point_get_value(sp)
+
+                    if label is None:
+                        errors.append("a port scalepoint is missing its label")
+                        continue
+
+                    label = lilv.lilv_node_as_string(label) or ""
+
+                    if not label:
+                        errors.append("a port scalepoint is missing its label")
+                        continue
+
+                    if value is None:
+                        errors.append("port scalepoint '%s' is missing its value" % label)
+                        continue
+
+                    if isInteger:
+                        if is_integer(lilv.lilv_node_as_string(value)):
+                            value = lilv.lilv_node_as_int(value)
+                        else:
+                            value = lilv.lilv_node_as_float(value)
+                            if fmod(value, 1.0) == 0.0:
+                                warnings.append("port '%s' has integer property but scalepoint '%s' value is float" % (portname, label))
+                            else:
+                                errors.append("port '%s' has integer property but scalepoint '%s' value has non-zero decimals" % (portname, label))
+                            value = int(value)
+                    else:
+                        if is_integer(lilv.lilv_node_as_string(value)):
+                            warnings.append("port '%s' scalepoint '%s' value is an integer" % (portname, label))
+                        value = lilv.lilv_node_as_float(value)
+
+                    if ranges['minimum'] <= value <= ranges['maximum']:
+                        scalepoints.append({'label': label, 'value': value})
+                    else:
+                        errors.append(("port scalepoint '%s' has an out-of-bounds value:\n" % label) +
+                                      ("%d < %d < %d" if isInteger else "%f < %f < %f") % (ranges['minimum'], value, ranges['maximum']))
+
+            if "enumeration" in properties and len(scalepoints) <= 1:
+                errors.append("port '%s' wants to use enumeration but doesn't have enough values" % portname)
+                properties.remove("enumeration")
+
+        # control ports might contain unit
         if "Control" in types:
+            # unit
+            uunit = lilv.lilv_nodes_get_first(port.get_value(ns_units.unit.me))
+
             if uunit is not None:
                 uuri = lilv.lilv_node_as_uri(uunit)
 
                 # using pre-existing lv2 unit
-                if uuri is not None and uuri.startswith("http://lv2plug.in/ns/extensions/units#"):
-                    ulabel, urender, usymbol = get_port_unit(uuri.replace("http://lv2plug.in/ns/extensions/units#","",1))
+                if uuri is not None and uuri.startswith("http://lv2plug.in/ns/"):
+                    uuri  = uuri.replace("http://lv2plug.in/ns/extensions/units#","",1)
+                    alnum = uuri.isalnum()
+
+                    if not alnum:
+                        errors.append("port '%s' has wrong lv2 unit uri" % portname)
+                        uuri = uuri.rsplit("#",1)[-1].rsplit("/",1)[-1]
+
+                    ulabel, urender, usymbol = get_port_unit(uuri)
+
+                    if alnum and not (ulabel and urender and usymbol):
+                        errors.append("port '%s' has unknown lv2 unit (our bug?, data is '%s', '%s', '%s')" % (portname,
+                                                                                                               ulabel,
+                                                                                                               urender,
+                                                                                                               usymbol))
 
                 # using custom unit
                 else:
-                    xlabel  = world.find_nodes(uunit, rdfs  .label.me, None).get_first()
-                    xrender = world.find_nodes(uunit, units.render.me, None).get_first()
-                    xsymbol = world.find_nodes(uunit, units.symbol.me, None).get_first()
+                    xlabel  = world.find_nodes(uunit, ns_rdfs  .label.me, None).get_first()
+                    xrender = world.find_nodes(uunit, ns_units.render.me, None).get_first()
+                    xsymbol = world.find_nodes(uunit, ns_units.symbol.me, None).get_first()
 
-                    ulabel  = xlabel .as_string() if xlabel .me else ""
-                    urender = xrender.as_string() if xrender.me else ""
-                    usymbol = xsymbol.as_string() if xsymbol.me else ""
+                    if xlabel.me is not None:
+                        ulabel = xlabel.as_string()
+                    else:
+                        errors.append("port '%s' has custom unit with no label" % portname)
 
-            # no unit
-            else:
-                ulabel  = ""
-                urender = ""
-                usymbol = ""
+                    if xrender.me is not None:
+                        urender = xrender.as_string()
+                    else:
+                        errors.append("port '%s' has custom unit with no render" % portname)
 
-            xdefault = lilv.lilv_nodes_get_first(port.get_value(lv2core.default.me))
-            xminimum = lilv.lilv_nodes_get_first(port.get_value(lv2core.minimum.me))
-            xmaximum = lilv.lilv_nodes_get_first(port.get_value(lv2core.maximum.me))
-
-            if xminimum is not None and xmaximum is not None:
-                ranges['minimum'] = lilv.lilv_node_as_float(xminimum)
-                ranges['maximum'] = lilv.lilv_node_as_float(xmaximum)
-
-                if xdefault is not None:
-                    ranges['default'] = lilv.lilv_node_as_float(xdefault)
+                    if xsymbol.me is not None:
+                        usymbol = xsymbol.as_string()
+                    else:
+                        errors.append("port '%s' has custom unit with no symbol" % portname)
 
         return (types, {
-            'name'   : lilv.lilv_node_as_string(port.get_name()),
-            'symbol' : lilv.lilv_node_as_string(port.get_symbol()),
+            'name'   : portname,
+            'symbol' : portsymbol,
             'ranges' : ranges,
             'units'  : {
                 'label' : ulabel,
                 'render': urender,
                 'symbol': usymbol,
-            } if "Control" in types and (ulabel or urender or usymbol) else {},
-            'designation': (get_port_data(port, lv2core.designation) or [None])[0],
-            'properties' : [typ.rsplit("#",1)[-1] for typ in get_port_data(port, lv2core.portProperty)],
-            'rangeSteps' : (get_port_data(port, pprops.rangeSteps) or [None])[0],
-            "scalePoints": [],
+            } if "Control" in types and ulabel and urender and usymbol else {},
+            'designation': (get_port_data(port, ns_lv2core.designation) or [None])[0],
+            'properties' : properties,
+            'rangeSteps' : (get_port_data(port, ns_mod.rangeSteps) or get_port_data(port, ns_pprops.rangeSteps) or [None])[0],
+            "scalePoints": scalepoints,
+            'shortname'  : psname,
         })
 
     for p in (plugin.get_port_by_index(i) for i in range(plugin.get_num_ports())):
@@ -691,40 +1162,60 @@ def get_plugin_info(world, plugin):
         isInput = "Input" in types
         types.remove("Input" if isInput else "Output")
 
-        # FIXME: this is needed by SDK, but it's not pretty
-        if "Control" in types:
-            info['enumeration'] = bool("enumeration" in info['properties'])
-            info['trigger'    ] = bool("trigger"     in info['properties'])
-            info['toggled'    ] = bool("toggled"     in info['properties'])
-
         for typ in [typl.lower() for typl in types]:
             if typ not in ports.keys():
                 ports[typ] = { 'input': [], 'output': [] }
             ports[typ]["input" if isInput else "output"].append(info)
 
     # --------------------------------------------------------------------------------------------------------
+    # presets
+
+    def get_preset_data(preset):
+        world.load_resource(preset.me)
+
+        uri   = preset.as_string() or ""
+        label = world.find_nodes(preset.me, ns_rdfs.label.me, None).get_first().as_string() or ""
+
+        if not uri:
+            errors.append("preset with label '%s' has no uri" % (label or "<unknown>"))
+        if not label:
+            errors.append("preset with uri '%s' has no label" % (uri or "<unknown>"))
+
+        return { 'uri': uri, 'label': label }
+
+    presetsrel = plugin.get_related(ns_pset.Preset)
+    presets    = list(LILV_FOREACH(presetsrel, get_preset_data))
+
+    del presetsrel
+
+    # --------------------------------------------------------------------------------------------------------
     # done
 
     return {
-        'name': plugin.get_name().as_string() or "",
-        'uri' : plugin.get_uri().as_string(),
-        'author': {
-            'name'    : plugin.get_author_name().as_string() or "",
-            'homepage': plugin.get_author_homepage().as_string() or "",
-            'email'   : (plugin.get_author_email().as_string() or "").replace(bundleuri,"",1),
-        },
+        'uri' : uri,
+        'name': name,
 
-        'ports': ports,
-        'gui'  : gui,
+        'binary' : binary,
+        'brand'  : brand,
+        'label'  : label,
+        'license': license,
+        'comment': comment,
 
-        'binary'  : lilv.lilv_uri_to_path(plugin.get_library_uri().as_string() or ""),
-        'category': get_category(plugin.get_value(rdf.type_)),
-        'license' : (plugin.get_value(doap.license).get_first().as_string() or "").replace(bundleuri,"",1),
+        'category'    : get_category(plugin.get_value(ns_rdf.type_)),
+        'microVersion': microVersion,
+        'minorVersion': minorVersion,
 
-        'description'  : plugin.get_value(rdfs.comment).get_first().as_string() or "",
-        'documentation': plugin.get_value(lv2core.documentation).get_first().as_string() or "",
-        'microVersion' : microver.as_int() if microver.me else 0,
-        'minorVersion' : minorver.as_int() if minorver.me else 0,
+        'version'  : version,
+        'stability': stability,
+
+        'author' : author,
+        'bundles': bundles,
+        'gui'    : gui,
+        'ports'  : ports,
+        'presets': presets,
+
+        'errors'  : errors,
+        'warnings': warnings,
     }
 
 # ------------------------------------------------------------------------------------------------------------
@@ -777,6 +1268,27 @@ if __name__ == '__main__':
     from sys import argv
     from pprint import pprint
     #get_plugins_info(argv[1:])
-    for i in get_plugins_info(argv[1:]): pprint(i)
+    #for i in get_plugins_info(argv[1:]): pprint(i)
+    for i in get_plugins_info(argv[1:]):
+        warnings = i['warnings'].copy()
+
+        if 'plugin brand is missing' in warnings:
+            i['warnings'].remove('plugin brand is missing')
+
+        if 'plugin label is missing' in warnings:
+            i['warnings'].remove('plugin label is missing')
+
+        if 'no modgui available' in warnings:
+            i['warnings'].remove('no modgui available')
+
+        for warn in warnings:
+            if "has no short name" in warn:
+                i['warnings'].remove(warn)
+
+        pprint({
+            'uri'     : i['uri'],
+            'errors'  : i['errors'],
+            'warnings': i['warnings']
+        }, width=200)
 
 # ------------------------------------------------------------------------------------------------------------

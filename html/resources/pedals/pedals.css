@@ -1,0 +1,637 @@
+/* GENERAL PEDAL STYLE */
+
+.mod-pedal { 
+    display:inline-block;
+    padding:1px 15px 1px 15px;
+    z-index:100;
+}
+
+.mod-input .mod-output-jack{
+    z-index: 100;
+}
+
+/* = ACTIONS - Icons above:settings, remove, etc
+================================================ */
+.mod-pedal .mod-actions {
+    position:absolute;
+    right:0;
+    top:0;
+}
+.mod-pedal .mod-actions .mod-settings {
+    background:url(../../img/icn-settings-16x16.png) no-repeat bottom center;
+    cursor:pointer;
+    height:16px;
+    position:absolute;
+    right:22px;
+    top:-20px;
+    width:16px;
+}
+.mod-pedal .mod-actions .mod-settings:hover { background-position:top center; }
+.mod-pedal .mod-actions .mod-remove {
+    background:url(../../img/icn-remove-16x16.png) no-repeat bottom center;
+    cursor:pointer;
+    height:16px;
+    position:absolute;
+    right:0;
+    top:-20px;
+    width:16px;
+}
+.mod-pedal .mod-actions .mod-remove:hover { background-position:top center; }
+
+/* = DRAG HANDLE
+================================================ */
+.mod-pedal .mod-drag-handle {
+    bottom:0;
+    cursor:move;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0px;
+    z-index:20;
+}
+
+/* = AUTHOR AND PLUGIN'S NAME
+================================================ */
+.mod-pedal .mod-plugin-author,
+.mod-pedal .mod-plugin-title {
+    z-index:10;
+}
+
+/* = FOOTSWITCH
+================================================ */
+.mod-pedal .mod-footswitch {
+    z-index:20;
+}
+
+/* = CONTROLS
+================================================ */
+.mod-pedal .mod-control-group {
+    z-index:20;
+}
+
+/* = INPUT/OUTPUT
+================================================ */
+.mod-pedal .mod-pedal-input,
+.mod-pedal .mod-pedal-output {
+    z-index:30;
+}
+
+
+/* = LIGHT ON/OFF
+================================================ */
+.mod-pedal .mod-light.off { background-image:url(red-light-off.png); }
+.mod-pedal .mod-light.on  { background-image:url(red-light-on.png); }
+
+
+/* = INPUT
+================================================ */
+.mod-pedal-input-wrapper {
+    background:#000;
+    border-radius:4px;
+    height:100px;
+    left:-21px;
+    position:relative;
+    width:47px;
+    z-index:35;
+}
+
+.mod-pedal-input-wrapper .mod-pedal-input-arrow {
+    /* Attention: pedalboard.js has hardcoded value related to this height */
+    border-bottom:12px solid transparent;
+    border-left:12px solid #000;
+    border-top:12px solid transparent;
+    height:0; 
+    position:absolute;
+    right:-12px;
+    top:39px;
+    width:0; 
+}
+
+.mod-input.expanded .mod-output-jack {
+    background-image:url(../../../img/jack-expanded.png) !important;
+    margin-left: -21px !important;
+}
+
+.mod-pedal .mod-pedal-input {
+    height:170px;
+    left:-28px;
+    position:absolute;
+    top:106px;
+    width:45px;
+}
+
+.mod-pedal .mod-pedal-input .mod-input {
+    width:45px;
+    height:45px;
+    margin-bottom:10px
+}
+
+.mod-pedal .mod-pedal-input-image {
+    background:url(input.png) no-repeat right top;
+    background-size:auto 45px;
+    height:56px;
+    position:absolute;
+    right:0;
+    width:17px;
+    z-index:2;
+}
+
+.mod-pedal .mod-pedal-input .input-connected .mod-pedal-input-image {
+    background-image:url(../../../img/input-connected.png);
+    background-position:right top;
+    background-repeat:no-repeat;
+    background-size:auto 45px;
+    width:56px;
+}
+
+.mod-pedal .mod-pedal-input .input-connected .mod-output-jack {
+    background:none;
+    position:relative;
+    z-index:100;
+}
+
+.mod-pedal .input-disconnected {}
+.mod-pedal .input-connecting {}
+.mod-pedal .input-connected {}
+
+
+/* = OUTPUT
+================================================ */
+.mod-pedal-output-wrapper {
+    background:#000;
+    border-radius:4px;
+    height:100px;
+    right:-32px;
+    position:absolute;
+    top:78px;
+    width:32px;
+    z-index:50;
+}
+
+.mod-pedal-output-wrapper .mod-pedal-output-arrow {
+    border-bottom:12px solid transparent;
+    border-right:12px solid #000;
+    border-top:12px solid transparent;
+    height:0; 
+    position:absolute;
+    left:-12px;
+    top:39px;
+    width:0; 
+}
+.mod-pedal .mod-output-jack,
+.mod-pedal .output-connected .mod-output-jack:hover {
+    background-image:url(../../img/jack-p10.png);
+    background-position:right center;
+    background-repeat:no-repeat;
+    cursor:pointer;
+    height:18px;
+    left:2px;
+    position:absolute;
+    top:12px;
+    width:87px;
+}
+
+.mod-pedal .mod-output-jack:hover,
+.mod-pedal .mod-output-jack.jack-connecting {}
+
+.mod-pedal .mod-pedal-output {
+    height:170px;
+    position:absolute;
+    right:-27px;
+    top:106px;
+    width:45px;
+}
+
+.mod-pedal .mod-pedal-output .mod-output { 
+    cursor:pointer; 
+    height:45px;
+    margin-bottom:10px;
+    position:relative;
+    width:45px;
+}
+
+.mod-pedal .mod-pedal-output-image {
+    background:url(output.png) no-repeat 0 top;
+    background-size:auto 45px;
+    height:56px;
+    position:relative;
+    width:13px;
+    z-index:2;
+}
+
+.mod-pedal .output-disconnected .mod-output-jack { }
+.mod-pedal .output-connecting {}
+.mod-pedal .output-connected .mod-output-jack { background:none; }
+
+    
+/* = PEDAL SETTINGS - Pop Up Window
+================================================ */
+body > .mod-settings {
+    background:rgba(20,20,20,.85);
+    bottom:0;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0;
+}
+
+.mod-pedal-settings {
+    background:#000;
+    border-radius:9px;
+    bottom:38px;
+    color:#fff;
+    left:30px;
+    margin:0 auto;
+    overflow:auto;
+    padding:0;
+    position:absolute;
+    right:30px;
+    top:38px;
+    z-index:10;
+}
+
+.mod-pedal-settings header {
+    padding:10px 10px 18px;
+}
+
+.mod-pedal-settings h1 {
+    font-size:18px;
+    font-weight:bold;
+    margin:0;
+}
+
+.mod-pedal-settings .mod-actions {
+    border-color:#2b2b2b;
+    border-style:dotted;
+    border-width:1px 0 0 0;
+    margin:18px;
+    padding:18px 0 0 0;
+    text-align:right;
+}
+
+.mod-pedal-settings .mod-control-group {
+    margin:0;
+    padding:0 18px;
+}
+
+.mod-presets {
+    padding: 0 18px;
+}
+
+/* = KNOB
+================================================ */
+.mod-pedal-settings .mod-knob {
+    background:rgba(255,255,255,.15);
+    float:left;
+    height:160px;
+    margin-bottom:2px;
+    margin-right:2px;
+    position:relative;
+    text-align:center;
+    width:160px;
+}
+
+.mod-pedal-settings .mod-knob > span.mod-knob-current-value {
+    bottom:30px;
+    font-size:12px;
+    font-weight:bold;
+    left:0;
+    position:absolute;
+    text-align:center;
+    right:0;
+}
+.mod-pedal-settings .mod-knob > span.mod-knob-max-value {
+    font-size:11px;
+    font-weight:bold;
+    left:110px;
+    position:absolute;
+    text-align:left;
+    top:90px;
+}
+.mod-pedal-settings .mod-knob > span.mod-knob-min-value {
+    font-size:11px;
+    font-weight:bold;
+    position:absolute;
+    text-align:right;
+    right:110px;
+    top:90px;
+}
+.mod-pedal-settings .mod-knob > span.mod-knob-title {
+    color:white;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    line-height:1;
+    margin:9px 0;
+    position:relative;
+    overflow:hidden;
+    text-transform:uppercase;
+}
+
+.mod-pedal-settings .mod-knob .mod-knob-image {
+    background-image:url(../knobs/japanese/white.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    background-size:auto 63px;
+    height:63px;
+    left:47px;
+    position:absolute;
+    overflow:hidden;
+    top:45px;
+    width:63px;
+}
+
+.mod-pedal-settings .mod-knob .mod-knob-image.disabled {
+    opacity:.3;
+}
+
+/* = ENUMERATED
+================================================ */
+.mod-pedal-settings .mod-enumerated {
+    background:rgba(255,255,255,.15);
+    float:left;
+    height:160px;
+    margin:0 2px 2px 0;
+    position:relative;
+    width:160px;
+}
+
+.mod-pedal-settings .mod-enumerated .mod-enumerated-list {
+    color:#fff;
+    height:111px;
+    overflow:auto;
+    position:relative;
+}
+
+.mod-pedal-settings .mod-enumerated .mod-enumerated-list > div {
+    font-size:11px;
+    font-weight:bold;
+    padding:1px 9px;
+}
+
+.mod-pedal-settings .mod-enumerated .mod-enumerated-list > div.selected {
+    background:rgba(255, 255, 255, .4)
+}
+
+.mod-pedal-settings .mod-enumerated .mod-enumerated-list > div:hover,
+.mod-pedal-settings .mod-enumerated .mod-enumerated-list > div.selected:hover {
+    background:rgba(255,255,255,.2);
+    box-shadow:inset 0 0 4px rgba(0,0,0,.5);
+    cursor:pointer;
+}
+
+.mod-pedal-settings .mod-enumerated > span.mod-enumerated-title {
+    color:white;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    line-height:1;
+    margin:9px 0;
+    position:relative;
+    overflow:hidden;
+    text-align:center;
+    text-transform:uppercase;
+}
+
+
+/* = SLIDER
+================================================ */
+.mod-pedal-settings .mod-slider {
+    background:rgba(255,255,255,.15);
+    float:left;
+    font-size:11px;
+    height:160px;
+    margin-bottom:2px;
+    margin-right:2px;
+    overflow:hidden;
+    position:relative;
+    text-align:center;
+    width:80px;
+}
+
+
+.mod-pedal-settings .mod-slider .mod-slider-title {
+    color:white;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    line-height:1;
+    margin:9px 0;
+    position:relative;
+    overflow:hidden;
+    text-transform:uppercase;}
+
+.mod-pedal-settings .mod-slider .mod-slider-image {
+    background-image:url(../sliders/slider01/_strip.png);
+    background-repeat:no-repeat;
+    background-size:auto 70px;
+    height:70px;
+    margin:14px auto 0;
+    width:28px;
+}
+
+.mod-pedal-settings .mod-slider .mod-slider-image:hover {
+    cursor:pointer;
+}
+
+.mod-pedal-settings .mod-slider > span.mod-slider-current-value {
+    bottom:24px;
+    font-size:12px;
+    font-weight:bold;
+    left:0;
+    position:absolute;
+    text-align:center;
+    right:0;
+}
+.mod-pedal-settings .mod-slider > span.mod-slider-max-value {
+    font-size:11px;
+    font-weight:bold;
+    left:0;
+    position:absolute;
+    right:0;
+    text-align:center;
+    top:18px;
+}
+.mod-pedal-settings .mod-slider > span.mod-slider-min-value {
+    bottom:38px;
+    font-size:11px;
+    font-weight:bold;
+    left:0;
+    position:absolute;
+    right:0;
+    text-align:center;
+}
+
+
+/* = SWITCH
+================================================ */
+.mod-pedal-settings .mod-switch {
+    background:rgba(255,255,255,.15);
+    cursor:pointer;
+    float:left;
+    height:160px;
+    margin-bottom:2px;
+    margin-right:2px;
+    position:relative;
+    text-align:center;
+    width:160px;
+}
+
+.mod-pedal-settings .mod-switch > span.mod-switch-title {
+    color:white;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    line-height:1;
+    margin:9px 0;
+    position:relative;
+    overflow:hidden;
+    text-transform:uppercase;
+}
+
+.mod-pedal-settings .mod-switch .mod-switch-image {
+    background-image:url(../switches/switch-002.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    background-size:auto 63px;
+    height:63px;
+    left:17px;
+    position:absolute;
+    overflow:hidden;
+    top:55px;
+    width:126px;
+}
+
+.mod-pedal-settings .mod-switch .mod-footswitch-image {
+    background-image:url(../switches/footswitch.png);
+    background-position:left center;
+    background-repeat:no-repeat;
+    background-size:auto 63px;
+    height:63px;
+    left:47px;
+    position:absolute;
+    overflow:hidden;
+    top:55px;
+    width:63px;
+}
+
+/* This makes the switch works either with film of switch widget */
+.mod-pedal-settings .mod-switch .mod-switch-image.on {
+    background-position:right center;
+}
+.mod-pedal-settings .mod-switch .mod-switch-image.off {
+    background-position:left center;
+}
+
+/* Invert the display of bypass, so that we display ON when bypass is off */
+.mod-pedal-settings .bypass .mod-switch-image.on {
+    background-position:left center !important;
+}
+.mod-pedal-settings .bypass .mod-switch-image.off {
+    background-position:right center !important;
+}
+.mod-pedal-settings .bypass .mod-switch-image {
+    background-position:right center !important;
+}
+
+.mod-pedal-settings .bypass .mod-light {
+    background-repeat:no-repeat;
+    background-size:auto 24px;
+    height:24px;
+    margin:20px auto 0;
+    width:24px;
+}
+.mod-pedal-settings .bypass .mod-light.off {
+    background-image:url(red-light-off.png);
+}
+.mod-pedal-settings .bypass .mod-light.on  {
+    background-image:url(red-light-on.png);
+}
+
+
+
+/* ADDRESSING BUTTON */
+.mod-pedal-settings .mod-knob .mod-address,
+.mod-pedal-settings .mod-enumerated .mod-address,
+.mod-pedal-settings .mod-switch .mod-address,
+.mod-pedal-settings .mod-slider .mod-address {
+    background-color:rgba(255,255,255,.1);
+    background-image:url(../../img/icn-addressing.png);
+    background-position:center center;
+    background-repeat:no-repeat;
+    bottom:0;
+    cursor:pointer;
+    height:24px;
+    position:absolute;
+    right:0;
+    width:24px;
+}
+
+.mod-pedal-settings .mod-knob .mod-address:hover,
+.mod-pedal-settings .mod-enumerated .mod-address:hover,
+.mod-pedal-settings .mod-switch .mod-address:hover,
+.mod-pedal-settings .mod-slider .mod-address:hover {
+    background-color:#0088cc;
+}
+
+
+/* ADDRESSING POP-UP */
+.mod-pedal-settings-address {
+    background:rgba(0,0,0,.75);
+    bottom:0;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:1000;
+}
+
+.mod-pedal-settings-address .mod-box {
+    background:white;
+    border-radius:9px;
+    left:50%;
+    margin:-150px -168px;
+    padding:18px;
+    position:absolute;
+    top:50%;
+    width:300px;
+}
+
+.mod-pedal-settings-address h1 {
+    font-size:18px;
+    line-height:1;
+    margin:0 0 18px 0;
+    padding:0;
+    text-transform:uppercase;
+}
+
+.mod-pedal-settings-address label {
+    display:inline-block;
+    float:left;
+    line-height:2;
+    width:96px;
+}
+
+.mod-pedal-settings-address .mod-controls {
+    float:left;
+}
+
+.mod-pedal-settings-address input[type="text"] {
+    width:190px;
+}
+
+.mod-pedal-settings-address .mod-value input[type="number"] {
+    width:190px;
+}
+
+.mod-pedal-settings-address .mod-range input[type="number"] {
+    width:81px;
+}
+
+.mod-pedal-settings-address select {
+    width:202px;
+}

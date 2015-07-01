@@ -1,0 +1,107 @@
+/* SLIDER */
+.mod-pedal .mod-slider:first-child {
+    margin-left:8px;
+}
+
+.mod-pedal .mod-slider {
+    color:black;
+    float:left;
+    font-size:11px;
+    height:140px;
+    margin-bottom:2px;
+    margin-right:2px;
+    overflow:hidden;
+    position:relative;
+    text-align:center;
+    width:33px;
+}
+
+
+.mod-pedal .mod-slider .mod-slider-title {
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:7px;
+    line-height:1;
+    margin-bottom:3px;
+    overflow:hidden;
+    padding:7px 0 5px;
+    position:relative;
+}
+
+.mod-pedal .mod-slider .mod-slider-image {
+    background-image:url(_strip.png);
+    background-repeat:no-repeat;
+    background-size:auto 110px;
+    height:110px;
+    margin:0 auto;
+    width:44px;
+}
+
+.mod-pedal .mod-slider .mod-slider-image:hover {
+    cursor:pointer;
+}
+
+.mod-pedal.mod-three-sliders .mod-slider {
+    margin:0;
+    width:33%;
+}
+
+.mod-pedal.mod-four-sliders .mod-slider {
+    margin:0;
+    width:25%;
+}
+
+.mod-pedal.mod-five-sliders .mod-slider {
+    margin:0;
+    width:20%;
+}
+
+.mod-pedal.mod-six-sliders .mod-slider {
+    margin:0;
+    width:16.5%;
+}
+
+.mod-pedal.mod-seven-sliders .mod-slider {
+    margin:0;
+    width:14.2%;
+}
+
+.mod-pedal.mod-eight-sliders .mod-slider {
+    margin:0;
+    width:12.5%;
+}
+
+.mod-pedal.mod-nine-sliders .mod-slider {
+    margin:0;
+    width:11.11%;
+}
+
+.mod-pedal.mod-ten-sliders .mod-slider {
+    margin:0;
+    width:10%;
+}
+
+.mod-pedal.mod-ten-sliders .mod-slider .mod-slider-image {
+    margin-left:-5px;
+}
+
+.mod-pedal.mod-twelve-sliders .mod-slider {
+    margin:0;
+    width:8.333333%;
+}
+
+.mod-pedal.mod-twelve-sliders .mod-slider .mod-slider-image {
+    margin-left:-5px;
+}
+
+
+/* JAPANESE */
+.mod-pedal-japanese.mod-sliders .mod-control-group {
+    top:18px;
+}
+
+.mod-pedal-japanese.mod-sliders .mod-slider {
+    color:white;
+    top:0;
+}

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 """
 This module works as an interface for mod-host, it uses a socket to communicate
-with mod-host, the protocol is described in <http://github.com/portalmod/mod-host>
+with mod-host, the protocol is described in <http://github.com/moddevices/mod-host>
 
 The module relies on tornado.ioloop stuff, but you need to start the ioloop
 by yourself:

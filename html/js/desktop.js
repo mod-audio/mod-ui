@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
+ * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ function Desktop(elements) {
                 return false
             })
             self.userSession.getUserData(null, function (data) {
-                // FIXME the avatar_href from portalmod server is wrong
+                // FIXME the avatar_href from moddevices server is wrong
                 elements.userAvatar.show().attr('src', data.avatar_href)
                 self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
                 self.netStatus.statusTooltip('status', 'logged')
@@ -124,12 +124,12 @@ function Desktop(elements) {
         address: function (instance, symbol, addressing, callback) {
             addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
             if (symbol == ':bypass') {
-                var url = instance
-                url += ',' + addressing.actuator.join(',')
-                url += ',' + (addressing.value ? 1 : 0)
-                url += ',' + addressing.label
+                varuri = instance
+                uri += ',' + addressing.actuator.join(',')
+                uri += ',' + (addressing.value ? 1 : 0)
+                uri += ',' + addressing.label
                 $.ajax({
-                    url: '/effect/bypass/address/' + url,
+                    url: '/effect/bypass/address/' + uri,
                     success: function (resp) {
                         callback(resp.ok, resp)
                     },
@@ -185,10 +185,10 @@ function Desktop(elements) {
         self.pedalboard.pedalboard('zoomOut')
     })
 
-    var ajaxFactory = function (url, errorMessage) {
+    var ajaxFactory = function (uri, errorMessage) {
         return function (callback) {
             $.ajax({
-                url: url,
+                uri: uri,
                 success: callback,
                 error: function () {
                     new Error(errorMessage)
@@ -223,10 +223,10 @@ function Desktop(elements) {
             })
         },
         upgradePlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.url, callback)
+            self.installationQueue.install(plugin.uri, callback)
         },
         installPlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.url, callback)
+            self.installationQueue.install(plugin.uri, callback)
         }
     })
 
@@ -521,11 +521,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         windowManager: self.windowManager,
         hardwareManager: self.hardwareManager,
         bottomMargin: effectBox.height(),
-        pluginLoad: function (url, instance, x, y, callback, errorCallback) {
+        pluginLoad: function (uri, instance, x, y, callback, errorCallback) {
             var firstTry = true
             var add = function () {
                 $.ajax({
-                    url: '/effect/add/' + instance + '?x=' + x + '&y=' + y + '&url=' + escape(url),
+                    url: '/effect/add/' + instance + '?x=' + x + '&y=' + y + '&uri=' + escape(uri),
                     success: function (pluginData) {
                         if (pluginData)
                             callback(pluginData)
@@ -536,7 +536,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     error: function (resp) {
                         if (resp.status == 404 && firstTry) {
                             firstTry = false
-                            self.installationQueue.install(url, add)
+                            self.installationQueue.install(uri, add)
                         } else {
                             new Notification('error', 'Error adding effect. Probably a connection problem.')
                             if (errorCallback)
@@ -691,12 +691,12 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        getPluginsData: function (urls, callback) {
+        getPluginsData: function (uris, callback) {
             $.ajax({
                 url: '/effect/bulk/',
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(urls),
+                data: JSON.stringify(uris),
                 success: callback,
                 dataType: 'json'
             })
@@ -821,10 +821,10 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
             })
         },
         upgradePlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.url, callback)
+            self.installationQueue.install(plugin.uri, callback)
         },
         installPlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.url, callback)
+            self.installationQueue.install(plugin.uri, callback)
         }
     })
 }

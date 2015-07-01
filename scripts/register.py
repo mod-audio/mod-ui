@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 parser = argparse.ArgumentParser(description='Register device at Cloud')
 parser.add_argument('--serial', metavar='Serial Nº', type=str,
                     help='The serial number for this device')
-parser.add_argument('--cloud', metavar="Cloud address", default='http://cloud.portalmod.com',
+parser.add_argument('--cloud', metavar="Cloud address", default='http://cloud.moddevices.com',
                     type=str, help="The URL where cloud can be found")
 parser.add_argument('--device', metavar="Device address", default='http://192.168.1.50',
                     type=str, help="The URL where device can be found")

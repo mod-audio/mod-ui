@@ -1,0 +1,78 @@
+{
+    "boxy": {
+        "panels": {
+            "1-knob": 1,
+            "2-knobs": 2,
+            "3-knobs": 3,
+            "4-knobs": 4,
+            "5-knobs": 5,
+            "6-knobs": 6,
+            "7-knobs": 7,
+            "8-knobs": 8,
+            "3-sliders": 3,
+            "4-sliders": 4,
+            "5-sliders": 5,
+            "6-sliders": 6,
+            "7-sliders": 7,
+            "8-sliders": 8,
+            "9-sliders": 9,
+            "10-sliders": 10,
+            "12-sliders": 12,
+            "1-select-1-knob": 2,
+            "1-select-2-knobs": 3,
+            "1-select-3-knobs": 4
+        },
+        "colors": [ "blue", "brown", "cream", "darkblue", "gray", "green", "orange", "purple", "red", "white", "yellow" ]
+    },
+    
+    "boxy-small": {
+        "panels": { "1-footswitch": 1 },
+        "colors": [ "blue", "brown", "cream", "darkblue", "gray", "green", "orange", "purple", "red", "white", "yellow" ]
+    },
+    
+    "japanese": {
+        "panels": {
+            "4-knobs": 4,
+            "5-knobs": 5,
+            "7-a-knobs": 7,
+            "7-b-knobs": 7,
+            "8-knobs": 8
+        },
+        "colors": [ "blue", "brown", "cream", "darkblue", "gray", "green", "orange", "purple", "red", "white", "yellow" ],
+        "knobs": [ "blue", "brown", "cream", "darkblue", "gray", "green", "orange", "purple", "red", "white", "yellow" ]
+    },
+    "lata" : {
+        "panels" : {
+            "7-knobs" : 7,
+            "8-knobs" : 8
+        },
+        "colors": [ "blue", "brown", "cream", "darkblue", "gray", "green", "orange", "purple", "red", "white", "yellow" ]
+    },
+    "british" : {
+        "panels" : {
+            "4-knobs" : 4
+        },
+        "colors": [ "metallic" ]
+    },
+    "head-model-001" : {
+        "panels" : {
+            "0550": 4,
+            "0700": 5,
+            "0800": 7,
+            "0950": 10
+        }
+    },
+    "combo-model-001" : {
+        "panels" : {
+            "0550": 4,
+            "0625": 5,
+            "0778": 7,
+            "0930": 9
+        }
+    },
+    "rack" : {
+        "panels" : {
+            "model-001": 12
+        }
+    }
+}
