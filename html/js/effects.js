@@ -209,13 +209,10 @@ JqueryClass('effectBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.effectBox('cleanResults')
-        for (var i in plugins) {
-            self.effectBox('fillInShortNames', plugins[i])
-        }
         plugins.sort(function (a, b) {
-            if (a.shortname > b.shortname)
+            if (a.label > b.label)
                 return 1
-            if (a.shortname < b.shortname)
+            if (a.label < b.label)
                 return -1
             return 0
         })
@@ -250,13 +247,6 @@ JqueryClass('effectBox', {
         self.effectBox('calculateNavigation')
     },
 
-    fillInShortNames: function (plugin) {
-        if (!plugin.author.shortname)
-            plugin.author.shortname = plugin.author.name
-        if (!plugin.shortname)
-            plugin.shortname = plugin.name
-    },
-
     renderPlugin: function (index, container) {
         var self = $(this)
         if (container.length == 0)
@@ -267,8 +257,8 @@ JqueryClass('effectBox', {
         var plugin_data = {
             uri: uri,
             status: plugin.status,
-            author: plugin.author.shortname,
-            label: plugin.shortname,
+            brand : plugin.brand,
+            label : plugin.label,
             thumbnail_href: "/effect/image/thumbnail.png?uri=" + uri,
         }
 
@@ -835,16 +825,10 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-        // FIXME - remove this later
-        for (var i in plugins) {
-            author = plugins[i].author
-            plugins[i].author = { name: author }
-            self.effectBox('fillInShortNames', plugins[i])
-        }
         plugins.sort(function (a, b) {
-            if (a.shortname > b.shortname)
+            if (a.label > b.label)
                 return 1
-            if (a.shortname < b.shortname)
+            if (a.label < b.label)
                 return -1
             return 0
         })
@@ -895,8 +879,8 @@ JqueryClass('cloudPluginBox', {
             package_name: "TODO",//plugin.package.replace(/\.lv2$/, ''),
             uri: uri,
             status: plugin.status,
-            author: plugin.author ? (plugin.author.shortname || plugin.author.name) : "",
-            label: plugin.shortname
+            brand : plugin.brand,
+            label : plugin.label
         }
 
         var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
@@ -990,8 +974,8 @@ JqueryClass('cloudPluginBox', {
             thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
             uri: uri,
             status: plugin.status,
-            author: plugin.author ? (plugin.author.shortname || plugin.author.name) : "",
-            label: plugin.shortname
+            brand : plugin.brand,
+            label : plugin.label
         }
 
         var rendered = $(Mustache.render(template, plugin_data))
