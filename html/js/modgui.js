@@ -521,15 +521,15 @@ function GUI(effect, options) {
 
         if (skipNamespace) {
             data.ns  = ''
-            data.cns = ''
+            data.cns = '_sdk'
         } else {
             data.ns  = '?uri=' + escape(options.uri)
             data.cns = '_' + escape(options.uri).split("/").join("_").split("%").join("_").split(".").join("_")
         }
 
         // fill fields that might be present on modgui data
-        if (!data.author)
-            data.author = effect.gui.author || ""
+        if (!data.brand)
+            data.brand = effect.gui.brand || ""
         if (!data.label)
             data.label = effect.gui.label || ""
         if (!data.color)

@@ -823,15 +823,15 @@ def get_plugin_info(world, plugin):
                 errors.append("modgui has no thumbnail data")
 
             # extra stuff, all optional
-            modgui_author = world.find_nodes(modguigui.me, ns_modgui.brand.me, None).get_first()
-            modgui_label  = world.find_nodes(modguigui.me, ns_modgui.label.me, None).get_first()
-            modgui_model  = world.find_nodes(modguigui.me, ns_modgui.model.me, None).get_first()
-            modgui_panel  = world.find_nodes(modguigui.me, ns_modgui.panel.me, None).get_first()
-            modgui_color  = world.find_nodes(modguigui.me, ns_modgui.color.me, None).get_first()
-            modgui_knob   = world.find_nodes(modguigui.me, ns_modgui.knob .me, None).get_first()
+            modgui_brand = world.find_nodes(modguigui.me, ns_modgui.brand.me, None).get_first()
+            modgui_label = world.find_nodes(modguigui.me, ns_modgui.label.me, None).get_first()
+            modgui_model = world.find_nodes(modguigui.me, ns_modgui.model.me, None).get_first()
+            modgui_panel = world.find_nodes(modguigui.me, ns_modgui.panel.me, None).get_first()
+            modgui_color = world.find_nodes(modguigui.me, ns_modgui.color.me, None).get_first()
+            modgui_knob  = world.find_nodes(modguigui.me, ns_modgui.knob .me, None).get_first()
 
-            if modgui_author.me is not None:
-                gui['brand'] = modgui_author.as_string()
+            if modgui_brand.me is not None:
+                gui['brand'] = modgui_brand.as_string()
             if modgui_label.me is not None:
                 gui['label'] = modgui_label.as_string()
             if modgui_model.me is not None:

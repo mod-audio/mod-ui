@@ -57,6 +57,7 @@
 /* = AUTHOR AND PLUGIN'S NAME
 ================================================ */
 .mod-pedal .mod-plugin-author,
+.mod-pedal .mod-plugin-brand,
 .mod-pedal .mod-plugin-title {
     z-index:10;
 }
