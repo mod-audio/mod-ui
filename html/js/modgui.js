@@ -1049,33 +1049,3 @@ JqueryClass('customSelect', baseWidget, {
             self.trigger('valuechange', parseFloat(value))
     }
 })
-
-
-JqueryClass('confirmButton', {
-    init: function (options) {
-        var self = $(this);
-        options = $.extend({
-            confirm: true,
-            action: function (e) { },
-            question: "Shure?"
-        }, options);
-        self.data("options", options);
-        self.click(function (e) { self.confirmButton("clicked", e); });
-        return self;
-    },
-    
-    clicked: function (e) {
-        var self = $(this);
-        var options = self.data("options");
-        if (!self.hasClass("prelight") && options.confirm) {
-            options.text = self.text();
-            self.addClass("prelight").text(options.question);
-            $("body").one("click", function () {
-                self.removeClass("prelight").text(options.text);
-            });
-            e.stopPropagation();
-            return;
-        }
-        options.action(e);
-    },
-})

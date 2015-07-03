@@ -400,14 +400,16 @@ function Desktop(elements) {
     
     this.presetManager = elements.presetManager.presetManager({
         listURL: '/pedalboard/list',
-        presets: [
-            { name: "Foobar", uri: "whatever" },
-            { name: "Barfoo", uri: "whatever" },
-            { name: "myFirstPreset", uri: "whatever" },
-            { name: "Two Presets One Plugin", uri: "whatever" },
-            { name: "Teserp", uri: "whatever" },
-            { name: "ƚɘƨɘɿꟼ", uri: "whatever" },
-        ],
+        getPresets: function () {
+            return [
+                { name: "Foobar", uri: "whatever" },
+                { name: "Barfoo", uri: "whatever" },
+                { name: "myFirstPreset", uri: "whatever" },
+                { name: "Two Presets One Plugin", uri: "whatever" },
+                { name: "Teserp", uri: "whatever" },
+                { name: "ƚɘƨɘɿꟼ", uri: "whatever" },
+            ];
+        }
     });
     
     elements.shareButton.click(function () {

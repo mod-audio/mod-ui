@@ -26,8 +26,8 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="624.08234"
-     inkscape:cy="865.52665"
+     inkscape:cx="489.18844"
+     inkscape:cy="937.3669"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
@@ -35,9 +35,9 @@
      inkscape:snap-bbox="true"
      inkscape:bbox-nodes="true"
      inkscape:window-width="2880"
-     inkscape:window-height="1554"
+     inkscape:window-height="1551"
      inkscape:window-x="0"
-     inkscape:window-y="37"
+     inkscape:window-y="40"
      inkscape:window-maximized="1"
      inkscape:object-nodes="true"
      inkscape:snap-nodes="true"
@@ -52,7 +52,7 @@
        opacity="0.1254902"
        empcolor="#ff7800"
        empopacity="0.25098039"
-       visible="false"
+       visible="true"
        snapvisiblegridlinesonly="true" />
     <sodipodi:guide
        position="175,850.00002"
@@ -1111,19 +1111,19 @@
     <path
        style="display:inline;fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 618,218.28516 -7,2.07704 -4,4 4,1.59961 0,5.40039 14,7 9,-7 0,-4.86719 4,-2.13281 -4,-4 -6,-1.71572 0,1 4.50391,1.39541 L 625,225.36133 612.8418,220.93837 618,219.28516 Z"
-       id="path4285"
+       id="path157"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccccccccc" />
     <path
        style="display:inline;fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 616.81445,173.63672 611,175.36133 l -4,4 4,2.00087 0,4.99913 14,7 9,-7 0,-3.99913 4,-3.00087 -4,-4 -5.11523,-1.46094 -0.86133,0.75391 4.48047,1.38672 -7.50391,4.32031 -12.1582,-4.42383 4.83398,-1.54883 z"
-       id="path4305"
+       id="path159"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccccccccc" />
     <path
        sodipodi:nodetypes="cccccccccccc"
        inkscape:connector-curvature="0"
-       id="path4251"
+       id="path161"
        d="m 611,181.3622 11.06599,5.53299 2.93401,-6.53299 3,6 6,-4 0,1 -6.36418,4.24279 L 625,182.3622 l 0,0 -2.45625,5.77188 L 611,182.3622 Z"
        style="display:inline;fill:#727272;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     <g

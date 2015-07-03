@@ -1,26 +1,118 @@
+JqueryClass("modIcon", {
+    init: function (options) {
+        options = $.extend({
+            icon: "",
+            size: 36
+        }, options);
+        var self = $(this);
+        self.data("icon", options);
+        self.addClass("mod-icon-" + options.icon);
+        self.addClass("mod-icon");
+        self.modIcon("setIcon", options.icon);
+        self.modIcon("setSize", options.size);
+        return self;
+    },
+    setIcon: function (icon) {
+        var self = $(this);
+        var i = self.data("icon").icon;
+        if (i)
+            self.removeClass("icon-" + i);
+        if (icon)
+            self.addClass("icon-" + icon);
+        self.data("icon").icon = icon;
+        return self;
+    },
+    setSize: function (size) {
+        var self = $(this);
+        self.css({ width: size + "px", height: size + "px" });
+        self.data("icon").size = size;
+        return self;
+    },
+});
+
+JqueryClass('modButton', {
+    init: function (options) {
+        var self = $(this);
+        options = $.extend({
+            icon: "",
+            label: "",
+            confirm: false,
+            action: function (e) { },
+            question: "Shure?"
+        }, options);
+        self.data("button", options);
+        self.click(function (e) { self.modButton("clicked", e); });
+        if (options.label)
+            self.modButton("setLabel", options.label);
+        if (options.icon)
+            self.modButton("setIcon", options.icon);
+        return self;
+    },
+    setLabel: function (label) {
+        var self = $(this);
+        self.data("button").label = label;
+        self.text(label);
+        return self;
+    },
+    setIcon: function (icon) {
+        var self = $(this);
+        if (self.data("icon"))
+            self.data("icon").remove();
+        if (icon)
+            self.data("icon", $("<div>").modIcon({ icon: icon }).prependTo(self));
+        else
+            self.data("icon", null);
+        self.data("button").icon = icon;
+        return self;
+    },
+    clicked: function (e) {
+        var self = $(this);
+        var options = self.data("button");
+        if (!self.hasClass("prelight") && options.confirm) {
+            options.text = self.text();
+            self.addClass("mod-prelight").text(options.question);
+            $("body").one("click", function () {
+                self.removeClass("mod-prelight").text(options.text);
+            });
+            e.stopPropagation();
+            return;
+        }
+        options.action(e);
+    },
+})
+
 JqueryClass("presetManager", {
     init: function (options) {
         var self = $(this);
         options = $.extend({
-            listURL : "",
-            presets: [],
+            getPresets: function () { return [] },
         }, options);
         
         self.html(Mustache.render(TEMPLATES.presets));
         var e = {};
         e.entry = self.find(".preset-manager-entry");
-        e.load  = self.find(".preset-manager-button.preset-manager-load");
-        e.save  = self.find(".preset-manager-button.preset-manager-save");
-        e.bind  = self.find(".preset-manager-button.preset-manager-bind");
-        e.list  = self.find(".preset-manager-list");
-        
-        e.save.confirmButton({action: function (e) { self.presetManager("saveClicked", self, e); }});
+        e.load  = self.find(".mod-button-load");
+        e.save  = self.find(".mod-button-save");
+        e.bind  = self.find(".mod-button-bind");
+        e.list  = self.find(".mod-list");
         
         e.entry.click(function (e) { self.presetManager("entryClicked", self, e); });
         e.entry.keyup(function (e) { self.presetManager("entryKeyup", self, e); });
-        e.load.click(function (e) { self.presetManager("loadClicked", self, e); });
-        //e.save.click(function (e) { self.presetManager("saveClicked", self, e); });
-        e.bind.click(function (e) { self.presetManager("bindClicked", self, e); });
+        e.bind.modButton({
+            icon: "bind",
+            label: "bind",
+            action: function (e) { self.presetManager("loadClicked", self, e); }
+        });
+        e.load.modButton({
+            icon: "load",
+            label: "load",
+            action: function (e) { self.presetManager("bindClicked", self, e); }
+        });
+        e.save.modButton({
+            icon: "save",
+            label: "save",
+            action: function (e) { self.presetManager("saveClicked", self, e); }
+        });
         
         self.addClass("preset-manager");
         
@@ -28,8 +120,8 @@ JqueryClass("presetManager", {
         self.data("elements", e);
         
         self.presetManager("setPresetTitle", "");
-        self.presetManager("setPresets", options.presets);
-        //self.presetManager("loadPresets");
+        self.presetManager("setPresets", options.getPresets());
+        return self;
     },
     
     //loadPresets: function () {
@@ -52,8 +144,9 @@ JqueryClass("presetManager", {
             li.presetEntry({
                 title: presets[p].name,
                 clickPreset: function (e) { },
-                bindPreset: function (self, e) { },
-                removePreset: function (self, e) { },
+                bindPreset: function (e) { },
+                editPreset: function (e) { },
+                removePreset: function (e) { },
             });
             li.appendTo(self.data("elements").list);
         }
@@ -115,7 +208,7 @@ JqueryClass("presetManager", {
     },
     
     entryClicked: function(self, e) {
-        
+        console.log("click");
     },
     
     entryKeyup: function(self, e) {
@@ -143,25 +236,36 @@ JqueryClass("presetEntry", {
             title: "untitled",
             bind: "",
             clickPreset: function (e) { },
-            bindPreset: function (self, e) { },
-            removePreset: function (self, e) { },
+            bindPreset: function (e) { },
+            editPreset: function (e) { },
+            removePreset: function (e) { },
         }, options);
         
         self.html(Mustache.render(TEMPLATES.preset));
         var e         = {};
-        e.title       = self.find(".preset-manager-preset-title");
+        e.title       = self.find(".preset-manager-preset-entry");
         e.bindstate   = self.find(".preset-manager-preset-bindstate");
-        e.bind        = self.find(".preset-manager-button.preset-manager-bind");
-        e.remove      = self.find(".preset-manager-button.preset-manager-clear");
+        e.bind        = self.find(".mod-button-bind");
+        e.edit        = self.find(".mod-button-edit");
+        e.remove      = self.find(".mod-button-clear");
         
         self.click(options.clickPreset);
-        e.bind.click( function (e) { options.bindPreset(self, e); });
-        e.remove.click( function (e) {
-            options.removePreset(self, e);
-            self.remove();
+        e.bind.modButton({
+            icon: "bind",
+            action: function (e) { options.bindPreset(e); }
+        });
+        e.edit.modButton({
+            icon: "edit",
+            action: function (e) { options.bindPreset(e); }
+        });
+        e.remove.modButton({
+            icon: "remove",
+            action: function (e) {
+                options.removePreset(self, e);
+                self.remove(); }
         });
         
-        self.addClass("preset-manager-preset");
+        self.addClass("mod-list-entry");
         
         self.data("options", options);
         self.data("elements", e);
@@ -179,8 +283,10 @@ JqueryClass("presetEntry", {
             e.bindstate.text("(unlinked)");
             self.removeClass("bound");
         }
+        $(this).data("options").bind = bind;
     },
     setTitle: function (title) {
         $(this).data("elements").title.text(title);
+        $(this).data("options").title = title;
     },
 });
