@@ -1,0 +1,144 @@
+.mod-dark  .mod-icon-autohide, .mod-light.mod-icon-autohide {
+    background-image: url(white/autohide.png);
+}
+.mod-light .mod-icon-autohide, .mod-dark.mod-icon-autohide  {
+    background-image: url(black/autohide.png);
+}
+
+
+.mod-dark  .mod-icon-bind, .mod-light.mod-icon-bind {
+    background-image: url(white/bind.png);
+}
+.mod-light .mod-icon-bind, .mod-dark.mod-icon-bind  {
+    background-image: url(black/bind.png);
+}
+
+
+.mod-dark  .mod-icon-bluetooth, .mod-light.mod-icon-bluetooth {
+    background-image: url(white/bluetooth.png);
+}
+.mod-light .mod-icon-bluetooth, .mod-dark.mod-icon-bluetooth  {
+    background-image: url(black/bluetooth.png);
+}
+
+
+.mod-dark  .mod-icon-clear, .mod-light.mod-icon-clear {
+    background-image: url(white/clear.png);
+}
+.mod-light .mod-icon-clear, .mod-dark.mod-icon-clear  {
+    background-image: url(black/clear.png);
+}
+
+
+.mod-dark  .mod-icon-cloud, .mod-light.mod-icon-cloud {
+    background-image: url(white/cloud.png);
+}
+.mod-light .mod-icon-cloud, .mod-dark.mod-icon-cloud  {
+    background-image: url(black/cloud.png);
+}
+
+
+.mod-dark  .mod-icon-confirm, .mod-light.mod-icon-confirm {
+    background-image: url(white/confirm.png);
+}
+.mod-light .mod-icon-confirm, .mod-dark.mod-icon-confirm  {
+    background-image: url(black/confirm.png);
+}
+
+
+.mod-dark  .mod-icon-edit, .mod-light.mod-icon-edit {
+    background-image: url(white/edit.png);
+}
+.mod-light .mod-icon-edit, .mod-dark.mod-icon-edit  {
+    background-image: url(black/edit.png);
+}
+
+
+.mod-dark  .mod-icon-folder, .mod-light.mod-icon-folder {
+    background-image: url(white/folder.png);
+}
+.mod-light .mod-icon-folder, .mod-dark.mod-icon-folder  {
+    background-image: url(black/folder.png);
+}
+
+
+.mod-dark  .mod-icon-load, .mod-light.mod-icon-load {
+    background-image: url(white/load.png);
+}
+.mod-light .mod-icon-load, .mod-dark.mod-icon-load  {
+    background-image: url(black/load.png);
+}
+
+
+.mod-dark  .mod-icon-mod, .mod-light.mod-icon-mod {
+    background-image: url(white/mod.png);
+}
+.mod-light .mod-icon-mod, .mod-dark.mod-icon-mod  {
+    background-image: url(black/mod.png);
+}
+
+
+.mod-dark  .mod-icon-pedal, .mod-light.mod-icon-pedal {
+    background-image: url(white/pedal.png);
+}
+.mod-light .mod-icon-pedal, .mod-dark.mod-icon-pedal  {
+    background-image: url(black/pedal.png);
+}
+
+
+.mod-dark  .mod-icon-pedalboard, .mod-light.mod-icon-pedalboard {
+    background-image: url(white/pedalboard.png);
+}
+.mod-light .mod-icon-pedalboard, .mod-dark.mod-icon-pedalboard  {
+    background-image: url(black/pedalboard.png);
+}
+
+
+.mod-dark  .mod-icon-pedals, .mod-light.mod-icon-pedals {
+    background-image: url(white/pedals.png);
+}
+.mod-light .mod-icon-pedals, .mod-dark.mod-icon-pedals  {
+    background-image: url(black/pedals.png);
+}
+
+
+.mod-dark  .mod-icon-pin, .mod-light.mod-icon-pin {
+    background-image: url(white/pin.png);
+}
+.mod-light .mod-icon-pin, .mod-dark.mod-icon-pin  {
+    background-image: url(black/pin.png);
+}
+
+
+.mod-dark  .mod-icon-pinned, .mod-light.mod-icon-pinned {
+    background-image: url(white/pinned.png);
+}
+.mod-light .mod-icon-pinned, .mod-dark.mod-icon-pinned  {
+    background-image: url(black/pinned.png);
+}
+
+
+.mod-dark  .mod-icon-remove, .mod-light.mod-icon-remove {
+    background-image: url(white/remove.png);
+}
+.mod-light .mod-icon-remove, .mod-dark.mod-icon-remove  {
+    background-image: url(black/remove.png);
+}
+
+
+.mod-dark  .mod-icon-save, .mod-light.mod-icon-save {
+    background-image: url(white/save.png);
+}
+.mod-light .mod-icon-save, .mod-dark.mod-icon-save  {
+    background-image: url(black/save.png);
+}
+
+
+.mod-dark  .mod-icon-settings, .mod-light.mod-icon-settings {
+    background-image: url(white/settings.png);
+}
+.mod-light .mod-icon-settings, .mod-dark.mod-icon-settings  {
+    background-image: url(black/settings.png);
+}
+
+

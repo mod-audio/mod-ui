@@ -16,9 +16,9 @@ JqueryClass("modIcon", {
         var self = $(this);
         var i = self.data("icon").icon;
         if (i)
-            self.removeClass("icon-" + i);
+            self.removeClass("mod-icon-" + i);
         if (icon)
-            self.addClass("icon-" + icon);
+            self.addClass("mod-icon-" + icon);
         self.data("icon").icon = icon;
         return self;
     },
@@ -68,11 +68,15 @@ JqueryClass('modButton', {
     clicked: function (e) {
         var self = $(this);
         var options = self.data("button");
-        if (!self.hasClass("prelight") && options.confirm) {
-            options.text = self.text();
-            self.addClass("mod-prelight").text(options.question);
+        if (!self.hasClass("mod-confirm") && options.confirm) {
+            var textnodes = self.contents().filter(function () { return this.nodeType == 3; });
+            if (textnodes.length)
+                textnodes[0].nodeValue = options.question;
+            self.addClass("mod-confirm");
             $("body").one("click", function () {
-                self.removeClass("mod-prelight").text(options.text);
+                self.removeClass("mod-confirm");
+                if (textnodes.length)
+                    textnodes[0].nodeValue = options.label;
             });
             e.stopPropagation();
             return;
@@ -247,7 +251,7 @@ JqueryClass("presetEntry", {
         e.bindstate   = self.find(".preset-manager-preset-bindstate");
         e.bind        = self.find(".mod-button-bind");
         e.edit        = self.find(".mod-button-edit");
-        e.remove      = self.find(".mod-button-clear");
+        e.remove      = self.find(".mod-button-remove");
         
         self.click(options.clickPreset);
         e.bind.modButton({
@@ -259,13 +263,15 @@ JqueryClass("presetEntry", {
             action: function (e) { options.bindPreset(e); }
         });
         e.remove.modButton({
+            confirm: true,
+            question: "",
             icon: "remove",
             action: function (e) {
                 options.removePreset(self, e);
                 self.remove(); }
         });
         
-        self.addClass("mod-list-entry");
+        self.addClass("mod-list-item");
         
         self.data("options", options);
         self.data("elements", e);
