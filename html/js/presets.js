@@ -36,6 +36,7 @@ JqueryClass('modButton', {
         options = $.extend({
             icon: "",
             label: "",
+            tooltip: "",
             confirm: false,
             action: function (e) { },
             question: "Shure?"
@@ -46,6 +47,7 @@ JqueryClass('modButton', {
             self.modButton("setLabel", options.label);
         if (options.icon)
             self.modButton("setIcon", options.icon);
+        self.modButton("setTooltip", options.tooltip);
         return self;
     },
     setLabel: function (label) {
@@ -64,6 +66,9 @@ JqueryClass('modButton', {
             self.data("icon", null);
         self.data("button").icon = icon;
         return self;
+    },
+    setTooltip: function (tt) {
+        $(this).attr("title", tt);
     },
     clicked: function (e) {
         var self = $(this);
@@ -104,17 +109,19 @@ JqueryClass("presetManager", {
         e.entry.keyup(function (e) { self.presetManager("entryKeyup", self, e); });
         e.bind.modButton({
             icon: "bind",
-            label: "bind",
+            tooltip: "Bind the preset list to a controller",
             action: function (e) { self.presetManager("loadClicked", self, e); }
         });
         e.load.modButton({
             icon: "load",
             label: "load",
+            tooltip: "Load the selected preset",
             action: function (e) { self.presetManager("bindClicked", self, e); }
         });
         e.save.modButton({
             icon: "save",
             label: "save",
+            tooltip: "Save or overwrite the selected preset",
             action: function (e) { self.presetManager("saveClicked", self, e); }
         });
         
@@ -256,16 +263,19 @@ JqueryClass("presetEntry", {
         self.click(options.clickPreset);
         e.bind.modButton({
             icon: "bind",
+            tooltip: "Bind the preset to a controller",
             action: function (e) { options.bindPreset(e); }
         });
         e.edit.modButton({
             icon: "edit",
+            tooltip: "Edit the preset title",
             action: function (e) { options.bindPreset(e); }
         });
         e.remove.modButton({
             confirm: true,
             question: "",
             icon: "remove",
+            tooltip: "Remove this preset",
             action: function (e) {
                 options.removePreset(self, e);
                 self.remove(); }

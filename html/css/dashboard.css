@@ -963,10 +963,13 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 
 .mod-list {
-    
+    padding: 0;
+    margin: 0;
 }
 .mod-list-item {
-    
+    padding: 0;
+    margin: 0;
+    list-style: none;
 }
 .mod-list-item:nth-child(even) {
     background: #eee;
@@ -985,10 +988,15 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     display: inline-block;
     color: white;
     font-size: 16px;
+    cursor: pointer;
+    vertical-align: middle;
+    box-sizing: border-box;
 }
-
-.mod-button-bar {
+.mod-button:hover {
     
+}
+.mod-button-bar {
+    box-sizing: border-box;
 }
 
 .mod-button,
@@ -1023,21 +1031,20 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 
-.mod-list .mod-button {
-    background: #f4f4f4;
-    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2Y0ZjRmNCIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlNWU1ZTUiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-    background: -moz-linear-gradient(top, #f4f4f4 0%, #e5e5e5 100%);
-    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f4f4f4), color-stop(100%,#e5e5e5));
-    background: -webkit-linear-gradient(top, #f4f4f4 0%,#e5e5e5 100%);
-    background: -o-linear-gradient(top, #f4f4f4 0%,#e5e5e5 100%);
-    background: -ms-linear-gradient(top, #f4f4f4 0%,#e5e5e5 100%);
-    background: linear-gradient(to bottom, #f4f4f4 0%,#e5e5e5 100%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f4f4f4', endColorstr='#e5e5e5',GradientType=0 );
+.mod-light .mod-button {
+    opacity: 0.66;
+    background:transparent;
     color: #666;
 }
 
+.mod-light .mod-button:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.1);
+}
 
-.mod-button.mod-confirm {
+.mod-button.mod-confirm,
+.mod-button.mod-confirm:hover {
+    opacity: 1;
     background: #a90329;
     background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2E5MDMyOSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQ0JSIgc3RvcC1jb2xvcj0iIzhmMDIyMiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM2ZDAwMTkiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
     background: -moz-linear-gradient(top, #a90329 0%, #8f0222 44%, #6d0019 100%);
@@ -1068,6 +1075,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     width: 32px;
     height: 32px;
     vertical-align: middle;
+    display: inline-block;
     background-repeat: no-repeat;
     background-position: 50% 50%;
     background-size: contain;
@@ -1090,13 +1098,30 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 
 
-
-.preset-manager-preset-bindstate {
-    display: inline-block;
+.preset-manager .mod-button-bar .mod-button {
+    width: 49.0%;
+    text-align: center;
 }
 
+.preset-manager .mod-list {
+    max-height: 400px;
+    overflow-y: scroll;
+}
 
-
+.preset-manager .mod-list .preset-manager-preset-entry {
+    border: none;
+    background: none;
+    font-size: 2em;
+    height: 2em;
+    outline: 0;
+    box-shadow: none !important;
+}
+.preset-manager .mod-list .preset-manager-preset-bindstate {
+    display: inline-block;
+}
+.preset-manager .mod-list .mod-button {
+    margin: 2px;
+}
 
 
 
@@ -1141,7 +1166,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     font-size: 4em;
     line-height: 1.5em;
     opacity: 0.33;
-    width: calc(100% - 55px);
     height: 1.5em;
     box-sizing: border-box;
     outline: 0;
@@ -1217,21 +1241,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     -webkit-touch-callout: auto;
     -webkit-user-select: auto;
     -webkit-user-drag: auto;
-}
-.preset-manager .preset-manager-save {
-    background-image: url(../img/icons/save.png);
-}
-.preset-manager .preset-manager-load {
-    background-image: url(../img/icons/load.png);
-}
-.preset-manager .preset-manager-bind {
-    background-image: url(../img/icons/bind.png);
-}
-.preset-manager .preset-manager-clear {
-    background-image: url(../img/icons/clear.png);
-}
-.preset-manager .preset-manager-message {
-    
 }
 
 .preset-manager .preset-manager-list {
