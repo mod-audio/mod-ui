@@ -46,6 +46,14 @@
 }
 
 
+.mod-dark  .mod-icon-disconnected, .mod-light.mod-icon-disconnected {
+    background-image: url(white/disconnected.png);
+}
+.mod-light .mod-icon-disconnected, .mod-dark.mod-icon-disconnected  {
+    background-image: url(black/disconnected.png);
+}
+
+
 .mod-dark  .mod-icon-edit, .mod-light.mod-icon-edit {
     background-image: url(white/edit.png);
 }
@@ -62,6 +70,22 @@
 }
 
 
+.mod-dark  .mod-icon-footswitch, .mod-light.mod-icon-footswitch {
+    background-image: url(white/footswitch.png);
+}
+.mod-light .mod-icon-footswitch, .mod-dark.mod-icon-footswitch  {
+    background-image: url(black/footswitch.png);
+}
+
+
+.mod-dark  .mod-icon-knob, .mod-light.mod-icon-knob {
+    background-image: url(white/knob.png);
+}
+.mod-light .mod-icon-knob, .mod-dark.mod-icon-knob  {
+    background-image: url(black/knob.png);
+}
+
+
 .mod-dark  .mod-icon-load, .mod-light.mod-icon-load {
     background-image: url(white/load.png);
 }
@@ -70,11 +94,27 @@
 }
 
 
+.mod-dark  .mod-icon-midi, .mod-light.mod-icon-midi {
+    background-image: url(white/midi.png);
+}
+.mod-light .mod-icon-midi, .mod-dark.mod-icon-midi  {
+    background-image: url(black/midi.png);
+}
+
+
 .mod-dark  .mod-icon-mod, .mod-light.mod-icon-mod {
     background-image: url(white/mod.png);
 }
 .mod-light .mod-icon-mod, .mod-dark.mod-icon-mod  {
     background-image: url(black/mod.png);
+}
+
+
+.mod-dark  .mod-icon-ok, .mod-light.mod-icon-ok {
+    background-image: url(white/ok.png);
+}
+.mod-light .mod-icon-ok, .mod-dark.mod-icon-ok  {
+    background-image: url(black/ok.png);
 }
 
 

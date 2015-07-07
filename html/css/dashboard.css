@@ -959,7 +959,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 
 
-
+/* MOD LIST */
 
 
 .mod-list {
@@ -978,6 +978,11 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background: #fff;
 }
 
+
+
+
+
+/* MOD BUTTON */
 
 .mod-button {
     transition: all 0.3s;
@@ -1001,27 +1006,16 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 .mod-button,
 .mod-button-bar {
-    background: #191919;
-    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzMzMzMzMyIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMyMjIyMjIiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-    background: -moz-linear-gradient(top, #333333 0%, #222222 100%);
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#333333), color-stop(100%,#222222));
     background: -webkit-linear-gradient(top, #333333 0%,#222222 100%);
-    background: -o-linear-gradient(top, #333333 0%,#222222 100%);
-    background: -ms-linear-gradient(top, #333333 0%,#222222 100%);
     background: linear-gradient(to bottom, #333333 0%,#222222 100%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#333333', endColorstr='#222222',GradientType=0 );
+    transition: background 0.3s;
 }
 
 .mod-button:hover {
-    background: #555555;
-    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzU1NTU1NSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM0NDQ0NDQiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-    background: -moz-linear-gradient(top, #555555 0%, #444444 100%);
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#555555), color-stop(100%,#444444));
     background: -webkit-linear-gradient(top, #555555 0%,#444444 100%);
-    background: -o-linear-gradient(top, #555555 0%,#444444 100%);
-    background: -ms-linear-gradient(top, #555555 0%,#444444 100%);
     background: linear-gradient(to bottom, #555555 0%,#444444 100%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#555555', endColorstr='#444444',GradientType=0 );
 }
 
 .mod-button-bar .mod-button {
@@ -1030,46 +1024,155 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     border-radius: 0px;
 }
 
-
 .mod-light .mod-button {
-    opacity: 0.66;
-    background:transparent;
+/*
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,1)), color-stop(100%,rgba(238,238,238,1)));
+    background: -webkit-linear-gradient(top, rgba(255,255,255,1) 0%,rgba(238,238,238,1) 100%);
+    background: linear-gradient(to bottom, rgba(255,255,255,1) 0%,rgba(238,238,238,1) 100%);
+*/
+    background: transparent;
+    box-shadow: 0 0px 0px rgba(0, 0, 0, 0.0);
     color: #666;
 }
-
 .mod-light .mod-button:hover {
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,1)), color-stop(100%,rgba(221,221,221,1)));
+    background: -webkit-linear-gradient(top, rgba(255,255,255,1) 0%,rgba(221,221,221,1) 100%);
+    background: linear-gradient(to bottom, rgba(255,255,255,1) 0%,rgba(221,221,221,1) 100%);
+    box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.66);
+    color: #000;
+}
+.mod-light .mod-button .mod-icon {
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.mod-light .mod-button:hover .mod-icon {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.1);
 }
 
 .mod-button.mod-confirm,
 .mod-button.mod-confirm:hover {
     opacity: 1;
-    background: #a90329;
-    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2E5MDMyOSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQ0JSIgc3RvcC1jb2xvcj0iIzhmMDIyMiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM2ZDAwMTkiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-    background: -moz-linear-gradient(top, #a90329 0%, #8f0222 44%, #6d0019 100%);
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#a90329), color-stop(44%,#8f0222), color-stop(100%,#6d0019));
     background: -webkit-linear-gradient(top, #a90329 0%,#8f0222 44%,#6d0019 100%);
-    background: -o-linear-gradient(top, #a90329 0%,#8f0222 44%,#6d0019 100%);
-    background: -ms-linear-gradient(top, #a90329 0%,#8f0222 44%,#6d0019 100%);
     background: linear-gradient(to bottom, #a90329 0%,#8f0222 44%,#6d0019 100%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=0 );
 }
 
 
 
+
+
+/* MOD POPOUT */
 
 .mod-popout {
     
 }
+.mod-popout .mod-popout-anchor {
+    position: absolute;
+    background-repeat: no-repeat;
+}
+.mod-popout .mod-popout-container {
+    background: #111;
+    border: 1px solid #AA0088;
+}
+
+.mod-popout.mod-anchor-n {
+    
+}
+.mod-popout.mod-anchor-e {
+    
+}
+.mod-popout.mod-anchor-s {
+    
+}
+.mod-popout.mod-anchor-w {
+    
+}
+.mod-popout.mod-anchor-ne {
+    
+}
+.mod-popout.mod-anchor-se {
+    
+}
+.mod-popout.mod-anchor-sw {
+    
+}
+.mod-popout.mod-anchor-nw {
+    
+}
 
 
+.mod-popout.mod-anchor-n .mod-popout-anchor {
+    background-position: 50% 0;
+    background-image: url(../img/mod-popout-anchor-top.png);
+    
+}
+.mod-popout.mod-anchor-e .mod-popout-anchor {
+    background-position: 100% 50%;
+    background-image: url(../img/mod-popout-anchor-right.png);
+}
+.mod-popout.mod-anchor-s .mod-popout-anchor {
+    background-position: 50% 100%;
+    background-image: url(../img/mod-popout-anchor-bottom.png);
+}
+.mod-popout.mod-anchor-w .mod-popout-anchor {
+    background-position: 0 50%;
+    background-image: url(../img/mod-popout-anchor-left.png);
+}
+.mod-popout.mod-anchor-ne .mod-popout-anchor {
+    background-position: 100% 0;
+    background-image: url(../img/mod-popout-anchor-right.png);
+}
+.mod-popout.mod-anchor-se .mod-popout-anchor {
+    background-position: 100% 100%;
+    background-image: url(../img/mod-popout-anchor-right.png);
+}
+.mod-popout.mod-anchor-sw .mod-popout-anchor {
+    background-position: 0 100%;
+    background-image: url(../img/mod-popout-anchor-left.png);
+}
+.mod-popout.mod-anchor-nw .mod-popout-anchor {
+    background-position: 0 0;
+    background-image: url(../img/mod-popout-anchor-left.png);
+}
 
 
+.mod-popout.mod-anchor-n .mod-popout-content {
+    border-top-width: 1px;
+    margin-top: 10px;
+}
+.mod-popout.mod-anchor-e .mod-popout-content {
+    border-right-width: 1px;
+    margin-right: 10px;
+}
+.mod-popout.mod-anchor-s .mod-popout-content {
+    border-bottom-width: 1px;
+    margin-bottom: 10px;
+}
+.mod-popout.mod-anchor-w .mod-popout-content {
+    border-left-width: 1px;
+    margin-left: 10px;
+}
+.mod-popout.mod-anchor-ne .mod-popout-content {
+    border-right-width: 1px;
+    margin-right: 10px;
+}
+.mod-popout.mod-anchor-se .mod-popout-content {
+    border-right-width: 1px;
+    margin-right: 10px;
+}
+.mod-popout.mod-anchor-sw .mod-popout-content {
+    border-left-width: 1px;
+    margin-left: 10px;
+}
+.mod-popout.mod-anchor-nw .mod-popout-content {
+    border-left-width: 1px;
+    margin-left: 10px;
+}
 
 
-
-
+/* MOD ICON */
+/* icon definitions in img/icons/icons.css */
 
 .mod-icon {
     width: 32px;
@@ -1093,9 +1196,106 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 
 
+.preset-manager {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    transition: all 0.3s;
+/*
+    pointer-events: none;
+    touch-callout: none;
+    user-select: none;
+    user-drag: none;
+    -webkit-pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+*/
+}
 
+.preset-manager.active {
+    background: rgba(0, 0, 0, 0.5);
+/*
+    pointer-events: auto;
+    touch-callout: auto;
+    user-select: auto;
+    user-drag: auto;
+    -webkit-pointer-events: auto;
+    -webkit-touch-callout: auto;
+    -webkit-user-select: auto;
+    -webkit-user-drag: auto;
+*/
+}
 
+.preset-manager .preset-manager-entry {
+    background: none;
+    border: none;
+    color: white;
+    
+    opacity: 0.33;
+    
+    font-family: 'Ek Mukta', sans-serif;
+    font-weight: 100;
+    
+    font-size: 32px;
+    line-height: 48px;
+    height: 48px;
+    
+    box-sizing: border-box;
+    
+    box-shadow: none !important;
+    text-shadow: 0 2px 5px black;
+    
+    transition: all 0.3s;
+    
+    padding: 0;
+    margin: 0;
+    
+    outline: 0;
+    
+    width: auto;
+/*
+    pointer-events: none;
+    touch-callout: none;
+    user-select: none;
+    user-drag: none;
+    -webkit-pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+*/
+}
+.preset-manager.active .preset-manager-entry {
+    opacity: 1;
+/*
+    pointer-events: auto;
+    touch-callout: auto;
+    user-select: auto;
+    user-drag: auto;
+    -webkit-pointer-events: auto;
+    -webkit-touch-callout: auto;
+    -webkit-user-select: auto;
+    -webkit-user-drag: auto;
+*/
+}
 
+.preset-manager > .mod-button-bind {
+    margin: 3px;
+}
+
+.preset-manager .preset-manager-container {
+    overflow: hidden;
+    transition: opacity 0.3s;
+    display: none;
+    opacity: 0;
+    position: absolute;
+    top: 48px;
+}
+.preset-manager.active .preset-manager-container {
+    opacity: 1;
+    display: block;
+}
 
 
 .preset-manager .mod-button-bar .mod-button {
@@ -1107,191 +1307,34 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     max-height: 400px;
     overflow-y: scroll;
 }
-
-.preset-manager .mod-list .preset-manager-preset-entry {
-    border: none;
-    background: none;
-    font-size: 2em;
-    height: 2em;
-    outline: 0;
-    box-shadow: none !important;
+.preset-manager .mod-list .mod-list-item {
+    height: 50px;
+    position: relative;
+    transition: height 0.3s;
+    overflow: hidden;
+}
+.preset-manager .mod-list .mod-list-item:hover {
+    background: #ddd;
+}
+.preset-manager .mod-list .preset-manager-preset-name {
+    font-size: 1.2em;
+    height: 50px;
+    line-height: 50px;
+    margin-right: 168px;
+    cursor: pointer;
+    white-space: nowrap;
 }
 .preset-manager .mod-list .preset-manager-preset-bindstate {
     display: inline-block;
 }
 .preset-manager .mod-list .mod-button {
-    margin: 2px;
-}
-
-
-
-
-
-
-
-.preset-manager {
     position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    transition: all 0.3s;
-/*
-    pointer-events: none;
-    touch-callout: none;
-    user-select: none;
-    user-drag: none;
-*/
-/*
-    -webkit-pointer-events: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
-*/
+    top: 3px;
+    right: 3px;
 }
-.preset-manager.active {
-    background: rgba(0, 0, 0, 0.5);
-    pointer-events: auto;
-    touch-callout: auto;
-    user-select: auto;
-    user-drag: auto;
-    -webkit-pointer-events: auto;
-    -webkit-touch-callout: auto;
-    -webkit-user-select: auto;
-    -webkit-user-drag: auto;
+.preset-manager .mod-list .mod-button.mod-button-bind {
+    right: 113px;
 }
-.preset-manager .preset-manager-entry {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 4em;
-    line-height: 1.5em;
-    opacity: 0.33;
-    height: 1.5em;
-    box-sizing: border-box;
-    outline: 0;
-    box-shadow: none !important;
-    text-shadow: 0 2px 5px black;
-    font-family: 'Ek Mukta', sans-serif;
-    font-weight: 100;
-    transition: all 0.3s;
-    box-sizing: border-box;
-    vertical-align: middle;
-    padding: 0;
-    margin: 0;
-    margin-left: 10px;
-    pointer-events: none;
-    touch-callout: none;
-    user-select: none;
-    user-drag: none;
-    -webkit-pointer-events: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
-}
-.preset-manager.active .preset-manager-entry {
-    opacity: 1;
-    pointer-events: auto;
-    touch-callout: auto;
-    user-select: auto;
-    user-drag: auto;
-    -webkit-pointer-events: auto;
-    -webkit-touch-callout: auto;
-    -webkit-user-select: auto;
-    -webkit-user-drag: auto;
-}
-.preset-manager .preset-manager-button {
-    background-color: transparent;
-    background-position: 0% 50%;
-    background-repeat: no-repeat;
-    height: 3em;
-    line-height: 3em;
-    padding: 0 10px 0 42px;
-    color: white;
-    cursor: pointer;
-    text-transform: uppercase;
-    display: inline-block;
-    overflow: hidden;
-    opacity: 0.8;
-    transition: all 0.3s;
-    -webkit-border-radius: 4px;
-    -moz-border-radius: 4px;
-    border-radius: 4px;
-}
-.preset-manager .preset-manager-button:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    opacity: 1;
-}
-.preset-manager .preset-manager-button.prelight {
-    background-color: rgba(255, 0, 0, 0.25);
-    opacity: 1;
-}
-.preset-manager.active .preset-manager-button {
-    height: 3em;
-    line-height: 3em;
-}
-.preset-manager .preset-manager-settings {
-    background-image: url(../img/icons/settings.png);
-    height: 3em;
-    padding: 0;
-    pointer-events: auto;
-    touch-callout: auto;
-    user-select: auto;
-    user-drag: auto;
-    -webkit-pointer-events: auto;
-    -webkit-touch-callout: auto;
-    -webkit-user-select: auto;
-    -webkit-user-drag: auto;
-}
-
-.preset-manager .preset-manager-list {
-/*
-    height: 0px;
-*/
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-.preset-manager.active .preset-manager-list {
-    height: calc(100% - 9em);
-}
-.preset-manager .preset-manager-preset {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    box-sizing: border-box;
-    padding: 10px;
-}
-.preset-manager .preset-manager-preset:after {
-    content: "."; 
-    visibility: hidden; 
-    display: block; 
-    height: 0; 
-    clear: both;
-}
-.preset-manager .preset-manager-preset .preset-manager-preset-title {
-    color: white;
-    font-size: 2em;
-}
-.preset-manager .preset-manager-preset .preset-manager-preset-description {
-    
-}
-.preset-manager .preset-manager-preset .preset-manager-button {
-    float: right;
-}
-
-
-.preset-manager-confirm-pane {
-    position:absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-.preset-manager-confirm-pane .preset-manager-confirm-button {
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    animation-name: flashlight;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
+.preset-manager .mod-list .mod-button.mod-button-edit {
+    right: 58px;
 }

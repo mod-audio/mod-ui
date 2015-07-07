@@ -402,12 +402,12 @@ function Desktop(elements) {
         listURL: '/pedalboard/list',
         getPresets: function () {
             return [
-                { name: "Foobar", uri: "whatever" },
-                { name: "Barfoo", uri: "whatever" },
-                { name: "myFirstPreset", uri: "whatever" },
-                { name: "Two Presets One Plugin", uri: "whatever" },
-                { name: "Teserp", uri: "whatever" },
-                { name: "ƚɘƨɘɿꟼ", uri: "whatever" },
+                { name: "Foobar", uri: "whatever", bind: MOD_BIND_MIDI },
+                { name: "Barfoo", uri: "whatever", bind: MOD_BIND_NONE },
+                { name: "myFirstPreset", uri: "whatever", bind: MOD_BIND_KNOB },
+                { name: "Two Presets One Plugin", uri: "whatever", bind: MOD_BIND_FOOTSWITCH },
+                { name: "Teserp", uri: "whatever", bind: MOD_BIND_MIDI },
+                { name: "ƚɘƨɘɿꟼ", uri: "whatever", bind: MOD_BIND_NONE },
             ];
         }
     });
