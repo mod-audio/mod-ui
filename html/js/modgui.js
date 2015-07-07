@@ -147,9 +147,6 @@ function GUI(effect, options) {
 
             // adjust for sample rate
             if (port.properties.indexOf("sampleRate") >= 0) {
-                if (port.ranges.minimum < port.ranges.default && port.ranges.default < port.ranges.maximum) {
-                    port.ranges.default *= SAMPLERATE
-                }
                 port.ranges.minimum *= SAMPLERATE
                 port.ranges.maximum *= SAMPLERATE
             }
