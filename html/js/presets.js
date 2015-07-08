@@ -79,6 +79,8 @@ JqueryClass('modButton', {
     //             new tooltip
     // confirmset: is fired when the confrim message is set. argument is the
     //             new confirm message
+    // confirm:    is fired when confirmation mode is entered
+    // cancel:     is fired when confirmation mode is canceled
     
     init: function (options) {
         var self = $(this);
@@ -139,17 +141,24 @@ JqueryClass('modButton', {
                 textnodes[0].nodeValue = options.question;
             self.addClass("mod-confirm");
             $("body").one("click", function (e) {
-                self.removeClass("mod-confirm");
-                if (textnodes.length)
-                    textnodes[0].nodeValue = options.label;
-                e.stopPropagation();
+                self.modButton("reset", e);
+                self.trigger("cancel", [e]);
             });
-            e.stopImmediatePropagation(true);
+            e.stopPropagation(true);
             e.preventDefault(true);
+            self.trigger("confirm", [e]);
             return false;
         }
         self.trigger("action", [e]);
     },
+    reset: function (e) {
+        var self = $(this);
+        self.removeClass("mod-confirm");
+        var textnodes = self.contents().filter(function () { return this.nodeType == 3; });
+        if (textnodes.length)
+            textnodes[0].nodeValue = self.data("button").label;
+        e.stopPropagation();
+    }
 })
 
 JqueryClass("modEditable", {
@@ -349,6 +358,7 @@ JqueryClass("presetManager", {
         options = $.extend({
             getPresets: function () { return [] },
             preset: "",
+            confirmations: 0,
         }, options);
         
         self.html(Mustache.render(TEMPLATES.presets));
@@ -381,6 +391,9 @@ JqueryClass("presetManager", {
             tooltip: "Save or overwrite the selected preset",
         }).on("action", function (e) { self.presetManager("saveClicked", self, e); });
         
+        e.save.on("confirm", function () { self.data("options").confirmations++; });
+        e.save.on("cancel", function () { self.data("options").confirmations--; });   
+        
         self.addClass("preset-manager");
         
         self.data("options", options);
@@ -408,6 +421,12 @@ JqueryClass("presetManager", {
                 self.presetManager("setPresetName", $(this).data("options").name);
             });
             li.click( function (e) { e.stopPropagation(); });
+            li.data("elements").remove.on("confirm", function () {
+                self.data("options").confirmations++;
+            });
+            li.data("elements").remove.on("cancel", function () {
+                self.data("options").confirmations--;
+            });
         }
         return self;
     },
@@ -480,7 +499,7 @@ JqueryClass("presetManager", {
         var self = $(this);
         var e = self.data("elements");
         if (self.presetManager("getPresetByName", e.entry.val()))
-            e.save.modButton("setConfirm", "Sure?");
+            e.save.modButton("setConfirm", "Overwrite?");
         else
             e.save.modButton("setConfirm", false);
     },
@@ -489,17 +508,23 @@ JqueryClass("presetManager", {
         var self = $(this);
         self.addClass("active");
         self.data("elements").entry.focus();
-        $("body").one("click", function () { self.presetManager("deactivate"); });
+        $("body").on("click", function (e) {
+            console.log(self.data("options").confirmations);
+            if (self.data("options").confirmations > 0)
+                return;
+            self.presetManager("deactivate");
+            $(this).off(e);
+        });
         self.presetManager("resetPresets");
         return self;
     },
     
     deactivate: function() {
         var self = $(this);
-        var entry = self.data("elements").entry;
         self.removeClass("active");
-        entry.blur();
+        self.data("elements").entry.blur();
         self.presetManager("setPresetName", self.data("options").preset);
+        self.data("options").confirmations = 0;
         return self;
     },
     

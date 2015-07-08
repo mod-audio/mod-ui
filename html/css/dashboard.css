@@ -1291,6 +1291,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     opacity: 0;
     position: absolute;
     top: 48px;
+    box-shadow: 0 4px 10px black;
 }
 .preset-manager.active .preset-manager-container {
     opacity: 1;
@@ -1323,6 +1324,8 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     margin-right: 168px;
     cursor: pointer;
     white-space: nowrap;
+    padding: 0 5px;
+    box-sizing: border-box;
 }
 .preset-manager .mod-list .preset-manager-preset-bindstate {
     display: inline-block;
