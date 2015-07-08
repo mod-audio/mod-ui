@@ -506,6 +506,8 @@ JqueryClass("presetManager", {
     
     activate: function() {
         var self = $(this);
+        if (self.hasClass("active"))
+            return;
         self.addClass("active");
         self.data("elements").entry.focus();
         $("body").on("click", function (e) {
