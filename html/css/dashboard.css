@@ -400,6 +400,80 @@
 }
 
 
+/* CV */
+
+
+.mod-cv-output .mod-output-jack {
+    background-image: url(../img/cv-jack-nconnect.png);
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    position: absolute;
+    width: 80px !important;
+    height: 56px;
+    cursor: pointer;
+}
+.mod-cv-output.output-connected .mod-output-jack {
+    background-image: url(../img/cv-jack.png);
+    background-size: 50%;
+    background-position: 100% 100%;
+    height: 70px;
+}
+.mod-cv-output .mod-output-jack.jack-connecting {
+    background-image: url(../img/cv-jack.png);
+    background-size: 100%;
+    height: 56px;
+}
+
+.mod-cv-output {
+    background-image: url(../img/cv-output.png);
+    background-repeat: no-repeat;
+    position: absolute;
+    width: 80px;
+    height: 56px;
+    left: 0px;
+    z-index: 90;
+}
+.mod-cv-output.output-connecting {
+    background-image: url(../img/cv-output-connected.png);
+}
+.mod-cv-output.output-connected {
+    background-image: url(../img/cv-output-connected.png);
+}
+
+
+.mod-cv-input .mod-output-jack {
+    width: 80px !important;
+    height: 56px;
+    cursor: pointer;
+}
+
+.mod-cv-input {
+    background-image: url(../img/cv-input.png);
+    background-repeat: no-repeat;
+    background-position: 50% 100%;
+    position: absolute;
+    width: 80px;
+    height: 56px;
+    right: 0px;
+    z-index: 90;
+}
+.mod-cv-input.input-connecting {
+    background-image: url(../img/cv-input-connecting.png);
+}
+.mod-cv-input.input-connecting-highlight {
+    background-image: url(../img/cv-input-connecting-highlight.png);
+}
+.mod-cv-input.input-connected {
+    background-image: url(../img/cv-input-connected.png);
+}
+.mod-cv-input.input-connected.input-connecting-highlight {
+    background-image: url(../img/cv-input-connected-highlight.png);
+}
+.mod-cv-input .mod-output-jack.jack-connecting {
+    background-image: url(../img/cv-jack.png);
+}
+
+
 
 
 /* = JACK - HARDWARE AND PEDAL
