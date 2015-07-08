@@ -23,7 +23,7 @@ JqueryClass("modIcon", {
             size: 36
         }, options);
         var self = $(this);
-        self.data("icon", options);
+        self.data("modIconOptions", options);
         self.addClass("mod-icon-" + options.icon);
         self.addClass("mod-icon");
         self.modIcon("setIcon", options.icon);
@@ -32,19 +32,19 @@ JqueryClass("modIcon", {
     },
     setIcon: function (icon) {
         var self = $(this);
-        var i = self.data("icon").icon;
+        var i = self.data("modIconOptions").icon;
         if (i)
             self.removeClass("mod-icon-" + i);
         if (icon)
             self.addClass("mod-icon-" + icon);
-        self.data("icon").icon = icon;
+        self.data("modIconOptions").icon = icon;
         this.trigger("iconset", [icon]);
         return self;
     },
     setSize: function (size) {
         var self = $(this);
         self.css({ width: size + "px", height: size + "px" });
-        self.data("icon").size = size;
+        self.data("modIconOptions").size = size;
         self.trigger("setsize", [size]);
         return self;
     },
@@ -91,7 +91,7 @@ JqueryClass('modButton', {
             confirm: false,
             question: "Shure?"
         }, options);
-        self.data("button", options);
+        self.data("modButtonOptions", options);
         self.click(function (e) { self.modButton("clicked", e); });
         if (options.label)
             self.modButton("setLabel", options.label);
@@ -102,7 +102,7 @@ JqueryClass('modButton', {
     },
     setLabel: function (label) {
         var self = $(this);
-        self.data("button").label = label;
+        self.data("modButtonOptions").label = label;
         self.text(label);
         this.trigger("labelset", [label]);
         return self;
@@ -115,7 +115,7 @@ JqueryClass('modButton', {
             self.data("icon", $("<div>").modIcon({ icon: icon }).prependTo(self));
         else
             self.data("icon", null);
-        self.data("button").icon = icon;
+        self.data("modButtonOptions").icon = icon;
         this.trigger("iconset", [icon]);
         return self;
     },
@@ -127,14 +127,14 @@ JqueryClass('modButton', {
     },
     setConfirm: function (mesg) {
         var self = $(this);
-        self.data("button").confirm = mesg != "";
-        self.data("button").question = mesg;
+        self.data("modButtonOptions").confirm = mesg != "";
+        self.data("modButtonOptions").question = mesg;
         this.trigger("confirmset", [mesg]);
         return self;
     },
     clicked: function (e) {
         var self = $(this);
-        var options = self.data("button");
+        var options = self.data("modButtonOptions");
         if (!self.hasClass("mod-confirm") && options.confirm) {
             var textnodes = self.contents().filter(function () { return this.nodeType == 3; });
             if (textnodes.length)
@@ -196,20 +196,21 @@ JqueryClass("modEditable", {
         
         self.addClass("mod-editable");
         self.click(self.clicked);
-        self.data("options", options);
+        self.data("modEditableOptions", options);
+        self.data("modEditableElements", e);
         self.modEditable("setText", options.text);
         return self;
     },
     setText: function (text) {
         var self = $(this);
-        self.data("options").text = text;
+        self.data("modEditableOptions").text = text;
         self.text(text);
         self.trigger("changed", [text]);
         return self;
     },
     clicked: function (e) {
         var self = $(this);
-        self.data("elements").input.val(self.data("options").text);
+        self.data("modEditableElements").input.val(self.data("options").text);
         self.modPopout("show");
         $("body").one( function () { self.modPopout("hide"); });
         return self;
@@ -258,8 +259,8 @@ JqueryClass("modPopout", {
         e.anchor = self.find(".mod-popout-anchor");
         e.container = self.find("mod-popout-content");
         
-        self.data("options", options);
-        self.data("elements", e);
+        self.data("modPopoutOptions", options);
+        self.data("modPopoutElements", e);
         
         self.modPopout("setAnchor", options.anchor);
         self.modPopout("setContent", options.content);
@@ -300,29 +301,29 @@ JqueryClass("modPopout", {
                 break;
         }
         
-        self.data("options").anchor = anchor;
+        self.data("modPopoutOptions").anchor = anchor;
         self.trigger("anchorset", [anchor]);
         return self;
     },
     setContent: function (content) {
         var self = $(this);
-        self.data("options").content = content;
-        self.data("elements").container.append($(content));
+        self.data("modPopoutOptions").content = content;
+        self.data("modPopoutElements").container.append($(content));
         self.trigger("contentset", [content]);
         return self;
     },
     setParent: function (parent) {
         var self = $(this);
-        self.data("options").parent = parent;
-        //self.data("elements").container.append($(content));
+        self.data("modPopoutOptions").parent = parent;
+        //self.data("modPopoutElements").container.append($(content));
         self.trigger("parentset", [parent]);
         return self;
     },
     show: function () {
         var self = $(this);
         self.removeClass("mod-hidden").addClass("mod-visible");
-        var o = self.data("options");
-        var p = self.data("elements").popout;
+        var o = self.data("modPopoutOptions");
+        var p = self.data("modPopoutElements").popout;
         p.appendTo($("body"));
         switch (o.anchor) {
             default:
@@ -338,7 +339,7 @@ JqueryClass("modPopout", {
     hide: function () {
         var self = $(this);
         self.addClass("mod-hidden").removeClass("mod-visible");
-        self.data("element").popout.fadeOut();
+        self.data("modPopoutElements").popout.fadeOut();
         self.trigger("popoff");
         return self;
     },
@@ -391,13 +392,13 @@ JqueryClass("presetManager", {
             tooltip: "Save or overwrite the selected preset",
         }).on("action", function (e) { self.presetManager("saveClicked", self, e); });
         
-        e.save.on("confirm", function () { self.data("options").confirmations++; });
-        e.save.on("cancel", function () { self.data("options").confirmations--; });   
+        e.save.on("confirm", function () { self.data("presetManagerOptions").confirmations++; });
+        e.save.on("cancel", function () { self.data("presetManagerOptions").confirmations--; });   
         
         self.addClass("preset-manager");
         
-        self.data("options", options);
-        self.data("elements", e);
+        self.data("presetManagerOptions", options);
+        self.data("presetManagerElements", e);
         
         self.presetManager("setPresetName", "");
         self.presetManager("setPresets", options.getPresets());
@@ -407,7 +408,7 @@ JqueryClass("presetManager", {
     
     clearPresets: function () {
         var self = $(this);
-        self.data("elements").list.empty();
+        self.data("presetManagerElements").list.empty();
         return self;
     },
     
@@ -416,16 +417,16 @@ JqueryClass("presetManager", {
         for (p in presets) {
             var li = $("<li>");
             li.presetEntry(presets[p]);
-            li.appendTo(self.data("elements").list);
+            li.appendTo(self.data("presetManagerElements").list);
             li.on("clicked", function (e) {
-                self.presetManager("setPresetName", $(this).data("options").name);
+                self.presetManager("setPresetName", $(this).data("presetEntryOptions").name);
             });
             li.click( function (e) { e.stopPropagation(); });
-            li.data("elements").remove.on("confirm", function () {
-                self.data("options").confirmations++;
+            li.data("presetEntryElements").remove.on("confirm", function () {
+                self.data("presetManagerOptions").confirmations++;
             });
-            li.data("elements").remove.on("cancel", function () {
-                self.data("options").confirmations--;
+            li.data("presetEntryElements").remove.on("cancel", function () {
+                self.data("presetManagerOptions").confirmations--;
             });
         }
         return self;
@@ -440,7 +441,7 @@ JqueryClass("presetManager", {
     
     resetPresets: function() {
         var self = $(this);
-        self.data("elements").list.children().each( function () {
+        self.data("presetManagerElements").list.children().each( function () {
             $(this).css("height", "");
         });
         return self;
@@ -452,7 +453,7 @@ JqueryClass("presetManager", {
             string = "untitled";
         if (string === false)
             string = "";
-        var entry = self.data("elements").entry;
+        var entry = self.data("presetManagerElements").entry;
         entry.val(string);
         entry.attr('size', Math.max(entry.val().length, 1));
         self.presetManager("checkOverwrite");
@@ -462,11 +463,11 @@ JqueryClass("presetManager", {
     searchInPresets: function(string) {
         // search for a substring in all preset titles
         var self = $(this);
-        var o = self.data("options");
-        var e = self.data("elements");
+        var o = self.data("presetManagerOptions");
+        var e = self.data("presetManagerElements");
         e.list.children().each( function () {
             var t = $(this);
-            if (t.data("options").name.toLowerCase().indexOf(string.toLowerCase()) >= 0)
+            if (t.data("presetManagerOptions").name.toLowerCase().indexOf(string.toLowerCase()) >= 0)
                 t.css("height", "");
             else
                 t.css("height", 0);
@@ -476,7 +477,7 @@ JqueryClass("presetManager", {
     
     setPreset: function (preset) {
         var self = $(this);
-        self.data("options").preset = preset;
+        self.data("presetManagerOptions").preset = preset;
         self.presetManager("setPresetName", preset);
         self.presetManager("checkOverwrite");
         return self;
@@ -484,10 +485,10 @@ JqueryClass("presetManager", {
     
     getPresetByName: function (name) {
         var self = $(this);
-        var e = self.data("elements");
+        var e = self.data("presetManagerElements");
         var a = false;
         e.list.children().each( function () {
-            if ($(this).data("options").name == name) {
+            if ($(this).data("presetEntryOptions").name == name) {
                 a = $(this);
                 return false;
             }
@@ -497,7 +498,7 @@ JqueryClass("presetManager", {
     
     checkOverwrite: function () {
         var self = $(this);
-        var e = self.data("elements");
+        var e = self.data("presetManagerElements");
         if (self.presetManager("getPresetByName", e.entry.val()))
             e.save.modButton("setConfirm", "Overwrite?");
         else
@@ -509,10 +510,9 @@ JqueryClass("presetManager", {
         if (self.hasClass("active"))
             return;
         self.addClass("active");
-        self.data("elements").entry.focus();
+        self.data("presetManagerElements").entry.focus();
         $("body").on("click", function (e) {
-            console.log(self.data("options").confirmations);
-            if (self.data("options").confirmations > 0)
+            if (self.data("presetManagerOptions").confirmations > 0)
                 return;
             self.presetManager("deactivate");
             $(this).off(e);
@@ -524,9 +524,9 @@ JqueryClass("presetManager", {
     deactivate: function() {
         var self = $(this);
         self.removeClass("active");
-        self.data("elements").entry.blur();
-        self.presetManager("setPresetName", self.data("options").preset);
-        self.data("options").confirmations = 0;
+        self.data("presetManagerElements").entry.blur();
+        self.presetManager("setPresetName", self.data("presetManagerOptions").preset);
+        self.data("presetManagerOptions").confirmations = 0;
         return self;
     },
     
@@ -552,7 +552,7 @@ JqueryClass("presetManager", {
             
         } else if (e.keyCode == 27) {
             // esc
-            self.presetManager("setPresetName", self.data("options").preset);
+            self.presetManager("setPresetName", self.data("presetManagerOptions").preset);
             self.presetManager("resetPresets");
             self.presetManager("deactivate");
         } else {
@@ -623,15 +623,15 @@ JqueryClass("presetEntry", {
         
         self.addClass("mod-list-item");
         
-        self.data("options", options);
-        self.data("elements", e);
+        self.data("presetEntryOptions", options);
+        self.data("presetEntryElements", e);
         self.presetEntry("setBind", options.bind);
         self.presetEntry("setName", options.name);
         return self;
     },
     setBind: function (bind) {
         var self = $(this);
-        var e = self.data("elements");
+        var e = self.data("presetEntryElements");
         switch (bind) {
             default:
             case MOD_BIND_NONE:
@@ -647,13 +647,13 @@ JqueryClass("presetEntry", {
                 e.bind.modButton("setIcon", "footswitch");
                 break;
         }
-        $(this).data("options").bind = bind;
+        $(this).data("presetEntryOptions").bind = bind;
         return self;
     },
     setName: function (name) {
         var self = $(this);
-        self.data("elements").name.text(name);
-        self.data("options").name = name;
+        self.data("presetEntryElements").name.text(name);
+        self.data("presetEntryOptions").name = name;
         return self;
     },
 });
