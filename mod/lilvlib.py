@@ -718,9 +718,12 @@ def get_plugin_info(world, plugin):
         else:
             gui['resourcesDirectory'] = lilv.lilv_uri_to_path(modgui_resdir.as_string())
 
-            # check if the modgui is outside the main bundle and in the user dir
-            gui['modificableInPlace'] = bool(bundle not in gui['resourcesDirectory'] and
-                                             os.path.expanduser("~") in gui['resourcesDirectory'])
+            # check if modgui is defined in a separate file
+            gui['usingSeeAlso'] = os.path.exists(os.path.join(bundle, "modgui.ttl"))
+
+            # check if the modgui definition is on its own file and in the user dir
+            gui['modificableInPlace'] = bool((bundle not in gui['resourcesDirectory'] or gui['usingSeeAlso']) and
+                                              os.path.expanduser("~") in gui['resourcesDirectory'])
 
             # icon and settings templates
             modgui_icon  = world.find_nodes(modguigui.me, ns_modgui.iconTemplate    .me, None).get_first()
@@ -960,6 +963,9 @@ def get_plugin_info(world, plugin):
         if "Control" in types or "CV" in types:
             isInteger = "integer" in properties
 
+            if isInteger and "CV" in types:
+                errors.append("port '%s' has integer property and CV type" % portname)
+
             xdefault = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.default.me))
             xminimum = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.minimum.me))
             xmaximum = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.maximum.me))
@@ -1017,7 +1023,14 @@ def get_plugin_info(world, plugin):
                         if is_integer(lilv.lilv_node_as_string(xdefault)):
                             warnings.append("port '%s' default value is an integer" % portname)
 
-                    if not (ranges['minimum'] <= ranges['default'] <= ranges['maximum']):
+                    testmin = ranges['minimum']
+                    testmax = ranges['maximum']
+
+                    if "sampleRate" in properties:
+                        testmin *= 48000
+                        testmax *= 48000
+
+                    if not (testmin <= ranges['default'] <= testmax):
                         ranges['default'] = ranges['minimum']
                         errors.append("port '%s' default value is out of bounds" % portname)
 
@@ -1033,10 +1046,12 @@ def get_plugin_info(world, plugin):
                     ranges['maximum'] = 1
                     ranges['default'] = 0
                 else:
-                    ranges['minimum'] = 0.0
+                    ranges['minimum'] = -1.0 if "CV" in types else 0.0
                     ranges['maximum'] = 1.0
                     ranges['default'] = 0.0
-                errors.append("port '%s' is missing value ranges" % portname)
+
+                if "CV" not in types:
+                    errors.append("port '%s' is missing value ranges" % portname)
 
             nodes = port.get_scale_points()
 

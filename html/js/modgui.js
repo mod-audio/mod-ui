@@ -147,9 +147,6 @@ function GUI(effect, options) {
 
             // adjust for sample rate
             if (port.properties.indexOf("sampleRate") >= 0) {
-                if (port.ranges.minimum < port.ranges.default && port.ranges.default < port.ranges.maximum) {
-                    port.ranges.default *= SAMPLERATE
-                }
                 port.ranges.minimum *= SAMPLERATE
                 port.ranges.maximum *= SAMPLERATE
             }
@@ -251,7 +248,7 @@ function GUI(effect, options) {
             self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
                 self.getTemplateData(effect, skipNamespace)))
             self.assignIconFunctionality(self.icon)
-            self.assignControlFunctionality(self.icon)
+            self.assignControlFunctionality(self.icon, false)
 
             // Take the width of the plugin. This is necessary because plugin may have position absolute.
             // setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
@@ -273,7 +270,7 @@ function GUI(effect, options) {
                 self.settings = $('<div class="mod-settings">')
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
                 self.getTemplateData(effect, skipNamespace)))
-            self.assignControlFunctionality(self.settings)
+            self.assignControlFunctionality(self.settings, false)
 
             if (! instance) {
                 self.settings.find(".js-close").hide()
@@ -301,7 +298,8 @@ function GUI(effect, options) {
         var render = function () {
             var icon = $('<div class="mod-pedal dummy">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
-                self.getTemplateData(effect, true)))
+                self.getTemplateData(effect, false)))
+            self.assignControlFunctionality(icon, true)
             callback(icon)
         }
         if (self.dependenciesLoaded) {
@@ -325,7 +323,7 @@ function GUI(effect, options) {
         }
     }
 
-    this.assignControlFunctionality = function (element) {
+    this.assignControlFunctionality = function (element, onlySetValues) {
         element.find('[mod-role=input-control-port]').each(function () {
             var control = $(this)
             var symbol = $(this).attr('mod-port-symbol')
@@ -416,6 +414,9 @@ function GUI(effect, options) {
                 control.text('No such symbol: ' + symbol)
             }
         });
+
+        if (onlySetValues)
+            return
 
         element.find('[mod-role=input-control-minimum]').each(function () {
             var symbol = $(this).attr('mod-port-symbol')
