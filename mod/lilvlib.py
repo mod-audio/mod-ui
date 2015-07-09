@@ -966,9 +966,12 @@ def get_plugin_info(world, plugin):
             if isInteger and "CV" in types:
                 errors.append("port '%s' has integer property and CV type" % portname)
 
-            xdefault = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.default.me))
-            xminimum = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.minimum.me))
-            xmaximum = lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.maximum.me))
+            xdefault = lilv.lilv_nodes_get_first(port.get_value(ns_mod.default.me)) or \
+                       lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.default.me))
+            xminimum = lilv.lilv_nodes_get_first(port.get_value(ns_mod.minimum.me)) or \
+                       lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.minimum.me))
+            xmaximum = lilv.lilv_nodes_get_first(port.get_value(ns_mod.maximum.me)) or \
+                       lilv.lilv_nodes_get_first(port.get_value(ns_lv2core.maximum.me))
 
             if xminimum is not None and xmaximum is not None:
                 if isInteger:

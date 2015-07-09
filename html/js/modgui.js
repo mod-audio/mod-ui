@@ -544,6 +544,13 @@ function GUI(effect, options) {
         if (!data.controls)
             data.controls = options.gui.ports || {}
 
+        // insert scalePoints into controls
+        for (var i in data.controls)
+        {
+            var control = data.controls[i]
+            control.scalePoints = self.controls[control.symbol].scalePoints
+        }
+
         // FIXME - this is a little ugly hack, sorry!
 
         // don't show some special ports
