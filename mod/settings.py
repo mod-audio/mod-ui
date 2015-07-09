@@ -23,7 +23,9 @@ DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
 DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 
 LOG = bool(int(os.environ.get('MOD_LOG', False)))
-MODGUIS_ONLY = bool(int(os.environ.get('MOD_GUIS_ONLY', False)))
+
+# 0 means all; 1 means modguis only; 2 means cloud approved
+MODGUI_SHOW_MODE = int(os.environ.get('MOD_GUI_SHOW_MODE', 0))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
