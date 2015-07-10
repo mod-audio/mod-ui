@@ -490,6 +490,7 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
     ns_lv2core = NS(world, lilv.LILV_NS_LV2)
     ns_atom    = NS(world, "http://lv2plug.in/ns/ext/atom#")
     ns_midi    = NS(world, "http://lv2plug.in/ns/ext/midi#")
+    ns_morph   = NS(world, "http://lv2plug.in/ns/ext/morph#")
     ns_pprops  = NS(world, "http://lv2plug.in/ns/ext/port-props#")
     ns_pset    = NS(world, "http://lv2plug.in/ns/ext/presets#")
     ns_units   = NS(world, "http://lv2plug.in/ns/extensions/units#")
@@ -960,6 +961,13 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
             and port.supports_event(ns_midi.MidiEvent.me) \
             and lilv.Nodes(port.get_value(ns_atom.bufferType.me)).get_first() == ns_atom.Sequence:
                 types.append("MIDI")
+
+        #if "Morph" in types:
+            #morphtyp = lilv.lilv_nodes_get_first(port.get_value(ns_morph.supportsType.me))
+            #if morphtyp is not None:
+                #morphtyp = lilv.lilv_node_as_uri(morphtyp)
+                #if morphtyp:
+                    #types.append(morphtyp.rsplit("#",1)[-1].replace("Port","",1))
 
         # port properties
         properties = [typ.rsplit("#",1)[-1] for typ in get_port_data(port, ns_lv2core.portProperty)]
