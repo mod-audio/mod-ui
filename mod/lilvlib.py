@@ -482,7 +482,7 @@ def plugin_has_modgui(world, plugin):
 
 # Get info from a lilv plugin
 # This is used in get_plugins_info below and MOD-SDK
-def get_plugin_info(world, plugin):
+def get_plugin_info(world, plugin, useAbsolutePath = True):
     # define the needed stuff
     ns_doap    = NS(world, lilv.LILV_NS_DOAP)
     ns_rdf     = NS(world, lilv.LILV_NS_RDF)
@@ -529,6 +529,8 @@ def get_plugin_info(world, plugin):
 
     if not binary:
         errors.append("plugin binary is missing")
+    elif not useAbsolutePath:
+        binary = binary.replace(bundle,"",1)
 
     # --------------------------------------------------------------------------------------------------------
     # license
@@ -652,31 +654,33 @@ def get_plugin_info(world, plugin):
     # --------------------------------------------------------------------------------------------------------
     # bundles
 
-    bnodes  = lilv.lilv_plugin_get_data_uris(plugin.me)
     bundles = []
 
-    it = lilv.lilv_nodes_begin(bnodes)
-    while not lilv.lilv_nodes_is_end(bnodes, it):
-        bnode = lilv.lilv_nodes_get(bnodes, it)
-        it    = lilv.lilv_nodes_next(bnodes, it)
+    if useAbsolutePath:
+        bnodes = lilv.lilv_plugin_get_data_uris(plugin.me)
 
-        if bnode is None:
-            continue
-        if not lilv.lilv_node_is_uri(bnode):
-            continue
+        it = lilv.lilv_nodes_begin(bnodes)
+        while not lilv.lilv_nodes_is_end(bnodes, it):
+            bnode = lilv.lilv_nodes_get(bnodes, it)
+            it    = lilv.lilv_nodes_next(bnodes, it)
 
-        bpath = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bnode)))
+            if bnode is None:
+                continue
+            if not lilv.lilv_node_is_uri(bnode):
+                continue
 
-        if not bpath.endswith(os.sep):
-            bpath += os.sep
+            bpath = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bnode)))
 
-        if bpath not in bundles:
-            bundles.append(bpath)
+            if not bpath.endswith(os.sep):
+                bpath += os.sep
 
-    if bundle not in bundles:
-        bundles.append(bundle)
+            if bpath not in bundles:
+                bundles.append(bpath)
 
-    del bnodes, it
+        if bundle not in bundles:
+            bundles.append(bundle)
+
+        del bnodes, it
 
     # --------------------------------------------------------------------------------------------------------
     # get the proper modgui
@@ -694,6 +698,9 @@ def get_plugin_info(world, plugin):
         if resdir.me is None:
             continue
         modguigui = mgui
+        if not useAbsolutePath:
+            # special build, use first modgui found
+            break
         if os.path.expanduser("~") in lilv.lilv_uri_to_path(resdir.as_string()):
             # found a modgui in the home dir, stop here and use it
             break
@@ -716,14 +723,17 @@ def get_plugin_info(world, plugin):
             errors.append("modgui has no resourcesDirectory data")
 
         else:
-            gui['resourcesDirectory'] = lilv.lilv_uri_to_path(modgui_resdir.as_string())
+            if useAbsolutePath:
+                gui['resourcesDirectory'] = lilv.lilv_uri_to_path(modgui_resdir.as_string())
 
-            # check if modgui is defined in a separate file
-            gui['usingSeeAlso'] = os.path.exists(os.path.join(bundle, "modgui.ttl"))
+                # check if modgui is defined in a separate file
+                gui['usingSeeAlso'] = os.path.exists(os.path.join(bundle, "modgui.ttl"))
 
-            # check if the modgui definition is on its own file and in the user dir
-            gui['modificableInPlace'] = bool((bundle not in gui['resourcesDirectory'] or gui['usingSeeAlso']) and
-                                              os.path.expanduser("~") in gui['resourcesDirectory'])
+                # check if the modgui definition is on its own file and in the user dir
+                gui['modificableInPlace'] = bool((bundle not in gui['resourcesDirectory'] or gui['usingSeeAlso']) and
+                                                os.path.expanduser("~") in gui['resourcesDirectory'])
+            else:
+                gui['resourcesDirectory'] = modgui_resdir.as_string().replace(bundleuri,"",1)
 
             # icon and settings templates
             modgui_icon  = world.find_nodes(modguigui.me, ns_modgui.iconTemplate    .me, None).get_first()
@@ -756,7 +766,7 @@ def get_plugin_info(world, plugin):
             if modgui_script.me is not None:
                 javascriptFile = lilv.lilv_uri_to_path(modgui_script.as_string())
                 if os.path.exists(javascriptFile):
-                    gui['javascript'] = javascriptFile
+                    gui['javascript'] = javascriptFile if useAbsolutePath else javascriptFile.replace(bundle,"",1)
                 else:
                     errors.append("modgui javascript file is missing")
                 del javascriptFile
@@ -766,7 +776,7 @@ def get_plugin_info(world, plugin):
             else:
                 stylesheetFile = lilv.lilv_uri_to_path(modgui_style.as_string())
                 if os.path.exists(stylesheetFile):
-                    gui['stylesheet'] = stylesheetFile
+                    gui['stylesheet'] = stylesheetFile if useAbsolutePath else stylesheetFile.replace(bundle,"",1)
                 else:
                     errors.append("modgui stylesheet file is missing")
                 del stylesheetFile
@@ -815,6 +825,8 @@ def get_plugin_info(world, plugin):
                 gui['screenshot'] = lilv.lilv_uri_to_path(modgui_scrn.as_string())
                 if not os.path.exists(gui['screenshot']):
                     errors.append("modgui screenshot file is missing")
+                if not useAbsolutePath:
+                    gui['screenshot'] = gui['screenshot'].replace(bundle,"",1)
             else:
                 errors.append("modgui has no screnshot data")
 
@@ -822,6 +834,8 @@ def get_plugin_info(world, plugin):
                 gui['thumbnail'] = lilv.lilv_uri_to_path(modgui_thumb.as_string())
                 if not os.path.exists(gui['thumbnail']):
                     errors.append("modgui thumbnail file is missing")
+                if not useAbsolutePath:
+                    gui['thumbnail'] = gui['thumbnail'].replace(bundle,"",1)
             else:
                 errors.append("modgui has no thumbnail data")
 
@@ -1278,15 +1292,16 @@ def get_plugins_info(bundles):
         raise Exception('get_plugins_info() - selected bundles have no plugins')
 
     # return all the info
-    return [get_plugin_info(world, p) for p in plugins]
+    return [get_plugin_info(world, p, False) for p in plugins]
 
 # ------------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from sys import argv
+    from sys import argv, exit
     from pprint import pprint
     #get_plugins_info(argv[1:])
     #for i in get_plugins_info(argv[1:]): pprint(i)
+    #exit(0)
     for i in get_plugins_info(argv[1:]):
         warnings = i['warnings'].copy()
 
