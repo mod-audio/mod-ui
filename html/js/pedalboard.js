@@ -972,20 +972,19 @@ JqueryClass('pedalboard', {
             var top = height / (elements.length + 1)
             var i, el
             elements.sort(function(e1, e2) {
-                var e1_midi = e1.hasClass('mod-midi-output') || e1.hasClass('mod-midi-input')
-                var e2_midi = e2.hasClass('mod-midi-output') || e2.hasClass('mod-midi-input')
-                if (e1_midi == e2_midi) {
-                    if (e1.attr('mod-port-index') > e2.attr('mod-port-index')) {
-                        return 1
-                    } else {
-                        return -1
-                    }
+                var e1_audio = e1.hasClass('mod-audio-output') || e1.hasClass('mod-audio-input')
+                var e2_audio = e2.hasClass('mod-audio-output') || e2.hasClass('mod-audio-input')
+                var e1_midi  = e1.hasClass('mod-midi-output')  || e1.hasClass('mod-midi-input')
+                var e2_midi  = e2.hasClass('mod-midi-output')  || e2.hasClass('mod-midi-input')
+                var e1_cv    = e1.hasClass('mod-cv-output')    || e1.hasClass('mod-cv-input')
+                var e2_cv    = e2.hasClass('mod-cv-output')    || e2.hasClass('mod-cv-input')
+                // FIXME - there's got to be a better way..
+                if ((e1_audio && e2_audio) || (e1_midi && e2_midi) || (e1_cv && e2_cv)) {
+                    return (e1.attr('mod-port-index') > e2.attr('mod-port-index')) ? 1 : -1;
+                } else if (e1_cv || e2_cv) {
+                    return e1_cv ? 1 : -1;
                 } else {
-                    if (e1_midi) {
-                        return 1
-                    } else {
-                        return -1
-                    }
+                    return e1_midi ? 1 : -1;
                 }
             })
             for (i = 0; i < elements.length; i++) {
@@ -1107,16 +1106,22 @@ JqueryClass('pedalboard', {
                 // check if mouse is not over a control button
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-control-port]')))
                     return
-                    // check if mouse is not over the footswitch
+                // check if mouse is not over the footswitch
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=bypass]')))
                     return
-                    // clicking in input means expand
+                // clicking in input means expand
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-audio-port]')))
                     return
-                    // clicking in output or output jack means connecting
+                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-midi-port]')))
+                    return
+                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-cv-port]')))
+                    return
+                // clicking in output or output jack means connecting
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-audio-port]')))
                     return
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-midi-port]')))
+                    return
+                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-cv-port]')))
                     return
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-jack]')))
                     return
@@ -1201,7 +1206,7 @@ JqueryClass('pedalboard', {
             }
 
             // Find elements with mod-role of audio/midi input/output ports and assign functionality to them
-            var types = ['audio', 'midi']
+            var types = ['audio', 'midi', 'cv']
             var directions = ['input', 'output']
             var j, k, type, direction, method
             for (i = 0; i < types.length; i++) {
@@ -1319,8 +1324,10 @@ JqueryClass('pedalboard', {
         if (!highlight) {
             self.find('[mod-role=input-audio-port]').removeClass('input-connecting')
             self.find('[mod-role=input-midi-port]').removeClass('input-connecting')
+            self.find('[mod-role=input-cv-port]').removeClass('input-connecting')
             self.find('[mod-role=input-audio-port]').removeClass('input-connecting-highlight')
             self.find('[mod-role=input-midi-port]').removeClass('input-connecting-highlight')
+            self.find('[mod-role=input-cv-port]').removeClass('input-connecting-highlight')
             return
         }
 
@@ -1467,6 +1474,8 @@ JqueryClass('pedalboard', {
             canvas.addClass("mod-audio");
         else if (output.attr("class").search("mod-midi-") >= 0)
             canvas.addClass("mod-midi");
+        else if (output.attr("class").search("mod-cv-") >= 0)
+            canvas.addClass("mod-cv");
 
         canvas.css({
             width: '100%',

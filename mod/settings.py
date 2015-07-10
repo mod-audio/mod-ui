@@ -144,6 +144,8 @@ INGEN_NUM_AUDIO_INS  = int(os.environ.get('MOD_INGEN_NUM_AUDIO_INS', 2))
 INGEN_NUM_AUDIO_OUTS = int(os.environ.get('MOD_INGEN_NUM_AUDIO_OUTS', 2))
 INGEN_NUM_MIDI_INS   = int(os.environ.get('MOD_INGEN_NUM_MIDI_INS', 1))
 INGEN_NUM_MIDI_OUTS  = int(os.environ.get('MOD_INGEN_NUM_MIDI_OUTS', 1))
+INGEN_NUM_CV_INS     = int(os.environ.get('MOD_INGEN_NUM_CV_INS', 0))
+INGEN_NUM_CV_OUTS    = int(os.environ.get('MOD_INGEN_NUM_CV_OUTS', 0))
 
 JS_CUSTOM_CHANNEL = bool(int(os.environ.get('MOD_JS_CUSTOM_CHANNEL', False)))
 AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))

@@ -77,8 +77,8 @@ class Host(IngenAsync):
             callback(False)
             return
 
-        # type should be Audio or MIDI
-        if typ not in ("Audio", "MIDI"):
+        # type should be Audio, CV or MIDI
+        if typ not in ("Audio", "CV", "MIDI"):
             callback(False)
             return
 
@@ -92,6 +92,9 @@ class Host(IngenAsync):
             <http://lv2plug.in/ns/ext/atom#bufferType> <http://lv2plug.in/ns/ext/atom#Sequence> ;
             <http://lv2plug.in/ns/ext/atom#supports> <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
             """
+        elif typ == "CV":
+            portyp = "<http://lv2plug.in/ns/lv2core#CVPort>"
+            extra  = ""
         else:
             portyp = "<http://lv2plug.in/ns/lv2core#AudioPort>"
             extra  = ""

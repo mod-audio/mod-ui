@@ -259,6 +259,8 @@ function GUI(effect, options) {
                     $('[mod-role="output-audio-port"]').addClass("mod-audio-output")
                     $('[mod-role="input-midi-port"]').addClass("mod-midi-input")
                     $('[mod-role="output-midi-port"]').addClass("mod-midi-output")
+                    $('[mod-role="input-cv-port"]').addClass("mod-cv-input")
+                    $('[mod-role="output-cv-port"]').addClass("mod-cv-output")
                 }
                 self.icon.width(self.icon.children().width())
                 self.icon.height(self.icon.children().height())
