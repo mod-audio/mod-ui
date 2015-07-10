@@ -1,15 +1,17 @@
 /* GENERAL PEDAL STYLE */
 
-.mod-pedal { 
+.mod-pedal {
     display:inline-block;
 /*
     padding:1px 15px 1px 15px;
 */
     z-index:100;
 }
-#pedalboard-dashboard > .mod-pedal > div:first-child { 
+/*
+#pedalboard-dashboard > .mod-pedal > div:first-child {
     box-shadow: 8px 24px 50px rgba(0, 0, 0, 0.66), 5px 15px 30px rgba(0, 0, 0, 0.9), 0px 2px 5px black;
 }
+*/
 .mod-input .mod-output-jack{
     z-index: 100;
 }
@@ -105,11 +107,11 @@
     border-bottom:12px solid transparent;
     border-left:12px solid #000;
     border-top:12px solid transparent;
-    height:0; 
+    height:0;
     position:absolute;
     right:-12px;
     top:39px;
-    width:0; 
+    width:0;
 */
 }
 
@@ -120,7 +122,8 @@
     width: 88px;
 }
 .mod-pedal .mod-pedal-input .mod-audio-input,
-.mod-pedal .mod-pedal-input .mod-midi-input {
+.mod-pedal .mod-pedal-input .mod-midi-input,
+.mod-pedal .mod-pedal-input .mod-cv-input {
     position: relative;
 /*
     margin-top: 10px;
@@ -128,6 +131,9 @@
 }
 .mod-pedal .mod-pedal-input .mod-midi-input {
     right: -12px;
+}
+.mod-pedal .mod-pedal-input .mod-cv-input {
+    right: -8px;
 }
 .mod-input.expanded .mod-output-jack {
     background-image:url(../img/audio-jack.png) !important;
@@ -191,11 +197,11 @@
     border-bottom:12px solid transparent;
     border-right:12px solid #000;
     border-top:12px solid transparent;
-    height:0; 
+    height:0;
     position:absolute;
     left:-12px;
     top:39px;
-    width:0; 
+    width:0;
 }
 .mod-pedal .mod-pedal-output {
     position: absolute;
@@ -204,7 +210,8 @@
     width: 87px;
 }
 .mod-pedal .mod-pedal-output .mod-audio-output,
-.mod-pedal .mod-pedal-output .mod-midi-output {
+.mod-pedal .mod-pedal-output .mod-midi-output,
+.mod-pedal .mod-pedal-output .mod-cv-output {
     position: relative;
 /*
     margin-top: 10px;
@@ -246,8 +253,8 @@
     width:45px;
 }
 
-.mod-pedal .mod-pedal-output .mod-output { 
-    cursor:pointer; 
+.mod-pedal .mod-pedal-output .mod-output {
+    cursor:pointer;
     height:45px;
     margin-bottom:10px;
     position:relative;
@@ -267,7 +274,7 @@
 .mod-pedal .output-connected .mod-output-jack { background:none; }
 */
 
-    
+
 /* = PEDAL SETTINGS - Pop Up Window
 ================================================ */
 body > .mod-settings {
@@ -320,7 +327,7 @@ body > .mod-settings {
 
 .mod-presets {
     margin:0;
-    padding:0 18px;
+    padding: 0 18px;
 }
 
 /* = KNOB
