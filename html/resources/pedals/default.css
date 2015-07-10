@@ -57,3 +57,20 @@
 .mod-pedal-default .mod-footswitch.on {
     background-position-y: top !important
 }
+
+/* = NAME
+================================================ */
+.mod-pedal-default .mod-plugin-name {
+    color: #333;
+    left:30px;
+    right:30px;
+    overflow:hidden;
+    position:absolute;
+    text-align:center;
+    top:30px;
+    line-height:1;
+}
+
+.mod-pedal-default .mod-plugin-name h1 {
+    font-family: "Ek Mukta",Helvetica,Arial,Sans-serif;
+}
