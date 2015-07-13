@@ -160,8 +160,10 @@ function UserSession(options) {
     this.getUserData = function (user_id, callback) {
         if (user_id == null)
             user_id = self.user_id
-        //if (user_id == null)
-        //    return
+        if (user_id == null) {
+            console.log("FIXME: getUserData called without an active user")
+            return
+        }
 
         $.ajax({
             url: SITEURLNEW + '/users/' + user_id,
