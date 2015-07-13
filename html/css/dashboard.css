@@ -1374,7 +1374,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 
 .preset-manager .mod-button-bar .mod-button {
-    width: 49.0%;
+    width: 50%;
     text-align: center;
 }
 
@@ -1401,17 +1401,43 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     padding: 0 5px;
     box-sizing: border-box;
 }
+.preset-manager .mod-list .mod-list-item.editing .preset-manager-preset-name {
+    opacity: 0;
+}
+
+.preset-manager .mod-list .preset-manager-preset-entry {
+    display: none;
+    font-size: 1.2em;
+    height: 50px;
+    line-height: 50px;
+    border: none;
+    padding: 0 5px;
+    box-sizing: border-box;
+    box-shadow: none;
+    background: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.preset-manager .mod-list .mod-list-item.editing .preset-manager-preset-entry {
+    display: block;
+}
+
+
 .preset-manager .mod-list .preset-manager-preset-bindstate {
     display: inline-block;
 }
+
 .preset-manager .mod-list .mod-button {
     position: absolute;
     top: 3px;
-    right: 3px;
+}
+.preset-manager .mod-list .mod-button.mod-button-remove {
+    right: 58px;
 }
 .preset-manager .mod-list .mod-button.mod-button-bind {
-    right: 113px;
+    right: 3px;
 }
 .preset-manager .mod-list .mod-button.mod-button-edit {
-    right: 58px;
+    right: 113px;
 }
