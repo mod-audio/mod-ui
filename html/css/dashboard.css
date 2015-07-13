@@ -17,7 +17,7 @@
     right: 0;
 }
 
-#pedalboard-actions { 
+#pedalboard-actions {
     background-color:#1b1b1b;
     background-image:-moz-linear-gradient(top, #222222, #111111);
     background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#222222), to(#111111));
@@ -75,7 +75,7 @@
 
 
 /* Pedalboard Info - Header */
-#pedalboard-info { 
+#pedalboard-info {
     height:35px;
     left:0;
     margin:0;
@@ -532,7 +532,7 @@
 }
 
 .mod-input {
-    
+
 }
 
 .mod-input.input-connecting {
@@ -688,6 +688,16 @@ svg .light {
 }
 .mod-midi svg .light {
     stroke: #00A3C4;
+}
+
+.mod-cv svg .shadow {
+    stroke: rgba(0,0,0,0.66);
+}
+.mod-cv svg .cable {
+    stroke: #F0546C; /*FIXME*/
+}
+.mod-cv svg .light {
+    stroke: #F0A3C4; /*FIXME*/
 }
 
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
@@ -939,7 +949,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 #share-window  #record-rec {
-	border-radius: 50px !important;	
+	border-radius: 50px !important;
 }
 #share-window span.btn {
 	text-align: center;
@@ -1072,7 +1082,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     box-sizing: border-box;
 }
 .mod-button:hover {
-    
+
 }
 .mod-button-bar {
     box-sizing: border-box;
@@ -1139,7 +1149,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 /* MOD POPOUT */
 
 .mod-popout {
-    
+
 }
 .mod-popout .mod-popout-anchor {
     position: absolute;
@@ -1151,35 +1161,35 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 .mod-popout.mod-anchor-n {
-    
+
 }
 .mod-popout.mod-anchor-e {
-    
+
 }
 .mod-popout.mod-anchor-s {
-    
+
 }
 .mod-popout.mod-anchor-w {
-    
+
 }
 .mod-popout.mod-anchor-ne {
-    
+
 }
 .mod-popout.mod-anchor-se {
-    
+
 }
 .mod-popout.mod-anchor-sw {
-    
+
 }
 .mod-popout.mod-anchor-nw {
-    
+
 }
 
 
 .mod-popout.mod-anchor-n .mod-popout-anchor {
     background-position: 50% 0;
     background-image: url(../img/mod-popout-anchor-top.png);
-    
+
 }
 .mod-popout.mod-anchor-e .mod-popout-anchor {
     background-position: 100% 50%;
@@ -1306,28 +1316,28 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background: none;
     border: none;
     color: white;
-    
+
     opacity: 0.33;
-    
+
     font-family: 'Ek Mukta', sans-serif;
     font-weight: 100;
-    
+
     font-size: 32px;
     line-height: 48px;
     height: 48px;
-    
+
     box-sizing: border-box;
-    
+
     box-shadow: none !important;
     text-shadow: 0 2px 5px black;
-    
+
     transition: all 0.3s;
-    
+
     padding: 0;
     margin: 0;
-    
+
     outline: 0;
-    
+
     width: auto;
 /*
     pointer-events: none;

@@ -29,9 +29,6 @@ JqueryClass('socialWindow', {
 
         self.data(options)
         self.window($.extend({
-            preopen: function (callback) {
-                options.userSession.login(callback)
-            },
             open: function () {
                 self.data('page', 0)
                 self.socialWindow('showFeed', 0)
@@ -86,22 +83,15 @@ JqueryClass('socialWindow', {
                 return
 
             var pb = pedalboards.pop()
-            console.log(pb)
 
-            // FIXME
-            desktop.userSession.getUserData(pb.user_id, function (data) {
-                var context = {
-                    cloud:       SITEURLNEW,
-                    avatar_href: data.avatar_href,
-                    user_name:   data.name
-                }
-                console.log(i)
-                // FIXME broken
-                //pb.created = renderTime(new Date(pb.created * 1000))
+            desktop.userSession.getUserData(pb.user.id, function (data) {
+                pb.created      = renderTime(new Date(pb.created))
+                pb.cloud        = SITEURLNEW,
+                pb.avatar_href  = data.avatar_href,
+                pb.user_name    = data.name,
+                pb.plugin_count = pb.plugins.length // FIXME, should be in the cloud info
 
-                $.extend(context, pb)
-
-                var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
+                var content = $(Mustache.render(TEMPLATES.cloud_feed, pb))
                 content.find('.js-pedalboard-' + pb.id).click(pbLoad(pb.file_href))
                 content.find('div.spec').each(function () {
                     var spec = $(this)
@@ -110,9 +100,9 @@ JqueryClass('socialWindow', {
                     }
                 });
                 content.appendTo(canvas)
-
-                renderNextPedalboard(pedalboards)
             })
+
+            renderNextPedalboard(pedalboards)
         }
 
         renderNextPedalboard(pedalboards.reverse())

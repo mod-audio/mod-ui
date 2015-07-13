@@ -102,6 +102,8 @@ $(document).ready(function () {
                                 }
                             } else if (type.length == 2 && (type[0].object == "http://lv2plug.in/ns/lv2core#AudioPort" ||
                                                             type[1].object == "http://lv2plug.in/ns/lv2core#AudioPort" ||
+                                                            type[0].object == "http://lv2plug.in/ns/lv2core#CVPort"    ||
+                                                            type[1].object == "http://lv2plug.in/ns/lv2core#CVPort"    ||
                                                             type[0].object == "http://lv2plug.in/ns/ext/atom#AtomPort" ||
                                                             type[1].object == "http://lv2plug.in/ns/ext/atom#AtomPort"
                                                             )) {
@@ -121,6 +123,9 @@ $(document).ready(function () {
                                 if (types.indexOf("http://lv2plug.in/ns/ext/atom#AtomPort") > -1) {
                                     // atom
                                     var port_type = "midi"
+                                } else if (types.indexOf("http://lv2plug.in/ns/lv2core#CVPort") > -1) {
+                                    // cv
+                                    var port_type = "cv"
                                 } else {
                                     // audio
                                     var port_type = "audio"

@@ -13,7 +13,7 @@
 }
 
 /* Top Menu */
-#mod-social-network-header { 
+#mod-social-network-header {
     background-color:#1b1b1b;
     background-image:-moz-linear-gradient(top, #222222, #111111);
     background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#222222), to(#111111));
@@ -75,9 +75,13 @@
 #mod-social-network-header .menu ul li.search {
     border-left:1px solid #222;
 }
+#mod-social-network-header .menu ul li.login,
 #mod-social-network-header .menu ul li.logout {
     border-left:1px solid #222;
     border-right:1px solid #222;
+}
+#mod-social-network-header .menu ul li.logout {
+    display: none;
 }
 #mod-social-network-header .menu a {
     color:#fff;
@@ -279,7 +283,7 @@
 }
 #mod-social-network .pedalboard ul.plugins li:last-child:after {
     content:"";
-} 
+}
 /* Reviews */
 #mod-social-network .pedalboard ul.reviews {
     border-top:1px solid #222;

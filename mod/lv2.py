@@ -6,7 +6,7 @@ import lilv
 
 from mod.lilvlib import NS, LILV_FOREACH, plugin_has_modgui
 from mod.lilvlib import get_plugin_info as get_plugin_info2
-from mod.settings import MODGUIS_ONLY
+from mod.settings import MODGUI_SHOW_MODE
 
 # global stuff
 global W, BUNDLES, PLUGINS, PLUGNFO
@@ -22,6 +22,119 @@ PLUGINS = []
 
 # cached info about each plugin (using uri as key)
 PLUGNFO = {}
+
+# List of plugins available in the mod cloud
+CLOUD_PLUGINS = [
+    "http://distrho.sf.net/plugins/MVerb",
+    "http://distrho.sf.net/plugins/PingPongPan",
+    "http://drobilla.net/plugins/blop/sawtooth",
+    "http://drobilla.net/plugins/blop/square",
+    "http://drobilla.net/plugins/blop/triangle",
+    "http://drobilla.net/plugins/fomp/autowah",
+    "http://drobilla.net/plugins/fomp/cs_phaser1",
+    "http://drobilla.net/plugins/fomp/pulse_vco",
+    "http://drobilla.net/plugins/fomp/rec_vco",
+    "http://drobilla.net/plugins/fomp/saw_vco",
+    "http://moddevices.com/plugins/caps/AmpVTS",
+    "http://moddevices.com/plugins/caps/AutoFilter",
+    "http://moddevices.com/plugins/caps/CEO",
+    "http://moddevices.com/plugins/caps/CabinetIV",
+    "http://moddevices.com/plugins/caps/ChorusI",
+    "http://moddevices.com/plugins/caps/Click",
+    "http://moddevices.com/plugins/caps/Compress",
+    "http://moddevices.com/plugins/caps/CompressX2",
+    "http://moddevices.com/plugins/caps/Eq10",
+    "http://moddevices.com/plugins/caps/Eq10X2",
+    "http://moddevices.com/plugins/caps/Eq4p",
+    "http://moddevices.com/plugins/caps/Fractal",
+    "http://moddevices.com/plugins/caps/Narrower",
+    "http://moddevices.com/plugins/caps/Noisegate",
+    "http://moddevices.com/plugins/caps/PhaserII",
+    "http://moddevices.com/plugins/caps/Plate",
+    "http://moddevices.com/plugins/caps/PlateX2",
+    "http://moddevices.com/plugins/caps/Saturate",
+    "http://moddevices.com/plugins/caps/Scape",
+    "http://moddevices.com/plugins/caps/Sin",
+    "http://moddevices.com/plugins/caps/Spice",
+    "http://moddevices.com/plugins/caps/SpiceX2",
+    "http://moddevices.com/plugins/caps/ToneStack",
+    "http://moddevices.com/plugins/caps/White",
+    "http://moddevices.com/plugins/caps/Wider",
+    "http://moddevices.com/plugins/mda/Ambience",
+    "http://moddevices.com/plugins/mda/Bandisto",
+    "http://moddevices.com/plugins/mda/BeatBox",
+    "http://moddevices.com/plugins/mda/Combo",
+    "http://moddevices.com/plugins/mda/DX10",
+    "http://moddevices.com/plugins/mda/DeEss",
+    "http://moddevices.com/plugins/mda/Degrade",
+    "http://moddevices.com/plugins/mda/Delay",
+    "http://moddevices.com/plugins/mda/Detune",
+    "http://moddevices.com/plugins/mda/Dither",
+    "http://moddevices.com/plugins/mda/DubDelay",
+    "http://moddevices.com/plugins/mda/Dynamics",
+    "http://moddevices.com/plugins/mda/EPiano",
+    "http://moddevices.com/plugins/mda/Image",
+    "http://moddevices.com/plugins/mda/JX10",
+    "http://moddevices.com/plugins/mda/Leslie",
+    "http://moddevices.com/plugins/mda/Limiter",
+    "http://moddevices.com/plugins/mda/Loudness",
+    "http://moddevices.com/plugins/mda/MultiBand",
+    "http://moddevices.com/plugins/mda/Overdrive",
+    "http://moddevices.com/plugins/mda/Piano",
+    "http://moddevices.com/plugins/mda/RePsycho",
+    "http://moddevices.com/plugins/mda/RezFilter",
+    "http://moddevices.com/plugins/mda/RingMod",
+    "http://moddevices.com/plugins/mda/RoundPan",
+    "http://moddevices.com/plugins/mda/Shepard",
+    "http://moddevices.com/plugins/mda/Splitter",
+    "http://moddevices.com/plugins/mda/Stereo",
+    "http://moddevices.com/plugins/mda/SubSynth",
+    "http://moddevices.com/plugins/mda/TalkBox",
+    "http://moddevices.com/plugins/mda/TestTone",
+    "http://moddevices.com/plugins/mda/ThruZero",
+    "http://moddevices.com/plugins/mda/Tracker",
+    "http://moddevices.com/plugins/mda/Transient",
+    "http://moddevices.com/plugins/mda/VocInput",
+    "http://moddevices.com/plugins/mda/Vocoder",
+    #"http://moddevices.com/plugins/mod-devel/2Voices",
+    "http://moddevices.com/plugins/mod-devel/BandPassFilter",
+    #"http://moddevices.com/plugins/mod-devel/Capo",
+    "http://moddevices.com/plugins/mod-devel/CrossOver2",
+    "http://moddevices.com/plugins/mod-devel/CrossOver3",
+    #"http://moddevices.com/plugins/mod-devel/Drop",
+    "http://moddevices.com/plugins/mod-devel/Gain",
+    "http://moddevices.com/plugins/mod-devel/Gain2x2",
+    #"http://moddevices.com/plugins/mod-devel/Harmonizer",
+    #"http://moddevices.com/plugins/mod-devel/Harmonizer2",
+    #"http://moddevices.com/plugins/mod-devel/HarmonizerCS",
+    "http://moddevices.com/plugins/mod-devel/HighPassFilter",
+    "http://moddevices.com/plugins/mod-devel/LowPassFilter",
+    #"http://moddevices.com/plugins/mod-devel/SuperCapo",
+    #"http://moddevices.com/plugins/mod-devel/SuperWhammy",
+    "http://moddevices.com/plugins/mod-devel/SwitchBox2",
+    "http://moddevices.com/plugins/mod-devel/SwitchTrigger4",
+    "http://moddevices.com/plugins/mod-devel/ToggleSwitch4",
+    "http://moddevices.com/plugins/sooperlooper",
+    "http://moddevices.com/plugins/tap/autopan",
+    "http://moddevices.com/plugins/tap/chorusflanger",
+    "http://moddevices.com/plugins/tap/deesser",
+    "http://moddevices.com/plugins/tap/doubler",
+    "http://moddevices.com/plugins/tap/dynamics",
+    "http://moddevices.com/plugins/tap/dynamics-st",
+    "http://moddevices.com/plugins/tap/echo",
+    "http://moddevices.com/plugins/tap/eq",
+    "http://moddevices.com/plugins/tap/eqbw",
+    "http://moddevices.com/plugins/tap/limiter",
+    "http://moddevices.com/plugins/tap/pinknoise",
+    "http://moddevices.com/plugins/tap/pitch",
+    "http://moddevices.com/plugins/tap/reflector",
+    "http://moddevices.com/plugins/tap/reverb",
+    "http://moddevices.com/plugins/tap/rotspeak",
+    "http://moddevices.com/plugins/tap/sigmoid",
+    "http://moddevices.com/plugins/tap/tremolo",
+    "http://moddevices.com/plugins/tap/tubewarmth",
+    "http://moddevices.com/plugins/tap/vibrato",
+]
 
 # initialize
 def init():
@@ -66,7 +179,7 @@ def refresh():
 
 # get all available plugins
 # this is trigger scanning of all plugins
-# returned value depends on MODGUIS_ONLY value
+# returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
     global W, PLUGINS, PLUGNFO
 
@@ -76,14 +189,17 @@ def get_all_plugins():
     for p in PLUGINS:
         uri = p.get_uri().as_uri()
 
+        if MODGUI_SHOW_MODE == 2 and uri not in CLOUD_PLUGINS:
+            continue
+
         # check if it's already cached
         if uri in keys and PLUGNFO[uri]:
-            if PLUGNFO[uri]['gui'] or not MODGUIS_ONLY:
+            if PLUGNFO[uri]['gui'] or MODGUI_SHOW_MODE != 1:
                 ret.append(PLUGNFO[uri])
             continue
 
         # skip plugins without modgui if so requested
-        if MODGUIS_ONLY and not plugin_has_modgui(W, p):
+        if MODGUI_SHOW_MODE == 1 and not plugin_has_modgui(W, p):
             continue
 
         # get new info

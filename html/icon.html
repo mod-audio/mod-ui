@@ -6,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="css/main.css"/>
     <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+    <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
 
     <!-- PEDALS -->
     <link rel="stylesheet" type="text/css" href="css/pedals.css"/>
@@ -21,11 +22,9 @@
     <script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
     <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
 
-    <script type="text/javascript" src="js/common.js"></script>
-    <script type="text/javascript" src="js/modgui.js"></script>
-
     <script type="text/javascript">
-      var icongui = null
+      var icongui    = null
+      var SAMPLERATE = 48000
 
       $(document).ready(function() {
           var uri = window.location.hash.replace(/^#/, '')
@@ -48,8 +47,10 @@
               })
           }
       })
-
     </script>
+
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript" src="js/modgui.js"></script>
 
     <style type="text/css" media="screen">
     body {

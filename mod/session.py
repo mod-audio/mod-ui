@@ -28,7 +28,9 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
-                          INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS, INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
+                          INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
+                          INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
+                          INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS,
                           DEFAULT_JACK_BUFSIZE)
 from mod import symbolify
 from mod.development import FakeHost, FakeHMI
@@ -198,6 +200,12 @@ class Session(object):
 
         for i in range(2, INGEN_NUM_MIDI_OUTS+1):
             yield gen.Task(lambda callback: self.host.add_external_port("MIDI Out %i" % i, "Output", "MIDI", callback=callback))
+
+        for i in range(1, INGEN_NUM_CV_INS+1):
+            yield gen.Task(lambda callback: self.host.add_external_port("CV In %i" % i, "Input", "CV", callback=callback))
+
+        for i in range(1, INGEN_NUM_CV_OUTS+1):
+            yield gen.Task(lambda callback: self.host.add_external_port("CV Out %i" % i, "Output", "CV", callback=callback))
 
         yield gen.Task(lambda callback: self.host.initial_setup(callback=callback))
 

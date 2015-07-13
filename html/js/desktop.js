@@ -55,6 +55,7 @@ function Desktop(elements) {
         bluetoothIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
+        login: $('<div>'),
         logout: $('<div>')
     }, elements)
 
@@ -97,7 +98,6 @@ function Desktop(elements) {
                 return false
             })
             self.userSession.getUserData(null, function (data) {
-                // FIXME the avatar_href from moddevices server is wrong
                 elements.userAvatar.show().attr('src', data.avatar_href)
                 self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
                 self.netStatus.statusTooltip('status', 'logged')
@@ -114,6 +114,11 @@ function Desktop(elements) {
             self.netStatus.statusTooltip('message', message)
         }
     });
+    elements.login.click(function () {
+        self.windowManager.closeWindows()
+        self.userSession.login()
+        return false
+    })
     elements.logout.click(function () {
         self.userSession.logout()
         self.windowManager.closeWindows()
@@ -416,8 +421,6 @@ function Desktop(elements) {
     this.presetManager.on("rename", function (e, name, options) {
         console.log("rename", name, options);
     });
-    
-    
     
     elements.shareButton.click(function () {
         var share = function () {

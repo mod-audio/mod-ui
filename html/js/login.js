@@ -1,33 +1,33 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
  * The authentication has the following steps: (NOTE: work in progress, this has changed now)
- * 
+ *
  * 1 - Get a session id (sid) from cloud
- * 
+ *
  * 2 - Send the sid to device, get the device serial number and signed sid
- * 
+ *
  * 3 - Send the signed sid to cloud. If device is already assigned to a user,
  *     user data is received and login is done.
- * 
+ *
  * 4 - Application calls method login() when authorization is needed. If user
  *     is not logged, an authentication window will open
- * 
+ *
  * 5 - Login and password is sent to server. The response will be a package containing
  *     user data signed by server
  *
@@ -60,7 +60,9 @@ function UserSession(options) {
         notify: function (message) {
             new Notification('error', message)
         },
-        loginWindow: $('<div>')
+        loginWindow: $('<div>'),
+        loginButton: $("#mod-social-network-header .menu ul li.login"),
+        logoutButton: $("#mod-social-network-header .menu ul li.logout")
     }, options)
 
     this.tryConnectingToSocial = function () {
@@ -158,6 +160,10 @@ function UserSession(options) {
     this.getUserData = function (user_id, callback) {
         if (user_id == null)
             user_id = self.user_id
+        if (user_id == null) {
+            console.log("FIXME: getUserData called without an active user")
+            return
+        }
 
         $.ajax({
             url: SITEURLNEW + '/users/' + user_id,
@@ -231,6 +237,8 @@ function UserSession(options) {
         self.user_id       = null
         self.access_token  = null
         self.refresh_token = null
+        options.logoutButton.hide()
+        options.loginButton.show()
         options.logout()
         self.setStatus(OFFLINE)
     }
@@ -250,6 +258,8 @@ function UserSession(options) {
             options.online();
             break;
         case LOGGED:
+            options.loginButton.hide()
+            options.logoutButton.show()
             options.login();
             break;
         case DISCONNECTED:

@@ -30,9 +30,9 @@
     <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
     <script type="text/javascript" src="js/lib/n3-browser.min.js?v={{version}}"></script>
     <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
-    
+
     <script type="text/javascript" src="js/constants.js?v={{version}}"></script>
-    
+
     <script type="text/javascript">
 
       {% autoescape None %}
@@ -98,6 +98,7 @@ $('document').ready(function() {
       bluetoothIcon: $('#mod-bluetooth'),
       upgradeWindow: $('#mod-upgrade'),
       upgradeIcon: $('#mod-settings'),
+      login: $('#login'),
       logout: $('#logout')
   })
 })
@@ -339,8 +340,8 @@ $('document').ready(function() {
 
         </div>
         <!-- END PEDALBOARD-ACTIONS -->
-        
-        
+
+
         <!-- PRESET-MANAGER -->
         <div id="pb-preset-manager" class="preset-manager">
         </div>
@@ -733,6 +734,7 @@ $('document').ready(function() {
                 </form>
               </li>
 	      -->
+              <li class="login"><a id="login">Login</a></li>
               <li class="logout"><a id="logout">Logout</a></li>
             </ul>
         </div>

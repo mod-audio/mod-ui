@@ -130,7 +130,7 @@ JqueryClass('effectBox', {
         //self.effectBox('fold')
         self.effectBox('setCategory', 'All')
         self.effectBox('search')
-        
+
         self.mouseenter(function () { self.effectBox('mouseEnter'); });
         $("#main-menu").mouseenter(function () { self.trigger("mouseenter") });
         return self
@@ -159,7 +159,7 @@ JqueryClass('effectBox', {
             self.effectBox('fold')
         self.toggleClass("auto");
     },
-    
+
     mouseEnter: function (e) {
         var self = $(this);
         if (self.hasClass('auto')) {
@@ -167,7 +167,7 @@ JqueryClass('effectBox', {
             self.effectBox('unfold');
         }
     },
-    
+
     setCategory: function (category) {
         var self = $(this)
         self.find('ul.js-category-tabs li').removeClass('selected')
@@ -259,7 +259,9 @@ JqueryClass('effectBox', {
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
-            thumbnail_href: "/effect/image/thumbnail.png?uri=" + uri,
+            thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
+                          ? ("/effect/image/thumbnail.png?uri=" + uri)
+                          :  "/resources/pedals/default-thumbnail.png",
         }
 
         var rendered = $(Mustache.render(TEMPLATES.plugin, plugin_data))
@@ -682,6 +684,13 @@ JqueryClass('cloudPluginBox', {
                 plugin = results.cloud[i]
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
                 if (results.local[plugin.uri]) {
+                    if (plugin.gui && plugin.gui.screenshot) {
+                        plugin.screenshot_href =  "/effect/image/screenshot.png?uri=" + uri
+                        plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri
+                    } else {
+                        plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                        plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                    }
                     plugin.installedVersion = [results.local[plugin.uri].minorVersion,
                         results.local[plugin.uri].microVersion,
                         results.local[plugin.uri].release || 0
@@ -699,7 +708,8 @@ JqueryClass('cloudPluginBox', {
             }
             for (uri in results.local) {
                 plugin = results.local[uri]
-                plugin.installedVersion = [plugin.minorVersion,
+                plugin.installedVersion = [
+                    plugin.minorVersion,
                     plugin.microVersion,
                     plugin.release || 0
                 ]
@@ -871,8 +881,8 @@ JqueryClass('cloudPluginBox', {
         var uri = escape(plugin.uri)
 
         var plugin_data = {
-            thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
-            screenshot_href: plugin.screenshot_href || "/effect/image/screenshot.png?uri=" + uri,
+            thumbnail_href: plugin.thumbnail_href,
+            screenshot_href: plugin.screenshot_href,
             category: plugin.category[0] || "",
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
@@ -971,7 +981,7 @@ JqueryClass('cloudPluginBox', {
         var uri = escape(plugin.uri)
         var plugin_data = {
             id: plugin.id || plugin._id,
-            thumbnail_href: plugin.thumbnail_href || "/effect/image/thumbnail.png?uri=" + uri,
+            thumbnail_href: plugin.thumbnail_href,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,

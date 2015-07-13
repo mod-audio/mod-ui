@@ -6,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="css/main.css"/>
     <link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+    <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
 
     <!-- PEDALS -->
     <link rel="stylesheet" type="text/css" href="css/pedals.css"/>
@@ -21,11 +22,8 @@
     <script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
     <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
 
-    <script type="text/javascript" src="js/common.js"></script>
-    <script type="text/javascript" src="js/modgui.js"></script>
-
     <script type="text/javascript">
-      var icongui = null
+      var SAMPLERATE = 48000
 
       $(document).ready(function() {
           $.ajax({
@@ -33,8 +31,7 @@
               url: '/effect/list/',
               success: function(effects) {
                   for (var i = 0; i < effects.length; i++) {
-                      icongui = new GUI(effects[i])
-                      icongui.render(null, function(icon, settings) {
+                      new GUI(effects[i]).render(null, function(icon, settings) {
                          $('#pedalboard-dashboard').append(icon)
                       })
                   }
@@ -45,8 +42,30 @@
               dataType: 'json'
           })
       })
-
     </script>
+
+    <style type="text/css" media="screen">
+    body {
+        background: transparent;
+    }
+    body, div {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+    }
+    #pedalboard-dashboard {
+        top: 0px;
+        background: transparent;
+    }
+    </style>
+    </style>
+
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript" src="js/modgui.js"></script>
 
 </head>
 <body>

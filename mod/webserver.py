@@ -46,8 +46,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
                           AVATAR_URL, DEV_ENVIRONMENT,
-                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP,
-                          MODGUIS_ONLY)
+                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
 
 from mod import indexing, jsoncall, json_handler, symbolify
