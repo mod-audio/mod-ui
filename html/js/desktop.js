@@ -55,6 +55,7 @@ function Desktop(elements) {
         bluetoothIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
+        login: $('<div>'),
         logout: $('<div>')
     }, elements)
 
@@ -114,6 +115,11 @@ function Desktop(elements) {
             self.netStatus.statusTooltip('message', message)
         }
     });
+    elements.login.click(function () {
+        self.windowManager.closeWindows()
+        self.userSession.login()
+        return false
+    })
     elements.logout.click(function () {
         self.userSession.logout()
         self.windowManager.closeWindows()
@@ -397,7 +403,7 @@ function Desktop(elements) {
     elements.disconnectButton.click(function () {
         self.disconnect()
     })
-    
+
     this.presetManager = elements.presetManager.presetManager({
         listURL: '/pedalboard/list',
         getPresets: function () {
@@ -411,7 +417,7 @@ function Desktop(elements) {
             ];
         }
     });
-    
+
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {

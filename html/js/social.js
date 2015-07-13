@@ -29,9 +29,6 @@ JqueryClass('socialWindow', {
 
         self.data(options)
         self.window($.extend({
-            preopen: function (callback) {
-                options.userSession.login(callback)
-            },
             open: function () {
                 self.data('page', 0)
                 self.socialWindow('showFeed', 0)

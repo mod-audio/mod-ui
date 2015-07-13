@@ -3,9 +3,9 @@
             <div class="content alignleft span10">
                 <p>On {{created}} <a>{{user_name}}</a> published <b>{{name}}</b>:</p>
                 <p class="screenshot">
-		  {{#video}}
-  		    <iframe src="http://player.vimeo.com/video/{{id}}" width="780" height="440" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
-		  {{/video}}
+                  {{#video}}
+                    <iframe src="http://player.vimeo.com/video/{{id}}" width="780" height="440" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+                  {{/video}}
                   {{^video}}
                     <a class="js-pedalboard-{{id}}">
                         <img src="{{screenshot_href}}" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
@@ -68,7 +68,7 @@
                     </div>
                     -->
                 </div>
-		<button class="pedalboard-load btn btn-primary js-pedalboard-{{id}}">Try</button>
+                <button class="pedalboard-load btn btn-primary js-pedalboard-{{id}}">Try</button>
                 <!--<div class="description">{{description}}</div>-->
                 <div class="actions">
                   <!-- <a href="">Like</a> &bull; <a href="">Comment</a> -->
