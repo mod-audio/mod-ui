@@ -98,7 +98,6 @@ function Desktop(elements) {
                 return false
             })
             self.userSession.getUserData(null, function (data) {
-                // FIXME the avatar_href from moddevices server is wrong
                 elements.userAvatar.show().attr('src', data.avatar_href)
                 self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
                 self.netStatus.statusTooltip('status', 'logged')
