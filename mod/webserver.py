@@ -396,17 +396,17 @@ class EffectResource(web.StaticFileHandler):
 
         try:
             super(EffectResource, self).initialize(root)
-            super(EffectResource, self).get(path)
+            return super(EffectResource, self).get(path)
         except web.HTTPError as e:
             if e.status_code != 404:
                 raise e
-            self.shared_resource(path)
+            return self.shared_resource(path)
         except IOError:
             raise web.HTTPError(404)
 
     def shared_resource(self, path):
         super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
-        super(EffectResource, self).get(path)
+        return super(EffectResource, self).get(path)
 
 class EffectImage(web.RequestHandler):
     def get(self, image):
