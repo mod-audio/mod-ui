@@ -422,7 +422,7 @@ function Desktop(elements) {
     elements.disconnectButton.click(function () {
         self.disconnect()
     })
-    
+
     this.presetManager = elements.presetManager.presetManager({});
     this.presetManager.presetManager("setPresets", [
         { name: "Foobar", uri: "whatever", bind: MOD_BIND_MIDI },
@@ -441,7 +441,7 @@ function Desktop(elements) {
     this.presetManager.on("rename", function (e, name, options) {
         console.log("rename", name, options);
     });
-    
+
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {
@@ -498,10 +498,48 @@ function Desktop(elements) {
                                               }})
 
             transfer.reportFinished = function () {
-                callback(true)
+                // FIXME - get cloud to report ID when uploading pedalboard
+                $.ajax({
+                    url: SITEURLNEW + '/pedalboards/?top=1&user_id=' + self.userSession.user_id,
+                    headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                    success: function (data2) {
+                        if (data2.length != 1) {
+                            new Notification('error', "Cloud sent incorrect data")
+                            return
+                        }
+
+                        pb = data2[0]
+
+                        $.ajax({
+                            url: SITEURLNEW + '/social/posts/',
+                            method: 'POST',
+                            contentType: 'application/json',
+                            headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                            data: JSON.stringify({
+                                pedalboard_id: pb.id,
+                                text: data.title,
+                            }),
+                            success: function (pluginData) {
+                                callback(true)
+                            },
+                            error: function (resp) {
+                                new Notification('error', "Failed to create new post")
+                            },
+                            cache: false,
+                            dataType: 'json'
+                        })
+
+                    },
+                    error: function () {
+                        new Notification('error', "Can't get latest pedalboard from cloud")
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             }
+
             transfer.reportError = function (error) {
-                new Notification('error', "Can't share pedalboard")
+                new Notification('error', "Failed to upload pedalboard to cloud")
             }
 
             transfer.start()
@@ -584,15 +622,15 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
         pluginRemove: function (instance, callback) {
             $.ajax({
-                'url': '/effect/remove/' + instance,
-                'success': function (resp) {
+                url: '/effect/remove/' + instance,
+                success: function (resp) {
                     if (resp)
                         callback()
                     else
                         new Notification("error", "Couldn't remove effect")
                 },
                 cache: false,
-                'dataType': 'json'
+                dataType: 'json'
             })
         },
 
@@ -648,7 +686,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 			 */
                 },
                 cache: false,
-                'dataType': 'json'
+                dataType: 'json'
             })
         },
 
