@@ -106,11 +106,9 @@ JqueryClass('socialWindow', {
 
                 for (var i in sdata.pedalboard.plugins) {
                     var plug = sdata.pedalboard.plugins[i]
-                    if (! plug.name)
-                        continue
                     context.pedalboard.plugins.push({
-                        name     : plug.name,
-                        thumbnail: plug.thumbnail_href,
+                        name     : plug.name || "Unknown",
+                        thumbnail: plug.thumbnail_href || "/resources/pedals/default-thumbnail.png",
                     })
                 }
             }
