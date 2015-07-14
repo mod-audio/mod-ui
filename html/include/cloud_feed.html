@@ -1,86 +1,32 @@
         <li class="feed clearfix">
-            <a class="avatar"><img src="{{avatar_href}}?s=64"/></a>
-            <div class="content alignleft span10">
-                <p>On {{created}} <a>{{user_name}}</a> published <b>{{name}}</b>:</p>
-                <p class="screenshot">
-                  {{#video}}
-                    <iframe src="http://player.vimeo.com/video/{{id}}" width="780" height="440" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
-                  {{/video}}
-                  {{^video}}
-                    <a class="js-pedalboard-{{id}}">
-                        <img src="{{screenshot_href}}" style="background-color:#333;border-radius:4px;height:auto;width:100%;"/>
-                    </a>
-                  {{/video}}
-                </p>
-                <div class="techspecs clearfix">
-                    <div class="spec clearfix">
-                        <img src="img/cloud/icn-techspecs-input.png"/>
-                        <div class="number">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.audio_inputs}}</span>
-                        </div>
-                    </div>
-                    <div class="spec clearfix">
-                        <img src="img/cloud/icn-techspecs-output.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.audio_outputs}}</span>
-                        </div>
-                    </div>
-                    <div class="spec clearfix">
-                        <!-- FIXME icon for MIDI in and out is the same -->
-                        <img src="img/cloud/icn-techspecs-midiin.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.midi_inputs}}</span>
-                        </div>
-                    </div>
-                    <div class="spec clearfix">
-                        <!-- FIXME icon for MIDI in and out is the same -->
-                        <img src="img/cloud/icn-techspecs-midiin.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.midi_outputs}}</span>
-                        </div>
-                    </div>
-                    <div class="spec clearfix">
-                        <!-- FIXME needs proper icon -->
-                        <img src="img/cloud/icn-techspecs-rotary.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{connections_count}}</span>
-                        </div>
-                    </div>
-                    <div class="spec clearfix">
-                        <!-- FIXME needs proper icon -->
-                        <img src="img/cloud/icn-techspecs-rotary.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{plugin_count}}</span>
-                        </div>
-                    </div>
-                    <!--
-                    <div class="spec clearfix">
-                        <img src="img/cloud/icn-techspecs-footswitch.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.footswitch_addressings}}</span>
-                        </div>
-                    </div>
-                    <div class="spec clearfix">
-                        <img src="img/cloud/icn-techspecs-pedal.png"/>
-                        <div class="number clearfix">
-                            <div class="arrow-left"></div>
-                            <span>{{hardware_connections.pedal_addressings}}</span>
-                        </div>
-                    </div>
-                    -->
-                </div>
-                <button class="pedalboard-load btn btn-primary js-pedalboard-{{id}}">Try</button>
-                <!--<div class="description">{{description}}</div>-->
-                <div class="actions">
-                  <!-- <a href="">Like</a> &bull; <a href="">Comment</a> -->
-                </div>
-                <div class="js-template" data-template-name="comments"></div>
+            <figure class="col-sm-2">
+                <img src="{{avatar_href}}?s=64" style="margin-right: 1em; float: left" class="gravatar" alt=""/>
+            </figure>
+            <div class="col-sm-10" style="padding-left: 0">
+              <p><strong>{{user_name}}</strong></p>
+              <h2 class="italic">{{text}}</h2>
             </div>
+            {{#pedalboard}}
+            <div class="row col-sm-offset-1 js-pedalboard-{{id}}">
+              <div class="col-sm-12">
+                <p><strong>PEDALBOARD ATTACHED:</strong> {{name}}</p>
+                <figure class="col-sm-7">
+                  <a href="#"><img src="{{thumbnail}}" class="img img-responsive" alt="thumb"/></a>
+                </figure>
+              </div>
+              <div class="col-sm-12">
+                <p><strong>PLUGINS USED:</strong></p>
+                <ul style="list-style:outside none none;">
+                  {{#plugins}}
+                  <li style="display:inline-block;">
+                    <figure>
+                      <img src="{{thumbnail}}" class="img img-responsive" alt="plug"/>
+                      <figcaption><small>{{name}}</small></figcaption>
+                    </figure>
+                  </li>
+                  {{/plugins}}
+                </ul>
+              </div>
+            </div>
+            {{/pedalboard}}
         </li>

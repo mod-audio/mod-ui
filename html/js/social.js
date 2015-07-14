@@ -20,7 +20,7 @@ JqueryClass('socialWindow', {
         var self = $(this)
         options = $.extend({
             userSession: null, //must be passed
-            getFeed: function (page, callback) {
+            getFeed: function (page, lastId, callback) {
                 callback([])
             },
             loadPedalboard: function (pedalboard) {},
@@ -50,13 +50,13 @@ JqueryClass('socialWindow', {
         return self
     },
 
-    showFeed: function (page) {
+    showFeed: function (page, lastId) {
         var self = $(this)
-        self.data('getFeed')(page, function (pedalboards) {
+        self.data('getFeed')(page, lastId, function (data) {
             var canvas = self.find('#social-main')
-            if (page == 0)
-                canvas.find('li.feed').remove()
-            var content = self.socialWindow('renderFeed', pedalboards, canvas)
+            //if (page == 0)
+            //    canvas.find('li.feed').remove()
+            /*var content =*/ self.socialWindow('renderFeed', data, canvas)
             //canvas.find('li.more').appendTo(canvas) // always last item
             //self.find('button').show()
             self.window('open')
@@ -65,12 +65,16 @@ JqueryClass('socialWindow', {
 
     nextPage: function () {
         var self = $(this)
-        page = self.data('page') + 1
+        page   = self.data('page') + 1
+        lastId = null // self.data('lastId')
         self.data('page', page)
-        self.socialWindow('showFeed', page)
+        self.socialWindow('showFeed', page, lastId)
     },
 
-    renderFeed: function (pedalboards, canvas) {
+    renderFeed: function (data, canvas) {
+        if (data.length == 0)
+            return
+
         var self = $(this)
         var pbLoad = function (pb_url) {
             return function () {
@@ -78,34 +82,51 @@ JqueryClass('socialWindow', {
             }
         }
 
-        function renderNextPedalboard(pedalboards) {
-            if (pedalboards.length == 0)
+        function renderNextPost(data) {
+            if (data.length == 0)
                 return
 
-            var pb = pedalboards.pop()
+            var sdata = data.pop()
+            //sdata.created = renderTime(new Date(sdata.created))
+            //console.log(sdata)
 
-            desktop.userSession.getUserData(pb.user.id, function (data) {
-                pb.created      = renderTime(new Date(pb.created))
-                pb.cloud        = SITEURLNEW,
-                pb.avatar_href  = data.avatar_href,
-                pb.user_name    = data.name,
-                pb.plugin_count = pb.plugins.length // FIXME, should be in the cloud info
+            var context = {
+                avatar_href: sdata.user.avatar_href,
+                user_name  : sdata.user.name,
+                text       : sdata.text,
+            }
 
-                var content = $(Mustache.render(TEMPLATES.cloud_feed, pb))
-                content.find('.js-pedalboard-' + pb.id).click(pbLoad(pb.file_href))
-                content.find('div.spec').each(function () {
-                    var spec = $(this)
-                    if (parseInt(spec.find('span').html()) == 0) {
-                        spec.addClass('none')
-                    }
-                });
-                content.appendTo(canvas)
-            })
+            if (sdata.pedalboard) {
+                context.pedalboard = {
+                    id       : sdata.pedalboard.id,
+                    name     : sdata.pedalboard.name,
+                    thumbnail: sdata.pedalboard.thumbnail_href,
+                    plugins  : [],
+                }
 
-            renderNextPedalboard(pedalboards)
+                for (var i in sdata.pedalboard.plugins) {
+                    var plug = sdata.pedalboard.plugins[i]
+                    if (! plug.name)
+                        continue
+                    context.pedalboard.plugins.push({
+                        name     : plug.name,
+                        thumbnail: plug.thumbnail_href,
+                    })
+                }
+            }
+
+            var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
+
+            if (sdata.pedalboard) {
+                content.find('.js-pedalboard-' + sdata.pedalboard.id).click(pbLoad(sdata.pedalboard.file_href))
+            }
+
+            content.appendTo(canvas)
+
+            renderNextPost(data)
         }
 
-        renderNextPedalboard(pedalboards.reverse())
+        renderNextPost(data.reverse())
     },
 
     showSearch: function () {},

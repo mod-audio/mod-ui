@@ -83,6 +83,26 @@ function Desktop(elements) {
             return self.userSession.user_id
         }
     })
+
+    this.getUserData = function (user_id, callback) {
+        if (user_id == null) {
+            console.log("FIXME: getUserData called with an invalid user")
+            return
+        }
+
+        $.ajax({
+            url: SITEURLNEW + '/users/' + user_id,
+            //headers : { 'Authorization' : 'MOD ' + self.access_token },
+            success: function (data) {
+                callback(data)
+            },
+            error: function (e) {
+                console.log("Error: can't get user data for " + user_id)
+            },
+            dataType: 'json'
+        })
+    }
+
     this.userSession = new UserSession({
         loginWindow: elements.loginWindow,
         registration: self.registration,
@@ -97,7 +117,7 @@ function Desktop(elements) {
                 console.log('user profile')
                 return false
             })
-            self.userSession.getUserData(null, function (data) {
+            self.getUserData(self.userSession.user_id, function (data) {
                 elements.userAvatar.show().attr('src', data.avatar_href)
                 self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
                 self.netStatus.statusTooltip('status', 'logged')
@@ -332,12 +352,12 @@ function Desktop(elements) {
     this.socialWindow = elements.socialWindow.socialWindow({
         windowManager: self.windowManager,
         userSession: self.userSession,
-        getFeed: function (page, callback) {
+        getFeed: function (page, lastId, callback) {
             $.ajax({
-                url: SITEURLNEW + '/pedalboards/',
-                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
-                success: function (pedalboards) {
-                    callback(pedalboards)
+                url: SITEURLNEW + '/social/posts/',
+                //headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                success: function (data) {
+                    callback(data)
                 },
                 error: function () {
                     new Notification('error', 'Cannot contact cloud')
