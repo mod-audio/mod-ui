@@ -497,41 +497,21 @@ function Desktop(elements) {
                                               { 'Authorization' : 'MOD ' + self.userSession.access_token }
                                               }})
 
-            transfer.reportFinished = function () {
-                // FIXME - get cloud to report ID when uploading pedalboard
+            transfer.reportFinished = function (resp) {
                 $.ajax({
-                    url: SITEURLNEW + '/pedalboards/?top=1&user_id=' + self.userSession.user_id,
+                    url: SITEURLNEW + '/social/posts/',
+                    method: 'POST',
+                    contentType: 'application/json',
                     headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
-                    success: function (data2) {
-                        if (data2.length != 1) {
-                            new Notification('error', "Cloud sent incorrect data")
-                            return
-                        }
-
-                        pb = data2[0]
-
-                        $.ajax({
-                            url: SITEURLNEW + '/social/posts/',
-                            method: 'POST',
-                            contentType: 'application/json',
-                            headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
-                            data: JSON.stringify({
-                                pedalboard_id: pb.id,
-                                text: data.title,
-                            }),
-                            success: function (pluginData) {
-                                callback(true)
-                            },
-                            error: function (resp) {
-                                new Notification('error', "Failed to create new post")
-                            },
-                            cache: false,
-                            dataType: 'json'
-                        })
-
+                    data: JSON.stringify({
+                        pedalboard_id: resp.id,
+                        text: data.title,
+                    }),
+                    success: function (pluginData) {
+                        callback(true)
                     },
-                    error: function () {
-                        new Notification('error', "Can't get latest pedalboard from cloud")
+                    error: function (resp) {
+                        new Notification('error', "Failed to create new post")
                     },
                     cache: false,
                     dataType: 'json'

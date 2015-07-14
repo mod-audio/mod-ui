@@ -127,5 +127,37 @@ JqueryClass('socialWindow', {
         renderNextPost(data.reverse())
     },
 
+    renderTimeline: function (data, canvas) {
+        if (data.length == 0)
+            return
+
+        function renderNextPost(data) {
+            if (data.length == 0)
+                return
+
+            var sdata = data.pop()
+            //sdata.created = renderTime(new Date(sdata.created))
+            console.log(sdata)
+
+            var context = {
+                avatar_href: sdata.user.avatar_href,
+                user_name  : sdata.user.name,
+                text       : sdata.text,
+            }
+
+            var content = $(Mustache.render(TEMPLATES.cloud_timeline, context))
+
+            if (sdata.pedalboard) {
+                content.find('.js-pedalboard-' + sdata.pedalboard.id).click(pbLoad(sdata.pedalboard.file_href))
+            }
+
+            content.appendTo(canvas)
+
+            renderNextPost(data)
+        }
+
+        renderNextPost(data.reverse())
+    },
+
     showSearch: function () {},
 })
