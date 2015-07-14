@@ -351,11 +351,37 @@ function Desktop(elements) {
         */
     this.socialWindow = elements.socialWindow.socialWindow({
         windowManager: self.windowManager,
-        userSession: self.userSession,
-        getFeed: function (page, lastId, callback) {
+        getFeed: function (lastId, callback) {
+            var url = SITEURLNEW + '/social/posts/?page_size=8'
+
+            if (lastId != 0)
+                url += '&max_id=' + lastId
+
             $.ajax({
-                url: SITEURLNEW + '/social/posts/',
-                //headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                url: url,
+                success: function (data) {
+                    callback(data)
+                },
+                error: function () {
+                    new Notification('error', 'Cannot contact cloud')
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+        getTimeline: function (lastId, callback) {
+            if (! self.userSession.access_token) {
+                console.log("Cannot show timeline when used is logged out")
+                return
+            }
+            var url = SITEURLNEW + '/social/timeline/?page_size=2'
+
+            if (lastId != 0)
+                url += '&max_id=' + lastId
+
+            $.ajax({
+                url: url,
+                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
                 success: function (data) {
                     callback(data)
                 },
