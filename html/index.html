@@ -62,7 +62,8 @@
           console.log = function() {}
       }
 
-$('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
+// FIXME: what is this for?
+// $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
   desktop = new Desktop({
