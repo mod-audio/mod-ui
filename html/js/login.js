@@ -61,8 +61,9 @@ function UserSession(options) {
             new Notification('error', message)
         },
         loginWindow: $('<div>'),
+        feedButton: $('#mod-social-network-header .menu ul li.feed'),
         loginButton: $("#mod-social-network-header .menu ul li.login"),
-        logoutButton: $("#mod-social-network-header .menu ul li.logout")
+        logoutButton: $("#mod-social-network-header .menu ul li.logout"),
     }, options)
 
     options.loginWindow.find('form').on('submit', function (event) {
@@ -216,6 +217,7 @@ function UserSession(options) {
         self.user_id       = null
         self.access_token  = null
         self.refresh_token = null
+        options.feedButton.hide()
         options.logoutButton.hide()
         options.loginButton.show()
         options.logout()
@@ -238,6 +240,7 @@ function UserSession(options) {
             break;
         case LOGGED:
             options.loginButton.hide()
+            options.feedButton.show()
             options.logoutButton.show()
             options.login();
             break;

@@ -46,16 +46,13 @@ JqueryClass('socialWindow', {
         return self
     },
 
-    switchToFeed: function () {
-        seld.data('feed', true)
+    switchToAlternateView: function () {
+        var self = $(this)
+        var feed = self.data('feed')
+        self.data('feed', !feed)
         self.data('lastId', 0)
         self.socialWindow('showFeed', 0)
-    },
-
-    switchToTimeline: function () {
-        seld.data('feed', false)
-        self.data('lastId', 0)
-        self.socialWindow('showFeed', 0)
+        return feed
     },
 
     showFeed: function (lastId) {

@@ -55,6 +55,7 @@ function Desktop(elements) {
         bluetoothIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
+        feedButton: $('<div>'),
         login: $('<div>'),
         logout: $('<div>')
     }, elements)
@@ -92,7 +93,7 @@ function Desktop(elements) {
 
         $.ajax({
             url: SITEURLNEW + '/users/' + user_id,
-            //headers : { 'Authorization' : 'MOD ' + self.access_token },
+            headers : { 'Authorization' : 'MOD ' + self.access_token },
             success: function (data) {
                 callback(data)
             },
@@ -134,6 +135,11 @@ function Desktop(elements) {
             self.netStatus.statusTooltip('message', message)
         }
     });
+    elements.feedButton.click(function () {
+        var timeline = elements.socialWindow.socialWindow('switchToAlternateView')
+        elements.feedButton.html(timeline ? "Timeline" : "Feed")
+        return false
+    })
     elements.login.click(function () {
         self.windowManager.closeWindows()
         self.userSession.login()
