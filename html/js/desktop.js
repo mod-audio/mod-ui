@@ -80,9 +80,6 @@ function Desktop(elements) {
 
     this.registration = new RegistrationWindow({
         registrationWindow: elements.registrationWindow,
-        getUserSession: function () {
-            return self.userSession.user_id
-        }
     })
 
     this.getUserData = function (user_id, callback) {
@@ -216,10 +213,10 @@ function Desktop(elements) {
         self.pedalboard.pedalboard('zoomOut')
     })
 
-    var ajaxFactory = function (uri, errorMessage) {
+    var ajaxFactory = function (url, errorMessage) {
         return function (callback) {
             $.ajax({
-                uri: uri,
+                url: url,
                 success: callback,
                 error: function () {
                     new Error(errorMessage)
@@ -554,7 +551,6 @@ function Desktop(elements) {
     })
 
     elements.shareWindow.shareBox({
-        userSession: self.userSession,
         recordStart: ajaxFactory('/recording/start', "Can't record. Probably a connection problem."),
         recordStop: ajaxFactory('/recording/stop', "Can't stop record. Probably a connection problem. Please try stopping again"),
         playStart: function (startCallback, stopCallback) {

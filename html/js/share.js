@@ -27,10 +27,6 @@ JqueryClass('shareBox', {
         var self = $(this)
 
         options = $.extend({
-            userSession: {
-                'sid': ''
-            },
-
             recordStart: function (callback) {
                 callback()
             },
@@ -60,7 +56,8 @@ JqueryClass('shareBox', {
         self.data(options)
         self.data('bundlepath', '')
         self.data('recordedData', null)
-
+        self.data('status', STOPPED)
+        self.data('step', 0)
 
         self.find('#record-rec').click(function () {
             self.shareBox('recordStartCountdown');
@@ -97,9 +94,6 @@ JqueryClass('shareBox', {
         self.find('#pedalboard-share-fb').click(function () {
             self.shareBox('checkFacebook')
         })
-
-        self.data('status', STOPPED)
-        self.data('step', 0)
 
         $('body').keydown(function (e) {
             if (e.keyCode == 27)
