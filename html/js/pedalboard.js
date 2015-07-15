@@ -425,7 +425,6 @@ JqueryClass('pedalboard', {
         // Loads the next plugin in queue. Gets as parameter a data structure containing
         // information on all plugins
         loadPlugin = function (pluginsData) {
-
             var plugin = data.instances.pop()
             if (plugin == null)
                 // Queue is empty, let's create the hardware ports now
@@ -510,7 +509,11 @@ JqueryClass('pedalboard', {
                 })
         }
 
-        self.data('getPluginsData')(data.instances, loadPlugin)
+        var uris = []
+        for (var i in data.instances)
+            uris.push(data.instances[i].uri)
+
+        self.data('getPluginsData')(uris, loadPlugin)
     },
 
     // Register hardware inputs and outputs, elements that will be used to represent the audio inputs and outputs

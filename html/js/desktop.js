@@ -61,7 +61,7 @@ function Desktop(elements) {
     }, elements)
 
     this.installationQueue = new InstallationQueue()
-    this.windowManager = new WindowManager();
+    this.windowManager = new WindowManager()
     this.feedManager = new FeedManager({
         // This is a backdoor. It allows the cloud to send arbitrary javascript code
         // to be executed by client. By now this is the simplest way to garantee a
@@ -280,7 +280,6 @@ function Desktop(elements) {
         })
     }
 
-
     this.pedalboardListFunction = function (callback) {
         $.ajax({
             'method': 'GET',
@@ -467,6 +466,7 @@ function Desktop(elements) {
                         self.pedalboardSavable = true
                         self.windowManager.closeWindows()
                     }
+
                     transfer.reportError = function (error) {
                         new Bug("Couldn't load pedalboard, reason:<br/>" + error)
                     }
