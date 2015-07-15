@@ -27,7 +27,7 @@ JqueryClass('socialWindow', {
             getTimeline: function (lastId, callback) {
                 callback([])
             },
-            loadPedalboard: function (pedalboard) {},
+            loadPedalboardFromSocial: function (pb) {},
             trigger: $('<div>')
         }, options)
 
@@ -86,9 +86,9 @@ JqueryClass('socialWindow', {
         if (data.length < 8) // page size used in desktop.js
             self.find('li.more').hide()
 
-        var pbLoad = function (pb_url) {
+        var pbLoad = function (pb) {
             return function () {
-                self.data('loadPedalboard')(pb_url)
+                self.data('loadPedalboardFromSocial')(pb)
             }
         }
 
@@ -126,7 +126,7 @@ JqueryClass('socialWindow', {
             var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
 
             if (sdata.pedalboard) {
-                content.find('.js-pedalboard-' + sdata.pedalboard.id).click(pbLoad(sdata.pedalboard.file_href))
+                content.find('.js-pedalboard-' + sdata.pedalboard.id).click(pbLoad(sdata.pedalboard))
             }
 
             content.appendTo(canvas)

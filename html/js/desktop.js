@@ -380,7 +380,7 @@ function Desktop(elements) {
                 console.log("Cannot show timeline when used is logged out")
                 return
             }
-            var url = SITEURLNEW + '/social/timeline/?page_size=2'
+            var url = SITEURLNEW + '/social/timeline/?page_size=8'
 
             if (lastId != 0)
                 url += '&max_id=' + lastId
@@ -398,21 +398,58 @@ function Desktop(elements) {
                 dataType: 'json'
             })
         },
-        loadPedalboard: function (pb_url) {
-            self.reset(function () {
-                transfer = new SimpleTransference(pb_url, '/pedalboard/load_web/')
+        loadPedalboardFromSocial: function (pb) {
+            // FIXME
+            desktop.pedalboard.pedalboard('getPluginsData', pb.plugins, function () {
+                self.reset(function () {
+                    transfer = new SimpleTransference(pb.file_href, '/pedalboard/load_web/')
 
-                transfer.reportFinished = function () {
-                    self.pedalboardModified = true
-                    self.pedalboardSavable = true
-                    self.windowManager.closeWindows()
-                }
-                transfer.reportError = function (error) {
-                    new Bug("Couldn't load pedalboard, reason:<br/>" + error)
-                }
+                    transfer.reportFinished = function () {
+                        self.pedalboardModified = true
+                        self.pedalboardSavable = true
+                        self.windowManager.closeWindows()
+                    }
+                    transfer.reportError = function (error) {
+                        new Bug("Couldn't load pedalboard, reason:<br/>" + error)
+                    }
 
-                transfer.start()
+                    transfer.start()
+                })
+
+                console.log("loadPedalboardFromSocial done");
             })
+
+            /*
+            var uris = []
+
+            for (var i in pb.plugins)
+                uris.push(pb.plugins[i].uri)
+
+            self.getPluginsData(uris, function (plugins) {
+                // Check if we have all needed plugins
+                for (var i in pb.plugins) {
+                    var webplugin   = pb.plugins[i]
+                    var localplugin = plugins[webplugin.uri]
+
+                    if (localplugin == null) {
+                        console.log("Plugin " + webplugin.uri + " is not installed, cannot load this PB")
+                        return
+                    }
+
+                    var webversion   = [webplugin.minorVersion, webplugin.microVersion]
+                    var localversion = [localplugin.minorVersion, localplugin.microVersion]
+
+                    if (compareVersions(webversion, localversion)) {
+                        console.log("plugin " + webplugin.uri + " is ok");
+                        return
+                    } else {
+                        console.log("plugin " + webplugin.uri + " is NOT ok");
+                        return
+                    }
+                }
+
+            })
+            */
         },
         trigger: elements.socialTrigger,
     })
