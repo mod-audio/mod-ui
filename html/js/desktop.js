@@ -355,6 +355,65 @@ function Desktop(elements) {
         this.userBox = elements.userBox.userBox()
         //this.xrun = elements.xRunNotifier.xRunNotifier()
         */
+    this.getPluginsData = function (uris, callback) {
+        $.ajax({
+            url: '/effect/bulk/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(uris),
+            success: callback,
+            dataType: 'json'
+        })
+    }
+    this.installMissingPlugins = function (plugins, callback) {
+        var missingCount = 0
+        var versions = {}
+        var uris = []
+
+        // make list of uris
+        for (var i in plugins)
+        {
+            var plugin = plugins[i]
+            versions[plugin.uri] = [plugin.minorVersion, plugin.microVersion, 0]
+            uris.push(plugin.uri)
+        }
+
+        var installPlugin = function (uri, data) {
+            missingCount++
+            self.installationQueue.install(uri, function (pluginData) {
+                data[uri] = pluginData
+                missingCount--
+
+                if (missingCount == 0)
+                    callback(data)
+            })
+        }
+
+        var installMissing = function (data) {
+            for (var i in uris) {
+                var uri         = uris[i]
+                var localplugin = data[uri]
+
+                if (localplugin == null)
+                {
+                    installPlugin(uri, data)
+                }
+                else
+                {
+                    var version = [localplugin.minorVersion, localplugin.microVersion, 0]
+
+                    if (compareVersions(version, versions[uri]) < 0)
+                        installPlugin(uri, data)
+                }
+            }
+
+            if (missingCount == 0)
+                callback(data)
+        }
+
+        this.getPluginsData(uris, installMissing)
+    },
+
     this.socialWindow = elements.socialWindow.socialWindow({
         windowManager: self.windowManager,
         getFeed: function (lastId, callback) {
@@ -399,8 +458,7 @@ function Desktop(elements) {
             })
         },
         loadPedalboardFromSocial: function (pb) {
-            // FIXME
-            desktop.pedalboard.pedalboard('getPluginsData', pb.plugins, function () {
+            self.installMissingPlugins(pb.plugins, function () {
                 self.reset(function () {
                     transfer = new SimpleTransference(pb.file_href, '/pedalboard/load_web/')
 
@@ -415,41 +473,7 @@ function Desktop(elements) {
 
                     transfer.start()
                 })
-
-                console.log("loadPedalboardFromSocial done");
             })
-
-            /*
-            var uris = []
-
-            for (var i in pb.plugins)
-                uris.push(pb.plugins[i].uri)
-
-            self.getPluginsData(uris, function (plugins) {
-                // Check if we have all needed plugins
-                for (var i in pb.plugins) {
-                    var webplugin   = pb.plugins[i]
-                    var localplugin = plugins[webplugin.uri]
-
-                    if (localplugin == null) {
-                        console.log("Plugin " + webplugin.uri + " is not installed, cannot load this PB")
-                        return
-                    }
-
-                    var webversion   = [webplugin.minorVersion, webplugin.microVersion]
-                    var localversion = [localplugin.minorVersion, localplugin.microVersion]
-
-                    if (compareVersions(webversion, localversion)) {
-                        console.log("plugin " + webplugin.uri + " is ok");
-                        return
-                    } else {
-                        console.log("plugin " + webplugin.uri + " is NOT ok");
-                        return
-                    }
-                }
-
-            })
-            */
         },
         trigger: elements.socialTrigger,
     })
@@ -810,16 +834,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        getPluginsData: function (uris, callback) {
-            $.ajax({
-                url: '/effect/bulk/',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(uris),
-                success: callback,
-                dataType: 'json'
-            })
-        },
+        getPluginsData: self.getPluginsData,
 
         pluginMove: function (instance, x, y, callback) {
             if (callback == null) {

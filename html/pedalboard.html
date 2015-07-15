@@ -39,19 +39,17 @@
       $('document').ready(function() {
           var el = $('#pedalboard-dashboard').pedalboard({
              baseScale: 1,
-             getPluginsData: function(urls, callback) {
+             getPluginsData: function(uris, callback) {
                  $.ajax({
                      url: '/effect/bulk/',
                      type: 'POST',
                      contentType: 'application/json',
-                     data: JSON.stringify(urls),
+                     data: JSON.stringify(uris),
                      success: callback,
                      dataType: 'json'
                  })
              }
           })
-
-          console.log(PEDALBOARD_DATA)
           el.pedalboard('unserialize', PEDALBOARD_DATA)
       })
 

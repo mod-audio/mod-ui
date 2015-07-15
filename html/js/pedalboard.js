@@ -28,8 +28,6 @@ JqueryClass('pedalboard', {
             windowManager: new WindowManager(),
             // HardwareManager instance, must be specified
             hardwareManager: null,
-            // InstallationQueue instance
-            installationQueue: new InstallationQueue(),
 
             // Wait object, used to show waiting message to user
             wait: new WaitMessage(self),
@@ -89,15 +87,15 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
-            // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
-            // indexed by URL
-            getPluginsData: function (plugins, callback) {
-                callback({})
-            },
-
             // Marks the position of a plugin
             pluginMove: function (instance, x, y, callback) {
                 callback(true)
+            },
+
+            // Takes a list of plugin URIs and gets a dictionary containing all those plugins's data,
+            // indexed by URI
+            getPluginsData: function (uris, callback) {
+                callback({})
             },
 
             // Sets the size of the pedalboard
@@ -106,8 +104,8 @@ JqueryClass('pedalboard', {
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
-            'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
-            'portConnect', 'portDisconnect', 'reset', 'pluginMove'
+            'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange', 'pluginBypass',
+            'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData'
         ])
 
         self.data(options)
@@ -512,41 +510,7 @@ JqueryClass('pedalboard', {
                 })
         }
 
-        self.pedalboard('getPluginsData', data.instances, loadPlugin)
-    },
-
-    // Gets a list of instances, loads from application the data from all plugins available,
-    // installs missing plugins and gives callback the whole result
-    getPluginsData: function (instances, callback) {
-        var self = $(this)
-        var plugins = {}
-        for (var i in instances) {
-            plugins[instances[i].uri] = 1
-        }
-        var uris = Object.keys(plugins)
-
-        var missingCount = 0
-        var installationQueue = self.data('installationQueue')
-
-        var installPlugin = function (uri, data) {
-            missingCount++
-            installationQueue.install(uri, function (pluginData) {
-                data[uri] = pluginData
-                missingCount--
-                if (missingCount == 0)
-                    callback(data)
-            })
-        }
-
-        var installMissing = function (data) {
-            for (var i in uris)
-                if (data[uris[i]] == null)
-                    installPlugin(uris[i], data)
-            if (missingCount == 0)
-                callback(data)
-        }
-
-        self.data('getPluginsData')(uris, installMissing)
+        self.data('getPluginsData')(data.instances, loadPlugin)
     },
 
     // Register hardware inputs and outputs, elements that will be used to represent the audio inputs and outputs
@@ -563,6 +527,7 @@ JqueryClass('pedalboard', {
         self.data('hwInputs').push(element)
         self.append(element)
     },
+
     addHardwareOutput: function (element, symbol, portType) {
         var self = $(this)
         element.attr('mod-role', 'output-' + portType + '-port')
@@ -914,6 +879,7 @@ JqueryClass('pedalboard', {
         // move plugins
         for (instance in plugins) {
             plugin = plugins[instance]
+            if (!plugin.position) continue
             x = parseInt(plugin.css('left')) + left
             y = parseInt(plugin.css('top')) + top
             plugin.animate({
