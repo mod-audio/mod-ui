@@ -1,26 +1,26 @@
-import time, subprocess, random, os, copy, json
+import time, subprocess, os, copy, json
 from tornado import ioloop
-from mod.settings import CAPTURE_PATH
+from mod.settings import CAPTURE_PATH, PLAYBACK_PATH
 
 class Recorder(object):
-
     def __init__(self):
         self.recording = False
         self.tstamp = None
-        self.events = None
+        self.events = []
+        self.last_event = None
         self.proc = None
 
-    def start(self, pedalboard):
+    def start(self, client_name):
         if self.recording:
             self.stop()
         self.tstamp = time.time()
-        self.pedalboard = pedalboard
         self.events = []
         self.last_event = None
         self.proc = subprocess.Popen(['jack_capture',
                                       '-f', 'ogg',
                                       '-V',
                                       '-d', '65',
+                                      '--port', '%s:audio_out_*' % client_name,
                                       CAPTURE_PATH],
                                      stdout=open('/tmp/capture.err', 'w'),
                                      stderr=open('/tmp/capture.out', 'w')
@@ -34,10 +34,9 @@ class Recorder(object):
         self.proc.wait()
         self.recording = False
         result = {
-            'pedalboard': self.pedalboard.serialize(),
             'handle': open(CAPTURE_PATH, 'rb'),
             'events': copy.deepcopy(self.events),
-            }
+        }
         os.remove(CAPTURE_PATH)
         self.events = []
         self.last_event = None
@@ -63,7 +62,6 @@ class Recorder(object):
         self.event('parameter', instance_id, port_id, value)
 
 class Player(object):
-
     def __init__(self):
         self.proc = None
         self.fh = None
@@ -77,8 +75,9 @@ class Player(object):
         if self.playing:
             self.stop()
         fh.seek(0)
-        open('/tmp/recording.ogg', 'wb').write(fh.read())
-        self.proc = subprocess.Popen(['sndfile-jackplay', '/tmp/recording.ogg'],
+        with open(PLAYBACK_PATH, 'wb') as fd:
+            fd.write(fh.read())
+        self.proc = subprocess.Popen(['sndfile-jackplay', PLAYBACK_PATH],
                                      stdout=subprocess.PIPE)
         self.fh = fh
         self.stop_callback = stop_callback
@@ -105,5 +104,3 @@ class Player(object):
         if cb is not None:
             self.stop_callback = None
             cb()
-        
-

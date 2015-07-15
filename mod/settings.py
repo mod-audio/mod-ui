@@ -153,6 +153,7 @@ AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))
 DEFAULT_JACK_BUFSIZE = int(os.environ.get('MOD_DEFAULT_JACK_BUFSIZE', 128))
 
 CAPTURE_PATH='/tmp/capture.ogg'
+PLAYBACK_PATH='/tmp/playback.ogg'
 
 for dirname in (DOWNLOAD_TMP_DIR, HARDWARE_DIR):
     if not os.path.exists(dirname):

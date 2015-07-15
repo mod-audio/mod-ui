@@ -83,6 +83,7 @@ class Session(object):
         self._tuner = False
         self._tuner_port = 1
         self._peakmeter = False
+        self._client_name = "ingen"
 
         self.monitor_server = None
 
@@ -677,7 +678,7 @@ class Session(object):
     def start_recording(self):
         if self.player.playing:
             self.player.stop()
-        self.recorder.start(self._pedalboard)
+        self.recorder.start(self._client_name)
 
     def stop_recording(self):
         if self.recorder.recording:
