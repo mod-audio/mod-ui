@@ -81,7 +81,8 @@ def check_environment(callback):
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
     SESSION.ping(ping_callback)
 
-# Turn any string into a LV2 compatible symbol
 def symbolify(name):
-    # TODO
+    name = re.sub("[^_a-zA-Z0-9]+", "_", name)
+    if name[0].isdigit():
+        name = "_" + name
     return name

@@ -39,7 +39,7 @@ class Host(IngenAsync):
         self.copy("/graph", "file://%s" % bundlepath, callback)
 
     def set_pedalboard_name(self, name, callback=lambda r:r):
-        self.set("/graph", "doap:name", '"%s"' % name, callback)
+        self.set("/graph", "doap:name", '"%s"' % name.replace('"','\\"'), callback)
 
     def set_pedalboard_size(self, width, height, callback=lambda r:r):
         self.set("/graph", "<http://moddevices.com/ns/modpedal#width>", width, callback)
