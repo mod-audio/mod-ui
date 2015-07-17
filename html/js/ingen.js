@@ -113,26 +113,35 @@ $(document).ready(function () {
                                     // not a system/hardware port
                                     return
                                 }
+                                if (sub == "/graph/control_in" || sub == "/graph/control_out") {
+                                    // skip special ingen control ports
+                                    return
+                                }
+
                                 var name = N3.Util.getLiteralValue(store.find(
-                                                                body[0].object,
-                                                                "http://lv2plug.in/ns/lv2core#name")[0].object);
+                                                                   body[0].object,
+                                                                   "http://lv2plug.in/ns/lv2core#name")[0].object);
                                 var index = N3.Util.getLiteralValue(store.find(
-                                                                body[0].object,
-                                                                "http://lv2plug.in/ns/lv2core#index")[0].object);
+                                                                    body[0].object,
+                                                                    "http://lv2plug.in/ns/lv2core#index")[0].object);
                                 var types = [type[0].object, type[1].object]
+
+                                var port_type
                                 if (types.indexOf("http://lv2plug.in/ns/ext/atom#AtomPort") > -1) {
                                     // atom
-                                    var port_type = "midi"
+                                    port_type = "midi"
                                 } else if (types.indexOf("http://lv2plug.in/ns/lv2core#CVPort") > -1) {
                                     // cv
-                                    var port_type = "cv"
+                                    port_type = "cv"
                                 } else {
                                     // audio
-                                    var port_type = "audio"
+                                    port_type = "audio"
                                 }
 
                                 var el = $('[id="' + sub + '"]')
-                                if (el.length > 0) return;
+                                if (el.length > 0) {
+                                    return
+                                }
 
                                 if (types.indexOf("http://lv2plug.in/ns/lv2core#InputPort") > -1) {
                                     el = $('<div id="' + sub + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')

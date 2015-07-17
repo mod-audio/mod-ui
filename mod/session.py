@@ -196,10 +196,10 @@ class Session(object):
         for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
             yield gen.Task(lambda callback: self.host.add_external_port("Audio Out %i" % i, "Output", "Audio", callback=callback))
 
-        for i in range(2, INGEN_NUM_MIDI_INS+1):
+        for i in range(1, INGEN_NUM_MIDI_INS+1):
             yield gen.Task(lambda callback: self.host.add_external_port("MIDI In %i" % i, "Input", "MIDI", callback=callback))
 
-        for i in range(2, INGEN_NUM_MIDI_OUTS+1):
+        for i in range(1, INGEN_NUM_MIDI_OUTS+1):
             yield gen.Task(lambda callback: self.host.add_external_port("MIDI Out %i" % i, "Output", "MIDI", callback=callback))
 
         for i in range(1, INGEN_NUM_CV_INS+1):
