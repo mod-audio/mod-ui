@@ -326,7 +326,7 @@ function Desktop(elements) {
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
 
-        if (usingDesktop || true)
+        if (usingDesktop)
         {
             // TESTING
             //$('#mod-pedalboard').hide()
@@ -338,6 +338,11 @@ function Desktop(elements) {
                 'top': '3px',
                 'right': '3px'
             })
+        }
+        else // using Live-ISO
+        {
+            $('#mod-plugins').hide()
+            $('#pb-preset-manager').hide()
         }
     }
 
