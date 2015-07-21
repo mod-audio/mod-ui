@@ -331,7 +331,7 @@ function Desktop(elements) {
             // TESTING
             //$('#mod-pedalboard').hide()
             $('#pedalboard-actions').hide()
-            $("#pedalboard-dashboard").parent().css({
+            $('#pedalboard-dashboard').parent().css({
                 'top': '0px'
             })
             $('#zoom-controllers').css({
@@ -341,8 +341,27 @@ function Desktop(elements) {
         }
         else // using Live-ISO
         {
-            $('#mod-plugins').hide()
+            $('#mod-social').hide()
+            //$('#mod-plugins').hide()
+            $('#mod-cloud-plugins').hide()
+            //$('#mod-pedalboard').hide()
+            $('#mod-cpu').hide()
+            $('#mod-cloud').hide()
+            //$('#main-menu').hide()
             $('#pb-preset-manager').hide()
+            $('#pedalboard-sharing').hide()
+            $('#plugins-library > .js-settings-trigger').hide()
+            $('#pedalboard-dashboard').css({
+                'bottom': '0px'
+            })
+            $('#pedalboard-dashboard').parent().css({
+                'top': '0px',
+                'bottom': '0px'
+            })
+            $('#zoom-controllers').css({
+                'top': '3px',
+                'right': '3px'
+            })
         }
     }
 
