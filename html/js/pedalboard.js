@@ -1327,7 +1327,7 @@ JqueryClass('pedalboard', {
             if (!ok) {
                 return
             }
-            self.data('connectionManager').iterateInstance(":system:", function (jack) {
+            self.data('connectionManager').iterate(function (jack) {
                 self.pedalboard('disconnect', jack)
             })
             if (callback)
@@ -1751,8 +1751,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('finishConnection')
 
         // Register the connection in desktop structure
-        self.data('connectionManager').connect(output.attr("mod-port"), input.attr("mod-port"),
-            jack)
+        self.data('connectionManager').connect(output.attr("mod-port"), input.attr("mod-port"), jack)
 
         // Register the connection in jack
         jack.data('destination', input)

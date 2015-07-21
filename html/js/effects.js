@@ -670,6 +670,8 @@ JqueryClass('cloudPluginBox', {
         });
     },
     searchAll: function (query) {
+        // TODO: implement new cloud API
+        return
         /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
 	   Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
 	   All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
