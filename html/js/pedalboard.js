@@ -283,6 +283,9 @@ JqueryClass('pedalboard', {
             self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
             ev.preventDefault()
         })
+        self[0].addEventListener('dblclick', function (ev) {
+            self.pedalboard('zoomOut')
+        })
     },
 
     // Check if mouse event has happened over any element of a jquery set in pedalboard
@@ -1330,6 +1333,7 @@ JqueryClass('pedalboard', {
             self.data('connectionManager').iterate(function (jack) {
                 self.pedalboard('disconnect', jack)
             })
+            self.pedalboard('resetSize')
             if (callback)
                 callback()
         })

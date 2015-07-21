@@ -351,6 +351,10 @@ function Desktop(elements) {
             $('#pb-preset-manager').hide()
             $('#pedalboard-sharing').hide()
             $('#plugins-library > .js-settings-trigger').hide()
+            $('#pedalboards-library .form-horizontal').hide()
+            $('#pedalboards-library .pedalboards').css({
+                'left': '0px'
+            })
             $('#pedalboard-dashboard').css({
                 'bottom': '0px'
             })
