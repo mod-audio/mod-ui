@@ -1081,6 +1081,8 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
             nodes = port.get_scale_points()
 
             if nodes is not None:
+                scalepoints_unsorted = []
+
                 it = lilv.lilv_scale_points_begin(nodes)
                 while not lilv.lilv_scale_points_is_end(nodes, it):
                     sp = lilv.lilv_scale_points_get(nodes, it)
@@ -1122,10 +1124,19 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
                         value = lilv.lilv_node_as_float(value)
 
                     if ranges['minimum'] <= value <= ranges['maximum']:
-                        scalepoints.append({'label': label, 'value': value})
+                        scalepoints_unsorted.append((value, label))
                     else:
                         errors.append(("port scalepoint '%s' has an out-of-bounds value:\n" % label) +
                                       ("%d < %d < %d" if isInteger else "%f < %f < %f") % (ranges['minimum'], value, ranges['maximum']))
+
+                if len(scalepoints_unsorted) != 0:
+                    unsorted = dict(s for s in scalepoints_unsorted)
+                    values   = list(v for v, l in scalepoints_unsorted)
+                    values.sort()
+                    scalepoints = list({ 'value': v, 'label': unsorted[v] } for v in values)
+                    del unsorted, values
+
+                del scalepoints_unsorted
 
             if "enumeration" in properties and len(scalepoints) <= 1:
                 errors.append("port '%s' wants to use enumeration but doesn't have enough values" % portname)
@@ -1221,12 +1232,21 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
         if not label:
             errors.append("preset with uri '%s' has no label" % (uri or "<unknown>"))
 
-        return { 'uri': uri, 'label': label }
+        return (uri, label)
 
-    presetsrel = plugin.get_related(ns_pset.Preset)
-    presets    = list(LILV_FOREACH(presetsrel, get_preset_data))
+    presets = []
 
-    del presetsrel
+    presets_related = plugin.get_related(ns_pset.Preset)
+    presets_data    = list(LILV_FOREACH(presets_related, get_preset_data))
+
+    if len(presets_data) != 0:
+        unsorted = dict(p for p in presets_data)
+        uris     = list(unsorted.keys())
+        uris.sort()
+        presets  = list({ 'uri': p, 'label': unsorted[p] } for p in uris)
+        del unsorted, uris
+
+    del presets_related
 
     # --------------------------------------------------------------------------------------------------------
     # done
