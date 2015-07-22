@@ -26,6 +26,7 @@ PLUGNFO = {}
 # Blacklisted plugins, which don't work properly on MOD for various reasons
 BLACKLIST = [
     "urn:juce:JuceDemoHost",
+    "urn:juced:DrumSynth",
     "file:///usr/lib/lv2/MonoEffect.ingen/MonoEffect.ttl",
     "file:///usr/lib/lv2/MonoInstrument.ingen/MonoInstrument.ttl",
     "file:///usr/lib/lv2/StereoEffect.ingen/StereoEffect.ttl",
