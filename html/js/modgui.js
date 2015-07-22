@@ -1052,10 +1052,11 @@ JqueryClass('customSelect', baseWidget, {
     },
 
     setValue: function (value, only_gui) {
+        value = parseFloat(value)
         var self = $(this)
         self.find('[mod-role=enumeration-option]').removeClass('selected')
         self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]').addClass('selected')
         if (!only_gui)
-            self.trigger('valuechange', parseFloat(value))
+            self.trigger('valuechange', value)
     }
 })
