@@ -118,12 +118,16 @@ $(document).ready(function () {
                                     return
                                 }
 
-                                var name = N3.Util.getLiteralValue(store.find(
-                                                                   body[0].object,
-                                                                   "http://lv2plug.in/ns/lv2core#name")[0].object);
-                                var index = N3.Util.getLiteralValue(store.find(
-                                                                    body[0].object,
-                                                                    "http://lv2plug.in/ns/lv2core#index")[0].object);
+                                var nameObj = store.find(body[0].object, "http://lv2plug.in/ns/lv2core#name")[0]
+                                if (nameObj == null)
+                                    return
+
+                                var indexObj = store.find(body[0].object, "http://lv2plug.in/ns/lv2core#index")[0]
+                                if (indexObj == null)
+                                    return
+
+                                var name = N3.Util.getLiteralValue(nameObj.object)
+                                var index = N3.Util.getLiteralValue(indexObj.object)
                                 var types = [type[0].object, type[1].object]
 
                                 var port_type
