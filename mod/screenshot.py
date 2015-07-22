@@ -77,6 +77,7 @@ def resize_image(img, max_width, max_height):
 class ScreenshotGenerator(object):
     def __init__(self):
         self.queue = []
+        self.callback = None
         self.processing = False
 
     def schedule_screenshot(self, bundlepath):
@@ -88,6 +89,9 @@ class ScreenshotGenerator(object):
     def process_next(self):
         if len(self.queue) == 0:
             self.processing = False
+            if self.callback is not None:
+                self.callback()
+                self.callback = None
             return
         self.processing = True
 
@@ -105,7 +109,5 @@ class ScreenshotGenerator(object):
 
         generate_screenshot(bundlepath, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
 
-    def wait_for_pending_jobs(self):
-        from time import sleep
-        while self.processing:
-            sleep(0.5)
+    def wait_for_pending_jobs(self, callback):
+        self.callback = callback

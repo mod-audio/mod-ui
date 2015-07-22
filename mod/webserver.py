@@ -788,7 +788,7 @@ class PedalboardPackBundle(web.RequestHandler):
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
 
         # make sure the screenshot is ready before proceeding
-        SESSION.screenshot_generator.wait_for_pending_jobs()
+        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs)
 
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
