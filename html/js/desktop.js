@@ -328,8 +328,13 @@ function Desktop(elements) {
 
         if (usingDesktop)
         {
-            // TESTING
-            //$('#mod-pedalboard').hide()
+            $('#mod-cloud-plugins').hide()
+            $('#mod-cpu').hide()
+            $('#plugins-library > .js-settings-trigger').hide()
+            $('#pedalboards-library .form-horizontal').hide()
+            $('#pedalboards-library .pedalboards').css({
+                'left': '0px'
+            })
             $('#pedalboard-actions').hide()
             $('#pedalboard-dashboard').parent().css({
                 'top': '0px'
@@ -367,6 +372,8 @@ function Desktop(elements) {
                 'right': '3px'
             })
         }
+
+        self.netStatus.statusTooltip('updatePosition')
     }
 
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
@@ -1248,5 +1255,11 @@ JqueryClass('statusTooltip', {
                         $(this).hide()
                     })
             }, timeout)
+    },
+
+    updatePosition: function() {
+        var self = $(this)
+        var tooltip = self.data('tooltip')
+        tooltip.css('right', $(window).width() - self.position().left - self.width())
     }
 })
