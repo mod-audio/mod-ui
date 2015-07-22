@@ -166,7 +166,6 @@ $(document).ready(function () {
                                 var port = sub.substring(last_slash+1);
                                 if (!$('[mod-port="' + sub.replace("/", "\\/") + '"]').length) {
                                     var cb = function () {
-                                        var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                         setTimeout(function() {
                                             var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                             gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
@@ -229,7 +228,6 @@ $(document).ready(function () {
                         var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
                         if (subject.length)
                             console.log("Patch: " + subject[0]);
-
                     });
 
                     // Set messages
@@ -254,6 +252,8 @@ $(document).ready(function () {
                                     var instance = subject[0].object
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(":bypass", value[0].object == "true" ? 0 : 1, undefined, true);
+                                } else {
+                                    console.log("TESTING: Received unhandled patch:Set message " + subject[0])
                                 }
                             }
                         }
