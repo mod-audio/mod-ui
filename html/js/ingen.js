@@ -164,15 +164,16 @@ $(document).ready(function () {
                                 var last_slash = sub.lastIndexOf("/");
                                 var instance = sub.substring(0, last_slash);
                                 var port = sub.substring(last_slash+1);
-                                if (!$('[mod-port="' + sub.replace("/", "\\/") + '"]').length) {
+                                var symbol = '[mod-port="' + sub.replace("/", "\\/") + '"]'
+                                if (!$(symbol).length) {
                                     var cb = function () {
                                         setTimeout(function() {
                                             var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                             gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
                                         }, 100)
-                                        $(document).unbindArrive('[mod-port="' + sub.replace("/", "\\/") + '"]', cb)
+                                        $(document).unbindArrive(symbol, cb)
                                     }
-                                    $(document).arrive('[mod-port="' + sub.replace("/", "\\/") + '"]', cb)
+                                    $(document).arrive(symbol, cb)
                                 } else {
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
