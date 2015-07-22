@@ -1043,9 +1043,9 @@ JqueryClass('customSelect', baseWidget, {
                 }
             })
         });
-        var hidden = self.find('[mod-widget-property=hidden]')
+        var enumlist = self.find('.mod-enumerated-list')
         self.click(function () {
-            hidden.toggle()
+            enumlist.toggle()
         })
 
         return self
