@@ -372,6 +372,9 @@ class IngenAsync(object):
         patch:subject </engine/> .
 ''',  callback)
 
+    def midi_learn(self, path, callback=lambda r:r):
+        return self.set(path, "<http://lv2plug.in/ns/ext/midi#binding>", "<http://lv2plug.in/ns/ext/patch#wildcard>")
+
 if __name__ == "__main__":
     h = IngenAsync()
     ioloop.IOLoop.instance().start()

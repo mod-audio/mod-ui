@@ -580,6 +580,14 @@ class EffectParameterSet(web.RequestHandler):
         self.write(json.dumps(response))
         self.finish()
 
+class EffectParameterMidiLearn(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, port):
+        response = yield gen.Task(SESSION.parameter_midi_learn, port)
+        self.write(json.dumps(response))
+        self.finish()
+
 class EffectParameterAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1346,6 +1354,7 @@ application = web.Application(
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
             (r"/effect/parameter/set/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
+            (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
             (r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
             (r"/effect/parameter/address/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
             (r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),

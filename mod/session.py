@@ -492,6 +492,9 @@ class Session(object):
         #self.recorder.parameter(instance, port_id, value)
         self.host.param_set(port, value, callback)
 
+    def parameter_midi_learn(self, port, callback):
+        self.host.midi_learn(port, callback)
+
     def parameter_get(self, port, callback):
         self.host.param_get(port, callback)
 

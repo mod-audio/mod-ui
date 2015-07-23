@@ -747,6 +747,20 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
+        pluginParameterMidiLearn: function (port, callback) {
+            $.ajax({
+                url: '/effect/parameter/midi/learn/' + port,
+                success: function (resp) {
+			   // TODO trigger
+                    callback(resp)
+                },
+                error: function () {
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
         pluginParameterChange: function (port, value, callback) {
             $.ajax({
                 url: '/effect/parameter/set/' + port,
