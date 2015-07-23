@@ -549,8 +549,14 @@ function GUI(effect, options) {
         // insert scalePoints into controls
         for (var i in data.controls)
         {
-            var control = data.controls[i]
-            control.scalePoints = self.controls[control.symbol].scalePoints
+            var dcontrol = data.controls[i]
+            var scontrol = self.controls[dcontrol.symbol]
+
+            if (scontrol) {
+                dcontrol.scalePoints = scontrol.scalePoints
+            } else {
+                console.log("Control port symbol '" + dcontrol.symbol + "' is missing")
+            }
         }
 
         // FIXME - this is a little ugly hack, sorry!
@@ -576,7 +582,11 @@ function GUI(effect, options) {
             data.effect.ports.control.input = inputs
         }
 
-        DEBUG = JSON.stringify(data, undefined, 4)
+        if (window.desktop != undefined) {
+            // this is expensive and only useful for mod-sdk
+            DEBUG = JSON.stringify(data, undefined, 4)
+        }
+
         return data
     }
 
