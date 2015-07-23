@@ -22,14 +22,16 @@ from whoosh.index import FileIndex, open_dir
 from whoosh.index import _DEF_INDEX_NAME as WHOOSH_DEF_INDEX_NAME
 from whoosh.filedb.filestore import RamStorage
 from whoosh.query import And, Or, Every, Term
-from whoosh.qparser import MultifieldParser
+from whoosh.qparser import QueryParser
 from whoosh import sorting
 
 from mod import json_handler
 
 class Index(object):
+    schema = Schema(id=ID(unique=True, stored=True), data=TEXT())
+
     @property
-    def schema(self):
+    def fields(self):
         raise NotImplemented
 
     @property
@@ -41,16 +43,8 @@ class Index(object):
         self.reindex()
 
     def schemed_data(self, obj):
-        data = {}
-
-        for key, field in self.schema.items():
-            if key == 'id':
-                data['id'] = str(obj['uri'])
-                continue
-            try:
-                data[key] = obj[key]
-            except KeyError:
-                data[key] = ''
+        data = {'id': obj['uri']}
+        data['data'] = " ".join([ obj[field] for field in self.fields ])
         return data
 
     def searcher(self):
@@ -72,7 +66,7 @@ class Index(object):
             for data in self.data:
                 self.add(data)
         t=time.time()-t
-        print("INDEXING: %f seconds" % t)
+        print("INDEXING %s: %f seconds" % (self.__class__, t))
 
     def find(self, **kwargs):
         terms = []
@@ -88,15 +82,10 @@ class Index(object):
             for entry in searcher.search(Every(), limit=None):
                 yield entry.fields()
 
-    def term_search(self, query):
-        terms = []
-        if query.get('term'):
-            parser = MultifieldParser(self.term_fields, schema=self.index.schema)
-            terms.append(parser.parse(str(query.pop('term')[0])))
-        for key in query.keys():
-            terms.append(Or([ Term(key, str(t)) for t in query.pop(key) ]))
+    def search(self, term):
+        parser = QueryParser('data', schema=self.index.schema)
         with self.searcher() as searcher:
-            for entry in searcher.search(And(terms), limit=None):
+            for entry in searcher.search(parser.parse(str(term)), limit=None):
                 yield entry.fields()
 
     def add(self, obj):
@@ -116,23 +105,7 @@ class Index(object):
 
 class EffectIndex(Index):
     data = None
-    schema = Schema(id=ID(unique=True, stored=True), # URI
-                    name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
-                    brand=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
-                    label=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
-                    author_name=TEXT(stored=True),
-                    category=ID(stored=True),
-                    version=NUMERIC(decimal_places=5, stored=True),
-                    stability=ID(stored=True),
-                    #input_ports=NUMERIC(stored=True),
-                    #output_ports=NUMERIC(stored=True),
-                    #pedalModel=STORED(),
-                    #pedalColor=STORED(),
-                    #pedalLabel=TEXT(stored=True),
-                    #smallLabel=STORED(),
-                    )
-
-    term_fields = ['label', 'name', 'category', 'author_name', 'brand']
+    fields = ['label', 'name', 'categories', 'author_name', 'author_email', 'brand']
 
     def schemed_data(self, obj):
         try:
@@ -144,41 +117,17 @@ class EffectIndex(Index):
         except (KeyError, TypeError):
             pass
 
-        obj['author_name'] = obj['author']['name']
-        obj['input_ports'] = len(obj['ports']['audio']['input'])
-        obj['output_ports'] = len(obj['ports']['audio']['output'])
+        obj['author_name']  = obj['author']['name']
+        obj['author_email'] = obj['author']['email']
+        obj['categories']   = " ".join(obj['category'])
         return Index.schemed_data(self, obj)
-
-    def add(self, effect):
-        if not self.indexable(effect):
-            return
-
-        effect_data = self.schemed_data(effect)
-
-        writer = self.index.writer()
-        writer.update_document(**effect_data)
-        writer.commit()
 
     def indexable(self, obj):
         return not obj.get('hidden', False)
 
 class PedalboardIndex(Index):
     data = None
-    schema = Schema(id=ID(unique=True, stored=True), # URI
-                    name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
-                    )
-
-    term_fields = ['name']
-
-    def add(self, pedalboard):
-        if not self.indexable(pedalboard):
-            return
-
-        pedalboard_data = self.schemed_data(pedalboard)
-
-        writer = self.index.writer()
-        writer.update_document(**pedalboard_data)
-        writer.commit()
+    fields = ['name']
 
     def indexable(self, obj):
         return not obj.get('hidden', False)

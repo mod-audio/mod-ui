@@ -261,7 +261,7 @@ class Searcher(web.RequestHandler):
 
     def search(self):
         result = []
-        for entry in self.index.term_search(self.request.arguments):
+        for entry in self.index.search(self.request.arguments['term']):
             obj = self.get_object(entry['id'])
             if obj is None:
                 # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
@@ -689,7 +689,6 @@ class PedalboardSearcher(Searcher):
 
         global fake_tstamp
         fake_tstamp += 1
-        import pdb; pdb.set_trace()
         for pedal in pedals:
             result.append({
                 'instances'  : {},
