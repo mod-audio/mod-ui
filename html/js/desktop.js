@@ -325,52 +325,33 @@ function Desktop(elements) {
         $('#mod-bluetooth').hide()
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
+        $('#pedalboard-dashboard').parent().css({
+            'top': '0px'
+        })
+        $('#zoom-controllers').css({
+            'top': '3px',
+            'right': '3px'
+        })
+
+        // TODO
+        $('#mod-cloud-plugins').hide()
+        $('#mod-cpu').hide()
+        $('#pedalboards-library .form-horizontal').hide()
+        $('#pedalboards-library .pedalboards').css({
+            'left': '0px'
+        })
+        $('#pb-preset-manager').hide()
 
         if (usingDesktop)
         {
-            $('#mod-cloud-plugins').hide()
-            $('#mod-cpu').hide()
-            $('#plugins-library > .js-settings-trigger').hide()
-            $('#pedalboards-library .form-horizontal').hide()
-            $('#pedalboards-library .pedalboards').css({
-                'left': '0px'
-            })
             $('#pedalboard-actions').hide()
-            $('#pedalboard-dashboard').parent().css({
-                'top': '0px'
-            })
-            $('#zoom-controllers').css({
-                'top': '3px',
-                'right': '3px'
-            })
         }
         else // using Live-ISO
         {
             $('#mod-social').hide()
             //$('#mod-plugins').hide()
-            $('#mod-cloud-plugins').hide()
-            //$('#mod-pedalboard').hide()
-            $('#mod-cpu').hide()
             $('#mod-cloud').hide()
-            //$('#main-menu').hide()
-            $('#pb-preset-manager').hide()
             $('#pedalboard-sharing').hide()
-            $('#plugins-library > .js-settings-trigger').hide()
-            $('#pedalboards-library .form-horizontal').hide()
-            $('#pedalboards-library .pedalboards').css({
-                'left': '0px'
-            })
-            $('#pedalboard-dashboard').css({
-                'bottom': '0px'
-            })
-            $('#pedalboard-dashboard').parent().css({
-                'top': '0px',
-                'bottom': '0px'
-            })
-            $('#zoom-controllers').css({
-                'top': '3px',
-                'right': '3px'
-            })
         }
 
         self.netStatus.statusTooltip('updatePosition')
