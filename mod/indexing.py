@@ -28,7 +28,7 @@ from whoosh import sorting
 from mod import json_handler
 
 class Index(object):
-    schema = Schema(id=ID(unique=True, stored=True), data=TEXT())
+    schema = Schema(id=ID(unique=True, stored=True), data=NGRAMWORDS(minsize=3, maxsize=5, at="start"))
 
     @property
     def fields(self):
@@ -66,7 +66,7 @@ class Index(object):
             for data in self.data:
                 self.add(data)
         t=time.time()-t
-        print("INDEXING %s: %f seconds" % (self.__class__, t))
+        print("INDEXING %s: %f seconds" % (self.__class__.__name__, t))
 
     def find(self, **kwargs):
         terms = []

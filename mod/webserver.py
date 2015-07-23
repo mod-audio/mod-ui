@@ -261,7 +261,7 @@ class Searcher(web.RequestHandler):
 
     def search(self):
         result = []
-        for entry in self.index.search(self.request.arguments['term']):
+        for entry in self.index.search(self.request.arguments['term'][0]):
             obj = self.get_object(entry['id'])
             if obj is None:
                 # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
