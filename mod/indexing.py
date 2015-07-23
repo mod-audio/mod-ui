@@ -64,11 +64,15 @@ class Index(object):
         return True
 
     def reindex(self):
+        import time
+        t=time.time()
         if self.data is not None:
-            self.index.destroy()
+            self.index.storage.destroy()
             self.index = FileIndex.create(RamStorage(), self.schema, WHOOSH_DEF_INDEX_NAME)
             for data in self.data:
                 self.add(data)
+        t=time.time()-t
+        print("INDEXING: %f seconds" % t)
 
     def find(self, **kwargs):
         terms = []
@@ -112,34 +116,27 @@ class Index(object):
 
 class EffectIndex(Index):
     data = None
-    """
-    schema = Schema(id=ID(unique=True, stored=True),
+    schema = Schema(id=ID(unique=True, stored=True), # URI
                     name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
                     brand=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
                     label=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
-                    author=TEXT(stored=True),
-                    package=ID(stored=True),
+                    author_name=TEXT(stored=True),
                     category=ID(stored=True),
-                    description=TEXT,
                     version=NUMERIC(decimal_places=5, stored=True),
                     stability=ID(stored=True),
-                    input_ports=NUMERIC(stored=True),
-                    output_ports=NUMERIC(stored=True),
-                    pedalModel=STORED(),
-                    pedalColor=STORED(),
-                    pedalLabel=TEXT(stored=True),
-                    smallLabel=STORED(),
-                    bufsize=NUMERIC(stored=True),
+                    #input_ports=NUMERIC(stored=True),
+                    #output_ports=NUMERIC(stored=True),
+                    #pedalModel=STORED(),
+                    #pedalColor=STORED(),
+                    #pedalLabel=TEXT(stored=True),
+                    #smallLabel=STORED(),
                     )
-    """
-    schema = Schema(id=ID(unique=True, stored=True), # URI
-                    name=NGRAMWORDS(minsize=2, maxsize=5, stored=True))
 
-    #term_fields = ['label', 'name', 'category', 'author', 'description', 'brand']
-    term_fields = ['name']
+    term_fields = ['label', 'name', 'category', 'author_name', 'brand']
 
     def schemed_data(self, obj):
-        obj['id'] = obj['uri']
+        obj['_id'] = obj['uri']
+        obj['author_name'] = obj['author']['name']
         return Index.schemed_data(self, obj)
 
     def add(self, effect):
