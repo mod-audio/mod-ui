@@ -681,15 +681,15 @@ global fake_tstamp
 fake_tstamp = 0
 
 class PedalboardSearcher(Searcher):
-    index = None
+    index = SESSION.pedalboard_index
 
     def list(self):
         result = []
-        pedals = get_pedalboards()
+        pedals = self.index.data
 
         global fake_tstamp
         fake_tstamp += 1
-
+        import pdb; pdb.set_trace()
         for pedal in pedals:
             result.append({
                 'instances'  : {},
@@ -1427,9 +1427,11 @@ def prepare():
 
     lv2_init()
 
-    # creates index in memory with plugin info
+    # creates index in memory for plugins and pedalboards
     SESSION.effect_index.data = get_all_plugins()
     SESSION.effect_index.reindex()
+    SESSION.pedalboard_index.data = get_pedalboards()
+    SESSION.pedalboard_index.reindex()
 
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)

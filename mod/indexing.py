@@ -45,7 +45,7 @@ class Index(object):
 
         for key, field in self.schema.items():
             if key == 'id':
-                data['id'] = str(obj['_id'])
+                data['id'] = str(obj['uri'])
                 continue
             try:
                 data[key] = obj[key]
@@ -135,29 +135,49 @@ class EffectIndex(Index):
     term_fields = ['label', 'name', 'category', 'author_name', 'brand']
 
     def schemed_data(self, obj):
-        obj['_id'] = obj['uri']
+        try:
+            obj['label'] = obj['gui']['templateData']['label']
+        except (KeyError, TypeError):
+            pass
+        try:
+            obj['brand'] = obj['gui']['templateData']['author']
+        except (KeyError, TypeError):
+            pass
+
         obj['author_name'] = obj['author']['name']
+        obj['input_ports'] = len(obj['ports']['audio']['input'])
+        obj['output_ports'] = len(obj['ports']['audio']['output'])
         return Index.schemed_data(self, obj)
 
     def add(self, effect):
         if not self.indexable(effect):
             return
-        try:
-            effect['label'] = effect['gui']['templateData']['label']
-        except (KeyError, TypeError):
-            pass
-        try:
-            effect['brand'] = effect['gui']['templateData']['author']
-        except (KeyError, TypeError):
-            pass
 
         effect_data = self.schemed_data(effect)
 
-        #effect_data['input_ports'] = len(effect['ports']['audio']['input'])
-        #effect_data['output_ports'] = len(effect['ports']['audio']['output'])
-
         writer = self.index.writer()
         writer.update_document(**effect_data)
+        writer.commit()
+
+    def indexable(self, obj):
+        return not obj.get('hidden', False)
+
+class PedalboardIndex(Index):
+    data = None
+    schema = Schema(id=ID(unique=True, stored=True), # URI
+                    name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
+                    )
+
+    term_fields = ['name']
+
+    def add(self, pedalboard):
+        if not self.indexable(pedalboard):
+            return
+
+        pedalboard_data = self.schemed_data(pedalboard)
+
+        writer = self.index.writer()
+        writer.update_document(**pedalboard_data)
         writer.commit()
 
     def indexable(self, obj):

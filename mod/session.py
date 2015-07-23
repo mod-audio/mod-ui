@@ -44,7 +44,7 @@ from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
-from mod.indexing import EffectIndex
+from mod.indexing import EffectIndex, PedalboardIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
@@ -91,6 +91,7 @@ class Session(object):
 
         self.jack_bufsize = DEFAULT_JACK_BUFSIZE
         self.effect_index = EffectIndex()
+        self.pedalboard_index = PedalboardIndex()
 
         self._pedalboard = Pedalboard()
 
