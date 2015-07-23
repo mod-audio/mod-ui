@@ -18,7 +18,9 @@
 
 import os, json, shutil
 from whoosh.fields import Schema, ID, TEXT, NGRAMWORDS, NUMERIC, STORED
-from whoosh.index import create_in, open_dir
+from whoosh.index import FileIndex, open_dir
+from whoosh.index import _DEF_INDEX_NAME as WHOOSH_DEF_INDEX_NAME
+from whoosh.filedb.filestore import RamStorage
 from whoosh.query import And, Or, Every, Term
 from whoosh.qparser import MultifieldParser
 from whoosh import sorting
@@ -29,24 +31,14 @@ class Index(object):
     @property
     def schema(self):
         raise NotImplemented
+
     @property
-    def index_path(self):
-        raise NotImplemented
-    @property
-    def data_source(self):
+    def data(self):
         raise NotImplemented
 
     def __init__(self):
-        if self.index_path is None:
-            pass
-        elif not os.path.exists(self.index_path):
-            os.mkdir(self.index_path)
-            self.reindex()
-        else:
-            try:
-                self.index = open_dir(self.index_path)
-            except:
-                self.reindex()
+        self.index = FileIndex.create(RamStorage(), self.schema, WHOOSH_DEF_INDEX_NAME)
+        self.reindex()
 
     def schemed_data(self, obj):
         data = {}
@@ -72,39 +64,11 @@ class Index(object):
         return True
 
     def reindex(self):
-        if self.data_source and os.path.exists(self.data_source):
-            shutil.rmtree(self.index_path)
-            os.mkdir(self.index_path)
-            self.index = create_in(self.index_path, self.schema)
-            for filename in os.listdir(self.data_source):
-                filename = os.path.join(self.data_source, filename)
-                if filename.endswith('.metadata'):
-                    continue
-                if os.path.isdir(filename):
-                    continue
-                try:
-                    data = json.loads(open(filename).read())
-                except ValueError:
-                    # Not json valid
-                    continue
-                metadata_file = filename + '.metadata'
-                if os.path.exists(metadata_file):
-                    try:
-                        metadata = json.loads(open(filename).read())
-                        data.update(metadata)
-                    except ValueError:
-                        # Not json valid, just ignore metadata file
-                        pass
+        if self.data is not None:
+            self.index.destroy()
+            self.index = FileIndex.create(RamStorage(), self.schema, WHOOSH_DEF_INDEX_NAME)
+            for data in self.data:
                 self.add(data)
-
-    def save_local_variable(self, objid, var, value):
-        path = os.path.join(self.data_source, '%s.metadata' % objid)
-        if os.path.exists(path):
-            data = json.loads(open(path).read())
-        else:
-            data = {}
-        data[var] = value
-        open(path, 'w').write(json.dumps(data))
 
     def find(self, **kwargs):
         terms = []
@@ -147,11 +111,9 @@ class Index(object):
         return count > 0
 
 class EffectIndex(Index):
-    index_path = None
-    data_source = None
-
+    data = None
+    """
     schema = Schema(id=ID(unique=True, stored=True),
-                    uri=ID(stored=True),
                     name=NGRAMWORDS(minsize=2, maxsize=5, stored=True),
                     brand=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
                     label=NGRAMWORDS(minsize=2, maxsize=4, stored=True),
@@ -169,8 +131,16 @@ class EffectIndex(Index):
                     smallLabel=STORED(),
                     bufsize=NUMERIC(stored=True),
                     )
+    """
+    schema = Schema(id=ID(unique=True, stored=True), # URI
+                    name=NGRAMWORDS(minsize=2, maxsize=5, stored=True))
 
-    term_fields = ['label', 'name', 'category', 'author', 'description', 'brand']
+    #term_fields = ['label', 'name', 'category', 'author', 'description', 'brand']
+    term_fields = ['name']
+
+    def schemed_data(self, obj):
+        obj['id'] = obj['uri']
+        return Index.schemed_data(self, obj)
 
     def add(self, effect):
         if not self.indexable(effect):
@@ -186,36 +156,12 @@ class EffectIndex(Index):
 
         effect_data = self.schemed_data(effect)
 
-        effect_data['input_ports'] = len(effect['ports']['audio']['input'])
-        effect_data['output_ports'] = len(effect['ports']['audio']['output'])
+        #effect_data['input_ports'] = len(effect['ports']['audio']['input'])
+        #effect_data['output_ports'] = len(effect['ports']['audio']['output'])
 
         writer = self.index.writer()
         writer.update_document(**effect_data)
         writer.commit()
 
     def indexable(self, obj):
-        return not obj.get('hidden')
-
-#class PedalboardIndex(Index):
-    #index_path = PEDALBOARD__INDEX_PATH
-    #data_source = PEDALBOARD__DIR
-
-    #schema = Schema(id=ID(unique=True, stored=True),
-                    #title=ID(unique=True, stored=True),
-                    #title_words=NGRAMWORDS(minsize=3, maxsize=5, stored=True),
-                    #description=TEXT,
-                    #)
-
-    #term_fields = ['title_words', 'description']
-
-    #def add(self, pedalboard):
-        #if not self.indexable(pedalboard):
-            #return
-        #data = pedalboard['metadata']
-        #data['_id'] = pedalboard['_id']
-        #data = self.schemed_data(data)
-        #data['title_words'] = data['title']
-
-        #writer = self.index.writer()
-        #writer.update_document(**data)
-        #writer.commit()
+        return not obj.get('hidden', False)

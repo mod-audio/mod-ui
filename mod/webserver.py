@@ -219,13 +219,13 @@ class Searcher(web.RequestHandler):
         raise NotImplemented
 
     def get_object(self, objid):
+        return get_plugin_info(objid)
         #path = os.path.join(self.index.data_source, objid)
         #md_path = path + '.metadata'
         #obj = json.loads(open(path).read())
         #if os.path.exists(md_path):
-            #obj.update(json.loads(open(md_path).read()))
+        #    obj.update(json.loads(open(md_path).read()))
         #return obj
-        return None
 
     def get(self, action, objid=None):
         try:
@@ -242,10 +242,10 @@ class Searcher(web.RequestHandler):
         if action == 'get_by':
             response = self.get_by()
         if action == 'get':
-            #try:
+            try:
                 response = self.get_object(objid)
-            #except:
-                #raise web.HTTPError(404)
+            except:
+                raise web.HTTPError(404)
 
         if action == 'list':
             response = self.list()
@@ -261,64 +261,62 @@ class Searcher(web.RequestHandler):
 
     def search(self):
         result = []
-        #for entry in self.index.term_search(self.request.arguments):
-            #obj = self.get_object(entry['id'])
-            #if obj is None:
+        for entry in self.index.term_search(self.request.arguments):
+            obj = self.get_object(entry['id'])
+            if obj is None:
                 # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
-                #continue
-            #entry.update(obj)
-            #result.append(entry)
+                continue
+            entry.update(obj)
+            result.append(entry)
         return result
 
     def list(self):
         result = []
-        #for entry in self.index.every():
-            #obj = self.get_object(entry['id'])
-            #if obj is None:
-                #continue
-            #entry.update(obj)
-            #result.append(entry)
+        for entry in self.index.every():
+            obj = self.get_object(entry['id'])
+            if obj is None:
+                continue
+            entry.update(obj)
+            result.append(entry)
         return result
 
     def get_by(self):
-        #query = {}
-        #for key in self.request.arguments.keys():
-            #query[key] = self.get_argument(key)
-        #try:
-            #return next(self.index.find(**query))
-        #except StopIteration:
+        query = {}
+        for key in self.request.arguments.keys():
+            query[key] = self.get_argument(key)
+        try:
+            return next(self.index.find(**query))
+        except StopIteration:
             return None
 
 class EffectSearcher(Searcher):
-    index = None
+    index = SESSION.effect_index
 
     def list(self):
-        return get_all_plugins()
+        return self.index.data
 
-    #index = indexing.EffectIndex()
+    def get_by_uri(self):
+        try:
+            uri = self.request.arguments['uri'][0]
+        except (KeyError, IndexError):
+            try:
+                uri = self.request.arguments['uri']
+            except (KeyError, IndexError):
+                raise web.HTTPError(404)
 
-    #def get_by_uri(self):
-        #try:
-            #uri = self.request.arguments['uri'][0]
-        #except (KeyError, IndexError):
-            #try:
-                #uri = self.request.arguments['uri']
-            #except (KeyError, IndexError):
-                #raise web.HTTPError(404)
+        search = self.index.find(id=uri)
+        try:
+            entry = next(search)
+        except StopIteration:
+            raise web.HTTPError(404)
 
-        #search = self.index.find(uri=uri)
-        #try:
-            #entry = next(search)
-        #except StopIteration:
-            #raise web.HTTPError(404)
+        return entry['id']
 
-        #return entry['id']
+    def get(self, action, objid=None):
+        if action == 'get' and objid is None:
+            objid = self.get_by_uri()
 
-    #def get(self, action, objid=None):
-        #if action == 'get' and objid is None:
-            #objid = self.get_by_uri()
-
-        #super(EffectSearcher, self).get(action, objid)
+        super(EffectSearcher, self).get(action, objid)
 
 class EffectBulkData(EffectSearcher):
     def prepare(self):
@@ -1428,6 +1426,11 @@ def prepare():
         check_environment(lambda result: result)
 
     lv2_init()
+
+    # creates index in memory with plugin info
+    SESSION.effect_index.data = get_all_plugins()
+    SESSION.effect_index.reindex()
+
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
     tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
