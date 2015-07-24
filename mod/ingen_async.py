@@ -36,6 +36,7 @@ class NS:
     xsd         = rdflib.Namespace('http://www.w3.org/2001/XMLSchema#')
     presets     = rdflib.Namespace('http://lv2plug.in/ns/ext/presets#')
     parameters  = rdflib.Namespace('http://lv2plug.in/ns/ext/parameters#')
+    midi        = rdflib.Namespace('http://lv2plug.in/ns/ext/midi#')
 
 class Error(Exception):
     def __init__(self, msg, cause):
@@ -82,7 +83,8 @@ class IngenAsync(object):
         self._queue = []
         self._idle = True
         self.position_callback = lambda instance,x,y: None
-        self.port_value_callback = lambda instance,port,value: None
+        self.port_value_callback = lambda port,value: None
+        self.midi_binding_callback = lambda port,controller_number: None
         self.delete_callback = lambda subject: None
         self.save_callback = lambda bundlepath: None
         self.msg_callback = lambda msg: None
@@ -192,6 +194,12 @@ class IngenAsync(object):
                 elif msg_model.value(bnode, NS.patch.property) == NS.parameters.sampleRate:
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.samplerate_value_callback(value)
+                elif msg_model.value(bnode, NS.patch.property) == NS.midi.binding:
+                    port = subject.partition(self.proto_base)[-1]
+                    if msg_model.value(bnode, NS.rdf.type) == NS.midi.Controller:
+                        controller_number = msg_model.value(msg_model.value(bnode, NS.patch.value),
+                                                NS.midi.controllerNumber).toPython()
+                        self.midi_binding_callback(port, controller_number)
 
             # Put messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
