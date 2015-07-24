@@ -289,6 +289,7 @@ JqueryClass('pedalboard', {
             ev.preventDefault()
         })
         self[0].addEventListener('dblclick', function (ev) {
+            if (ev.handled) return
             self.pedalboard('zoomOut')
         })
     },

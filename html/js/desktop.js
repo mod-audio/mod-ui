@@ -658,6 +658,7 @@ function Desktop(elements) {
     $('body')[0].addEventListener('gesturestart', prevent)
     $('body')[0].addEventListener('gesturechange', prevent)
     $('body')[0].addEventListener('touchmove', prevent)
+    $('body')[0].addEventListener('dblclick', prevent)
 
     /*
      * when putting this function, we must remember to remove it from /ping call

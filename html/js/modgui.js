@@ -521,6 +521,10 @@ function GUI(effect, options) {
             widget.controlWidget('gestureChange', ev.scale)
             ev.handled = true
         })
+        element[0].addEventListener('dblclick', function (ev) {
+            ev.preventDefault()
+            ev.handled = true
+        })
     }
 
     this.getTemplateData = function (options, skipNamespace) {
