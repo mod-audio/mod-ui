@@ -833,7 +833,6 @@ JqueryClass('film', baseWidget, {
         self.click(function (e) {
             if (!self.data('enabled')) return self.film('prevent', e)
             self.film('mouseClick', e)
-            self.trigger('midilearn')
         })
 
         return self
