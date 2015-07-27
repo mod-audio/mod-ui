@@ -46,6 +46,7 @@ from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.indexing import EffectIndex, PedalboardIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
+from mod.jacklib_helpers import jacklib
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -125,18 +126,42 @@ class Session(object):
         self.screenshot_generator = ScreenshotGenerator()
 
         self.engine_samplerate = 48000 # default value
+        self.jack_client = None
+        self.xrun_count = 0
+        self.xrun_count2 = 0
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
 
         self._pedal_changed_callback = None
 
+    def JackShutdownCallback(self, arg):
+        self.jack_client = None
+        self.xrun_count = 0
+
+    def JackXRunCallback(self, arg):
+        self.xrun_count += 1
+
     def reconnect(self):
         self.host.open_connection(self.host_callback)
 
     def websocket_opened(self, ws):
+        if self.jack_client is not None:
+            jacklib.deactivate(self.jack_client)
+            jacklib.client_close(self.jack_client)
+
         self.websockets.append(ws)
         self.host.get("/graph")
+
+        self.jack_client = jacklib.client_open("%s-helper" % self._client_name, jacklib.JackNoStartServer, None)
+        self.xrun_count = 0
+        self.xrun_count2 = 0
+
+        if self.jack_client is not None:
+            jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
+            jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
+            jacklib.activate(self.jack_client)
+            print("jacklib client activated")
 
     @gen.engine
     def host_callback(self):
@@ -504,13 +529,23 @@ class Session(object):
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
 
-    # TODO: jack cpu load with ingen
     def jack_cpu_load(self, callback=lambda result: None):
-        def cb(result):
-            if result['ok']:
-                pass
-                #self.browser.send(99999, 'cpu_load', round(result['value']))
-        self.host.cpu_load(cb)
+        if self.jack_client is not None:
+            msg = """
+            []
+            a <http://lv2plug.in/ns/ext/patch#Set> ;
+            <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
+            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/mod#cpuload> ;
+            <http://lv2plug.in/ns/ext/patch#value> "%i" .
+            """ % round(100.0-jacklib.cpu_load(self.jack_client))
+
+            for ws in self.websockets:
+                ws.write_message(msg)
+
+    def jack_xrun(self, callback=lambda result: None):
+        for i in range(self.xrun_count2, self.xrun_count):
+            self.xrun_count2 += 1
+            self.hmi.xrun(callback)
     # END host commands
 
     # hmi commands

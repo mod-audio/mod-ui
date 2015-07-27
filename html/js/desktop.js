@@ -335,7 +335,6 @@ function Desktop(elements) {
 
         // TODO
         $('#mod-cloud-plugins').hide()
-        $('#mod-cpu').hide()
         $('#pedalboards-library .form-horizontal').hide()
         $('#pedalboards-library .pedalboards').css({
             'left': '0px'

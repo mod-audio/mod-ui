@@ -20,7 +20,7 @@
 # Try Import jacklib
 
 try:
-    import jacklib
+    from mod import jacklib
 except ImportError:
     jacklib = None
 

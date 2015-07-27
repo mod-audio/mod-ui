@@ -1423,12 +1423,15 @@ application = web.Application(
             ],
             debug=LOG, **settings)
 
+global cpu_load_callback, xrun_callback
+cpu_load_callback = None
+xrun_callback     = None
+
 def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
         if LOG:
             tornado.log.enable_pretty_logging()
-        JackXRun.connect()
 
     def check():
         check_environment(lambda result: result)
@@ -1443,17 +1446,20 @@ def prepare():
 
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
-    tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
-    global cpu_load_callback
+
+    global cpu_load_callback, xrun_callback
     cpu_load_callback = tornado.ioloop.PeriodicCallback(SESSION.jack_cpu_load, 1000)
+    xrun_callback     = tornado.ioloop.PeriodicCallback(SESSION.jack_xrun, 500)
 
 def start():
-    global cpu_load_callback
+    global cpu_load_callback, xrun_callback
     cpu_load_callback.start()
+    xrun_callback.start()
     tornado.ioloop.IOLoop.instance().start()
 
 def stop():
-    global cpu_load_callback
+    global cpu_load_callback, xrun_callback
+    xrun_callback.stop()
     cpu_load_callback.stop()
     tornado.ioloop.IOLoop.instance().stop()
 

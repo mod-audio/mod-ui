@@ -253,6 +253,10 @@ $(document).ready(function () {
                                     var instance = subject[0].object
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(":bypass", value[0].object == "true" ? 0 : 1, undefined, true);
+                                } else if (property[0].object == "http://moddevices/ns/mod#cpuload") {
+                                    // setting cpuload
+                                    var value = value[0].object
+                                    $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
                                 } else {
                                     console.log("TESTING: Received unhandled patch:Set message " + subject[0])
                                 }
