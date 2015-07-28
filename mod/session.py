@@ -46,7 +46,7 @@ from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.indexing import EffectIndex, PedalboardIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
-from mod.jacklib_helpers import jacklib
+from mod.jacklib_helpers import jacklib, c_char_p_p_to_list
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -152,6 +152,31 @@ class Session(object):
     def stop_timers(self):
         self.jack_cpu_load_timer.stop()
         self.jack_xrun_timer.stop()
+
+    def get_midi_device_list(self):
+        if self.jack_client is None:
+            return []
+
+        # get input and outputs separately
+        in_ports  = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                         jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+        out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                         jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+
+        # remove suffixes from ports
+        in_ports  = [port.rsplit(" (in)" ,1)[0] for port in in_ports ]
+        out_ports = [port.rsplit(" (out)",1)[0] for port in out_ports]
+
+        # add our own suffix now
+        ports = []
+        for port in in_ports:
+            if "Midi Through" in port:
+                continue
+            if port in ("jackmidi", "OSS sequencer"):
+                continue
+            ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
+
+        return ports
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)
