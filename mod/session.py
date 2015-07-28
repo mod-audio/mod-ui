@@ -108,7 +108,7 @@ class Session(object):
         Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
         #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
         #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
-        Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
+        #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
 #        self.host = factory(Host, FakeHost, DEV_HOST,
 #                            "unix:///tmp/ingen.sock", self.host_callback)
@@ -135,12 +135,23 @@ class Session(object):
 
         self._pedal_changed_callback = None
 
+        self.jack_cpu_load_timer = ioloop.PeriodicCallback(self.jack_cpu_load_callback, 1000)
+        self.jack_xrun_timer     = ioloop.PeriodicCallback(self.jack_xrun_callback, 500)
+
     def JackShutdownCallback(self, arg):
         self.jack_client = None
         self.xrun_count = 0
 
     def JackXRunCallback(self, arg):
         self.xrun_count += 1
+
+    def start_timers(self):
+        self.jack_cpu_load_timer.start()
+        self.jack_xrun_timer.start()
+
+    def stop_timers(self):
+        self.jack_cpu_load_timer.stop()
+        self.jack_xrun_timer.stop()
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)
@@ -529,7 +540,7 @@ class Session(object):
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
 
-    def jack_cpu_load(self, callback=lambda result: None):
+    def jack_cpu_load_callback(self, callback=lambda result: None):
         if self.jack_client is not None:
             msg = """
             []
@@ -537,12 +548,12 @@ class Session(object):
             <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
             <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/mod#cpuload> ;
             <http://lv2plug.in/ns/ext/patch#value> "%i" .
-            """ % round(100.0-jacklib.cpu_load(self.jack_client))
+            """ % round(100.0 - jacklib.cpu_load(self.jack_client))
 
             for ws in self.websockets:
                 ws.write_message(msg)
 
-    def jack_xrun(self, callback=lambda result: None):
+    def jack_xrun_callback(self, callback=lambda result: None):
         for i in range(self.xrun_count2, self.xrun_count):
             self.xrun_count2 += 1
             self.hmi.xrun(callback)

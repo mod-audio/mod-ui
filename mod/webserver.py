@@ -1138,32 +1138,9 @@ class SysMonProcessList(web.RequestHandler):
 
 
 class JackXRun(web.RequestHandler):
-    xruns = 0
-    requests = set()
-
-    @classmethod
-    def connect(cls):
-        pass
-
-    @classmethod
-    def xrun(cls, *args):
-        cls.xruns += 1
-        for request in list(cls.requests):
-            request.wake()
-        return cls.xruns
-
-    @web.asynchronous
-    def get(self, count=None):
-        if count is not None and self.xruns > int(count):
-            self.write(json.dumps(self.xruns))
-            self.finish()
-        else:
-            self.requests.add(self)
-
-    def wake(self):
-        self.write(json.dumps(self.xruns))
+    def get(self):
+        self.write(json.dumps(SESSSION.xrun_count))
         self.finish()
-        self.requests.remove(self)
 
 class LoginSign(web.RequestHandler):
     def get(self, sid):
@@ -1423,10 +1400,6 @@ application = web.Application(
             ],
             debug=LOG, **settings)
 
-global cpu_load_callback, xrun_callback
-cpu_load_callback = None
-xrun_callback     = None
-
 def prepare():
     def run_server():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
@@ -1447,21 +1420,13 @@ def prepare():
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
 
-    global cpu_load_callback, xrun_callback
-    cpu_load_callback = tornado.ioloop.PeriodicCallback(SESSION.jack_cpu_load, 1000)
-    xrun_callback     = tornado.ioloop.PeriodicCallback(SESSION.jack_xrun, 500)
-
 def start():
-    global cpu_load_callback, xrun_callback
-    cpu_load_callback.start()
-    xrun_callback.start()
+    SESSION.start_timers()
     tornado.ioloop.IOLoop.instance().start()
 
 def stop():
-    global cpu_load_callback, xrun_callback
-    xrun_callback.stop()
-    cpu_load_callback.stop()
     tornado.ioloop.IOLoop.instance().stop()
+    SESSION.stop_timers()
 
 def run():
     prepare()
