@@ -1138,7 +1138,7 @@ class SysMonProcessList(web.RequestHandler):
 
 class JackMidiDeviceList(web.RequestHandler):
     def get(self):
-        self.write(json.dumps(SESSSION.get_midi_device_list()))
+        self.write(json.dumps(SESSION.get_midi_device_list()))
         self.finish()
 
 class JackXRuns(web.RequestHandler):

@@ -24,6 +24,9 @@ function Desktop(elements) {
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
         rec: $('<div>'),
+        addMidiButton: $('<div>'),
+        midiDevicesWindow: $('<div>'),
+        midiDevicesList: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
@@ -77,6 +80,11 @@ function Desktop(elements) {
     })
 
     this.netStatus = elements.networkIcon.statusTooltip()
+
+    this.midiDevices = new MidiDevicesWindow({
+        midiDevicesWindow: elements.midiDevicesWindow,
+        midiDevicesList: elements.midiDevicesList,
+    })
 
     this.registration = new RegistrationWindow({
         registrationWindow: elements.registrationWindow,
@@ -515,6 +523,9 @@ function Desktop(elements) {
         }
     })
 
+    elements.addMidiButton.click(function () {
+        self.showMidiDeviceList()
+    })
     elements.saveButton.click(function () {
         self.saveCurrentPedalboard(false)
     })
@@ -1036,6 +1047,13 @@ Desktop.prototype.reset = function (callback) {
     this.pedalboardModified = false
     this.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
+}
+
+Desktop.prototype.showMidiDeviceList = function () {
+    var self = this
+
+    self.midiDevices.start(function (newDevs) {
+    })
 }
 
 Desktop.prototype.loadPedalboard = function (bundlepath, callback) {

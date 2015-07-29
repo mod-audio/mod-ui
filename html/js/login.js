@@ -61,6 +61,7 @@ function UserSession(options) {
             new Notification('error', message)
         },
         loginWindow: $('<div>'),
+        registration: $('<div>'),
         feedButton: $('#mod-social-network-header .menu ul li.feed'),
         loginButton: $("#mod-social-network-header .menu ul li.login"),
         logoutButton: $("#mod-social-network-header .menu ul li.logout"),

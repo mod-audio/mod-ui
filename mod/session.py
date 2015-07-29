@@ -138,6 +138,13 @@ class Session(object):
         self.jack_cpu_load_timer = ioloop.PeriodicCallback(self.jack_cpu_load_callback, 1000)
         self.jack_xrun_timer     = ioloop.PeriodicCallback(self.jack_xrun_callback, 500)
 
+    def __del__(self):
+        if self.jack_client is None:
+            return
+        jacklib.deactivate(self.jack_client)
+        jacklib.client_close(self.jack_client)
+        #self.jack_client = None
+
     def JackShutdownCallback(self, arg):
         self.jack_client = None
         self.xrun_count = 0
@@ -159,13 +166,13 @@ class Session(object):
 
         # get input and outputs separately
         in_ports  = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                         jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
-        out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
                                                          jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+        out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                         jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
 
         # remove suffixes from ports
-        in_ports  = [port.rsplit(" (in)" ,1)[0] for port in in_ports ]
-        out_ports = [port.rsplit(" (out)",1)[0] for port in out_ports]
+        in_ports  = [port.replace("alsa_midi:","",1).rsplit(" in" ,1)[0] for port in in_ports ]
+        out_ports = [port.replace("alsa_midi:","",1).rsplit(" out",1)[0] for port in out_ports]
 
         # add our own suffix now
         ports = []
@@ -183,8 +190,10 @@ class Session(object):
 
     def websocket_opened(self, ws):
         if self.jack_client is not None:
-            jacklib.deactivate(self.jack_client)
-            jacklib.client_close(self.jack_client)
+            c = self.jack_client
+            self.jack_client = None
+            jacklib.deactivate(c)
+            jacklib.client_close(c)
 
         self.websockets.append(ws)
         self.host.get("/graph")

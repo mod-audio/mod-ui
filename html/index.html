@@ -72,6 +72,9 @@ $('document').ready(function() {
       zoomIn: $('.zoom-in'),
       zoomOut: $('.zoom-out'),
       rec: $('#rec'),
+      addMidiButton: $('#pedalboard-info .js-add-midi'),
+      midiDevicesWindow: $('#midi-device-window'),
+      midiDevicesList: $("#midi-device-list"),
       saveBox: $('#save-pedalboard'),
       saveButton: $('#pedalboard-info .js-save'),
       saveAsButton: $('#pedalboard-info .js-save-as'),
@@ -121,6 +124,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/login.js?v={{version}}"></script>
+<script type="text/javascript" src="js/mididevices.js?v={{version}}"></script>
 <script type="text/javascript" src="js/register.js?v={{version}}"></script>
 <script type="text/javascript" src="js/feed.js?v={{version}}"></script>
 <script type="text/javascript" src="js/social.js?v={{version}}"></script>
@@ -326,6 +330,8 @@ $('document').ready(function() {
                 <div class="title">Untitled</div>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
+                    <button class="js-add-midi btn btn-mini btn-warning">Add MIDI Device</button>
+                    <span class="separator"></span>
                     <button class="js-save btn btn-mini btn-warning">Save</button>
                     <button class="js-save-as btn btn-mini btn-warning">Save as</button>
                     <span class="separator"></span>
@@ -353,6 +359,22 @@ $('document').ready(function() {
         <div id="pedalboard-dashboard">
         </div>
         <!-- END PEDALBOARD-DASHBOARD -->
+
+        <!-- MIDI DEVICE LIST WINDOW -->
+        <div id="midi-device-window" class="save-popup hidden">
+            <div class="mod-box">
+                <h1>MIDI Device List</h1>
+                <form class="bottom">
+                    <div class="controls clearfix" id="midi-device-list">
+                    </div>
+                    <div class="controls actions">
+                        <button class="js-cancel btn btn-danger">Cancel</button>
+                        <button class="js-submit btn btn-success">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- MIDI DEVICE LIST WINDOW -->
 
     </div>
     <!-- END PEDALBOARD -->

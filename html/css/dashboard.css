@@ -910,6 +910,19 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 
+#midi-device-window .mod-box {
+    width:500px;
+    margin:-150px -280px;
+}
+#midi-device-list {
+    width:500px;
+}
+#midi-device-window input {
+    vertical-align:text-top;
+    margin-right:3px;
+}
+
+
 #registration-form.mod-box {
     width:329px;
 }
