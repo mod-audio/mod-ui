@@ -67,12 +67,12 @@ JACK_LOAD_INIT_LIMIT = 1024
 JACK_DEFAULT_AUDIO_TYPE = "32 bit float mono audio"
 JACK_DEFAULT_MIDI_TYPE  = "8 bit raw midi"
 
-JACK_METADATA_PRETTY_NAME = ""
-JACK_METADATA_HARDWARE = ""
-JACK_METADATA_CONNECTED = ""
-JACK_METADATA_PORT_GROUP = ""
-JACK_METADATA_ICON_SMALL = ""
-JACK_METADATA_ICON_LARGE = ""
+JACK_METADATA_PRETTY_NAME = "http://jackaudio.org/metadata/pretty-name"
+#JACK_METADATA_HARDWARE = ""
+#JACK_METADATA_CONNECTED = ""
+#JACK_METADATA_PORT_GROUP = ""
+#JACK_METADATA_ICON_SMALL = ""
+#JACK_METADATA_ICON_LARGE = ""
 
 # ------------------------------------------------------------------------------------------------------------
 # Types
@@ -687,6 +687,12 @@ jacklib.jack_port_get_buffer.restype = c_void_p
 jacklib.jack_port_name.argtypes = [POINTER(jack_port_t)]
 jacklib.jack_port_name.restype = c_char_p
 
+try:
+    jacklib.jack_port_uuid.argtypes = [POINTER(jack_port_t)]
+    jacklib.jack_port_uuid.restype = jack_uuid_t
+except:
+    jacklib.jack_port_uuid = None
+
 jacklib.jack_port_short_name.argtypes = [POINTER(jack_port_t)]
 jacklib.jack_port_short_name.restype = c_char_p
 
@@ -777,6 +783,11 @@ def port_get_buffer(port, nframes):
 
 def port_name(port):
     return jacklib.jack_port_name(port)
+
+def port_uuid(port):
+    if jacklib.jack_port_uuid:
+        return jacklib.jack_port_uuid(port)
+    return 0
 
 def port_short_name(port):
     return jacklib.jack_port_short_name(port)
@@ -1305,7 +1316,7 @@ def get_property(subject, key):
         value = c_char_p(0)
         type_ = c_char_p(0)
         ret   = jacklib.jack_get_property(subject, key.encode("utf-8"), pointer(value), pointer(type_))
-        return (ret, value, type_)
+        return (ret, value.value.decode("utf-8", errors="ignore"), type_.value.decode("utf-8", errors="ignore"))
     return (-1, "", "")
 
 def get_properties(subject):

@@ -167,12 +167,35 @@ class Session(object):
         def get_ports(client_name):
             # get input and outputs separately
             in_ports  = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
+                                                             if client_name == "alsa_midi" else
+                                                             jacklib.JackPortIsInput
+                                                             ))
             out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsInput
+                                                             if client_name == "alsa_midi" else
+                                                             jacklib.JackPortIsOutput
+                                                             ))
 
-            #if client_name != "alsa_midi":
-                #jack_get_property()
+            if client_name != "alsa_midi":
+                print("INGEN", in_ports, out_ports)
+                for i in range(len(in_ports)):
+                    if in_ports[i] == "ingen:control_in":
+                        continue
+                    uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
+                    ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
+                    print(ret, value, type_)
+                    if ret == 0: # and type_ == "text/plain":
+                        in_ports[i] = value
+                for i in range(len(out_ports)):
+                    if out_ports[i] == "ingen:control_out":
+                        continue
+                    uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
+                    ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
+                    print(ret, value, type_)
+                    if ret == 0: # and type_ == "text/plain":
+                        out_ports[i] = value
+                print("INGEN", in_ports, out_ports)
 
             # remove suffixes from ports
             in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
