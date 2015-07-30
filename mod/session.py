@@ -164,31 +164,42 @@ class Session(object):
         if self.jack_client is None:
             return []
 
-        # get input and outputs separately
-        in_ports  = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                         jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
-        out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, "alsa_midi:", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                         jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+        def get_ports(client_name):
+            # get input and outputs separately
+            in_ports  = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+            out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
 
-        # remove suffixes from ports
-        in_ports  = [port.replace("alsa_midi:","",1).rsplit(" in" ,1)[0] for port in in_ports ]
-        out_ports = [port.replace("alsa_midi:","",1).rsplit(" out",1)[0] for port in out_ports]
+            #if client_name != "alsa_midi":
+                #jack_get_property()
 
-        # add our own suffix now
-        ports = []
-        for port in in_ports:
-            #if "Midi Through" in port:
-                #continue
-            #if port in ("jackmidi", "OSS sequencer"):
-                #continue
-            ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
+            # remove suffixes from ports
+            in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
+            out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
 
-        print(ports)
+            # add our own suffix now
+            ports = []
+            for port in in_ports:
+                #if "Midi Through" in port:
+                    #continue
+                #if port in ("jackmidi", "OSS sequencer"):
+                    #continue
+                ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
 
-        return ["Midi Through Midi Through Port-3 (in+out)",], ports
+            print(client_name, ports)
+            return ports
+
+        return get_ports(self._client_name), get_ports("alsa_midi")
 
     def set_midi_devices(self, devs):
         print(devs)
+
+        for dev in devs:
+            dev, modes = dev.rsplit(" (",1)
+            self.host.add_external_port(dev+" in", "Input", "MIDI")
+            if "out" in modes:
+                self.host.add_external_port(dev+" out", "Output", "MIDI")
 
     def reconnect(self):
         self.host.open_connection(self.host_callback)

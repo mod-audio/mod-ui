@@ -67,9 +67,17 @@ JACK_LOAD_INIT_LIMIT = 1024
 JACK_DEFAULT_AUDIO_TYPE = "32 bit float mono audio"
 JACK_DEFAULT_MIDI_TYPE  = "8 bit raw midi"
 
+JACK_METADATA_PRETTY_NAME = ""
+JACK_METADATA_HARDWARE = ""
+JACK_METADATA_CONNECTED = ""
+JACK_METADATA_PORT_GROUP = ""
+JACK_METADATA_ICON_SMALL = ""
+JACK_METADATA_ICON_LARGE = ""
+
 # ------------------------------------------------------------------------------------------------------------
 # Types
 
+jack_uuid_t      = c_uint64
 jack_nframes_t   = c_uint32
 jack_port_id_t   = c_uint32
 jack_time_t      = c_uint64
@@ -83,8 +91,8 @@ jack_transport_state_t    = c_enum # JackTransportState
 jack_position_bits_t      = c_enum # JackPositionBits
 jack_session_event_type_t = c_enum # JackSessionEventType
 jack_session_flags_t      = c_enum # JackSessionFlags
-jack_custom_change_t      = c_enum # JackCustomChange
 jack_latency_callback_mode_t = c_enum # JackLatencyCallbackMode
+jack_property_change_t = c_enum
 
 jack_port_t   = _jack_port
 jack_client_t = _jack_client
@@ -152,10 +160,10 @@ JackSessionSaveTemplate = 3
 JackSessionSaveError    = 0x01
 JackSessionNeedTerminal = 0x02
 
-# enum JackCustomChange
-JackCustomRemoved  = 0
-JackCustomAdded    = 1
-JackCustomReplaced = 2
+# enum jack_property_change_t
+PropertyCreated = 0
+PropertyChanged = 1
+PropertyDeleted = 2
 
 # ------------------------------------------------------------------------------------------------------------
 # Structs
@@ -215,6 +223,21 @@ class jack_session_command_t(Structure):
         ("flags", jack_session_flags_t)
     ]
 
+class jack_property_t(Structure):
+    _fields_ = [
+        ("key", c_char_p),
+        ("data", c_char_p),
+        ("type", c_char_p)
+    ]
+
+class jack_description_t(Structure):
+    _fields_ = [
+        ("subject", jack_uuid_t),
+        ("property_cnt", c_uint32),
+        ("properties", POINTER(jack_property_t)),
+        ("property_size", c_uint32)
+    ]
+
 # ------------------------------------------------------------------------------------------------------------
 # Callbacks
 
@@ -237,7 +260,7 @@ JackInfoShutdownCallback = CFUNCTYPE(None, jack_status_t, c_char_p, c_void_p)
 JackSyncCallback     = CFUNCTYPE(c_int, jack_transport_state_t, POINTER(jack_position_t), c_void_p)
 JackTimebaseCallback = CFUNCTYPE(None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p)
 JackSessionCallback  = CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p)
-JackCustomDataAppearanceCallback = CFUNCTYPE(None, c_char_p, c_char_p, jack_custom_change_t, c_void_p)
+JackPropertyChangeCallback = CFUNCTYPE(None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p)
 
 # ------------------------------------------------------------------------------------------------------------
 # Functions
@@ -1210,71 +1233,124 @@ def client_has_session_callback(client, client_name):
     return -1
 
 # ------------------------------------------------------------------------------------------------------------
-# Custom
+# Meta-Data
 
-global _custom_appearance_callback
-_custom_appearance_callback = None
-
-try:
-    jacklib.jack_custom_publish_data.argtypes = [POINTER(jack_client_t), c_char_p, c_void_p, c_size_t]
-    jacklib.jack_custom_publish_data.restype  = c_int
-except:
-    jacklib.jack_custom_publish_data = None
+global _property_change_callback
+_property_change_callback = None
 
 try:
-    jacklib.jack_custom_get_data.argtypes = [POINTER(jack_client_t), c_char_p, c_char_p, POINTER(c_void_p), POINTER(c_size_t)]
-    jacklib.jack_custom_get_data.restype  = c_int
+    jacklib.jack_set_property.argtypes = [POINTER(jack_client_t), jack_uuid_t, c_char_p, c_char_p, c_char_p]
+    jacklib.jack_set_property.restype  = c_int
 except:
-    jacklib.jack_custom_get_data = None
+    jacklib.jack_set_property = None
 
 try:
-    jacklib.jack_custom_unpublish_data.argtypes = [POINTER(jack_client_t), c_char_p]
-    jacklib.jack_custom_unpublish_data.restype  = c_int
+    jacklib.jack_get_property.argtypes = [jack_uuid_t, c_char_p, POINTER(c_char_p), POINTER(c_char_p)]
+    jacklib.jack_get_property.restype  = c_int
 except:
-    jacklib.jack_custom_unpublish_data = None
+    jacklib.jack_get_property = None
 
 try:
-    jacklib.jack_custom_get_keys.argtypes = [POINTER(jack_client_t), c_char_p]
-    jacklib.jack_custom_get_keys.restype  = POINTER(c_char_p)
+    jacklib.jack_get_properties.argtypes = [jack_uuid_t, POINTER(jack_description_t)]
+    jacklib.jack_get_properties.restype  = c_int
 except:
-    jacklib.jack_custom_get_keys = None
+    jacklib.jack_get_properties = None
 
 try:
-    jacklib.jack_custom_set_data_appearance_callback.argtypes = [POINTER(jack_client_t), JackCustomDataAppearanceCallback, c_void_p]
-    jacklib.jack_custom_set_data_appearance_callback.restype  = c_int
+    jacklib.jack_get_all_properties.argtypes = [POINTER(POINTER(jack_description_t))]
+    jacklib.jack_get_all_properties.restype  = c_int
 except:
-    jacklib.jack_custom_set_data_appearance_callback = None
+    jacklib.jack_get_all_properties = None
 
-def custom_publish_data(client, key, data, size):
-    if jacklib.jack_custom_publish_data:
-        return jacklib.jack_custom_publish_data(client, key.encode("utf-8"), data, size)
+try:
+    jacklib.jack_free_description.argtypes = [POINTER(jack_description_t), c_int]
+    jacklib.jack_free_description.restype  = None
+except:
+    jacklib.jack_free_description = None
+
+try:
+    jacklib.jack_remove_property.argtypes = [POINTER(jack_client_t), jack_uuid_t, c_char_p]
+    jacklib.jack_remove_property.restype  = c_int
+except:
+    jacklib.jack_remove_property = None
+
+try:
+    jacklib.jack_remove_properties.argtypes = [POINTER(jack_client_t), jack_uuid_t]
+    jacklib.jack_remove_properties.restype  = c_int
+except:
+    jacklib.jack_remove_properties = None
+
+try:
+    jacklib.jack_remove_all_properties.argtypes = [POINTER(jack_client_t)]
+    jacklib.jack_remove_all_properties.restype  = c_int
+except:
+    jacklib.jack_remove_all_properties = None
+
+try:
+    jacklib.jack_set_property_change_callback.argtypes = [POINTER(jack_client_t), JackPropertyChangeCallback, c_void_p]
+    jacklib.jack_set_property_change_callback.restype  = c_int
+except:
+    jacklib.jack_set_property_change_callback = None
+
+def set_property(client, subject, key, value, type_):
+    if jacklib.jack_set_property:
+        return jacklib.jack_set_property(client, subject, key.encode("utf-8"), value.encode("utf-8"), type_.encode("utf-8"))
     return -1
 
-def custom_get_data(client, client_name, key):
+def get_property(subject, key):
     # NOTE - this function has no extra arguments in jacklib
-    # Instead, data and size will be passed in return value, in form of (int ret, void* data, size_t size)
+    # Instead, value and type will be passed in return value, in form of (ret, value, type)
 
-    if jacklib.jack_custom_get_data:
-        data = c_void_p(0)
-        size = c_size_t(0)
-        ret  = jacklib.jack_custom_get_data(client, client_name.encode("utf-8"), key.encode("utf-8"), pointer(data), pointer(size))
-        return (ret, data, size)
+    if jacklib.jack_get_property:
+        value = c_char_p(0)
+        type_ = c_char_p(0)
+        ret   = jacklib.jack_get_property(subject, key.encode("utf-8"), pointer(value), pointer(type_))
+        return (ret, value, type_)
+    return (-1, "", "")
 
-    return (-1, None, 0)
+def get_properties(subject):
+    # NOTE - this function has no extra arguments in jacklib
+    # Instead, desc will be passed in return value, in form of (ret, desc)
 
-def custom_unpublish_data(client, key):
-    if jacklib.jack_custom_unpublish_data:
-        return jacklib.jack_custom_unpublish_data(client, key.encode("utf-8"))
+    if jacklib.jack_get_properties:
+        desc = jack_description_t(0)
+        ret  = jacklib.jack_get_properties(subject, pointer(desc))
+        return (ret, desc)
+    return (-1, None)
+
+def get_all_properties(subject, key):
+    # NOTE - this function has no extra arguments in jacklib
+    # Instead, descs will be passed in return value, in form of (ret, descs)
+
+    if jacklib.jack_get_all_properties:
+        descs_type = POINTER(jack_description_t)
+        descs      = descs_type(0)
+        ret        = jacklib.jack_get_all_properties(subject, key.encode("utf-8"), pointer(descs))
+        return (ret, descs)
+    return (-1, None)
+
+def free_description(desc, free_description_itself):
+    if jacklib.jack_free_description:
+        jacklib.jack_free_description(desc, free_description_itself)
+
+def remove_property(client, subject, key):
+    if jacklib.jack_remove_property:
+        return jacklib.jack_remove_property(client, subject, key.encode("utf-8"))
     return -1
 
-def custom_get_keys(client, client_name):
-    if jacklib.jack_custom_get_keys:
-        return jacklib.jack_custom_get_keys(client, client_name.encode("utf-8"))
-    return None
+def remove_properties(client, subject):
+    if jacklib.jack_remove_properties:
+        return jacklib.jack_remove_properties(client, subject)
+    return -1
 
-def custom_set_data_appearance_callback(client, custom_callback, arg):
-    if jacklib.jack_custom_set_data_appearance_callback:
-        global _custom_appearance_callback
-        _custom_appearance_callback = JackCustomDataAppearanceCallback(custom_callback)
-        return jacklib.jack_custom_set_data_appearance_callback(client, _custom_appearance_callback, arg)
+def remove_all_properties(client):
+    if jacklib.jack_remove_all_properties:
+        return jacklib.jack_remove_all_properties(client)
+    return -1
+
+def set_property_change_callback(client, callback, arg):
+    if jacklib.jack_set_property_change_callback:
+        global _property_change_callback
+        _property_change_callback = JackPropertyChangeCallback(callback)
+        return jacklib.jack_set_property_change_callback(client, _property_change_callback, arg)
     return -1

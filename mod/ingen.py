@@ -108,4 +108,4 @@ class Host(IngenAsync):
         %s
         """ % (x, y, name, mode, portyp, extra)
 
-        self.put("/graph/%s" % name.replace(" ", "_").lower(), msg, callback)
+        self.put("/graph/%s" % name.replace(" ", "_").replace("-","_").lower(), msg, callback)
