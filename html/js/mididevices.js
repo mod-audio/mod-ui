@@ -30,28 +30,33 @@ function MidiDevicesWindow(options) {
 
     options.midiDevicesWindow.find('.js-submit').click(function () {
         var devs = []
-        self.selectedDevicesCallback(devs)
 
+        $.each(options.midiDevicesList.find('input'), function (index, input) {
+            var input = $(input)
+            if (input.is(':checked'))
+                devs.push(input.val())
+        })
+
+        self.selectDevices(devs)
         options.midiDevicesWindow.hide()
         return false
     })
 
-    this.selectedDevicesCallback = function () {}
-
-    this.start = function (callback) {
-        self.selectedDevicesCallback = callback
-
+    this.start = function () {
         // clear old entries
         options.midiDevicesList.find('input').remove()
         options.midiDevicesList.find('span').remove()
 
-        self.getDeviceList(function (devs) {
-            if (devs.length == 0)
+        self.getDeviceList(function (devsInUse, devList) {
+            if (devList.length == 0)
                 return new Notification("info", "No MIDI devices available")
 
-            // add news ones
-            for (var i in devs) {
-                var elem = $('<input type="checkbox" name="" value="' + devs[i] + '" checked/><span>' + devs[i] + '<br/></span>')
+            // add new ones
+            for (var i in devList) {
+                var dev  = devList[i]
+                var elem = $('<input type="checkbox" name="" value="' + dev + '" '
+                         + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + dev + '<br/></span>')
+
                 elem.appendTo(options.midiDevicesList)
             }
 
@@ -61,13 +66,26 @@ function MidiDevicesWindow(options) {
 
     this.getDeviceList = function (callback) {
         $.ajax({
-            url: '/jack/midi_devices',
+            url: '/jack/get_midi_devices',
             type: 'GET',
             success: function (resp) {
-                callback(resp)
+                callback(resp.devsInUse, resp.devList)
             },
             error: function () {
                 new Bug("Failed to get list of MIDI devices")
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    }
+
+    this.selectDevices = function (devs) {
+        $.ajax({
+            url: '/jack/set_midi_devices',
+            type: 'POST',
+            data: JSON.stringify(devs),
+            error: function () {
+                new Bug("Failed to enable some MIDI devices")
             },
             cache: false,
             dataType: 'json'

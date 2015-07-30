@@ -1136,10 +1136,21 @@ class SysMonProcessList(web.RequestHandler):
             self.sock.read_until("\0".encode("utf-8"), set_ps_list)
         self.sock.connect(('127.0.0.1', 57890), recv_ps_list)
 
-class JackMidiDeviceList(web.RequestHandler):
+class JackGetMidiDevices(web.RequestHandler):
     def get(self):
-        self.write(json.dumps(SESSION.get_midi_device_list()))
+        devsInUse, devList = SESSION.get_midi_device_list()
+        self.write(json.dumps({
+            "devsInUse": devsInUse,
+            "devList"  : devList
+        }))
         self.finish()
+
+class JackSetMidiDevices(web.RequestHandler):
+    def post(self):
+        devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        SESSION.set_midi_devices(devs)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
 
 class JackXRuns(web.RequestHandler):
     def get(self):
@@ -1387,7 +1398,8 @@ application = web.Application(
 
             #(r"/sysmon/ps", SysMonProcessList),
 
-            (r"/jack/midi_devices", JackMidiDeviceList),
+            (r"/jack/get_midi_devices", JackGetMidiDevices),
+            (r"/jack/set_midi_devices", JackSetMidiDevices),
             (r"/jack/xruns", JackXRuns),
 
             (r"/ping/?", Ping),

@@ -1050,10 +1050,7 @@ Desktop.prototype.reset = function (callback) {
 }
 
 Desktop.prototype.showMidiDeviceList = function () {
-    var self = this
-
-    self.midiDevices.start(function (newDevs) {
-    })
+    this.midiDevices.start()
 }
 
 Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
