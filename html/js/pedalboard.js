@@ -1300,6 +1300,27 @@ JqueryClass('pedalboard', {
 
             plugin.remove()
         } else {
+            var connections = self.data('connectionManager')
+            connections.iterate(function (jack) {
+                var input   = jack.data('destination')
+                var inport  = input.attr('mod-port')
+                var output  = jack.data('origin')
+                var outport = output.attr('mod-port')
+
+                if (inport != instance && outport != instance)
+                    return
+
+                connections.disconnect(outport, inport)
+                jack.data('canvas').remove()
+                jack.remove()
+                self.pedalboard('packJacks', input)
+
+                if (!connections.origIndex[outport] || Object.keys(connections.origIndex[outport]).length == 0) {
+                    output.addClass('output-disconnected')
+                    output.removeClass('output-connected')
+                }
+            })
+
             var inputs  = self.data('hwInputs')
             var outputs = self.data('hwOutputs')
 
@@ -1317,13 +1338,8 @@ JqueryClass('pedalboard', {
                 }
             })
 
-            // TODO - remove connections
-
-            setTimeout(100, function() {
-                self.pedalboard('positionHardwarePorts')
-            })
+            self.pedalboard('positionHardwarePorts')
         }
-
     },
 
     // Highlight all inputs to which a jack can be connected (any inputs that are not from same
