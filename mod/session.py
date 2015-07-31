@@ -46,7 +46,7 @@ from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.indexing import EffectIndex, PedalboardIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
-from mod.jacklib_helpers import jacklib, c_char_p_p_to_list
+from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     if fake:
@@ -132,11 +132,13 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
+        self.mididevuuids = []
 
         self._pedal_changed_callback = None
 
-        self.jack_cpu_load_timer = ioloop.PeriodicCallback(self.jack_cpu_load_callback, 1000)
-        self.jack_xrun_timer     = ioloop.PeriodicCallback(self.jack_xrun_callback, 500)
+        self.jack_midi_devs_timer = ioloop.PeriodicCallback(self.jack_midi_devs_callback, 1000)
+        self.jack_cpu_load_timer  = ioloop.PeriodicCallback(self.jack_cpu_load_callback, 1000)
+        self.jack_xrun_timer      = ioloop.PeriodicCallback(self.jack_xrun_callback, 500)
 
     def __del__(self):
         if self.jack_client is None:
@@ -144,10 +146,22 @@ class Session(object):
         jacklib.deactivate(self.jack_client)
         jacklib.client_close(self.jack_client)
         #self.jack_client = None
+        print("jacklib client deactivated")
 
     def JackShutdownCallback(self, arg):
         self.jack_client = None
-        self.xrun_count = 0
+
+    # jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
+    def JackPropertyChangeCallback(self, subject, key, change, arg):
+        if self.jack_client is None:
+            return
+        if change != jacklib.PropertyCreated:
+            return
+        if key != jacklib.bJACK_METADATA_PRETTY_NAME:
+            return
+
+        self.mididevuuids.append(subject)
+        self.jack_midi_devs_timer.start()
 
     def JackXRunCallback(self, arg):
         self.xrun_count += 1
@@ -157,68 +171,78 @@ class Session(object):
         self.jack_xrun_timer.start()
 
     def stop_timers(self):
-        self.jack_cpu_load_timer.stop()
         self.jack_xrun_timer.stop()
+        self.jack_cpu_load_timer.stop()
 
-    def get_midi_device_list(self):
+    def get_ports(self, client_name):
         if self.jack_client is None:
             return []
 
-        def get_ports(client_name):
-            # get input and outputs separately
-            in_ports  = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
-                                                             if client_name == "alsa_midi" else
-                                                             jacklib.JackPortIsInput
-                                                             ))
-            out_ports = c_char_p_p_to_list(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
+        # get input and outputs separately
+        in_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
+                                                            if client_name == "alsa_midi" else
+                                                            jacklib.JackPortIsInput
+                                                            ))
+        out_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
                                                              jacklib.JackPortIsPhysical|jacklib.JackPortIsInput
                                                              if client_name == "alsa_midi" else
                                                              jacklib.JackPortIsOutput
                                                              ))
 
-            if client_name != "alsa_midi":
-                print("INGEN", in_ports, out_ports)
-                for i in range(len(in_ports)):
-                    if in_ports[i] == "ingen:control_in":
-                        continue
-                    uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
-                    ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                    print(ret, value, type_)
-                    if ret == 0: # and type_ == "text/plain":
-                        in_ports[i] = value
-                for i in range(len(out_ports)):
-                    if out_ports[i] == "ingen:control_out":
-                        continue
-                    uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
-                    ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                    print(ret, value, type_)
-                    if ret == 0: # and type_ == "text/plain":
-                        out_ports[i] = value
-                print("INGEN", in_ports, out_ports)
+        if client_name != "alsa_midi":
+            in_ports.remove("ingen:control_in")
+            out_ports.remove("ingen:control_out")
 
-            # remove suffixes from ports
-            in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
-            out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
+            for i in range(len(in_ports)):
+                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
+                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
+                if ret == 0 and type_ == b"text/plain":
+                    in_ports[i] = charPtrToString(value)
 
-            # add our own suffix now
-            ports = []
-            for port in in_ports:
-                #if "Midi Through" in port:
-                    #continue
-                #if port in ("jackmidi", "OSS sequencer"):
-                    #continue
-                ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
+            for i in range(len(out_ports)):
+                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
+                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
+                if ret == 0 and type_ == b"text/plain":
+                    out_ports[i] = charPtrToString(value)
 
-            print(client_name, ports)
-            return ports
+        # remove suffixes from ports
+        in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
+        out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
 
-        return get_ports(self._client_name), get_ports("alsa_midi")
+        # add our own suffix now
+        ports = []
+        for port in in_ports:
+            if "Midi Through" in port:
+                continue
+            if port in ("jackmidi", "OSS sequencer"):
+                continue
+            ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
 
-    def set_midi_devices(self, devs):
-        print(devs)
+        return ports
 
-        for dev in devs:
+    def get_midi_device_list(self):
+        return self.get_ports(self._client_name), self.get_ports("alsa_midi")
+
+    def set_midi_devices(self, newDevs):
+        curDevs = self.get_ports(self._client_name)
+
+        # remove
+        for dev in curDevs:
+            if dev in newDevs:
+                continue
+            if dev.startswith("MIDI Port-"):
+                continue
+            dev, modes = dev.rsplit(" (",1)
+            self.host.remove_external_port(dev+" in")
+            if "out" in modes:
+                self.host.remove_external_port(dev+" out")
+            jacklib.disconnect(self.jack_client, "alsa_midi:%s in" % dev, self._client_name+":control_in")
+
+        # add
+        for dev in newDevs:
+            if dev in curDevs:
+                continue
             dev, modes = dev.rsplit(" (",1)
             self.host.add_external_port(dev+" in", "Input", "MIDI")
             if "out" in modes:
@@ -233,6 +257,7 @@ class Session(object):
             self.jack_client = None
             jacklib.deactivate(c)
             jacklib.client_close(c)
+            print("jacklib client deactivated")
 
         self.websockets.append(ws)
         self.host.get("/graph")
@@ -242,6 +267,7 @@ class Session(object):
         self.xrun_count2 = 0
 
         if self.jack_client is not None:
+            jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
             jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
             jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
             jacklib.activate(self.jack_client)
@@ -301,22 +327,22 @@ class Session(object):
 
         # Add ports
         for i in range(1, INGEN_NUM_AUDIO_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("Audio In %i" % i, "Input", "Audio", callback=callback))
+            yield gen.Task(lambda callback: self.host.add_external_port("Audio Port-%i in" % i, "Input", "Audio", callback=callback))
 
         for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("Audio Out %i" % i, "Output", "Audio", callback=callback))
+            yield gen.Task(lambda callback: self.host.add_external_port("Audio Port-%i out" % i, "Output", "Audio", callback=callback))
 
         for i in range(1, INGEN_NUM_MIDI_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("MIDI In %i" % i, "Input", "MIDI", callback=callback))
+            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Port-%i in" % i, "Input", "MIDI", callback=callback))
 
         for i in range(1, INGEN_NUM_MIDI_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Out %i" % i, "Output", "MIDI", callback=callback))
+            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Port-%i out" % i, "Output", "MIDI", callback=callback))
 
         for i in range(1, INGEN_NUM_CV_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("CV In %i" % i, "Input", "CV", callback=callback))
+            yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i in" % i, "Input", "CV", callback=callback))
 
         for i in range(1, INGEN_NUM_CV_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("CV Out %i" % i, "Output", "CV", callback=callback))
+            yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i out" % i, "Output", "CV", callback=callback))
 
         yield gen.Task(lambda callback: self.host.initial_setup(callback=callback))
 
@@ -612,6 +638,32 @@ class Session(object):
 
     def parameter_monitor(self, instance_id, port_id, op, value, callback):
         self.host.param_monitor(instance_id, port_id, op, value, callback)
+
+    def jack_midi_devs_callback(self, callback=lambda result: None):
+        while len(self.mididevuuids) != 0:
+            subject = self.mididevuuids.pop()
+
+            ret, value, type_ = jacklib.get_property(subject, jacklib.JACK_METADATA_PRETTY_NAME)
+            if ret != 0:
+                continue
+            if type_ != b"text/plain":
+                continue
+
+            value = charPtrToString(value)
+            if not (value.endswith(" in") or value.endswith(" out")):
+                continue
+
+            mod_name  = "%s:%s" % (self._client_name, value.replace(" ", "_").replace("-","_").lower())
+            midi_name = "alsa_midi:%s" % value
+
+            # All good, make connection now
+            if value.endswith(" in"):
+                jacklib.connect(self.jack_client, midi_name, mod_name)
+                jacklib.connect(self.jack_client, midi_name, self._client_name+":control_in")
+            else:
+                jacklib.connect(self.jack_client, mod_name, midi_name)
+
+        self.jack_midi_devs_timer.stop()
 
     def jack_cpu_load_callback(self, callback=lambda result: None):
         if self.jack_client is not None:

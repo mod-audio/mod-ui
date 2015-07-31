@@ -67,7 +67,8 @@ JACK_LOAD_INIT_LIMIT = 1024
 JACK_DEFAULT_AUDIO_TYPE = "32 bit float mono audio"
 JACK_DEFAULT_MIDI_TYPE  = "8 bit raw midi"
 
-JACK_METADATA_PRETTY_NAME = "http://jackaudio.org/metadata/pretty-name"
+JACK_METADATA_PRETTY_NAME  =  "http://jackaudio.org/metadata/pretty-name"
+bJACK_METADATA_PRETTY_NAME = b"http://jackaudio.org/metadata/pretty-name"
 #JACK_METADATA_HARDWARE = ""
 #JACK_METADATA_CONNECTED = ""
 #JACK_METADATA_PORT_GROUP = ""
@@ -96,7 +97,6 @@ jack_property_change_t = c_enum
 
 jack_port_t   = _jack_port
 jack_client_t = _jack_client
-jack_port_type_id_t = c_uint32 # JACK2 only
 
 # enum JackOptions
 JackNullOption    = 0x00
@@ -137,11 +137,10 @@ JackPortIsTerminal = 0x10
 JackPortIsControlVoltage = 0x100
 
 # enum JackTransportState
-JackTransportStopped     = 0
-JackTransportRolling     = 1
-JackTransportLooping     = 2
-JackTransportStarting    = 3
-JackTransportNetStarting = 4 # JACK2 only
+JackTransportStopped  = 0
+JackTransportRolling  = 1
+JackTransportLooping  = 2
+JackTransportStarting = 3
 
 # enum JackPositionBits
 JackPositionBBT      = 0x10
@@ -251,9 +250,8 @@ JackBufferSizeCallback = CFUNCTYPE(c_int, jack_nframes_t, c_void_p)
 JackSampleRateCallback = CFUNCTYPE(c_int, jack_nframes_t, c_void_p)
 JackPortRegistrationCallback   = CFUNCTYPE(None, jack_port_id_t, c_int, c_void_p)
 JackClientRegistrationCallback = CFUNCTYPE(None, c_char_p, c_int, c_void_p)
-JackClientRenameCallback = CFUNCTYPE(c_int, c_char_p, c_char_p, c_void_p) # JACK2 only
 JackPortConnectCallback  = CFUNCTYPE(None, jack_port_id_t, jack_port_id_t, c_int, c_void_p)
-JackPortRenameCallback   = CFUNCTYPE(c_int, jack_port_id_t, c_char_p, c_char_p, c_void_p) # JACK2 only
+JackPortRenameCallback   = CFUNCTYPE(None, jack_port_id_t, c_char_p, c_char_p, c_void_p)
 JackFreewheelCallback    = CFUNCTYPE(None, c_int, c_void_p)
 JackShutdownCallback     = CFUNCTYPE(None, c_void_p)
 JackInfoShutdownCallback = CFUNCTYPE(None, jack_status_t, c_char_p, c_void_p)
@@ -276,12 +274,6 @@ try:
     jacklib.jack_client_open.restype  = POINTER(jack_client_t)
 except:
     jacklib.jack_client_open = None
-
-try:
-    jacklib.jack_client_rename.argtypes = [POINTER(jack_client_t), c_char_p]
-    jacklib.jack_client_rename.restype  = c_char_p
-except:
-    jacklib.jack_client_rename = None
 
 try:
     jacklib.jack_client_close.argtypes = [POINTER(jack_client_t)]
@@ -314,12 +306,6 @@ except:
     jacklib.jack_deactivate = None
 
 try:
-    jacklib.jack_get_client_pid.argtypes = [c_char_p]
-    jacklib.jack_get_client_pid.restype  = c_int
-except:
-    jacklib.jack_get_client_pid = None
-
-try:
     jacklib.jack_is_realtime.argtypes = [POINTER(jack_client_t)]
     jacklib.jack_is_realtime.restype  = c_int
 except:
@@ -333,11 +319,6 @@ def get_version_string(): # JACK2 only
 def client_open(client_name, options, status, uuid=""):
     if jacklib.jack_client_open:
         return jacklib.jack_client_open(client_name.encode("utf-8"), options, status, uuid.encode("utf-8") if uuid else None)
-    return None
-
-def client_rename(client, new_name):
-    if jacklib.jack_client_rename:
-        return jacklib.jack_client_rename(client, new_name.encode("utf-8"))
     return None
 
 def client_close(client):
@@ -364,11 +345,6 @@ def deactivate(client):
     if jacklib.jack_deactivate:
         return jacklib.jack_deactivate(client)
     return -1
-
-def get_client_pid(name): # JACK2 only
-    if jacklib.jack_get_client_pid:
-        return jacklib.jack_get_client_pid(name.encode("utf-8"))
-    return 0
 
 def is_realtime(client):
     if jacklib.jack_is_realtime:
@@ -426,7 +402,6 @@ global _freewheel_callback
 global _bufsize_callback
 global _srate_callback
 global _client_registration_callback
-global _client_rename_callback
 global _port_registration_callback
 global _port_connect_callback
 global _port_rename_callback
@@ -436,9 +411,8 @@ global _latency_callback
 
 _thread_init_callback = _shutdown_callback = _info_shutdown_callback = None
 _process_callback = _freewheel_callback = _bufsize_callback = _srate_callback = None
-_client_registration_callback = _client_rename_callback = None
+_client_registration_callback = _graph_callback = _xrun_callback = _latency_callback = None
 _port_registration_callback = _port_connect_callback = _port_rename_callback = None
-_graph_callback = _xrun_callback = _latency_callback = None
 
 try:
     jacklib.jack_set_thread_init_callback.argtypes = [POINTER(jack_client_t), JackThreadInitCallback, c_void_p]
@@ -487,12 +461,6 @@ try:
     jacklib.jack_set_client_registration_callback.restype = c_int
 except:
     jacklib.jack_set_client_registration_callback = None
-
-try:
-    jacklib.jack_set_client_rename_callback.argtypes = [POINTER(jack_client_t), JackClientRenameCallback, c_void_p]
-    jacklib.jack_set_client_rename_callback.restype = c_int
-except:
-    jacklib.jack_set_client_rename_callback = None
 
 try:
     jacklib.jack_set_port_registration_callback.argtypes = [POINTER(jack_client_t), JackPortRegistrationCallback, c_void_p]
@@ -584,13 +552,6 @@ def set_client_registration_callback(client, client_registration_callback, arg):
         return jacklib.jack_set_client_registration_callback(client, _client_registration_callback, arg)
     return -1
 
-def set_client_rename_callback(client, client_rename_callback, arg): # JACK2 only
-    if jacklib.jack_set_client_rename_callback:
-        global _client_rename_callback
-        _client_rename_callback = JackClientRenameCallback(client_rename_callback)
-        return jacklib.jack_set_client_rename_callback(client, _client_rename_callback, arg)
-    return -1
-
 def set_port_registration_callback(client, port_registration_callback, arg):
     if jacklib.jack_set_port_registration_callback:
         global _port_registration_callback
@@ -605,7 +566,7 @@ def set_port_connect_callback(client, connect_callback, arg):
         return jacklib.jack_set_port_connect_callback(client, _port_connect_callback, arg)
     return -1
 
-def set_port_rename_callback(client, rename_callback, arg): # JACK2 only
+def set_port_rename_callback(client, rename_callback, arg):
     if jacklib.jack_set_port_rename_callback:
         global _port_rename_callback
         _port_rename_callback = JackPortRenameCallback(rename_callback)
@@ -702,10 +663,6 @@ jacklib.jack_port_flags.restype = c_int
 jacklib.jack_port_type.argtypes = [POINTER(jack_port_t)]
 jacklib.jack_port_type.restype = c_char_p
 
-if JACK2:
-    jacklib.jack_port_type_id.argtypes = [POINTER(jack_port_t)]
-    jacklib.jack_port_type_id.restype = jack_port_type_id_t
-
 jacklib.jack_port_is_mine.argtypes = [POINTER(jack_client_t), POINTER(jack_port_t)]
 jacklib.jack_port_is_mine.restype = c_int
 
@@ -727,8 +684,11 @@ jacklib.jack_port_tie.restype = c_int
 jacklib.jack_port_untie.argtypes = [POINTER(jack_port_t)]
 jacklib.jack_port_untie.restype = c_int
 
-jacklib.jack_port_set_name.argtypes = [POINTER(jack_port_t), c_char_p]
-jacklib.jack_port_set_name.restype = c_int
+try:
+    jacklib.jack_port_rename.argtypes = [POINTER(jack_client_t), POINTER(jack_port_t), c_char_p]
+    jacklib.jack_port_rename.restype = c_int
+except:
+    jacklib.jack_port_rename = None
 
 jacklib.jack_port_set_alias.argtypes = [POINTER(jack_port_t), c_char_p]
 jacklib.jack_port_set_alias.restype = c_int
@@ -798,9 +758,6 @@ def port_flags(port):
 def port_type(port):
     return jacklib.jack_port_type(port)
 
-def port_type_id(port): # JACK2 only
-    return jacklib.jack_port_type_id(port)
-
 def port_is_mine(client, port):
     return jacklib.jack_port_is_mine(client, port)
 
@@ -822,8 +779,10 @@ def port_tie(src, dst):
 def port_untie(port):
     return jacklib.jack_port_untie(port)
 
-def port_set_name(port, port_name):
-    return jacklib.jack_port_set_name(port, port_name.encode("utf-8"))
+def port_rename(client, port, port_name):
+    if jacklib.jack_port_rename:
+        return jacklib.jack_port_rename(client, port, port_name.encode("utf-8"))
+    return -1
 
 def port_set_alias(port, alias):
     return jacklib.jack_port_set_alias(port, alias.encode("utf-8"))
@@ -1316,8 +1275,8 @@ def get_property(subject, key):
         value = c_char_p(0)
         type_ = c_char_p(0)
         ret   = jacklib.jack_get_property(subject, key.encode("utf-8"), pointer(value), pointer(type_))
-        return (ret, value.value.decode("utf-8", errors="ignore"), type_.value.decode("utf-8", errors="ignore"))
-    return (-1, "", "")
+        return (ret, value.value, type_.value)
+    return (-1, b"", b"")
 
 def get_properties(subject):
     # NOTE - this function has no extra arguments in jacklib

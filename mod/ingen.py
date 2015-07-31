@@ -108,4 +108,9 @@ class Host(IngenAsync):
         %s
         """ % (x, y, name, mode, portyp, extra)
 
+        print("========================================> add_external_port", name)
         self.put("/graph/%s" % name.replace(" ", "_").replace("-","_").lower(), msg, callback)
+
+    def remove_external_port(self, name, callback=lambda r:r):
+        print("========================================> remove_external_port", name)
+        self.delete("/graph/%s" % name.replace(" ", "_").replace("-","_").lower(), callback)

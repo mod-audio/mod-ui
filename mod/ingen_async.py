@@ -203,10 +203,10 @@ class IngenAsync(object):
 
             # Put messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
-                bnode       = i[0]
-                subject     = msg_model.value(bnode, NS.patch.subject)
-                body        = msg_model.value(bnode, NS.patch.body)
-                msg_type    = msg_model.value(body,  NS.rdf.type)
+                bnode    = i[0]
+                subject  = msg_model.value(bnode, NS.patch.subject)
+                body     = msg_model.value(bnode, NS.patch.body)
+                msg_type = msg_model.value(body,  NS.rdf.type)
 
                 # Put for port, we set the value
                 if msg_type == NS.lv2.ControlPort:
@@ -229,10 +229,11 @@ class IngenAsync(object):
                     head = msg_model.value(body, NS.ingen.head).partition(self.proto_base)[-1]
                     tail = msg_model.value(body, NS.ingen.tail).partition(self.proto_base)[-1]
                     self.connection_add_callback(head, tail)
+
             # Delete msgs
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Delete]):
-                bnode       = i[0]
-                subject     = msg_model.value(bnode, NS.patch.subject)
+                bnode   = i[0]
+                subject = msg_model.value(bnode, NS.patch.subject)
                 if subject:
                     self.delete_callback(subject.partition(self.proto_base)[-1])
 

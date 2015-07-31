@@ -25,6 +25,36 @@ except ImportError:
     jacklib = None
 
 # ------------------------------------------------------------------------------------------------------------
+# Convert a ctypes c_char_p into a python string
+
+def charPtrToString(charPtr):
+    if not charPtr:
+        return ""
+    if isinstance(charPtr, str):
+        return charPtr
+    return charPtr.decode("utf-8", errors="ignore")
+
+# ------------------------------------------------------------------------------------------------------------
+# Convert a ctypes POINTER(c_char_p) into a python string list
+
+def charPtrPtrToStringList(charPtrPtr):
+    if not charPtrPtr:
+        return []
+
+    i       = 0
+    charPtr = charPtrPtr[0]
+    strList = []
+
+    while charPtr:
+        strList.append(charPtr.decode("utf-8", errors="ignore"))
+
+        i += 1
+        charPtr = charPtrPtr[i]
+
+    jacklib.free(charPtrPtr)
+    return strList
+
+# ------------------------------------------------------------------------------------------------------------
 # Get JACK error status as string
 
 def get_jack_status_error_string(cStatus):
@@ -63,27 +93,6 @@ def get_jack_status_error_string(cStatus):
         errorString += "Client is being shutdown against its will;\n"
 
     return errorString.strip().rsplit(";", 1)[0] + "."
-
-# ------------------------------------------------------------------------------------------------------------
-# Convert C char** -> Python list
-
-def c_char_p_p_to_list(c_char_p_p):
-    i = 0
-    retList = []
-
-    if not c_char_p_p:
-        return retList
-
-    while True:
-        new_char_p = c_char_p_p[i]
-        if new_char_p:
-            retList.append(str(new_char_p, encoding="utf-8"))
-            i += 1
-        else:
-            break
-
-    jacklib.free(c_char_p_p)
-    return retList
 
 # ------------------------------------------------------------------------------------------------------------
 # Convert C void* -> string
