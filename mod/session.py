@@ -213,8 +213,8 @@ class Session(object):
         # add our own suffix now
         ports = []
         for port in in_ports:
-            if "Midi Through" in port:
-                continue
+            #if "Midi Through" in port:
+                #continue
             if port in ("jackmidi", "OSS sequencer"):
                 continue
             ports.append(port + (" (in+out)" if port in out_ports else " (in)"))

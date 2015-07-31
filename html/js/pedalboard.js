@@ -1276,27 +1276,54 @@ JqueryClass('pedalboard', {
         })
     },
 
-    removePluginFromCanvas: function (instance) {
+    removeItemFromCanvas: function (instance) {
         var self = $(this)
         var plugins = self.data('plugins')
-        var plugin = plugins[instance]
 
-        var connections = self.data('connectionManager')
-        connections.iterateInstance(instance, function (jack) {
-            var input = jack.data('destination')
-            jack.data('canvas').remove()
-            jack.remove()
-            self.pedalboard('packJacks', input)
-        })
-        connections.removeInstance(instance)
+        if (instance in plugins) {
+            var plugin = plugins[instance]
 
-        var hw = self.data('hardwareManager')
-        if (hw)
-            hw.removeInstance(instance)
+            var connections = self.data('connectionManager')
+            connections.iterateInstance(instance, function (jack) {
+                var input = jack.data('destination')
+                jack.data('canvas').remove()
+                jack.remove()
+                self.pedalboard('packJacks', input)
+            })
+            connections.removeInstance(instance)
 
-        delete plugins[instance]
+            var hw = self.data('hardwareManager')
+            if (hw)
+                hw.removeInstance(instance)
 
-        plugin.remove()
+            delete plugins[instance]
+
+            plugin.remove()
+        } else {
+            var inputs  = self.data('hwInputs')
+            var outputs = self.data('hwOutputs')
+
+            inputs.forEach(function (hw) {
+                if (hw.attr("mod-port-symbol") == instance) {
+                    hw.remove()
+                    inputs.pop(hw)
+                }
+            })
+
+            outputs.forEach(function (hw) {
+                if (hw.attr("mod-port-symbol") == instance) {
+                    hw.remove()
+                    outputs.pop(hw)
+                }
+            })
+
+            // TODO - remove connections
+
+            setTimeout(100, function() {
+                self.pedalboard('positionHardwarePorts')
+            })
+        }
+
     },
 
     // Highlight all inputs to which a jack can be connected (any inputs that are not from same

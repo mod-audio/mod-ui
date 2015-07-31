@@ -53,13 +53,13 @@ $(document).ready(function () {
                                         desktop.pedalboard.pedalboard('destroyJack', jack)
                                     }
                                 }
+                            } else {
+                                    console.log("TESTING: Received unhandled patch:Delete message:" + type[0].object)
                             }
                         } else {
                             var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
                             if (subject.length) {
-                                var instance = subject[0].object
-                                if (instance in desktop.pedalboard.data('plugins'))
-                                    desktop.pedalboard.pedalboard('removePluginFromCanvas', instance)
+                                desktop.pedalboard.pedalboard('removeItemFromCanvas', subject[0].object)
                             }
                         }
                     });
