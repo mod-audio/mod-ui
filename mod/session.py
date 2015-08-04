@@ -191,8 +191,10 @@ class Session(object):
                                                              ))
 
         if client_name != "alsa_midi":
-            in_ports.remove("ingen:control_in")
-            out_ports.remove("ingen:control_out")
+            if "ingen:control_in" in in_ports:
+                in_ports.remove("ingen:control_in")
+            if "ingen:control_out" in out_ports:
+                out_ports.remove("ingen:control_out")
 
             for i in range(len(in_ports)):
                 uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))

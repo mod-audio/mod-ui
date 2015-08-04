@@ -364,13 +364,9 @@ function Desktop(elements) {
         self.netStatus.statusTooltip('updatePosition')
 
         // Fix mod-cpu starting in wrong position
-        $('#mod-cpu .progress-title').css({
-            'position': 'relative'
-        })
+        $('#mod-cpu .progress-title').css('position', 'relative')
         setTimeout(function () {
-            $('#mod-cpu .progress-title').css({
-                'position': 'absolute'
-            })
+            $('#mod-cpu .progress-title').css('position', 'absolute')
         }, 100)
     }
 
