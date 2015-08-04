@@ -333,9 +333,9 @@ function Desktop(elements) {
         $('#mod-bluetooth').hide()
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
-        $('#pedalboard-dashboard').parent().css({
-            'top': '0px'
-        })
+        $('#pedalboard-dashboard').parent().css('top', '0px')
+        $('#pedalboard-info .js-add-midi').hide()
+        $('#js-add-midi-separator').hide()
         $('#zoom-controllers').css({
             'top': '3px',
             'right': '3px'
