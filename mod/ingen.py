@@ -16,7 +16,8 @@
 
 from tornado import iostream, ioloop
 try:
-    from ingen_async import NS, Error, ingen_bundle_path, lv2_path, IngenAsync
+    from ingenasync import Error, ingen_bundle_path, lv2_path, IngenAsync
+    from lilvlib import NS
 except ImportError:
     from mod.ingen_async import NS, Error, ingen_bundle_path, lv2_path, IngenAsync
 import os
