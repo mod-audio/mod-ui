@@ -49,7 +49,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
 
-from mod import indexing, jsoncall, json_handler, symbolify
+from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
@@ -165,14 +165,6 @@ class EffectInstaller(SimpleFileReceiver):
             callback()
         install_bundle(data['filename'], on_finish)
 
-#class EffectSetLocalVariable(web.RequestHandler):
-    #def post(self, var):
-        #uri = self.get_argument('uri')
-        #value = self.get_argument(var)
-        #index = indexing.EffectIndex()
-        #objid = next(index.find(uri=uri))['id']
-        #index.save_local_variable(objid, var, value)
-
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -202,123 +194,7 @@ class SDKSysUpdate(web.RequestHandler):
         self.write(json.dumps(True))
         self.finish()
 
-# Abstract class
-class Searcher(web.RequestHandler):
-    @classmethod
-    def urls(cls, path):
-        return [
-            (r"/%s/(autocomplete)/?" % path, cls),
-            (r"/%s/(search)/?" % path, cls),
-            (r"/%s/(get)/([a-z0-9]+)?" % path, cls),
-            (r"/%s/(get_by)/?" % path, cls),
-            (r"/%s/(list)/?" % path, cls),
-        ]
-
-    @property
-    def index(self):
-        raise NotImplemented
-
-    def get_object(self, objid):
-        return get_plugin_info(objid)
-        #path = os.path.join(self.index.data_source, objid)
-        #md_path = path + '.metadata'
-        #obj = json.loads(open(path).read())
-        #if os.path.exists(md_path):
-        #    obj.update(json.loads(open(md_path).read()))
-        #return obj
-
-    def get(self, action, objid=None):
-        try:
-            self.set_header('Access-Control-Allow-Origin', self.request.headers['Origin'])
-        except KeyError:
-            pass
-
-        self.set_header('Content-Type', 'application/json')
-
-        if action == 'autocomplete':
-            response = self.autocomplete()
-        if action == 'search':
-            response = self.search()
-        if action == 'get_by':
-            response = self.get_by()
-        if action == 'get':
-            try:
-                response = self.get_object(objid)
-            except:
-                raise web.HTTPError(404)
-
-        if action == 'list':
-            response = self.list()
-
-        self.write(json.dumps(response, default=json_handler))
-
-    def autocomplete(self):
-        #term = str(self.request.arguments.get('term')[0])
-        result = []
-        #for entry in self.index.term_search(term):
-            #result.append(entry)
-        return result
-
-    def search(self):
-        result = []
-        for entry in self.index.search(self.request.arguments['term'][0]):
-            obj = self.get_object(entry['id'])
-            if obj is None:
-                # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
-                continue
-            entry.update(obj)
-            result.append(entry)
-        return result
-
-    def list(self):
-        result = []
-        for entry in self.index.every():
-            obj = self.get_object(entry['id'])
-            if obj is None:
-                continue
-            entry.update(obj)
-            result.append(entry)
-        return result
-
-    def get_by(self):
-        query = {}
-        for key in self.request.arguments.keys():
-            query[key] = self.get_argument(key)
-        try:
-            return next(self.index.find(**query))
-        except StopIteration:
-            return None
-
-class EffectSearcher(Searcher):
-    index = SESSION.effect_index
-
-    def list(self):
-        return self.index.data
-
-    def get_by_uri(self):
-        try:
-            uri = self.request.arguments['uri'][0]
-        except (KeyError, IndexError):
-            try:
-                uri = self.request.arguments['uri']
-            except (KeyError, IndexError):
-                raise web.HTTPError(404)
-
-        search = self.index.find(id=uri)
-        try:
-            entry = next(search)
-        except StopIteration:
-            raise web.HTTPError(404)
-
-        return entry['id']
-
-    def get(self, action, objid=None):
-        if action == 'get' and objid is None:
-            objid = self.get_by_uri()
-
-        super(EffectSearcher, self).get(action, objid)
-
-class EffectBulkData(EffectSearcher):
+class EffectBulk(web.RequestHandler):
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
             self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
@@ -336,6 +212,12 @@ class EffectBulkData(EffectSearcher):
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
+
+class EffectList(web.RequestHandler):
+    def get(self):
+        data = get_all_plugins()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(data))
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
@@ -688,16 +570,14 @@ class PackageUninstall(web.RequestHandler):
 global fake_tstamp
 fake_tstamp = 0
 
-class PedalboardSearcher(Searcher):
-    index = SESSION.pedalboard_index
-
-    def list(self):
+class PedalboardList(web.RequestHandler):
+    def get(self):
         result = []
-        pedals = self.index.data
 
         global fake_tstamp
         fake_tstamp += 1
-        for pedal in pedals:
+
+        for pedal in get_pedalboards():
             result.append({
                 'instances'  : {},
                 'connections': [],
@@ -711,7 +591,8 @@ class PedalboardSearcher(Searcher):
                 'width' : pedal['width'],
                 'height': pedal['height']
             })
-        return result
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(result))
 
 class PedalboardSave(web.RequestHandler):
     @web.asynchronous
@@ -1327,8 +1208,6 @@ application = web.Application(
         UpgradeSync.urls('system/upgrade/sync') +
         UpgradePackage.urls('system/upgrade/package') +
         EffectInstaller.urls('effect/install') +
-        EffectSearcher.urls('effect') +
-        PedalboardSearcher.urls('pedalboard') +
         [
             (r"/system/upgrade/packages", UpgradePackages),
             (r"/system/upgrade/do", UpgradeDo),
@@ -1340,7 +1219,8 @@ application = web.Application(
 
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/get/?", EffectGet),
-            (r"/effect/bulk/?", EffectBulkData),
+            (r"/effect/bulk/?", EffectBulk),
+            (r"/effect/list", EffectList),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
@@ -1360,6 +1240,7 @@ application = web.Application(
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
+            (r"/pedalboard/list", PedalboardList),
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
@@ -1428,12 +1309,6 @@ def prepare():
         check_environment(lambda result: result)
 
     lv2_init()
-
-    # creates index in memory for plugins and pedalboards
-    SESSION.effect_index.data = get_all_plugins()
-    SESSION.effect_index.reindex()
-    SESSION.pedalboard_index.data = get_pedalboards()
-    SESSION.pedalboard_index.reindex()
 
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)

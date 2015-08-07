@@ -44,7 +44,6 @@ from mod.protocol import Protocol
 from mod.jack import change_jack_bufsize
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
-from mod.indexing import EffectIndex, PedalboardIndex
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
@@ -91,8 +90,6 @@ class Session(object):
         self.current_bank = None
 
         self.jack_bufsize = DEFAULT_JACK_BUFSIZE
-        self.effect_index = EffectIndex()
-        self.pedalboard_index = PedalboardIndex()
 
         self._pedalboard = Pedalboard()
 

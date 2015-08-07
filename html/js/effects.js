@@ -183,27 +183,44 @@ JqueryClass('effectBox', {
         var self = $(this)
         var searchbox = self.data('searchbox')
         var term = searchbox.val()
-        var query = {
-            'term': term
-        }
 
-        var url = query.term ? '/effect/search/' : '/effect/list/'
-        $.ajax({
-            'method': 'GET',
-            'url': url,
-            'data': query,
-            'success': function (plugins) {
-                for (var i = 0; i < plugins.length; i++) {
-                    plugins[i].installedVersion = [plugins[i].minorVersion,
-                        plugins[i].microVersion,
-                        plugins[i].release || 0
-                    ]
-                    plugins[i].status = 'installed'
-                }
-                self.effectBox('showPlugins', plugins)
-            },
-            'dataType': 'json'
-        })
+        if (term)
+        {
+            allplugins = self.data('allplugins')
+            plugins    = []
+
+            ret = desktop.pluginIndexer.search(term)
+            for (var i in ret) {
+                var uri = ret[i].ref
+                plugins.push(allplugins[uri])
+            }
+
+            self.effectBox('showPlugins', plugins)
+        }
+        else
+        {
+            $.ajax({
+                'method': 'GET',
+                'url': '/effect/list',
+                'success': function (plugins) {
+                    var allplugins = {}
+                    for (var i = 0; i < plugins.length; i++) {
+                        var plugin = plugins[i]
+                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                        plugin.status = 'installed'
+
+                        allplugins[plugin.uri] = plugin
+                        desktop.pluginIndexer.add({
+                            id: plugin.uri,
+                            data: [plugin.brand, plugin.name, plugin.author.name, plugin.category.join(" ")].join(" ")
+                        })
+                    }
+                    self.data('allplugins', allplugins)
+                    self.effectBox('showPlugins', plugins)
+                },
+                'dataType': 'json'
+            })
+        }
     },
 
     showPlugins: function (plugins) {

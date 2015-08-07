@@ -21,7 +21,6 @@ from mod.settings import BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE
 from mod import json_handler
 from mod.bank import remove_pedalboard_from_banks
 from mod.hardware import get_hardware
-from mod import indexing
 
 
 class Pedalboard(object):
@@ -294,10 +293,10 @@ class Pedalboard(object):
 
     def get_bufsize(self, minimum=DEFAULT_JACK_BUFSIZE):
         bufsize = minimum
-        index = indexing.EffectIndex()
-        for instance in self.data['instances'].values():
-            effect  = next(index.find(uri=instance['uri']))
-            bufsize = max(effect['bufsize'], minimum)
+        #index = indexing.EffectIndex()
+        #for instance in self.data['instances'].values():
+            #effect  = next(index.find(uri=instance['uri']))
+            #bufsize = max(effect['bufsize'], minimum)
         return bufsize
 
 #def remove_pedalboard(uid):

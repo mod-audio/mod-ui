@@ -79,6 +79,18 @@ function Desktop(elements) {
         }
     })
 
+    this.pluginIndexer = lunr(function () {
+        this.field('data')
+        this.ref('id')
+        this.requireAllTerms = true
+    })
+
+    this.pedalboardIndexer = lunr(function () {
+        this.field('data')
+        this.ref('id')
+        this.requireAllTerms = true
+    })
+
     this.netStatus = elements.networkIcon.statusTooltip()
 
     this.midiDevices = new MidiDevicesWindow({
