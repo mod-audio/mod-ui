@@ -204,7 +204,7 @@ JqueryClass('effectBox', {
                 'url': '/effect/list',
                 'success': function (plugins) {
                     var allplugins = {}
-                    for (var i = 0; i < plugins.length; i++) {
+                    for (var i=0; i<plugins.length; i++) {
                         var plugin = plugins[i]
                         plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                         plugin.status = 'installed'
@@ -212,7 +212,7 @@ JqueryClass('effectBox', {
                         allplugins[plugin.uri] = plugin
                         desktop.pluginIndexer.add({
                             id: plugin.uri,
-                            data: [plugin.brand, plugin.name, plugin.author.name, plugin.category.join(" ")].join(" ")
+                            data: [plugin.uri, plugin.brand, plugin.name, plugin.author.name, plugin.category.join(" ")].join(" ")
                         })
                     }
                     self.data('allplugins', allplugins)

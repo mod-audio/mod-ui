@@ -91,6 +91,8 @@ function Desktop(elements) {
         this.requireAllTerms = true
     })
 
+    this.pedalboardIndexerData = {}
+
     this.netStatus = elements.networkIcon.statusTooltip()
 
     this.midiDevices = new MidiDevicesWindow({
@@ -301,20 +303,49 @@ function Desktop(elements) {
         $.ajax({
             'method': 'GET',
             'url': '/pedalboard/list',
-            'success': callback,
+            'success': function(pedals) {
+                var allpedals = {}
+                for (var i=0; i<pedals.length; i++) {
+                    var pedal = pedals[i]
+                    allpedals[pedal.uri] = pedal
+                    self.pedalboardIndexer.add({
+                        id: pedal.uri,
+                        data: [pedal.uri, pedal.metadata.title].join(" ")
+                    })
+                }
+                self.pedalboardIndexerData = allpedals
+
+                if (callback)
+                    callback(pedals)
+            },
             'dataType': 'json'
         })
     }
     this.pedalboardSearchFunction = function (local, query, callback) {
-        var url = local ? '' : SITEURL
-        $.ajax({
-            'method': 'GET',
-            'url': url + '/pedalboard/search/?term=' + escape(query),
-            'success': function (pedalboards) {
-                callback(pedalboards, url)
-            },
-            'dataType': 'json'
-        })
+        if (local)
+        {
+            var allpedals = self.pedalboardIndexerData
+            var pedals    = []
+
+            ret = self.pedalboardIndexer.search(query)
+            for (var i in ret) {
+                var uri = ret[i].ref
+                pedals.push(allpedals[uri])
+            }
+
+            callback(pedals, '')
+        }
+        else
+        {
+            $.ajax({
+                'method': 'GET',
+                'url': SITEURLNEW + '/pedalboard/search/?term=' + escape(query),
+                'success': function (pedals) {
+                    callback(pedalboards, SITEURLNEW)
+                },
+                'dataType': 'json'
+            })
+        }
     }
 
     this.disconnect = function () {
@@ -355,10 +386,6 @@ function Desktop(elements) {
 
         // TODO
         $('#mod-cloud-plugins').hide()
-        $('#pedalboards-library .form-horizontal').hide()
-        $('#pedalboards-library .pedalboards').css({
-            'left': '0px'
-        })
         $('#pb-preset-manager').hide()
 
         if (usingDesktop)
@@ -368,7 +395,6 @@ function Desktop(elements) {
         else // using Live-ISO
         {
             $('#mod-social').hide()
-            //$('#mod-plugins').hide()
             $('#mod-cloud').hide()
             $('#pedalboard-sharing').hide()
         }
