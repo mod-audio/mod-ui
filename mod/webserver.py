@@ -157,14 +157,22 @@ class BluetoothSetPin(web.RequestHandler):
 
 class SystemInfo(web.RequestHandler):
     def get(self):
+        uname = os.uname()
         info = {
             "hardware": {},
+            "env": dict((k, os.environ[k]) for k in [k for k in os.environ.keys() if k.startswith("MOD")]),
             "python": {
                 "argv"    : sys.argv,
+                "flags"   : sys.flags,
                 "path"    : sys.path,
                 "platform": sys.platform,
                 "prefix"  : sys.prefix,
                 "version" : sys.version
+            },
+            "uname": {
+                "machine": uname.machine,
+                "release": uname.release,
+                "version": uname.version
             }
         }
 
