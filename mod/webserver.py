@@ -155,6 +155,27 @@ class BluetoothSetPin(web.RequestHandler):
             self.write(json.dumps(True))
         self.finish()
 
+class SystemInfo(web.RequestHandler):
+    def get(self):
+        info = {
+            "hardware": {},
+            "python": {
+                "argv"    : sys.argv,
+                "flags"   : sys.flags,
+                "path"    : sys.path,
+                "platform": sys.platform,
+                "prefix"  : sys.prefix,
+                "version" : sys.version
+            }
+        }
+
+        if os.path.exists("/etc/mod-capabilities.json"):
+            with open("/etc/mod-capabilities.json", 'r') as fd:
+                info["hardware"] = json.loads(fd.read())
+
+        self.write(json.dumps(info))
+        self.finish()
+
 class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
     destination_dir = DOWNLOAD_TMP_DIR
@@ -1215,6 +1236,8 @@ application = web.Application(
             #(r"/system/install_pkg/([^/]+)/?", InstallPkg),
             #(r"/system/install_pkg/do/([^/]+)/?", InstallPkgDo),
             (r"/system/bluetooth/set", BluetoothSetPin),
+            (r"/system/info", SystemInfo),
+
             (r"/resources/(.*)", EffectResource),
 
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
