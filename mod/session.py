@@ -162,6 +162,7 @@ class Session(object):
 
     def JackXRunCallback(self, arg):
         self.xrun_count += 1
+        return 0
 
     def start_timers(self):
         self.jack_cpu_load_timer.start()

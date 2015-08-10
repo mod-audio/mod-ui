@@ -161,7 +161,6 @@ class SystemInfo(web.RequestHandler):
             "hardware": {},
             "python": {
                 "argv"    : sys.argv,
-                "flags"   : sys.flags,
                 "path"    : sys.path,
                 "platform": sys.platform,
                 "prefix"  : sys.prefix,

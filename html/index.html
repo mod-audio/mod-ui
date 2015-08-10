@@ -33,7 +33,6 @@
 
     <script type="text/javascript" src="js/constants.js?v={{version}}"></script>
 
-
     <!-- Lunr -->
     <script src="js/lib/lunr/lunr.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/lib/lunr/utils.js" type="text/javascript" charset="utf-8"></script>
@@ -76,6 +75,11 @@
       if (!DEBUG) {
           console = console || {}
           console.log = function() {}
+      }
+
+      var INFO = {
+          "hardware": {},
+          "python": {}
       }
 
 // FIXME: what is this for?
@@ -122,6 +126,17 @@ $('document').ready(function() {
       login: $('#login'),
       logout: $('#logout')
   })
+
+  $.ajax({
+      url: '/system/info',
+      method: 'GET',
+      success: function (info) {
+          INFO = info
+          console.log(info)
+      },
+      dataType: 'json'
+  })
+
 })
 
 </script>
