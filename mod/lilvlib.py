@@ -243,8 +243,8 @@ def get_pedalboard_info(bundle):
             'width' : plugin.get_value(ns_modpedal.width).get_first().as_int(),
             'height': plugin.get_value(ns_modpedal.height).get_first().as_int(),
         },
-        'screenshot' : os.path.basename(plugin.get_value(ns_modpedal.screenshot).get_first().as_string()),
-        'thumbnail'  : os.path.basename(plugin.get_value(ns_modpedal.thumbnail).get_first().as_string()),
+        'screenshot' : os.path.basename(plugin.get_value(ns_modpedal.screenshot).get_first().as_string() or ""),
+        'thumbnail'  : os.path.basename(plugin.get_value(ns_modpedal.thumbnail).get_first().as_string() or ""),
         'connections': [], # we save this info later
         'plugins'    : []  # we save this info later
     }
