@@ -856,7 +856,7 @@ JqueryClass('film', baseWidget, {
         setTimeout(function () {
             var url = self.css('background-image').replace('url(', '').replace(')', '').replace("'", '').replace('"', '');
             if (! url) {
-                console.log("The background-image for '" + self[0].className + "' is missing, typo in css?")
+                console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
                 return
             }
             var height = self.css('background-size').split(/ /)[1]

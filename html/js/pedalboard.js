@@ -1798,6 +1798,11 @@ JqueryClass('pedalboard', {
     connect: function (jack, input) {
         var self = $(this)
         var output = jack.data('origin')
+        if (output == null) {
+            console.log(jack)
+            console.log("ERROR: The origin for '" + jack.selector + "' is missing")
+            return
+        }
        // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input))
             return self.pedalboard('disconnect', jack)
