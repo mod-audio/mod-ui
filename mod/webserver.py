@@ -953,10 +953,12 @@ class TemplateHandler(web.RequestHandler):
         context = self.index()
         bundlepath = self.get_argument('bundlepath')
 
-        #try: # TESTING let us receive exceptions for now
-        pedalboard = get_pedalboard_info(bundlepath)
-        #except:
-            #return None
+        try:
+            pedalboard = get_pedalboard_info(bundlepath)
+        except:
+            print("ERROR in webserver.py: get_pedalboard_info failed")
+            context['pedalboard'] = ""
+            return context
 
         data = b'{ "_id": "0", "instances": ['
 
