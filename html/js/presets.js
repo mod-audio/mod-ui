@@ -739,7 +739,7 @@ JqueryClass("presetEntry", {
         e.entry.val(self.data("presetEntryOptions").name);
         self.removeClass("editing");
         return self;
-    }
+    },
 });
 
 

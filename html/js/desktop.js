@@ -421,6 +421,12 @@ function Desktop(elements) {
     this.presetManager.on("rename", function (e, name, options) {
         console.log("rename", name, options);
     });
+    this.presetManager.on("bind", function (e, options) {
+        console.log("bind", options);
+    });
+    this.presetManager.on("bindlist", function (e, options) {
+        console.log("bindlist", options);
+    })
     
     elements.shareButton.click(function () {
         var share = function () {
