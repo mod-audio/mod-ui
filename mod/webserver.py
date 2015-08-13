@@ -960,33 +960,23 @@ class TemplateHandler(web.RequestHandler):
             context['pedalboard'] = ""
             return context
 
-        data = b'{ "_id": "0", "instances": ['
+        data = {
+            "_id": "0",
+            "instances": [],
+            "connections": pedalboard['connections'],
+            "hardware": pedalboard['hardware'],
+        }
 
         first = True
         for plugin in pedalboard['plugins']:
-            if first:
-                first = False
-            else:
-                data += b','
+            data["instances"].append({
+                "uri": plugin['uri'],
+                "x": plugin['x'],
+                "y": plugin['y'],
+                "bypassed": False
+            })
 
-            msg = '{ "uri": "%s", "bypassed": false, "x": %i, "y": %i, "values": {} }' % (plugin['uri'], plugin['x'], plugin['y'])
-            data += bytes(msg, "utf-8")
-
-        data += b'], "connections": ['
-
-        first = True
-        for connection in pedalboard['connections']:
-            if first:
-                first = False
-            else:
-                data += b','
-
-            msg = '{ "source": "%s", "target": "%s" }' % (connection['source'], connection['target'])
-            data += bytes(msg, "utf-8")
-
-        data += b'] } '
-
-        context['pedalboard'] = b64encode(data)
+        context['pedalboard'] = b64encode(json.dumps(data).encode("utf-8"))
         return context
 
 class EditionLoader(TemplateHandler):

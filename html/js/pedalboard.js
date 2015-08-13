@@ -470,6 +470,7 @@ JqueryClass('pedalboard', {
 
         // Create needed hardware ports
         createHardwarePorts = function () {
+            console.log(data.hardware)
             // TODO - add ports as needed
             var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
             var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
@@ -478,12 +479,12 @@ JqueryClass('pedalboard', {
             var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
             var inputM = $('<div class="hardware-input" title="Hardware MIDI Output">')
 
-            self.pedalboard('addHardwareOutput', outputL, '/graph/audio_in_1', 'audio')
-            self.pedalboard('addHardwareOutput', outputR, '/graph/audio_in_2', 'audio')
-            self.pedalboard('addHardwareOutput', outputM, '/graph/control_in', 'midi')
-            self.pedalboard('addHardwareInput', inputL, '/graph/audio_out_1', 'audio')
-            self.pedalboard('addHardwareInput', inputR, '/graph/audio_out_2', 'audio')
-            self.pedalboard('addHardwareInput', inputM, '/graph/control_out', 'midi')
+            self.pedalboard('addHardwareOutput', outputL, '/graph/audio_port_1_in', 'audio')
+            self.pedalboard('addHardwareOutput', outputR, '/graph/audio_port_2_in', 'audio')
+            self.pedalboard('addHardwareOutput', outputM, '/graph/midi_port_1_in', 'midi')
+            self.pedalboard('addHardwareInput', inputL, '/graph/audio_port_1_out', 'audio')
+            self.pedalboard('addHardwareInput', inputR, '/graph/audio_port_2_out', 'audio')
+            self.pedalboard('addHardwareInput', inputM, '/graph/midi_port_2_out', 'midi')
 
             // Queue is empty, let's load connections now
             self.pedalboard('positionHardwarePorts')
@@ -1799,7 +1800,6 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var output = jack.data('origin')
         if (output == null) {
-            console.log(jack)
             console.log("ERROR: The origin for '" + jack.selector + "' is missing")
             return
         }
