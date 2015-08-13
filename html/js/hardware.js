@@ -53,6 +53,9 @@ function HardwareManager(options) {
 
     // Lists all available actuators and initializes the addressing structure
     this.listActuators = function () {
+        if (Object.keys(HARDWARE_PROFILE).length == 0) {
+            return []
+        }
         var actuators = []
         var i, j, type, actuator, actuatorKey
         for (i = 0; i < controlTypes.length; i++) {
