@@ -967,7 +967,6 @@ class TemplateHandler(web.RequestHandler):
             "hardware": pedalboard['hardware'],
         }
 
-        first = True
         for plugin in pedalboard['plugins']:
             data["instances"].append({
                 "uri": plugin['uri'],

@@ -285,6 +285,8 @@ def get_pedalboard_info(bundle):
         port_uri = port.as_uri()
         if port_uri in handled_port_uris:
             continue
+        if port_uri.endswith("/control_in") or port_uri.endswith("/control_out"):
+            continue
         handled_port_uris.append(port_uri)
 
         # get types

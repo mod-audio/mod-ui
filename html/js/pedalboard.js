@@ -470,23 +470,32 @@ JqueryClass('pedalboard', {
 
         // Create needed hardware ports
         createHardwarePorts = function () {
-            console.log(data.hardware)
-            // TODO - add ports as needed
-            var outputL = $('<div class="hardware-output" title="Hardware Audio Input 1">')
-            var outputR = $('<div class="hardware-output" title="Hardware Audio Input 2">')
-            var outputM = $('<div class="hardware-output" title="Hardware MIDI Input">')
-            var inputL = $('<div class="hardware-input" title="Hardware Audio Output 1">')
-            var inputR = $('<div class="hardware-input" title="Hardware Audio Output 2">')
-            var inputM = $('<div class="hardware-input" title="Hardware MIDI Output">')
-
-            self.pedalboard('addHardwareOutput', outputL, '/graph/audio_port_1_in', 'audio')
-            self.pedalboard('addHardwareOutput', outputR, '/graph/audio_port_2_in', 'audio')
-            self.pedalboard('addHardwareOutput', outputM, '/graph/midi_port_1_in', 'midi')
-            self.pedalboard('addHardwareInput', inputL, '/graph/audio_port_1_out', 'audio')
-            self.pedalboard('addHardwareInput', inputR, '/graph/audio_port_2_out', 'audio')
-            self.pedalboard('addHardwareInput', inputM, '/graph/midi_port_2_out', 'midi')
-
-            // Queue is empty, let's load connections now
+            if (data.hardware) {
+                for (var i=1, count=data.hardware.audio.ins; i<=count; i++) {
+                    var hw = $('<div class="hardware-output" title="Hardware Audio Input ' + i + '">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/audio_port_' + i + '_in', 'audio')
+                }
+                for (var i=1, count=data.hardware.audio.outs; i<=count; i++) {
+                    var hw = $('<div class="hardware-input" title="Hardware Audio Output ' + i + '">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/audio_port_' + i + '_out', 'audio')
+                }
+                for (var i=1, count=data.hardware.cv.ins; i<=count; i++) {
+                    var hw = $('<div class="hardware-output" title="Hardware CV Input ' + i + '">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/cv_port_' + i + '_in', 'cv')
+                }
+                for (var i=1, count=data.hardware.cv.outs; i<=count; i++) {
+                    var hw = $('<div class="hardware-input" title="Hardware CV Output ' + i + '">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/cv_port_' + i + '_out', 'cv')
+                }
+                for (var i=1, count=data.hardware.midi.ins; i<=count; i++) {
+                    var hw = $('<div class="hardware-output" title="Hardware MIDI Input ' + i + '">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/midi_port_' + i + '_in', 'midi')
+                }
+                for (var i=1, count=data.hardware.midi.outs; i<=count; i++) {
+                    var hw = $('<div class="hardware-input" title="Hardware MIDI Output ' + i + '">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/midi_port_' + i + '_out', 'midi')
+                }
+            }
             self.pedalboard('positionHardwarePorts')
             return connect()
         }
