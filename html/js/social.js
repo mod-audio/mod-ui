@@ -18,94 +18,129 @@
 JqueryClass('socialWindow', {
     init: function (options) {
         var self = $(this)
+
         options = $.extend({
-            userSession: null, //must be passed
-            getFeed: function (page, callback) {
+            feed: true,
+            getFeed: function (lastId, callback) {
                 callback([])
             },
-            loadPedalboard: function (pedalboard) {},
+            getTimeline: function (lastId, callback) {
+                callback([])
+            },
+            loadPedalboardFromSocial: function (pb) {},
             trigger: $('<div>')
         }, options)
 
         self.data(options)
         self.window($.extend({
             open: function () {
-                self.data('page', 0)
+                self.data('lastId', 0)
                 self.socialWindow('showFeed', 0)
-            }
+            },
         }, options))
 
         self.find('button').click(function () {
-            self.socialWindow('nextPage')
+            self.socialWindow('nextFeedPage')
         })
 
-        /*
-	self.find('#cloud-feed').click(function() {
-	    self.socialWindow('renderFeed')
-	})
-	self.find('#cloud-pedalboards').click(function() {
-	    self.socialWindow('showSearch')
-	})
-	*/
         return self
     },
 
-    showFeed: function (page) {
+    switchToAlternateView: function () {
         var self = $(this)
-        self.data('getFeed')(page, function (pedalboards) {
+        var feed = self.data('feed')
+        self.data('feed', !feed)
+        self.data('lastId', 0)
+        self.socialWindow('showFeed', 0)
+        return feed
+    },
+
+    showFeed: function (lastId) {
+        var self = $(this)
+        self.data(self.data('feed') ? 'getFeed' : 'getTimeline')(lastId, function (data) {
             var canvas = self.find('#social-main')
-            if (page == 0)
+
+            // remove existing contents
+            if (lastId == 0)
+            {
                 canvas.find('li.feed').remove()
-            var content = self.socialWindow('renderFeed', pedalboards, canvas)
-            //canvas.find('li.more').appendTo(canvas) // always last item
-            //self.find('button').show()
-            self.window('open')
+                self.find('li.more').show()
+            }
+
+            self.socialWindow('renderFeed', data, canvas)
+
+            canvas.find('li.more').appendTo(canvas) // always last item
+            self.find('button').show()
         })
     },
 
-    nextPage: function () {
-        var self = $(this)
-        page = self.data('page') + 1
-        self.data('page', page)
-        self.socialWindow('showFeed', page)
+    nextFeedPage: function () {
+        var self   = $(this)
+        var lastId = self.data('lastId')
+        self.socialWindow('showFeed', lastId)
     },
 
-    renderFeed: function (pedalboards, canvas) {
+    renderFeed: function (data, canvas) {
         var self = $(this)
-        var pbLoad = function (pb_url) {
+
+        if (data.length < 8) // page size used in desktop.js
+            self.find('li.more').hide()
+
+        var pbLoad = function (pb) {
             return function () {
-                self.data('loadPedalboard')(pb_url)
+                self.data('loadPedalboardFromSocial')(pb)
             }
         }
 
-        function renderNextPedalboard(pedalboards) {
-            if (pedalboards.length == 0)
+        function renderNextPost(data) {
+            if (data.length == 0)
                 return
 
-            var pb = pedalboards.pop()
+            var sdata = data.pop()
+            //sdata.created = renderTime(new Date(sdata.created))
+            //console.log(sdata)
 
-            desktop.userSession.getUserData(pb.user.id, function (data) {
-                pb.created      = renderTime(new Date(pb.created))
-                pb.cloud        = SITEURLNEW,
-                pb.avatar_href  = data.avatar_href,
-                pb.user_name    = data.name,
-                pb.plugin_count = pb.plugins.length // FIXME, should be in the cloud info
+            var context = {
+                avatar_href: sdata.user.avatar_href,
+                user_name  : sdata.user.name,
+                text       : sdata.text,
+            }
 
-                var content = $(Mustache.render(TEMPLATES.cloud_feed, pb))
-                content.find('.js-pedalboard-' + pb.id).click(pbLoad(pb.file_href))
-                content.find('div.spec').each(function () {
-                    var spec = $(this)
-                    if (parseInt(spec.find('span').html()) == 0) {
-                        spec.addClass('none')
-                    }
-                });
-                content.appendTo(canvas)
-            })
+            if (sdata.pedalboard) {
+                context.pedalboard = {
+                    id       : sdata.pedalboard.id,
+                    name     : sdata.pedalboard.name,
+                    thumbnail: sdata.pedalboard.thumbnail_href,
+                    plugins  : [],
+                }
 
-            renderNextPedalboard(pedalboards)
+                for (var i in sdata.pedalboard.plugins) {
+                    var plug = sdata.pedalboard.plugins[i]
+                    context.pedalboard.plugins.push({
+                        name     : plug.name || "Unknown",
+                        thumbnail: plug.thumbnail_href || "/resources/pedals/default-thumbnail.png",
+                    })
+                }
+            }
+
+            var content = $(Mustache.render(TEMPLATES.cloud_feed, context))
+
+            if (sdata.pedalboard) {
+                content.find('.js-pedalboard-' + sdata.pedalboard.id).click(pbLoad(sdata.pedalboard))
+            }
+
+            content.appendTo(canvas)
+
+            if (data.length == 0)
+            {
+                self.data('lastId', sdata.id)
+                return
+            }
+
+            renderNextPost(data)
         }
 
-        renderNextPedalboard(pedalboards.reverse())
+        renderNextPost(data.reverse())
     },
 
     showSearch: function () {},

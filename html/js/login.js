@@ -61,9 +61,40 @@ function UserSession(options) {
             new Notification('error', message)
         },
         loginWindow: $('<div>'),
+        registration: $('<div>'),
+        feedButton: $('#mod-social-network-header .menu ul li.feed'),
         loginButton: $("#mod-social-network-header .menu ul li.login"),
-        logoutButton: $("#mod-social-network-header .menu ul li.logout")
+        logoutButton: $("#mod-social-network-header .menu ul li.logout"),
     }, options)
+
+    options.loginWindow.find('form').on('submit', function (event) {
+        event.preventDefault();
+        options.loginWindow.find('.error').hide()
+
+        // get values
+        var user_id  = $(this).find('input[name=user_id]').val()
+        var password = $(this).find('input[name=password]').val()
+
+        // clear password entry
+        $(this).find('input[type=password]').val('')
+
+        // log in
+        self.tryLogin(user_id, password)
+    });
+
+    options.loginWindow.find('.js-close').on('click', function () {
+        options.loginWindow.find('.error').hide()
+        options.loginWindow.find('input[type=text]').val('')
+        options.loginWindow.find('input[type=password]').val('')
+        options.loginWindow.window('close')
+    })
+
+    options.loginWindow.find('#register').click(function () {
+        options.loginWindow.hide()
+        options.registration.start(function (data) {
+            self.tryLogin(data.user_id, data.password)
+        })
+    })
 
     this.tryConnectingToSocial = function () {
         self.setStatus(CONNECTING)
@@ -115,64 +146,6 @@ function UserSession(options) {
             error: function () {
                 self.setStatus(OFFLINE)
                 self.notify("Communication with mod-ui failed")
-            },
-            dataType: 'json'
-        })
-    }
-
-    this.login = function (callback) {
-        if (self.status === LOGGED) {
-            return callback()
-        }
-        options.loginWindow.window('open')
-        self.loginCallback = callback
-    };
-
-    options.loginWindow.find('form').on('submit', function (event) {
-        event.preventDefault();
-        options.loginWindow.find('.error').hide()
-
-        // get values
-        var user_id  = $(this).find('input[name=user_id]').val()
-        var password = $(this).find('input[name=password]').val()
-
-        // clear password entry
-        $(this).find('input[type=password]').val('')
-
-        // log in
-        self.tryLogin(user_id, password)
-    });
-
-    options.loginWindow.find('.js-close').on('click', function () {
-        options.loginWindow.find('.error').hide()
-        options.loginWindow.find('input[type=text]').val('')
-        options.loginWindow.find('input[type=password]').val('')
-        options.loginWindow.window('close')
-    })
-
-    options.loginWindow.find('#register').click(function () {
-        options.loginWindow.hide()
-        options.registration.start(function (data) {
-            self.tryLogin(data.user_id, data.password)
-        })
-    })
-
-    this.getUserData = function (user_id, callback) {
-        if (user_id == null)
-            user_id = self.user_id
-        if (user_id == null) {
-            console.log("FIXME: getUserData called without an active user")
-            return
-        }
-
-        $.ajax({
-            url: SITEURLNEW + '/users/' + user_id,
-            headers : { 'Authorization' : 'MOD ' + self.access_token },
-            success: function (data) {
-                callback(data)
-            },
-            error: function (e) {
-                console.log("Error: can't get user data for " + user_id)
             },
             dataType: 'json'
         })
@@ -230,6 +203,14 @@ function UserSession(options) {
         })
     }
 
+    this.login = function (callback) {
+        if (self.status === LOGGED) {
+            return callback()
+        }
+        options.loginWindow.window('open')
+        self.loginCallback = callback
+    };
+
     this.logout = function () {
         // tell mod-ui to delete tokens
         $.ajax({ url: '/tokens/delete' })
@@ -237,6 +218,7 @@ function UserSession(options) {
         self.user_id       = null
         self.access_token  = null
         self.refresh_token = null
+        options.feedButton.hide()
         options.logoutButton.hide()
         options.loginButton.show()
         options.logout()
@@ -259,6 +241,7 @@ function UserSession(options) {
             break;
         case LOGGED:
             options.loginButton.hide()
+            options.feedButton.show()
             options.logoutButton.show()
             options.login();
             break;

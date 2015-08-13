@@ -28,8 +28,6 @@ JqueryClass('pedalboard', {
             windowManager: new WindowManager(),
             // HardwareManager instance, must be specified
             hardwareManager: null,
-            // InstallationQueue instance
-            installationQueue: new InstallationQueue(),
 
             // Wait object, used to show waiting message to user
             wait: new WaitMessage(self),
@@ -65,6 +63,11 @@ JqueryClass('pedalboard', {
             },
 
             // Changes the parameter of a plugin's control port
+            pluginParameterMidiLearn: function (port, callback) {
+                callback(true)
+            },
+
+            // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value, callback) {
                 callback(true)
             },
@@ -89,15 +92,15 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
-            // Takes a list of plugin URLs and gets a dictionary containing all those plugins's data,
-            // indexed by URL
-            getPluginsData: function (plugins, callback) {
-                callback({})
-            },
-
             // Marks the position of a plugin
             pluginMove: function (instance, x, y, callback) {
                 callback(true)
+            },
+
+            // Takes a list of plugin URIs and gets a dictionary containing all those plugins's data,
+            // indexed by URI
+            getPluginsData: function (uris, callback) {
+                callback({})
             },
 
             // Sets the size of the pedalboard
@@ -106,8 +109,8 @@ JqueryClass('pedalboard', {
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
-            'pluginLoad', 'pluginRemove', 'pluginParameterChange', 'pluginPresetLoad', 'pluginBypass',
-            'portConnect', 'portDisconnect', 'reset', 'pluginMove'
+            'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange', 'pluginBypass',
+            'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData', 'pluginParameterMidiLearn'
         ])
 
         self.data(options)
@@ -285,6 +288,10 @@ JqueryClass('pedalboard', {
             self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
             ev.preventDefault()
         })
+        self[0].addEventListener('dblclick', function (ev) {
+            if (ev.handled) return
+            self.pedalboard('zoomOut')
+        })
     },
 
     // Check if mouse event has happened over any element of a jquery set in pedalboard
@@ -427,7 +434,6 @@ JqueryClass('pedalboard', {
         // Loads the next plugin in queue. Gets as parameter a data structure containing
         // information on all plugins
         loadPlugin = function (pluginsData) {
-
             var plugin = data.instances.pop()
             if (plugin == null)
                 // Queue is empty, let's create the hardware ports now
@@ -512,41 +518,11 @@ JqueryClass('pedalboard', {
                 })
         }
 
-        self.pedalboard('getPluginsData', data.instances, loadPlugin)
-    },
+        var uris = []
+        for (var i in data.instances)
+            uris.push(data.instances[i].uri)
 
-    // Gets a list of instances, loads from application the data from all plugins available,
-    // installs missing plugins and gives callback the whole result
-    getPluginsData: function (instances, callback) {
-        var self = $(this)
-        var plugins = {}
-        for (var i in instances) {
-            plugins[instances[i].uri] = 1
-        }
-        var uris = Object.keys(plugins)
-
-        var missingCount = 0
-        var installationQueue = self.data('installationQueue')
-
-        var installPlugin = function (uri, data) {
-            missingCount++
-            installationQueue.install(uri, function (pluginData) {
-                data[uri] = pluginData
-                missingCount--
-                if (missingCount == 0)
-                    callback(data)
-            })
-        }
-
-        var installMissing = function (data) {
-            for (var i in uris)
-                if (data[uris[i]] == null)
-                    installPlugin(uris[i], data)
-            if (missingCount == 0)
-                callback(data)
-        }
-
-        self.data('getPluginsData')(uris, installMissing)
+        self.data('getPluginsData')(uris, loadPlugin)
     },
 
     // Register hardware inputs and outputs, elements that will be used to represent the audio inputs and outputs
@@ -563,6 +539,7 @@ JqueryClass('pedalboard', {
         self.data('hwInputs').push(element)
         self.append(element)
     },
+
     addHardwareOutput: function (element, symbol, portType) {
         var self = $(this)
         element.attr('mod-role', 'output-' + portType + '-port')
@@ -914,6 +891,7 @@ JqueryClass('pedalboard', {
         // move plugins
         for (instance in plugins) {
             plugin = plugins[instance]
+            if (!plugin.position) continue
             x = parseInt(plugin.css('left')) + left
             y = parseInt(plugin.css('top')) + top
             plugin.animate({
@@ -1138,6 +1116,12 @@ JqueryClass('pedalboard', {
                         // TODO Handle error
                     })
             },
+            midiLearn: function (port) {
+                self.data('pluginParameterMidiLearn')(port,
+                        function (ok) {
+                            // TODO Handle this error
+                        })
+            },
             change: function (port, value) {
                 self.data('pluginParameterChange')(port, value,
                     function (ok) {
@@ -1292,27 +1276,70 @@ JqueryClass('pedalboard', {
         })
     },
 
-    removePluginFromCanvas: function (instance) {
+    removeItemFromCanvas: function (instance) {
         var self = $(this)
         var plugins = self.data('plugins')
-        var plugin = plugins[instance]
 
-        var connections = self.data('connectionManager')
-        connections.iterateInstance(instance, function (jack) {
-            var input = jack.data('destination')
-            jack.data('canvas').remove()
-            jack.remove()
-            self.pedalboard('packJacks', input)
-        })
-        connections.removeInstance(instance)
+        if (instance in plugins) {
+            var plugin = plugins[instance]
 
-        var hw = self.data('hardwareManager')
-        if (hw)
-            hw.removeInstance(instance)
+            var connections = self.data('connectionManager')
+            connections.iterateInstance(instance, function (jack) {
+                var input = jack.data('destination')
+                jack.data('canvas').remove()
+                jack.remove()
+                self.pedalboard('packJacks', input)
+            })
+            connections.removeInstance(instance)
 
-        delete plugins[instance]
+            var hw = self.data('hardwareManager')
+            if (hw)
+                hw.removeInstance(instance)
 
-        plugin.remove()
+            delete plugins[instance]
+
+            plugin.remove()
+        } else {
+            var connections = self.data('connectionManager')
+            connections.iterate(function (jack) {
+                var input   = jack.data('destination')
+                var inport  = input.attr('mod-port')
+                var output  = jack.data('origin')
+                var outport = output.attr('mod-port')
+
+                if (inport != instance && outport != instance)
+                    return
+
+                connections.disconnect(outport, inport)
+                jack.data('canvas').remove()
+                jack.remove()
+                self.pedalboard('packJacks', input)
+
+                if (!connections.origIndex[outport] || Object.keys(connections.origIndex[outport]).length == 0) {
+                    output.addClass('output-disconnected')
+                    output.removeClass('output-connected')
+                }
+            })
+
+            var inputs  = self.data('hwInputs')
+            var outputs = self.data('hwOutputs')
+
+            inputs.forEach(function (hw) {
+                if (hw.attr("mod-port-symbol") == instance) {
+                    hw.remove()
+                    inputs.pop(hw)
+                }
+            })
+
+            outputs.forEach(function (hw) {
+                if (hw.attr("mod-port-symbol") == instance) {
+                    hw.remove()
+                    outputs.pop(hw)
+                }
+            })
+
+            self.pedalboard('positionHardwarePorts')
+        }
     },
 
     // Highlight all inputs to which a jack can be connected (any inputs that are not from same
@@ -1358,9 +1385,10 @@ JqueryClass('pedalboard', {
             if (!ok) {
                 return
             }
-            self.data('connectionManager').iterateInstance(":system:", function (jack) {
+            self.data('connectionManager').iterate(function (jack) {
                 self.pedalboard('disconnect', jack)
             })
+            self.pedalboard('resetSize')
             if (callback)
                 callback()
         })
@@ -1770,6 +1798,11 @@ JqueryClass('pedalboard', {
     connect: function (jack, input) {
         var self = $(this)
         var output = jack.data('origin')
+        if (output == null) {
+            console.log(jack)
+            console.log("ERROR: The origin for '" + jack.selector + "' is missing")
+            return
+        }
        // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input))
             return self.pedalboard('disconnect', jack)
@@ -1782,8 +1815,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('finishConnection')
 
         // Register the connection in desktop structure
-        self.data('connectionManager').connect(output.attr("mod-port"), input.attr("mod-port"),
-            jack)
+        self.data('connectionManager').connect(output.attr("mod-port"), input.attr("mod-port"), jack)
 
         // Register the connection in jack
         jack.data('destination', input)

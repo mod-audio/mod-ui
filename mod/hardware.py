@@ -157,7 +157,6 @@ class Touch(Hardware):
     def get_label_for_actuator(self, actuator, addr_type):
         return "%s: %s" % (self.name, actuator.name)
 
-
 class Accel(Hardware):
     HW_TYP = 3
 
@@ -172,16 +171,33 @@ class Accel(Hardware):
     def get_label_for_actuator(self, actuator, addr_type):
         return "%s: %s" % (self.name, actuator.name)
 
+class Custom(Hardware):
+    HW_TYP = 4
+
+    def __init__(self, id, info):
+        actuators = []
+
+        for act in info['actuators']:
+            name = act['name'].split(" ",1)[0]
+            if name == "Knob":
+                actuators.append(Knob(name))
+            elif name == "Footswitch":
+                actuators.append(FootSwitch(name))
+
+        Hardware.__init__(self, id, info['name'], actuators)
 
 HW_TYP_TO_CLS = dict((cls.HW_TYP, cls) for cls in Hardware.__subclasses__())
 
-def add_hardware(hardware_type, hardware_id, hardware):
+def add_hardware(hardware_type, hardware_id, hardware, info = {}):
     try:
         hardware_cls = HW_TYP_TO_CLS[hardware_type]
     except (KeyError):
         return
 
-    hw = hardware_cls(hardware_id)
+    if hardware_type == Custom.HW_TYP:
+        hw = hardware_cls(hardware_id, info)
+    else:
+        hw = hardware_cls(hardware_id)
 
     for actuator in hw.actuators:
         for addr_type in actuator.addressing_type:
@@ -194,19 +210,19 @@ def add_hardware(hardware_type, hardware_id, hardware):
                                         hw.get_label_for_actuator(actuator, addr_type) ])
 
 def get_hardware():
-    # TODO might deserve cache. inotify to expire cache?
+    if not os.path.exists("/etc/mod-capabilities.json"):
+        return {}
+
     hardware = {}
     known_hws = dict( (cls.__name__.upper(), cls.HW_TYP) for cls in Hardware.__subclasses__() )
-    try:
-        model = open(DEVICE_MODEL).read()
-        model = known_hws.get(model, 0)
-    except IOError:
-        model = 0
 
-    add_hardware(model, 0, hardware)
+    with open("/etc/mod-capabilities.json", 'r') as fd:
+        add_hardware(Custom.HW_TYP, 0, hardware, json.loads(fd.read()))
 
+    # TODO might deserve cache. inotify to expire cache?
     for extension in sorted(os.listdir(HARDWARE_DIR)):
         m = re.match('^(\d+)_(\d+)$', extension)
         if m:
             add_hardware(int(m.groups()[0]), int(m.groups()[1]), hardware)
+
     return hardware

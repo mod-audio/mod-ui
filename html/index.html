@@ -33,6 +33,21 @@
 
     <script type="text/javascript" src="js/constants.js?v={{version}}"></script>
 
+    <!-- Lunr -->
+    <script src="js/lib/lunr/lunr.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/utils.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/tokenizer.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/pipeline.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/vector.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/sorted_set.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/event_emitter.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/index.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/document_store.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/stemmer.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/stop_word_filter.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/trimmer.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/lib/lunr/token_store.js" type="text/javascript" charset="utf-8"></script>
+
     <script type="text/javascript">
 
       {% autoescape None %}
@@ -62,7 +77,15 @@
           console.log = function() {}
       }
 
-$('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
+      var INFO = {
+          "hardware": {},
+          "env": {},
+          "python": {},
+          "uname": {}
+      }
+
+// FIXME: what is this for?
+// $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
   desktop = new Desktop({
@@ -71,6 +94,9 @@ $('document').ready(function() {
       zoomIn: $('.zoom-in'),
       zoomOut: $('.zoom-out'),
       rec: $('#rec'),
+      addMidiButton: $('#pedalboard-info .js-add-midi'),
+      midiDevicesWindow: $('#midi-device-window'),
+      midiDevicesList: $("#midi-device-list"),
       saveBox: $('#save-pedalboard'),
       saveButton: $('#pedalboard-info .js-save'),
       saveAsButton: $('#pedalboard-info .js-save-as'),
@@ -98,9 +124,21 @@ $('document').ready(function() {
       bluetoothIcon: $('#mod-bluetooth'),
       upgradeWindow: $('#mod-upgrade'),
       upgradeIcon: $('#mod-settings'),
+      feedButton: $('#cloud-feed-timeline'),
       login: $('#login'),
       logout: $('#logout')
   })
+
+  $.ajax({
+      url: '/system/info',
+      method: 'GET',
+      success: function (info) {
+          INFO = info
+          console.log(info)
+      },
+      dataType: 'json'
+  })
+
 })
 
 </script>
@@ -119,6 +157,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/login.js?v={{version}}"></script>
+<script type="text/javascript" src="js/mididevices.js?v={{version}}"></script>
 <script type="text/javascript" src="js/register.js?v={{version}}"></script>
 <script type="text/javascript" src="js/feed.js?v={{version}}"></script>
 <script type="text/javascript" src="js/social.js?v={{version}}"></script>
@@ -185,13 +224,13 @@ $('document').ready(function() {
                         <div class="control-group">
                             <label>User ID</label>
                             <div class="mod-controls">
-                                <input type="text" name="user_id" value="uu05"/>
+                                <input type="text" name="user_id" value=""/>
                             </div>
                         </div>
                         <div class="control-group">
                             <label>Password</label>
                             <div class="mod-controls">
-                                <input type="password" name="password" value="uu05uu05"/>
+                                <input type="password" name="password" value=""/>
                             </div>
                         </div>
                         <div class="textright">
@@ -324,6 +363,8 @@ $('document').ready(function() {
                 <div class="title">Untitled</div>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
+                    <button class="js-add-midi btn btn-mini btn-warning">Add MIDI Device</button>
+                    <span class="separator" id="js-add-midi-separator"></span>
                     <button class="js-save btn btn-mini btn-warning">Save</button>
                     <button class="js-save-as btn btn-mini btn-warning">Save as</button>
                     <span class="separator"></span>
@@ -351,6 +392,22 @@ $('document').ready(function() {
         <div id="pedalboard-dashboard">
         </div>
         <!-- END PEDALBOARD-DASHBOARD -->
+
+        <!-- MIDI DEVICE LIST WINDOW -->
+        <div id="midi-device-window" class="save-popup hidden">
+            <div class="mod-box">
+                <h1>MIDI Device List</h1>
+                <form class="bottom">
+                    <div class="controls clearfix" id="midi-device-list">
+                    </div>
+                    <div class="controls actions">
+                        <button class="js-cancel btn btn-danger">Cancel</button>
+                        <button class="js-submit btn btn-success">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- MIDI DEVICE LIST WINDOW -->
 
     </div>
     <!-- END PEDALBOARD -->
@@ -734,6 +791,7 @@ $('document').ready(function() {
                 </form>
               </li>
 	      -->
+              <li class="feed"><a id="cloud-feed-timeline">Feed</a></li>
               <li class="login"><a id="login">Login</a></li>
               <li class="logout"><a id="logout">Logout</a></li>
             </ul>

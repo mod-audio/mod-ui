@@ -53,13 +53,13 @@ $(document).ready(function () {
                                         desktop.pedalboard.pedalboard('destroyJack', jack)
                                     }
                                 }
+                            } else {
+                                    console.log("TESTING: Received unhandled patch:Delete message:" + type[0].object)
                             }
                         } else {
                             var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
                             if (subject.length) {
-                                var instance = subject[0].object
-                                if (instance in desktop.pedalboard.data('plugins'))
-                                    desktop.pedalboard.pedalboard('removePluginFromCanvas', instance)
+                                desktop.pedalboard.pedalboard('removeItemFromCanvas', subject[0].object)
                             }
                         }
                     });
@@ -113,26 +113,39 @@ $(document).ready(function () {
                                     // not a system/hardware port
                                     return
                                 }
-                                var name = N3.Util.getLiteralValue(store.find(
-                                                                body[0].object,
-                                                                "http://lv2plug.in/ns/lv2core#name")[0].object);
-                                var index = N3.Util.getLiteralValue(store.find(
-                                                                body[0].object,
-                                                                "http://lv2plug.in/ns/lv2core#index")[0].object);
+                                if (sub == "/graph/control_in" || sub == "/graph/control_out") {
+                                    // skip special ingen control ports
+                                    return
+                                }
+
+                                var nameObj = store.find(body[0].object, "http://lv2plug.in/ns/lv2core#name")[0]
+                                if (nameObj == null)
+                                    return
+
+                                var indexObj = store.find(body[0].object, "http://lv2plug.in/ns/lv2core#index")[0]
+                                if (indexObj == null)
+                                    return
+
+                                var name = N3.Util.getLiteralValue(nameObj.object)
+                                var index = N3.Util.getLiteralValue(indexObj.object)
                                 var types = [type[0].object, type[1].object]
+
+                                var port_type
                                 if (types.indexOf("http://lv2plug.in/ns/ext/atom#AtomPort") > -1) {
                                     // atom
-                                    var port_type = "midi"
+                                    port_type = "midi"
                                 } else if (types.indexOf("http://lv2plug.in/ns/lv2core#CVPort") > -1) {
                                     // cv
-                                    var port_type = "cv"
+                                    port_type = "cv"
                                 } else {
                                     // audio
-                                    var port_type = "audio"
+                                    port_type = "audio"
                                 }
 
                                 var el = $('[id="' + sub + '"]')
-                                if (el.length > 0) return;
+                                if (el.length > 0) {
+                                    return
+                                }
 
                                 if (types.indexOf("http://lv2plug.in/ns/lv2core#InputPort") > -1) {
                                     el = $('<div id="' + sub + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
@@ -151,16 +164,16 @@ $(document).ready(function () {
                                 var last_slash = sub.lastIndexOf("/");
                                 var instance = sub.substring(0, last_slash);
                                 var port = sub.substring(last_slash+1);
-                                if (!$('[mod-port="' + sub.replace("/", "\\/") + '"]').length) {
+                                var symbol = '[mod-port="' + sub.replace("/", "\\/") + '"]'
+                                if (!$(symbol).length) {
                                     var cb = function () {
-                                        var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                         setTimeout(function() {
                                             var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                             gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
                                         }, 100)
-                                        $(document).unbindArrive('[mod-port="' + sub.replace("/", "\\/") + '"]', cb)
+                                        $(document).unbindArrive(symbol, cb)
                                     }
-                                    $(document).arrive('[mod-port="' + sub.replace("/", "\\/") + '"]', cb)
+                                    $(document).arrive(symbol, cb)
                                 } else {
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
@@ -216,7 +229,6 @@ $(document).ready(function () {
                         var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
                         if (subject.length)
                             console.log("Patch: " + subject[0]);
-
                     });
 
                     // Set messages
@@ -241,6 +253,12 @@ $(document).ready(function () {
                                     var instance = subject[0].object
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(":bypass", value[0].object == "true" ? 0 : 1, undefined, true);
+                                } else if (property[0].object == "http://moddevices/ns/mod#cpuload") {
+                                    // setting cpuload
+                                    var value = value[0].object
+                                    $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
+                                } else {
+                                    console.log("TESTING: Received unhandled patch:Set message " + subject[0])
                                 }
                             }
                         }

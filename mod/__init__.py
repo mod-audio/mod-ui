@@ -55,7 +55,6 @@ def check_environment(callback):
     from mod.settings import (HARDWARE_DIR,
                               DEVICE_SERIAL, DEVICE_MODEL,
                               DOWNLOAD_TMP_DIR, BANKS_JSON_FILE, HTML_DIR)
-    from mod import indexing
     from mod.session import SESSION
 
     for dirname in (HARDWARE_DIR, DOWNLOAD_TMP_DIR):
@@ -73,15 +72,14 @@ def check_environment(callback):
         model = re.search('^[A-Z]+').group()
         open(DEVICE_MODEL, 'w').write(model)
 
+    # calls ping until ok is received
     def ping_callback(ok):
-        if ok:
-            pass
-        else:
-            # calls ping again every one second
+        if not ok:
             ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
     SESSION.ping(ping_callback)
 
-# Turn any string into a LV2 compatible symbol
 def symbolify(name):
-    # TODO
+    name = re.sub("[^_a-zA-Z0-9]+", "_", name)
+    if name[0].isdigit():
+        name = "_" + name
     return name

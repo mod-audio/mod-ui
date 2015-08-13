@@ -100,6 +100,7 @@ function GUI(effect, options) {
         'dragStop': new Function(),
         'bypass': new Function(),
         'presetLoad': new Function(),
+        'midiLearn': new Function(),
         'bypassed': false,
         'defaultIconTemplate': 'Template missing',
         'defaultSettingsTemplate': 'Template missing'
@@ -373,6 +374,10 @@ function GUI(effect, options) {
                     port: port,
                     change: function (e, value) {
                         setValue(value)
+                    },
+                    midiLearn: function (e) {
+                        var port_path = $(this).attr('mod-port')
+                        options.midiLearn(port_path)
                     }
                 })
 
@@ -516,6 +521,10 @@ function GUI(effect, options) {
             widget.controlWidget('gestureChange', ev.scale)
             ev.handled = true
         })
+        element[0].addEventListener('dblclick', function (ev) {
+            ev.preventDefault()
+            ev.handled = true
+        })
     }
 
     this.getTemplateData = function (options, skipNamespace) {
@@ -549,8 +558,14 @@ function GUI(effect, options) {
         // insert scalePoints into controls
         for (var i in data.controls)
         {
-            var control = data.controls[i]
-            control.scalePoints = self.controls[control.symbol].scalePoints
+            var dcontrol = data.controls[i]
+            var scontrol = self.controls[dcontrol.symbol]
+
+            if (scontrol) {
+                dcontrol.scalePoints = scontrol.scalePoints
+            } else {
+                console.log("Control port symbol '" + dcontrol.symbol + "' is missing")
+            }
         }
 
         // FIXME - this is a little ugly hack, sorry!
@@ -576,7 +591,11 @@ function GUI(effect, options) {
             data.effect.ports.control.input = inputs
         }
 
-        DEBUG = JSON.stringify(data, undefined, 4)
+        if (window.desktop != undefined) {
+            // this is expensive and only useful for mod-sdk
+            DEBUG = JSON.stringify(data, undefined, 4)
+        }
+
         return data
     }
 
@@ -641,6 +660,7 @@ var baseWidget = {
         if (!(self.data('enabled') === false))
             self.data('enabled', true)
         self.bind('valuechange', options.change)
+        self.bind('midilearn', options.midiLearn)
 
         var port = options.port
 
@@ -807,7 +827,7 @@ JqueryClass('film', baseWidget, {
                 $(document).bind('mousemove', moveHandler)
                 self.trigger('filmstart')
             }
-        })
+         })
 
         self.data('wheelBuffer', 0)
         self.bind('mousewheel', function (e) {
@@ -835,6 +855,10 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         setTimeout(function () {
             var url = self.css('background-image').replace('url(', '').replace(')', '').replace("'", '').replace('"', '');
+            if (! url) {
+                console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
+                return
+            }
             var height = self.css('background-size').split(/ /)[1]
             if (height)
                 height = parseInt(height.replace(/\D+$/, ''))
@@ -1043,19 +1067,20 @@ JqueryClass('customSelect', baseWidget, {
                 }
             })
         });
-        var hidden = self.find('[mod-widget-property=hidden]')
+        var enumlist = self.find('.mod-enumerated-list')
         self.click(function () {
-            hidden.toggle()
+            enumlist.toggle()
         })
 
         return self
     },
 
     setValue: function (value, only_gui) {
+        value = parseFloat(value)
         var self = $(this)
         self.find('[mod-role=enumeration-option]').removeClass('selected')
         self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]').addClass('selected')
         if (!only_gui)
-            self.trigger('valuechange', parseFloat(value))
+            self.trigger('valuechange', value)
     }
 })

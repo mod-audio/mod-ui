@@ -39,19 +39,18 @@
       $('document').ready(function() {
           var el = $('#pedalboard-dashboard').pedalboard({
              baseScale: 1,
-             getPluginsData: function(urls, callback) {
+             getPluginsData: function(uris, callback) {
                  $.ajax({
                      url: '/effect/bulk/',
                      type: 'POST',
                      contentType: 'application/json',
-                     data: JSON.stringify(urls),
+                     data: JSON.stringify(uris),
                      success: callback,
                      dataType: 'json'
                  })
              }
           })
-
-          console.log(PEDALBOARD_DATA)
+          //console.log(PEDALBOARD_DATA)
           el.pedalboard('unserialize', PEDALBOARD_DATA)
       })
 
@@ -75,7 +74,26 @@
     <script type="text/javascript" src="js/xrun.js"></script>
 
     <style type="text/css" media="screen">
-    body { background:transparent !important;}
+    body {
+        background:transparent !important;
+    }
+    body, div {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+    }
+    #wrapper {
+        overflow: hidden;
+    }
+    #pedalboard-dashboard {
+        background: transparent;
+        top: 0px;
+        bottom: 0px;
+    }
     </style>
 
 </head>

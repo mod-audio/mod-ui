@@ -103,8 +103,7 @@ function SimpleTransference(from, to, options) {
     this.success = function (resp) {
         console.log("[TRANSFERENCE] upload finished")
         console.log(resp)
-        console.log(resp['result'])
-        self.reportFinished(resp['result'])
+        self.reportFinished(resp)
     }
 
     this.reportInitialStatus = function (upload) {

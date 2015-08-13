@@ -1,16 +1,16 @@
 /*
  * Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -27,10 +27,6 @@ JqueryClass('shareBox', {
         var self = $(this)
 
         options = $.extend({
-            userSession: {
-                'sid': ''
-            },
-
             recordStart: function (callback) {
                 callback()
             },
@@ -60,7 +56,8 @@ JqueryClass('shareBox', {
         self.data(options)
         self.data('bundlepath', '')
         self.data('recordedData', null)
-
+        self.data('status', STOPPED)
+        self.data('step', 0)
 
         self.find('#record-rec').click(function () {
             self.shareBox('recordStartCountdown');
@@ -97,9 +94,6 @@ JqueryClass('shareBox', {
         self.find('#pedalboard-share-fb').click(function () {
             self.shareBox('checkFacebook')
         })
-
-        self.data('status', STOPPED)
-        self.data('step', 0)
 
         $('body').keydown(function (e) {
             if (e.keyCode == 27)
@@ -296,9 +290,9 @@ JqueryClass('shareBox', {
     close: function () {
         var self = $(this)
         self.shareBox('recordStop', function () {
-            console.log(self.data('recordReset'))
+            //console.log(self.data('recordReset'))
             self.data('recordReset')(function () {
-                console.log('reset')
+                //console.log('reset')
                 self.hide()
             })
         })

@@ -24,6 +24,9 @@ function Desktop(elements) {
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
         rec: $('<div>'),
+        addMidiButton: $('<div>'),
+        midiDevicesWindow: $('<div>'),
+        midiDevicesList: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
@@ -55,12 +58,13 @@ function Desktop(elements) {
         bluetoothIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
+        feedButton: $('<div>'),
         login: $('<div>'),
         logout: $('<div>')
     }, elements)
 
     this.installationQueue = new InstallationQueue()
-    this.windowManager = new WindowManager();
+    this.windowManager = new WindowManager()
     this.feedManager = new FeedManager({
         // This is a backdoor. It allows the cloud to send arbitrary javascript code
         // to be executed by client. By now this is the simplest way to garantee a
@@ -75,14 +79,50 @@ function Desktop(elements) {
         }
     })
 
+    this.pluginIndexer = lunr(function () {
+        this.field('data')
+        this.ref('id')
+        this.requireAllTerms = true
+    })
+
+    this.pedalboardIndexer = lunr(function () {
+        this.field('data')
+        this.ref('id')
+        this.requireAllTerms = true
+    })
+
+    this.pedalboardIndexerData = {}
+
     this.netStatus = elements.networkIcon.statusTooltip()
+
+    this.midiDevices = new MidiDevicesWindow({
+        midiDevicesWindow: elements.midiDevicesWindow,
+        midiDevicesList: elements.midiDevicesList,
+    })
 
     this.registration = new RegistrationWindow({
         registrationWindow: elements.registrationWindow,
-        getUserSession: function () {
-            return self.userSession.user_id
-        }
     })
+
+    this.getUserData = function (user_id, callback) {
+        if (user_id == null) {
+            console.log("FIXME: getUserData called with an invalid user")
+            return
+        }
+
+        $.ajax({
+            url: SITEURLNEW + '/users/' + user_id,
+            headers : { 'Authorization' : 'MOD ' + self.access_token },
+            success: function (data) {
+                callback(data)
+            },
+            error: function (e) {
+                console.log("Error: can't get user data for " + user_id)
+            },
+            dataType: 'json'
+        })
+    }
+
     this.userSession = new UserSession({
         loginWindow: elements.loginWindow,
         registration: self.registration,
@@ -97,7 +137,7 @@ function Desktop(elements) {
                 console.log('user profile')
                 return false
             })
-            self.userSession.getUserData(null, function (data) {
+            self.getUserData(self.userSession.user_id, function (data) {
                 elements.userAvatar.show().attr('src', data.avatar_href)
                 self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
                 self.netStatus.statusTooltip('status', 'logged')
@@ -114,6 +154,11 @@ function Desktop(elements) {
             self.netStatus.statusTooltip('message', message)
         }
     });
+    elements.feedButton.click(function () {
+        var timeline = elements.socialWindow.socialWindow('switchToAlternateView')
+        elements.feedButton.html(timeline ? "Timeline" : "Feed")
+        return false
+    })
     elements.login.click(function () {
         self.windowManager.closeWindows()
         self.userSession.login()
@@ -190,10 +235,10 @@ function Desktop(elements) {
         self.pedalboard.pedalboard('zoomOut')
     })
 
-    var ajaxFactory = function (uri, errorMessage) {
+    var ajaxFactory = function (url, errorMessage) {
         return function (callback) {
             $.ajax({
-                uri: uri,
+                url: url,
                 success: callback,
                 error: function () {
                     new Error(errorMessage)
@@ -254,25 +299,53 @@ function Desktop(elements) {
         })
     }
 
-
     this.pedalboardListFunction = function (callback) {
         $.ajax({
             'method': 'GET',
             'url': '/pedalboard/list',
-            'success': callback,
+            'success': function(pedals) {
+                var allpedals = {}
+                for (var i=0; i<pedals.length; i++) {
+                    var pedal = pedals[i]
+                    allpedals[pedal.uri] = pedal
+                    self.pedalboardIndexer.add({
+                        id: pedal.uri,
+                        data: [pedal.uri, pedal.metadata.title].join(" ")
+                    })
+                }
+                self.pedalboardIndexerData = allpedals
+
+                if (callback)
+                    callback(pedals)
+            },
             'dataType': 'json'
         })
     }
     this.pedalboardSearchFunction = function (local, query, callback) {
-        var url = local ? '' : SITEURL
-        $.ajax({
-            'method': 'GET',
-            'url': url + '/pedalboard/search/?term=' + escape(query),
-            'success': function (pedalboards) {
-                callback(pedalboards, url)
-            },
-            'dataType': 'json'
-        })
+        if (local)
+        {
+            var allpedals = self.pedalboardIndexerData
+            var pedals    = []
+
+            ret = self.pedalboardIndexer.search(query)
+            for (var i in ret) {
+                var uri = ret[i].ref
+                pedals.push(allpedals[uri])
+            }
+
+            callback(pedals, '')
+        }
+        else
+        {
+            $.ajax({
+                'method': 'GET',
+                'url': SITEURLNEW + '/pedalboard/search/?term=' + escape(query),
+                'success': function (pedals) {
+                    callback(pedalboards, SITEURLNEW)
+                },
+                'dataType': 'json'
+            })
+        }
     }
 
     this.disconnect = function () {
@@ -303,20 +376,36 @@ function Desktop(elements) {
         $('#mod-bluetooth').hide()
         $('#mod-settings').hide()
         $('#mod-disconnect').hide()
+        $('#pedalboard-dashboard').parent().css('top', '0px')
+        $('#pedalboard-info .js-add-midi').hide()
+        $('#js-add-midi-separator').hide()
+        $('#zoom-controllers').css({
+            'top': '3px',
+            'right': '3px'
+        })
 
-        if (usingDesktop || true)
+        // TODO
+        $('#mod-cloud-plugins').hide()
+        $('#pb-preset-manager').hide()
+
+        if (usingDesktop)
         {
-            // TESTING
-            //$('#mod-pedalboard').hide()
             $('#pedalboard-actions').hide()
-            $("#pedalboard-dashboard").parent().css({
-                'top': '0px'
-            })
-            $('#zoom-controllers').css({
-                'top': '3px',
-                'right': '3px'
-            })
         }
+        else // using Live-ISO
+        {
+            $('#mod-social').hide()
+            $('#mod-cloud').hide()
+            $('#pedalboard-sharing').hide()
+        }
+
+        self.netStatus.statusTooltip('updatePosition')
+
+        // Fix mod-cpu starting in wrong position
+        $('#mod-cpu .progress-title').css('position', 'relative')
+        setTimeout(function () {
+            $('#mod-cpu .progress-title').css('position', 'absolute')
+        }, 100)
     }
 
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
@@ -329,15 +418,77 @@ function Desktop(elements) {
         this.userBox = elements.userBox.userBox()
         //this.xrun = elements.xRunNotifier.xRunNotifier()
         */
+    this.getPluginsData = function (uris, callback) {
+        $.ajax({
+            url: '/effect/bulk/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(uris),
+            success: callback,
+            dataType: 'json'
+        })
+    }
+    this.installMissingPlugins = function (plugins, callback) {
+        var missingCount = 0
+        var versions = {}
+        var uris = []
+
+        // make list of uris
+        for (var i in plugins)
+        {
+            var plugin = plugins[i]
+            versions[plugin.uri] = [plugin.minorVersion, plugin.microVersion, 0]
+            uris.push(plugin.uri)
+        }
+
+        var installPlugin = function (uri, data) {
+            missingCount++
+            self.installationQueue.install(uri, function (pluginData) {
+                data[uri] = pluginData
+                missingCount--
+
+                if (missingCount == 0)
+                    callback(data)
+            })
+        }
+
+        var installMissing = function (data) {
+            for (var i in uris) {
+                var uri         = uris[i]
+                var localplugin = data[uri]
+
+                if (localplugin == null)
+                {
+                    installPlugin(uri, data)
+                }
+                else
+                {
+                    var version = [localplugin.minorVersion, localplugin.microVersion, 0]
+
+                    if (compareVersions(version, versions[uri]) < 0)
+                        installPlugin(uri, data)
+                }
+            }
+
+            if (missingCount == 0)
+                callback(data)
+        }
+
+        this.getPluginsData(uris, installMissing)
+    },
+
     this.socialWindow = elements.socialWindow.socialWindow({
         windowManager: self.windowManager,
-        userSession: self.userSession,
-        getFeed: function (page, callback) {
+        getFeed: function (lastId, callback) {
+            var url = SITEURLNEW + '/social/posts/?page_size=8'
+
+            if (lastId != 0)
+                url += '&max_id=' + lastId
+
             $.ajax({
-                url: SITEURLNEW + '/pedalboards/',
-                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
-                success: function (pedalboards) {
-                    callback(pedalboards)
+                url: url,
+                success: function (data) {
+                    callback(data)
                 },
                 error: function () {
                     new Notification('error', 'Cannot contact cloud')
@@ -346,20 +497,46 @@ function Desktop(elements) {
                 dataType: 'json'
             })
         },
-        loadPedalboard: function (pb_url) {
-            self.reset(function () {
-                transfer = new SimpleTransference(pb_url, '/pedalboard/load_web/')
+        getTimeline: function (lastId, callback) {
+            if (! self.userSession.access_token) {
+                console.log("Cannot show timeline when used is logged out")
+                return
+            }
+            var url = SITEURLNEW + '/social/timeline/?page_size=8'
 
-                transfer.reportFinished = function () {
-                    self.pedalboardModified = true
-                    self.pedalboardSavable = true
-                    self.windowManager.closeWindows()
-                }
-                transfer.reportError = function (error) {
-                    new Bug("Couldn't load pedalboard, reason:<br/>" + error)
-                }
+            if (lastId != 0)
+                url += '&max_id=' + lastId
 
-                transfer.start()
+            $.ajax({
+                url: url,
+                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                success: function (data) {
+                    callback(data)
+                },
+                error: function () {
+                    new Notification('error', 'Cannot contact cloud')
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+        loadPedalboardFromSocial: function (pb) {
+            self.installMissingPlugins(pb.plugins, function () {
+                self.reset(function () {
+                    transfer = new SimpleTransference(pb.file_href, '/pedalboard/load_web/')
+
+                    transfer.reportFinished = function () {
+                        self.pedalboardModified = true
+                        self.pedalboardSavable = true
+                        self.windowManager.closeWindows()
+                    }
+
+                    transfer.reportError = function (error) {
+                        new Bug("Couldn't load pedalboard, reason:<br/>" + error)
+                    }
+
+                    transfer.start()
+                })
             })
         },
         trigger: elements.socialTrigger,
@@ -390,6 +567,9 @@ function Desktop(elements) {
         }
     })
 
+    elements.addMidiButton.click(function () {
+        self.showMidiDeviceList()
+    })
     elements.saveButton.click(function () {
         self.saveCurrentPedalboard(false)
     })
@@ -402,7 +582,7 @@ function Desktop(elements) {
     elements.disconnectButton.click(function () {
         self.disconnect()
     })
-    
+
     this.presetManager = elements.presetManager.presetManager({});
     this.presetManager.presetManager("setPresets", [
         { name: "Foobar", uri: "whatever", bind: MOD_BIND_MIDI },
@@ -427,7 +607,6 @@ function Desktop(elements) {
     this.presetManager.on("bindlist", function (e, options) {
         console.log("bindlist", options);
     })
-    
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {
@@ -447,7 +626,6 @@ function Desktop(elements) {
     })
 
     elements.shareWindow.shareBox({
-        userSession: self.userSession,
         recordStart: ajaxFactory('/recording/start', "Can't record. Probably a connection problem."),
         recordStop: ajaxFactory('/recording/stop', "Can't stop record. Probably a connection problem. Please try stopping again"),
         playStart: function (startCallback, stopCallback) {
@@ -483,11 +661,29 @@ function Desktop(elements) {
                                               { 'Authorization' : 'MOD ' + self.userSession.access_token }
                                               }})
 
-            transfer.reportFinished = function () {
-                callback(true)
+            transfer.reportFinished = function (resp) {
+                $.ajax({
+                    url: SITEURLNEW + '/social/posts/',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                    data: JSON.stringify({
+                        pedalboard_id: resp.id,
+                        text: data.title,
+                    }),
+                    success: function (pluginData) {
+                        callback(true)
+                    },
+                    error: function (resp) {
+                        new Notification('error', "Failed to create new post")
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             }
+
             transfer.reportError = function (error) {
-                new Notification('error', "Can't share pedalboard")
+                new Notification('error', "Failed to upload pedalboard to cloud")
             }
 
             transfer.start()
@@ -521,14 +717,15 @@ function Desktop(elements) {
     $('body')[0].addEventListener('gesturestart', prevent)
     $('body')[0].addEventListener('gesturechange', prevent)
     $('body')[0].addEventListener('touchmove', prevent)
+    $('body')[0].addEventListener('dblclick', prevent)
 
     /*
      * when putting this function, we must remember to remove it from /ping call
     $(document).bind('ajaxSend', function() {
-	$('body').css('cursor', 'wait')
+    $('body').css('cursor', 'wait')
     })
     $(document).bind('ajaxComplete', function() {
-	$('body').css('cursor', 'default')
+    $('body').css('cursor', 'default')
     })
     */
 }
@@ -570,15 +767,15 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
         pluginRemove: function (instance, callback) {
             $.ajax({
-                'url': '/effect/remove/' + instance,
-                'success': function (resp) {
+                url: '/effect/remove/' + instance,
+                success: function (resp) {
                     if (resp)
                         callback()
                     else
                         new Notification("error", "Couldn't remove effect")
                 },
                 cache: false,
-                'dataType': 'json'
+                dataType: 'json'
             })
         },
 
@@ -590,23 +787,37 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 },
                 success: function (resp) {
                     /*
-			   // TODO trigger
-			   if (!resp || self.data('trigger')) {
-			   self.data('value', oldValue)
-			   self.widget('sync')
-			   }
-			 */
+               // TODO trigger
+               if (!resp || self.data('trigger')) {
+               self.data('value', oldValue)
+               self.widget('sync')
+               }
+             */
                     callback(resp)
                 },
                 error: function () {
                     /*
-			   self.data('value', oldValue)
-			   self.widget('sync')
-			   alert('erro no request (6)')
-			 */
+               self.data('value', oldValue)
+               self.widget('sync')
+               alert('erro no request (6)')
+             */
                 },
                 cache: false,
                 'dataType': 'json'
+            })
+        },
+
+        pluginParameterMidiLearn: function (port, callback) {
+            $.ajax({
+                url: '/effect/parameter/midi/learn/' + port,
+                success: function (resp) {
+               // TODO trigger
+                    callback(resp)
+                },
+                error: function () {
+                },
+                cache: false,
+                dataType: 'json'
             })
         },
 
@@ -618,23 +829,23 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 },
                 success: function (resp) {
                     /*
-			   // TODO trigger
-			   if (!resp || self.data('trigger')) {
-			   self.data('value', oldValue)
-			   self.widget('sync')
-			   }
-			 */
+               // TODO trigger
+               if (!resp || self.data('trigger')) {
+               self.data('value', oldValue)
+               self.widget('sync')
+               }
+             */
                     callback(resp)
                 },
                 error: function () {
                     /*
-			   self.data('value', oldValue)
-			   self.widget('sync')
-			   alert('erro no request (6)')
-			 */
+               self.data('value', oldValue)
+               self.widget('sync')
+               alert('erro no request (6)')
+             */
                 },
                 cache: false,
-                'dataType': 'json'
+                dataType: 'json'
             })
         },
 
@@ -709,16 +920,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        getPluginsData: function (uris, callback) {
-            $.ajax({
-                url: '/effect/bulk/',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(uris),
-                success: callback,
-                dataType: 'json'
-            })
-        },
+        getPluginsData: self.getPluginsData,
 
         pluginMove: function (instance, x, y, callback) {
             if (callback == null) {
@@ -894,6 +1096,10 @@ Desktop.prototype.reset = function (callback) {
     this.pedalboardModified = false
     this.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
+}
+
+Desktop.prototype.showMidiDeviceList = function () {
+    this.midiDevices.start()
 }
 
 Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
@@ -1108,5 +1314,11 @@ JqueryClass('statusTooltip', {
                         $(this).hide()
                     })
             }, timeout)
+    },
+
+    updatePosition: function() {
+        var self = $(this)
+        var tooltip = self.data('tooltip')
+        tooltip.css('right', $(window).width() - self.position().left - self.width())
     }
 })

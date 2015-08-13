@@ -15,7 +15,11 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from tornado import iostream, ioloop
-from mod.ingen_async import NS, Error, ingen_bundle_path, lv2_path, IngenAsync
+try:
+    from ingenasync import Error, ingen_bundle_path, lv2_path, IngenAsync
+    from lilvlib import NS
+except ImportError:
+    from mod.ingen_async import NS, Error, ingen_bundle_path, lv2_path, IngenAsync
 import os
 import rdflib
 import socket
@@ -39,7 +43,7 @@ class Host(IngenAsync):
         self.copy("/graph", "file://%s" % bundlepath, callback)
 
     def set_pedalboard_name(self, name, callback=lambda r:r):
-        self.set("/graph", "doap:name", '"%s"' % name, callback)
+        self.set("/graph", "doap:name", '"%s"' % name.replace('"','\\"'), callback)
 
     def set_pedalboard_size(self, width, height, callback=lambda r:r):
         self.set("/graph", "<http://moddevices.com/ns/modpedal#width>", width, callback)
@@ -108,4 +112,9 @@ class Host(IngenAsync):
         %s
         """ % (x, y, name, mode, portyp, extra)
 
-        self.put("/graph/%s" % name.replace(" ", "_").lower(), msg, callback)
+        print("========================================> add_external_port", name)
+        self.put("/graph/%s" % name.replace(" ", "_").replace("-","_").lower(), msg, callback)
+
+    def remove_external_port(self, name, callback=lambda r:r):
+        print("========================================> remove_external_port", name)
+        self.delete("/graph/%s" % name.replace(" ", "_").replace("-","_").lower(), callback)

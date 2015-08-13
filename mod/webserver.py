@@ -49,7 +49,7 @@ from mod.settings import (HTML_DIR, CLOUD_PUB,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
 
-from mod import indexing, jsoncall, json_handler, symbolify
+from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
@@ -155,6 +155,34 @@ class BluetoothSetPin(web.RequestHandler):
             self.write(json.dumps(True))
         self.finish()
 
+class SystemInfo(web.RequestHandler):
+    def get(self):
+        uname = os.uname()
+        info = {
+            "hardware": {},
+            "env": dict((k, os.environ[k]) for k in [k for k in os.environ.keys() if k.startswith("MOD")]),
+            "python": {
+                "argv"    : sys.argv,
+                "flags"   : sys.flags,
+                "path"    : sys.path,
+                "platform": sys.platform,
+                "prefix"  : sys.prefix,
+                "version" : sys.version
+            },
+            "uname": {
+                "machine": uname.machine,
+                "release": uname.release,
+                "version": uname.version
+            }
+        }
+
+        if os.path.exists("/etc/mod-capabilities.json"):
+            with open("/etc/mod-capabilities.json", 'r') as fd:
+                info["hardware"] = json.loads(fd.read())
+
+        self.write(json.dumps(info))
+        self.finish()
+
 class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
     destination_dir = DOWNLOAD_TMP_DIR
@@ -164,14 +192,6 @@ class EffectInstaller(SimpleFileReceiver):
             self.result = result
             callback()
         install_bundle(data['filename'], on_finish)
-
-#class EffectSetLocalVariable(web.RequestHandler):
-    #def post(self, var):
-        #uri = self.get_argument('uri')
-        #value = self.get_argument(var)
-        #index = indexing.EffectIndex()
-        #objid = next(index.find(uri=uri))['id']
-        #index.save_local_variable(objid, var, value)
 
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
@@ -202,125 +222,7 @@ class SDKSysUpdate(web.RequestHandler):
         self.write(json.dumps(True))
         self.finish()
 
-# Abstract class
-class Searcher(web.RequestHandler):
-    @classmethod
-    def urls(cls, path):
-        return [
-            (r"/%s/(autocomplete)/?" % path, cls),
-            (r"/%s/(search)/?" % path, cls),
-            (r"/%s/(get)/([a-z0-9]+)?" % path, cls),
-            (r"/%s/(get_by)/?" % path, cls),
-            (r"/%s/(list)/?" % path, cls),
-        ]
-
-    @property
-    def index(self):
-        raise NotImplemented
-
-    def get_object(self, objid):
-        #path = os.path.join(self.index.data_source, objid)
-        #md_path = path + '.metadata'
-        #obj = json.loads(open(path).read())
-        #if os.path.exists(md_path):
-            #obj.update(json.loads(open(md_path).read()))
-        #return obj
-        return None
-
-    def get(self, action, objid=None):
-        try:
-            self.set_header('Access-Control-Allow-Origin', self.request.headers['Origin'])
-        except KeyError:
-            pass
-
-        self.set_header('Content-Type', 'application/json')
-
-        if action == 'autocomplete':
-            response = self.autocomplete()
-        if action == 'search':
-            response = self.search()
-        if action == 'get_by':
-            response = self.get_by()
-        if action == 'get':
-            #try:
-                response = self.get_object(objid)
-            #except:
-                #raise web.HTTPError(404)
-
-        if action == 'list':
-            response = self.list()
-
-        self.write(json.dumps(response, default=json_handler))
-
-    def autocomplete(self):
-        #term = str(self.request.arguments.get('term')[0])
-        result = []
-        #for entry in self.index.term_search(term):
-            #result.append(entry)
-        return result
-
-    def search(self):
-        result = []
-        #for entry in self.index.term_search(self.request.arguments):
-            #obj = self.get_object(entry['id'])
-            #if obj is None:
-                # TODO isso acontece qdo sobra lixo no índice, não deve acontecer na produção
-                #continue
-            #entry.update(obj)
-            #result.append(entry)
-        return result
-
-    def list(self):
-        result = []
-        #for entry in self.index.every():
-            #obj = self.get_object(entry['id'])
-            #if obj is None:
-                #continue
-            #entry.update(obj)
-            #result.append(entry)
-        return result
-
-    def get_by(self):
-        #query = {}
-        #for key in self.request.arguments.keys():
-            #query[key] = self.get_argument(key)
-        #try:
-            #return next(self.index.find(**query))
-        #except StopIteration:
-            return None
-
-class EffectSearcher(Searcher):
-    index = None
-
-    def list(self):
-        return get_all_plugins()
-
-    #index = indexing.EffectIndex()
-
-    #def get_by_uri(self):
-        #try:
-            #uri = self.request.arguments['uri'][0]
-        #except (KeyError, IndexError):
-            #try:
-                #uri = self.request.arguments['uri']
-            #except (KeyError, IndexError):
-                #raise web.HTTPError(404)
-
-        #search = self.index.find(uri=uri)
-        #try:
-            #entry = next(search)
-        #except StopIteration:
-            #raise web.HTTPError(404)
-
-        #return entry['id']
-
-    #def get(self, action, objid=None):
-        #if action == 'get' and objid is None:
-            #objid = self.get_by_uri()
-
-        #super(EffectSearcher, self).get(action, objid)
-
-class EffectBulkData(EffectSearcher):
+class EffectBulk(web.RequestHandler):
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
             self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
@@ -338,6 +240,12 @@ class EffectBulkData(EffectSearcher):
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
+
+class EffectList(web.RequestHandler):
+    def get(self):
+        data = get_all_plugins()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(data))
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
@@ -396,17 +304,17 @@ class EffectResource(web.StaticFileHandler):
 
         try:
             super(EffectResource, self).initialize(root)
-            super(EffectResource, self).get(path)
+            return super(EffectResource, self).get(path)
         except web.HTTPError as e:
             if e.status_code != 404:
                 raise e
-            self.shared_resource(path)
+            return self.shared_resource(path)
         except IOError:
             raise web.HTTPError(404)
 
     def shared_resource(self, path):
         super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
-        super(EffectResource, self).get(path)
+        return super(EffectResource, self).get(path)
 
 class EffectImage(web.RequestHandler):
     def get(self, image):
@@ -582,6 +490,14 @@ class EffectParameterSet(web.RequestHandler):
         self.write(json.dumps(response))
         self.finish()
 
+class EffectParameterMidiLearn(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, port):
+        response = yield gen.Task(SESSION.parameter_midi_learn, port)
+        self.write(json.dumps(response))
+        self.finish()
+
 class EffectParameterAddress(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -682,17 +598,14 @@ class PackageUninstall(web.RequestHandler):
 global fake_tstamp
 fake_tstamp = 0
 
-class PedalboardSearcher(Searcher):
-    index = None
-
-    def list(self):
+class PedalboardList(web.RequestHandler):
+    def get(self):
         result = []
-        pedals = get_pedalboards()
 
         global fake_tstamp
         fake_tstamp += 1
 
-        for pedal in pedals:
+        for pedal in get_pedalboards():
             result.append({
                 'instances'  : {},
                 'connections': [],
@@ -706,7 +619,8 @@ class PedalboardSearcher(Searcher):
                 'width' : pedal['width'],
                 'height': pedal['height']
             })
-        return result
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(result))
 
 class PedalboardSave(web.RequestHandler):
     @web.asynchronous
@@ -788,7 +702,7 @@ class PedalboardPackBundle(web.RequestHandler):
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
 
         # make sure the screenshot is ready before proceeding
-        SESSION.screenshot_generator.wait_for_pending_jobs()
+        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs)
 
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
@@ -1039,10 +953,12 @@ class TemplateHandler(web.RequestHandler):
         context = self.index()
         bundlepath = self.get_argument('bundlepath')
 
-        #try: # TESTING let us receive exceptions for now
-        pedalboard = get_pedalboard_info(bundlepath)
-        #except:
-            #return None
+        try:
+            pedalboard = get_pedalboard_info(bundlepath)
+        except:
+            print("ERROR in webserver.py: get_pedalboard_info failed")
+            context['pedalboard'] = ""
+            return context
 
         data = b'{ "_id": "0", "instances": ['
 
@@ -1131,34 +1047,26 @@ class SysMonProcessList(web.RequestHandler):
             self.sock.read_until("\0".encode("utf-8"), set_ps_list)
         self.sock.connect(('127.0.0.1', 57890), recv_ps_list)
 
-
-class JackXRun(web.RequestHandler):
-    xruns = 0
-    requests = set()
-
-    @classmethod
-    def connect(cls):
-        pass
-
-    @classmethod
-    def xrun(cls, *args):
-        cls.xruns += 1
-        for request in list(cls.requests):
-            request.wake()
-        return cls.xruns
-
-    @web.asynchronous
-    def get(self, count=None):
-        if count is not None and self.xruns > int(count):
-            self.write(json.dumps(self.xruns))
-            self.finish()
-        else:
-            self.requests.add(self)
-
-    def wake(self):
-        self.write(json.dumps(self.xruns))
+class JackGetMidiDevices(web.RequestHandler):
+    def get(self):
+        devsInUse, devList = SESSION.get_midi_device_list()
+        self.write(json.dumps({
+            "devsInUse": devsInUse,
+            "devList"  : devList
+        }))
         self.finish()
-        self.requests.remove(self)
+
+class JackSetMidiDevices(web.RequestHandler):
+    def post(self):
+        devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        SESSION.set_midi_devices(devs)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
+class JackXRuns(web.RequestHandler):
+    def get(self):
+        self.write(json.dumps(SESSSION.xrun_count))
+        self.finish()
 
 class LoginSign(web.RequestHandler):
     def get(self, sid):
@@ -1330,8 +1238,6 @@ application = web.Application(
         UpgradeSync.urls('system/upgrade/sync') +
         UpgradePackage.urls('system/upgrade/package') +
         EffectInstaller.urls('effect/install') +
-        EffectSearcher.urls('effect') +
-        PedalboardSearcher.urls('pedalboard') +
         [
             (r"/system/upgrade/packages", UpgradePackages),
             (r"/system/upgrade/do", UpgradeDo),
@@ -1339,16 +1245,20 @@ application = web.Application(
             #(r"/system/install_pkg/([^/]+)/?", InstallPkg),
             #(r"/system/install_pkg/do/([^/]+)/?", InstallPkgDo),
             (r"/system/bluetooth/set", BluetoothSetPin),
+            (r"/system/info", SystemInfo),
+
             (r"/resources/(.*)", EffectResource),
 
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/get/?", EffectGet),
-            (r"/effect/bulk/?", EffectBulkData),
+            (r"/effect/bulk/?", EffectBulk),
+            (r"/effect/list", EffectList),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
             (r"/effect/parameter/set/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
+            (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
             (r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
             (r"/effect/parameter/address/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
             (r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
@@ -1362,6 +1272,7 @@ application = web.Application(
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
+            (r"/pedalboard/list", PedalboardList),
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
@@ -1399,7 +1310,10 @@ application = web.Application(
             (r"/register/finish/?", RegistrationFinish),
 
             #(r"/sysmon/ps", SysMonProcessList),
-            (r"/sysmon/xrun/(\d+)?", JackXRun),
+
+            (r"/jack/get_midi_devices", JackGetMidiDevices),
+            (r"/jack/set_midi_devices", JackSetMidiDevices),
+            (r"/jack/xruns", JackXRuns),
 
             (r"/ping/?", Ping),
 
@@ -1422,27 +1336,22 @@ def prepare():
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
         if LOG:
             tornado.log.enable_pretty_logging()
-        JackXRun.connect()
 
     def check():
         check_environment(lambda result: result)
 
     lv2_init()
+
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
-    tornado.ioloop.IOLoop.instance().add_callback(JackXRun.connect)
-    global cpu_load_callback
-    cpu_load_callback = tornado.ioloop.PeriodicCallback(SESSION.jack_cpu_load, 1000)
 
 def start():
-    global cpu_load_callback
-    cpu_load_callback.start()
+    SESSION.start_timers()
     tornado.ioloop.IOLoop.instance().start()
 
 def stop():
-    global cpu_load_callback
-    cpu_load_callback.stop()
     tornado.ioloop.IOLoop.instance().stop()
+    SESSION.stop_timers()
 
 def run():
     prepare()
