@@ -142,7 +142,7 @@ class Session(object):
             return
         jacklib.deactivate(self.jack_client)
         jacklib.client_close(self.jack_client)
-        #self.jack_client = None
+        self.jack_client = None
         print("jacklib client deactivated")
 
     def JackShutdownCallback(self, arg):

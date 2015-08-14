@@ -1249,7 +1249,7 @@ application = web.Application(
             (r"/effect/parameter/set/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
             (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
             (r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
-            (r"/effect/parameter/address/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/parameter/address/*(/[:A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
             (r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
             (r"/effect/bypass/address/*(/[A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),

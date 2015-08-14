@@ -178,7 +178,18 @@ function GUI(effect, options) {
         properties: ["toggled", "integer"],
         widgets: [],
         enabled: true,
-        value: options.bypassed
+        value: options.bypassed,
+
+        // FIXME
+        default: 1,
+        maximum: 1,
+        minimum: 0,
+        enumeration: false,
+        integer: true,
+        logarithmic: false,
+        toggled: true,
+        trigger: false,
+        scalePoints: []
     }
 
     this.setPortValue = function (symbol, value, source) {

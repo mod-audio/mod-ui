@@ -173,8 +173,8 @@ function Desktop(elements) {
     this.hardwareManager = new HardwareManager({
         address: function (instance, symbol, addressing, callback) {
             addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
-            if (symbol == ':bypass') {
-                varuri = instance
+            /*if (symbol == ':bypass') {
+                var uri = instance
                 uri += ',' + addressing.actuator.join(',')
                 uri += ',' + (addressing.value ? 1 : 0)
                 uri += ',' + addressing.label
@@ -190,7 +190,7 @@ function Desktop(elements) {
                     cache: false,
                     dataType: 'json'
                 })
-            } else {
+            } else*/ {
                 $.ajax({
                     url: '/effect/parameter/address/' + instance + "/" + symbol,
                     type: 'POST',
