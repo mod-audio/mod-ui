@@ -49,6 +49,9 @@ HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 def get_tty_acm():
     if DEV_HMI:
         return # doesn't matter, connection won't ever be made
+    if os.path.exists("/usr/bin/mod-get-tty-hmi"):
+        from subprocess import getoutput
+        return getoutput("/usr/bin/mod-get-tty-hmi").strip()
     import glob, serial
     for tty in glob.glob("/dev/ttyACM*"):
         try:
