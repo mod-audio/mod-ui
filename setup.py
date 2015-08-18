@@ -71,7 +71,7 @@ setup(name = 'mod',
                     (('share/mod'), ['screenshot.js']),
                     (('share/mod/keys'), ['keys/cloud_key.pub']),
           ],
-      install_requires = ['tornado', 'whoosh'],
+      install_requires = ['tornado'],
       classifiers = [
           'Intended Audience :: Developers',
           'Natural Language :: English',
