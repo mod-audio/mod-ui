@@ -53,8 +53,8 @@ class Host(IngenAsync):
         self.set(instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
         self.set(instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
 
-    def param_get(self, port, callback=lambda r:r):
-        callback(1)
+    #def param_get(self, port, callback=lambda r:r):
+        #callback(1)
 
     def param_set(self, port, value, callback=lambda r:r):
         self.set(port, "ingen:value", value, callback)
@@ -65,11 +65,11 @@ class Host(IngenAsync):
     def remove(self, instance, callback=lambda r:r):
         self.delete(instance, callback)
 
-    def cpu_load(self, callback=lambda r:r):
-        callback({'ok': True, 'value': 50})
+    #def cpu_load(self, callback=lambda r:r):
+        #callback({'ok': True, 'value': 50})
 
-    def monitor(self, addr, port, status, callback=lambda r:r):
-        callback(True)
+    #def monitor(self, addr, port, status, callback=lambda r:r):
+        #callback(True)
 
     def bypass(self, instance, value, callback=lambda r:r):
         value = "true" if value == 0 else "false"

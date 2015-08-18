@@ -504,17 +504,17 @@ class EffectParameterAddress(web.RequestHandler):
     def post(self, port):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
 
-        actuator = data.get('actuator', [-1] * 4)
+        actuator = data.get('actuator', None)
 
-        if actuator[0] < 0:
-            actuator = [ -1, -1, -1, -1 ]
-            result = yield gen.Task(SESSION.parameter_get, port)
-            if not result['ok']:
-                self.write(json.dumps(result))
-                self.finish()
-                return
-        else:
-            result = {}
+        if actuator is None or actuator[0] < 0:
+            actuator = [-1, -1, -1, -1]
+            #result = yield gen.Task(SESSION.parameter_get, port)
+            #if not result['ok']:
+                #self.write(json.dumps(result))
+                #self.finish()
+                #return
+        #else:
+        #   result = {}
 
         label = data.get('label', '---')
 
@@ -531,22 +531,10 @@ class EffectParameterAddress(web.RequestHandler):
 
         options = data.get('options', [])
 
-        result['ok'] = yield gen.Task(SESSION.parameter_address,
-                                      port,
-                                      data.get('addressing_type', None),
-                                      label,
-                                      ctype,
-                                      unit,
-                                      value,
-                                      maximum,
-                                      minimum,
-                                      steps,
-                                      actuator[0],
-                                      actuator[1],
-                                      actuator[2],
-                                      actuator[3],
-                                      options,
-                                      )
+        result = yield gen.Task(SESSION.parameter_address,
+                                port, data.get('addressing_type', None),
+                                label, ctype, unit, value, maximum, minimum, steps,
+                                actuator[0], actuator[1], actuator[2], actuator[3], options)
 
         self.write(json.dumps(result))
         self.finish()

@@ -240,7 +240,9 @@ $(document).ready(function () {
                             var property = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#property");
                             var value = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#value");
                             if (property.length && value.length) {
-                                if (property[0].object == "http://drobilla.net/ns/ingen#value") {
+                                var prop = property[0].object
+                                if (prop == "http://drobilla.net/ns/ingen#value")
+                                {
                                     // setting a port value
                                     var sub = subject[0].object;
                                     var last_slash = sub.lastIndexOf("/");
@@ -248,17 +250,36 @@ $(document).ready(function () {
                                     var port = sub.substring(last_slash+1);
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
-                                } else if (property[0].object == "http://drobilla.net/ns/ingen#enabled") {
+                                }
+                                else if (prop == "http://drobilla.net/ns/ingen#enabled")
+                                {
                                     // setting bypass
                                     var instance = subject[0].object
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(":bypass", value[0].object == "true" ? 0 : 1, undefined, true);
-                                } else if (property[0].object == "http://moddevices/ns/mod#cpuload") {
+                                }
+                                else if (prop == "http://moddevices/ns/mod#cpuload")
+                                {
                                     // setting cpuload
                                     var value = value[0].object
                                     $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
-                                } else {
-                                    console.log("TESTING: Received unhandled patch:Set message " + subject[0])
+                                }
+                                else
+                                {
+                                    // ignore some properties
+                                    if (prop == "http://drobilla.net/ns/ingen#canvasX"     ||
+                                        prop == "http://drobilla.net/ns/ingen#canvasY"     ||
+                                        prop == "http://moddevices.com/ns/modpedal#width"  ||
+                                        prop == "http://moddevices.com/ns/modpedal#height" ||
+                                        prop == "http://moddevices.com/ns/modpedal#screenshot" ||
+                                        prop == "http://moddevices.com/ns/modpedal#thumbnail"  ||
+                                        prop == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type") {
+                                        return
+                                    }
+
+                                    console.log("TESTING: Received unhandled patch:Set message")
+                                    console.log(subject[0])
+                                    console.log(property[0])
                                 }
                             }
                         }

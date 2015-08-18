@@ -183,22 +183,25 @@ class IngenAsync(object):
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
-                bnode       = i[0]
-                subject     = msg_model.value(bnode, NS.patch.subject)
+                bnode    = i[0]
+                subject  = msg_model.value(bnode, NS.patch.subject)
+                property = msg_model.value(bnode, NS.patch.property)
 
                 # Setting a port value
-                if msg_model.value(bnode, NS.patch.property) == NS.ingen.value:
+                if property == NS.ingen.value:
                     port = subject.partition(self.proto_base)[-1]
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.port_value_callback(port, value)
-                elif msg_model.value(bnode, NS.patch.property) == NS.parameters.sampleRate:
+
+                elif property == NS.parameters.sampleRate:
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.samplerate_value_callback(value)
-                elif msg_model.value(bnode, NS.patch.property) == NS.midi.binding:
+
+                elif property == NS.midi.binding:
                     port = subject.partition(self.proto_base)[-1]
                     if msg_model.value(bnode, NS.rdf.type) == NS.midi.Controller:
                         controller_number = msg_model.value(msg_model.value(bnode, NS.patch.value),
-                                                NS.midi.controllerNumber).toPython()
+                                                            NS.midi.controllerNumber).toPython()
                         self.midi_binding_callback(port, controller_number)
 
             # Put messages

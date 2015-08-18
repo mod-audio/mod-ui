@@ -122,6 +122,7 @@ function HardwareManager(options) {
     // Opens an addressing window to address this a port
     this.open = function (instanceId, port, currentValue) {
         console.log('open')
+        console.log(currentValue)
         var currentAddressing = {}
         if (self.controls[instanceId])
             currentAddressing = self.controls[instanceId][port.symbol] || {}
@@ -173,10 +174,9 @@ function HardwareManager(options) {
                 options: [] // the available options in case this is enumerated (no interface for that now)
             }
 
-            self.setAddressing(instanceId, port.symbol, addressing,
-                function () {
-                    form.remove()
-                })
+            self.setAddressing(instanceId, port.symbol, addressing, function () {
+                form.remove()
+            })
         })
         form.find('.js-close').click(function () {
             form.remove()
@@ -267,7 +267,7 @@ function HardwareManager(options) {
     this.setAddressing = function (instanceId, symbol, addressing, callback) {
         self.setIHMParameters(instanceId, symbol, addressing)
 
-        options.address(instanceId, symbol, addressing, function (ok, result) {
+        options.address(instanceId, symbol, addressing, function (ok) {
             var actuator = addressing.actuator || [-1, -1, -1, -1]
             var actuatorKey = actuator.join(',')
             var portKey = [instanceId, symbol].join(',')
@@ -287,9 +287,10 @@ function HardwareManager(options) {
                     gui.disable(symbol)
                 } else {
                     // We're unaddressing
-                    if (!self.controls[instanceId] || !self.controls[instanceId][symbol])
-                    // not addressed, nothing to be done
+                    if (!self.controls[instanceId] || !self.controls[instanceId][symbol]) {
+                        // not addressed, nothing to be done
                         return callback(true)
+                    }
                     var currentAddressing = self.controls[instanceId][symbol]
                     actuatorKey = currentAddressing.actuator.join(',')
                     var portIndex = self.addressings[actuatorKey].indexOf(portKey)
@@ -298,17 +299,19 @@ function HardwareManager(options) {
                     gui.enable(symbol)
 
                     // Set the returned value in GUI
-                    gui.setPortValue(symbol, result.value)
+                    //gui.setPortValue(symbol, result.value)
                 }
             }
             callback(ok)
         })
     }
 
+    /*
     this.serializeInstance = function (instanceId) {
         return self.controls[instanceId]
-    }
+    }*/
 
+    /*
     this.unserializeInstance = function (instanceId, addressings, bypassApplication, addressingErrors) {
         // Store the original options.change callback, to bypass application
         var callback = options.address
@@ -317,10 +320,11 @@ function HardwareManager(options) {
         if (!addressingErrors)
             addressingErrors = []
 
-        if (bypassApplication)
+        if (bypassApplication) {
             options.address = function () {
                 arguments[arguments.length - 1](true)
             }
+        }
         var restore = function () {
             options.address = callback
         }
@@ -343,7 +347,7 @@ function HardwareManager(options) {
         }
 
         processNext()
-    }
+    }*/
 
     // Removes an instance
     this.removeInstance = function (instanceId) {

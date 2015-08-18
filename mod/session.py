@@ -98,7 +98,7 @@ class Session(object):
         Protocol.register_cmd_callback("hw_con", self.hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
         Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
-        Protocol.register_cmd_callback("control_get", self.parameter_get)
+        #Protocol.register_cmd_callback("control_get", self.parameter_get)
         Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
         Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         Protocol.register_cmd_callback("tuner", self.tuner_set)
@@ -280,15 +280,15 @@ class Session(object):
         def port_value_cb(port, value):
             instance = port.rpartition("/")[0]
             port = port.rpartition("/")[-1]
-            instance_id = self.instance_mapper.map(instance)
-            if self._pedalboard.data['instances'].get(instance_id, False):
-                self._pedalboard.parameter_set(instance_id, port, value)
-                addrs = self._pedalboard.data['instances'][instance_id]['addressing']
+            instance = self.instance_mapper.map(instance)
+            if self._pedalboard.data['instances'].get(instance, False):
+                self._pedalboard.parameter_set(instance, port, value)
+                addrs = self._pedalboard.data['instances'][instance]['addressing']
                 addr = addrs.get(port, None)
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
-                    #self.parameter_addressing_load(*act)
+                    self.parameter_addressing_load(*act)
 
         def position_cb(instance, x, y):
             pass
@@ -630,14 +630,14 @@ class Session(object):
     def parameter_midi_learn(self, port, callback):
         self.host.midi_learn(port, callback)
 
-    def parameter_get(self, port, callback):
-        self.host.param_get(port, callback)
+    #def parameter_get(self, port, callback):
+        #self.host.param_get(port, callback)
 
-    def set_monitor(self, addr, port, status, callback):
-        self.host.monitor(addr, port, status, callback)
+    #def set_monitor(self, addr, port, status, callback):
+        #self.host.monitor(addr, port, status, callback)
 
-    def parameter_monitor(self, instance_id, port_id, op, value, callback):
-        self.host.param_monitor(instance_id, port_id, op, value, callback)
+    #def parameter_monitor(self, instance_id, port_id, op, value, callback):
+        #self.host.param_monitor(instance_id, port_id, op, value, callback)
 
     def jack_midi_devs_callback(self, callback=lambda result: None):
         while len(self.mididevuuids) != 0:
@@ -789,6 +789,21 @@ class Session(object):
                                                      actuator_type,
                                                      actuator_id,
                                                      options)
+
+            #self.host.set(port, "<http://moddevices.com/ns/modpedal#addressing>", '"""' + json.dumps({
+                #'addressing_type': addressing_type,
+                #'label': label,
+                #'ctype': ctype,
+                #'unit': unit,
+                #'maximum': maximum,
+                #'minimum': minimum,
+                #'steps': steps,
+                #'hardware_type': hardware_type,
+                #'hardware_id': hardware_id,
+                #'actuator_type': actuator_type,
+                #'actuator_id': actuator_id,
+                #'options': options,
+            #}) + '"""')
 
             self.hmi.control_add(instance_id,
                                  port_id,

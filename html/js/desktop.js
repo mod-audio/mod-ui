@@ -181,7 +181,7 @@ function Desktop(elements) {
                 $.ajax({
                     url: '/effect/bypass/address/' + uri,
                     success: function (resp) {
-                        callback(resp.ok, resp)
+                        callback(resp)
                     },
                     error: function () {
                         new Bug("Couldn't address bypass")
@@ -196,7 +196,7 @@ function Desktop(elements) {
                     type: 'POST',
                     data: JSON.stringify(addressing),
                     success: function (resp) {
-                        callback(resp.ok, resp)
+                        callback(resp)
                     },
                     error: function () {
                         new Bug("Couldn't address parameter")
