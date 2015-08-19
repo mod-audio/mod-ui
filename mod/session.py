@@ -262,26 +262,27 @@ class Session(object):
         self.host.open_connection(self.host_callback)
 
     def websocket_opened(self, ws):
-        if self.jack_client is not None:
-            c = self.jack_client
-            self.jack_client = None
-            jacklib.deactivate(c)
-            jacklib.client_close(c)
-            print("jacklib client deactivated")
+        #if self.jack_client is not None:
+            #c = self.jack_client
+            #self.jack_client = None
+            #jacklib.deactivate(c)
+            #jacklib.client_close(c)
+            #print("jacklib client deactivated")
 
         self.websockets.append(ws)
         self.host.get("/graph")
 
-        self.jack_client = jacklib.client_open("%s-helper" % self._client_name, jacklib.JackNoStartServer, None)
-        self.xrun_count = 0
-        self.xrun_count2 = 0
+        if self.jack_client is None:
+            self.jack_client = jacklib.client_open("%s-helper" % self._client_name, jacklib.JackNoStartServer, None)
+            self.xrun_count = 0
+            self.xrun_count2 = 0
 
-        if self.jack_client is not None:
-            jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-            jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
-            jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
-            jacklib.activate(self.jack_client)
-            print("jacklib client activated")
+            if self.jack_client is not None:
+                jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
+                jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
+                jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
+                jacklib.activate(self.jack_client)
+                print("jacklib client activated")
 
     @gen.engine
     def host_callback(self):
