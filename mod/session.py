@@ -274,7 +274,7 @@ class Session(object):
 
         if self.jack_client is None:
             self.jack_client = jacklib.client_open("%s-helper" % self._client_name, jacklib.JackNoStartServer, None)
-            self.xrun_count = 0
+            self.xrun_count  = 0
             self.xrun_count2 = 0
 
             if self.jack_client is not None:
@@ -291,7 +291,7 @@ class Session(object):
         def port_value_cb(port, value):
             instance = port.rpartition("/")[0]
             port = port.rpartition("/")[-1]
-            instance = self.instance_mapper.map(instance)
+            instance = self.instance_mapper.get_id(instance)
             if self._pedalboard.data['instances'].get(instance, False):
                 self._pedalboard.parameter_set(instance, port, value)
                 addrs = self._pedalboard.data['instances'][instance]['addressing']
@@ -306,7 +306,7 @@ class Session(object):
 
         def plugin_add_cb(instance, uri, x, y):
             if not instance in self.instances:
-                self._pedalboard.add_instance(uri, self.instance_mapper.map(instance), x=x, y=y)
+                self._pedalboard.add_instance(uri, self.instance_mapper.get_id(instance), x=x, y=y)
                 self.instances.append(instance)
 
         def pedal_save_cb(bundlepath):
@@ -769,7 +769,7 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        instance_id = self.instance_mapper.map(port.rpartition("/")[0])
+        instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
         port_id = port.rpartition("/")[-1]
         if (hardware_type == -1 and
             hardware_id == -1 and

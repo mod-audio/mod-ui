@@ -804,18 +804,18 @@ class PedalboardSize(web.RequestHandler):
 
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
+    @gen.engine
     def get(self):
-        SESSION.reset(self.result)
-    def result(self, resp):
+        resp = yield gen.Task(SESSION.reset)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
         self.finish()
 
 class DashboardDisconnect(web.RequestHandler):
     @web.asynchronous
+    @gen.engine
     def get(self):
-        SESSION.end_session(self.result)
-    def result(self, resp):
+        resp = yield gen.Task(SESSION.end_session)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
         self.finish()

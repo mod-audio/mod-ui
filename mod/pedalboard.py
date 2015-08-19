@@ -61,17 +61,17 @@ class Pedalboard(object):
             }
         self.init_addressings()
 
-    def serialize(self):
-        serialized = copy.deepcopy(self.data)
-        serialized['instances'] = list(serialized['instances'].values())
-        return serialized
+    #def serialize(self):
+        #serialized = copy.deepcopy(self.data)
+        #serialized['instances'] = list(serialized['instances'].values())
+        #return serialized
 
-    def unserialize(self, data):
-        instances = data.pop('instances')
-        data['instances'] = {}
-        for instance in instances:
-            data['instances'][instance['instanceId']] = instance
-        self.data = data
+    #def unserialize(self, data):
+        #instances = data.pop('instances')
+        #data['instances'] = {}
+        #for instance in instances:
+            #data['instances'][instance['instanceId']] = instance
+        #self.data = data
 
     #def load(self, uid):
         #try:
