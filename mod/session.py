@@ -47,30 +47,40 @@ from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
+# create a real or fake class according to 'fake'
 def factory(realClass, fakeClass, fake, *args, **kwargs):
-    if fake:
-        return fakeClass(*args, **kwargs)
-    return realClass(*args, **kwargs)
+    return fakeClass(*args, **kwargs) if fake else realClass(*args, **kwargs)
 
-
+# class to map between numeric ids and string instances
 class InstanceIdMapper(object):
     def __init__(self):
-        self.instance_map = {}
+        # last used id, always incrementing
+        self.last_id = 0
+        # map id <-> instances
         self.id_map = {}
+        # map instances <-> ids
+        self.instance_map = {}
 
-    def _get_new_id(self):
-        return max(self.id_map.keys()) + 1 if self.id_map else 0
+    # get a numeric id from a string instance
+    def get_id(self, instance):
+        # check if it already exists
+        if instance in self.instance_map:
+            return self.instance_map[instance]
 
-    def map(self, instance):
-        if instance not in self.instance_map:
-            id = self._get_new_id()
-            self.instance_map[instance] = id
-            self.id_map[id] = instance
+        # increment last id
+        id = self.last_id
+        self.last_id += 1
+
+        # create mapping
+        self.instance_map[instance] = id
+        self.id_map[id] = instance
+
+        # ready
         return self.instance_map[instance]
 
+    # get a string instance from a numeric id
     def get_instance(self, id):
-        return self.id_map.get(id, None)
-
+        return self.id_map[id]
 
 class Session(object):
     def __init__(self):
@@ -355,8 +365,8 @@ class Session(object):
         self.host.connection_delete_callback = connection_delete_cb
 
     def hmi_callback(self):
-        if self.host_initialized:
-            self.restore_last_pedalboard()
+        #if self.host_initialized:
+            #self.restore_last_pedalboard()
         logging.info("hmi initialized")
         self.hmi_initialized = True
 
