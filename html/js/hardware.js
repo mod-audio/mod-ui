@@ -36,15 +36,15 @@ function HardwareManager(options) {
 
     this.reset = function () {
         /* All adressings indexed by actuator
-	   key: "hardwareType,hardwareId,actuatorType,actuatorId"
-	   value: ["instanceId,symbol"]
-	*/
+            key: "hardwareType,hardwareId,actuatorType,actuatorId"
+            value: ["instanceId,symbol"]
+         */
         self.addressings = {}
 
         /* All addressings indexed by instanceId and control port
-	   key: [instanceId][symbol]
-	   value: complete addressing structure
-	*/
+            key: [instanceId][symbol]
+            value: complete addressing structure
+         */
         self.controls = {}
 
         // Initializes addressings
