@@ -82,12 +82,17 @@ class IngenAsync(object):
         self.ns_manager.bind('server', self.server_base)
         self._queue = []
         self._idle = True
-        self.position_callback = lambda instance,x,y: None
-        self.port_value_callback = lambda port,value: None
-        self.midi_binding_callback = lambda port,controller_number: None
-        self.delete_callback = lambda subject: None
-        self.save_callback = lambda bundlepath: None
-        self.msg_callback = lambda msg: None
+
+        self.msg_callback = lambda msg:None
+        self.saved_callback = lambda bundlepath:None
+        self.samplerate_callback = lambda srate:None
+        self.plugin_added_callback = lambda instance,uri,x,y:None
+        self.plugin_removed_callback = lambda instance:None
+        self.plugin_position_callback = lambda instance,x,y:None
+        self.port_value_callback = lambda port,value:None
+        self.port_binding_callback = lambda port,cc:None
+        self.connection_added_callback = lambda port1,port2:None
+        self.connection_removed_callback = lambda port1,port2:None
 
         for (k, v) in NS.__dict__.items():
             if k.startswith("__") and k.endswith("__"):
@@ -104,7 +109,7 @@ class IngenAsync(object):
         def check_response():
             if callback is not None:
                 callback()
-            self.sock.read_until(self.msgencode("\0"), self.keep_reading)
+            self.sock.read_until(b"\0", self.keep_reading)
 
         if self.uri.startswith('unix://'):
             self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
@@ -123,8 +128,7 @@ class IngenAsync(object):
         msg_str = msg.decode("utf-8", errors="ignore").replace("\0", "") if msg else ""
         if msg_str:
             self.msg_callback(msg_str)
-            msg_model = rdflib.Graph()
-            msg_model.namespace_manager = self.ns_manager
+            msg_model = rdflib.Graph(namespace_manager=self.ns_manager)
             msg_model.parse(StringIO(msg_str), self.proto_base, format='n3')# self.server_base, format='n3')
 
             # Handle responses if any
@@ -162,15 +166,15 @@ class IngenAsync(object):
 
             # Patch messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Patch]):
-                bnode       = i[0]
-                subject     = msg_model.value(bnode, NS.patch.subject)
-                add_node    = msg_model.value(bnode, NS.patch.add)
+                bnode    = i[0]
+                subject  = msg_model.value(bnode, NS.patch.subject)
+                add_node = msg_model.value(bnode, NS.patch.add)
 
                 # Is it setting a position?
                 if NS.ingen.canvasX in msg_model.predicates(add_node) and NS.ingen.canvasY in msg_model.predicates(add_node):
                     x = msg_model.value(add_node, NS.ingen.canvasX).toPython()
                     y = msg_model.value(add_node, NS.ingen.canvasY).toPython()
-                    self.position_callback(subject.partition(self.proto_base)[-1], x, y)
+                    self.plugin_position_callback(subject.partition(self.proto_base)[-1], x, y)
 
             # Checks for Copy messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Copy]):
@@ -179,7 +183,7 @@ class IngenAsync(object):
 
                 if subject in ("/graph", "/graph/"):
                     bundlepath = get_bundle_dirname(msg_model.value(bnode, NS.patch.destination).toPython())
-                    self.save_callback(bundlepath)
+                    self.saved_callback(bundlepath)
 
             # Checks for Set messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Set]):
@@ -189,20 +193,19 @@ class IngenAsync(object):
 
                 # Setting a port value
                 if property == NS.ingen.value:
-                    port = subject.partition(self.proto_base)[-1]
+                    port  = subject.partition(self.proto_base)[-1]
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.port_value_callback(port, value)
 
                 elif property == NS.parameters.sampleRate:
                     value = msg_model.value(bnode, NS.patch.value).toPython()
-                    self.samplerate_value_callback(value)
+                    self.samplerate_callback(value)
 
                 elif property == NS.midi.binding:
                     port = subject.partition(self.proto_base)[-1]
                     if msg_model.value(bnode, NS.rdf.type) == NS.midi.Controller:
-                        controller_number = msg_model.value(msg_model.value(bnode, NS.patch.value),
-                                                            NS.midi.controllerNumber).toPython()
-                        self.midi_binding_callback(port, controller_number)
+                        cc = msg_model.value(msg_model.value(bnode, NS.patch.value), NS.midi.controllerNumber).toPython()
+                        self.port_binding_callback(port, cc)
 
             # Put messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):
@@ -218,7 +221,7 @@ class IngenAsync(object):
                         continue
                     port = subject.partition(self.proto_base)[-1]
                     self.port_value_callback(port, value.toPython())
-                # Put for a plugin
+
                 elif msg_type == NS.ingen.Block:
                     protouri = msg_model.value(body, NS.lv2.prototype)
                     if protouri is None:
@@ -226,19 +229,19 @@ class IngenAsync(object):
                     instance = subject.partition(self.proto_base)[-1]
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
-                    self.plugin_add_callback(instance, protouri.toPython(), x or 0, y or 0)
-                # New port connection
+                    self.plugin_added_callback(instance, protouri.toPython(), x or 0, y or 0)
+
                 elif msg_type == NS.ingen.Arc:
                     head = msg_model.value(body, NS.ingen.head).partition(self.proto_base)[-1]
                     tail = msg_model.value(body, NS.ingen.tail).partition(self.proto_base)[-1]
-                    self.connection_add_callback(head, tail)
+                    self.connection_added_callback(head, tail)
 
             # Delete msgs
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Delete]):
                 bnode   = i[0]
                 subject = msg_model.value(bnode, NS.patch.subject)
                 if subject:
-                    self.delete_callback(subject.partition(self.proto_base)[-1])
+                    self.plugin_removed_callback(subject.partition(self.proto_base)[-1])
 
         self._reading = True
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
@@ -269,48 +272,41 @@ class IngenAsync(object):
     # abstract methods
 
     def get(self, path, callback=lambda r:r):
-        return self._send('''
-[]
+        return self._send('''[]
         a patch:Get ;
         patch:subject <%s> .
 ''' % path, callback)
 
     def set(self, path, prop, value, callback=lambda r:r):
-        x = '''
-[]
+        return self._send('''[]
         a patch:Set ;
         patch:subject <%s> ;
         patch:property %s ;
         patch:value %s .
-''' % (path, prop, value)
-        return self._send(x, callback)
+''' % (path, prop, value), callback)
 
     def put(self, path, body, callback=lambda r:r):
-        return self._send('''
-[]
+        return self._send('''[]
         a patch:Put ;
         patch:subject <%s> ;
         patch:body [ %s ] .
 ''' % (path, body), callback)
 
-    def copy(self, source, target, callback=lambda r: r):
-        return self._send('''
-[]
+    def copy(self, source, target, callback=lambda r:r):
+        return self._send('''[]
         a patch:Copy ;
         patch:subject <%s> ;
         patch:destination <%s> .
 ''' % (source, target), callback)
 
-    def delete(self, path, callback=lambda r: r):
-        return self._send('''
-[]
+    def delete(self, path, callback=lambda r:r):
+        return self._send('''[]
         a patch:Delete ;
         patch:subject <%s> .
 ''' % path, callback)
 
-    def move(self, source, target, callback=lambda r: r):
-        return self._send('''
-[]
+    def move(self, source, target, callback=lambda r:r):
+        return self._send('''[]
         a patch:Move ;
         patch:subject <%s> ;
         patch:destination <%s> .
@@ -325,68 +321,9 @@ class IngenAsync(object):
         for prop, value in add:
             add_str += "%s %s;\n" % (prop, value)
 
-        return self._send('''
-[]
+        return self._send('''[]
         a patch:Patch ;
         patch:subject <%s> ;
         patch:remove [ %s ] ;
         patch:add [ %s ] .
 ''' % (path, remove_str, add_str), callback)
-
-    # custom methods
-
-    def add(self, uri, instance, x, y, callback=lambda r: r):
-        self.put(instance, '''
-        a ingen:Block ;
-        <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
-        ingen:canvasX %f ;
-        ingen:canvasY %f
-''' % (uri, float(x), float(y)), callback)
-
-    def add_bundle(self, bundle, callback=lambda r: r):
-        return False # FIXME, this is not right..
-        return self._send('''
-[]
-        a patch:Put ;
-        patch:subject <%s> ;
-        patch:body [
-                a atom:Path
-        ] .
-''' % bundle, callback)
-
-    def connect(self, tail, head, callback=lambda r: r):
-        return self._send('''
-[]
-        a patch:Put ;
-        patch:subject <> ;
-        patch:body [
-                a ingen:Arc ;
-                ingen:tail <%s> ;
-                ingen:head <%s> ;
-        ] .
-''' % (tail, head), callback)
-
-    def disconnect(self, tail, head, callback=lambda r: r):
-        return self._send('''
-[]
-        a patch:Delete ;
-        patch:body [
-                a ingen:Arc ;
-                ingen:tail <%s> ;
-                ingen:head <%s> ;
-        ] .
-''' % (tail, head), callback)
-
-    def get_engine_info(self, callback=lambda r:r):
-        return self._send('''
-[]
-        a patch:Get ;
-        patch:subject </engine/> .
-''',  callback)
-
-    def midi_learn(self, path, callback=lambda r:r):
-        return self.set(path, "<http://lv2plug.in/ns/ext/midi#binding>", "<http://lv2plug.in/ns/ext/patch#wildcard>")
-
-if __name__ == "__main__":
-    h = IngenAsync()
-    ioloop.IOLoop.instance().start()

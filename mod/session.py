@@ -288,7 +288,31 @@ class Session(object):
     def host_callback(self):
         self.host_initialized = True
 
-        def port_value_cb(port, value):
+        def msg_callback(msg):
+            for ws in self.websockets:
+                ws.write_message(msg)
+
+        def saved_callback(bundlepath):
+            if add_bundle_to_lilv_world(bundlepath):
+                pass #self.host.add_bundle(bundlepath)
+            self.screenshot_generator.schedule_screenshot(bundlepath)
+
+        def samplerate_callback(srate):
+            self.engine_samplerate = srate
+
+        def plugin_added_callback(instance, uri, x, y):
+            if instance not in self.instances:
+                self._pedalboard.add_instance(uri, self.instance_mapper.get_id(instance), False, x, y)
+                self.instances.append(instance)
+
+        def plugin_removed_callback(instance):
+            if instance in self.instances:
+                self.instances.remove(instance)
+
+        #def plugin_position_callback(instance, x, y):
+            #pass
+
+        def port_value_callback(port, value):
             instance = port.rpartition("/")[0]
             port = port.rpartition("/")[-1]
             instance = self.instance_mapper.get_id(instance)
@@ -299,42 +323,29 @@ class Session(object):
                 if addr:
                     addr['value'] = value
                     act = addr['actuator']
-                    self.parameter_addressing_load(*act)
+                    #self.parameter_addressing_load(*act)
 
-        def position_cb(instance, x, y):
-            pass
+        #def port_binding_callback(port, cc):
+            #pass
 
-        def plugin_add_cb(instance, uri, x, y):
-            if not instance in self.instances:
-                self._pedalboard.add_instance(uri, self.instance_mapper.get_id(instance), x=x, y=y)
-                self.instances.append(instance)
+        #def connection_added_callback(port1, port2):
+            #pass
 
-        def pedal_save_cb(bundlepath):
-            if add_bundle_to_lilv_world(bundlepath):
-                self.host.add_bundle(bundlepath)
-            self.screenshot_generator.schedule_screenshot(bundlepath)
+        #def connection_removed_callback(port1, port2):
+            #pass
 
-        def delete_cb(instance):
-            if instance in self.instances:
-                self.instances.remove(instance)
+        self.host.msg_callback = msg_callback
+        self.host.saved_callback = saved_callback
+        self.host.samplerate_callback = samplerate_callback
+        self.host.plugin_added_callback = plugin_added_callback
+        self.host.plugin_removed_callback = plugin_removed_callback
+        #self.host.plugin_position_callback = plugin_position_callback
+        self.host.port_value_callback = port_value_callback
+        #self.host.port_binding_callback = port_binding_callback
+        #self.host.connection_added_callback = connection_added_callback
+        #self.host.connection_removed_callback = connection_removed_callback
 
-        def connection_add_cb(port_a, port_b):
-            pass
-
-        def connection_delete_cb(port_a, port_b):
-            pass
-
-        def msg_cb(msg):
-            for ws in self.websockets:
-                ws.write_message(msg)
-
-        def sr_cb(value):
-            self.engine_samplerate = value
-
-        self.host.msg_callback = msg_cb
-        self.host.samplerate_value_callback = sr_cb
-
-        yield gen.Task(lambda callback: self.host.get_engine_info(callback=callback))
+        yield gen.Task(self.host.initial_setup)
 
         # Add ports
         for i in range(1, INGEN_NUM_AUDIO_INS+1):
@@ -354,16 +365,6 @@ class Session(object):
 
         for i in range(1, INGEN_NUM_CV_OUTS+1):
             yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i out" % i, "Output", "CV", callback=callback))
-
-        yield gen.Task(lambda callback: self.host.initial_setup(callback=callback))
-
-        self.host.position_callback = position_cb
-        self.host.port_value_callback = port_value_cb
-        self.host.plugin_add_callback = plugin_add_cb
-        self.host.delete_callback = delete_cb
-        self.host.save_callback = pedal_save_cb
-        self.host.connection_add_callback = connection_add_cb
-        self.host.connection_delete_callback = connection_delete_cb
 
     def hmi_callback(self):
         #if self.host_initialized:
@@ -387,15 +388,18 @@ class Session(object):
             self._pedal_changed_callback(True, "", "")
 
     def save_pedalboard(self, bundlepath, title, callback):
-        def callback2(ok):
+        def step1(ok):
+            if ok: self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), step2)
+            else: callback(False)
+
+        def step2(ok):
             self.bundlepath = bundlepath if ok else None
             callback(ok)
 
             if self._pedal_changed_callback is not None:
                 self._pedal_changed_callback(ok, bundlepath, title)
 
-        self.host.set_pedalboard_name(title)
-        self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), callback2)
+        self.host.set_pedalboard_name(title, step1)
 
     def load_pedalboard(self, bundlepath, name):
         self.bundlepath = bundlepath
@@ -525,7 +529,7 @@ class Session(object):
     # host commands
 
     def add(self, objid, instance, x, y, callback, loaded=False):
-        self.host.add(objid, instance, x, y, callback)
+        self.host.add_plugin(objid, instance, x, y, callback)
 
     def remove(self, instance, callback, loaded=False):
         """

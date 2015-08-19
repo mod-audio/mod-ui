@@ -32,9 +32,20 @@ except ImportError:
 
 class Host(IngenAsync):
     def initial_setup(self, callback=lambda r:r):
-        self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://moddevices.com/ns/modpedal#Pedalboard>", callback)
-        self.set("/graph", "<http://moddevices.com/ns/modpedal#screenshot>", "<ingen:/screenshot.png>", callback)
-        self.set("/graph", "<http://moddevices.com/ns/modpedal#thumbnail>", "<ingen:/thumbnail.png>", callback)
+        def step1(ok):
+            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#screenshot>",
+                                      "<ingen:/screenshot.png>", step2)
+            else: callback(False)
+        def step2(ok):
+            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#thumbnail>",
+                                      "<ingen:/thumbnail.png>", step3)
+            else: callback(False)
+        def step3(ok):
+            if ok: self.get("/engine", callback)
+            else: callback(False)
+
+        self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                           "<http://moddevices.com/ns/modpedal#Pedalboard>", step1)
 
     def load(self, bundlepath, callback=lambda r:r):
         self.copy("file://%s" % bundlepath, "/graph", callback)
@@ -46,12 +57,16 @@ class Host(IngenAsync):
         self.set("/graph", "doap:name", '"%s"' % name.replace('"','\\"'), callback)
 
     def set_pedalboard_size(self, width, height, callback=lambda r:r):
-        self.set("/graph", "<http://moddevices.com/ns/modpedal#width>", width, callback)
-        self.set("/graph", "<http://moddevices.com/ns/modpedal#height>", height, callback)
+        def nextStep(ok):
+            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#height>", height, callback)
+            else: callback(False)
+        self.set("/graph", "<http://moddevices.com/ns/modpedal#width>", width, nextStep)
 
     def set_position(self, instance, x, y, callback=lambda r:r):
-        self.set(instance, "<%s>" % NS.ingen.canvasX, float(x), callback)
-        self.set(instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
+        def nextStep(ok):
+            if ok: self.set(instance, "<%s>" % NS.ingen.canvasY, float(y), callback)
+            else: callback(False)
+        self.set(instance, "<%s>" % NS.ingen.canvasX, float(x), nextStep)
 
     #def param_get(self, port, callback=lambda r:r):
         #callback(1)
@@ -62,7 +77,15 @@ class Host(IngenAsync):
     def preset_load(self, instance, uri, callback=lambda r:r):
         self.set(instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
-    def remove(self, instance, callback=lambda r:r):
+    def add_plugin(self, uri, instance, x, y, callback=lambda r:r):
+        self.put(instance, '''
+        a ingen:Block ;
+        <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+        ingen:canvasX %f ;
+        ingen:canvasY %f ;
+''' % (uri, float(x), float(y)), callback)
+
+    def remove_plugin(self, instance, callback=lambda r:r):
         self.delete(instance, callback)
 
     #def cpu_load(self, callback=lambda r:r):
@@ -74,6 +97,33 @@ class Host(IngenAsync):
     def bypass(self, instance, value, callback=lambda r:r):
         value = "true" if value == 0 else "false"
         self.set(instance, "ingen:enabled", value, callback)
+
+    def connect(self, tail, head, callback=lambda r:r):
+        return self._send('''
+[]
+        a patch:Put ;
+        patch:subject <> ;
+        patch:body [
+                a ingen:Arc ;
+                ingen:tail <%s> ;
+                ingen:head <%s> ;
+        ] .
+''' % (tail, head), callback)
+
+    def disconnect(self, tail, head, callback=lambda r:r):
+        return self._send('''
+[]
+        a patch:Delete ;
+        patch:body [
+                a ingen:Arc ;
+                ingen:tail <%s> ;
+                ingen:head <%s> ;
+        ] .
+''' % (tail, head), callback)
+
+    def midi_learn(self, path, callback=lambda r:r):
+        return self.set(path, "<http://lv2plug.in/ns/ext/midi#binding>",
+                              "<http://lv2plug.in/ns/ext/patch#wildcard>", callback)
 
     def add_external_port(self, name, mode, typ, callback=lambda r:r):
         # mode should be Input or Output
@@ -118,3 +168,14 @@ class Host(IngenAsync):
     def remove_external_port(self, name, callback=lambda r:r):
         print("========================================> remove_external_port", name)
         self.delete("/graph/%s" % name.replace(" ", "_").replace("-","_").lower(), callback)
+
+    #def add_bundle(self, bundle, callback=lambda r: r):
+        #return False # FIXME, this is not right..
+        #return self._send('''
+#[]
+        #a patch:Put ;
+        #patch:subject <%s> ;
+        #patch:body [
+                #a atom:Path
+        #] .
+#''' % bundle, callback)
