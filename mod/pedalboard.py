@@ -15,50 +15,50 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, json, logging, copy
-from datetime import datetime
-from mod.settings import BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE
+#from datetime import datetime
+#from mod.settings import BANKS_JSON_FILE, DEFAULT_JACK_BUFSIZE
 
-from mod import json_handler
-from mod.bank import remove_pedalboard_from_banks
+#from mod import json_handler
+#from mod.bank import remove_pedalboard_from_banks
 from mod.hardware import get_hardware
-
 
 class Pedalboard(object):
     class ValidationError(Exception):
         pass
 
-    def __init__(self, uid=None):
+    def __init__(self):
         self.data = None
         self.clear()
 
         self.init_addressings()
 
-        if uid:
-            self.load(uid)
+        #if uid:
+            #self.load(uid)
 
     def init_addressings(self):
         hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist  ])
         self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
 
     def clear(self):
-        if self.data:
-            width = self.data['width']
-            height = self.data['height']
-        else:
-            width = 0
-            height = 0
+        #if self.data:
+            #width = self.data['width']
+            #height = self.data['height']
+        #else:
+            #width = 0
+            #height = 0
+
         self.data = {
             'instances': {},
-            'connections': [],
-            'metadata': {
-                'title':      "",
-                'thumbnail':  "",
-                'tstamp':     None,
-            },
-            'uri':    "",
-            'width':  width,
-            'height': height
-            }
+            #'connections': [],
+            #'metadata': {
+                #'title':      "",
+                #'thumbnail':  "",
+                #'tstamp':     None,
+            #},
+            #'uri':    "",
+            #'width':  width,
+            #'height': height
+        }
         self.init_addressings()
 
     #def serialize(self):
@@ -151,10 +151,10 @@ class Pedalboard(object):
 
     # Remove an instance and returns a list of all affected actuators
     def remove_instance(self, instance_id):
-        if instance_id < 0:
-            # remove all effects
-            self.clear()
-            return []
+        #if instance_id < 0:
+            ## remove all effects
+            #self.clear()
+            #return []
         try:
             # Remove the instance
             self.data['instances'].pop(instance_id)
@@ -183,36 +183,36 @@ class Pedalboard(object):
                 i += 1
         return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
 
-    def bypass(self, instance_id, value):
-        try:
-            self.data['instances'][instance_id]['bypassed'] = bool(value)
-            return True
-        except KeyError:
-            logging.error('[pedalboard] Cannot bypass unknown instance %d' % instance_id)
+    #def bypass(self, instance_id, value):
+        #try:
+            #self.data['instances'][instance_id]['bypassed'] = bool(value)
+            #return True
+        #except KeyError:
+            #logging.error('[pedalboard] Cannot bypass unknown instance %d' % instance_id)
 
-    def connect(self, port_from, port_to):
-        port_from = self._port_to_list(port_from)
-        port_to = self._port_to_list(port_to)
-        for port in (port_from, port_to):
-            try:
-                instance_id = int(port[0])
-            except ValueError:
-                continue
-            if not self.data['instances'].get(instance_id):
-                # happens with clipmeter and probably with other internal plugins
-                return
-        self.data['connections'].append([port_from[0], port_from[1], port_to[0], port_to[1]])
+    #def connect(self, port_from, port_to):
+        #port_from = self._port_to_list(port_from)
+        #port_to = self._port_to_list(port_to)
+        #for port in (port_from, port_to):
+            #try:
+                #instance_id = int(port[0])
+            #except ValueError:
+                #continue
+            #if not self.data['instances'].get(instance_id):
+                ## happens with clipmeter and probably with other internal plugins
+                #return
+        #self.data['connections'].append([port_from[0], port_from[1], port_to[0], port_to[1]])
 
-    def disconnect(self, port_from, port_to):
-        pf = self._port_to_list(port_from)
-        pt = self._port_to_list(port_to)
-        # This is O(N). It will hardly be a problem, since it's only called when user is connected
-        # and manually disconnects two ports, and number of connections is expected to be relatively small.
-        # Anyway, if you're greping TODO, check if optimizing this is one ;-)
-        for i, c in enumerate(self.data['connections']):
-            if c[0] == pf[0] and c[1] == pf[1] and c[2] == pt[0] and c[3] == pt[1]:
-                self.data['connections'].pop(i)
-                return True
+    #def disconnect(self, port_from, port_to):
+        #pf = self._port_to_list(port_from)
+        #pt = self._port_to_list(port_to)
+        ## This is O(N). It will hardly be a problem, since it's only called when user is connected
+        ## and manually disconnects two ports, and number of connections is expected to be relatively small.
+        ## Anyway, if you're greping TODO, check if optimizing this is one ;-)
+        #for i, c in enumerate(self.data['connections']):
+            #if c[0] == pf[0] and c[1] == pf[1] and c[2] == pt[0] and c[3] == pt[1]:
+                #self.data['connections'].pop(i)
+                #return True
 
     def parameter_set(self, instance_id, port_id, value):
         try:
@@ -273,31 +273,31 @@ class Pedalboard(object):
                 return addressing['actuator']
         return tuple()
 
-    def set_title(self, title):
-        self.data['metadata']['title'] = title
+    #def set_title(self, title):
+        #self.data['metadata']['title'] = title
 
-    def set_size(self, width, height):
-        logging.debug("[pedalboard] setting window size %dx%d" % (width, height))
-        self.data['width'] = width
-        self.data['height'] = height
+    #def set_size(self, width, height):
+        #logging.debug("[pedalboard] setting window size %dx%d" % (width, height))
+        #self.data['width'] = width
+        #self.data['height'] = height
 
-    def set_position(self, instance_id, x, y):
-        try:
-            self.data['instances'][instance_id]['x'] = x
-            self.data['instances'][instance_id]['y'] = y
-            logging.debug('[pedalboard] Setting position of instance %d at (%d,%d)' %
-                          (instance_id, x, y))
-            return True
-        except KeyError:
-            logging.error('[pedalboard] Cannot set position of unknown instance %d' % instance_id)
+    #def set_position(self, instance_id, x, y):
+        #try:
+            #self.data['instances'][instance_id]['x'] = x
+            #self.data['instances'][instance_id]['y'] = y
+            #logging.debug('[pedalboard] Setting position of instance %d at (%d,%d)' %
+                          #(instance_id, x, y))
+            #return True
+        #except KeyError:
+            #logging.error('[pedalboard] Cannot set position of unknown instance %d' % instance_id)
 
-    def get_bufsize(self, minimum=DEFAULT_JACK_BUFSIZE):
-        bufsize = minimum
+    #def get_bufsize(self, minimum=DEFAULT_JACK_BUFSIZE):
+        #bufsize = minimum
         #index = indexing.EffectIndex()
         #for instance in self.data['instances'].values():
             #effect  = next(index.find(uri=instance['uri']))
             #bufsize = max(effect['bufsize'], minimum)
-        return bufsize
+        #return bufsize
 
 #def remove_pedalboard(uid):
     ## Delete pedalboard file

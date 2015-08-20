@@ -15,8 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-$(document).ready(function () {
-    var ws = new WebSocket("ws://" + window.location.host + "/websocket");
+$('document').ready(function() {
     ws.onmessage = function (evt) {
         var parser = N3.Parser();
         var msgs = evt.data;

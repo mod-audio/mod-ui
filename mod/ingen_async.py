@@ -72,14 +72,15 @@ def ingen_bundle_path():
     return None
 
 class IngenAsync(object):
-    def __init__(self, uri='unix:///tmp/ingen.sock', callback=lambda:None):
+    def __init__(self, uri='unix:///tmp/ingen.sock'):
         self.msg_id      = 1
         self.server_base = uri + '/'
-        self.proto_base = "mod://"
-        self.uri = uri
+        self.proto_base  = "mod://"
         self.model       = rdflib.Graph()
         self.ns_manager  = rdflib.namespace.NamespaceManager(self.model)
         self.ns_manager.bind('server', self.server_base)
+
+        self.sock = None
         self._queue = []
         self._idle = True
 
@@ -103,24 +104,32 @@ class IngenAsync(object):
         bundle = ingen_bundle_path()
         if bundle:
             self.model.parse(os.path.join(bundle, 'errors.ttl'), format='n3')
-        self.open_connection(callback)
 
-    def open_connection(self, callback=None):
+        if uri.startswith('unix://'):
+            self.addr = uri[len('unix://'):]
+
+        elif uri.startswith('tcp://'):
+            parsed = re.split('[:/]', uri[len('tcp://'):])
+            self.addr = (parsed[0], int(parsed[1]))
+
+        else:
+            raise Exception('Unsupported server URI `%s' % uri)
+
+    def open_connection_if_needed(self, callback):
+        if self.sock is not None:
+            return False
+
+        if isinstance(self.addr, list):
+            self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        else:
+            self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
+
         def check_response():
-            if callback is not None:
-                callback()
+            callback()
             self.sock.read_until(b"\0", self.keep_reading)
 
-        if self.uri.startswith('unix://'):
-            self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
-            ioloop.IOLoop.instance().add_callback(lambda: self.sock.connect(self.uri[len('unix://'):], check_response))
-        elif self.uri.startswith('tcp://'):
-            self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
-            parsed = re.split('[:/]', self.uri[len('tcp://'):])
-            addr = (parsed[0], int(parsed[1]))
-            ioloop.IOLoop.instance().add_callback(lambda: self.sock.connect(addr, check_response))
-        else:
-            raise Exception('Unsupported server URI `%s' % self.uri)
+        self.sock.connect(self.addr, check_response)
+        return True
 
     def keep_reading(self, msg=None):
         self._reading = False

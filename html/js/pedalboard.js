@@ -1277,13 +1277,12 @@ JqueryClass('pedalboard', {
         })
     },
 
-    // Removes a plugin from pedalboard.
+    // Removes a plugin from pedalboard. (from the system?)
     // Calls application removal function with proper removal callback
     removePlugin: function (instance) {
         var self = $(this)
         var pluginRemove = self.data('pluginRemove')
-        pluginRemove(instance, function () {
-        })
+        pluginRemove(instance, function () {})
     },
 
     removeItemFromCanvas: function (instance) {

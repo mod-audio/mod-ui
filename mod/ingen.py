@@ -41,7 +41,10 @@ class Host(IngenAsync):
                                       "<ingen:/thumbnail.png>", step3)
             else: callback(False)
         def step3(ok):
-            if ok: self.get("/engine", callback)
+            if ok: self.get("/engine", step4)
+            else: callback(False)
+        def step4(ok):
+            if ok: self.get("/graph", callback)
             else: callback(False)
 
         self.set("/graph", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",

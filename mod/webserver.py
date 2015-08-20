@@ -552,11 +552,12 @@ class EffectParameterGet(web.RequestHandler):
 
 class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
+        print("atom websocket open")
         SESSION.websocket_opened(self)
 
     def on_close(self):
-        SESSION.websockets.remove(self)
-
+        print("atom websocket close")
+        SESSION.websocket_closed(self)
 
 class EffectPosition(web.RequestHandler):
     def get(self, instance):
@@ -1034,6 +1035,8 @@ class JackGetMidiDevices(web.RequestHandler):
         self.finish()
 
 class JackSetMidiDevices(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
         devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         SESSION.set_midi_devices(devs)

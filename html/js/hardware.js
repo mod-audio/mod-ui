@@ -35,16 +35,16 @@ function HardwareManager(options) {
     var controlTypes = ['switch', 'range', 'tap_tempo']
 
     this.reset = function () {
-        /* All adressings indexed by actuator
-            key: "hardwareType,hardwareId,actuatorType,actuatorId"
-            value: ["instanceId,symbol"]
-         */
+       /* All adressings indexed by actuator
+           key: "hardwareType,hardwareId,actuatorType,actuatorId"
+           value: ["instanceId,symbol"]
+        */
         self.addressings = {}
 
-        /* All addressings indexed by instanceId and control port
-            key: [instanceId][symbol]
-            value: complete addressing structure
-         */
+       /* All addressings indexed by instanceId and control port
+           key: [instanceId][symbol]
+           value: complete addressing structure
+        */
         self.controls = {}
 
         // Initializes addressings

@@ -18,6 +18,8 @@
     <script type="text/javascript">
       // for mod-app control
       var desktop = null
+      // for websocket control
+      var ws = null
     </script>
 
     <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
@@ -88,6 +90,8 @@
 // $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
+  ws = new WebSocket("ws://" + window.location.host + "/websocket");
+
   desktop = new Desktop({
       titleBox: $('#pedalboard-info .title'),
       pedalboard: $('#pedalboard-dashboard'),
