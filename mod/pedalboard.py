@@ -36,7 +36,7 @@ class Pedalboard(object):
             #self.load(uid)
 
     def init_addressings(self):
-        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist  ])
+        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist ])
         self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
 
     def clear(self):
