@@ -310,6 +310,9 @@ class Session(object):
 
     @gen.engine
     def host_callback(self):
+        if self.host_initialized:
+            return
+
         self.host_initialized = True
 
         def msg_callback(msg):

@@ -115,8 +115,14 @@ class IngenAsync(object):
         else:
             raise Exception('Unsupported server URI `%s' % uri)
 
+        ioloop.IOLoop.instance().add_callback(self.init_connection)
+
+    def init_connection(self):
+        self.open_connection_if_needed(lambda:None)
+
     def open_connection_if_needed(self, callback):
         if self.sock is not None:
+            callback()
             return False
 
         if isinstance(self.addr, list):
