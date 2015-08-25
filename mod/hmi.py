@@ -57,7 +57,6 @@ class HMI(object):
 
         self.sp = self.open_connection(callback)
 
-
     def open_connection(self, callback):
         try:
             sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
@@ -107,6 +106,9 @@ class HMI(object):
             logging.error("[hmi] error while reading %s" % e)
 
     def process_queue(self):
+        if self.sp is None:
+            return
+
         try:
             msg = self.queue[0][0] # fist msg on the queue
             logging.info("[hmi] popped from queue: %s" % msg)
@@ -122,6 +124,9 @@ class HMI(object):
         self.send("resp -1")
 
     def send(self, msg, callback=None, datatype='int'):
+        if self.sp is None:
+            return
+
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
             logging.info("[hmi] scheduling -> %s" % str(msg))
