@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO stuff
+# - remove EffectBypass
 
 import os, re, shutil, sys
 import json, socket
@@ -395,7 +397,7 @@ class EffectAdd(web.RequestHandler):
         except:
             raise web.HTTPError(404)
 
-        res = yield gen.Task(SESSION.add, uri, instance, x, y)
+        res = yield gen.Task(SESSION.add, instance, uri, x, y)
 
         if self.request.connection.stream.closed():
             return
@@ -434,7 +436,8 @@ class EffectBypass(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance, value):
-        res = yield gen.Task(SESSION.bypass, instance, int(value))
+        res = yield gen.Task(SESSION.parameter_set, instance + "/:bypass", int(value))
+        #res = yield gen.Task(SESSION.bypass, instance, int(value))
         self.write(json.dumps(res))
         self.finish()
 
@@ -473,9 +476,7 @@ class EffectPresetLoad(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        response = yield gen.Task(SESSION.preset_load,
-                                  instance,
-                                  self.get_argument('uri'))
+        response = yield gen.Task(SESSION.preset_load, instance, self.get_argument('uri'))
         self.write(json.dumps(response))
         self.finish()
 
@@ -483,10 +484,7 @@ class EffectParameterSet(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port):
-        response = yield gen.Task(SESSION.parameter_set,
-                                  port,
-                                  float(self.get_argument('value')),
-                                  )
+        response = yield gen.Task(SESSION.parameter_set, port, float(self.get_argument('value')))
         self.write(json.dumps(response))
         self.finish()
 

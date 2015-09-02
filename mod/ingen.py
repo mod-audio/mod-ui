@@ -77,10 +77,14 @@ class Host(IngenAsync):
     def param_set(self, port, value, callback=lambda r:r):
         self.set(port, "ingen:value", value, callback)
 
+    def enable(self, instance, value, callback=lambda r:r):
+        value = "true" if value else "false"
+        self.set(instance, "ingen:enabled", value, callback)
+
     def preset_load(self, instance, uri, callback=lambda r:r):
         self.set(instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
-    def add_plugin(self, uri, instance, x, y, callback=lambda r:r):
+    def add_plugin(self, instance, uri, x, y, callback=lambda r:r):
         self.put(instance, '''
         a ingen:Block ;
         <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
@@ -96,10 +100,6 @@ class Host(IngenAsync):
 
     #def monitor(self, addr, port, status, callback=lambda r:r):
         #callback(True)
-
-    def bypass(self, instance, value, callback=lambda r:r):
-        value = "true" if value == 0 else "false"
-        self.set(instance, "ingen:enabled", value, callback)
 
     def connect(self, tail, head, callback=lambda r:r):
         return self._send('''

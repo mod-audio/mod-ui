@@ -138,10 +138,7 @@ class HMI(object):
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
         pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
-        self.send("initial_state %d %d %s" % (bank_id,
-                                              pedalboard_id,
-                                              pedalboards),
-                  callback)
+        self.send("initial_state %d %d %s" % (bank_id, pedalboard_id, pedalboards), callback)
 
     def ui_con(self, callback=lambda result: None):
         self.send("ui_con", callback, datatype='boolean')
@@ -230,4 +227,3 @@ class HMI(object):
             3: Pedalboard DOWN
         """
         self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
-

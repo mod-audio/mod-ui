@@ -107,7 +107,6 @@ class Knob(Actuator):
     def __init__(self, name="Knob", addressing_type=['range', 'select'], exclusive=False):
         super(Knob, self).__init__(name, addressing_type, exclusive)
 
-
 class Pot(Actuator):
     ACT_TYP = 3
 
@@ -213,7 +212,7 @@ def get_hardware():
     if not os.path.exists("/etc/mod-capabilities.json"):
         return {}
 
-    hardware = {}
+    hardware  = {}
     known_hws = dict( (cls.__name__.upper(), cls.HW_TYP) for cls in Hardware.__subclasses__() )
 
     with open("/etc/mod-capabilities.json", 'r') as fd:

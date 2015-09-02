@@ -32,6 +32,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
 from mod import symbolify
+from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
 from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
@@ -44,6 +45,13 @@ from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
+
+# TODO stuff:
+# - receive bypass command from ingen
+# - document _pedal_changed_callback
+# - ingen command to remove all plugins?
+# - callback for loaded graph?
+# - jack_midi_devs_timer_callback is single-shot, does IO have a function for those?
 
 # create a real or fake class according to 'fake'
 def factory(realClass, fakeClass, fake, *args, **kwargs):
@@ -86,24 +94,22 @@ class Session(object):
         self.host_initialized = False
         self.pedalboard_initialized = False
 
-        #self._playback_1_connected_ports = []
-        #self._playback_2_connected_ports = []
         self._tuner = False
         self._tuner_port = 1
         self._peakmeter = False
         self._client_name = "ingen"
 
         self.monitor_server = None
-
         self.current_bank = None
 
+        # TODO REMOVE
         self._pedalboard = Pedalboard()
 
-#        self.host = factory(Host, FakeHost, DEV_HOST,
-#                            "unix:///tmp/ingen.sock", self.host_callback)
         self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
         self.hmi = factory(HMI, FakeHMI, DEV_HMI,
                            HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_callback)
+
+        self.addressings = Addressing(self.hmi)
 
         self.recorder = Recorder()
         self.player = Player()
@@ -111,7 +117,6 @@ class Session(object):
         self.mute_state = True
         self.recording = None
         self.instances = []
-        self.instance_mapper = InstanceIdMapper()
         self.screenshot_generator = ScreenshotGenerator()
 
         self.engine_samplerate = 48000 # default value
@@ -129,19 +134,7 @@ class Session(object):
         self.jack_cpu_load_timer  = ioloop.PeriodicCallback(self.jack_cpu_load_timer_callback, 1000)
         self.jack_xrun_timer      = ioloop.PeriodicCallback(self.jack_xrun_timer_callback, 500)
 
-        #Protocol.register_cmd_callback("banks", self.hmi_list_banks)
-        #Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
-        Protocol.register_cmd_callback("hw_con", self.hardware_connected)
-        Protocol.register_cmd_callback("hw_dis", self.hardware_disconnected)
-        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
-        #Protocol.register_cmd_callback("control_get", self.parameter_get)
-        Protocol.register_cmd_callback("control_next", self.parameter_addressing_next)
-        #Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
-        #Protocol.register_cmd_callback("tuner", self.tuner_set)
-        #Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
-        #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
-        #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
-        #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
+        self.set_hmi_callbacks()
 
     def __del__(self):
         if self.jack_client is None:
@@ -151,10 +144,199 @@ class Session(object):
         self.jack_client = None
         print("jacklib client deactivated")
 
-    def JackShutdownCallback(self, arg):
-        self.jack_client = None
+    def start_timers(self):
+        self.jack_cpu_load_timer.start()
+        self.jack_xrun_timer.start()
 
-    # jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
+    def stop_timers(self):
+        self.jack_xrun_timer.stop()
+        self.jack_cpu_load_timer.stop()
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # App utilities, needed only for mod-app
+
+    def reconnect(self):
+        if self.host.sock is not None:
+            self.host.sock.close()
+            self.host.sock = None
+        self.host.open_connection_if_needed(self.host_callback)
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # HMI callbacks, called by HMI via serial
+
+    def set_hmi_callbacks(self):
+        #Protocol.register_cmd_callback("banks", self.hmi_list_banks)
+        #Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
+        Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
+        Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
+        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
+        Protocol.register_cmd_callback("control_get", self.hmi_parameter_get)
+        Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
+        #Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
+        #Protocol.register_cmd_callback("tuner", self.tuner_set)
+        #Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
+        #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
+        #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
+        #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
+
+    def hmi_hardware_connected(self, hwtype, hwid, callback):
+        callback(True)
+
+    def hmi_hardware_disconnected(self, hwtype, hwid, callback):
+        callback(True)
+
+    def hmi_parameter_get(self, instance_id, port, callback):
+        instance = self.addressings.get_instance_from_id(instance_id)
+        value    = self.addressings.get_value(instance, port)
+        callback(value)
+
+    def hmi_parameter_set(self, instance_id, port, value, callback):
+        instance = self.addressings.get_instance_from_id(instance_id)
+
+        if port == ":bypass":
+            self.addressings.set_bypassed(instance, value)
+            self.host.enable(port, not value, callback)
+        else:
+            self.addressings.set_value(instance, value)
+            self.host.param_set(port, value, callback)
+
+    # FIXME
+    def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
+        addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
+        if len(addrs['addrs']) > 0:
+            addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
+            callback(True)
+            self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
+                                           addrs['idx'])
+            return True
+        #elif len(addrs['addrs']) <= 0:
+        #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
+        callback(True)
+        return False
+
+    #def peakmeter_set(self, status, callback):
+        #if "on" in status:
+            #self.peakmeter_on(callback)
+        #elif "off" in status:
+            #self.peakmeter_off(callback)
+
+    #def peakmeter_on(self, cb):
+
+        #def mon_peak_in_l(ok):
+            #if ok:
+                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_VALUE_L, ">=", -30, cb)
+                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_PEAK_L, ">=", -30, cb)
+
+        #def mon_peak_in_r(ok):
+            #if ok:
+                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_VALUE_R, ">=", -30, lambda r:None)
+                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_PEAK_R, ">=", -30, lambda r:None)
+
+        #def mon_peak_out_l(ok):
+            #if ok:
+                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_VALUE_L, ">=", -30, lambda r:None)
+                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_PEAK_L, ">=", -30, lambda r:None)
+
+        #def mon_peak_out_r(ok):
+            #if ok:
+                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_VALUE_R, ">=", -30, lambda r:None)
+                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_PEAK_R, ">=", -30, lambda r:None)
+
+        #def setup_peak_in(ok):
+            #if ok:
+                #self.connect("system:capture_1", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_L), mon_peak_in_l, True)
+                #self.connect("system:capture_2", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_R), mon_peak_in_r, True)
+
+        #def setup_peak_out(ok):
+            #if ok:
+                #self._peakmeter = True
+                #for port in self._playback_1_connected_ports:
+                    #self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_l, True)
+                #for port in self._playback_2_connected_ports:
+                    #self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), mon_peak_out_r, True)
+
+        #self.add(PEAKMETER_URI, PEAKMETER_IN, setup_peak_in, True)
+        #self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out, True)
+
+    #def peakmeter_off(self, cb):
+        #self.remove(PEAKMETER_IN, cb, True)
+        #self.remove(PEAKMETER_OUT, lambda r: None, True)
+        #self._tuner = False
+
+    #def tuner_set(self, status, callback):
+        #if "on" in status:
+            #self.tuner_on(callback)
+        #elif "off" in status:
+            #self.tuner_off(callback)
+
+    #def tuner_on(self, cb):
+        #def mon_tuner(ok):
+            #if ok:
+                #self.parameter_monitor(TUNER, TUNER_MON_PORT, ">=", 0, cb)
+
+        #def setup_tuner(ok):
+            #if ok:
+                #self._tuner = True
+                #self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
+
+        #def mute_callback():
+            #self.add(TUNER_URI, TUNER, setup_tuner, True)
+        #self.mute(mute_callback)
+
+    #def tuner_off(self, cb):
+        #def callback():
+            #self.remove(TUNER, cb, True)
+            #self._tuner = False
+        #self.unmute(callback)
+
+    #def tuner_set_input(self, input, callback):
+        ## TODO: implement
+        #self.disconnect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), lambda r:r, True)
+        #self._tuner_port = input
+        #self.connect("system:capture_%s" % input, "effect_%d:%s" % (TUNER, TUNER_PORT), callback, True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Webserver callbacks, called from the browser (see webserver.py)
+    # These will be called as a reponse to an action in the browser.
+    # A callback must always be used unless specified otherwise.
+
+    def web_add(self, instance, uri, x, y, callback):
+        self.host.add_plugin(instance, uri, x, y, callback)
+
+    def web_remove(self, instance, callback):
+        """
+        affected_actuators = []
+        if not loaded:
+            affected_actuators = self._pedalboard.remove_instance(instance_id)
+        def bufsize_callback(bufsize_changed):
+            callback(True)
+        def change_bufsize(ok):
+            self.change_bufsize(self._pedalboard.get_bufsize(), bufsize_callback)
+
+        def _callback(ok):
+            if ok:
+                self.hmi.control_rm(instance_id, ":all", change_bufsize)
+                for addr in affected_actuators:
+                    self.parameter_addressing_load(*addr)
+            else:
+                change_bufsize(ok)
+        """
+        #if instance == "-1":
+            #self.reset(callback)
+        #else:
+        self.host.remove_plugin(instance, callback)
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # JACK callbacks, called by JACK itself
+    # We must take care to ensure not to block for long periods of time or else audio will skip or xrun.
+
+    def set_jack_callbacks(self):
+        jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
+        jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
+        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
+
+    # Callback for when a client or port property changes.
+    # We use this to know the full length name of ingen created ports.
     def JackPropertyChangeCallback(self, subject, key, change, arg):
         if self.jack_client is None:
             return
@@ -166,19 +348,21 @@ class Session(object):
         self.mididevuuids.append(subject)
         self.jack_midi_devs_timer.start()
 
+    # Callback for when an xrun occurs
     def JackXRunCallback(self, arg):
         self.xrun_count += 1
         return 0
 
-    def start_timers(self):
-        self.jack_cpu_load_timer.start()
-        self.jack_xrun_timer.start()
+    # Callback for when JACK has shutdown or our client zombified
+    def JackShutdownCallback(self, arg):
+        self.jack_client = None
 
-    def stop_timers(self):
-        self.jack_xrun_timer.stop()
-        self.jack_cpu_load_timer.stop()
+    # -----------------------------------------------------------------------------------------------------------------
+    # Misc/Utility functions
+    # We use these to save possibly duplicated code.
 
-    def get_ports(self, client_name):
+    # Get all available MIDI ports of a specific JACK client.
+    def get_midi_ports(self, client_name):
         if self.jack_client is None:
             return []
 
@@ -227,8 +411,62 @@ class Session(object):
 
         return ports
 
+    # -----------------------------------------------------------------------------------------------------------------
+    # Timer callbacks
+    # These are functions called by the IO loop at regular intervals.
+
+    # Single-shot callback that automatically connects new backend JACK MIDI ports to their hardware counterparts.
+    def jack_midi_devs_timer_callback(self):
+        while len(self.mididevuuids) != 0:
+            subject = self.mididevuuids.pop()
+
+            ret, value, type_ = jacklib.get_property(subject, jacklib.JACK_METADATA_PRETTY_NAME)
+            if ret != 0:
+                continue
+            if type_ != b"text/plain":
+                continue
+
+            value = charPtrToString(value)
+            if not (value.endswith(" in") or value.endswith(" out")):
+                continue
+
+            mod_name  = "%s:%s" % (self._client_name, value.replace(" ", "_").replace("-","_").lower())
+            midi_name = "alsa_midi:%s" % value
+
+            # All good, make connection now
+            if value.endswith(" in"):
+                jacklib.connect(self.jack_client, midi_name, mod_name)
+                jacklib.connect(self.jack_client, midi_name, self._client_name+":control_in")
+            else:
+                jacklib.connect(self.jack_client, mod_name, midi_name)
+
+        self.jack_midi_devs_timer.stop()
+
+    # Callback for getting the current JACK cpu load and report it to the browser side.
+    def jack_cpu_load_timer_callback(self):
+        if self.jack_client is not None:
+            msg = """[]
+            a <http://lv2plug.in/ns/ext/patch#Set> ;
+            <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
+            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/mod#cpuload> ;
+            <http://lv2plug.in/ns/ext/patch#value> "%i" .
+            """ % round(100.0 - jacklib.cpu_load(self.jack_client))
+
+            for ws in self.websockets:
+                ws.write_message(msg)
+
+    # Callback that checks if xruns have occured.
+    def jack_xrun_timer_callback(self):
+        for i in range(self.xrun_count2, self.xrun_count):
+            self.xrun_count2 += 1
+            self.hmi.xrun()
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # TODO
+    # Everything after this line is yet to be documented
+
     def get_midi_device_list(self):
-        return self.get_ports(self._client_name), self.get_ports("alsa_midi")
+        return self.get_midi_ports(self._client_name), self.get_midi_ports("alsa_midi")
 
     @gen.engine
     def set_midi_devices(self, newDevs):
@@ -273,12 +511,6 @@ class Session(object):
             if "out" in modes:
                 yield gen.Task(add_external_port_out)
 
-    def reconnect(self):
-        if self.host.sock is not None:
-            self.host.sock.close()
-            self.host.sock = None
-        self.host.open_connection_if_needed(self.host_callback)
-
     def websocket_opened(self, ws):
         #if self.jack_client is not None:
             #c = self.jack_client
@@ -299,9 +531,7 @@ class Session(object):
             self.xrun_count2 = 0
 
             if self.jack_client is not None:
-                jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-                jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
-                jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
+                self.set_jack_callbacks()
                 jacklib.activate(self.jack_client)
                 print("jacklib client activated")
 
@@ -328,29 +558,21 @@ class Session(object):
             self.engine_samplerate = srate
 
         def plugin_added_callback(instance, uri, x, y):
+            self.addressings.add_instance(instance, uri, False, x, y)
             if instance not in self.instances:
-                self._pedalboard.add_instance(uri, self.instance_mapper.get_id(instance), False, x, y)
                 self.instances.append(instance)
 
         def plugin_removed_callback(instance):
+            actuators = self.addressings.remove_instance(instance)
             if instance in self.instances:
                 self.instances.remove(instance)
 
-        #def plugin_position_callback(instance, x, y):
-            #pass
+        def plugin_position_callback(instance, x, y):
+            self.addressings.set_position(instance, x, y)
 
         def port_value_callback(port, value):
-            instance = port.rpartition("/")[0]
-            port = port.rpartition("/")[-1]
-            instance = self.instance_mapper.get_id(instance)
-            if self._pedalboard.data['instances'].get(instance, False):
-                self._pedalboard.parameter_set(instance, port, value)
-                addrs = self._pedalboard.data['instances'][instance]['addressing']
-                addr = addrs.get(port, None)
-                if addr:
-                    addr['value'] = value
-                    act = addr['actuator']
-                    #self.parameter_addressing_load(*act)
+            instance, port = port.rsplit("/", 1)
+            self.addressings.set_value(instance, port, value)
 
         #def port_binding_callback(port, cc):
             #pass
@@ -366,7 +588,7 @@ class Session(object):
         self.host.samplerate_callback = samplerate_callback
         self.host.plugin_added_callback = plugin_added_callback
         self.host.plugin_removed_callback = plugin_removed_callback
-        #self.host.plugin_position_callback = plugin_position_callback
+        self.host.plugin_position_callback = plugin_position_callback
         self.host.port_value_callback = port_value_callback
         #self.host.port_binding_callback = port_binding_callback
         #self.host.connection_added_callback = connection_added_callback
@@ -460,132 +682,14 @@ class Session(object):
             #self.parameter_monitor(CLIPMETER_OUT, CLIPMETER_MON_L, ">=", 0, lambda r:None)
             #self.parameter_monitor(CLIPMETER_OUT, CLIPMETER_MON_R, ">=", 0, lambda r:None)
 
-    #def tuner_set_input(self, input, callback):
-        ## TODO: implement
-        #self.disconnect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), lambda r:r, True)
-        #self._tuner_port = input
-        #self.connect("system:capture_%s" % input, "effect_%d:%s" % (TUNER, TUNER_PORT), callback, True)
-
-    #def tuner_set(self, status, callback):
-        #if "on" in status:
-            #self.tuner_on(callback)
-        #elif "off" in status:
-            #self.tuner_off(callback)
-
-    #def tuner_on(self, cb):
-        #def mon_tuner(ok):
-            #if ok:
-                #self.parameter_monitor(TUNER, TUNER_MON_PORT, ">=", 0, cb)
-
-        #def setup_tuner(ok):
-            #if ok:
-                #self._tuner = True
-                #self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
-
-        #def mute_callback():
-            #self.add(TUNER_URI, TUNER, setup_tuner, True)
-        #self.mute(mute_callback)
-
-    #def tuner_off(self, cb):
-        #def callback():
-            #self.remove(TUNER, cb, True)
-            #self._tuner = False
-        #self.unmute(callback)
-
-    #def peakmeter_set(self, status, callback):
-        #if "on" in status:
-            #self.peakmeter_on(callback)
-        #elif "off" in status:
-            #self.peakmeter_off(callback)
-
-    #def peakmeter_on(self, cb):
-
-        #def mon_peak_in_l(ok):
-            #if ok:
-                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_VALUE_L, ">=", -30, cb)
-                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_PEAK_L, ">=", -30, cb)
-
-        #def mon_peak_in_r(ok):
-            #if ok:
-                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_VALUE_R, ">=", -30, lambda r:None)
-                #self.parameter_monitor(PEAKMETER_IN, PEAKMETER_MON_PEAK_R, ">=", -30, lambda r:None)
-
-        #def mon_peak_out_l(ok):
-            #if ok:
-                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_VALUE_L, ">=", -30, lambda r:None)
-                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_PEAK_L, ">=", -30, lambda r:None)
-
-        #def mon_peak_out_r(ok):
-            #if ok:
-                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_VALUE_R, ">=", -30, lambda r:None)
-                #self.parameter_monitor(PEAKMETER_OUT, PEAKMETER_MON_PEAK_R, ">=", -30, lambda r:None)
-
-        #def setup_peak_in(ok):
-            #if ok:
-                #self.connect("system:capture_1", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_L), mon_peak_in_l, True)
-                #self.connect("system:capture_2", "effect_%d:%s" % (PEAKMETER_IN, PEAKMETER_R), mon_peak_in_r, True)
-
-        #def setup_peak_out(ok):
-            #if ok:
-                #self._peakmeter = True
-                #for port in self._playback_1_connected_ports:
-                    #self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), mon_peak_out_l, True)
-                #for port in self._playback_2_connected_ports:
-                    #self.connect(port, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), mon_peak_out_r, True)
-
-        #self.add(PEAKMETER_URI, PEAKMETER_IN, setup_peak_in, True)
-        #self.add(PEAKMETER_URI, PEAKMETER_OUT, setup_peak_out, True)
-
-    def peakmeter_off(self, cb):
-        self.remove(PEAKMETER_IN, cb, True)
-        self.remove(PEAKMETER_OUT, lambda r: None, True)
-        self._tuner = False
-
-    def hardware_connected(self, hwtyp, hwid, callback):
-        callback(True)
-        #open(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), 'w')
-        #callback(True)
-
-    def hardware_disconnected(self, hwtype, hwid, callback):
-        callback(True)
-        #if os.path.exist():
-        #    os.remove(os.path.join(HARDWARE_DIR, "%d_%d" % (hwtyp, hwid)), callback)
-        #callback(True)
-
     # host commands
 
-    def add(self, objid, instance, x, y, callback):
-        self.host.add_plugin(objid, instance, x, y, callback)
-
-    def remove(self, instance, callback):
-        """
-        affected_actuators = []
-        if not loaded:
-            affected_actuators = self._pedalboard.remove_instance(instance_id)
-        def bufsize_callback(bufsize_changed):
-            callback(True)
-        def change_bufsize(ok):
-            self.change_bufsize(self._pedalboard.get_bufsize(), bufsize_callback)
-
-        def _callback(ok):
-            if ok:
-                self.hmi.control_rm(instance_id, ":all", change_bufsize)
-                for addr in affected_actuators:
-                    self.parameter_addressing_load(*addr)
-            else:
-                change_bufsize(ok)
-        """
-        if instance == "-1":
-            self.reset(callback)
-        else:
-            self.host.remove_plugin(instance, callback)
-
     def bypass(self, instance, value, callback):
-        value = 1 if int(value) > 0 else 0
+        value = int(value) > 0
         #if not loaded:
         #    self._pedalboard.bypass(instance_id, value)
         #self.recorder.bypass(instance, value)
-        self.host.bypass(instance, value, callback)
+        self.host.enable(instance, value, callback)
 
     def connect(self, port_from, port_to, callback):
         #if not loaded:
@@ -654,25 +758,18 @@ class Session(object):
         """
         self.host.disconnect(port_from, port_to, callback)
 
-    def hmi_parameter_set(self, instance_id, port_id, value, callback):
-        #self.browser.send(instance_id, port_id, value)
-        self.parameter_set(self.instance_mapper.get_instance(instance_id) + "/" + port_id, value, callback)
-
     def preset_load(self, instance_id, uri, callback):
         self.host.preset_load(instance_id, uri, callback)
 
     def parameter_set(self, port, value, callback):
-        if port == ":bypass":
-            # self.bypass(instance_id, value, callback)
-            return
-        #self.recorder.parameter(instance, port_id, value)
-        self.host.param_set(port, value, callback)
+        if port.endswith("/:bypass"):
+            self.host.enable(port, value, callback)
+        else:
+            #self.recorder.parameter(instance, port_id, value)
+            self.host.param_set(port, value, callback)
 
     def parameter_midi_learn(self, port, callback):
         self.host.midi_learn(port, callback)
-
-    #def parameter_get(self, port, callback):
-        #self.host.param_get(port, callback)
 
     #def set_monitor(self, addr, port, status, callback):
         #self.host.monitor(addr, port, status, callback)
@@ -680,49 +777,6 @@ class Session(object):
     #def parameter_monitor(self, instance_id, port_id, op, value, callback):
         #self.host.param_monitor(instance_id, port_id, op, value, callback)
 
-    def jack_midi_devs_timer_callback(self):
-        while len(self.mididevuuids) != 0:
-            subject = self.mididevuuids.pop()
-
-            ret, value, type_ = jacklib.get_property(subject, jacklib.JACK_METADATA_PRETTY_NAME)
-            if ret != 0:
-                continue
-            if type_ != b"text/plain":
-                continue
-
-            value = charPtrToString(value)
-            if not (value.endswith(" in") or value.endswith(" out")):
-                continue
-
-            mod_name  = "%s:%s" % (self._client_name, value.replace(" ", "_").replace("-","_").lower())
-            midi_name = "alsa_midi:%s" % value
-
-            # All good, make connection now
-            if value.endswith(" in"):
-                jacklib.connect(self.jack_client, midi_name, mod_name)
-                jacklib.connect(self.jack_client, midi_name, self._client_name+":control_in")
-            else:
-                jacklib.connect(self.jack_client, mod_name, midi_name)
-
-        self.jack_midi_devs_timer.stop()
-
-    def jack_cpu_load_timer_callback(self):
-        if self.jack_client is not None:
-            msg = """
-            []
-            a <http://lv2plug.in/ns/ext/patch#Set> ;
-            <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
-            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/mod#cpuload> ;
-            <http://lv2plug.in/ns/ext/patch#value> "%i" .
-            """ % round(100.0 - jacklib.cpu_load(self.jack_client))
-
-            for ws in self.websockets:
-                ws.write_message(msg)
-
-    def jack_xrun_timer_callback(self):
-        for i in range(self.xrun_count2, self.xrun_count):
-            self.xrun_count2 += 1
-            self.hmi.xrun()
     # END host commands
 
     # hmi commands
@@ -751,19 +805,6 @@ class Session(object):
                                1, 0, 0, hardware_type, hardware_id, actuator_type,
                                actuator_id, [], callback, loaded)
 
-    def parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
-        addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
-        if len(addrs['addrs']) > 0:
-            addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
-            callback(True)
-            self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
-                                           addrs['idx'])
-            return True
-        #elif len(addrs['addrs']) <= 0:
-        #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
-        callback(True)
-        return False
-
     def parameter_addressing_load(self, hw_type, hw_id, act_type, act_id, idx=None):
         addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
         if idx == None:
@@ -778,7 +819,6 @@ class Session(object):
                              addressing['actuator'][0], addressing['actuator'][1],
                              addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
                              addressing.get('options', []))
-
 
     def parameter_address(self, port, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
@@ -868,7 +908,6 @@ class Session(object):
         else:
             callback(True)
 
-
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
         Function is an integer, meaning:
@@ -884,7 +923,6 @@ class Session(object):
 
     def effect_position(self, instance, x, y):
         self.host.set_position(instance, x, y)
-        #self._pedalboard.set_position(instance, x, y)
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)
@@ -934,38 +972,41 @@ class Session(object):
         self.recording = None
 
     def mute(self, callback):
-        self.set_audio_state(False, callback)
+        return
+        #self.set_audio_state(False, callback)
+
     def unmute(self, callback):
-        self.set_audio_state(True, callback)
+        return
+        #self.set_audio_state(True, callback)
 
-    def set_audio_state(self, state, callback):
-        if self.mute_state == state:
-            return callback()
-        self.mute_state = state
-        connections = self._pedalboard.data['connections']
-        queue = []
-        for connection in connections:
-            if connection[2] == 'system' and connection[3].startswith('playback'):
-                port_from = self.format_port(':'.join([str(x) for x in connection[:2]]))
-                port_to = self.format_port(':'.join([str(x) for x in connection[2:]]))
-                queue.append([port_from, port_to])
-        def consume(result=None):
-            if len(queue) == 0:
-                return callback()
-            nxt = queue.pop(0)
-            if state:
-                self.host.connect(nxt[0], nxt[1], consume)
-            else:
-                self.host.disconnect(nxt[0], nxt[1], consume)
-        consume()
+    #def set_audio_state(self, state, callback):
+        #if self.mute_state == state:
+            #return callback()
+        #self.mute_state = state
+        #connections = self._pedalboard.data['connections']
+        #queue = []
+        #for connection in connections:
+            #if connection[2] == 'system' and connection[3].startswith('playback'):
+                #port_from = self.format_port(':'.join([str(x) for x in connection[:2]]))
+                #port_to = self.format_port(':'.join([str(x) for x in connection[2:]]))
+                #queue.append([port_from, port_to])
+        #def consume(result=None):
+            #if len(queue) == 0:
+                #return callback()
+            #nxt = queue.pop(0)
+            #if state:
+                #self.host.connect(nxt[0], nxt[1], consume)
+            #else:
+                #self.host.disconnect(nxt[0], nxt[1], consume)
+        #consume()
 
-    def serialize_pedalboard(self):
-        return self._pedalboard.serialize()
+    #def serialize_pedalboard(self):
+        #return self._pedalboard.serialize()
 
-    def xrun(self, callback=None):
-        cb = callback
-        if not cb:
-            cb = lambda r: r
-        self.hmi.xrun(cb)
+    #def xrun(self, callback=None):
+        #cb = callback
+        #if not cb:
+            #cb = lambda r: r
+        #self.hmi.xrun(cb)
 
 SESSION = Session()
