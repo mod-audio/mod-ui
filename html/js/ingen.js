@@ -77,18 +77,25 @@ $('document').ready(function() {
                                 // add a new plugin
                                 var instance = subject[0].object;
                                 var uri = prototype[0].object;
+
+                                var enabled = store.find(body[0].object, "http://drobilla.net/ns/ingen#enabled");
+                                enabled = enabled.length ? enabled[0].object.indexOf("true") >= 0 : false;
+
                                 var canvasX = store.find(body[0].object, "http://drobilla.net/ns/ingen#canvasX");
+                                canvasX = canvasX.length ? N3.Util.getLiteralValue(canvasX[0].object) : 0;
+
                                 var canvasY = store.find(body[0].object, "http://drobilla.net/ns/ingen#canvasY");
-                                var x = canvasX.length ? N3.Util.getLiteralValue(canvasX[0].object) : 0;
-                                var y = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
-                                var waiter =desktop.pedalboard.data('wait')
+                                canvasY = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
+
+                                var waiter = desktop.pedalboard.data('wait')
                                 var plugins = desktop.pedalboard.data('plugins')
+
                                 if (plugins[instance] == null) {
                                     plugins[instance] = {} // register plugin
                                     $.ajax({
                                         url: '/effect/get?uri=' + escape(uri),
                                         success: function (pluginData) {
-                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, parseInt(x), parseInt(y))
+                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, !enabled, parseInt(canvasX), parseInt(canvasY))
                                             $("#pedalboard-dashboard").arrive('[mod-instance="' + instance + '"]', function () {
                                                 desktop.pedalboard.pedalboard('adapt')
                                                 if (waiter.plugins[instance])
@@ -256,7 +263,7 @@ $('document').ready(function() {
                                     // setting bypass
                                     var instance = subject[0].object
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                    gui.setPortWidgetsValue(":bypass", value[0].object == "true" ? 0 : 1, undefined, true);
+                                    gui.setPortWidgetsValue(":bypass", value[0].object.indexOf("false") >= 0 ? 1 : 0, undefined, true);
                                 }
                                 else if (prop == "http://moddevices/ns/mod#cpuload")
                                 {

@@ -84,13 +84,14 @@ class Host(IngenAsync):
     def preset_load(self, instance, uri, callback=lambda r:r):
         self.set(instance, "<%s>" % NS.presets.preset, "<%s>" % uri, callback)
 
-    def add_plugin(self, instance, uri, x, y, callback=lambda r:r):
+    def add_plugin(self, instance, uri, enabled, x, y, callback=lambda r:r):
         self.put(instance, '''
         a ingen:Block ;
         <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+        ingen:enabled %s ;
         ingen:canvasX %f ;
         ingen:canvasY %f ;
-''' % (uri, float(x), float(y)), callback)
+''' % (uri, "true" if enabled else "false", float(x), float(y)), callback)
 
     def remove_plugin(self, instance, callback=lambda r:r):
         self.delete(instance, callback)

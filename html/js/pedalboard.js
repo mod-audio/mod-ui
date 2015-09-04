@@ -454,10 +454,8 @@ JqueryClass('pedalboard', {
                             })
                     }
 
-                    self.pedalboard('addPlugin', pluginData, instance, plugin.x, plugin.y, {
-                            //'preset': plugin.preset,
-                            'bypassed': plugin.bypassed
-                        }, plugin.addressing, addressingErrors,
+                    self.pedalboard('addPlugin', pluginData, instance, plugin.bypassed, plugin.x, plugin.y, {},
+                                                 plugin.addressing, addressingErrors,
                         function () {
                             loadPlugin(pluginsData)
                         }
@@ -580,7 +578,7 @@ JqueryClass('pedalboard', {
             var pluginLoad = self.data('pluginLoad')
             pluginLoad(pluginData.uri, instance, position.x, position.y, function () {})
 /*                function () {
-                    self.pedalboard('addPlugin', pluginData, instance, position.x, position.y)
+                    self.pedalboard('addPlugin', pluginData, instance, false, position.x, position.y)
                     setTimeout(function () {
                         self.pedalboard('adapt')
                     }, 1)
@@ -1054,7 +1052,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instance, now we need to put it in screen.
-    addPlugin: function (pluginData, instance, x, y, guiOptions, addressing, addressingErrors, renderCallback) {
+    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, addressing, addressingErrors, renderCallback) {
         var self = $(this)
         var scale = self.data('scale')
 
@@ -1135,6 +1133,7 @@ JqueryClass('pedalboard', {
                             // TODO Handle this error
                     })
             },
+            bypassed: bypassed ? 1 : 0,
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
             defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
         }, guiOptions)

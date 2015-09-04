@@ -100,7 +100,7 @@ function GUI(effect, options) {
         'dragStop': new Function(),
         'presetLoad': new Function(),
         'midiLearn': new Function(),
-        'bypassed': false,
+        'bypassed': 1,
         'defaultIconTemplate': 'Template missing',
         'defaultSettingsTemplate': 'Template missing'
     }, options)
@@ -172,15 +172,15 @@ function GUI(effect, options) {
         ranges: {
             minimum: 0,
             maximum: 1,
-            default: 0,
+            default: 1,
         },
         properties: ["toggled", "integer"],
         widgets: [],
         enabled: true,
-        value: options.bypassed ? 1 : 0,
+        value: self.bypassed ? 1 : 0,
 
         // FIXME
-        default: 0,
+        default: 1,
         maximum: 1,
         minimum: 0,
         enumeration: false,
@@ -198,6 +198,9 @@ function GUI(effect, options) {
         var mod_port = source ? source.attr("mod-port") : symbol
         if (!port.enabled || port.value == value)
             return
+        /*
+          FIXME - shouldn't this be done in the host?
+
         if (port.properties.indexOf("trigger") >= 0) {
             // Report the new value and return the widget to old value
             options.change(mod_port, value)
@@ -208,20 +211,28 @@ function GUI(effect, options) {
             }
             return
         }
-        port.value = value
+        */
+
+        // update our own widgets
         self.setPortWidgetsValue(symbol, value, source)
+
+        // let the host know about this change
         options.change(mod_port, value)
-        self.currentValues[symbol] = value
-        self.triggerJS({ type: 'change', symbol: symbol })
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
         var port = self.controls[symbol]
+
+        port.value = value
+        self.currentValues[symbol] = value
+
         for (var i in port.widgets) {
             if (port.widgets[i] == source)
                 continue
             port.widgets[i].controlWidget('setValue', value, only_gui)
         }
+
+        self.triggerJS({ type: 'change', symbol: symbol, value: value })
     }
 
     this.getPortValue = function (symbol) {
@@ -471,12 +482,33 @@ function GUI(effect, options) {
             var port = self.controls[':bypass']
             port.widgets.push(control)
 
-            control.switchWidget({
+            control.bypassWidget({
                 port: port,
-                value: options.bypassed,
+                value: self.bypassed,
                 change: function (e, value) {
+                    /*
+                     TESTING - the following code is also on 'changeLights' so we don't need it here?
                     self.bypassed = value
+                    element.find('[mod-role=bypass-light]').each(function () {
+                        // NOTE
+                        // the element itself will get inverse class ("on" when light is "off"),
+                        // because of the switch widget.
+                        if (value)
+                            $(this).addClass('off').removeClass('on')
+                        else
+                            $(this).addClass('on').removeClass('off')
+                    });
+                    */
+
                     self.setPortValue(':bypass', value ? 1 : 0, control)
+
+                    if (value)
+                        control.addClass('on').removeClass('off')
+                    else
+                        control.addClass('off').removeClass('on')
+                },
+                changeLights: function (value) {
+                    self.bypassed = value
 
                     element.find('[mod-role=bypass-light]').each(function () {
                         // NOTE
@@ -487,16 +519,11 @@ function GUI(effect, options) {
                         else
                             $(this).addClass('on').removeClass('off')
                     });
-
-                    if (value)
-                        control.addClass('on').removeClass('off')
-                    else
-                        control.addClass('off').removeClass('on')
-                }
+                },
             })
 
             control.attr("mod-port", instance ? instance + "/:bypass" : ":bypass")
-            control.attr('mod-widget', 'switch')
+            control.attr('mod-widget', 'bypass')
             control.addClass("mod-port")
         })
 
@@ -657,6 +684,7 @@ function JqueryClass() {
         var widgets = {
             'film': 'film',
             'switch': 'switchWidget',
+            'bypass': 'bypassWidget',
             'select': 'selectWidget',
             'custom-select': 'customSelect'
         }
@@ -1056,14 +1084,56 @@ JqueryClass('switchWidget', baseWidget, {
     setValue: function (value, only_gui) {
         var self = $(this)
         self.data('value', value)
+
         if (value == self.data('minimum')) {
             self.addClass('off').removeClass('on')
         } else {
             self.addClass('on').removeClass('off')
         }
+
         if (!only_gui)
             self.trigger('valuechange', value)
     }
+})
+
+// this is the same as switchWidget with extra bypass-specific stuff
+JqueryClass('bypassWidget', baseWidget, {
+    init: function (options) {
+        var self = $(this)
+        self.data('changeLights', options.changeLights)
+        self.bypassWidget('config', options)
+        if (options.value != undefined) {
+            self.bypassWidget('setValue', options.value)
+        } else {
+            self.bypassWidget('setValue', options.port.ranges.default)
+        }
+        self.click(function (e) {
+            if (!self.data('enabled'))
+                return self.bypassWidget('prevent', e)
+            var value = self.data('value')
+            if (value == self.data('minimum')) {
+                self.bypassWidget('setValue', self.data('maximum'))
+                self.addClass('on').removeClass('off')
+            } else {
+                self.bypassWidget('setValue', self.data('minimum'))
+                self.addClass('off').removeClass('on')
+            }
+        })
+        return self
+    },
+    setValue: function (value, only_gui) {
+        var self = $(this)
+        self.data('value', value)
+        self.data('changeLights')(value)
+
+        if (value)
+            self.addClass('on').removeClass('off')
+        else
+            self.addClass('off').removeClass('on')
+
+        if (!only_gui)
+            self.trigger('valuechange', value)
+    },
 })
 
 JqueryClass('customSelect', baseWidget, {

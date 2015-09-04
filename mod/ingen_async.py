@@ -87,8 +87,9 @@ class IngenAsync(object):
         self.msg_callback = lambda msg:None
         self.saved_callback = lambda bundlepath:None
         self.samplerate_callback = lambda srate:None
-        self.plugin_added_callback = lambda instance,uri,x,y:None
+        self.plugin_added_callback = lambda instance,uri,enabled,x,y:None
         self.plugin_removed_callback = lambda instance:None
+        self.plugin_enabled_callback = lambda instance,enabled:None
         self.plugin_position_callback = lambda instance,x,y:None
         self.port_value_callback = lambda port,value:None
         self.port_binding_callback = lambda port,cc:None
@@ -205,8 +206,11 @@ class IngenAsync(object):
                 subject  = msg_model.value(bnode, NS.patch.subject)
                 property = msg_model.value(bnode, NS.patch.property)
 
-                # Setting a port value
-                if property == NS.ingen.value:
+                if property == NS.ingen.enabled:
+                    value = msg_model.value(bnode, NS.patch.value).toPython()
+                    self.plugin_enabled_callback(subject, value)
+
+                elif property == NS.ingen.value:
                     port  = subject.partition(self.proto_base)[-1]
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.port_value_callback(port, value)
@@ -243,8 +247,9 @@ class IngenAsync(object):
                     instance = subject.partition(self.proto_base)[-1]
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
+                    e = msg_model.value(body, NS.ingen.enabled)
                     print("plugin_added_callback", instance, protouri.toPython(), x or 0, y or 0)
-                    self.plugin_added_callback(instance, protouri.toPython(), x or 0, y or 0)
+                    self.plugin_added_callback(instance, protouri.toPython(), e, x or 0, y or 0)
 
                 elif msg_type == NS.ingen.Arc:
                     head = msg_model.value(body, NS.ingen.head).partition(self.proto_base)[-1]

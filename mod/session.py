@@ -197,7 +197,7 @@ class Session(object):
         instance = self.addressings.get_instance_from_id(instance_id)
 
         if port == ":bypass":
-            self.addressings.set_bypassed(instance, value)
+            self.addressings.set_bypassed(instance, bool(value))
             self.host.enable(port, not value, callback)
         else:
             self.addressings.set_value(instance, value)
@@ -305,21 +305,25 @@ class Session(object):
     # A callback must always be used unless specified otherwise.
 
     def web_add(self, instance, uri, x, y, callback):
-        self.host.add_plugin(instance, uri, x, y, callback)
+        self.host.add_plugin(instance, uri, True, x, y, callback)
 
     def web_remove(self, instance, callback):
         self.host.remove_plugin(instance, callback)
 
     def web_parameter_set(self, port, value, callback):
-        print("web_parameter_set", type(port), port, type(value), value)
-        if port.endswith("/:bypass"):
-            self.host.enable(port.split("/:bypass",1)[0], value < 0.5, callback)
+        instance, port2 = port.rsplit("/",1)
+
+        if port2 == ":bypass":
+            value = value >= 0.5
+            self.addressings.set_bypassed(instance, value)
+            self.host.enable(instance, not value, callback)
         else:
+            self.addressings.set_value(instance, port2, value)
             self.host.param_set(port, value, callback)
+
         #self.recorder.parameter(port, value)
 
     # TODO
-    # parameter_set
     # parameter_address
     # parameter_midi_learn
     # connect
@@ -506,7 +510,6 @@ class Session(object):
 
     def websocket_opened(self, ws):
         self.websockets.append(ws)
-        print("websocket_opened", ws)
 
         self.host.open_connection_if_needed(self.host_callback)
         self.host.get("/graph")
@@ -533,8 +536,8 @@ class Session(object):
         def samplerate_callback(srate):
             self.engine_samplerate = srate
 
-        def plugin_added_callback(instance, uri, x, y):
-            self.addressings.add_instance(instance, uri, False, x, y)
+        def plugin_added_callback(instance, uri, enabled, x, y):
+            self.addressings.add_instance(instance, uri, not enabled, x, y)
             if instance not in self.instances:
                 self.instances.append(instance)
 
@@ -542,6 +545,9 @@ class Session(object):
             actuators = self.addressings.remove_instance(instance)
             if instance in self.instances:
                 self.instances.remove(instance)
+
+        def plugin_enabled_callback(instance, enabled):
+            self.addressings.set_bypassed(instance, not enabled)
 
         def plugin_position_callback(instance, x, y):
             self.addressings.set_position(instance, x, y)

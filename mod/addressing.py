@@ -76,12 +76,12 @@ class Addressing(object):
     def get_value(self, instance, port):
         return self.instances[instance]['ports'][port]
 
-    def add_instance(self, instance, uri, bypassed=False, x=0, y=0):
+    def add_instance(self, instance, uri, bypassed, x, y):
         self.instances[instance] = {
               'id': self.mapper.get_id(instance),
               'instance': instance,
               'uri': uri,
-              'bypassed': bool(bypassed),
+              'bypassed': bypassed,
               'x': x,
               'y': y,
               'addressing': {},
@@ -120,7 +120,7 @@ class Addressing(object):
 
     def set_bypassed(self, instance, bypassed):
         if instance in self.instances.keys():
-            self.instances[instance][bypassed] = bool(bypassed)
+            self.instances[instance]['bypassed'] = bypassed
 
     def set_position(self, instance, x, y):
         if instance in self.instances.keys():
