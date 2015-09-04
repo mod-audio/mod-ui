@@ -34,9 +34,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
 from mod import symbolify
 from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
-from mod.pedalboard import Pedalboard
 from mod.hmi import HMI
-#from mod.host import Host
 from mod.ingen import Host
 from mod.lv2 import add_bundle_to_lilv_world
 from mod.clipmeter import Clipmeter
@@ -51,42 +49,10 @@ from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 # - document _pedal_changed_callback
 # - ingen command to remove all plugins?
 # - callback for loaded graph?
-# - jack_midi_devs_timer_callback is single-shot, does IO have a function for those?
 
 # create a real or fake class according to 'fake'
 def factory(realClass, fakeClass, fake, *args, **kwargs):
     return fakeClass(*args, **kwargs) if fake else realClass(*args, **kwargs)
-
-# class to map between numeric ids and string instances
-class InstanceIdMapper(object):
-    def __init__(self):
-        # last used id, always incrementing
-        self.last_id = 0
-        # map id <-> instances
-        self.id_map = {}
-        # map instances <-> ids
-        self.instance_map = {}
-
-    # get a numeric id from a string instance
-    def get_id(self, instance):
-        # check if it already exists
-        if instance in self.instance_map:
-            return self.instance_map[instance]
-
-        # increment last id
-        id = self.last_id
-        self.last_id += 1
-
-        # create mapping
-        self.instance_map[instance] = id
-        self.id_map[id] = instance
-
-        # ready
-        return self.instance_map[instance]
-
-    # get a string instance from a numeric id
-    def get_instance(self, id):
-        return self.id_map[id]
 
 class Session(object):
     def __init__(self):
@@ -101,9 +67,6 @@ class Session(object):
 
         self.monitor_server = None
         self.current_bank = None
-
-        # TODO REMOVE
-        self._pedalboard = Pedalboard()
 
         self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
         self.hmi = factory(HMI, FakeHMI, DEV_HMI,
@@ -130,7 +93,7 @@ class Session(object):
 
         self._pedal_changed_callback = None
 
-        self.jack_midi_devs_timer = ioloop.PeriodicCallback(self.jack_midi_devs_timer_callback, 1000)
+        self.jack_midi_devs_timer = ioloop.PeriodicCallback(self.jack_midi_devs_timer_callback, 1)
         self.jack_cpu_load_timer  = ioloop.PeriodicCallback(self.jack_cpu_load_timer_callback, 1000)
         self.jack_xrun_timer      = ioloop.PeriodicCallback(self.jack_xrun_timer_callback, 500)
 
@@ -202,13 +165,13 @@ class Session(object):
 
     # FIXME
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
-        addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
-        if len(addrs['addrs']) > 0:
-            addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
-            callback(True)
-            self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
-                                           addrs['idx'])
-            return True
+        #addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
+        #if len(addrs['addrs']) > 0:
+            #addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
+            #callback(True)
+            #self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
+                                           #addrs['idx'])
+            #return True
         #elif len(addrs['addrs']) <= 0:
         #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
         callback(True)
@@ -806,19 +769,20 @@ class Session(object):
                                actuator_id, [], callback, loaded)
 
     def parameter_addressing_load(self, hw_type, hw_id, act_type, act_id, idx=None):
-        addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
-        if idx == None:
-            idx = addrs['idx']
-        try:
-            addressing = addrs['addrs'][idx]
-        except IndexError:
-            return
-        self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'],
-                             addressing['type'], addressing['unit'], addressing['value'],
-                             addressing['maximum'], addressing['minimum'], addressing['steps'],
-                             addressing['actuator'][0], addressing['actuator'][1],
-                             addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
-                             addressing.get('options', []))
+        return
+        #addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
+        #if idx == None:
+            #idx = addrs['idx']
+        #try:
+            #addressing = addrs['addrs'][idx]
+        #except IndexError:
+            #return
+        #self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'],
+                             #addressing['type'], addressing['unit'], addressing['value'],
+                             #addressing['maximum'], addressing['minimum'], addressing['steps'],
+                             #addressing['actuator'][0], addressing['actuator'][1],
+                             #addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
+                             #addressing.get('options', []))
 
     def parameter_address(self, port, addressing_type, label, ctype,
                           unit, current_value, maximum, minimum, steps,
@@ -839,37 +803,37 @@ class Session(object):
         actuator_id: the encoder button number
         options: array of options, each one being a tuple (value, label)
         """
-        instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
-        port_id = port.rpartition("/")[-1]
-        if (hardware_type == -1 and
-            hardware_id == -1 and
-            actuator_type == -1 and
-            actuator_id == -1):
-            if not loaded:
-                a = self._pedalboard.parameter_unaddress(instance_id, port_id)
-                if a:
-                    if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
-                        self.hmi.control_rm(instance_id, port_id, lambda r:None)
-                else:
-                    callback(True)
-            else:
-                self.hmi.control_rm(instance_id, port_id, callback)
-            return
-        if not loaded:
-            old = self._pedalboard.parameter_address(instance_id, port_id,
-                                                     addressing_type,
-                                                     label,
-                                                     ctype,
-                                                     unit,
-                                                     current_value,
-                                                     maximum,
-                                                     minimum,
-                                                     steps,
-                                                     hardware_type,
-                                                     hardware_id,
-                                                     actuator_type,
-                                                     actuator_id,
-                                                     options)
+        #instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
+        #port_id = port.rpartition("/")[-1]
+        #if (hardware_type == -1 and
+            #hardware_id == -1 and
+            #actuator_type == -1 and
+            #actuator_id == -1):
+            #if not loaded:
+                #a = self._pedalboard.parameter_unaddress(instance_id, port_id)
+                #if a:
+                    #if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
+                        #self.hmi.control_rm(instance_id, port_id, lambda r:None)
+                #else:
+                    #callback(True)
+            #else:
+                #self.hmi.control_rm(instance_id, port_id, callback)
+            #return
+        #if not loaded:
+            #old = self._pedalboard.parameter_address(instance_id, port_id,
+                                                     #addressing_type,
+                                                     #label,
+                                                     #ctype,
+                                                     #unit,
+                                                     #current_value,
+                                                     #maximum,
+                                                     #minimum,
+                                                     #steps,
+                                                     #hardware_type,
+                                                     #hardware_id,
+                                                     #actuator_type,
+                                                     #actuator_id,
+                                                     #options)
 
             #self.host.set(port, "<http://moddevices.com/ns/modpedal#addressing>", '"""' + json.dumps({
                 #'addressing_type': addressing_type,
@@ -886,27 +850,27 @@ class Session(object):
                 #'options': options,
             #}) + '"""')
 
-            self.hmi.control_add(instance_id,
-                                 port_id,
-                                 label,
-                                 ctype,
-                                 unit,
-                                 current_value,
-                                 maximum,
-                                 minimum,
-                                 steps,
-                                 hardware_type,
-                                 hardware_id,
-                                 actuator_type,
-                                 actuator_id,
-                                 len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 options,
-                                 callback)
-            if old:
-                self.parameter_addressing_load(*old)
-        else:
-            callback(True)
+            #self.hmi.control_add(instance_id,
+                                 #port_id,
+                                 #label,
+                                 #ctype,
+                                 #unit,
+                                 #current_value,
+                                 #maximum,
+                                 #minimum,
+                                 #steps,
+                                 #hardware_type,
+                                 #hardware_id,
+                                 #actuator_type,
+                                 #actuator_id,
+                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                                 #options,
+                                 #callback)
+            #if old:
+                #self.parameter_addressing_load(*old)
+        #else:
+        callback(True)
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
