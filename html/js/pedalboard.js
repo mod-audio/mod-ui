@@ -72,11 +72,6 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
-            // Bypasses or un-bypasses plugin
-            pluginBypass: function (instance, bypassed, callback) {
-                callback(true)
-            },
-
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
                 callback(true)
@@ -109,7 +104,7 @@ JqueryClass('pedalboard', {
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
-            'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange', 'pluginBypass',
+            'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange',
             'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData', 'pluginParameterMidiLearn'
         ])
 
@@ -323,11 +318,12 @@ JqueryClass('pedalboard', {
                     }
                 }
             }
-            // First, let's wrap all application functions to provide a way to bypass all of them when desired
+        // First, let's wrap all application functions to provide a way to bypass all of them when desired
         for (var i in functions)
             options[functions[i]] = factory(functions[i], options[functions[i]])
     },
 
+    /*
     serialize: function (callback) {
         var self = $(this)
         var scale = self.data('scale')
@@ -371,6 +367,7 @@ JqueryClass('pedalboard', {
 
         callback(data)
     },
+    */
 
     unserialize: function (data, callback, loadPedalboardAtOnce, bypassApplication) {
         var self = $(this)
@@ -1136,12 +1133,6 @@ JqueryClass('pedalboard', {
                 self.data('pluginParameterChange')(port, value,
                     function (ok) {
                             // TODO Handle this error
-                    })
-            },
-            bypass: function (bypassed) {
-                self.data('pluginBypass')(instance, bypassed,
-                    function (ok) {
-                        // TODO Handle this error
                     })
             },
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE,

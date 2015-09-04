@@ -22,21 +22,20 @@ from mod.host import Host
 class FakeCommunicator(object):
     def send(self, msg, callback, datatype=None):
         logging.info(msg)
+        if callback is None:
+            return
         if datatype == 'boolean':
             callback(True)
         else:
             callback(0)
 
-    def open_connection(self, callback):
-        callback()
-
 class FakeHMI(FakeCommunicator, HMI):
     pass
 
 class FakeHost(FakeCommunicator, Host):
-    def param_get(self, instance_id, symbol, callback=lambda result: None):
-        callback({'ok': True, 'value': 17})
+    pass
+    #def param_get(self, instance_id, symbol, callback=lambda result: None):
+        #callback({'ok': True, 'value': 17})
 
-    def cpu_load(self, callback=lambda result: None):
-        callback({'ok': True, 'value': random.random()*100})
-
+    #def cpu_load(self, callback=lambda result: None):
+        #callback({'ok': True, 'value': random.random()*100})

@@ -849,21 +849,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginBypass: function (instance, bypassed, callback) {
-            var value = bypassed ? 1 : 0
-            $.ajax({
-                url: '/effect/bypass/' + instance + ',' + value,
-                success: function (resp) {
-                    callback(!!resp)
-                },
-                error: function () {
-                    console.log('erro no request')
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-
         portConnect: function (fromPort, toPort, callback) {
             var urlParam = fromPort + ',' + toPort
             $.ajax({

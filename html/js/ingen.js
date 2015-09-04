@@ -16,11 +16,12 @@
  */
 
 $('document').ready(function() {
+    var ws = new WebSocket("ws://" + window.location.host + "/websocket");
+
     ws.onmessage = function (evt) {
         var parser = N3.Parser();
-        var msgs = evt.data;
-        var store = N3.Store();
-        parser.parse(msgs,
+        var store  = N3.Store();
+        parser.parse(evt.data,
             function (error, triple, prefixes) {
                 if (error) {
                     console.log("N3: " + error)

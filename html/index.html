@@ -18,8 +18,6 @@
     <script type="text/javascript">
       // for mod-app control
       var desktop = null
-      // for websocket control
-      var ws = null
     </script>
 
     <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
@@ -90,8 +88,6 @@
 // $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
-  ws = new WebSocket("ws://" + window.location.host + "/websocket");
-
   desktop = new Desktop({
       titleBox: $('#pedalboard-info .title'),
       pedalboard: $('#pedalboard-dashboard'),
@@ -132,6 +128,13 @@ $('document').ready(function() {
       login: $('#login'),
       logout: $('#logout')
   })
+
+  if ({{bundlepath}} && {{title}}) {
+      desktop.title = {{title}}
+      desktop.pedalboardBundle   = {{bundlepath}}
+      desktop.pedalboardModified = true
+      desktop.pedalboardSavable  = true
+  }
 
   $.ajax({
       url: '/system/info',
@@ -364,7 +367,7 @@ $('document').ready(function() {
 
             <!-- PEDALBOARD-SETTINGS -->
             <div id="pedalboard-info">
-                <div class="title">Untitled</div>
+                <div class="title">{{title2}}</div>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
                     <button class="js-add-midi btn btn-mini btn-warning">Add MIDI Device</button>

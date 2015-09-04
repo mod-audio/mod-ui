@@ -51,19 +51,21 @@ def process_resp(resp, datatype):
         # resp is first an int representing status
         # then the float
         resps = resp.split()
-        resp = { 'ok': int(resps[0]) >= 0 }
+        resp  = { 'ok': int(resps[0]) >= 0 }
         try:
             resp['value'] = float(resps[1])
         except IndexError:
             resp['ok'] = False
+
     else:
         try:
             resp = int(resp)
         except ValueError:
-            resp = -1003
+            resp = None
 
-        if datatype == 'boolean':
+        if datatype == 'boolean' and resp is not None:
             resp = resp >= 0
+
     return resp
 
 class Protocol(object):

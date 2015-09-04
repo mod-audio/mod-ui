@@ -397,17 +397,18 @@ class EffectAdd(web.RequestHandler):
         except:
             raise web.HTTPError(404)
 
-        res = yield gen.Task(SESSION.add, instance, uri, x, y)
+        resp = yield gen.Task(SESSION.web_add, instance, uri, x, y)
 
-        if self.request.connection.stream.closed():
-            return
+        self.set_header('Content-type', 'application/json')
+        self.write(json.dumps(data if resp >= 0 else False))
+        self.finish()
 
-        if res >= 0:
-            #options['instance'] = res
-            self.write(json.dumps(data))
-        else:
-            self.write(json.dumps(False))
-
+class EffectRemove(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        resp = yield gen.Task(SESSION.web_remove, instance)
+        self.write(json.dumps(resp))
         self.finish()
 
 class EffectGet(web.RequestHandler):
@@ -421,36 +422,18 @@ class EffectGet(web.RequestHandler):
 
         self.set_header('Content-type', 'application/json')
         self.write(json.dumps(data))
-
-class EffectRemove(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, instance):
-        resp = yield gen.Task(SESSION.remove, instance)
-        if self.request.connection.stream.closed():
-            return
-        self.write(json.dumps(resp))
         self.finish()
 
-class EffectBypass(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, instance, value):
-        res = yield gen.Task(SESSION.parameter_set, instance + "/:bypass", int(value))
-        #res = yield gen.Task(SESSION.bypass, instance, int(value))
-        self.write(json.dumps(res))
-        self.finish()
+#class EffectBypassAddress(web.RequestHandler):
+    #@web.asynchronous
+    #@gen.engine
+    #def get(self, instance, hwtype, hwid, actype, acid, value, label):
+        #res = yield gen.Task(SESSION.parameter_address, instance, ":bypass", 'switch', label, 6, "none",
+                            #int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
 
-class EffectBypassAddress(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        res = yield gen.Task(SESSION.parameter_address, instance, ":bypass", 'switch', label, 6, "none",
-                            int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
-
-        # TODO: get value when unaddressing
-        self.write(json.dumps({ 'ok': res, 'value': False }))
-        self.finish()
+        ## TODO: get value when unaddressing
+        #self.write(json.dumps({ 'ok': res, 'value': False }))
+        #self.finish()
 
 class EffectConnect(web.RequestHandler):
     @web.asynchronous
@@ -484,8 +467,8 @@ class EffectParameterSet(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port):
-        response = yield gen.Task(SESSION.parameter_set, port, float(self.get_argument('value')))
-        self.write(json.dumps(response))
+        resp = yield gen.Task(SESSION.web_parameter_set, port, float(self.get_argument('value')))
+        self.write(json.dumps(resp))
         self.finish()
 
 class EffectParameterMidiLearn(web.RequestHandler):
@@ -537,16 +520,16 @@ class EffectParameterAddress(web.RequestHandler):
         self.write(json.dumps(result))
         self.finish()
 
-class EffectParameterGet(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, port, parameter):
-        response = yield gen.Task(SESSION.parameter_get,
-                                  port,
-                                  parameter)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response))
-        self.finish()
+#class EffectParameterGet(web.RequestHandler):
+    #@web.asynchronous
+    #@gen.engine
+    #def get(self, port, parameter):
+        #response = yield gen.Task(SESSION.parameter_get,
+                                  #port,
+                                  #parameter)
+        #self.set_header('Content-Type', 'application/json')
+        #self.write(json.dumps(response))
+        #self.finish()
 
 class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
@@ -930,6 +913,9 @@ class TemplateHandler(web.RequestHandler):
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
+            'bundlepath': json.dumps(SESSION.bundlepath),
+            'title': json.dumps(SESSION.title),
+            'title2': SESSION.title or "Untitled",
         }
         return context
 
@@ -995,12 +981,12 @@ class Ping(web.RequestHandler):
     def get(self):
         start = time.time()
         ihm = 0
-        if SESSION.pedalboard_initialized:
-            ihm = yield gen.Task(SESSION.ping)
+        #if SESSION.pedalboard_initialized:
+        #   ihm = yield gen.Task(SESSION.ping)
         res = {
             'ihm_online': ihm,
             'ihm_time': int((time.time() - start) * 1000),
-            }
+        }
         self.write(json.dumps(res))
         self.finish()
 
@@ -1228,19 +1214,19 @@ application = web.Application(
             (r"/resources/(.*)", EffectResource),
 
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
+            (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulk),
             (r"/effect/list", EffectList),
-            (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
-            (r"/effect/parameter/set/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterSet),
+            (r"/effect/parameter/set/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterSet),
+            #(r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/])/?", EffectBypass),
             (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
-            (r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
+            #(r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
             (r"/effect/parameter/address/*(/[:A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
-            (r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/]),(\d+)", EffectBypass),
-            (r"/effect/bypass/address/*(/[A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+            #(r"/effect/bypass/address/*(/[A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/gui.js", EffectJavascript),

@@ -98,7 +98,6 @@ function GUI(effect, options) {
         'dragStart': new Function(),
         'drag': new Function(),
         'dragStop': new Function(),
-        'bypass': new Function(),
         'presetLoad': new Function(),
         'midiLearn': new Function(),
         'bypassed': false,
@@ -173,15 +172,15 @@ function GUI(effect, options) {
         ranges: {
             minimum: 0,
             maximum: 1,
-            default: 1,
+            default: 0,
         },
         properties: ["toggled", "integer"],
         widgets: [],
         enabled: true,
-        value: options.bypassed,
+        value: options.bypassed ? 1 : 0,
 
         // FIXME
-        default: 1,
+        default: 0,
         maximum: 1,
         minimum: 0,
         enumeration: false,
@@ -338,13 +337,14 @@ function GUI(effect, options) {
     }
 
     this.assignControlFunctionality = function (element, onlySetValues) {
+        var instance = element.attr('mod-instance')
+
         element.find('[mod-role=input-control-port]').each(function () {
             var control = $(this)
             var symbol = $(this).attr('mod-port-symbol')
             var port = self.controls[symbol]
-            var inst = element.attr('mod-instance')
 
-            control.attr("mod-port", (inst ? inst + "/" : "") + symbol)
+            control.attr("mod-port", (instance ? instance + "/" : "") + symbol)
             control.addClass("mod-port")
 
             if (port)
@@ -470,19 +470,19 @@ function GUI(effect, options) {
             var control = $(this)
             var port = self.controls[':bypass']
             port.widgets.push(control)
+
             control.switchWidget({
-                port: self.controls[':bypass'],
+                port: port,
                 value: options.bypassed,
                 change: function (e, value) {
-                    options.bypass(value)
                     self.bypassed = value
-                    self.setPortValue(':bypass', value, control)
+                    self.setPortValue(':bypass', value ? 1 : 0, control)
 
                     element.find('[mod-role=bypass-light]').each(function () {
                         // NOTE
                         // the element itself will get inverse class ("on" when light is "off"),
                         // because of the switch widget.
-                        if (value == 1)
+                        if (value)
                             $(this).addClass('off').removeClass('on')
                         else
                             $(this).addClass('on').removeClass('off')
@@ -493,10 +493,14 @@ function GUI(effect, options) {
                     else
                         control.addClass('off').removeClass('on')
                 }
-            }).attr('mod-widget', 'switch')
+            })
+
+            control.attr("mod-port", instance ? instance + "/:bypass" : ":bypass")
+            control.attr('mod-widget', 'switch')
+            control.addClass("mod-port")
         })
 
-        if (options.bypassed)
+        if (self.bypassed)
             element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
         else
             element.find('[mod-role=bypass-light]').addClass('on').removeClass('off')

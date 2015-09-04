@@ -123,7 +123,7 @@ class IngenAsync(object):
     def open_connection_if_needed(self, callback):
         if self.sock is not None:
             callback()
-            return False
+            return
 
         if isinstance(self.addr, list):
             self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
@@ -135,7 +135,6 @@ class IngenAsync(object):
             self.sock.read_until(b"\0", self.keep_reading)
 
         self.sock.connect(self.addr, check_response)
-        return True
 
     def keep_reading(self, msg=None):
         self._reading = False
@@ -244,6 +243,7 @@ class IngenAsync(object):
                     instance = subject.partition(self.proto_base)[-1]
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
+                    print("plugin_added_callback", instance, protouri.toPython(), x or 0, y or 0)
                     self.plugin_added_callback(instance, protouri.toPython(), x or 0, y or 0)
 
                 elif msg_type == NS.ingen.Arc:

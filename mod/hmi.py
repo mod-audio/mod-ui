@@ -49,20 +49,18 @@ class SerialIOStream(BaseIOStream):
 
 class HMI(object):
     def __init__(self, port, baud_rate, callback):
+        self.sp = None
         self.port = port
         self.baud_rate = baud_rate
         self.queue = []
         self.queue_idle = True
         self.ioloop = ioloop.IOLoop.instance()
 
-        self.sp = self.open_connection(callback)
-
-    def open_connection(self, callback):
         try:
             sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
         except Exception as e:
             print("ERROR: Failed to open HMI serial port, error was:\n%s" % e)
-            return None
+            return
 
         sp.flushInput()
         sp.flushOutput()
@@ -70,7 +68,7 @@ class HMI(object):
         self.ioloop.add_callback(self.checker)
         self.ioloop.add_callback(callback)
 
-        return SerialIOStream(sp)
+        self.sp = SerialIOStream(sp)
 
     def checker(self, data=None):
         if data is not None:
@@ -110,7 +108,7 @@ class HMI(object):
             return
 
         try:
-            msg = self.queue[0][0] # fist msg on the queue
+            msg, callback, datatype = self.queue[0] # fist msg on the queue
             logging.info("[hmi] popped from queue: %s" % msg)
             self.sp.write(bytes(msg, 'utf-8') + b"\0")
             logging.info("[hmi] sending -> %s" % msg)
@@ -133,6 +131,7 @@ class HMI(object):
             if self.queue_idle:
                 self.process_queue()
             return
+
         # is resp, just send
         self.sp.write(msg.encode('utf-8') + b'\0')
 
@@ -140,10 +139,10 @@ class HMI(object):
         pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
         self.send("initial_state %d %d %s" % (bank_id, pedalboard_id, pedalboards), callback)
 
-    def ui_con(self, callback=lambda result: None):
+    def ui_con(self, callback=lambda r:r):
         self.send("ui_con", callback, datatype='boolean')
 
-    def ui_dis(self, callback=lambda result: None):
+    def ui_dis(self, callback=lambda r:r):
         self.send("ui_dis", callback, datatype='boolean')
 
     def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback=lambda result:None):
@@ -151,7 +150,7 @@ class HMI(object):
 
     def control_add(self, instance_id, symbol, label, var_type, unit, value, max,
                     min, steps, hw_type, hw_id, actuator_type, actuator_id, n_controllers, index,
-                    options=[], callback=lambda result: None):
+                    options=[], callback=lambda r:r):
         """
         addresses a new control
         var_type is one of the following:
@@ -192,7 +191,7 @@ class HMI(object):
                   ),
                   callback, datatype='boolean')
 
-    def control_rm(self, instance_id, symbol, callback=lambda result: None):
+    def control_rm(self, instance_id, symbol, callback=lambda r:r):
         """
         removes an addressing
 
@@ -201,22 +200,22 @@ class HMI(object):
         """
         self.send('control_rm %d %s' % (instance_id, symbol), callback, datatype='boolean')
 
-    def ping(self, callback=lambda result: None):
+    def ping(self, callback=lambda r:r):
         self.send('ping', callback, datatype='boolean')
 
-    def clipmeter(self, position, callback=lambda result: None):
+    def clipmeter(self, position, callback=lambda r:r):
         self.send('clipmeter %d' % position, callback)
 
-    def peakmeter(self, position, value, peak, callback=lambda result: None):
+    def peakmeter(self, position, value, peak, callback=lambda r:r):
         self.send('peakmeter %d %f %f' % (position, value, peak), callback)
 
-    def tuner(self, freq, note, cents, callback=lambda result: None):
+    def tuner(self, freq, note, cents, callback=lambda r:r):
         self.send('tuner %f %s %f' % (freq, note, cents), callback)
 
-    def xrun(self, callback=lambda result: None):
+    def xrun(self, callback=lambda r:r):
         self.send('xrun', callback)
 
-    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback=lambda result: None):
+    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback=lambda r:r):
         """
         configures bank addressings
 
@@ -227,3 +226,8 @@ class HMI(object):
             3: Pedalboard DOWN
         """
         self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
+
+    # new messages
+
+    def clear(self, callback=None):
+        self.send("control_rm -1 :all", callback)
