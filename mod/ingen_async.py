@@ -248,7 +248,6 @@ class IngenAsync(object):
                     x = msg_model.value(body, NS.ingen.canvasX)
                     y = msg_model.value(body, NS.ingen.canvasY)
                     e = msg_model.value(body, NS.ingen.enabled)
-                    print("plugin_added_callback", instance, protouri.toPython(), x or 0, y or 0)
                     self.plugin_added_callback(instance, protouri.toPython(), e, x or 0, y or 0)
 
                 elif msg_type == NS.ingen.Arc:

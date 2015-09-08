@@ -323,6 +323,94 @@ class Session(object):
 
         #self.recorder.parameter(port, value)
 
+    def web_parameter_address(self, port, addressing_type,
+                              label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
+        hardware_type, hardware_id, actuator_type, actuator_id = actuator
+
+        # TODO the IHM parameters set by hardware.js should be here!
+        # The problem is that we need port data, and getting it now is expensive
+        """
+        instance_id: effect instance
+        port_id: control port
+        addressing_type: 'range', 'switch' or 'tap_tempo'
+        label: lcd display label
+        ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
+        unit: string representing the parameter unit (hz, bpm, seconds, etc)
+        hardware_type: the hardware model
+        hardware_id: the id of the hardware where we find this actuator
+        actuator_type: the encoder button type
+        actuator_id: the encoder button number
+        options: array of options, each one being a tuple (value, label)
+        """
+        #instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
+        #port_id = port.rpartition("/")[-1]
+        #if (hardware_type == -1 and
+            #hardware_id == -1 and
+            #actuator_type == -1 and
+            #actuator_id == -1):
+            #if not loaded:
+                #a = self._pedalboard.parameter_unaddress(instance_id, port_id)
+                #if a:
+                    #if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
+                        #self.hmi.control_rm(instance_id, port_id, lambda r:None)
+                #else:
+                    #callback(True)
+            #else:
+                #self.hmi.control_rm(instance_id, port_id, callback)
+            #return
+        #if not loaded:
+            #old = self._pedalboard.parameter_address(instance_id, port_id,
+                                                     #addressing_type,
+                                                     #label,
+                                                     #ctype,
+                                                     #unit,
+                                                     #current_value,
+                                                     #maximum,
+                                                     #minimum,
+                                                     #steps,
+                                                     #hardware_type,
+                                                     #hardware_id,
+                                                     #actuator_type,
+                                                     #actuator_id,
+                                                     #options)
+
+            #self.host.set(port, "<http://moddevices.com/ns/modpedal#addressing>", '"""' + json.dumps({
+                #'addressing_type': addressing_type,
+                #'label': label,
+                #'ctype': ctype,
+                #'unit': unit,
+                #'maximum': maximum,
+                #'minimum': minimum,
+                #'steps': steps,
+                #'hardware_type': hardware_type,
+                #'hardware_id': hardware_id,
+                #'actuator_type': actuator_type,
+                #'actuator_id': actuator_id,
+                #'options': options,
+            #}) + '"""')
+
+            #self.hmi.control_add(instance_id,
+                                 #port_id,
+                                 #label,
+                                 #ctype,
+                                 #unit,
+                                 #current_value,
+                                 #maximum,
+                                 #minimum,
+                                 #steps,
+                                 #hardware_type,
+                                 #hardware_id,
+                                 #actuator_type,
+                                 #actuator_id,
+                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
+                                 #options,
+                                 #callback)
+            #if old:
+                #self.parameter_addressing_load(*old)
+        #else:
+        callback(True)
+
     # TODO
     # parameter_address
     # parameter_midi_learn
@@ -630,10 +718,13 @@ class Session(object):
             if not ok:
                 callback(False)
                 return
+
             try:
                 instance = self.instances.pop(0)
             except IndexError:
                 callback(True)
+                return
+
             self.host.remove_plugin(instance, remove_next_plugin)
 
         # Callback from HMI, ignore ok status
@@ -799,94 +890,6 @@ class Session(object):
                              #addressing['actuator'][0], addressing['actuator'][1],
                              #addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
                              #addressing.get('options', []))
-
-    def parameter_address(self, port, addressing_type, label, ctype,
-                          unit, current_value, maximum, minimum, steps,
-                          hardware_type, hardware_id, actuator_type, actuator_id,
-                          options, callback, loaded=False):
-        # TODO the IHM parameters set by hardware.js should be here!
-        # The problem is that we need port data, and getting it now is expensive
-        """
-        instance_id: effect instance
-        port_id: control port
-        addressing_type: 'range', 'switch' or 'tap_tempo'
-        label: lcd display label
-        ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
-        unit: string representing the parameter unit (hz, bpm, seconds, etc)
-        hardware_type: the hardware model
-        hardware_id: the id of the hardware where we find this actuator
-        actuator_type: the encoder button type
-        actuator_id: the encoder button number
-        options: array of options, each one being a tuple (value, label)
-        """
-        #instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
-        #port_id = port.rpartition("/")[-1]
-        #if (hardware_type == -1 and
-            #hardware_id == -1 and
-            #actuator_type == -1 and
-            #actuator_id == -1):
-            #if not loaded:
-                #a = self._pedalboard.parameter_unaddress(instance_id, port_id)
-                #if a:
-                    #if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
-                        #self.hmi.control_rm(instance_id, port_id, lambda r:None)
-                #else:
-                    #callback(True)
-            #else:
-                #self.hmi.control_rm(instance_id, port_id, callback)
-            #return
-        #if not loaded:
-            #old = self._pedalboard.parameter_address(instance_id, port_id,
-                                                     #addressing_type,
-                                                     #label,
-                                                     #ctype,
-                                                     #unit,
-                                                     #current_value,
-                                                     #maximum,
-                                                     #minimum,
-                                                     #steps,
-                                                     #hardware_type,
-                                                     #hardware_id,
-                                                     #actuator_type,
-                                                     #actuator_id,
-                                                     #options)
-
-            #self.host.set(port, "<http://moddevices.com/ns/modpedal#addressing>", '"""' + json.dumps({
-                #'addressing_type': addressing_type,
-                #'label': label,
-                #'ctype': ctype,
-                #'unit': unit,
-                #'maximum': maximum,
-                #'minimum': minimum,
-                #'steps': steps,
-                #'hardware_type': hardware_type,
-                #'hardware_id': hardware_id,
-                #'actuator_type': actuator_type,
-                #'actuator_id': actuator_id,
-                #'options': options,
-            #}) + '"""')
-
-            #self.hmi.control_add(instance_id,
-                                 #port_id,
-                                 #label,
-                                 #ctype,
-                                 #unit,
-                                 #current_value,
-                                 #maximum,
-                                 #minimum,
-                                 #steps,
-                                 #hardware_type,
-                                 #hardware_id,
-                                 #actuator_type,
-                                 #actuator_id,
-                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 #options,
-                                 #callback)
-            #if old:
-                #self.parameter_addressing_load(*old)
-        #else:
-        callback(True)
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """

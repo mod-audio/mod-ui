@@ -362,6 +362,7 @@ def get_pedalboard_info(bundle):
 
         uri = lilv.lilv_node_as_uri(proto)
 
+        enabled  = lilv.lilv_world_get(world.me, block.me, ns_ingen.enabled.me, None)
         microver = lilv.lilv_world_get(world.me, block.me, ns_lv2core.microVersion.me, None)
         minorver = lilv.lilv_world_get(world.me, block.me, ns_lv2core.minorVersion.me, None)
 
@@ -369,6 +370,7 @@ def get_pedalboard_info(bundle):
             "uri": uri,
             "x": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ns_ingen.canvasX.me, None)),
             "y": lilv.lilv_node_as_float(lilv.lilv_world_get(world.me, block.me, ns_ingen.canvasY.me, None)),
+            "enabled": lilv.lilv_node_as_bool(enabled) if enabled is not None else False,
             "microVersion": lilv.lilv_node_as_int(microver) if microver else 0,
             "minorVersion": lilv.lilv_node_as_int(minorver) if minorver else 0,
         })

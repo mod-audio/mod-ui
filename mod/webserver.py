@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO stuff
-# - remove EffectBypass
-
 import os, re, shutil, sys
 import json, socket
 import tornado.ioloop
@@ -424,17 +421,6 @@ class EffectGet(web.RequestHandler):
         self.write(json.dumps(data))
         self.finish()
 
-#class EffectBypassAddress(web.RequestHandler):
-    #@web.asynchronous
-    #@gen.engine
-    #def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        #res = yield gen.Task(SESSION.parameter_address, instance, ":bypass", 'switch', label, 6, "none",
-                            #int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
-
-        ## TODO: get value when unaddressing
-        #self.write(json.dumps({ 'ok': res, 'value': False }))
-        #self.finish()
-
 class EffectConnect(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -475,8 +461,8 @@ class EffectParameterMidiLearn(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port):
-        response = yield gen.Task(SESSION.parameter_midi_learn, port)
-        self.write(json.dumps(response))
+        resp = yield gen.Task(SESSION.parameter_midi_learn, port)
+        self.write(json.dumps(resp))
         self.finish()
 
 class EffectParameterAddress(web.RequestHandler):
@@ -485,40 +471,41 @@ class EffectParameterAddress(web.RequestHandler):
     def post(self, port):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
 
-        actuator = data.get('actuator', None)
+        addr_type = data.get('addressing_type', None)
+        actuator  = data.get('actuator', None)
 
         if actuator is None or actuator[0] < 0:
             actuator = [-1, -1, -1, -1]
-            #result = yield gen.Task(SESSION.parameter_get, port)
-            #if not result['ok']:
-                #self.write(json.dumps(result))
-                #self.finish()
-                #return
-        #else:
-        #   result = {}
-
-        label = data.get('label', '---')
 
         try:
             ctype = int(data['type'])
         except:
             ctype = 0
 
-        value = float(data['value'])
+        label   = data.get('label', '---') or '---'
+        unit    = data.get('unit', 'none') or 'none'
+        value   = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
-        steps = int(data.get('steps', 33))
-        unit = data.get('unit', 'none') or 'none'
-
+        steps   = int(data.get('steps', 33))
         options = data.get('options', [])
 
-        result = yield gen.Task(SESSION.parameter_address,
-                                port, data.get('addressing_type', None),
-                                label, ctype, unit, value, maximum, minimum, steps,
-                                actuator[0], actuator[1], actuator[2], actuator[3], options)
+        resp = yield gen.Task(SESSION.web_parameter_address, port, addr_type,
+                              label, ctype, unit, value, maximum, minimum, steps, actuator, options)
 
-        self.write(json.dumps(result))
+        self.write(json.dumps(resp))
         self.finish()
+
+#class EffectBypassAddress(web.RequestHandler):
+    #@web.asynchronous
+    #@gen.engine
+    #def get(self, instance, hwtype, hwid, actype, acid, value, label):
+        #res = yield gen.Task(SESSION.parameter_address, instance, ":bypass", 'switch', label, 6, "none",
+                            #int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
+
+        ## TODO: get value when unaddressing
+        #self.write(json.dumps({ 'ok': res, 'value': False }))
+        #self.finish()
 
 #class EffectParameterGet(web.RequestHandler):
     #@web.asynchronous
@@ -945,7 +932,7 @@ class TemplateHandler(web.RequestHandler):
                 "uri": plugin['uri'],
                 "x": plugin['x'],
                 "y": plugin['y'],
-                "bypassed": False
+                "bypassed": not plugin['enabled'],
             })
 
         context['pedalboard'] = b64encode(json.dumps(data).encode("utf-8"))
@@ -1222,10 +1209,9 @@ application = web.Application(
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
             (r"/effect/parameter/set/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterSet),
-            #(r"/effect/bypass/*(/[A-Za-z0-9_/]+[^/])/?", EffectBypass),
+            (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
             (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
             #(r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
-            (r"/effect/parameter/address/*(/[:A-Za-z0-9_/]+[^/])/?", EffectParameterAddress),
             #(r"/effect/bypass/address/*(/[A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
