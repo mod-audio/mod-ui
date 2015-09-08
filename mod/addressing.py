@@ -170,14 +170,13 @@ class Addressing(object):
                 label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
         instance_id = self.mapper.get_id(instance)
 
-        if all(i == -1 for i in actuator):
-            actuator = self._unaddress(instance, port)
-            #if actuator is not None:
-                #self._address_next(actuator)
-            self.hmi.control_rm(instance_id, port, callback)
-            return
-
         old_actuator = self._unaddress(instance, port)
+
+        if all(i == -1 for i in actuator):
+            self.hmi.control_rm(instance_id, port, callback)
+            if old_actuator is not None:
+                  self.address_next(old_actuator)
+            return
 
         addressing = {
             'actuator': actuator,
@@ -205,10 +204,10 @@ class Addressing(object):
                              len(self.addressings[actuator]['addrs']), # index
                              options, callback)
 
-        if old_actuator:
+        if old_actuator is not None:
             self._addressing_load(old_actuator)
 
-    def address_next(self, actuator, callback):
+    def address_next(self, actuator, callback=lambda r:r):
         hardware_type, hardware_id, actuator_type, actuator_id = actuator
 
         addressings       = self.addressings[actuator]
@@ -248,7 +247,7 @@ class Addressing(object):
     def _unaddress(self, instance, port):
         data = self.instances.get(instance, None)
         if data is None:
-            return
+            return None
 
         addressing = data['addressing'].pop(port, None)
         if addressing is None:
