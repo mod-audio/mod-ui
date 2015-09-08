@@ -475,7 +475,9 @@ class EffectParameterAddress(web.RequestHandler):
         actuator  = data.get('actuator', None)
 
         if actuator is None or actuator[0] < 0:
-            actuator = [-1, -1, -1, -1]
+            actuator = (-1, -1, -1, -1)
+        else:
+            actuator = tuple(actuator)
 
         try:
             ctype = int(data['type'])
@@ -1279,7 +1281,7 @@ application = web.Application(
             (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": "/"}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
-            debug=LOG, **settings)
+            debug=LOG and False, **settings)
 
 def prepare():
     def run_server():

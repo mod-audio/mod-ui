@@ -16,6 +16,24 @@
 #
 # For a full copy of the GNU General Public License see the COPYING file
 
+ADDRESSING_TYPE_LINEAR      = 0
+ADDRESSING_TYPE_LOGARITHM   = 1
+ADDRESSING_TYPE_ENUMERATION = 2
+ADDRESSING_TYPE_TOGGLED     = 3
+ADDRESSING_TYPE_TRIGGER     = 4
+ADDRESSING_TYPE_TAP_TEMPO   = 5
+ADDRESSING_TYPE_BYPASS      = 6
+
+ACTUATOR_TYPE_FOOTSWITCH = 1
+ACTUATOR_TYPE_KNOB       = 2
+ACTUATOR_TYPE_POT        = 3
+
+HARDWARE_TYPE_QUADRA = 0
+HARDWARE_TYPE_PEDAL  = 1
+HARDWARE_TYPE_TOUCH  = 2
+HARDWARE_TYPE_ACCEL  = 3
+HARDWARE_TYPE_CUSTOM = 4
+
 import logging
 
 from mod.hardware import get_hardware
@@ -63,6 +81,9 @@ class Addressing(object):
         self._init_addressings()
 
     def _init_addressings(self):
+        # 'self.addressings' uses a structure like this:
+        # (4, 0, 1, 0): {'addrs': [], 'idx': 0}
+        # the 'key' is a hardware identifier, meaning a button, knob, etc
         hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist ])
         self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
 
@@ -77,20 +98,22 @@ class Addressing(object):
         return self.instances[instance]['ports'][port]
 
     def add_instance(self, instance, uri, bypassed, x, y):
+        instance_id = self.mapper.get_id(instance)
+
         self.instances[instance] = {
-              'id': self.mapper.get_id(instance),
+              'id': instance_id,
               'instance': instance,
               'uri': uri,
               'bypassed': bypassed,
               'x': x,
               'y': y,
-              'addressing': {},
-              'ports': {},
+              'addressing': {}, # symbol: addressing
+              'ports': {},      # symbol: value
         }
         logging.info('[addressing] Added instance %s' % instance)
 
     def remove_instance(self, instance):
-        idx = self.mapper.get_id(instance)
+        instance_id = self.mapper.get_id(instance)
 
         try:
             # Remove the instance
@@ -103,7 +126,7 @@ class Addressing(object):
         for actuator, addressing in self.addressings.items():
             i = 0
             while i < len(addressing['addrs']):
-                if addressing['addrs'][i].get('instance_id') == idx:
+                if addressing['addrs'][i].get('instance_id') == instance_id:
                     addressing['addrs'].pop(i)
                     if addressing['idx'] >= i:
                         addressing['idx'] -= 1
@@ -111,7 +134,7 @@ class Addressing(object):
                 else:
                     i += 1
 
-        self.hmi.control_rm(idx, ":all")
+        self.hmi.control_rm(instance_id, ":all")
         #for addr in affected_actuators:
             #self.parameter_addressing_load(*addr)
 
@@ -119,22 +142,128 @@ class Addressing(object):
         #return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
 
     def set_bypassed(self, instance, bypassed):
-        if instance in self.instances.keys():
-            self.instances[instance]['bypassed'] = bypassed
+        data = self.instances.get(instance, None)
+        if data is None:
+            return
+        data['bypassed'] = bypassed
 
     def set_position(self, instance, x, y):
-        if instance in self.instances.keys():
-            data = self.instances[instance]
-            data['x'] = x
-            data['y'] = y
+        data = self.instances.get(instance, None)
+        if data is None:
+            return
+        data['x'] = x
+        data['y'] = y
 
     def set_value(self, instance, port, value):
-        if instance in self.instances.keys():
-            data = self.instances[instance]
-            data['ports']['port'] = value
+        data = self.instances.get(instance, None)
+        if data is None:
+            return
+        data['ports'][port] = value
 
-            addr = data['addressing'].get(port, None)
-            if addr is not None:
-                addr['value'] = value
-                act = addr['actuator']
-                #self.parameter_addressing_load(*act)
+        addr = data['addressing'].get(port, None)
+        if addr is None:
+            return
+        addr['value'] = value
+        #self._addressing_load(addr['actuator'])
+
+    def address(self, instance, port, addressing_type,
+                label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
+        instance_id = self.mapper.get_id(instance)
+
+        if all(i == -1 for i in actuator):
+            actuator = self._unaddress(instance, port)
+            #if actuator is not None:
+                #self._address_next(actuator)
+            self.hmi.control_rm(instance_id, port, callback)
+            return
+
+        old_actuator = self._unaddress(instance, port)
+
+        addressing = {
+            'actuator': actuator,
+            'addressing_type': addressing_type,
+            'instance_id': instance_id,
+            'port': port,
+            'label': label,
+            'type': ctype,
+            'unit': unit,
+            'value': value,
+            'minimum': minimum,
+            'maximum': maximum,
+            'steps': steps,
+            'options': options,
+        }
+        self.instances[instance]['addressing'][port] = addressing
+        self.addressings[actuator]['addrs'].append(addressing)
+        self.addressings[actuator]['idx'] = len(self.addressings[actuator]['addrs']) - 1
+
+        hardware_type, hardware_id, actuator_type, actuator_id = actuator
+
+        self.hmi.control_add(instance_id, port, label, ctype, unit, value, maximum, minimum, steps,
+                             hardware_type, hardware_id, actuator_type, actuator_id,
+                             len(self.addressings[actuator]['addrs']), # num controllers
+                             len(self.addressings[actuator]['addrs']), # index
+                             options, callback)
+
+        if old_actuator:
+            self._addressing_load(old_actuator)
+
+    def address_next(self, actuator, callback):
+        hardware_type, hardware_id, actuator_type, actuator_id = actuator
+
+        addressings       = self.addressings[actuator]
+        addressings_addrs = addressings['addrs']
+        addressings_idx   = addressings['idx']
+
+        if len(addressings_addrs) > 0:
+            addressings['idx'] = (addressings['idx'] + 1) % len(addressings_addrs)
+            callback(True)
+            self._addressing_load(actuator)
+        else:
+            callback(True)
+            self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
+
+    def _addressing_load(self, actuator, callback=None):
+        print("_addressing_load", actuator)
+
+        addressings       = self.addressings[actuator]
+        addressings_addrs = addressings['addrs']
+        addressings_idx   = addressings['idx']
+
+        try:
+            addressing = addressings_addrs[addressings_idx]
+        except IndexError:
+            return
+
+        hardware_type, hardware_id, actuator_type, actuator_id = actuator
+
+        self.hmi.control_add(addressing['instance_id'], addressing['port'],
+                             addressing['label'], addressing['type'], addressing['unit'],
+                             addressing['value'], addressing['maximum'], addressing['minimum'], addressing['steps'],
+                             hardware_type, hardware_id, actuator_type, actuator_id,
+                             len(addressings_addrs), # num controllers
+                             addressings_idx+1,      # index
+                             addressing['options'], callback)
+
+    def _unaddress(self, instance, port):
+        data = self.instances.get(instance, None)
+        if data is None:
+            return
+
+        addressing = data['addressing'].pop(port, None)
+        if addressing is None:
+            return None
+
+        actuator          = addressing['actuator']
+        addressings       = self.addressings[actuator]
+        addressings_addrs = addressings['addrs']
+        addressings_idx   = addressings['idx']
+
+        index = addressings_addrs.index(addressing)
+        addressings_addrs.pop(index)
+
+        # FIXME ?
+        if index <= addressings_idx:
+            addressings['idx'] = addressings_idx - 1
+
+        return actuator

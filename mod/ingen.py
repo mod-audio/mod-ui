@@ -75,7 +75,7 @@ class Host(IngenAsync):
         #callback(1)
 
     def param_set(self, port, value, callback=lambda r:r):
-        self.set(port, "ingen:value", value, callback)
+        self.set(port, "ingen:value", str(value), callback)
 
     def enable(self, instance, value, callback=lambda r:r):
         value = "true" if value else "false"

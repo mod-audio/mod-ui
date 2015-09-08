@@ -145,12 +145,11 @@ class HMI(object):
     def ui_dis(self, callback=lambda r:r):
         self.send("ui_dis", callback, datatype='boolean')
 
-    def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback=lambda result:None):
+    def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback=lambda r:r):
         self.send("control_clean %d %d %d %d" % (hw_type, hw_id, actuator_type, actuator_id), callback, datatype='boolean')
 
-    def control_add(self, instance_id, symbol, label, var_type, unit, value, max,
-                    min, steps, hw_type, hw_id, actuator_type, actuator_id, n_controllers, index,
-                    options=[], callback=lambda r:r):
+    def control_add(self, instance_id, port, label, var_type, unit, value, max, min, steps,
+                    hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback=lambda r:r):
         """
         addresses a new control
         var_type is one of the following:
@@ -173,7 +172,7 @@ class HMI(object):
 
         self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
                   ( instance_id,
-                    symbol,
+                    port,
                     label,
                     var_type,
                     unit,
@@ -191,14 +190,14 @@ class HMI(object):
                   ),
                   callback, datatype='boolean')
 
-    def control_rm(self, instance_id, symbol, callback=lambda r:r):
+    def control_rm(self, instance_id, port, callback=lambda r:r):
         """
         removes an addressing
 
         if instance_id is -1 will remove all addressings
         if symbol == ":all" will remove every addressing for the instance_id
         """
-        self.send('control_rm %d %s' % (instance_id, symbol), callback, datatype='boolean')
+        self.send('control_rm %d %s' % (instance_id, port), callback, datatype='boolean')
 
     def ping(self, callback=lambda r:r):
         self.send('ping', callback, datatype='boolean')

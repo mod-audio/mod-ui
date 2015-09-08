@@ -192,31 +192,46 @@ class Session(object):
         value    = self.addressings.get_value(instance, port)
         callback(value)
 
-    def hmi_parameter_set(self, instance_id, port, value, callback):
+    def hmi_parameter_set(self, instance_id, port, value, callback=None):
         logging.info("hmi parameter set")
         instance = self.addressings.get_instance_from_id(instance_id)
 
         if port == ":bypass":
             self.addressings.set_bypassed(instance, bool(value))
-            self.host.enable(port, not value, callback)
+            self.host.enable(instance, not value, callback)
+
+            # FIXME: make ingen report this info back
+            msg = '''[]
+            a <http://lv2plug.in/ns/ext/patch#Set> ;
+            <http://lv2plug.in/ns/ext/patch#subject> <%s> ;
+            <http://lv2plug.in/ns/ext/patch#property> <http://drobilla.net/ns/ingen#enabled> ;
+            <http://lv2plug.in/ns/ext/patch#value> %s .
+            ''' % (instance, "true" if value else "false")
+
         else:
-            self.addressings.set_value(instance, value)
-            self.host.param_set(port, value, callback)
+            self.addressings.set_value(instance, port, value)
+            self.host.param_set("%s/%s" % (instance, port), value, callback)
+
+            # FIXME: make ingen report this info back
+            msg = '''[]
+            a <http://lv2plug.in/ns/ext/patch#Set> ;
+            <http://lv2plug.in/ns/ext/patch#subject> <%s/%s> ;
+            <http://lv2plug.in/ns/ext/patch#property> <http://drobilla.net/ns/ingen#value> ;
+            <http://lv2plug.in/ns/ext/patch#value> %f .
+            ''' % (instance, port, value)
+
+        for ws in self.websockets:
+            ws.write_message(msg)
 
     # FIXME
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
-        #addrs = self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]
-        #if len(addrs['addrs']) > 0:
-            #addrs['idx'] = (addrs['idx'] + 1) % len(addrs['addrs'])
-            #callback(True)
-            #self.parameter_addressing_load(hardware_type, hardware_id, actuator_type, actuator_id,
-                                           #addrs['idx'])
-            #return True
-        #elif len(addrs['addrs']) <= 0:
-        #   self.hmi.control_clean(hardware_type, hardware_id, actuator_type, actuator_id)
-        callback(True)
-        return False
+        if hardware_type == 0: # Quadra
+            hardware_type = 4  # Custom
+        actuator = (hardware_type, hardware_id, actuator_type, actuator_id)
+        self.addressings.address_next(actuator, callback)
+
+        #return False
 
     #def peakmeter_set(self, status, callback):
         #if "on" in status:
@@ -325,7 +340,10 @@ class Session(object):
 
     def web_parameter_address(self, port, addressing_type,
                               label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
-        hardware_type, hardware_id, actuator_type, actuator_id = actuator
+        instance, port2 = port.rsplit("/",1)
+        return self.addressings.address(instance, port2, addressing_type,
+                                        label, ctype, unit, value, maximum, minimum, steps,
+                                        actuator, options, callback)
 
         # TODO the IHM parameters set by hardware.js should be here!
         # The problem is that we need port data, and getting it now is expensive
@@ -344,6 +362,7 @@ class Session(object):
         """
         #instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
         #port_id = port.rpartition("/")[-1]
+
         #if (hardware_type == -1 and
             #hardware_id == -1 and
             #actuator_type == -1 and
@@ -358,6 +377,7 @@ class Session(object):
             #else:
                 #self.hmi.control_rm(instance_id, port_id, callback)
             #return
+
         #if not loaded:
             #old = self._pedalboard.parameter_address(instance_id, port_id,
                                                      #addressing_type,
@@ -409,10 +429,9 @@ class Session(object):
             #if old:
                 #self.parameter_addressing_load(*old)
         #else:
-        callback(True)
+        #callback(True)
 
     # TODO
-    # parameter_address
     # parameter_midi_learn
     # connect
     # disconnect
@@ -544,7 +563,7 @@ class Session(object):
     def jack_xrun_timer_callback(self):
         for i in range(self.xrun_count2, self.xrun_count):
             self.xrun_count2 += 1
-            self.hmi.xrun()
+            #self.hmi.xrun()
 
     # -----------------------------------------------------------------------------------------------------------------
     # TODO
@@ -630,7 +649,7 @@ class Session(object):
                 self.instances.append(instance)
 
         def plugin_removed_callback(instance):
-            actuators = self.addressings.remove_instance(instance)
+            self.addressings.remove_instance(instance)
             if instance in self.instances:
                 self.instances.remove(instance)
 
@@ -851,14 +870,11 @@ class Session(object):
 
     # hmi commands
     def start_session(self, callback=None):
-        self._playback_1_connected_ports = []
-        self._playback_2_connected_ports = []
-
         def verify(resp):
             if callback:
                 callback(resp)
             else:
-                assert resp
+                assert(resp)
         self.bank_address(0, 0, 1, 0, 0, lambda r: None)
         self.bank_address(0, 0, 1, 1, 0, lambda r: None)
         self.bank_address(0, 0, 1, 2, 0, lambda r: None)
@@ -874,22 +890,6 @@ class Session(object):
         self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
                                1, 0, 0, hardware_type, hardware_id, actuator_type,
                                actuator_id, [], callback, loaded)
-
-    def parameter_addressing_load(self, hw_type, hw_id, act_type, act_id, idx=None):
-        return
-        #addrs = self._pedalboard.addressings[(hw_type, hw_id, act_type, act_id)]
-        #if idx == None:
-            #idx = addrs['idx']
-        #try:
-            #addressing = addrs['addrs'][idx]
-        #except IndexError:
-            #return
-        #self.hmi.control_add(addressing['instance_id'], addressing['port_id'], addressing['label'],
-                             #addressing['type'], addressing['unit'], addressing['value'],
-                             #addressing['maximum'], addressing['minimum'], addressing['steps'],
-                             #addressing['actuator'][0], addressing['actuator'][1],
-                             #addressing['actuator'][2], addressing['actuator'][3], len(addrs['addrs']), idx+1,
-                             #addressing.get('options', []))
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
