@@ -174,10 +174,8 @@ class Session(object):
 
         if port2 == ":bypass":
             value = value >= 0.5
-            #self.addressings.set_bypassed(instance, value, False)
             self.host.enable(instance, not value, callback)
         else:
-            #self.addressings.set_value(instance, port2, value, False)
             self.host.param_set(port, value, callback)
 
         #self.recorder.parameter(port, value)

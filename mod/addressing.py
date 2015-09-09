@@ -16,13 +16,17 @@
 #
 # For a full copy of the GNU General Public License see the COPYING file
 
-ADDRESSING_TYPE_LINEAR      = 0
-ADDRESSING_TYPE_LOGARITHM   = 1
-ADDRESSING_TYPE_ENUMERATION = 2
-ADDRESSING_TYPE_TOGGLED     = 3
-ADDRESSING_TYPE_TRIGGER     = 4
-ADDRESSING_TYPE_TAP_TEMPO   = 5
-ADDRESSING_TYPE_BYPASS      = 6
+ADDRESSING_TYPE_RANGE     = "range"
+ADDRESSING_TYPE_SWITCH    = "switch"
+ADDRESSING_TYPE_TAP_TEMPO = "tap_tempo"
+
+ADDRESSING_CTYPE_LINEAR      = 0
+ADDRESSING_CTYPE_LOGARITHM   = 1
+ADDRESSING_CTYPE_ENUMERATION = 2
+ADDRESSING_CTYPE_TOGGLED     = 3
+ADDRESSING_CTYPE_TRIGGER     = 4
+ADDRESSING_CTYPE_TAP_TEMPO   = 5
+ADDRESSING_CTYPE_BYPASS      = 6
 
 ACTUATOR_TYPE_FOOTSWITCH = 1
 ACTUATOR_TYPE_KNOB       = 2
@@ -88,7 +92,7 @@ class Addressing(object):
         self.host = Host(os.getenv("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
 
         def plugin_added_callback(instance, uri, enabled, x, y):
-            self._add_instance(instance, uri, not enabled, x, y)
+            self._add_instance(instance, uri, not enabled)
 
         def plugin_removed_callback(instance):
             self._remove_instance(instance)
@@ -96,16 +100,12 @@ class Addressing(object):
         def plugin_enabled_callback(instance, enabled):
             self._set_bypassed(instance, not enabled)
 
-        def plugin_position_callback(instance, x, y):
-            self._set_position(instance, x, y)
-
         def port_value_callback(port, value):
             instance, port = port.rsplit("/", 1)
             self._set_value(instance, port, value)
 
         self.host.plugin_added_callback = plugin_added_callback
         self.host.plugin_removed_callback = plugin_removed_callback
-        self.host.plugin_position_callback = plugin_position_callback
         self.host.port_value_callback = port_value_callback
 
         # Register HMI protocol callbacks
@@ -177,11 +177,11 @@ class Addressing(object):
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
-    def hmi_hardware_connected(self, hwtype, hwid, callback):
+    def hmi_hardware_connected(self, hardware_type, hardware_id, callback):
         logging.info("hmi hardware connected")
         callback(True)
 
-    def hmi_hardware_disconnected(self, hwtype, hwid, callback):
+    def hmi_hardware_disconnected(self, hardware_type, hardware_id, callback):
         logging.info("hmi hardware disconnected")
         callback(True)
 
@@ -203,8 +203,8 @@ class Addressing(object):
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
-        if hardware_type == 0: # Quadra
-            hardware_type = 4  # Custom
+        if hardware_type == HARDWARE_TYPE_QUADRA:
+            hardware_type = HARDWARE_TYPE_CUSTOM
         actuator = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator, callback)
 
@@ -302,7 +302,7 @@ class Addressing(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def _add_instance(self, instance, uri, bypassed, x, y):
+    def _add_instance(self, instance, uri, bypassed):
         instance_id = self.mapper.get_id(instance)
 
         self.instances[instance] = {
@@ -310,8 +310,6 @@ class Addressing(object):
               'instance': instance,
               'uri': uri,
               'bypassed': bypassed,
-              'x': x,
-              'y': y,
               'addressing': {}, # symbol: addressing
               'ports': {},      # symbol: value
         }
@@ -320,8 +318,8 @@ class Addressing(object):
     def _remove_instance(self, instance):
         instance_id = self.mapper.get_id(instance)
 
+        # Remove the instance
         try:
-            # Remove the instance
             self.instances.pop(instance)
         except KeyError:
             logging.error('[addressing] Cannot remove unknown instance %d' % instance)
@@ -353,13 +351,6 @@ class Addressing(object):
         if data is None:
             return
         data['bypassed'] = bypassed
-
-    def _set_position(self, instance, x, y):
-        data = self.instances.get(instance, None)
-        if data is None:
-            return
-        data['x'] = x
-        data['y'] = y
 
     def _set_value(self, instance, port, value):
         data = self.instances.get(instance, None)
