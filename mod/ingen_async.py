@@ -269,7 +269,10 @@ class IngenAsync(object):
         self.sock.write(self.msgencode(msg), lambda: callback(True))
 
     def __del__(self):
+        if self.sock is None:
+            return
         self.sock.close()
+        self.sock = None
 
     def msgencode(self, msg):
         if sys.version_info[0] == 3:
