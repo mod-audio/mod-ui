@@ -27,7 +27,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT, HARDWARE_DIR,
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
                           INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
                           INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
@@ -145,7 +145,7 @@ class Session(object):
 
     def hmi_initialized(self):
         logging.info("hmi initialized")
-        self.addressings.clear()
+        self.hmi.clear()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Timers (start and stop in sync with webserver IOLoop)
@@ -724,11 +724,11 @@ class Session(object):
     def end_session(self, callback):
         self.hmi.ui_dis(callback)
 
-    def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
-                       callback, loaded=False):
-        self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
-                               1, 0, 0, hardware_type, hardware_id, actuator_type,
-                               actuator_id, [], callback, loaded)
+    #def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
+                       #callback, loaded=False):
+        #self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
+                               #1, 0, 0, hardware_type, hardware_id, actuator_type,
+                               #actuator_id, [], callback, loaded)
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """

@@ -15,6 +15,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+ADDRESSING_TYPE_RANGE     = "range"
+ADDRESSING_TYPE_SWITCH    = "switch"
+ADDRESSING_TYPE_TAP_TEMPO = "tap_tempo"
+
+ADDRESSING_TYPES = [
+    ADDRESSING_TYPE_RANGE,
+    ADDRESSING_TYPE_SWITCH,
+    ADDRESSING_TYPE_TAP_TEMPO
+]
+
+ADDRESSING_CTYPE_LINEAR      = 0
+ADDRESSING_CTYPE_LOGARITHMIC = 1
+ADDRESSING_CTYPE_ENUMERATION = 2
+ADDRESSING_CTYPE_TOGGLED     = 3
+ADDRESSING_CTYPE_TRIGGER     = 4
+ADDRESSING_CTYPE_TAP_TEMPO   = 5
+ADDRESSING_CTYPE_BYPASS      = 6
+ADDRESSING_CTYPE_INTEGER     = 7
+
+ACTUATOR_TYPE_FOOTSWITCH = 1
+ACTUATOR_TYPE_KNOB       = 2
+ACTUATOR_TYPE_POT        = 3
+
 function HardwareManager(options) {
     var self = this
 
@@ -30,9 +53,6 @@ function HardwareManager(options) {
         // Callback to enable or disable a control in GUI
 
     }, options)
-
-    // All control types
-    var controlTypes = ['switch', 'range', 'tap_tempo']
 
     this.reset = function () {
        /* All adressings indexed by actuator
@@ -58,8 +78,8 @@ function HardwareManager(options) {
         }
         var actuators = []
         var i, j, type, actuator, actuatorKey
-        for (i = 0; i < controlTypes.length; i++) {
-            type = controlTypes[i]
+        for (i = 0; i < ADDRESSING_TYPES.length; i++) {
+            type = ADDRESSING_TYPES[i]
             for (j = 0; j < HARDWARE_PROFILE[type].length; j++) {
                 actuatorData = HARDWARE_PROFILE[type][j]
                 actuator = {}
@@ -83,14 +103,14 @@ function HardwareManager(options) {
     this.availableAddressingTypes = function (port) {
         var types = []
         if (port.toggled) {
-            types.push('switch')
+            types.push(ADDRESSING_TYPE_SWITCH)
         } else if (port.enumeration) {
-            types.push('switch')
-            types.push('range')
+            types.push(ADDRESSING_TYPE_SWITCH)
+            types.push(ADDRESSING_TYPE_RANGE)
         } else {
-            types.push('range')
+            types.push(ADDRESSING_TYPE_RANGE)
             if (port.tap_tempo)
-                types.push('tap_tempo')
+                types.push(ADDRESSING_TYPE_TAP_TEMPO)
         }
         return types
     }
@@ -165,7 +185,7 @@ function HardwareManager(options) {
             // Here the addressing structure is created
             var addressing = {
                 actuator: actuator.address, // the actuator used
-                addressing_type: actuator.type, // one of controlTypes
+                addressing_type: actuator.type, // one of ADDRESSING_TYPES
                 label: label.val() || port.name,
                 minimum: min.val() || port.minimum,
                 maximum: max.val() || port.maximum,
@@ -230,28 +250,31 @@ function HardwareManager(options) {
      * place for this is the webserver, that should calculate this on demand.
      */
     this.setIHMParameters = function (instanceId, symbol, addressing) {
-        addressing.type = 0
+        addressing.type    = ADDRESSING_CTYPE_LINEAR
         addressing.options = []
         if (!addressing.actuator)
             return
+
         var port = options.getGui(instanceId).controls[symbol]
         addressing.unit = port.unit ? port.unit.symbol : null
-        if (port.logarithmic)
-            addressing.type = 1
-        else if (port.enumeration) {
-            addressing.type = 2
+
+        if (port.logarithmic) {
+            addressing.type = ADDRESSING_CTYPE_LOGARITHMIC
+        } else if (port.enumeration) {
+            addressing.type = ADDRESSING_CTYPE_ENUMERATION
             if (!addressing.options || addressing.options.length == 0)
                 addressing.options = port.scalePoints.map(function (point) {
                     return [point.value, point.label]
                 })
-        } else if (port.trigger)
-            addressing.type = 4
-        else if (port.toggled)
-            addressing.type = 3
-        else if (addressing.addressing_type == 'tap_tempo')
-            addressing.type = 5
-        else if (port.integer)
-            addressing.type = 7
+        } else if (port.trigger) {
+            addressing.type = ADDRESSING_CTYPE_TRIGGER
+        } else if (port.toggled) {
+            addressing.type = ADDRESSING_CTYPE_TOGGLED
+        } else if (addressing.addressing_type == ADDRESSING_TYPE_TAP_TEMPO) {
+            addressing.type = ADDRESSING_CTYPE_TAP_TEMPO
+        } else if (port.integer) {
+            addressing.type = ADDRESSING_CTYPE_INTEGER
+        }
     }
 
     this.hardwareExists = function (addressing) {

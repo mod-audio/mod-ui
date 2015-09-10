@@ -20,13 +20,20 @@ ADDRESSING_TYPE_RANGE     = "range"
 ADDRESSING_TYPE_SWITCH    = "switch"
 ADDRESSING_TYPE_TAP_TEMPO = "tap_tempo"
 
+ADDRESSING_TYPES = [
+    ADDRESSING_TYPE_RANGE,
+    ADDRESSING_TYPE_SWITCH,
+    ADDRESSING_TYPE_TAP_TEMPO
+]
+
 ADDRESSING_CTYPE_LINEAR      = 0
-ADDRESSING_CTYPE_LOGARITHM   = 1
+ADDRESSING_CTYPE_LOGARITHMIC = 1
 ADDRESSING_CTYPE_ENUMERATION = 2
 ADDRESSING_CTYPE_TOGGLED     = 3
 ADDRESSING_CTYPE_TRIGGER     = 4
 ADDRESSING_CTYPE_TAP_TEMPO   = 5
 ADDRESSING_CTYPE_BYPASS      = 6
+ADDRESSING_CTYPE_INTEGER     = 7
 
 ACTUATOR_TYPE_FOOTSWITCH = 1
 ACTUATOR_TYPE_KNOB       = 2
@@ -138,6 +145,13 @@ class Addressing(object):
                   self._address_next(old_actuator)
             return
 
+        hardware_type, hardware_id, actuator_type, actuator_id = actuator
+
+        #if port == ":bypass":
+        #ctype = ADDRESSING_CTYPE_TOGGLED
+        #elif actuator_type == ACTUATOR_TYPE_FOOTSWITCH:
+            #ctype = ADDRESSING_CTYPE_ENUMERATION
+
         addressing = {
             'actuator': actuator,
             'addressing_type': addressing_type,
@@ -155,8 +169,6 @@ class Addressing(object):
         self.instances[instance]['addressing'][port] = addressing
         self.addressings[actuator]['addrs'].append(addressing)
         self.addressings[actuator]['idx'] = len(self.addressings[actuator]['addrs']) - 1
-
-        hardware_type, hardware_id, actuator_type, actuator_id = actuator
 
         self.hmi.control_add(instance_id, port, label, ctype, unit, value, maximum, minimum, steps,
                              hardware_type, hardware_id, actuator_type, actuator_id,

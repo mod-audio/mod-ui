@@ -30,8 +30,6 @@ MODGUI_SHOW_MODE = int(os.environ.get('MOD_GUI_SHOW_MODE', 0))
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
 
-HARDWARE_DIR = os.environ.get('MOD_HARDWARE_DIR', join(DATA_DIR, 'hardware'))
-
 KEYPATH = os.environ.get('MOD_KEY_PATH', '/root/keys')
 
 CLOUD_PUB = os.environ.get('MOD_CLOUD_PUB', join(KEYPATH, 'cloud_key.pub'))
@@ -103,7 +101,6 @@ CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', default_cloud)
 if not CLOUD_HTTP_ADDRESS.endswith('/'):
     CLOUD_HTTP_ADDRESS += '/'
 
-
 if os.path.exists("/root/repository"):
     fh = open("/root/repository")
     default_repo = fh.read().strip()
@@ -155,7 +152,3 @@ AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
-
-for dirname in (DOWNLOAD_TMP_DIR, HARDWARE_DIR):
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)

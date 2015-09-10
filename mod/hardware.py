@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, json, re
-from mod.settings import HARDWARE_DIR, DEVICE_MODEL
+from mod.settings import DEVICE_MODEL
 
 """
 As it is implemented today by the JS UI:
@@ -218,10 +218,10 @@ def get_hardware():
     with open("/etc/mod-capabilities.json", 'r') as fd:
         add_hardware(Custom.HW_TYP, 0, hardware, json.loads(fd.read()))
 
-    # TODO might deserve cache. inotify to expire cache?
-    for extension in sorted(os.listdir(HARDWARE_DIR)):
-        m = re.match('^(\d+)_(\d+)$', extension)
-        if m:
-            add_hardware(int(m.groups()[0]), int(m.groups()[1]), hardware)
+    ## TODO might deserve cache. inotify to expire cache?
+    #for extension in sorted(os.listdir(HARDWARE_DIR)):
+        #m = re.match('^(\d+)_(\d+)$', extension)
+        #if m:
+            #add_hardware(int(m.groups()[0]), int(m.groups()[1]), hardware)
 
     return hardware
