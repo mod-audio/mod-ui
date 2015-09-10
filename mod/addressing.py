@@ -52,9 +52,6 @@ from mod.hardware import get_hardware
 from mod.ingen import Host
 from mod.protocol import Protocol
 
-# TODO stuff:
-# - X, Y is needed?
-
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
     def __init__(self):

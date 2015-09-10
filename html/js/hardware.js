@@ -258,7 +258,9 @@ function HardwareManager(options) {
         var port = options.getGui(instanceId).controls[symbol]
         addressing.unit = port.unit ? port.unit.symbol : null
 
-        if (port.logarithmic) {
+        if (port.symbol == ':bypass') {
+            addressing.type = ADDRESSING_CTYPE_BYPASS
+        } else if (port.logarithmic) {
             addressing.type = ADDRESSING_CTYPE_LOGARITHMIC
         } else if (port.enumeration) {
             addressing.type = ADDRESSING_CTYPE_ENUMERATION

@@ -104,7 +104,7 @@ class FootSwitch(Actuator):
 class Knob(Actuator):
     ACT_TYP = 2
 
-    def __init__(self, name="Knob", addressing_type=['range', 'select'], exclusive=False):
+    def __init__(self, name="Knob", addressing_type=['range'], exclusive=False):
         super(Knob, self).__init__(name, addressing_type, exclusive)
 
 class Pot(Actuator):
