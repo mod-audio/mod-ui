@@ -256,7 +256,7 @@ function HardwareManager(options) {
             return
 
         var port = options.getGui(instanceId).controls[symbol]
-        addressing.unit = port.unit ? port.unit.symbol : null
+        addressing.unit = port.units ? port.units.symbol : null
 
         if (port.symbol == ':bypass') {
             addressing.type = ADDRESSING_CTYPE_BYPASS
