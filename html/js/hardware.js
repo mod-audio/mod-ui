@@ -25,14 +25,15 @@ ADDRESSING_TYPES = [
     ADDRESSING_TYPE_TAP_TEMPO
 ]
 
-ADDRESSING_CTYPE_LINEAR      = 0
-ADDRESSING_CTYPE_LOGARITHMIC = 1
-ADDRESSING_CTYPE_ENUMERATION = 2
-ADDRESSING_CTYPE_TOGGLED     = 3
-ADDRESSING_CTYPE_TRIGGER     = 4
-ADDRESSING_CTYPE_TAP_TEMPO   = 5
-ADDRESSING_CTYPE_BYPASS      = 6
-ADDRESSING_CTYPE_INTEGER     = 7
+ADDRESSING_CTYPE_LINEAR         = 0
+ADDRESSING_CTYPE_BYPASS         = 1
+ADDRESSING_CTYPE_TAP_TEMPO      = 2
+ADDRESSING_CTYPE_ENUMERATION    = 4
+ADDRESSING_CTYPE_SCALE_POINTS   = 8
+ADDRESSING_CTYPE_TRIGGER        = 16
+ADDRESSING_CTYPE_TOGGLED        = 32
+ADDRESSING_CTYPE_LOGARITHMIC    = 64
+ADDRESSING_CTYPE_INTEGER        = 128
 
 ACTUATOR_TYPE_FOOTSWITCH = 1
 ACTUATOR_TYPE_KNOB       = 2
@@ -163,7 +164,7 @@ function HardwareManager(options) {
         var gui = options.getGui(instanceId)
         var pluginName = gui.effect.label || gui.effect.name
         var portName
-        if (port.symbol == ':bypass')
+        if (port.symbol == ":bypass")
             portName = pluginName
         else
             portName = port.name
@@ -194,7 +195,7 @@ function HardwareManager(options) {
                 options: [] // the available options in case this is enumerated (no interface for that now)
             }
 
-            self.setAddressing(instanceId, port.symbol, addressing, function () {
+            self.setAddressing(instanceId, port, addressing, function () {
                 form.remove()
             })
         })
@@ -207,8 +208,8 @@ function HardwareManager(options) {
     this.buildSensibilityOptions = function (select, port) {
         select.children().remove()
 
-        if (port.integer) {
-            // If port is integer, step is always 1
+        if (port.integer || port.symbol == ":bypass") {
+            // If port is integer or bypass, step is always 1
             $('<option value=0>').appendTo(select)
             select.val(0)
             select.hide()
@@ -249,34 +250,46 @@ function HardwareManager(options) {
      * user chosen values. These parameters shouldn't be part of the serialized data. The proper
      * place for this is the webserver, that should calculate this on demand.
      */
-    this.setIHMParameters = function (instanceId, symbol, addressing) {
-        addressing.type    = ADDRESSING_CTYPE_LINEAR
+    this.setIHMParameters = function (instanceId, port, addressing) {
+        /*
         addressing.options = []
-        if (!addressing.actuator)
+        if (!addressing.actuator) {
+            console.log("setIHMParameters: no actuator set")
             return
+        }
+        */
 
-        var port = options.getGui(instanceId).controls[symbol]
         addressing.unit = port.units ? port.units.symbol : null
 
-        if (port.symbol == ':bypass') {
+        if (port.symbol == ":bypass") {
             addressing.type = ADDRESSING_CTYPE_BYPASS
-        } else if (port.logarithmic) {
-            addressing.type = ADDRESSING_CTYPE_LOGARITHMIC
-        } else if (port.enumeration) {
-            addressing.type = ADDRESSING_CTYPE_ENUMERATION
-            if (!addressing.options || addressing.options.length == 0)
+        } else if (port.toggled) {
+            addressing.type = ADDRESSING_CTYPE_TOGGLED
+        } else if (port.integer) {
+            addressing.type = ADDRESSING_CTYPE_INTEGER
+        } else {
+            addressing.type = ADDRESSING_CTYPE_LINEAR
+        }
+
+        if (port.enumeration) {
+            addressing.type |= ADDRESSING_CTYPE_ENUMERATION|ADDRESSING_CTYPE_SCALE_POINTS
+            if (!addressing.options || addressing.options.length == 0) {
                 addressing.options = port.scalePoints.map(function (point) {
                     return [point.value, point.label]
                 })
-        } else if (port.trigger) {
-            addressing.type = ADDRESSING_CTYPE_TRIGGER
-        } else if (port.toggled) {
-            addressing.type = ADDRESSING_CTYPE_TOGGLED
-        } else if (addressing.addressing_type == ADDRESSING_TYPE_TAP_TEMPO) {
-            addressing.type = ADDRESSING_CTYPE_TAP_TEMPO
-        } else if (port.integer) {
-            addressing.type = ADDRESSING_CTYPE_INTEGER
+            }
         }
+        if (port.logarithmic) {
+            addressing.type |= ADDRESSING_CTYPE_LOGARITHMIC
+        }
+        if (port.trigger) {
+            addressing.type |= ADDRESSING_CTYPE_TRIGGER
+        }
+        if (addressing.addressing_type == ADDRESSING_TYPE_TAP_TEMPO) {
+            addressing.type |= ADDRESSING_CTYPE_TAP_TEMPO
+        }
+
+            console.log("setIHMParameters: type = " + addressing.type)
     }
 
     this.hardwareExists = function (addressing) {
@@ -289,39 +302,39 @@ function HardwareManager(options) {
     }
 
     // Does the addressing
-    this.setAddressing = function (instanceId, symbol, addressing, callback) {
-        self.setIHMParameters(instanceId, symbol, addressing)
+    this.setAddressing = function (instanceId, port, addressing, callback) {
+        self.setIHMParameters(instanceId, port, addressing)
 
-        options.address(instanceId, symbol, addressing, function (ok) {
+        options.address(instanceId, port.symbol, addressing, function (ok) {
             var actuator = addressing.actuator || [-1, -1, -1, -1]
             var actuatorKey = actuator.join(',')
-            var portKey = [instanceId, symbol].join(',')
+            var portKey = [instanceId, port.symbol].join(',')
             if (ok) {
                 var gui = options.getGui(instanceId)
                 if (actuator[0] >= 0) {
                     // We're addressing
                     try {
-                        var currentAddressing = self.controls[instanceId][symbol]
-                        remove_from_array(self.addressings[currentAddressing.actuator.join(',')], [instanceId, symbol].join(","))
+                        var currentAddressing = self.controls[instanceId][port.symbol]
+                        remove_from_array(self.addressings[currentAddressing.actuator.join(',')], [instanceId, port.symbol].join(","))
                     } catch (e) {
                         // TypeError when self.controls[instanceId] is null, that's ok
                     }
                     self.addressings[actuatorKey].push(portKey)
                     self.controls[instanceId] = self.controls[instanceId] || {}
-                    self.controls[instanceId][symbol] = addressing
-                    gui.disable(symbol)
+                    self.controls[instanceId][port.symbol] = addressing
+                    gui.disable(port.symbol)
                 } else {
                     // We're unaddressing
-                    if (!self.controls[instanceId] || !self.controls[instanceId][symbol]) {
+                    if (!self.controls[instanceId] || !self.controls[instanceId][port.symbol]) {
                         // not addressed, nothing to be done
                         return callback(true)
                     }
-                    var currentAddressing = self.controls[instanceId][symbol]
+                    var currentAddressing = self.controls[instanceId][port.symbol]
                     actuatorKey = currentAddressing.actuator.join(',')
                     var portIndex = self.addressings[actuatorKey].indexOf(portKey)
                     self.addressings[actuatorKey].splice(portIndex, 1)
-                    delete self.controls[instanceId][symbol]
-                    gui.enable(symbol)
+                    delete self.controls[instanceId][port.symbol]
+                    gui.enable(port.symbol)
 
                     // Set the returned value in GUI
                     //gui.setPortValue(symbol, result.value)

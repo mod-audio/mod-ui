@@ -26,20 +26,21 @@ ADDRESSING_TYPES = [
     ADDRESSING_TYPE_TAP_TEMPO
 ]
 
-ADDRESSING_CTYPE_LINEAR      = 0
-ADDRESSING_CTYPE_LOGARITHMIC = 1
-ADDRESSING_CTYPE_ENUMERATION = 2
-ADDRESSING_CTYPE_TOGGLED     = 3
-ADDRESSING_CTYPE_TRIGGER     = 4
-ADDRESSING_CTYPE_TAP_TEMPO   = 5
-ADDRESSING_CTYPE_BYPASS      = 6
-ADDRESSING_CTYPE_INTEGER     = 7
+ADDRESSING_CTYPE_LINEAR         = 0
+ADDRESSING_CTYPE_BYPASS         = 1
+ADDRESSING_CTYPE_TAP_TEMPO      = 2
+ADDRESSING_CTYPE_ENUMERATION    = 4
+ADDRESSING_CTYPE_SCALE_POINTS   = 8
+ADDRESSING_CTYPE_TRIGGER        = 16
+ADDRESSING_CTYPE_TOGGLED        = 32
+ADDRESSING_CTYPE_LOGARITHMIC    = 64
+ADDRESSING_CTYPE_INTEGER        = 128
 
 ACTUATOR_TYPE_FOOTSWITCH = 1
 ACTUATOR_TYPE_KNOB       = 2
 ACTUATOR_TYPE_POT        = 3
 
-HARDWARE_TYPE_QUADRA = 0
+HARDWARE_TYPE_MOD    = 0
 HARDWARE_TYPE_PEDAL  = 1
 HARDWARE_TYPE_TOUCH  = 2
 HARDWARE_TYPE_ACCEL  = 3
@@ -212,8 +213,8 @@ class Addressing(object):
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
-        if hardware_type == HARDWARE_TYPE_QUADRA:
-            hardware_type = HARDWARE_TYPE_CUSTOM
+        #if hardware_type == HARDWARE_TYPE_MOD:
+            #hardware_type = HARDWARE_TYPE_CUSTOM
         actuator = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator, callback)
 
