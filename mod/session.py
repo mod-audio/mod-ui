@@ -101,6 +101,7 @@ class Session(object):
 
         self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
+        self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
 
     def __del__(self):
         if self.jack_client is None:
@@ -126,6 +127,22 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
+    def autoconnect_jack(self):
+        if self.jack_client is None:
+            return
+
+        for i in range(1, INGEN_NUM_AUDIO_INS+1):
+            jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:audio_port_%i_in" % (SESSION.backend_client_name, i))
+
+        for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
+            jacklib.connect(self.jack_client,"%s:audio_port_%i_out" % (SESSION.backend_client_name, i), "system:playback_%i" % i)
+
+        #for i in range(1, INGEN_NUM_MIDI_INS+1):
+            #jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:midi_port_%i_in" % (SESSION.backend_client_name, i))
+
+        #for i in range(1, INGEN_NUM_MIDI_OUTS+1):
+            #jacklib.connect(self.jack_client,"%s:midi_port_%i_out" % (SESSION.backend_client_name, i), "system:playback_%i" % i)
+
     def init_jack(self):
         self.jack_client = jacklib.client_open("%s-helper" % self.backend_client_name, jacklib.JackNoStartServer, None)
         self.xrun_count  = 0
@@ -134,6 +151,7 @@ class Session(object):
         if self.jack_client is None:
             return
 
+        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
         jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
         jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
@@ -282,6 +300,14 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # JACK callbacks, called by JACK itself
     # We must take care to ensure not to block for long periods of time or else audio will skip or xrun.
+
+    # Callback for when a port appears or disappears
+    # We use this to trigger a auto-connect mode
+    #def JackPortRegistrationCallback(self, port, registered, arg):
+        #if self.jack_client is None:
+            #return
+        #if not registered:
+            #return
 
     # Callback for when a client or port property changes.
     # We use this to know the full length name of ingen created ports.
