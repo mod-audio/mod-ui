@@ -332,7 +332,7 @@ class Addressing(object):
         try:
             self.instances.pop(instance)
         except KeyError:
-            logging.error('[addressing] Cannot remove unknown instance %d' % instance)
+            logging.error('[addressing] Cannot remove unknown instance %s' % instance)
 
         # Remove addressings of that instance
         affected_actuators = {}
