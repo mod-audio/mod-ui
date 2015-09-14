@@ -58,12 +58,11 @@ class HMI(object):
 
         try:
             sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
+            sp.flushInput()
+            sp.flushOutput()
         except Exception as e:
             print("ERROR: Failed to open HMI serial port, error was:\n%s" % e)
             return
-
-        sp.flushInput()
-        sp.flushOutput()
 
         self.ioloop.add_callback(self.checker)
         self.ioloop.add_callback(callback)
