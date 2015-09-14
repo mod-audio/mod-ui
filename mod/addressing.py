@@ -131,6 +131,19 @@ class Addressing(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    """
+    instance_id: effect instance
+    port_id: control port
+    addressing_type: 'range', 'switch' or 'tap_tempo'
+    label: lcd display label
+    ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
+    unit: string representing the parameter unit (hz, bpm, seconds, etc)
+    hardware_type: the hardware model
+    hardware_id: the id of the hardware where we find this actuator
+    actuator_type: the encoder button type
+    actuator_id: the encoder button number
+    options: array of options, each one being a tuple (value, label)
+    """
     def address(self, instance, port, addressing_type,
                 label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
         instance_id = self.mapper.get_id(instance)
@@ -144,11 +157,6 @@ class Addressing(object):
             return
 
         hardware_type, hardware_id, actuator_type, actuator_id = actuator
-
-        #if port == ":bypass":
-        #ctype = ADDRESSING_CTYPE_TOGGLED
-        #elif actuator_type == ACTUATOR_TYPE_FOOTSWITCH:
-            #ctype = ADDRESSING_CTYPE_ENUMERATION
 
         addressing = {
             'actuator': actuator,
@@ -180,9 +188,6 @@ class Addressing(object):
     def clear(self):
         self.instances = {}
         self._init_addressings()
-
-    #def get_instance_from_id(self, instance_id):
-        #return self.mapper.get_instance(instance_id)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

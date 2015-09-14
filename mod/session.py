@@ -201,101 +201,33 @@ class Session(object):
     def web_parameter_address(self, port, addressing_type,
                               label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
         instance, port2 = port.rsplit("/",1)
-        return self.addressings.address(instance, port2, addressing_type,
-                                        label, ctype, unit, value, maximum, minimum, steps,
-                                        actuator, options, callback)
 
-        # TODO the IHM parameters set by hardware.js should be here!
-        # The problem is that we need port data, and getting it now is expensive
-        """
-        instance_id: effect instance
-        port_id: control port
-        addressing_type: 'range', 'switch' or 'tap_tempo'
-        label: lcd display label
-        ctype: 0 linear, 1 logarithm, 2 enumeration, 3 toggled, 4 trigger, 5 tap tempo, 6 bypass
-        unit: string representing the parameter unit (hz, bpm, seconds, etc)
-        hardware_type: the hardware model
-        hardware_id: the id of the hardware where we find this actuator
-        actuator_type: the encoder button type
-        actuator_id: the encoder button number
-        options: array of options, each one being a tuple (value, label)
-        """
-        #instance_id = self.instance_mapper.get_id(port.rpartition("/")[0])
-        #port_id = port.rpartition("/")[-1]
+        self.addressings.address(instance, port2, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
+                                 actuator, options, callback)
 
-        #if (hardware_type == -1 and
-            #hardware_id == -1 and
-            #actuator_type == -1 and
-            #actuator_id == -1):
-            #if not loaded:
-                #a = self._pedalboard.parameter_unaddress(instance_id, port_id)
-                #if a:
-                    #if not self.parameter_addressing_next(a[0], a[1], a[2], a[3], callback):
-                        #self.hmi.control_rm(instance_id, port_id, lambda r:None)
-                #else:
-                    #callback(True)
-            #else:
-                #self.hmi.control_rm(instance_id, port_id, callback)
-            #return
+    def web_parameter_midi_learn(self, port, callback):
+        self.host.midi_learn(port, callback)
 
-        #if not loaded:
-            #old = self._pedalboard.parameter_address(instance_id, port_id,
-                                                     #addressing_type,
-                                                     #label,
-                                                     #ctype,
-                                                     #unit,
-                                                     #current_value,
-                                                     #maximum,
-                                                     #minimum,
-                                                     #steps,
-                                                     #hardware_type,
-                                                     #hardware_id,
-                                                     #actuator_type,
-                                                     #actuator_id,
-                                                     #options)
+    def web_preset_load(self, instance, uri, callback):
+        self.host.preset_load(instance, uri, callback)
 
-            #self.host.set(port, "<http://moddevices.com/ns/modpedal#addressing>", '"""' + json.dumps({
-                #'addressing_type': addressing_type,
-                #'label': label,
-                #'ctype': ctype,
-                #'unit': unit,
-                #'maximum': maximum,
-                #'minimum': minimum,
-                #'steps': steps,
-                #'hardware_type': hardware_type,
-                #'hardware_id': hardware_id,
-                #'actuator_type': actuator_type,
-                #'actuator_id': actuator_id,
-                #'options': options,
-            #}) + '"""')
+    def web_set_position(self, instance, x, y, callback):
+        self.host.set_position(instance, x, y, callback)
 
-            #self.hmi.control_add(instance_id,
-                                 #port_id,
-                                 #label,
-                                 #ctype,
-                                 #unit,
-                                 #current_value,
-                                 #maximum,
-                                 #minimum,
-                                 #steps,
-                                 #hardware_type,
-                                 #hardware_id,
-                                 #actuator_type,
-                                 #actuator_id,
-                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 #len(self._pedalboard.addressings[(hardware_type, hardware_id, actuator_type, actuator_id)]['addrs']),
-                                 #options,
-                                 #callback)
-            #if old:
-                #self.parameter_addressing_load(*old)
-        #else:
-        #callback(True)
+    def web_connect(self, port_from, port_to, callback):
+        self.host.connect(port_from, port_to, callback)
 
-    # TODO
-    # parameter_midi_learn
-    # connect
-    # disconnect
-    # preset_load
+    def web_disconnect(self, port_from, port_to, callback):
+        self.host.disconnect(port_from, port_to, callback)
+
+    def websocket_opened(self, ws):
+        self.websockets.append(ws)
+
+        self.host.open_connection_if_needed(self.host_callback)
+        self.host.get("/graph")
+
+    def websocket_closed(self, ws):
+        self.websockets.remove(ws)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK callbacks, called by JACK itself
@@ -483,15 +415,6 @@ class Session(object):
             if "out" in modes:
                 yield gen.Task(add_external_port_out)
 
-    def websocket_opened(self, ws):
-        self.websockets.append(ws)
-
-        self.host.open_connection_if_needed(self.host_callback)
-        self.host.get("/graph")
-
-    def websocket_closed(self, ws):
-        self.websockets.remove(ws)
-
     @gen.engine
     def host_callback(self):
         if self.host_initialized:
@@ -519,34 +442,11 @@ class Session(object):
             if instance in self.instances:
                 self.instances.remove(instance)
 
-        #def plugin_enabled_callback(instance, enabled):
-            #pass
-
-        #def plugin_position_callback(instance, x, y):
-            #pass
-
-        #def port_value_callback(port, value):
-            #pass
-
-        #def port_binding_callback(port, cc):
-            #pass
-
-        #def connection_added_callback(port1, port2):
-            #pass
-
-        #def connection_removed_callback(port1, port2):
-            #pass
-
         self.host.msg_callback = msg_callback
         self.host.saved_callback = saved_callback
         self.host.samplerate_callback = samplerate_callback
         self.host.plugin_added_callback = plugin_added_callback
         self.host.plugin_removed_callback = plugin_removed_callback
-        #self.host.plugin_position_callback = plugin_position_callback
-        #self.host.port_value_callback = port_value_callback
-        #self.host.port_binding_callback = port_binding_callback
-        #self.host.connection_added_callback = connection_added_callback
-        #self.host.connection_removed_callback = connection_removed_callback
 
         yield gen.Task(self.host.initial_setup)
 
@@ -652,78 +552,10 @@ class Session(object):
         #self.recorder.bypass(instance, value)
         self.host.enable(instance, value, callback)
 
-    def connect(self, port_from, port_to, callback):
-        #if not loaded:
-        #    self._pedalboard.connect(port_from, port_to)
-
-        # Cases below happen because we just save instance ID in pedalboard connection structure, not whole string
-        #if not 'system' in port_from and not 'effect' in port_from:
-        #    port_from = "effect_%s" % port_from
-        #if not 'system' in port_to and not 'effect' in port_to:
-        #    port_to = "effect_%s" % port_to
-
-        #if "system" in port_to:
-        #    def cb(result):
-        #        if result:
-        #            if port_to == "system:playback_1":
-        #                self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r, True)
-        #                self._playback_1_connected_ports.append(port_from)
-        #                if self._peakmeter:
-        #                    self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r, True)
-        #            elif port_to == "system:playback_2":
-        #                self.connect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r, True)
-        #                self._playback_2_connected_ports.append(port_from)
-        #                if self._peakmeter:
-        #                    self.connect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r, True)
-        #        callback(result)
-        #else:
-        #    cb = callback
-
-        self.host.connect(port_from, port_to, callback)
-
     def format_port(self, port):
         if not 'system' in port and not 'effect' in port:
             port = "effect_%s" % port
         return port
-
-    def disconnect(self, port_from, port_to, callback):
-        """if not loaded:
-            self._pedalboard.disconnect(port_from, port_to)
-
-        port_from = self.format_port(port_from)
-        port_to = self.format_port(port_to)
-
-        if "system" in port_to:
-
-            def cb(result):
-                if result:
-                    if port_to == "system:playback_1":
-                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_L), lambda r: r, True)
-                        if self._peakmeter:
-                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_L), lambda r: r, True)
-                        try:
-                            self._playback_1_connected_ports.remove(port_from)
-                        except ValueError:
-                            pass
-                    elif port_to == "system:playback_2":
-                        self.disconnect(port_from, "effect_%d:%s" % (CLIPMETER_OUT, CLIPMETER_R), lambda r: r, True)
-                        if self._peakmeter:
-                            self.disconnect(port_from, "effect_%d:%s" % (PEAKMETER_OUT, PEAKMETER_R), lambda r: r, True)
-                        try:
-                            self._playback_2_connected_ports.remove(port_from)
-                        except ValueError:
-                            pass
-                callback(result)
-        else:
-            cb = callback
-        """
-        self.host.disconnect(port_from, port_to, callback)
-
-    def preset_load(self, instance_id, uri, callback):
-        self.host.preset_load(instance_id, uri, callback)
-
-    def parameter_midi_learn(self, port, callback):
-        self.host.midi_learn(port, callback)
 
     #def set_monitor(self, addr, port, status, callback):
         #self.host.monitor(addr, port, status, callback)
@@ -768,9 +600,6 @@ class Session(object):
 
     def ping(self, callback):
         self.hmi.ping(callback)
-
-    def effect_position(self, instance, x, y):
-        self.host.set_position(instance, x, y)
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)

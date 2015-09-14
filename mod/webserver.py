@@ -415,6 +415,7 @@ class EffectGet(web.RequestHandler):
         try:
             data = get_plugin_info(uri)
         except:
+            print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
             raise web.HTTPError(404)
 
         self.set_header('Content-type', 'application/json')
@@ -425,28 +426,16 @@ class EffectConnect(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port_from, port_to):
-        response = yield gen.Task(SESSION.connect, port_from, port_to)
-        if self.request.connection.stream.closed():
-            return
-        self.write(json.dumps(response))
+        resp = yield gen.Task(SESSION.web_connect, port_from, port_to)
+        self.write(json.dumps(resp))
         self.finish()
 
 class EffectDisconnect(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port_from, port_to):
-        response = yield gen.Task(SESSION.disconnect, port_from, port_to)
-        if self.request.connection.stream.closed():
-            return
-        self.write(json.dumps(response))
-        self.finish()
-
-class EffectPresetLoad(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, instance):
-        response = yield gen.Task(SESSION.preset_load, instance, self.get_argument('uri'))
-        self.write(json.dumps(response))
+        resp = yield gen.Task(SESSION.web_disconnect, port_from, port_to)
+        self.write(json.dumps(resp))
         self.finish()
 
 class EffectParameterSet(web.RequestHandler):
@@ -454,14 +443,6 @@ class EffectParameterSet(web.RequestHandler):
     @gen.engine
     def get(self, port):
         resp = yield gen.Task(SESSION.web_parameter_set, port, float(self.get_argument('value')))
-        self.write(json.dumps(resp))
-        self.finish()
-
-class EffectParameterMidiLearn(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, port):
-        resp = yield gen.Task(SESSION.parameter_midi_learn, port)
         self.write(json.dumps(resp))
         self.finish()
 
@@ -498,27 +479,32 @@ class EffectParameterAddress(web.RequestHandler):
         self.write(json.dumps(resp))
         self.finish()
 
-#class EffectBypassAddress(web.RequestHandler):
-    #@web.asynchronous
-    #@gen.engine
-    #def get(self, instance, hwtype, hwid, actype, acid, value, label):
-        #res = yield gen.Task(SESSION.parameter_address, instance, ":bypass", 'switch', label, 6, "none",
-                            #int(value), 1, 0, 0, int(hwtype), int(hwid), int(actype), int(acid), [])
+class EffectParameterMidiLearn(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, port):
+        resp = yield gen.Task(SESSION.web_parameter_midi_learn, port)
+        self.write(json.dumps(resp))
+        self.finish()
 
-        ## TODO: get value when unaddressing
-        #self.write(json.dumps({ 'ok': res, 'value': False }))
-        #self.finish()
+class EffectPresetLoad(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        uri  = self.get_argument('uri')
+        resp = yield gen.Task(SESSION.web_preset_load, instance, uri)
+        self.write(json.dumps(resp))
+        self.finish()
 
-#class EffectParameterGet(web.RequestHandler):
-    #@web.asynchronous
-    #@gen.engine
-    #def get(self, port, parameter):
-        #response = yield gen.Task(SESSION.parameter_get,
-                                  #port,
-                                  #parameter)
-        #self.set_header('Content-Type', 'application/json')
-        #self.write(json.dumps(response))
-        #self.finish()
+class EffectPosition(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        x    = int(float(self.get_argument('x')))
+        y    = int(float(self.get_argument('y')))
+        resp = yield gen.Task(SESSION.web_set_position, instance, x, y)
+        self.write(json.dumps(resp))
+        self.finish()
 
 class AtomWebSocket(websocket.WebSocketHandler):
     def open(self):
@@ -528,14 +514,6 @@ class AtomWebSocket(websocket.WebSocketHandler):
     def on_close(self):
         print("atom websocket close")
         SESSION.websocket_closed(self)
-
-class EffectPosition(web.RequestHandler):
-    def get(self, instance):
-        x = int(float(self.get_argument('x')))
-        y = int(float(self.get_argument('y')))
-        SESSION.effect_position(instance, x, y)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
 
 class PackageEffectList(web.RequestHandler):
     def get(self, bundle):
@@ -904,7 +882,7 @@ class TemplateHandler(web.RequestHandler):
             'version': self.get_argument('v'),
             'bundlepath': json.dumps(SESSION.bundlepath),
             'title': json.dumps(SESSION.title),
-            'title2': SESSION.title or "Untitled",
+            'fulltitle': SESSION.title or "Untitled",
         }
         return context
 
@@ -1202,28 +1180,37 @@ application = web.Application(
 
             (r"/resources/(.*)", EffectResource),
 
+            # plugin management
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/get/?", EffectGet),
             (r"/effect/bulk/?", EffectBulk),
             (r"/effect/list", EffectList),
-            (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
-            (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
-            (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
+
+            # plugin parameters
             (r"/effect/parameter/set/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterSet),
             (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
             (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
-            #(r"/effect/parameter/get/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterGet),
-            #(r"/effect/bypass/address/*(/[A-Za-z0-9_/]+),([0-9-]+),([0-9-]+),([0-9-]+),([0-9-]+),([01]),(.*)", EffectBypassAddress),
+
+            # plugin presets
+            (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
+
+            # misc plugin stuff
+            (r"/effect/position/*(/[A-Za-z0-9_/]+[^/])/?", EffectPosition),
+
+            # plugin resources
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
             (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/gui.js", EffectJavascript),
-            (r"/effect/position/*(/[A-Za-z0-9_/]+[^/])/?", EffectPosition),
-            #(r"/effect/set/(release)/?", EffectSetLocalVariable),
+
+            # connections
+            (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
+            (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
 
             (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
 
+            # pedalboard stuff
             (r"/pedalboard/list", PedalboardList),
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
@@ -1233,6 +1220,7 @@ application = web.Application(
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
 
+            # bank stuff
             (r"/banks/?", BankLoad),
             (r"/banks/save/?", BankSave),
 
