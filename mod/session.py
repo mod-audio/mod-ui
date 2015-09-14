@@ -28,6 +28,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
+                          INGEN_AUTOCONNECT,
                           INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
                           INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
@@ -101,7 +102,9 @@ class Session(object):
 
         self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
-        self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
+
+        if INGEN_AUTOCONNECT:
+            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
 
     def __del__(self):
         if self.jack_client is None:
@@ -137,11 +140,10 @@ class Session(object):
         for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
             jacklib.connect(self.jack_client,"%s:audio_port_%i_out" % (SESSION.backend_client_name, i), "system:playback_%i" % i)
 
-        #for i in range(1, INGEN_NUM_MIDI_INS+1):
-            #jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:midi_port_%i_in" % (SESSION.backend_client_name, i))
-
-        #for i in range(1, INGEN_NUM_MIDI_OUTS+1):
-            #jacklib.connect(self.jack_client,"%s:midi_port_%i_out" % (SESSION.backend_client_name, i), "system:playback_%i" % i)
+        if not DEV_HMI:
+            # this means we're using HMI, so very likely running MOD hardware
+            jacklib.connect(self.jack_client, "alsa_midi:ttymidi MIDI out in", "%s:midi_port_1_in" % SESSION.backend_client_name)
+            jacklib.connect(self.jack_client, "%s:midi_port_1_out" % SESSION.backend_client_name, "alsa_midi:ttymidi MIDI in out")
 
     def init_jack(self):
         self.jack_client = jacklib.client_open("%s-helper" % self.backend_client_name, jacklib.JackNoStartServer, None)
