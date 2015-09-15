@@ -556,7 +556,11 @@ class Session(object):
         def remove_all_plugins(ok):
             remove_next_plugin(True)
 
-        self.hmi.clear(remove_all_plugins)
+        if self.hmi_initialized:
+            self.hmi.clear(remove_all_plugins)
+        else:
+            remove_next_plugin(True)
+
         self.pedalboard_changed_callback(True, "", "")
 
     #def setup_monitor(self):
