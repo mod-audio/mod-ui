@@ -54,7 +54,6 @@ from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
 from mod.bank import save_banks
-from mod.hardware import get_hardware
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
@@ -810,7 +809,7 @@ class BankSave(web.RequestHandler):
 
 class HardwareLoad(web.RequestHandler):
     def get(self):
-        hardware = get_hardware()
+        hardware = SESSION.get_hardware()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(hardware))
 
@@ -870,7 +869,7 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': b64encode(json.dumps(get_hardware()).encode("utf-8")),
+            'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',

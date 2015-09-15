@@ -35,6 +35,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
 from mod import symbolify
 from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
+from mod.hardware import get_hardware
 from mod.hmi import HMI
 from mod.ingen import Host
 from mod.lv2 import add_bundle_to_lilv_world
@@ -119,6 +120,11 @@ class Session(object):
         jacklib.client_close(self.jack_client)
         self.jack_client = None
         print("jacklib client deactivated")
+
+    def get_hardware(self):
+        if self.addressings is None:
+            return {}
+        return get_hardware()
 
     # -----------------------------------------------------------------------------------------------------------------
     # App utilities, needed only for mod-app
