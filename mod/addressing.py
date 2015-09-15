@@ -218,8 +218,8 @@ class Addressing(object):
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
-        #if hardware_type == HARDWARE_TYPE_MOD:
-            #hardware_type = HARDWARE_TYPE_CUSTOM
+        if hardware_type == HARDWARE_TYPE_MOD:
+            hardware_type = HARDWARE_TYPE_CUSTOM
         actuator = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator, callback)
 

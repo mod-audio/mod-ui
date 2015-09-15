@@ -171,7 +171,7 @@ class Accel(Hardware):
         return "%s: %s" % (self.name, actuator.name)
 
 class Custom(Hardware):
-    HW_TYP = 0
+    HW_TYP = 4
 
     def __init__(self, id, info):
         actuators = []
