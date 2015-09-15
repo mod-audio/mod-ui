@@ -977,7 +977,7 @@ class SysMonProcessList(web.RequestHandler):
 
 class JackGetMidiDevices(web.RequestHandler):
     def get(self):
-        devsInUse, devList = SESSION.get_midi_device_list()
+        devsInUse, devList = SESSION.web_get_midi_device_list()
         self.write(json.dumps({
             "devsInUse": devsInUse,
             "devList"  : devList
@@ -989,7 +989,7 @@ class JackSetMidiDevices(web.RequestHandler):
     @gen.engine
     def post(self):
         devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        SESSION.set_midi_devices(devs)
+        SESSION.web_set_midi_devices(devs)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
 

@@ -202,12 +202,16 @@ class Session(object):
     # These will be called as a reponse to an action in the browser.
     # A callback must always be used unless specified otherwise.
 
+    # Add a new plugin, starts enabled (ie, not bypassed)
     def web_add(self, instance, uri, x, y, callback):
         self.host.add_plugin(instance, uri, True, x, y, callback)
 
+    # Remove a plugin
     def web_remove(self, instance, callback):
         self.host.remove_plugin(instance, callback)
 
+    # Set a plugin parameter
+    # We use ":bypass" symbol for on/off state
     def web_parameter_set(self, port, value, callback):
         instance, port2 = port.rsplit("/",1)
 
@@ -219,6 +223,7 @@ class Session(object):
 
         #self.recorder.parameter(port, value)
 
+    # Address a plugin parameter
     def web_parameter_address(self, port, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
                               actuator, options, callback):
         if self.addressings is None or not self.hmi_initialized:
@@ -229,27 +234,85 @@ class Session(object):
         self.addressings.address(instance, port2, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
                                  actuator, options, callback)
 
+    # Set a parameter for MIDI learn
     def web_parameter_midi_learn(self, port, callback):
         self.host.midi_learn(port, callback)
 
+    # Load a plugin preset
     def web_preset_load(self, instance, uri, callback):
         self.host.preset_load(instance, uri, callback)
 
+    # Set a plugin block position within the canvas
     def web_set_position(self, instance, x, y, callback):
         self.host.set_position(instance, x, y, callback)
 
+    # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
         self.host.connect(port_from, port_to, callback)
 
+    # Disconnect 2 ports
     def web_disconnect(self, port_from, port_to, callback):
         self.host.disconnect(port_from, port_to, callback)
 
+    # Get list of Hardware MIDI devices
+    # returns (devsInUse, devList)
+    def web_get_midi_device_list(self):
+        return self.get_midi_ports(self.backend_client_name), self.get_midi_ports("alsa_midi")
+
+    # Set the selected MIDI devices to @a newDevs
+    # Will remove or add new JACK ports as needed
+    @gen.engine
+    def web_set_midi_devices(self, newDevs):
+        curDevs = self.get_midi_ports(self.backend_client_name)
+
+        # remove
+        for dev in curDevs:
+            if dev in newDevs:
+                continue
+            if dev.startswith("MIDI Port-"):
+                continue
+            dev, modes = dev.rsplit(" (",1)
+            jacklib.disconnect(self.jack_client, "alsa_midi:%s in" % dev, self.backend_client_name+":control_in")
+
+            def remove_external_port_in(callback):
+                self.host.remove_external_port(dev+" in")
+                callback(True)
+            def remove_external_port_out(callback):
+                self.host.remove_external_port(dev+" out")
+                callback(True)
+
+            yield gen.Task(remove_external_port_in)
+
+            if "out" in modes:
+                yield gen.Task(remove_external_port_out)
+
+        # add
+        for dev in newDevs:
+            if dev in curDevs:
+                continue
+            dev, modes = dev.rsplit(" (",1)
+
+            def add_external_port_in(callback):
+                self.host.add_external_port(dev+" in", "Input", "MIDI")
+                callback(True)
+            def add_external_port_out(callback):
+                self.host.add_external_port(dev+" out", "Output", "MIDI")
+                callback(True)
+
+            yield gen.Task(add_external_port_in)
+
+            if "out" in modes:
+                yield gen.Task(add_external_port_out)
+
+    # A new webbrowser page has been open
+    # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws):
         self.websockets.append(ws)
 
         self.host.open_connection_if_needed(self.host_callback)
         self.host.get("/graph")
 
+    # Webbrowser page closed
     def websocket_closed(self, ws):
         self.websockets.remove(ws)
 
@@ -392,52 +455,6 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
-
-    def get_midi_device_list(self):
-        return self.get_midi_ports(self.backend_client_name), self.get_midi_ports("alsa_midi")
-
-    @gen.engine
-    def set_midi_devices(self, newDevs):
-        curDevs = self.get_ports(self.backend_client_name)
-
-        # remove
-        for dev in curDevs:
-            if dev in newDevs:
-                continue
-            if dev.startswith("MIDI Port-"):
-                continue
-            dev, modes = dev.rsplit(" (",1)
-            jacklib.disconnect(self.jack_client, "alsa_midi:%s in" % dev, self.backend_client_name+":control_in")
-
-            def remove_external_port_in(callback):
-                self.host.remove_external_port(dev+" in")
-                callback(True)
-            def remove_external_port_out(callback):
-                self.host.remove_external_port(dev+" out")
-                callback(True)
-
-            yield gen.Task(remove_external_port_in)
-
-            if "out" in modes:
-                yield gen.Task(remove_external_port_out)
-
-        # add
-        for dev in newDevs:
-            if dev in curDevs:
-                continue
-            dev, modes = dev.rsplit(" (",1)
-
-            def add_external_port_in(callback):
-                self.host.add_external_port(dev+" in", "Input", "MIDI")
-                callback(True)
-            def add_external_port_out(callback):
-                self.host.add_external_port(dev+" out", "Output", "MIDI")
-                callback(True)
-
-            yield gen.Task(add_external_port_in)
-
-            if "out" in modes:
-                yield gen.Task(add_external_port_out)
 
     @gen.engine
     def host_callback(self):
