@@ -110,6 +110,9 @@ class Addressing(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    # Init our ingen host class
+    # This is only called when the HMI responds to our initial ping (and it's thus initialized)
+    # The reason for this being a separate init function is because we don't need it when HMI is off
     def init_host(self):
         # We need our own host instance so that messages get propagated correctly by ingen
         # Later on this code will be a separate application so it all fits anyway
