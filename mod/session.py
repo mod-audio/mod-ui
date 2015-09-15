@@ -183,6 +183,9 @@ class Session(object):
         self.hmi_initialized = True
         self.hmi.clear()
 
+        if self.addressings is not None:
+            self.addressings.init_host()
+
     # -----------------------------------------------------------------------------------------------------------------
     # Timers (start and stop in sync with webserver IOLoop)
 

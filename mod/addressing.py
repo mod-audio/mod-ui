@@ -87,11 +87,30 @@ class InstanceIdMapper(object):
 # class that saves the current addressing state
 class Addressing(object):
     def __init__(self, hmi):
-        self.hmi = hmi
+        self.host = None
+        self.hmi  = hmi
         self.mapper = InstanceIdMapper()
         self.instances = {}
         self._init_addressings()
 
+        # Register HMI protocol callbacks
+        #Protocol.register_cmd_callback("banks", self.hmi_list_banks)
+        #Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
+        Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
+        Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
+        Protocol.register_cmd_callback("control_get", self.hmi_parameter_get)
+        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
+        Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
+        #Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
+        #Protocol.register_cmd_callback("tuner", self.tuner_set)
+        #Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
+        #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
+        #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
+        #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def init_host(self):
         # We need our own host instance so that messages get propagated correctly by ingen
         # Later on this code will be a separate application so it all fits anyway
         self.host = Host(os.getenv("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
@@ -112,22 +131,6 @@ class Addressing(object):
         self.host.plugin_added_callback = plugin_added_callback
         self.host.plugin_removed_callback = plugin_removed_callback
         self.host.port_value_callback = port_value_callback
-
-        # Register HMI protocol callbacks
-
-        #Protocol.register_cmd_callback("banks", self.hmi_list_banks)
-        #Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
-        Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
-        Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
-        Protocol.register_cmd_callback("control_get", self.hmi_parameter_get)
-        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
-        Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
-        #Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
-        #Protocol.register_cmd_callback("tuner", self.tuner_set)
-        #Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
-        #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
-        #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
-        #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -211,10 +214,13 @@ class Addressing(object):
 
         if port == ":bypass":
             self._set_bypassed(instance, bool(value))
-            self.host.enable(instance, not value, callback)
+            if self.host is not None:
+                self.host.enable(instance, not value, callback)
+
         else:
             self._set_value(instance, port, value)
-            self.host.param_set("%s/%s" % (instance, port), value, callback)
+            if self.host is not None:
+                self.host.param_set("%s/%s" % (instance, port), value, callback)
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
