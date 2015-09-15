@@ -135,6 +135,69 @@ class Addressing(object):
         self.host.plugin_removed_callback = plugin_removed_callback
         self.host.port_value_callback = port_value_callback
 
+        self.host.get("/graph")
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def _add_instance(self, instance, uri, bypassed):
+        instance_id = self.mapper.get_id(instance)
+
+        self.instances[instance] = {
+              'id': instance_id,
+              'instance': instance,
+              'uri': uri,
+              'bypassed': bypassed,
+              'addressing': {}, # symbol: addressing
+              'ports': {},      # symbol: value
+        }
+        logging.info('[addressing] Added instance %s' % instance)
+
+    def _remove_instance(self, instance):
+        instance_id = self.mapper.get_id(instance)
+
+        # Remove the instance
+        try:
+            self.instances.pop(instance)
+        except KeyError:
+            logging.error('[addressing] Cannot remove unknown instance %s' % instance)
+
+        # Remove addressings of that instance
+        affected_actuators = {}
+        for actuator, addressing in self.addressings.items():
+            i = 0
+            while i < len(addressing['addrs']):
+                if addressing['addrs'][i].get('instance_id') == instance_id:
+                    addressing['addrs'].pop(i)
+                    if addressing['idx'] >= i:
+                        addressing['idx'] -= 1
+                    affected_actuators[actuator] = addressing['idx']
+                else:
+                    i += 1
+
+        self.hmi.control_rm(instance_id, ":all")
+        #for addr in affected_actuators:
+            #self.parameter_addressing_load(*addr)
+
+        logging.info('[addressing] Removed instance %s' % instance)
+        #return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
+
+    def _set_bypassed(self, instance, bypassed):
+        data = self.instances.get(instance, None)
+        if data is None:
+            return
+        data['bypassed'] = bypassed
+
+    def _set_value(self, instance, port, value):
+        data = self.instances.get(instance, None)
+        if data is None:
+            return
+        data['ports'][port] = value
+
+        addr = data['addressing'].get(port, None)
+        if addr is None:
+            return
+        addr['value'] = value
+
     # -----------------------------------------------------------------------------------------------------------------
 
     """
@@ -323,69 +386,6 @@ class Addressing(object):
         # the 'key' is a hardware identifier, meaning a button, knob, etc
         hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist ])
         self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
-
-    # -----------------------------------------------------------------------------------------------------------------
-
-    def _add_instance(self, instance, uri, bypassed):
-        instance_id = self.mapper.get_id(instance)
-
-        self.instances[instance] = {
-              'id': instance_id,
-              'instance': instance,
-              'uri': uri,
-              'bypassed': bypassed,
-              'addressing': {}, # symbol: addressing
-              'ports': {},      # symbol: value
-        }
-        logging.info('[addressing] Added instance %s' % instance)
-
-    def _remove_instance(self, instance):
-        instance_id = self.mapper.get_id(instance)
-
-        # Remove the instance
-        try:
-            self.instances.pop(instance)
-        except KeyError:
-            logging.error('[addressing] Cannot remove unknown instance %s' % instance)
-
-        # Remove addressings of that instance
-        affected_actuators = {}
-        for actuator, addressing in self.addressings.items():
-            i = 0
-            while i < len(addressing['addrs']):
-                if addressing['addrs'][i].get('instance_id') == instance_id:
-                    addressing['addrs'].pop(i)
-                    if addressing['idx'] >= i:
-                        addressing['idx'] -= 1
-                    affected_actuators[actuator] = addressing['idx']
-                else:
-                    i += 1
-
-        self.hmi.control_rm(instance_id, ":all")
-        #for addr in affected_actuators:
-            #self.parameter_addressing_load(*addr)
-
-        logging.info('[addressing] Removed instance %s' % instance)
-        #return [ list(act) + [idx] for act, idx in affected_actuators.items() ]
-
-    # -----------------------------------------------------------------------------------------------------------------
-
-    def _set_bypassed(self, instance, bypassed):
-        data = self.instances.get(instance, None)
-        if data is None:
-            return
-        data['bypassed'] = bypassed
-
-    def _set_value(self, instance, port, value):
-        data = self.instances.get(instance, None)
-        if data is None:
-            return
-        data['ports'][port] = value
-
-        addr = data['addressing'].get(port, None)
-        if addr is None:
-            return
-        addr['value'] = value
 
     # -----------------------------------------------------------------------------------------------------------------
 
