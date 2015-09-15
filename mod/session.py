@@ -59,6 +59,7 @@ class Session(object):
 
         self.monitor_server = None
         self.current_bank = None
+        self.hmi_initialized = False
 
         # JACK client name of the backend
         self.backend_client_name = "ingen"
@@ -79,18 +80,20 @@ class Session(object):
         self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
 
         # Try to open real HMI
-        if not DEV_HMI:
-            self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
-            # If all ok, use addressings
-            if self.hmi.sp is not None:
-                self.addressings = Addressing(self.hmi)
-            # Not ok, disable HMI entirely
-            else:
-                DEV_HMI = True
+        hmiOpened = False
 
-        # Failed or just disabled
-        if DEV_HMI:
-            self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
+        if not DEV_HMI:
+            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
+            hmiOpened = self.hmi.sp is not None
+
+        print("Using HMI =>", hmiOpened)
+
+        if hmiOpened:
+            # If all ok, use addressings
+            self.addressings = Addressing(self.hmi)
+        else:
+            # Otherwise disable HMI entirely
+            self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
             self.addressings = None
 
         self.recorder = Recorder()
@@ -175,8 +178,9 @@ class Session(object):
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
 
-    def hmi_initialized(self):
+    def hmi_initialized_cb(self):
         logging.info("hmi initialized")
+        self.hmi_initialized = True
         self.hmi.clear()
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -214,7 +218,7 @@ class Session(object):
 
     def web_parameter_address(self, port, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
                               actuator, options, callback):
-        if self.addressings is None:
+        if self.addressings is None or not self.hmi_initialized:
             callback(False)
             return
 

@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from datetime import timedelta
 from tornado.iostream import BaseIOStream
 from tornado import ioloop
 
@@ -64,10 +65,17 @@ class HMI(object):
             print("ERROR: Failed to open HMI serial port, error was:\n%s" % e)
             return
 
-        self.ioloop.add_callback(self.checker)
-        self.ioloop.add_callback(callback)
-
         self.sp = SerialIOStream(sp)
+
+        # calls ping until ok is received
+        def ping_callback(ok):
+            if ok:
+                callback(True)
+            else:
+                self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
+
+        self.ioloop.add_callback(self.checker)
+        self.ioloop.add_callback(lambda:self.ping(ping_callback))
 
     def checker(self, data=None):
         if data is not None:

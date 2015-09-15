@@ -70,12 +70,6 @@ def check_environment(callback):
         model = re.search('^[A-Z]+').group()
         open(DEVICE_MODEL, 'w').write(model)
 
-    # calls ping until ok is received
-    def ping_callback(ok):
-        if not ok:
-            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), lambda:SESSION.ping(ping_callback))
-    SESSION.ping(ping_callback)
-
 def symbolify(name):
     name = re.sub("[^_a-zA-Z0-9]+", "_", name)
     if name[0].isdigit():
