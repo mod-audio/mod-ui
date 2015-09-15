@@ -339,6 +339,8 @@ function HardwareManager(options) {
                     // Set the returned value in GUI
                     //gui.setPortValue(symbol, result.value)
                 }
+            } else {
+                console.log("Addressing failed for port " + port.symbol)
             }
             callback(ok)
         })

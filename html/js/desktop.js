@@ -173,39 +173,21 @@ function Desktop(elements) {
     this.hardwareManager = new HardwareManager({
         address: function (instance, symbol, addressing, callback) {
             addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
-            /*if (symbol == ':bypass') {
-                var uri = instance
-                uri += ',' + addressing.actuator.join(',')
-                uri += ',' + (addressing.value ? 1 : 0)
-                uri += ',' + addressing.label
-                $.ajax({
-                    url: '/effect/bypass/address/' + uri,
-                    success: function (resp) {
-                        callback(resp)
-                    },
-                    error: function () {
-                        new Bug("Couldn't address bypass")
-                        callback(false)
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            } else*/ {
-                $.ajax({
-                    url: '/effect/parameter/address/' + instance + "/" + symbol,
-                    type: 'POST',
-                    data: JSON.stringify(addressing),
-                    success: function (resp) {
-                        callback(resp)
-                    },
-                    error: function () {
-                        new Bug("Couldn't address parameter")
-                        callback(false)
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            }
+
+            $.ajax({
+                url: '/effect/parameter/address/' + instance + "/" + symbol,
+                type: 'POST',
+                data: JSON.stringify(addressing),
+                success: function (resp) {
+                    callback(resp)
+                },
+                error: function () {
+                    new Bug("Couldn't address parameter")
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json'
+            })
         },
         getGui: function (instance) {
             return self.pedalboard.pedalboard('getGui', instance)
