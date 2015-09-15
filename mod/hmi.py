@@ -70,7 +70,7 @@ class HMI(object):
         # calls ping until ok is received
         def ping_callback(ok):
             if ok:
-                callback(True)
+                callback()
             else:
                 self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
 

@@ -135,6 +135,9 @@ class Addressing(object):
         self.host.plugin_removed_callback = plugin_removed_callback
         self.host.port_value_callback = port_value_callback
 
+        self.host.open_connection_if_needed(self.host_callback)
+
+    def host_callback(self):
         self.host.get("/graph")
 
     # -----------------------------------------------------------------------------------------------------------------
