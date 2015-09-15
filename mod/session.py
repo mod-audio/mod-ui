@@ -304,6 +304,10 @@ class Session(object):
             if "out" in modes:
                 yield gen.Task(add_external_port_out)
 
+    # Send a ping to HMI
+    def web_ping_hmi(self, callback):
+        self.hmi.ping(callback)
+
     # A new webbrowser page has been open
     # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws):
@@ -642,9 +646,6 @@ class Session(object):
          - 3: Pedalboard down
         """
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
-
-    def ping(self, callback):
-        self.hmi.ping(callback)
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)

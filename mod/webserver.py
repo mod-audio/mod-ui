@@ -388,15 +388,20 @@ class EffectAdd(web.RequestHandler):
         x   = self.request.arguments.get('x', [0])[0]
         y   = self.request.arguments.get('y', [0])[0]
 
-        try:
-            data = get_plugin_info(uri)
-        except:
-            raise web.HTTPError(404)
-
         resp = yield gen.Task(SESSION.web_add, instance, uri, x, y)
 
         self.set_header('Content-type', 'application/json')
-        self.write(json.dumps(data if resp >= 0 else False))
+
+        if resp >= 0:
+            try:
+                data = get_plugin_info(uri)
+            except:
+                print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
+                raise web.HTTPError(404)
+            self.write(json.dumps(data))
+        else:
+            self.write(json.dumps(False))
+
         self.finish()
 
 class EffectRemove(web.RequestHandler):
@@ -947,8 +952,8 @@ class Ping(web.RequestHandler):
     def get(self):
         start = time.time()
         ihm = 0
-        #if SESSION.pedalboard_initialized:
-        #   ihm = yield gen.Task(SESSION.ping)
+        if SESSION.hmi_initialized:
+            ihm = yield gen.Task(SESSION.web_ping_hmi)
         res = {
             'ihm_online': ihm,
             'ihm_time': int((time.time() - start) * 1000),
