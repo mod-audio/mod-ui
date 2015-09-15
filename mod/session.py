@@ -77,14 +77,20 @@ class Session(object):
         self.ioloop = ioloop.IOLoop.instance()
         self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
 
+        # Try to open real HMI
+        if not DEV_HMI:
+            self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
+            # If all ok, use addressings
+            if self.hmi.sp is not None:
+                self.addressings = Addressing(self.hmi)
+            # Not ok, disable HMI entirely
+            else:
+                DEV_HMI = True
+
+        # Failed or just disabled
         if DEV_HMI:
-            # Fake, development only
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
             self.addressings = None
-        else:
-            # Real HMI
-            self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
-            self.addressings = Addressing(self.hmi)
 
         self.recorder = Recorder()
         self.player = Player()
