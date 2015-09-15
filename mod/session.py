@@ -45,14 +45,8 @@ from mod.tuner import NOTES, FREQS, find_freqnotecents
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
 # TODO stuff:
-# - receive bypass command from ingen
-# - document _pedal_changed_callback
 # - ingen command to remove all plugins?
 # - callback for loaded graph?
-
-# create a real or fake class according to 'fake'
-def factory(realClass, fakeClass, fake, *args, **kwargs):
-    return fakeClass(*args, **kwargs) if fake else realClass(*args, **kwargs)
 
 class Session(object):
     def __init__(self):
@@ -82,9 +76,15 @@ class Session(object):
 
         self.ioloop = ioloop.IOLoop.instance()
         self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
-        self.hmi = factory(HMI, FakeHMI, DEV_HMI, HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
 
-        self.addressings = Addressing(self.hmi)
+        if DEV_HMI:
+            # Fake, development only
+            self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
+            self.addressings = None
+        else:
+            # Real HMI
+            self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized)
+            self.addressings = Addressing(self.hmi)
 
         self.recorder = Recorder()
         self.player = Player()
@@ -200,10 +200,13 @@ class Session(object):
 
         #self.recorder.parameter(port, value)
 
-    def web_parameter_address(self, port, addressing_type,
-                              label, ctype, unit, value, maximum, minimum, steps, actuator, options, callback):
-        instance, port2 = port.rsplit("/",1)
+    def web_parameter_address(self, port, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
+                              actuator, options, callback):
+        if self.addressings is None:
+            callback(False)
+            return
 
+        instance, port2 = port.rsplit("/",1)
         self.addressings.address(instance, port2, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
                                  actuator, options, callback)
 
