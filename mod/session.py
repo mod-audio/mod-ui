@@ -647,8 +647,8 @@ class Session(object):
         """
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
-    def pedalboard_size(self, width, height):
-        self.host.set_pedalboard_size(width, height)
+    def pedalboard_size(self, width, height, callback):
+        self.host.set_pedalboard_size(width, height, callback)
 
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)

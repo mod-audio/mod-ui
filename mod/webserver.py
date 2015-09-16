@@ -748,12 +748,14 @@ class PedalboardScreenshot(web.RequestHandler):
         self.finish()
 
 class PedalboardSize(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
     def get(self):
-        width = int(self.get_argument('width'))
+        width  = int(self.get_argument('width'))
         height = int(self.get_argument('height'))
-        SESSION.pedalboard_size(width, height)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        resp = yield gen.Task(SESSION.pedalboard_size, width, height)
+        self.write(json.dumps(resp))
+        self.finish()
 
 class PedalboardImage(web.RequestHandler):
     def get(self, image):
