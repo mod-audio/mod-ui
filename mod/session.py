@@ -533,8 +533,8 @@ class Session(object):
                 self.bundlepath = None
                 self.title      = None
 
-            callback(ok)
             self.pedalboard_changed_callback(ok, bundlepath, title)
+            callback(ok)
 
         self.host.set_pedalboard_name(title, step1)
 
@@ -630,12 +630,6 @@ class Session(object):
 
     def end_session(self, callback):
         self.hmi.ui_dis(callback)
-
-    #def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
-                       #callback, loaded=False):
-        #self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
-                               #1, 0, 0, hardware_type, hardware_id, actuator_type,
-                               #actuator_id, [], callback, loaded)
 
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
