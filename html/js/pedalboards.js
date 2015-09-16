@@ -345,7 +345,10 @@ JqueryClass('bankBox', {
 
     extractPedalboardData: function (pedalboard) {
         var data = $.extend({
-            'id': pedalboard['_id']
+            id   : pedalboard._id,
+            image: "/pedalboard/image/screenshot.png"
+                 + "?bundlepath=" + escape(pedalboard.bundle)
+                 + "&tstamp=" + pedalboard.metadata.tstamp
         }, pedalboard.metadata)
         data.footswitches = [0, 0, 0, 0]
         if (!pedalboard.instances)
@@ -547,7 +550,6 @@ JqueryClass('bankBox', {
 
     renderPedalboard: function (pedalboardData) {
         var self = $(this)
-        var template = TEMPLATES.bank_pedalboard
         var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, pedalboardData))
 
         // TODO is this necessary?

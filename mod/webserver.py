@@ -799,6 +799,7 @@ class BankLoad(web.RequestHandler):
         for bank in banks:
             pedalboards = []
             for pedalboard in bank['pedalboards']:
+                continue
                 try:
                     #full_pedalboard = open(os.path.join(PEDALBOARD__DIR, pedalboard['id'])).read()
                     TODO
