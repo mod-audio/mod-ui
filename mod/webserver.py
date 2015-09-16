@@ -62,6 +62,30 @@ from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
 from mod import register
 from mod import check_environment
 
+# Global fake timestamp used for pedalboard thumbnails
+# FIXME - use real timestamp
+global fake_tstamp
+fake_tstamp = 0
+
+# Formats the pedalboard in a way that the javascript side understands
+def format_pedalboard(pedal):
+    global fake_tstamp
+    fake_tstamp += 1
+
+    return {
+        'instances'  : {},
+        'connections': [],
+        'metadata'   : {
+            'title'    : pedal['name'],
+            'thumbnail': pedal['thumbnail'],
+            'tstamp'   : fake_tstamp,
+        },
+        'uri'   : pedal['uri'],
+        'bundle': pedal['bundlepath'],
+        'width' : pedal['width'],
+        'height': pedal['height']
+    }
+
 class SimpleFileReceiver(web.RequestHandler):
     @property
     def download_tmp_dir(self):
@@ -536,30 +560,13 @@ class PackageUninstall(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
-global fake_tstamp
-fake_tstamp = 0
-
 class PedalboardList(web.RequestHandler):
     def get(self):
         result = []
 
-        global fake_tstamp
-        fake_tstamp += 1
+        for pedal in get_pedalboards(False):
+            result.append(format_pedalboard(pedal))
 
-        for pedal in get_pedalboards():
-            result.append({
-                'instances'  : {},
-                'connections': [],
-                'metadata'   : {
-                    'title'    : pedal['name'],
-                    'thumbnail': pedal['thumbnail'],
-                    'tstamp'   : fake_tstamp,
-                },
-                'uri'   : pedal['uri'],
-                'bundle': pedal['bundlepath'],
-                'width' : pedal['width'],
-                'height': pedal['height']
-            })
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
 
@@ -790,29 +797,28 @@ class DashboardDisconnect(web.RequestHandler):
 class BankLoad(web.RequestHandler):
     def get(self):
         self.set_header('Content-Type', 'application/json')
-        try:
-            banks = open(BANKS_JSON_FILE).read()
-        except IOError:
+
+        if not os.path.exists(BANKS_JSON_FILE):
             self.write(json.dumps([]))
             return
+
+        with open(BANKS_JSON_FILE) as fd:
+            banks = fd.read()
+
         banks = json.loads(banks)
-        # Banks have only ID and title of each pedalboard, which are the necessary information
-        # for the IHM. But the GUI needs the whole pedalboard metadata
+
+        # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
+        # But the GUI needs the whole pedalboard metadata
+        pedalboards_dict = get_pedalboards(True)
+        pedalboards_keys = pedalboards_dict.keys()
+
         for bank in banks:
             pedalboards = []
+
             for pedalboard in bank['pedalboards']:
-                continue
-                try:
-                    #full_pedalboard = open(os.path.join(PEDALBOARD__DIR, pedalboard['id'])).read()
-                    TODO
-                except IOError:
-                    # Remove from banks pedalboards that have been removed
-                    continue
-                except KeyError:
-                    # This is a bug. There's a pedalboard without ID. Let's recover from it
-                    continue
-                full_pedalboard = json.loads(full_pedalboard)
-                pedalboards.append(full_pedalboard)
+                if pedalboard['uri'] in pedalboards_keys:
+                    pedalboards.append(format_pedalboard(pedalboards_dict[pedalboard['uri']]))
+
             bank['pedalboards'] = pedalboards
 
         self.write(json.dumps(banks))
@@ -920,7 +926,6 @@ class TemplateHandler(web.RequestHandler):
             return context
 
         data = {
-            "_id": "0",
             "instances": [],
             "connections": pedalboard['connections'],
             "hardware": pedalboard['hardware'],

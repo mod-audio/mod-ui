@@ -104,7 +104,7 @@ JqueryClass('pedalboardBox', {
             remove: function (pedalboard, callback) {
                 callback()
             },
-            load: function (pedalboardId, callback) {
+            load: function (pedalboardURI, callback) {
                 callback()
             },
             duplicate: function (pedalboard, callback) {
@@ -160,7 +160,7 @@ JqueryClass('pedalboardBox', {
         var results = self.data('results')
         var canvas = self.data('resultCanvas')
         self.pedalboardBox('render', pedalboard, canvas)
-        results[pedalboard._id] = pedalboard
+        results[pedalboard.uri] = pedalboard
     },
 
     render: function (pedalboard, canvas) {
@@ -284,10 +284,10 @@ JqueryClass('bankBox', {
         options.pedalboardCanvas.sortable({
             revert: true,
             update: function (e, ui) {
-                if (self.droppedId && !ui.item.data('pedalboardId')) {
-                    ui.item.data('pedalboardId', self.droppedId)
+                if (self.droppedURI && !ui.item.data('pedalboardURI')) {
+                    ui.item.data('pedalboardURI', self.droppedURI)
                 }
-                self.droppedId = null
+                self.droppedURI = null
 
                 // TODO the code below is repeated. The former click event is not triggered because
                 // the element is cloned
@@ -307,7 +307,7 @@ JqueryClass('bankBox', {
                 // Very weird. This should not be necessary, but for some reason the ID is lost between
                 // receive and update. The behaviour that can be seen at http://jsfiddle.net/wngchng87/h3WJH/11/
                 // does not happens here
-                self.droppedId = ui.item.data('pedalboardId')
+                self.droppedURI = ui.item.data('pedalboardURI')
             },
         })
 
@@ -345,7 +345,7 @@ JqueryClass('bankBox', {
 
     extractPedalboardData: function (pedalboard) {
         var data = $.extend({
-            id   : pedalboard._id,
+            uri  : pedalboard.uri,
             image: "/pedalboard/image/screenshot.png"
                  + "?bundlepath=" + escape(pedalboard.bundle)
                  + "&tstamp=" + pedalboard.metadata.tstamp
@@ -389,7 +389,7 @@ JqueryClass('bankBox', {
             var pedalboardData = []
             pedalboards.children().each(function () {
                 pedalboardData.push({
-                    id: $(this).data('pedalboardId'),
+                    uri: $(this).data('pedalboardURI'),
                     title: $(this).find('.js-title').text()
                 })
             })
@@ -567,7 +567,7 @@ JqueryClass('bankBox', {
             self.bankBox('save')
         })
 
-        rendered.data('pedalboardId', pedalboardData.id)
+        rendered.data('pedalboardURI', pedalboardData.uri)
 
         return rendered
     }

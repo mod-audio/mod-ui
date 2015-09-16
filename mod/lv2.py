@@ -421,7 +421,7 @@ def get_plugin_info(uri):
     raise Exception
 
 # get all available pedalboards (ie, plugins with pedalboard type)
-def get_pedalboards():
+def get_pedalboards(asDictionary):
     global W, PLUGINS
 
     # define needed namespaces
@@ -440,7 +440,10 @@ def get_pedalboards():
         return list(LILV_FOREACH(presets, get_preset_data))
 
     # check each plugin for a pedalboard type
-    pedalboards = []
+    if asDictionary:
+        pedalboards = {}
+    else:
+        pedalboards = []
 
     for pedalboard in PLUGINS:
         # check if the plugin is a pedalboard
@@ -452,7 +455,7 @@ def get_pedalboards():
             continue
 
         # ready
-        pedalboards.append({
+        pedalboard = {
             'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
             'name': pedalboard.get_name().as_string(),
             'uri':  pedalboard.get_uri().as_string(),
@@ -461,7 +464,12 @@ def get_pedalboards():
             'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),
             'height': pedalboard.get_value(modpedal.height).get_first().as_int(),
             'presets': get_presets(pedalboard)
-        })
+        }
+
+        if asDictionary:
+            pedalboards[pedalboard['uri']] = pedalboard
+        else:
+            pedalboards.append(pedalboard)
 
     return pedalboards
 
