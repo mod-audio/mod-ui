@@ -741,7 +741,7 @@ class PedalboardScreenshot(web.RequestHandler):
         result = {
             'screenshot': b64encode(screenshot_data),
             'thumbnail': b64encode(thumbnail_data),
-            }
+        }
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
@@ -754,6 +754,18 @@ class PedalboardSize(web.RequestHandler):
         SESSION.pedalboard_size(width, height)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
+
+class PedalboardImage(web.RequestHandler):
+    def get(self, image):
+        bundlepath = self.get_argument('bundlepath')
+        imagepath  = os.path.join(bundlepath, "%s.png" % image)
+
+        if not os.path.exists(imagepath):
+            raise web.HTTPError(404)
+
+        with open(imagepath, 'rb') as fd:
+            self.set_header('Content-type', 'image/png')
+            self.write(fd.read())
 
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
@@ -1223,6 +1235,7 @@ application = web.Application(
             (r"/pedalboard/remove/?", PedalboardRemove),
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
+            (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
 
             # bank stuff
             (r"/banks/?", BankLoad),
@@ -1270,7 +1283,6 @@ application = web.Application(
 
             (r"/websocket/?$", AtomWebSocket),
 
-            (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": "/"}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
             debug=LOG and False, **settings)

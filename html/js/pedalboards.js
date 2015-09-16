@@ -165,8 +165,15 @@ JqueryClass('pedalboardBox', {
 
     render: function (pedalboard, canvas) {
         var self = $(this)
-        var template = TEMPLATES.pedalboard
-        var rendered = $(Mustache.render(template, pedalboard.metadata))
+
+        var metadata = {
+            title: pedalboard.metadata.title,
+            image: "/pedalboard/image/screenshot.png"
+                 + "?bundlepath=" + escape(pedalboard.bundle)
+                 + "&tstamp=" + pedalboard.metadata.tstamp
+        }
+
+        var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
 
         var load = function () {
             self.data('load')(pedalboard.bundle, function () {
