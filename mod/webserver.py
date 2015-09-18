@@ -799,13 +799,19 @@ class BankLoad(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
 
         if not os.path.exists(BANKS_JSON_FILE):
+            print("ERROR in webserver.py: banks file does not exist")
             self.write(json.dumps([]))
             return
 
         with open(BANKS_JSON_FILE) as fd:
             banks = fd.read()
 
-        banks = json.loads(banks)
+        try:
+            banks = json.loads(banks)
+        except:
+            print("ERROR in webserver.py: failed to load banks file")
+            self.write(json.dumps([]))
+            return
 
         # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
         # But the GUI needs the whole pedalboard metadata

@@ -372,10 +372,29 @@ JqueryClass('bankBox', {
 
     load: function () {
         var self = $(this)
+
+        if (self.data('loaded'))
+            return
+        self.data('loaded', true)
+
         self.data('load')(function (banks) {
             self.data('bankCanvas').html('')
-            for (var i = 0; i < banks.length; i++) {
-                self.bankBox('renderBank', banks[i])
+            if (banks.length > 0) {
+                /*
+                var bank, curBankTitle = self.data('currentBankTitle')
+                self.data('currentBank', null)
+                self.data('currentBankTitle', null)
+                */
+
+                for (var i = 0; i < banks.length; i++) {
+                    /*
+                    bank = self.bankBox('renderBank', banks[i], i)
+                    if (curBankTitle == banks[i].title) {
+                        self.bankBox('selectBank', bank)
+                    }
+                    */
+                    self.bankBox('renderBank', banks[i], i)
+                }
             }
         })
     },
@@ -437,6 +456,7 @@ JqueryClass('bankBox', {
         bank.data('selected', false)
         bank.data('pedalboards', $('<div>'))
         bank.data('addressing', addressing)
+        /*bank.data('title', bankData.title)*/
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
@@ -474,7 +494,7 @@ JqueryClass('bankBox', {
             // Save the pedalboards of the current bank
             current.data('pedalboards').append(canvas.children())
             current.data('selected', false)
-                // addressing is already saved, every time select is changed
+            // addressing is already saved, every time select is changed
         }
 
         canvas.append(bank.data('pedalboards').children())
@@ -492,6 +512,7 @@ JqueryClass('bankBox', {
 
         // Mark this bank as selected
         self.data('currentBank', bank)
+        /*self.data('currentBankTitle', bank.data('title'))*/
         bank.data('selected', true)
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
@@ -512,9 +533,14 @@ JqueryClass('bankBox', {
         editBox.val(title)
         titleBox.append(editBox)
         var finish = function () {
+            var title = editBox.val() || 'Untitled'
             titleBox.data('editing', false)
-            titleBox.html(editBox.val() || 'Untitled')
+            titleBox.html(title)
             self.bankBox('save')
+            /*
+            self.data('currentBank').data('title', title)
+            self.data('currentBankTitle', title)
+            */
         }
         editBox.keydown(function (e) {
             if (e.keyCode == 13) {
@@ -532,6 +558,7 @@ JqueryClass('bankBox', {
             return
         if (bank.data('selected')) {
             self.data('currentBank', null)
+            /*self.data('currentBankTitle', null)*/
             self.data('pedalboardCanvas').html('').hide()
             self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
