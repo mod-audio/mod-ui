@@ -23,6 +23,3 @@ def clean(path):
             os.remove(fname)
         else:
             shutil.rmtree(fname)
-
-if os.path.exists(settings.BANKS_BINARY_FILE):
-    os.remove(settings.BANKS_BINARY_FILE)
