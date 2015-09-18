@@ -19,20 +19,10 @@ import os, json
 from mod.settings import BANKS_JSON_FILE
 
 def save_banks(banks):
-    fh = open(BANKS_JSON_FILE, 'w')
-    fh.write(json.dumps(banks))
-    fh.close()
+    with open(BANKS_JSON_FILE, 'w') as fd:
+        fd.write(json.dumps(banks))
 
-def list_banks():
-    try:
-        fh = open(BANKS_JSON_FILE, 'r')
-    except IOError:
-        return []
-    banks = json.load(fh)
-    fh.close()
-    return banks
-
-def save_last_pedalboard(bank_id, pedalboard_number):
+def save_last_bank_and_pedalboard(bank_id, pedalboard):
     return # TODO
     #if bank_id is not None:
         #fh = open(os.path.join(PEDALBOARD__DIR, '../last.json'), 'w')
@@ -53,24 +43,25 @@ def get_last_bank_and_pedalboard():
     #bid = j['bank']
     #try:
         #pid = int(pid)
-    #except ValueError: 
+    #except ValueError:
         ## This will happen after upgrade, because last.json will have old structure
         #return (None, None)
 
     #return (bid, pid)
 
-def remove_pedalboard_from_banks(uid):
-    # Remove from banks, and remove empty banks afterwards
-    banks = json.loads(open(BANKS_JSON_FILE).read())
+# Remove from banks, and remove empty banks afterwards
+def remove_pedalboard_from_banks(uri):
+    with open(BANKS_JSON_FILE, 'r') as fd:
+        banks = json.loads(fd.read())
     newbanks = []
     for bank in banks:
-        pedalboards = []
-        for pb in bank['pedalboards']:
-            if not pb['id'] == uid:
-                pedalboards.append(pb)
-        if len(pedalboards) == 0:
+        newpedalboards = []
+        for pedalboard in bank['pedalboards']:
+            if pedalboard['uri'] != uri:
+                newpedalboards.append(pedalboard)
+        # if there's no pedalboards left ignore this bank (ie, delete it)
+        if len(newpedalboards) == 0:
             continue
-        bank['pedalboards'] = pedalboards
+        bank['pedalboards'] = newpedalboards
         newbanks.append(bank)
     save_banks(newbanks)
-    return True
