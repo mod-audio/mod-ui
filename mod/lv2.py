@@ -25,6 +25,9 @@ PLUGNFO = {}
 
 # Blacklisted plugins, which don't work properly on MOD for various reasons
 BLACKLIST = [
+    "urn:50m30n3:plugins:SO-404",
+    "urn:50m30n3:plugins:SO-666",
+    "urn:50m30n3:plugins:SO-kl5",
     "urn:juce:JuceDemoHost",
     "urn:juced:DrumSynth",
     "file:///usr/lib/lv2/MonoEffect.ingen/MonoEffect.ttl",
@@ -98,6 +101,7 @@ BLACKLIST = [
     "http://teragonaudio.com/ExtraNotes.html",
     "http://www.klangfreund.com/lufsmeter",
     "http://www.klangfreund.com/lufsmetermultichannel",
+    "http://www.wodgod.com/newtonator/1.0",
     "https://github.com/HiFi-LoFi/KlangFalter",
 # FIXME: These are temporarily blacklisted because they need fixing or the modguis are not good enough for the live-ISO
     #"http://calf.sourceforge.net/plugins/eq5",
