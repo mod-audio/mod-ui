@@ -39,3 +39,4 @@ modui-env/
 build/
 dist/
 *.orig
+*node_modules/
