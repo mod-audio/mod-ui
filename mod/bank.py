@@ -18,37 +18,74 @@
 import os, json
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
-def save_banks(banks):
-    with open(BANKS_JSON_FILE, 'w') as fh:
-        fh.write(json.dumps(banks))
+# return list of banks
+def list_banks():
+    if not os.path.exists(BANKS_JSON_FILE):
+        print("banks file does not exist")
+        return []
 
+    with open(BANKS_JSON_FILE, 'r') as fh:
+        banks = fh.read()
+
+    try:
+        banks = json.loads(banks)
+    except:
+        print("ERROR in banks.py: failed to load banks file")
+        return []
+
+    return banks
+
+# save banks to disk
+def save_banks(banks):
+    banks = json.dumps(banks)
+
+    with open(BANKS_JSON_FILE, 'w') as fh:
+        fh.write(banks)
+
+# save last bank id and pedalboard uri to disk
 def save_last_bank_and_pedalboard(bank, pedalboard):
     if bank is None:
         return
 
-    with open(LAST_STATE_JSON_FILE, 'w') as fh:
-        fh.write(json.dumps({
-            'bank': bank,
-            'pedalboard': pedalboard
-        }))
+    state = json.dumps({
+        'bank': bank,
+        'pedalboard': pedalboard
+    })
 
+    with open(LAST_STATE_JSON_FILE, 'w') as fh:
+        fh.write(state)
+
+# get last bank id and pedalboard uri
 def get_last_bank_and_pedalboard():
     if not os.path.exists(LAST_STATE_JSON_FILE):
+        print("last state file does not exist")
         return (None, None)
 
     with open(LAST_STATE_JSON_FILE, 'r') as fh:
-        state = json.loads(fh.read())
+        state = fh.read()
+
+    try:
+        state = json.loads(state)
+    except:
+        print("ERROR in banks.py: failed to load last state file")
+        return (None, None)
 
     return (state['bank'], state['pedalboard'])
 
-# Remove from banks, and remove empty banks afterwards
+# Remove a pedalboard from banks, and banks that are or will become empty
 def remove_pedalboard_from_banks(uri):
     newbanks = []
 
     with open(BANKS_JSON_FILE, 'r') as fh:
-        oldbanks = json.loads(fh.read())
+        banks = fh.read()
 
-    for bank in oldbanks:
+    try:
+        banks = json.loads(banks)
+    except:
+        print("ERROR in banks.py: failed to load banks file")
+        return
+
+    for bank in banks:
         newpedalboards = []
 
         for pedalboard in bank['pedalboards']:

@@ -53,6 +53,9 @@ class Host(IngenAsync):
     def load(self, bundlepath, callback=lambda r:r):
         self.copy("file://%s" % bundlepath, "/graph", callback)
 
+    def load_uri(self, uri, callback=lambda r:r):
+        self.copy(uri, "/graph", callback)
+
     def save(self, bundlepath, callback=lambda r:r):
         self.copy("/graph", "file://%s" % bundlepath, callback)
 

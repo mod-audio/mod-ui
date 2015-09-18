@@ -35,9 +35,7 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (HTML_DIR, CLOUD_PUB,
-                          DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
-                          CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
+from mod.settings import (HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
@@ -53,7 +51,7 @@ from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
-from mod.bank import save_banks
+from mod.bank import list_banks, save_banks
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
@@ -796,22 +794,7 @@ class DashboardDisconnect(web.RequestHandler):
 
 class BankLoad(web.RequestHandler):
     def get(self):
-        self.set_header('Content-Type', 'application/json')
-
-        if not os.path.exists(BANKS_JSON_FILE):
-            print("ERROR in webserver.py: banks file does not exist")
-            self.write(json.dumps([]))
-            return
-
-        with open(BANKS_JSON_FILE) as fd:
-            banks = fd.read()
-
-        try:
-            banks = json.loads(banks)
-        except:
-            print("ERROR in webserver.py: failed to load banks file")
-            self.write(json.dumps([]))
-            return
+        banks = list_banks()
 
         # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
         # But the GUI needs the whole pedalboard metadata
@@ -827,6 +810,7 @@ class BankLoad(web.RequestHandler):
 
             bank['pedalboards'] = pedalboards
 
+        self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(banks))
 
 class BankSave(web.RequestHandler):
