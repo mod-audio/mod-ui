@@ -35,13 +35,14 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
+from mod.settings import (APP, LOG,
+                          HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
+                          PACKAGE_REPOSITORY, DEMO_DATA_DIR, DATA_DIR,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
@@ -1292,7 +1293,14 @@ def prepare():
             tornado.log.enable_pretty_logging()
 
     def check():
-        check_environment(lambda result: result)
+        if SESSION.host.sock is None:
+            print("Host failed to initialize, is ingen running?")
+            sys.exit(1)
+
+        check_environment()
+
+        if not APP:
+            get_all_plugins()
 
     lv2_init()
 

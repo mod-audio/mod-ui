@@ -751,6 +751,7 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
                 if os.path.exists(iconFile):
                     with open(iconFile, 'r') as fd:
                         gui['iconTemplate'] = fd.read()
+                    #gui['iconTemplate'] = iconFile if useAbsolutePath else iconFile.replace(bundle,"",1)
                 else:
                     errors.append("modgui iconTemplate file is missing")
                 del iconFile
@@ -760,6 +761,7 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
                 if os.path.exists(settingsFile):
                     with open(settingsFile, 'r') as fd:
                         gui['settingsTemplate'] = fd.read()
+                    #gui['settingsTemplate'] = settingsFile if useAbsolutePath else settingsFile.replace(bundle,"",1)
                 else:
                     errors.append("modgui settingsTemplate file is missing")
                 del settingsFile

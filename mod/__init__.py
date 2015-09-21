@@ -51,18 +51,16 @@ def _json_or_remove(path):
         os.remove(path)
         return None
 
-def check_environment(callback):
+def check_environment():
     from mod.settings import (DEVICE_SERIAL, DEVICE_MODEL,
-                              DOWNLOAD_TMP_DIR, BANKS_JSON_FILE, HTML_DIR)
-    from mod.session import SESSION
+                              DOWNLOAD_TMP_DIR, BANKS_JSON_FILE)
 
     if not os.path.exists(DOWNLOAD_TMP_DIR):
         os.makedirs(DOWNLOAD_TMP_DIR)
 
     if not os.path.exists(BANKS_JSON_FILE):
-        fh = open(BANKS_JSON_FILE, 'w')
-        fh.write("[]")
-        fh.close()
+        with open(BANKS_JSON_FILE, 'w') as fh:
+            fh.write("[]")
 
     # TEMPORARIO, APENAS NO DESENVOLVIMENTO
     if os.path.exists(DEVICE_SERIAL) and not os.path.exists(DEVICE_MODEL):
