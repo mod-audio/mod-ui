@@ -246,10 +246,12 @@ JqueryClass('effectBox', {
         var category
         for (i in plugins) {
             category = plugins[i].category[0]
-            if (categories[category] == null)
-                categories[category] = 1
-            else
-                categories[category] += 1
+            if (category) {
+                if (categories[category] == null)
+                    categories[category] = 1
+                else
+                    categories[category] += 1
+            }
             categories.All += 1
         }
 
