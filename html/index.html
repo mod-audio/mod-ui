@@ -136,6 +136,10 @@ $('document').ready(function() {
       desktop.pedalboardSavable  = true
   }
 
+  if ({{using_app}}) {
+      desktop.setupApp({{using_desktop}})
+  }
+
   $.ajax({
       url: '/system/info',
       method: 'GET',

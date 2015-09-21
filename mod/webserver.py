@@ -35,7 +35,7 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (APP, LOG,
+from mod.settings import (APP, DESKTOP, LOG,
                           HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -899,6 +899,8 @@ class TemplateHandler(web.RequestHandler):
             'bundlepath': json.dumps(SESSION.bundlepath),
             'title': json.dumps(SESSION.title),
             'fulltitle': SESSION.title or "Untitled",
+            'using_app': json.dumps(APP),
+            'using_desktop': json.dumps(DESKTOP),
         }
         return context
 

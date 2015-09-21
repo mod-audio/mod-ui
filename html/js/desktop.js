@@ -352,7 +352,7 @@ function Desktop(elements) {
         })
     }
 
-    this.prepareForApp = function (usingDesktop) {
+    this.setupApp = function (usingDesktop) {
         self.isApp = true
         $('#mod-bank').hide()
         $('#mod-bluetooth').hide()
