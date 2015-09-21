@@ -361,6 +361,27 @@ class EffectImage(web.RequestHandler):
             self.set_header('Content-type', 'image/png')
             self.write(fd.read())
 
+class EffectHTML(web.RequestHandler):
+    def get(self, html):
+        uri = self.get_argument('uri')
+
+        try:
+            data = get_plugin_info(uri)
+        except:
+            raise web.HTTPError(404)
+
+        try:
+            path = data['gui']['%sTemplate' % html]
+        except:
+            raise web.HTTPError(404)
+
+        if not os.path.exists(path):
+            raise web.HTTPError(404)
+
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'text/html')
+            self.write(fd.read())
+
 class EffectStylesheet(web.RequestHandler):
     def get(self):
         uri = self.get_argument('uri')
@@ -1217,6 +1238,7 @@ application = web.Application(
 
             # plugin resources
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
+            (r"/effect/(icon|settings).html", EffectHTML),
             (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/gui.js", EffectJavascript),
 

@@ -23,6 +23,9 @@ PLUGINS = []
 # cached info about each plugin (using uri as key)
 PLUGNFO = {}
 
+# cached keys() of PLUGNFO, for performance
+PLUGNFOk = []
+
 # Blacklisted plugins, which don't work properly on MOD for various reasons
 BLACKLIST = [
     "urn:50m30n3:plugins:SO-404",
@@ -336,18 +339,21 @@ def init():
 # refresh everything
 # plugins are not truly scanned here, only later per request
 def refresh():
-    global W, BUNDLES, PLUGINS, PLUGNFO
+    global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
-    BUNDLES = []
-    PLUGINS = W.get_all_plugins()
-    PLUGNFO = {}
+    BUNDLES  = []
+    PLUGINS  = W.get_all_plugins()
+    PLUGNFO  = {}
+    PLUGNFOk = []
 
     # Make a list of all installed bundles
     for p in PLUGINS:
         bundles = lilv.lilv_plugin_get_data_uris(p.me)
 
         # store empty dict for later
-        PLUGNFO[p.get_uri().as_uri()] = {}
+        uri = p.get_uri().as_uri()
+        PLUGNFO[uri] = {}
+        PLUGNFOk.append(uri)
 
         it = lilv.lilv_nodes_begin(bundles)
         while not lilv.lilv_nodes_is_end(bundles, it):
@@ -371,10 +377,9 @@ def refresh():
 # this is trigger scanning of all plugins
 # returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
-    global W, PLUGINS, PLUGNFO
+    global W, PLUGINS, PLUGNFO, PLUGNFOk
 
-    ret  = []
-    keys = PLUGNFO.keys()
+    ret = []
 
     for p in PLUGINS:
         uri = p.get_uri().as_uri()
@@ -385,7 +390,7 @@ def get_all_plugins():
             continue
 
         # check if it's already cached
-        if uri in keys and PLUGNFO[uri]:
+        if uri in PLUGNFOk and PLUGNFO[uri]:
             if PLUGNFO[uri]['gui'] or MODGUI_SHOW_MODE != 1:
                 ret.append(PLUGNFO[uri])
             continue
@@ -403,10 +408,10 @@ def get_all_plugins():
 # get a specific plugin
 # NOTE: may throw
 def get_plugin_info(uri):
-    global W, PLUGINS, PLUGNFO
+    global W, PLUGINS, PLUGNFO, PLUGNFOk
 
     # check if it exists
-    if uri not in PLUGNFO.keys():
+    if uri not in PLUGNFOk:
         raise Exception
 
     # check if it's already cached
@@ -418,6 +423,7 @@ def get_plugin_info(uri):
         if p.get_uri().as_uri() != uri:
             continue
         # found it
+        print("NOTICE: Plugin '%s' was not cached, scanning it now..." % uri)
         PLUGNFO[uri] = get_plugin_info2(W, p)
         return PLUGNFO[uri]
 
@@ -480,7 +486,7 @@ def get_pedalboards(asDictionary):
 # add a bundle to our lilv world
 # returns true if the bundle was added
 def add_bundle_to_lilv_world(bundlepath):
-    global W, BUNDLES, PLUGINS, PLUGNFO
+    global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
     # lilv wants the last character as the separator
     if not bundlepath.endswith(os.sep):
@@ -503,16 +509,15 @@ def add_bundle_to_lilv_world(bundlepath):
     BUNDLES.append(bundlepath)
 
     # fill in for any new plugins that appeared
-    keys = PLUGNFO.keys()
-
     for p in PLUGINS:
         uri = p.get_uri().as_uri()
 
         # check if it's already cached
-        if uri in keys and PLUGNFO[uri]:
+        if uri in PLUGNFOk and PLUGNFO[uri]:
             continue
 
         # get new info
         PLUGNFO[uri] = get_plugin_info2(W, p)
+        PLUGNFOk.append(uri)
 
     return True
