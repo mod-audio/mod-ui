@@ -235,33 +235,55 @@ JqueryClass('effectBox', {
         })
         self.data('plugins', plugins)
 
-        var count = {
-                'All': 0
-            }
-            //plugin.category_path = plugin.category.join(', ')
+        var currentCategory = self.data('category')
+        var pluginCount     = plugins.length
+        var showingAll      = currentCategory == 'All'
+
+        // count plugins first
+        var categories = {
+            'All': 0
+        }
         var category
         for (i in plugins) {
             category = plugins[i].category[0]
-            if (count[category] == null)
-                count[category] = 1
+            if (categories[category] == null)
+                categories[category] = 1
             else
-                count[category] += 1
-            count.All += 1
-
-            self.effectBox('renderPlugin', i, self.find('#effect-content-All'))
-            self.effectBox('renderPlugin', i, self.find('#effect-content-' + category))
+                categories[category] += 1
+            categories.All += 1
         }
 
-        var currentCategory = self.data('category')
-        var empty = true
-        for (category in count) {
+        // display plugin count
+        for (category in categories) {
             var tab = self.find('#effect-tab-' + category)
-            tab.html(tab.html() + ' (' + count[category] + ')')
-            if (category == currentCategory && count[category] > 0)
-                empty = false;
+            tab.html(tab.html() + ' (' + categories[category] + ')')
         }
 
-        self.effectBox('calculateNavigation')
+        // disable navigation while we render plugins
+        self.find('.nav-left').addClass('disabled')
+        self.find('.nav-right').addClass('disabled')
+
+        // render plugins
+        function renderNextPlugin() {
+            if (self.renderedIndex >= pluginCount) {
+                self.effectBox('calculateNavigation')
+                return
+            }
+
+            category = plugins[self.renderedIndex].category[0]
+
+            self.effectBox('renderPlugin', self.renderedIndex, self.find('#effect-content-All'))
+
+            if (category != 'All') {
+                self.effectBox('renderPlugin', self.renderedIndex, self.find('#effect-content-' + category))
+            }
+
+            self.renderedIndex += 1
+            setTimeout(renderNextPlugin, 1);
+        }
+
+        self.renderedIndex = 0
+        renderNextPlugin(0)
     },
 
     renderPlugin: function (index, container) {
@@ -272,7 +294,7 @@ JqueryClass('effectBox', {
         var uri = escape(plugin.uri)
 
         var plugin_data = {
-            uri: uri,
+            uri   : uri,
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
@@ -302,9 +324,10 @@ JqueryClass('effectBox', {
         })
 
         container.append(rendered)
-            // this 200px extra is a good margin to make sure the container's parent will
-            // always be big enough. it's impossible at this moment to know the necessary width,
-            // as this will be given by images not yet loaded.
+
+        // this 200px extra is a good margin to make sure the container's parent will
+        // always be big enough. it's impossible at this moment to know the necessary width,
+        // as this will be given by images not yet loaded.
         container.parent().width(container.parent().width() + rendered.width() + 200)
     },
 
