@@ -274,7 +274,7 @@ JqueryClass('effectBox', {
 
             self.effectBox('renderPlugin', self.renderedIndex, self.find('#effect-content-All'))
 
-            if (category != 'All') {
+            if (category && category != 'All') {
                 self.effectBox('renderPlugin', self.renderedIndex, self.find('#effect-content-' + category))
             }
 
