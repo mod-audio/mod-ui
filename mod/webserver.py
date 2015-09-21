@@ -1323,10 +1323,12 @@ def prepare():
 
         check_environment()
 
-        if not APP:
-            get_all_plugins()
-
     lv2_init()
+
+    if not APP:
+        print("Scanning plugins, this may take a little...")
+        get_all_plugins()
+        print("Done!")
 
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)
