@@ -749,8 +749,6 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
             else:
                 iconFile = lilv.lilv_uri_to_path(modgui_icon.as_string())
                 if os.path.exists(iconFile):
-                    #with open(iconFile, 'r') as fd:
-                        #gui['iconTemplate'] = fd.read()
                     gui['iconTemplate'] = iconFile if useAbsolutePath else iconFile.replace(bundle,"",1)
                 else:
                     errors.append("modgui iconTemplate file is missing")
@@ -759,8 +757,6 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
             if modgui_setts.me is not None:
                 settingsFile = lilv.lilv_uri_to_path(modgui_setts.as_string())
                 if os.path.exists(settingsFile):
-                    #with open(settingsFile, 'r') as fd:
-                        #gui['settingsTemplate'] = fd.read()
                     gui['settingsTemplate'] = settingsFile if useAbsolutePath else settingsFile.replace(bundle,"",1)
                 else:
                     errors.append("modgui settingsTemplate file is missing")
