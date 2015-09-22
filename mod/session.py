@@ -113,9 +113,6 @@ class Session(object):
         self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
 
-        if INGEN_AUTOCONNECT:
-            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
-
     def __del__(self):
         if self.jack_client is None:
             return
@@ -174,6 +171,9 @@ class Session(object):
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
         jacklib.activate(self.jack_client)
         print("jacklib client activated")
+
+        if INGEN_AUTOCONNECT:
+            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
 
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
