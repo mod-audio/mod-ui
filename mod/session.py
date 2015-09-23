@@ -32,10 +32,13 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
                           INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
+# TODO
+#from mod import get_hardware, symbolify
 from mod import symbolify
+from mod.hardware import get_hardware
+
 from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
-from mod.hardware import get_hardware
 from mod.hmi import HMI
 from mod.ingen import Host
 from mod.lv2 import add_bundle_to_lilv_world
