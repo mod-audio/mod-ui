@@ -221,7 +221,7 @@ WHITELIST = [
     "http://distrho.sf.net/plugins/Nekobi",
     "http://moddevices.com/plugins/tap/autopan",
     "http://moddevices.com/plugins/tap/chorusflanger",
-    "http://moddevices.com/plugins/tap/deesser",
+    #"http://moddevices.com/plugins/tap/deesser",
     "http://moddevices.com/plugins/tap/doubler",
     "http://moddevices.com/plugins/tap/dynamics",
     "http://moddevices.com/plugins/tap/dynamics-st",
@@ -230,7 +230,7 @@ WHITELIST = [
     "http://moddevices.com/plugins/tap/eqbw",
     "http://moddevices.com/plugins/tap/limiter",
     "http://moddevices.com/plugins/tap/pinknoise",
-    "http://moddevices.com/plugins/tap/pitch",
+    #"http://moddevices.com/plugins/tap/pitch",
     "http://moddevices.com/plugins/tap/reflector",
     "http://moddevices.com/plugins/tap/reverb",
     "http://moddevices.com/plugins/tap/rotspeak",
@@ -238,6 +238,8 @@ WHITELIST = [
     "http://moddevices.com/plugins/tap/tremolo",
     "http://moddevices.com/plugins/tap/tubewarmth",
     "http://moddevices.com/plugins/tap/vibrato",
+    "http://moddevices.com/plugins/mod-devel/Gain",
+    "http://moddevices.com/plugins/mod-devel/Gain2x2",
 ]
 
 # List of plugins available in the mod cloud
