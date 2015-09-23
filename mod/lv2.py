@@ -218,6 +218,7 @@ BLACKLIST = [
 
 # Whitelisted plugins, for testing purposes
 WHITELIST = [
+    "http://distrho.sf.net/plugins/Nekobi",
     "http://moddevices.com/plugins/tap/autopan",
     "http://moddevices.com/plugins/tap/chorusflanger",
     "http://moddevices.com/plugins/tap/deesser",
