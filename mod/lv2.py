@@ -216,6 +216,29 @@ BLACKLIST = [
     #"http://plugin.org.uk/swh-plugins/harmonicGen",
 ]
 
+# Whitelisted plugins, for testing purposes
+WHITELIST = [
+    "http://moddevices.com/plugins/tap/autopan",
+    "http://moddevices.com/plugins/tap/chorusflanger",
+    "http://moddevices.com/plugins/tap/deesser",
+    "http://moddevices.com/plugins/tap/doubler",
+    "http://moddevices.com/plugins/tap/dynamics",
+    "http://moddevices.com/plugins/tap/dynamics-st",
+    "http://moddevices.com/plugins/tap/echo",
+    "http://moddevices.com/plugins/tap/eq",
+    "http://moddevices.com/plugins/tap/eqbw",
+    "http://moddevices.com/plugins/tap/limiter",
+    "http://moddevices.com/plugins/tap/pinknoise",
+    "http://moddevices.com/plugins/tap/pitch",
+    "http://moddevices.com/plugins/tap/reflector",
+    "http://moddevices.com/plugins/tap/reverb",
+    "http://moddevices.com/plugins/tap/rotspeak",
+    "http://moddevices.com/plugins/tap/sigmoid",
+    "http://moddevices.com/plugins/tap/tremolo",
+    "http://moddevices.com/plugins/tap/tubewarmth",
+    "http://moddevices.com/plugins/tap/vibrato",
+]
+
 # List of plugins available in the mod cloud
 CLOUD_PLUGINS = [
     "http://distrho.sf.net/plugins/MVerb",
@@ -387,6 +410,8 @@ def get_all_plugins():
         if uri in BLACKLIST:
             continue
         if MODGUI_SHOW_MODE == 2 and uri not in CLOUD_PLUGINS:
+            continue
+        if MODGUI_SHOW_MODE == 3 and uri not in WHITELIST:
             continue
 
         # check if it's already cached

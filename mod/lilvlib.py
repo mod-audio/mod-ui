@@ -865,6 +865,7 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
 
             # ports
             errpr = False
+            sybls = []
             ports = []
             nodes = world.find_nodes(modguigui.me, ns_modgui.port.me, None)
             it    = lilv.lilv_nodes_begin(nodes.me)
@@ -883,11 +884,21 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
                         errpr = True
                     continue
 
+                port_indx = port_indx.as_int()
+                port_symb = port_symb.as_string()
+                port_name = port_name.as_string()
+
                 ports.append({
-                    'index' : port_indx.as_int(),
-                    'symbol': port_symb.as_string(),
-                    'name'  : port_name.as_string(),
+                    'index' : port_indx,
+                    'symbol': port_symb,
+                    'name'  : port_name,
                 })
+
+                if port_symb not in sybls:
+                    sybls.append(port_symb)
+                elif not errpr:
+                    errors.append("modgui has some duplicated port symbols")
+                    errpr = True
 
             # sort ports
             if len(ports) > 0:
