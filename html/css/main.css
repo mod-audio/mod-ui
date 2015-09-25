@@ -1532,7 +1532,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     list-style:none;
 }
 
-.hidden {
+.mod-hidden {
     display:none;
 }
 

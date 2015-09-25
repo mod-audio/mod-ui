@@ -63,13 +63,13 @@ JqueryClass('socialWindow', {
             // remove existing contents
             if (lastId == 0)
             {
-                canvas.find('li.feed').remove()
-                self.find('li.more').show()
+                canvas.find('div.feed').remove()
+                self.find('div.more').show()
             }
 
             self.socialWindow('renderFeed', data, canvas)
 
-            canvas.find('li.more').appendTo(canvas) // always last item
+            canvas.find('div.more').appendTo(canvas) // always last item
             self.find('button').show()
         })
     },
@@ -84,7 +84,7 @@ JqueryClass('socialWindow', {
         var self = $(this)
 
         if (data.length < 8) // page size used in desktop.js
-            self.find('li.more').hide()
+            self.find('div.more').hide()
 
         var pbLoad = function (pb) {
             return function () {
@@ -95,16 +95,21 @@ JqueryClass('socialWindow', {
         function renderNextPost(data) {
             if (data.length == 0)
                 return
-
             var sdata = data.pop()
             //sdata.created = renderTime(new Date(sdata.created))
             //console.log(sdata)
+            if(sdata.reply_to)
+                var post_class = "hide"
 
             var context = {
                 avatar_href: sdata.user.avatar_href,
                 user_name  : sdata.user.name,
+                user_id    : sdata.user.id,
                 text       : sdata.text,
+                post_class : post_class
             }
+            if(sdata.reply_to)
+                console.log(sdata)
 
             if (sdata.pedalboard) {
                 context.pedalboard = {
