@@ -104,7 +104,7 @@ JqueryClass('pedalboardBox', {
             remove: function (pedalboard, callback) {
                 callback()
             },
-            load: function (pedalboardId, callback) {
+            load: function (pedalboardURI, callback) {
                 callback()
             },
             duplicate: function (pedalboard, callback) {
@@ -160,13 +160,19 @@ JqueryClass('pedalboardBox', {
         var results = self.data('results')
         var canvas = self.data('resultCanvas')
         self.pedalboardBox('render', pedalboard, canvas)
-        results[pedalboard._id] = pedalboard
+        results[pedalboard.uri] = pedalboard
     },
 
     render: function (pedalboard, canvas) {
         var self = $(this)
-        var template = TEMPLATES.pedalboard
-        var rendered = $(Mustache.render(template, pedalboard.metadata))
+
+        var metadata = {
+            title: pedalboard.metadata.title,
+            // FIXME: proper gif image
+            image: "/img/loading-pedalboard.gif"
+        }
+
+        var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
 
         var load = function () {
             self.data('load')(pedalboard.bundle, function () {
@@ -195,12 +201,26 @@ JqueryClass('pedalboardBox', {
         })
 
         canvas.append(rendered)
-            // center thumbnail
-        rendered.find('.img img').each(function () {
-            var img = $(this)
-            $(this).css({
-                top: (img.parent().height() - img.height()) / 2
-            })
+
+        $.ajax({
+            url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),
+            success: function (ok) {
+                if (!ok) return
+
+                rendered.find('.img img').each(function () {
+                    var img = $(this)
+
+                    // set the actual image
+                    img.attr("src", "/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+pedalboard.metadata.tstamp)
+
+                    // center
+                    img.css({ top: (img.parent().height() - img.height()) / 2 })
+                })
+            },
+            error: function () {
+                console.log("Pedalboard image wait error")
+            },
+            dataType: 'json'
         })
 
         return rendered
@@ -277,10 +297,10 @@ JqueryClass('bankBox', {
         options.pedalboardCanvas.sortable({
             revert: true,
             update: function (e, ui) {
-                if (self.droppedId && !ui.item.data('pedalboardId')) {
-                    ui.item.data('pedalboardId', self.droppedId)
+                if (self.droppedURI && !ui.item.data('pedalboardURI')) {
+                    ui.item.data('pedalboardURI', self.droppedURI)
                 }
-                self.droppedId = null
+                self.droppedURI = null
 
                 // TODO the code below is repeated. The former click event is not triggered because
                 // the element is cloned
@@ -300,7 +320,7 @@ JqueryClass('bankBox', {
                 // Very weird. This should not be necessary, but for some reason the ID is lost between
                 // receive and update. The behaviour that can be seen at http://jsfiddle.net/wngchng87/h3WJH/11/
                 // does not happens here
-                self.droppedId = ui.item.data('pedalboardId')
+                self.droppedURI = ui.item.data('pedalboardURI')
             },
         })
 
@@ -338,7 +358,10 @@ JqueryClass('bankBox', {
 
     extractPedalboardData: function (pedalboard) {
         var data = $.extend({
-            'id': pedalboard['_id']
+            uri  : pedalboard.uri,
+            image: "/pedalboard/image/screenshot.png"
+                 + "?bundlepath=" + escape(pedalboard.bundle)
+                 + "&tstamp=" + pedalboard.metadata.tstamp
         }, pedalboard.metadata)
         data.footswitches = [0, 0, 0, 0]
         if (!pedalboard.instances)
@@ -362,10 +385,29 @@ JqueryClass('bankBox', {
 
     load: function () {
         var self = $(this)
+
+        if (self.data('loaded'))
+            return
+        self.data('loaded', true)
+
         self.data('load')(function (banks) {
             self.data('bankCanvas').html('')
-            for (var i = 0; i < banks.length; i++) {
-                self.bankBox('renderBank', banks[i])
+            if (banks.length > 0) {
+                /*
+                var bank, curBankTitle = self.data('currentBankTitle')
+                self.data('currentBank', null)
+                self.data('currentBankTitle', null)
+                */
+
+                for (var i = 0; i < banks.length; i++) {
+                    /*
+                    bank = self.bankBox('renderBank', banks[i], i)
+                    if (curBankTitle == banks[i].title) {
+                        self.bankBox('selectBank', bank)
+                    }
+                    */
+                    self.bankBox('renderBank', banks[i], i)
+                }
             }
         })
     },
@@ -379,7 +421,7 @@ JqueryClass('bankBox', {
             var pedalboardData = []
             pedalboards.children().each(function () {
                 pedalboardData.push({
-                    id: $(this).data('pedalboardId'),
+                    uri: $(this).data('pedalboardURI'),
                     title: $(this).find('.js-title').text()
                 })
             })
@@ -427,6 +469,7 @@ JqueryClass('bankBox', {
         bank.data('selected', false)
         bank.data('pedalboards', $('<div>'))
         bank.data('addressing', addressing)
+        /*bank.data('title', bankData.title)*/
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
@@ -464,7 +507,7 @@ JqueryClass('bankBox', {
             // Save the pedalboards of the current bank
             current.data('pedalboards').append(canvas.children())
             current.data('selected', false)
-                // addressing is already saved, every time select is changed
+            // addressing is already saved, every time select is changed
         }
 
         canvas.append(bank.data('pedalboards').children())
@@ -482,6 +525,7 @@ JqueryClass('bankBox', {
 
         // Mark this bank as selected
         self.data('currentBank', bank)
+        /*self.data('currentBankTitle', bank.data('title'))*/
         bank.data('selected', true)
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
@@ -502,9 +546,14 @@ JqueryClass('bankBox', {
         editBox.val(title)
         titleBox.append(editBox)
         var finish = function () {
+            var title = editBox.val() || 'Untitled'
             titleBox.data('editing', false)
-            titleBox.html(editBox.val() || 'Untitled')
+            titleBox.html(title)
             self.bankBox('save')
+            /*
+            self.data('currentBank').data('title', title)
+            self.data('currentBankTitle', title)
+            */
         }
         editBox.keydown(function (e) {
             if (e.keyCode == 13) {
@@ -522,6 +571,7 @@ JqueryClass('bankBox', {
             return
         if (bank.data('selected')) {
             self.data('currentBank', null)
+            /*self.data('currentBankTitle', null)*/
             self.data('pedalboardCanvas').html('').hide()
             self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
@@ -540,7 +590,6 @@ JqueryClass('bankBox', {
 
     renderPedalboard: function (pedalboardData) {
         var self = $(this)
-        var template = TEMPLATES.bank_pedalboard
         var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, pedalboardData))
 
         // TODO is this necessary?
@@ -558,7 +607,7 @@ JqueryClass('bankBox', {
             self.bankBox('save')
         })
 
-        rendered.data('pedalboardId', pedalboardData.id)
+        rendered.data('pedalboardURI', pedalboardData.uri)
 
         return rendered
     }

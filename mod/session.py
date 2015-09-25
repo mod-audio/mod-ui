@@ -32,10 +32,13 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
                           INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
                           INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
+# TODO
+#from mod import get_hardware, symbolify
 from mod import symbolify
+from mod.hardware import get_hardware
+
 from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
-from mod.hardware import get_hardware
 from mod.hmi import HMI
 from mod.ingen import Host
 from mod.lv2 import add_bundle_to_lilv_world
@@ -113,9 +116,6 @@ class Session(object):
         self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
 
-        if INGEN_AUTOCONNECT:
-            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
-
     def __del__(self):
         if self.jack_client is None:
             return
@@ -174,6 +174,9 @@ class Session(object):
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
         jacklib.activate(self.jack_client)
         print("jacklib client activated")
+
+        if INGEN_AUTOCONNECT:
+            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
 
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
@@ -533,8 +536,8 @@ class Session(object):
                 self.bundlepath = None
                 self.title      = None
 
-            callback(ok)
             self.pedalboard_changed_callback(ok, bundlepath, title)
+            callback(ok)
 
         self.host.set_pedalboard_name(title, step1)
 
@@ -631,12 +634,6 @@ class Session(object):
     def end_session(self, callback):
         self.hmi.ui_dis(callback)
 
-    #def bypass_address(self, instance_id, hardware_type, hardware_id, actuator_type, actuator_id, value, label,
-                       #callback, loaded=False):
-        #self.parameter_address(instance_id, ":bypass", 'switch', label, 6, "none", value,
-                               #1, 0, 0, hardware_type, hardware_id, actuator_type,
-                               #actuator_id, [], callback, loaded)
-
     def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
         Function is an integer, meaning:
@@ -647,8 +644,8 @@ class Session(object):
         """
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
-    def pedalboard_size(self, width, height):
-        self.host.set_pedalboard_size(width, height)
+    def pedalboard_size(self, width, height, callback):
+        self.host.set_pedalboard_size(width, height, callback)
 
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)

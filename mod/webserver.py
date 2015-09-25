@@ -35,15 +35,14 @@ from tornado import gen, web, iostream, websocket
 import subprocess
 from glob import glob
 
-from mod.settings import (HTML_DIR, CLOUD_PUB,
-                          DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT,
-                          CLOUD_HTTP_ADDRESS, BANKS_JSON_FILE,
+from mod.settings import (APP, DESKTOP, LOG,
+                          HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, LOG, DEMO_DATA_DIR, DATA_DIR,
+                          PACKAGE_REPOSITORY, DEMO_DATA_DIR, DATA_DIR,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
@@ -53,7 +52,7 @@ from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
 from mod.pedalboard import Pedalboard
-from mod.bank import save_banks
+from mod.bank import list_banks, save_banks
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
@@ -61,6 +60,30 @@ from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
+
+# Global fake timestamp used for pedalboard thumbnails
+# FIXME - use real timestamp
+global fake_tstamp
+fake_tstamp = 0
+
+# Formats the pedalboard in a way that the javascript side understands
+def format_pedalboard(pedal):
+    global fake_tstamp
+    fake_tstamp += 1
+
+    return {
+        'instances'  : {},
+        'connections': [],
+        'metadata'   : {
+            'title'    : pedal['name'],
+            'thumbnail': pedal['thumbnail'],
+            'tstamp'   : fake_tstamp,
+        },
+        'uri'   : pedal['uri'],
+        'bundle': pedal['bundlepath'],
+        'width' : pedal['width'],
+        'height': pedal['height']
+    }
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -338,6 +361,27 @@ class EffectImage(web.RequestHandler):
             self.set_header('Content-type', 'image/png')
             self.write(fd.read())
 
+class EffectHTML(web.RequestHandler):
+    def get(self, html):
+        uri = self.get_argument('uri')
+
+        try:
+            data = get_plugin_info(uri)
+        except:
+            raise web.HTTPError(404)
+
+        try:
+            path = data['gui']['%sTemplate' % html]
+        except:
+            raise web.HTTPError(404)
+
+        if not os.path.exists(path):
+            raise web.HTTPError(404)
+
+        with open(path, 'rb') as fd:
+            self.set_header('Content-type', 'text/html')
+            self.write(fd.read())
+
 class EffectStylesheet(web.RequestHandler):
     def get(self):
         uri = self.get_argument('uri')
@@ -536,30 +580,13 @@ class PackageUninstall(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
-global fake_tstamp
-fake_tstamp = 0
-
 class PedalboardList(web.RequestHandler):
     def get(self):
         result = []
 
-        global fake_tstamp
-        fake_tstamp += 1
+        for pedal in get_pedalboards(False):
+            result.append(format_pedalboard(pedal))
 
-        for pedal in get_pedalboards():
-            result.append({
-                'instances'  : {},
-                'connections': [],
-                'metadata'   : {
-                    'title'    : pedal['name'],
-                    'thumbnail': pedal['thumbnail'],
-                    'tstamp'   : fake_tstamp,
-                },
-                'uri'   : pedal['uri'],
-                'bundle': pedal['bundlepath'],
-                'width' : pedal['width'],
-                'height': pedal['height']
-            })
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
 
@@ -643,7 +670,7 @@ class PedalboardPackBundle(web.RequestHandler):
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
 
         # make sure the screenshot is ready before proceeding
-        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs)
+        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
 
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
@@ -741,19 +768,47 @@ class PedalboardScreenshot(web.RequestHandler):
         result = {
             'screenshot': b64encode(screenshot_data),
             'thumbnail': b64encode(thumbnail_data),
-            }
+        }
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
         self.finish()
 
 class PedalboardSize(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
     def get(self):
-        width = int(self.get_argument('width'))
+        width  = int(self.get_argument('width'))
         height = int(self.get_argument('height'))
-        SESSION.pedalboard_size(width, height)
+        resp = yield gen.Task(SESSION.pedalboard_size, width, height)
+        self.write(json.dumps(resp))
+        self.finish()
+
+class PedalboardImage(web.RequestHandler):
+    def get(self, image):
+        bundlepath = self.get_argument('bundlepath')
+        imagepath  = os.path.join(bundlepath, "%s.png" % image)
+        #imagetype  = "png"
+
+        if not os.path.exists(imagepath):
+            #imagepath = os.path.join(HTML_DIR, "img", "loading-effect.gif")
+            #imagetype = "gif"
+            raise web.HTTPError(404)
+
+        with open(imagepath, 'rb') as fd:
+            #self.set_header('Content-type', 'image/%s' % imagetype)
+            self.set_header('Content-type', 'image/png')
+            self.write(fd.read())
+
+class PedalboardImageWait(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        resp = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(json.dumps(resp))
+        self.finish()
 
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
@@ -775,31 +830,23 @@ class DashboardDisconnect(web.RequestHandler):
 
 class BankLoad(web.RequestHandler):
     def get(self):
-        self.set_header('Content-Type', 'application/json')
-        try:
-            banks = open(BANKS_JSON_FILE).read()
-        except IOError:
-            self.write(json.dumps([]))
-            return
-        banks = json.loads(banks)
-        # Banks have only ID and title of each pedalboard, which are the necessary information
-        # for the IHM. But the GUI needs the whole pedalboard metadata
+        banks = list_banks()
+
+        # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
+        # But the GUI needs the whole pedalboard metadata
+        pedalboards_dict = get_pedalboards(True)
+        pedalboards_keys = pedalboards_dict.keys()
+
         for bank in banks:
             pedalboards = []
+
             for pedalboard in bank['pedalboards']:
-                try:
-                    #full_pedalboard = open(os.path.join(PEDALBOARD__DIR, pedalboard['id'])).read()
-                    TODO
-                except IOError:
-                    # Remove from banks pedalboards that have been removed
-                    continue
-                except KeyError:
-                    # This is a bug. There's a pedalboard without ID. Let's recover from it
-                    continue
-                full_pedalboard = json.loads(full_pedalboard)
-                pedalboards.append(full_pedalboard)
+                if pedalboard['uri'] in pedalboards_keys:
+                    pedalboards.append(format_pedalboard(pedalboards_dict[pedalboard['uri']]))
+
             bank['pedalboards'] = pedalboards
 
+        self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(banks))
 
 class BankSave(web.RequestHandler):
@@ -887,6 +934,8 @@ class TemplateHandler(web.RequestHandler):
             'bundlepath': json.dumps(SESSION.bundlepath),
             'title': json.dumps(SESSION.title),
             'fulltitle': SESSION.title or "Untitled",
+            'using_app': json.dumps(APP),
+            'using_desktop': json.dumps(DESKTOP),
         }
         return context
 
@@ -905,7 +954,6 @@ class TemplateHandler(web.RequestHandler):
             return context
 
         data = {
-            "_id": "0",
             "instances": [],
             "connections": pedalboard['connections'],
             "hardware": pedalboard['hardware'],
@@ -1204,6 +1252,7 @@ application = web.Application(
 
             # plugin resources
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
+            (r"/effect/(icon|settings).html", EffectHTML),
             (r"/effect/stylesheet.css", EffectStylesheet),
             (r"/effect/gui.js", EffectJavascript),
 
@@ -1223,6 +1272,8 @@ application = web.Application(
             (r"/pedalboard/remove/?", PedalboardRemove),
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
+            (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
+            (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # bank stuff
             (r"/banks/?", BankLoad),
@@ -1270,7 +1321,6 @@ application = web.Application(
 
             (r"/websocket/?$", AtomWebSocket),
 
-            (r"/pedalboards/(.*)", web.StaticFileHandler, {"path": "/"}),
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],
             debug=LOG and False, **settings)
@@ -1282,9 +1332,18 @@ def prepare():
             tornado.log.enable_pretty_logging()
 
     def check():
-        check_environment(lambda result: result)
+        if SESSION.host.sock is None:
+            print("Host failed to initialize, is ingen running?")
+            sys.exit(1)
+
+        check_environment()
 
     lv2_init()
+
+    if not APP:
+        print("Scanning plugins, this may take a little...")
+        get_all_plugins()
+        print("Done!")
 
     run_server()
     tornado.ioloop.IOLoop.instance().add_callback(check)

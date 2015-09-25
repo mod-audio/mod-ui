@@ -20,6 +20,9 @@ from mod.hmi import HMI
 from mod.host import Host
 
 class FakeCommunicator(object):
+    def init(self, callback):
+        pass
+
     def send(self, msg, callback, datatype=None):
         logging.info(msg)
         if callback is None:

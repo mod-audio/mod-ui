@@ -73,7 +73,6 @@ def ingen_bundle_path():
 
 class IngenAsync(object):
     def __init__(self, uri='unix:///tmp/ingen.sock'):
-        self.msg_id      = 1
         self.server_base = uri + '/'
         self.proto_base  = "mod://"
         self.model       = rdflib.Graph()
@@ -129,6 +128,8 @@ class IngenAsync(object):
         if isinstance(self.addr, list):
             self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
         else:
+            if not os.path.exists(self.addr):
+                return
             self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
 
         def check_response():

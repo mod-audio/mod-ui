@@ -23,8 +23,14 @@ PLUGINS = []
 # cached info about each plugin (using uri as key)
 PLUGNFO = {}
 
+# cached keys() of PLUGNFO, for performance
+PLUGNFOk = []
+
 # Blacklisted plugins, which don't work properly on MOD for various reasons
 BLACKLIST = [
+    "urn:50m30n3:plugins:SO-404",
+    "urn:50m30n3:plugins:SO-666",
+    "urn:50m30n3:plugins:SO-kl5",
     "urn:juce:JuceDemoHost",
     "urn:juced:DrumSynth",
     "file:///usr/lib/lv2/MonoEffect.ingen/MonoEffect.ttl",
@@ -98,6 +104,7 @@ BLACKLIST = [
     "http://teragonaudio.com/ExtraNotes.html",
     "http://www.klangfreund.com/lufsmeter",
     "http://www.klangfreund.com/lufsmetermultichannel",
+    "http://www.wodgod.com/newtonator/1.0",
     "https://github.com/HiFi-LoFi/KlangFalter",
 # FIXME: These are temporarily blacklisted because they need fixing or the modguis are not good enough for the live-ISO
     #"http://calf.sourceforge.net/plugins/eq5",
@@ -207,6 +214,32 @@ BLACKLIST = [
     #"http://plugin.org.uk/swh-plugins/delayorama",
     #"http://plugin.org.uk/swh-plugins/tapeDelay",
     #"http://plugin.org.uk/swh-plugins/harmonicGen",
+]
+
+# Whitelisted plugins, for testing purposes
+WHITELIST = [
+    "http://distrho.sf.net/plugins/Nekobi",
+    "http://moddevices.com/plugins/tap/autopan",
+    "http://moddevices.com/plugins/tap/chorusflanger",
+    #"http://moddevices.com/plugins/tap/deesser",
+    "http://moddevices.com/plugins/tap/doubler",
+    "http://moddevices.com/plugins/tap/dynamics",
+    "http://moddevices.com/plugins/tap/dynamics-st",
+    "http://moddevices.com/plugins/tap/echo",
+    "http://moddevices.com/plugins/tap/eq",
+    "http://moddevices.com/plugins/tap/eqbw",
+    "http://moddevices.com/plugins/tap/limiter",
+    "http://moddevices.com/plugins/tap/pinknoise",
+    #"http://moddevices.com/plugins/tap/pitch",
+    "http://moddevices.com/plugins/tap/reflector",
+    "http://moddevices.com/plugins/tap/reverb",
+    "http://moddevices.com/plugins/tap/rotspeak",
+    "http://moddevices.com/plugins/tap/sigmoid",
+    "http://moddevices.com/plugins/tap/tremolo",
+    "http://moddevices.com/plugins/tap/tubewarmth",
+    "http://moddevices.com/plugins/tap/vibrato",
+    "http://moddevices.com/plugins/mod-devel/Gain",
+    "http://moddevices.com/plugins/mod-devel/Gain2x2",
 ]
 
 # List of plugins available in the mod cloud
@@ -332,18 +365,21 @@ def init():
 # refresh everything
 # plugins are not truly scanned here, only later per request
 def refresh():
-    global W, BUNDLES, PLUGINS, PLUGNFO
+    global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
-    BUNDLES = []
-    PLUGINS = W.get_all_plugins()
-    PLUGNFO = {}
+    BUNDLES  = []
+    PLUGINS  = W.get_all_plugins()
+    PLUGNFO  = {}
+    PLUGNFOk = []
 
     # Make a list of all installed bundles
     for p in PLUGINS:
         bundles = lilv.lilv_plugin_get_data_uris(p.me)
 
         # store empty dict for later
-        PLUGNFO[p.get_uri().as_uri()] = {}
+        uri = p.get_uri().as_uri()
+        PLUGNFO[uri] = {}
+        PLUGNFOk.append(uri)
 
         it = lilv.lilv_nodes_begin(bundles)
         while not lilv.lilv_nodes_is_end(bundles, it):
@@ -367,10 +403,9 @@ def refresh():
 # this is trigger scanning of all plugins
 # returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
-    global W, PLUGINS, PLUGNFO
+    global W, PLUGINS, PLUGNFO, PLUGNFOk
 
-    ret  = []
-    keys = PLUGNFO.keys()
+    ret = []
 
     for p in PLUGINS:
         uri = p.get_uri().as_uri()
@@ -379,9 +414,11 @@ def get_all_plugins():
             continue
         if MODGUI_SHOW_MODE == 2 and uri not in CLOUD_PLUGINS:
             continue
+        if MODGUI_SHOW_MODE == 3 and uri not in WHITELIST:
+            continue
 
         # check if it's already cached
-        if uri in keys and PLUGNFO[uri]:
+        if uri in PLUGNFOk and PLUGNFO[uri]:
             if PLUGNFO[uri]['gui'] or MODGUI_SHOW_MODE != 1:
                 ret.append(PLUGNFO[uri])
             continue
@@ -399,10 +436,10 @@ def get_all_plugins():
 # get a specific plugin
 # NOTE: may throw
 def get_plugin_info(uri):
-    global W, PLUGINS, PLUGNFO
+    global W, PLUGINS, PLUGNFO, PLUGNFOk
 
     # check if it exists
-    if uri not in PLUGNFO.keys():
+    if uri not in PLUGNFOk:
         raise Exception
 
     # check if it's already cached
@@ -414,6 +451,7 @@ def get_plugin_info(uri):
         if p.get_uri().as_uri() != uri:
             continue
         # found it
+        print("NOTICE: Plugin '%s' was not cached, scanning it now..." % uri)
         PLUGNFO[uri] = get_plugin_info2(W, p)
         return PLUGNFO[uri]
 
@@ -421,7 +459,7 @@ def get_plugin_info(uri):
     raise Exception
 
 # get all available pedalboards (ie, plugins with pedalboard type)
-def get_pedalboards():
+def get_pedalboards(asDictionary):
     global W, PLUGINS
 
     # define needed namespaces
@@ -440,7 +478,10 @@ def get_pedalboards():
         return list(LILV_FOREACH(presets, get_preset_data))
 
     # check each plugin for a pedalboard type
-    pedalboards = []
+    if asDictionary:
+        pedalboards = {}
+    else:
+        pedalboards = []
 
     for pedalboard in PLUGINS:
         # check if the plugin is a pedalboard
@@ -452,7 +493,7 @@ def get_pedalboards():
             continue
 
         # ready
-        pedalboards.append({
+        pedalboard = {
             'bundlepath': lilv.lilv_uri_to_path(pedalboard.get_bundle_uri().as_string()),
             'name': pedalboard.get_name().as_string(),
             'uri':  pedalboard.get_uri().as_string(),
@@ -461,14 +502,19 @@ def get_pedalboards():
             'width':  pedalboard.get_value(modpedal.width).get_first().as_int(),
             'height': pedalboard.get_value(modpedal.height).get_first().as_int(),
             'presets': get_presets(pedalboard)
-        })
+        }
+
+        if asDictionary:
+            pedalboards[pedalboard['uri']] = pedalboard
+        else:
+            pedalboards.append(pedalboard)
 
     return pedalboards
 
 # add a bundle to our lilv world
 # returns true if the bundle was added
 def add_bundle_to_lilv_world(bundlepath):
-    global W, BUNDLES, PLUGINS, PLUGNFO
+    global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
     # lilv wants the last character as the separator
     if not bundlepath.endswith(os.sep):
@@ -491,16 +537,15 @@ def add_bundle_to_lilv_world(bundlepath):
     BUNDLES.append(bundlepath)
 
     # fill in for any new plugins that appeared
-    keys = PLUGNFO.keys()
-
     for p in PLUGINS:
         uri = p.get_uri().as_uri()
 
         # check if it's already cached
-        if uri in keys and PLUGNFO[uri]:
+        if uri in PLUGNFOk and PLUGNFO[uri]:
             continue
 
         # get new info
         PLUGNFO[uri] = get_plugin_info2(W, p)
+        PLUGNFOk.append(uri)
 
     return True

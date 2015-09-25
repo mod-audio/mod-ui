@@ -26,15 +26,15 @@ ADDRESSING_TYPES = [
     ADDRESSING_TYPE_TAP_TEMPO
 ]
 
-ADDRESSING_CTYPE_LINEAR         = 0
-ADDRESSING_CTYPE_BYPASS         = 1
-ADDRESSING_CTYPE_TAP_TEMPO      = 2
-ADDRESSING_CTYPE_ENUMERATION    = 4
-ADDRESSING_CTYPE_SCALE_POINTS   = 8
-ADDRESSING_CTYPE_TRIGGER        = 16
-ADDRESSING_CTYPE_TOGGLED        = 32
-ADDRESSING_CTYPE_LOGARITHMIC    = 64
-ADDRESSING_CTYPE_INTEGER        = 128
+ADDRESSING_CTYPE_LINEAR       = 0
+ADDRESSING_CTYPE_BYPASS       = 1
+ADDRESSING_CTYPE_TAP_TEMPO    = 2
+ADDRESSING_CTYPE_ENUMERATION  = 4 # implies scalepoints
+ADDRESSING_CTYPE_SCALE_POINTS = 8
+ADDRESSING_CTYPE_TRIGGER      = 16
+ADDRESSING_CTYPE_TOGGLED      = 32
+ADDRESSING_CTYPE_LOGARITHMIC  = 64
+ADDRESSING_CTYPE_INTEGER      = 128
 
 ACTUATOR_TYPE_FOOTSWITCH = 1
 ACTUATOR_TYPE_KNOB       = 2
@@ -49,6 +49,7 @@ HARDWARE_TYPE_CUSTOM = 4
 import logging
 import os
 
+from mod.bank import list_banks
 from mod.hardware import get_hardware
 from mod.ingen import Host
 from mod.protocol import Protocol
@@ -90,14 +91,16 @@ class Addressing(object):
         self.host = None
         self.hmi  = hmi
         self.mapper = InstanceIdMapper()
+        self.banks = []
         self.instances = {}
         self._init_addressings()
 
         # Register HMI protocol callbacks
-        #Protocol.register_cmd_callback("banks", self.hmi_list_banks)
-        #Protocol.register_cmd_callback("pedalboards", self.hmi_list_pedalboards)
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
+        Protocol.register_cmd_callback("banks", self.hmi_list_banks)
+        Protocol.register_cmd_callback("pedalboards", self.hmi_list_bank_pedalboards)
+        Protocol.register_cmd_callback("pedalboard", self.hmi_load_bank_pedalboard)
         Protocol.register_cmd_callback("control_get", self.hmi_parameter_get)
         Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
         Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
@@ -258,6 +261,7 @@ class Addressing(object):
             self._addressing_load(old_actuator)
 
     def clear(self):
+        self.banks = []
         self.instances = {}
         self._init_addressings()
 
@@ -271,6 +275,37 @@ class Addressing(object):
     def hmi_hardware_disconnected(self, hardware_type, hardware_id, callback):
         logging.info("hmi hardware disconnected")
         callback(True)
+
+    def hmi_list_banks(self, callback):
+        logging.info("hmi list banks")
+        self.banks = list_banks()
+        banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(self.banks))
+        callback(True, banks)
+
+    def hmi_list_bank_pedalboards(self, bank_id, callback):
+        logging.info("hmi list bank pedalboards")
+        if bank_id < len(self.banks):
+            #pedalboards = " ".join('"%s" %d' % (pb['title'], i) for i,pb in enumerate(self.banks[bank_id]['pedalboards']))
+            pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['uri']) for pb in self.banks[bank_id]['pedalboards'])
+        else:
+            pedalboards = ""
+        callback(True, pedalboards)
+
+    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_uri, callback):
+        logging.info("hmi load bank pedalboard")
+
+        #if bank_id >= len(self.banks):
+            #print("ERROR in addressing.py: bank id out of bounds")
+            #return
+
+        #pedalboards = self.banks[bank_id]['pedalboards']
+        #if pedalboard_id >= len(pedalboards):
+            #print("ERROR in addressing.py: pedalboard id out of bounds")
+            #return
+
+        #uri = pedalboards[pedalboard_id]['uri']
+
+        self.host.load_uri(pedalboard_uri)
 
     def hmi_parameter_get(self, instance_id, port, callback):
         logging.info("hmi parameter get")

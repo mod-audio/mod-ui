@@ -31,15 +31,19 @@ function shouldSkipPort(port) {
     return false;
 }
 
+var loadedIcons = {}
+var loadedSettings = {}
 var loadedCSSs = {}
 var loadedJSs = {}
 
 function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
+    var iconLoaded = true
+    var settingsLoaded = true
     var cssLoaded = true
     var jsLoaded = true
 
     var cb = function () {
-        if (cssLoaded && jsLoaded) {
+        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded) {
             setTimeout(callback, 0)
         }
     }
@@ -48,6 +52,34 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
     if (effect.source) {
         baseUrl += effect.source
         baseUrl.replace(/\/?$/, '')
+    }
+
+    if (effect.gui.iconTemplate) {
+        if (loadedIcons[effect.uri]) {
+            effect.gui.iconTemplate = loadedIcons[effect.uri]
+        } else {
+            iconLoaded = false
+            var iconUrl = baseUrl + '/effect/icon.html?uri=' + escape(effect.uri)
+            $.get(iconUrl, function (data) {
+                effect.gui.iconTemplate = loadedIcons[effect.uri] = data
+                iconLoaded = true
+                cb()
+            })
+        }
+    }
+
+    if (effect.gui.settingsTemplate) {
+        if (loadedSettings[effect.uri]) {
+            effect.gui.settingsTemplate = loadedSettings[effect.uri]
+        } else {
+            settingsLoaded = false
+            var settingsUrl = baseUrl + '/effect/settings.html?uri=' + escape(effect.uri)
+            $.get(settingsUrl, function (data) {
+                effect.gui.settingsTemplate = loadedSettings[effect.uri] = data
+                settingsLoaded = true
+                cb()
+            })
+        }
     }
 
     if (effect.gui.stylesheet && !loadedCSSs[effect.uri]) {
@@ -300,6 +332,18 @@ function GUI(effect, options) {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
             }
+
+            var p, _presets = []
+            console.log(effect.presets)
+            for (i in effect.presets) {
+                p = effect.presets[i]
+                _presets.push({
+                    name: p.label,
+                    uri: p.uri,
+                    bind: MOD_BIND_NONE,
+                })
+            }
+            desktop.presetManager.presetManager("setPresets", instance, _presets)
 
             self.triggerJS({ 'type': 'start' })
 

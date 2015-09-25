@@ -24,7 +24,10 @@ DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 
 LOG = bool(int(os.environ.get('MOD_LOG', False)))
 
-# 0 means all; 1 means modguis only; 2 means cloud approved
+APP     = bool(int(os.environ.get('MOD_APP', False)))
+DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
+
+# 0 means all; 1 means modguis only; 2 means cloud approved; 3 means whitelist
 MODGUI_SHOW_MODE = int(os.environ.get('MOD_GUI_SHOW_MODE', 0))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
@@ -39,7 +42,7 @@ DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL =  os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
-BANKS_BINARY_FILE = os.environ.get('MOD_BANKS_BINARY', join(DATA_DIR, 'banks.bin'))
+LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'last.json'))
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp'))
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
