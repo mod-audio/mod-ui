@@ -81,7 +81,7 @@ class ScreenshotGenerator(object):
         self.processing = False
 
     def schedule_screenshot(self, bundlepath):
-        if not bundlepath in self.queue:
+        if bundlepath not in self.queue:
             self.queue.append(bundlepath)
         if not self.processing:
             self.process_next()
