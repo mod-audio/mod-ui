@@ -670,7 +670,7 @@ class PedalboardPackBundle(web.RequestHandler):
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
 
         # make sure the screenshot is ready before proceeding
-        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs)
+        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
 
         oldcwd = os.getcwd()
         os.chdir(parentpath) # hmm, is there os.path.parent() ?
@@ -788,13 +788,27 @@ class PedalboardImage(web.RequestHandler):
     def get(self, image):
         bundlepath = self.get_argument('bundlepath')
         imagepath  = os.path.join(bundlepath, "%s.png" % image)
+        #imagetype  = "png"
 
         if not os.path.exists(imagepath):
+            #imagepath = os.path.join(HTML_DIR, "img", "loading-effect.gif")
+            #imagetype = "gif"
             raise web.HTTPError(404)
 
         with open(imagepath, 'rb') as fd:
+            #self.set_header('Content-type', 'image/%s' % imagetype)
             self.set_header('Content-type', 'image/png')
             self.write(fd.read())
+
+class PedalboardImageWait(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        resp = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(resp))
+        self.finish()
 
 class DashboardClean(web.RequestHandler):
     @web.asynchronous
@@ -1259,6 +1273,7 @@ application = web.Application(
             (r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
+            (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # bank stuff
             (r"/banks/?", BankLoad),

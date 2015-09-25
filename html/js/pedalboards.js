@@ -168,9 +168,8 @@ JqueryClass('pedalboardBox', {
 
         var metadata = {
             title: pedalboard.metadata.title,
-            image: "/pedalboard/image/screenshot.png"
-                 + "?bundlepath=" + escape(pedalboard.bundle)
-                 + "&tstamp=" + pedalboard.metadata.tstamp
+            // FIXME: proper gif image
+            image: "/img/loading-pedalboard.gif"
         }
 
         var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
@@ -202,12 +201,26 @@ JqueryClass('pedalboardBox', {
         })
 
         canvas.append(rendered)
-            // center thumbnail
-        rendered.find('.img img').each(function () {
-            var img = $(this)
-            $(this).css({
-                top: (img.parent().height() - img.height()) / 2
-            })
+
+        $.ajax({
+            url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),
+            success: function (ok) {
+                if (!ok) return
+
+                rendered.find('.img img').each(function () {
+                    var img = $(this)
+
+                    // set the actual image
+                    img.attr("src", "/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+pedalboard.metadata.tstamp)
+
+                    // center
+                    img.css({ top: (img.parent().height() - img.height()) / 2 })
+                })
+            },
+            error: function () {
+                console.log("Pedalboard image wait error")
+            },
+            dataType: 'json'
         })
 
         return rendered

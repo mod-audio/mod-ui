@@ -90,7 +90,7 @@ class ScreenshotGenerator(object):
         if len(self.queue) == 0:
             self.processing = False
             if self.callback is not None:
-                self.callback()
+                self.callback(True)
                 self.callback = None
             return
         self.processing = True
@@ -109,5 +109,15 @@ class ScreenshotGenerator(object):
 
         generate_screenshot(bundlepath, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
 
-    def wait_for_pending_jobs(self, callback):
+    def wait_for_pending_jobs(self, bundlepath, callback):
+        if bundlepath not in self.queue:
+            # all ok
+            callback(True)
+            return
+
+        # if previous callback is still there it means we're too slow
+        if self.callback is not None:
+            self.callback(True)
+
+        # report back later
         self.callback = callback
