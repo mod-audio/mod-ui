@@ -566,7 +566,7 @@ function Desktop(elements) {
     })
 
     this.presetManager = elements.presetManager.presetManager({});
-    this.presetManager.presetManager("setPresets", [
+    this.presetManager.presetManager("setPresets", "", [
         { name: "Foobar", uri: "whatever", bind: MOD_BIND_MIDI },
         { name: "Barfoo", uri: "whatever", bind: MOD_BIND_NONE },
         { name: "myFirstPreset", uri: "whatever", bind: MOD_BIND_KNOB },
@@ -574,19 +574,34 @@ function Desktop(elements) {
         { name: "Teserp", uri: "whatever", bind: MOD_BIND_MIDI },
         { name: "ƚɘƨɘɿꟼ", uri: "whatever", bind: MOD_BIND_NONE },
     ]);
-    this.presetManager.on("load", function (e, options) {
+    this.presetManager.on("load", function (e, instance, options) {
         console.log("load", options);
+
+            $.ajax({
+                url: '/effect/preset/load/' + instance,
+                data: {
+                    uri: options.uri
+                },
+                success: function (resp) {
+                    self.presetManager.presetManager("setPresetName", options.label)
+                },
+                error: function () {
+                },
+                cache: false,
+                'dataType': 'json'
+            })
+
     });
-    this.presetManager.on("save", function (e, name, options) {
+    this.presetManager.on("save", function (e, instance, name, options) {
         console.log("save", name, options);
     });
-    this.presetManager.on("rename", function (e, name, options) {
+    this.presetManager.on("rename", function (e, instance, name, options) {
         console.log("rename", name, options);
     });
-    this.presetManager.on("bind", function (e, options) {
+    this.presetManager.on("bind", function (e, instance, options) {
         console.log("bind", options);
     });
-    this.presetManager.on("bindlist", function (e, options) {
+    this.presetManager.on("bindlist", function (e, instance, options) {
         console.log("bindlist", options);
     })
     elements.shareButton.click(function () {

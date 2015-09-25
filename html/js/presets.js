@@ -6,7 +6,7 @@ JqueryClass("modIcon", {
     // itself has mod-light, the icon is drawn as white.
     //
     // OPTIONS:
-    // 
+    //
     // icons: define the icon type (look into img/icons/icons.css)
     // size:  the icons size, default is 36 pixels
     //
@@ -16,7 +16,7 @@ JqueryClass("modIcon", {
     //          new icon type
     // sizeset: is fired when the size is set. argument is the
     //          new size
-    
+
     init: function (options) {
         options = $.extend({
             icon: "",
@@ -66,7 +66,7 @@ JqueryClass('modButton', {
     // tooltip:  tooltip for the button (default HTML title tag)
     // confirm:  bool if confirmation is required before firing event
     // question: the buttons label for confirmation state
-    // 
+    //
     // EVENTS:
     //
     // action:     is fired when the button is clicked once or twice
@@ -81,7 +81,7 @@ JqueryClass('modButton', {
     //             new confirm message
     // confirm:    is fired when confirmation mode is entered
     // cancel:     is fired when confirmation mode is canceled
-    
+
     init: function (options) {
         var self = $(this);
         options = $.extend({
@@ -170,18 +170,18 @@ JqueryClass("modEditable", {
     // OPTIONS:
     //
     // text: the text of the element
-    // 
+    //
     // EVENTS:
-    // 
+    //
     // changed:  is fired when the user edited the text and hit enter
     //           or clicked the OK button
-    
+
     init: function (options) {
         var self = $(this);
         options = $.extend({
             text: "",
         }, options);
-        
+
         var e = {};
         e.popout = $("<div>");
         e.container = $("<div/>").appendTo(e.popout);
@@ -189,11 +189,11 @@ JqueryClass("modEditable", {
         e.button = $("<div/>").modButton({icon: "ok"}).on("action", function (e) {
             self.modEditable("setText", self.data("elements").input.val());
         }).appendTo(e.container);
-        
+
         e.popout.modPopout({
             content: e.container
         });
-        
+
         self.addClass("mod-editable");
         self.click(self.clicked);
         self.data("modEditableOptions", options);
@@ -220,9 +220,9 @@ JqueryClass("modEditable", {
 JqueryClass("modPopout", {
     // popout is a container showing custom content bound to a specific
     // element. the popout appears directly attached to $(this).
-    // 
+    //
     // OPTIONS:
-    // 
+    //
     // content: a JQuery element to display in the popout
     // anchor:  a MOD_ANCHOR_X constant to define the poputs position
     // auto:    a bool determining if the popout is positioned
@@ -240,7 +240,7 @@ JqueryClass("modPopout", {
     //             new content
     // parentset:  is fired when the parent is set. argument is the
     //             new parent
-    
+
     init: function (options) {
         var self = $(this);
         options = $.extend({
@@ -250,18 +250,18 @@ JqueryClass("modPopout", {
             position: true,
             size: true
         }, options);
-        
+
         self.html(Mustache.render(TEMPLATES.popout));
         self.addClass("mod-popout");
         self.addClass("mod-hidden");
-        
+
         var e = {};
         e.anchor = self.find(".mod-popout-anchor");
         e.container = self.find("mod-popout-content");
-        
+
         self.data("modPopoutOptions", options);
         self.data("modPopoutElements", e);
-        
+
         self.modPopout("setAnchor", options.anchor);
         self.modPopout("setContent", options.content);
         self.modPopout("setParent", options.parent);
@@ -270,10 +270,10 @@ JqueryClass("modPopout", {
     setAnchor: function (anchor) {
         var self = $(this);
         var p = self.data("elements").popout;
-        
+
         self.removeClass("mod-anchor-n mod-anchor-e mod-anchor-s mod-anchor-w");
         self.removeClass("mod-anchor-ne mod-anchor-se mod-anchor-sw mod-anchor-ne");
-        
+
         switch (anchor) {
             case MOD_ANCHOR_N:
                 self.addClass("mod-anchor-n");
@@ -300,7 +300,7 @@ JqueryClass("modPopout", {
                 self.addClass("mod-anchor-nw");
                 break;
         }
-        
+
         self.data("modPopoutOptions").anchor = anchor;
         self.trigger("anchorset", [anchor]);
         return self;
@@ -329,7 +329,7 @@ JqueryClass("modPopout", {
             default:
             case MOD_ANCHOR_S:
                 if (o.size) p.outerWidth(self.outerWidth());
-                
+
                 break;
             // TODO: IMPLEMENT ALL ANCHOR POSITIONS AND AUTO POSITIONING
         }
@@ -371,14 +371,15 @@ JqueryClass("presetManager", {
     //         (if any)
     // rename: is fired when a preset is renamed. arguments are the new
     //         presets name and the preset options
-    
+
     init: function (options) {
         var self = $(this);
         options = $.extend({
             preset: "",
             confirmations: 0,
+            instance: "",
         }, options);
-        
+
         self.html(Mustache.render(TEMPLATES.presets));
         var e = {};
         e.entry     = self.find(".preset-manager-entry");
@@ -387,46 +388,46 @@ JqueryClass("presetManager", {
         e.save      = self.find(".mod-button-save");
         e.bind      = self.find(".mod-button-bind");
         e.list      = self.find(".mod-list");
-        
+
         e.entry.click(function (e) { self.presetManager("entryClicked", e); });
         e.entry.keyup(function (e) { self.presetManager("entryKeyup", e); });
-        
+
         e.bind.modButton({
             icon: "bind",
             tooltip: "Bind the preset list to a controller",
         }).on("action", function (e) { self.presetManager("bindClicked", e); });
-        
+
         e.load.modButton({
             icon: "load",
             label: "load",
             tooltip: "Load the selected preset",
         }).on("action", function (e) { self.presetManager("loadClicked", e); });
-        
+
         e.save.modButton({
             icon: "save",
             label: "save",
             tooltip: "Save or overwrite the selected preset",
         }).on("action", function (e) { self.presetManager("saveClicked", e); });
-        
+
         e.save.on("confirm", function () { self.data("presetManagerOptions").confirmations++; });
-        e.save.on("cancel", function () { self.data("presetManagerOptions").confirmations--; });   
-        
+        e.save.on("cancel", function () { self.data("presetManagerOptions").confirmations--; });
+
         self.addClass("preset-manager");
-        
+
         self.data("presetManagerOptions", options);
         self.data("presetManagerElements", e);
-        
+
         self.presetManager("setPresetName", "");
         self.presetManager("setPreset", options.preset);
         return self;
     },
-    
+
     clearPresets: function () {
         var self = $(this);
         self.data("presetManagerElements").list.empty();
         return self;
     },
-    
+
     addPresets: function (presets) {
         var self = $(this);
         for (p in presets) {
@@ -437,7 +438,7 @@ JqueryClass("presetManager", {
                 self.presetManager("setPresetName", $(this).data("presetEntryOptions").name);
             });
             li.on("rename", function (e, name, options) {
-                self.trigger("rename", [name, options]);
+                self.trigger("rename", [self.data("presetManagerOptions").instance, name, options]);
             });
             li.click( function (e) { e.stopPropagation(); });
             li.data("presetEntryElements").remove.on("confirm", function () {
@@ -449,14 +450,15 @@ JqueryClass("presetManager", {
         }
         return self;
     },
-    
-    setPresets: function (presets) {
+
+    setPresets: function (instance, presets) {
         var self = $(this);
+        self.data("presetManagerOptions").instance = instance
         self.presetManager("clearPresets");
         self.presetManager("addPresets", presets);
         return self;
     },
-    
+
     resetPresets: function() {
         var self = $(this);
         self.data("presetManagerElements").list.children().each( function () {
@@ -464,7 +466,7 @@ JqueryClass("presetManager", {
         });
         return self;
     },
-    
+
     setPresetName: function(string) {
         var self = $(this);
         if (string === "")
@@ -477,7 +479,7 @@ JqueryClass("presetManager", {
         self.presetManager("checkOverwrite");
         return self;
     },
-    
+
     searchInPresets: function(string) {
         // search for a substring in all preset titles
         var self = $(this);
@@ -492,7 +494,7 @@ JqueryClass("presetManager", {
         });
         return self;
     },
-    
+
     setPreset: function (preset) {
         var self = $(this);
         self.data("presetManagerOptions").preset = preset;
@@ -500,7 +502,7 @@ JqueryClass("presetManager", {
         self.presetManager("checkOverwrite");
         return self;
     },
-    
+
     getPresetByName: function (name) {
         var self = $(this);
         var e = self.data("presetManagerElements");
@@ -513,7 +515,7 @@ JqueryClass("presetManager", {
         });
         return a;
     },
-    
+
     checkOverwrite: function () {
         var self = $(this);
         var e = self.data("presetManagerElements");
@@ -522,7 +524,7 @@ JqueryClass("presetManager", {
         else
             e.save.modButton("setConfirm", false);
     },
-    
+
     activate: function() {
         var self = $(this);
         if (self.hasClass("active"))
@@ -538,7 +540,7 @@ JqueryClass("presetManager", {
         self.presetManager("resetPresets");
         return self;
     },
-    
+
     deactivate: function() {
         var self = $(this);
         self.removeClass("active");
@@ -555,7 +557,7 @@ JqueryClass("presetManager", {
         e.stopPropagation();
         return self;
     },
-    
+
     entryKeyup: function(e) {
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
@@ -575,27 +577,27 @@ JqueryClass("presetManager", {
         self.presetManager("checkOverwrite");
         return self;
     },
-    
+
     loadClicked: function(e) {
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
         var p = self.presetManager("getPresetByName", entry.val());
         if (p)
-            self.trigger("load", [p.data("presetEntryOptions")]);
+            self.trigger("load", [self.data("presetManagerOptions").instance, p.data("presetEntryOptions")]);
         self.presetManager("deactivate");
         return self;
     },
-    
+
     saveClicked: function(e) {
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
         var p = self.presetManager("getPresetByName", entry.val());
         var o = p ? p.data("presetEntryOptions") : false;
-        self.trigger("save", [entry.val(), o]);
+        self.trigger("save", [self.data("presetManagerOptions").instance, entry.val(), o]);
         self.presetManager("deactivate");
         return self;
     },
-    
+
     bindClicked: function(e) {
         var self = $(this);
         // TODO!
@@ -613,7 +615,7 @@ JqueryClass("presetEntry", {
             bind: "",
             uri:  "",
         }, options);
-        
+
         self.html(Mustache.render(TEMPLATES.preset));
         var e    = {};
         e.name   = self.find(".preset-manager-preset-name");
@@ -621,33 +623,33 @@ JqueryClass("presetEntry", {
         e.bind   = self.find(".mod-button-bind");
         e.edit   = self.find(".mod-button-edit");
         e.remove = self.find(".mod-button-remove");
-        
+
         e.bind.modButton({
             icon: "bind",
             tooltip: "Bind the preset to a controller",
         }).on("action",function (e) { self.presetEntry("bind", e); });
-        
+
         e.edit.modButton({
             icon: "edit",
             tooltip: "Edit the presets name",
         }).on("action", function (e) { self.presetEntry("editName", e); });
-        
+
         e.remove.modButton({
             confirm: true,
             question: "",
             icon: "remove",
             tooltip: "Remove this preset",
         }).on("action", function (e) {
-                self.trigger("remove", [self.data("presetEntryOptions")]);
+                self.trigger("remove", [self.data("presetManagerOptions").instance, self.data("presetEntryOptions")]);
                 self.remove();
         });
-        
+
         e.entry.on("keyup", function (e) { self.presetEntry("typing", e); });
-        
+
         e.name.on("click", function () { self.trigger("clicked"); });
-        
+
         self.addClass("mod-list-item");
-        
+
         self.data("presetEntryOptions", options);
         self.data("presetEntryElements", e);
         self.presetEntry("setBind", options.bind);
@@ -700,7 +702,7 @@ JqueryClass("presetEntry", {
         var self = $(this);
         switch (e.keyCode) {
             default:
-                
+
                 break;
             case 13:
                 // return
@@ -720,19 +722,20 @@ JqueryClass("presetEntry", {
     },
     doEdit: function () {
         var self = $(this);
-        self.trigger("rename", [self.data("presetEntryElements").entry.val(),
+        self.trigger("rename", [self.data("presetManagerOptions").instance,
+                                self.data("presetEntryElements").entry.val(),
                                 self.data("presetEntryOptions")]);
         self.presetEntry("reset");
         return self;
     },
-    
+
     bind: function (e) {
         var self = $(this);
         // TODO!
-        //self.trigger("bind", [self.data("presetEntryOptions")]);
+        //self.trigger("bind", [self.data("presetManagerOptions").instance, self.data("presetEntryOptions")]);
         return self;
     },
-    
+
     reset: function () {
         var self = $(this);
         var e = self.data("presetEntryElements");

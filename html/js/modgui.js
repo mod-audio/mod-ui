@@ -333,6 +333,18 @@ function GUI(effect, options) {
                 self.settings.find(".mod-address").hide()
             }
 
+            var p, _presets = []
+            console.log(effect.presets)
+            for (i in effect.presets) {
+                p = effect.presets[i]
+                _presets.push({
+                    name: p.label,
+                    uri: p.uri,
+                    bind: MOD_BIND_NONE,
+                })
+            }
+            desktop.presetManager.presetManager("setPresets", instance, _presets)
+
             self.triggerJS({ 'type': 'start' })
 
             var preset_select = self.settings.find('[mod-role=presets]')
