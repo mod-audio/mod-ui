@@ -17,6 +17,8 @@
 
 function Notification(type, message, timeout) {
     var self = this
+    if(type == 'error')
+        type = 'danger' //fix for bootstrap
 
     var delay = 200
 
@@ -69,7 +71,7 @@ function Notification(type, message, timeout) {
     this.type = function (type) {
         self.rendered.removeClass('info')
         self.rendered.removeClass('warning')
-        self.rendered.removeClass('error')
+        self.rendered.removeClass('danger')
         self.rendered.removeClass('success')
         self.rendered.addClass(type)
     }

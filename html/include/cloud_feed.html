@@ -1,4 +1,4 @@
-        <li class="feed clearfix">
+<!--         <article class="feed clearfix">
             <figure class="col-sm-2">
                 <img src="{{avatar_href}}?s=64" style="margin-right: 1em; float: left" class="gravatar" alt=""/>
             </figure>
@@ -29,4 +29,67 @@
               </div>
             </div>
             {{/pedalboard}}
-        </li>
+        </article>
+ -->
+
+        <article id="{{id}}" class="post {{post_class}}">
+            <figure class="col-lg-1" style="padding: 0 1em 0 0">
+                <a target="_new" href="http://social.dev.moddevices.com/#user/{{user_id}}"><img style="margin-bottom: 0.6em" class="gravatar l" src="{{avatar_href}}" alt="{{author_name}}" /></a>
+                 <figcaption class="pull-left hide " style="clear:left">
+                    <span class="profile-stats"><img src="assets/img/social_pedalboards.png" />&emsp;127</span><br />
+                    <span class="profile-stats"><i class="glyphicon glyphicon-home"></i></span>
+                </figcaption>
+            </figure>
+            <div class="col-xs-offset-1" style="padding: 0">
+                <p><a ng-href="#user/{{user_id}}" linkout><strong>@{{user_id}}</strong></a>&ensp;
+
+               <!--  <span ng-if="logged">
+                    <b ng-click="modalConfirm('delete your post',id)" ng-if="section == 'myposts'" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon glyphicon-remove"></i> remove post</b>
+                    <b ng-if="reply_original && section == 'myposts'" class="btn btn-xs btn-default"><i class="glyphicon glyphicon glyphicon-share-alt"></i><i class="glyphicon glyphicon glyphicon-user"></i> replied to</b>
+                    <b ng-if="user_id === user_id && section != 'myposts'" class="btn btn-xs btn-default"><i class="glyphicon glyphicon glyphicon-user"></i> you</b>
+                    <b ng-if="followCheck(user_id)" class="btn btn-xs btn-primary" ng-click="followUser(user_id)" ><i class="glyphicon glyphicon-plus"></i><i class="glyphicon glyphicon glyphicon-user"></i></b>
+                    <b ng-if="user_id !== user_id && !followCheck(user_id)" ng-click="unfollowUser(user_id)" class="btn btn-xs btn-warning"><i class="glyphicon glyphicon-minus"></i><i class="glyphicon glyphicon glyphicon-user"></i></b>
+                </span> -->
+                <br />
+                <small style="color: #666">{{user_name}}</small>
+                </p>
+                
+                <h2 class="italic">{{text}}</h2>
+            </div>
+            <!-- START PEDALBOARD -->
+            {{#pedalboard}}
+            <div class="row col-sm-offset-1 tl-pedalboard" id="js-pedalboard-{{id}}">
+                <div class="col-sm-11 col-xs-12 panel">
+                <br />
+                    <!-- <div ng-if="pedalboard.video" class="col-sm-5" style="padding: 0">
+                        <div class="flex-video widescreen">
+                            <iframe src="{{video_url}}" frameborder="0"></iframe>
+                        </div>
+                    </div> -->
+                    <figure class="col-sm-4">
+                        <header><p><strong><small>PEDALBOARD ATTACHED:</strong> {{name}}</small></p></header>
+                        <img class="img img-responsive"  src="{{thumbnail}}" />
+                    </figure>
+                    <div class="col-sm-8" style="border-left: 2px dotted#444;">
+                        <p><strong><small>PLUGINS USED</small></strong></p>
+                        <ul class="list list-unstyled list-inline">
+                            {{#plugins}}
+                            <li class="col-md-3 col-sm-4 col-xs-4 plugin" >
+                                <figure>
+                                    <img src="{{thumbnail}}" />
+                                    <figcaption class="hidden-xs hidden-sm">
+                                        <small ng-if="plugin.name"><a href="{{plugin.url}}">{{name}}</a></small>
+                                        <!-- <hr ng-show="plugin.href" class="dotted" style="margin: 0.3em 0" />
+                                        <small ng-show="plugin.href"><a href="{{plugin.href}}">+ Pedalboards</a></small> -->
+                                    </figcaption>
+                                </figure>
+                            </li>
+                            {{/plugins}}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {{/pedalboard}}
+            <hr class="col-sm-12 lg" style="margin-left: -15px" />
+            
+        </article>

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>MOD</title>
-    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+    Socialmod-1.0
+    <link rel="stylesheet" type="text/css" href="css/social.css?v={{version}}"/>
     <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
     <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
     <link rel="stylesheet" type="text/css" href="css/social.css?v={{version}}"/>
@@ -185,13 +186,13 @@ $('document').ready(function() {
 
   <!-- NOTIFICATIONS -->
 
-  <div id="notifications"></div>
+  <div id="notifications mod-hidden"></div>
   <!-- END NOTIFICATIONS -->
     <!-- WRAPPER -->
     <div id="wrapper">
 
         <!-- PEDALBOARD-SETTINGS-WINDOW -->
-        <div id="pedalboard-settings" class="hidden">
+        <div id="pedalboard-settings" class="mod-hidden">
             <h1>Settings</h1>
             <div class="js-canvas"></div>
         </div>
@@ -208,7 +209,7 @@ $('document').ready(function() {
             <!-- END ZOOM CONTROLLERS -->
 
             <!-- SAVE WINDOW -->
-            <div id="save-pedalboard" class="save-popup hidden">
+            <div id="save-pedalboard" class="save-popup mod-hidden">
                 <div class="mod-box">
                     <h1>Saving Pedalboard</h1>
                     <form class="bottom">
@@ -226,11 +227,11 @@ $('document').ready(function() {
             <!-- END SAVE WINDOW -->
 
             <!-- LOGIN WINDOW -->
-            <div id="login-window" class="save-popup hidden">
+            <div id="login-window" class="save-popup mod-hidden">
                 <div class="mod-box">
                     <h1>Login</h1>
                     <!-- The div below will hold error message. It must have class "error" -->
-                    <div class="error hidden"></div>
+                    <div class="error mod-hidden"></div>
                     <form class="bottom">
                         <div class="control-group">
                             <label>User ID</label>
@@ -254,11 +255,11 @@ $('document').ready(function() {
             <!-- END LOGIN WINDOW -->
 
             <!-- REGISTRATION WINDOW -->
-            <div id="registration-window" class="save-popup hidden">
+            <div id="registration-window" class="save-popup mod-hidden">
                 <div id="registration-form" class="mod-box">
                     <h1>Register</h1>
                     <!-- The div below will hold error message. It must have class "error" -->
-                    <div class="error hidden"></div>
+                    <div class="error mod-hidden"></div>
                     <form class="bottom form-horizontal">
                         <div class="control-group">
                             <label>User ID</label>
@@ -304,7 +305,7 @@ $('document').ready(function() {
                     </div>
                 </form>
             </div>
-            <div id="registration-result" class="mod-box hidden">
+            <div id="registration-result" class="mod-box mod-hidden">
                 <div class="js-close">x</div>
                 <p></p>
             </div>
@@ -312,7 +313,7 @@ $('document').ready(function() {
         <!-- END REGISTRATION WINDOW -->
 
         <!-- PEDALBOARD SHARE WINDOW -->
-        <div id="share-window" class="save-popup hidden">
+        <div id="share-window" class="save-popup mod-hidden">
 		 	<!-- PEDALBOARD SHARE WINDOW STAGE 1 -->
             <div class="box">
                 <h1>SHARE</h1>
@@ -328,21 +329,21 @@ $('document').ready(function() {
 						<span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
 						<p><small>(optional)</small><p>
 					</div>
-					<div class="controls actions hidden" id="record-step-2">
+					<div class="controls actions mod-hidden" id="record-step-2">
 						<h2 class="textcenter">Recording starts in</h2>
 						<span class="btn btn-danger" id="record-countdown">3</span>
 					</div>
-					<div class="textcenter hidden" id="record-step-3">
+					<div class="textcenter mod-hidden" id="record-step-3">
 						<h2>Recording</h2>
 						<span class="btn btn-primary" id="record-stop">15</span>
 						<p><small>(click the square to stop)</small><p>
 					</div>
-					<div class="textcenter hidden" id="record-step-4">
+					<div class="textcenter mod-hidden" id="record-step-4">
 						<small>&nbsp;</small>
 						<button class="btn btn-info btn-large btn-block " id="record-play">
 						  <i class="icon-white icon-play"></i> Listen
 						</button>
-						<button class="btn btn-info btn-large btn-block active hidden" id="record-play-stop" style="margin-top: 0">
+						<button class="btn btn-info btn-large btn-block active mod-hidden" id="record-play-stop" style="margin-top: 0">
 						  <i class="icon-white icon-stop"></i> Stop
 						</button>
 						<button class="btn btn-danger btn-large btn-block" id="record-again">
@@ -374,12 +375,12 @@ $('document').ready(function() {
                 <div class="title">{{fulltitle}}</div>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
-                    <button class="js-add-midi btn btn-mini btn-warning">Add MIDI Device</button>
+                    <button class="js-add-midi btn btn-xs btn-warning">Add MIDI Device</button>
                     <span class="separator" id="js-add-midi-separator"></span>
-                    <button class="js-save btn btn-mini btn-warning">Save</button>
-                    <button class="js-save-as btn btn-mini btn-warning">Save as</button>
+                    <button class="js-save btn btn-xs btn-warning">Save</button>
+                    <button class="js-save-as btn btn-xs btn-warning">Save as</button>
                     <span class="separator"></span>
-                    <button class="js-reset btn btn-mini btn-success">New Pedalboard</button>
+                    <button class="js-reset btn btn-xs btn-success">New Pedalboard</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
@@ -405,7 +406,7 @@ $('document').ready(function() {
         <!-- END PEDALBOARD-DASHBOARD -->
 
         <!-- MIDI DEVICE LIST WINDOW -->
-        <div id="midi-device-window" class="save-popup hidden">
+        <div id="midi-device-window" class="save-popup mod-hidden">
             <div class="mod-box">
                 <h1>MIDI Device List</h1>
                 <form class="bottom">
@@ -508,7 +509,7 @@ $('document').ready(function() {
     <!-- END plugins-library -->
 
     <!-- Cloud Plugins LIBRARY -->
-    <div id="cloud-plugins-library" class="hidden">
+    <div id="cloud-plugins-library" class="mod-hidden">
         <div class="box clearfix">
             <header>
                 <h1 class="bottom top">
@@ -568,7 +569,7 @@ $('document').ready(function() {
     <!-- END Cloud Plugins Library -->
 
     <!-- PEDALBOARDS LIBRARY -->
-    <div id="pedalboards-library" class="hidden">
+    <div id="pedalboards-library" class="mod-hidden">
         <div class="box clearfix">
             <header>
                 <h1 class="bottom top">
@@ -639,7 +640,7 @@ $('document').ready(function() {
     </div>
 
     <!-- BANK LIBRARY -->
-    <div id="bank-library" class="hidden">
+    <div id="bank-library" class="mod-hidden">
         <!-- END BOX -->
         <div class="box">
 
@@ -665,7 +666,7 @@ $('document').ready(function() {
                   <span class="list"></span>
                 </div>
             -->
-            <div id="bank-addressings" class="hidden">
+            <div id="bank-addressings" class="mod-hidden">
 	      <h2>Bank addressings:</h2>
 	      <small>Select footswitch functionality for this bank. Pedalboard footswitches will be overriden.</small>
                 <select name="foot-0">
@@ -779,84 +780,94 @@ $('document').ready(function() {
 
 
 <!-- MOD SOCIAL NETWORK -->
-<div id="mod-social-network" class="clearfix hidden">
-
-    <!-- HEADER -->
-    <div id="mod-social-network-header" class="clearfix">
-        <div class="profile">
-            <div class="avatar">
-                <img id="user-avatar">
-            </div>
-            <a id="user-name" href="cloud-user-profile.html" class="name"></a>
-        </div>
-        <div class="menu clearfix">
-            <ul class="clearfix">
-	      <!--
-                <li><a id="cloud-feed" href="#cloud-feed">Feed</a></li>
-                <li><a id="cloud-pedalboards" href="#cloud-pedalboards">Pedalboards</a></li>
-              <li><a href="cloud-people.html">People</a></li>
-              <li class="search">
-                <form class="form-inline bottom top">
-                  <input type="search" placeholder="Search pedalboard" class="bottom top"/>
-                  <button type="submit" class="bottom top"></button>
-                </form>
-              </li>
-	      -->
-              <li class="feed"><a id="cloud-feed-timeline">Feed</a></li>
-              <li class="login"><a id="login">Login</a></li>
-              <li class="logout"><a id="logout">Logout</a></li>
-            </ul>
-        </div>
-    </div>
-    <!-- END HEADER -->
-
-            <!-- CONTENT -->
-            <div class="content-wrapper clearfix">
-                <div class="container">
-                    <div class="row">
-                        <!-- MAIN -->
-                        <div id="social-main" class="span9">
-			  <div class="box bottom left top row-fluid">
-			    <!-- FEED -->
-			    <ul class="feeds span12">
-			      <li class="more"><button class="hidden">More...</button></li>
-			    </ul>
-			</div>
+<div id="mod-social-network" class="clearfix mod-hidden">
+    <div> <!-- wrapper -->
+        <header class="navbar navbar-default">
+          <div class="container">
+              <div class="col-sm-3 navbar-header">
+                  <button type="button" class="navbar-toggle hide">
+                      <span class="sr-only">Toggle navigation</span>
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                  </button>
+                  <figure class="navbar-brand">
+                      <a ui-sref="home"><img src="img/social/logo-b.png"></a>
+                  </figure>
+              </div>
+          <div class="col-sm-9">
+              <div class="collapse navbar-collapse" collapse="menuCollapsed">
+                  <div class="col-sm-8 center-block text-center" style="padding-top: 0.6em;">
+                      <form ng-submit="search()">
+                      <div class="input-group">
+                              <input type="text" ng-model="terms" class="form-control" placeholder="Search...">
+                              <span class="input-group-btn">
+                                  <button type="submit" class="btn btn-default" style="box-shadow: none !important" >
+                                      <i class="glyphicon glyphicon-search"></i>
+                                  </button>
+                              </span>
+                          </div>
+                      </form>
+                  </div>
+                  <ul class="nav navbar-nav pull-right">
+                  <li class="hide" ui-sref-active="active">
+                  </li>
+                  <li ng-if="!logged" ui-sref-active="active">
+                      <a ui-sref="register">
+                          Register
+                      </a>
+                  </li>
+                  <li>
+                      <a ng-click="modalLogin()">
+                          Login
+                      </a>
+                  </li>
+                  </ul>
+              </div>
+              </div>
+          </div>
+      </header>
+      <div class="content-wrapper">
+            <div class="container">
+                <div class="col-sm-12 home-feed">
+                              <!-- MAIN -->
+                    <div id="social-main" class="span9">
+                        <div class="box bottom left top row-fluid">
+                            <!-- FEED -->
+                            <div class="feeds">
+                              <div class="more"><button class="btn btn-block btn-default mod-hidden">Load more posts...</button></div>
+                            </div>
+                        </div>
                         <!-- END MAIN -->
-
                         <!-- ASIDE -->
                         <div id="social-aside" class="span3"></div>
                         <!-- END ASIDE -->
                     </div>
                 </div>
             </div>
-            <!-- END CONTENT -->
         </div>
-        <!-- END MOD SOCIAL NETWORK -->
-
-
     </div>
+</div>
     <!-- END WRAPPER -->
-
     <!-- MOD UPDATE/UPGRADE TOOLTIP -->
-    <div class="tooltip hidden" style="opacity:1;right:102px;">
-        <div class="arrow"></div>
-        <div class="text">New updates are available. Click to upgrade.</div>
-    </div>
+<div class="tooltip mod-hidden" style="opacity:1;right:102px;">
+    <div class="arrow"></div>
+    <div class="text">New updates are available. Click to upgrade.</div>
+</div>
     <!-- END MOD UPDATE/UPGRADE TOOLTIP -->
 
     <!-- MOD UPDATE/UPGRADE BOX -->
-    <div id="mod-upgrade" class="hidden">
+    <div id="mod-upgrade" class="mod-hidden">
         <div class="box">
             <div class="mod-upgrade-packages-list">
                 <p>The following software updates are available:</p>
                 <ul></ul>
                 <p class="textright">
-		    <button class="js-close btn btn-mini btn-danger">Cancel</button>
-                    <button class="js-upgrade btn btn-mini btn-info">Upgrade</button>
+		    <button class="js-close btn btn-xs btn-danger">Cancel</button>
+                    <button class="js-upgrade btn btn-xs btn-info">Upgrade</button>
                 </p>
             </div>
-            <div class="download-progress hidden">
+            <div class="download-progress mod-hidden">
              <div class="download-info">
               <div class="downloading-file">Downloading <span class="filename"></span> (<span class="file-number"></span>/<span class="total-files"></span>)</div>
           </div>
