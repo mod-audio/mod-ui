@@ -422,8 +422,8 @@ class Addressing(object):
         # 'self.addressings' uses a structure like this:
         # (4, 0, 1, 0): {'addrs': [], 'idx': 0}
         # the 'key' is a hardware identifier, meaning a button, knob, etc
-        hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist ])
-        self.addressings = dict( (k, {'idx': 0, 'addrs': []}) for k in hw )
+        # hw = set([ tuple(h[:4]) for sublist in get_hardware().values() for h in sublist ])
+        self.addressings = dict() # (k, {'idx': 0, 'addrs': []}) for k in hw )
 
     # -----------------------------------------------------------------------------------------------------------------
 
