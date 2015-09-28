@@ -15,41 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-ADDRESSING_TYPE_RANGE     = "range"
-ADDRESSING_TYPE_SWITCH    = "switch"
-ADDRESSING_TYPE_TAP_TEMPO = "tap_tempo"
-
-ADDRESSING_TYPES = [
-    ADDRESSING_TYPE_RANGE,
-    ADDRESSING_TYPE_SWITCH,
-    ADDRESSING_TYPE_TAP_TEMPO
-]
-
-ADDRESSING_CTYPE_LINEAR         = 0
-ADDRESSING_CTYPE_BYPASS         = 1
-ADDRESSING_CTYPE_TAP_TEMPO      = 2
-ADDRESSING_CTYPE_ENUMERATION    = 4
-ADDRESSING_CTYPE_SCALE_POINTS   = 8
-ADDRESSING_CTYPE_TRIGGER        = 16
-ADDRESSING_CTYPE_TOGGLED        = 32
-ADDRESSING_CTYPE_LOGARITHMIC    = 64
-ADDRESSING_CTYPE_INTEGER        = 128
-
-ACTUATOR_TYPE_FOOTSWITCH = 1
-ACTUATOR_TYPE_KNOB       = 2
-ACTUATOR_TYPE_POT        = 3
-
 function HardwareManager(options) {
     var self = this
 
     options = $.extend({
         // This is the function that will actually make the addressing
-        address: function (instanceId, symbol, addressing, callback) {
+        address: function (instance, symbol, addressing, callback) {
             callback(true)
         },
 
         // Callback to get the GUI object of a plugin instance
-        getGui: function (instanceId) {}
+        getGui: function (instance) {}
 
         // Callback to enable or disable a control in GUI
 
@@ -57,79 +33,83 @@ function HardwareManager(options) {
 
     this.reset = function () {
        /* All adressings indexed by actuator
-           key: "hardwareType,hardwareId,actuatorType,actuatorId"
-           value: ["instanceId,symbol"]
+           key  : "/actuator-uri"
+           value: ["/instance/symbol"]
         */
         self.addressings = {}
 
-       /* All addressings indexed by instanceId and control port
-           key: [instanceId][symbol]
-           value: complete addressing structure
+       /* All addressings indexed by instance and control port
+           key  : "/instance":["symbol"]
+           value: ["/actuator-uris"]
         */
         self.controls = {}
 
         // Initializes addressings
-        self.listActuators()
+        self.initializeAddressingsAsNeeded()
     }
 
-    // Lists all available actuators and initializes the addressing structure
-    this.listActuators = function () {
-        if (Object.keys(HARDWARE_PROFILE).length == 0) {
-            return []
+    // Fills in 'self.addressings' as needed
+    this.initializeAddressingsAsNeeded = function () {
+        if (HARDWARE_PROFILE.actuators == null) {
+            return
         }
-        var actuators = []
-        var i, j, type, actuator, actuatorKey
-        for (i = 0; i < ADDRESSING_TYPES.length; i++) {
-            type = ADDRESSING_TYPES[i]
-            for (j = 0; j < HARDWARE_PROFILE[type].length; j++) {
-                actuatorData = HARDWARE_PROFILE[type][j]
-                actuator = {}
-                actuator.address = actuatorData.slice(0, 4)
-                actuator.type = type
-                actuator.exclusive = actuatorData[4]
-                actuator.label = actuatorData[5]
-                actuators.push(actuator)
-
-                actuatorKey = actuator.address.join(',')
-                if (!self.addressings[actuatorKey])
-                    self.addressings[actuatorKey] = []
-            }
+        var i, uri
+        for (i in HARDWARE_PROFILE.actuators.length) {
+            uri = HARDWARE_PROFILE.actuators[i].uri
+            if (! self.addressings[uri])
+                self.addressings[uri] = []
         }
-        return actuators
     }
 
     this.reset()
 
     // Get all addressing types that can be used for a port
+    // Most of these are 1:1 match to LV2 hints, but we have extra details.
     this.availableAddressingTypes = function (port) {
+        var properties = port.properties
         var types = []
-        if (port.toggled) {
-            types.push(ADDRESSING_TYPE_SWITCH)
-        } else if (port.enumeration) {
-            types.push(ADDRESSING_TYPE_SWITCH)
-            types.push(ADDRESSING_TYPE_RANGE)
-        } else {
-            types.push(ADDRESSING_TYPE_RANGE)
-            if (port.tap_tempo)
-                types.push(ADDRESSING_TYPE_TAP_TEMPO)
-        }
+
+        if (properties.indexOf("integer") >= 0)
+            types.push("integer")
+        else
+            types.push("float")
+
+        if (properties.indexOf("enumeration") >= 0)
+            types.push("enumeration")
+        if (properties.indexOf("logarithmic") >= 0)
+            types.push("logarithmic")
+        if (properties.indexOf("toggled") >= 0)
+            types.push("toggled")
+        if (properties.indexOf("trigger") >= 0)
+            types.push("trigger")
+        if (properties.indexOf("taptempo") >= 0)
+            types.push("taptempo")
+
+        if (port.scalePoints.length >= 2)
+            types.push("scalepoints")
+        if (port.symbol == ":bypass")
+            types.push("bypass")
+
         return types
     }
 
     // Checks if an actuator is available for a port
-    this.available = function (actuator, instanceId, port) {
-        var actuatorKey = actuator.address.join(',')
-        var portKey = [instanceId, port.symbol].join(',')
-        return (!actuator.exclusive || self.addressings[actuatorKey].length == 0 || self.addressings[actuatorKey].indexOf(portKey) >= 0)
+    this.available = function (actuator, instance, port) {
+        // FIXME
+        //var actuatorKey = actuator.address.join(',')
+        //var portKey = [instanceId, port.symbol].join(',')
+        return true //(!actuator.exclusive || self.addressings[actuatorKey].length == 0 || self.addressings[actuatorKey].indexOf(portKey) >= 0)
     }
 
     // Gets a list of available actuators for a port
-    this.availableActuators = function (instanceId, port) {
-        var portKey = [instanceId, port.symbol].join(',')
+    this.availableActuators = function (instance, port) {
+        var available = []
+
+        // FIXME
+        /*var portKey = [instanceId, port.symbol].join(',')
         var types = self.availableAddressingTypes(port)
         var actuators = self.listActuators(instanceId, port)
 
-        var available = []
         for (var i = 0; i < actuators.length; i++) {
             if (types.indexOf(actuators[i].type) < 0)
                 continue
@@ -137,23 +117,54 @@ function HardwareManager(options) {
                 continue
             available.push(actuators[i])
         }
+        */
         return available
     }
 
+    this.buildSensibilityOptions = function (select, port, curStep) {
+        select.children().remove()
+
+        if (port.properties.indexOf("integer") >= 0 || port.symbol == ":bypass") {
+            // If port is integer or bypass, step is always 1
+            $('<option value=0>').appendTo(select)
+            select.val(0)
+            select.hide()
+            return
+        }
+
+        var options = {
+            17: 'Low',
+            33: 'Medium',
+            65: 'High'
+        }
+        var def = 33
+        var i, steps, label
+        if (port.rangeSteps) {
+            options[port.rangeSteps] = 'Default'
+        }
+        var keys = Object.keys(options).sort()
+        for (i in keys) {
+            steps = keys[i]
+            label = options[steps]
+            label += ' (' + steps + ' steps)'
+            $('<option>').attr('value', steps).html(label).appendTo(select)
+        }
+
+        select.val(curStep || def)
+    }
+
     // Opens an addressing window to address this a port
-    this.open = function (instanceId, port, currentValue) {
-        console.log('open')
-        console.log(currentValue)
-        var currentAddressing = {}
-        if (self.controls[instanceId])
-            currentAddressing = self.controls[instanceId][port.symbol] || {}
+    this.open = function (pluginLabel, instance, port) {
+        console.log('---------------------------- open')
+        var currentAddressing = self.controls[instance] ? (self.controls[instance][port.symbol] || {}) : {}
 
         // Renders the window
-        var form = $(options.renderForm(instanceId, port))
+        var form = $(options.renderForm(instance, port))
 
-        var actuators = self.availableActuators(instanceId, port)
+        var actuators = self.availableActuators(instance, port)
         var actuatorSelect = form.find('select[name=actuator]')
         $('<option value="-1">').text('None').appendTo(actuatorSelect)
+
         var i, value, actuator, opt
         for (i = 0; i < actuators.length; i++) {
             opt = $('<option>').attr('value', i).text(actuators[i].label).appendTo(actuatorSelect)
@@ -161,24 +172,28 @@ function HardwareManager(options) {
                 actuatorSelect.val(i)
             }
         }
-        var gui = options.getGui(instanceId)
-        var pluginName = gui.effect.label || gui.effect.name
-        var portName
-        if (port.symbol == ":bypass")
-            portName = pluginName
-        else
-            portName = port.name
+        var portName = port.symbol == ":bypass" ? pluginLabel : port.name
 
-        var min = form.find('input[name=min]').val(currentAddressing.minimum || port.ranges.minimum)
-        var max = form.find('input[name=max]').val(currentAddressing.maximum || port.ranges.maximum)
+        var minv  = currentAddressing.minimum || port.ranges.minimum
+        var maxv  = currentAddressing.maximum || port.ranges.maximum
+        var min   = form.find('input[name=min]').val(minv).attr("min", minv).attr("max", maxv)
+        var max   = form.find('input[name=max]').val(maxv).attr("min", minv).attr("max", maxv)
         var label = form.find('input[name=label]').val(currentAddressing.label || portName)
 
+        if (port.properties.indexOf("integer") < 0) {
+            var step = (maxv-minv)/100
+            min.attr("step", step)
+            max.attr("step", step)
+        }
+
         var sensibility = form.find('select[name=steps]')
-        self.buildSensibilityOptions(sensibility, port)
-        if (currentAddressing.steps)
-            sensibility.val(currentAddressing.steps)
+        self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
         form.find('.js-save').click(function () {
+            console.log('---------------------------- save')
+            form.remove()
+            return
+
             actuator = {}
             if (actuatorSelect.val() >= 0)
                 actuator = actuators[actuatorSelect.val()]
@@ -195,7 +210,7 @@ function HardwareManager(options) {
                 options: [] // the available options in case this is enumerated (no interface for that now)
             }
 
-            self.setAddressing(instanceId, port, addressing, function () {
+            self.setAddressing(instance, port, addressing, function () {
                 form.remove()
             })
         })
@@ -203,44 +218,6 @@ function HardwareManager(options) {
             form.remove()
         })
         form.appendTo($('body'))
-    }
-
-    this.buildSensibilityOptions = function (select, port) {
-        select.children().remove()
-
-        if (port.integer || port.symbol == ":bypass") {
-            // If port is integer or bypass, step is always 1
-            $('<option value=0>').appendTo(select)
-            select.val(0)
-            select.hide()
-            return
-        }
-
-        var options = {
-            17: 'Low',
-            33: 'Medium',
-            65: 'High'
-        }
-        var def = 33
-        var steps, i, label
-        if (port.rangeSteps) {
-            if (!(options[port.rangeSteps]))
-                options[port.rangeSteps] = 'Default'
-            def = port.rangeSteps
-            for (steps in options) {
-                if (steps > port.rangeSteps) {
-                    delete options[steps]
-                }
-            }
-        }
-        var keys = Object.keys(options).sort()
-        for (i in keys) {
-            steps = keys[i]
-            label = options[steps]
-            label += ' (' + steps + ' steps)'
-            $('<option>').attr('value', steps).html(label).appendTo(select)
-        }
-        select.val(def)
     }
 
     /* Based on port data and addressingType chosen, creates the addressing data

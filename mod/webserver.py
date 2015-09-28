@@ -919,7 +919,7 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': json.dumps(SESSION.get_hardware()),
+            'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',

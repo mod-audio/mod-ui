@@ -56,7 +56,7 @@
       SITEURLNEW = "http://api.dev.moddevices.com"
       var SAMPLERATE = {{sampleRate}}
       var NOTIFICATIONS_ENABLED = true
-      var HARDWARE_PROFILE = JSON.parse('{{hardware_profile}}')
+      var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var MAX_SCREENSHOT_WIDTH = 600

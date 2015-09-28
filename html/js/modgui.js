@@ -158,18 +158,18 @@ function GUI(effect, options) {
     self.bypassed = options.bypassed
 
     this.makePortIndexes = function (ports) {
-        var indexes = {}
-        for (var i in ports) {
+        var i, port, porti, indexes = {}
+
+        for (i in ports) {
             porti = ports[i]
 
             // skip notOnGUI controls
             if (shouldSkipPort(porti))
                 continue
 
-            var port = {
+            port = {
                 widgets: [],
-                enabled: true,
-                value: null
+                enabled: true
             }
             $.extend(port, porti)
 
@@ -189,6 +189,7 @@ function GUI(effect, options) {
             // ready
             indexes[port.symbol] = port
         }
+
         return indexes
     }
 

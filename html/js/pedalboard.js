@@ -1109,7 +1109,6 @@ JqueryClass('pedalboard', {
                 if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-jack]')))
                     return
 
-
                 // setTimeout avoids cable drawing bug
                 setTimeout(function () {
                     self.pedalboard('focusPlugin', obj.icon)
@@ -1165,27 +1164,28 @@ JqueryClass('pedalboard', {
             if (addressing && hardware)
                 hardware.unserializeInstance(instance, addressing, self.data('bypassApplication'), addressingErrors)
 
-            var i, symbol, port
+            var address, symbol, port
             if (hardware) {
                 var addressFactory = function (port) {
                     return function () {
-                        hardware.open(instance, port, pluginGui.getPortValue(port.symbol))
+                        hardware.open(pluginData.label, instance, port)
                     }
                 }
 
-                for (i = 0; i < pluginData.ports.control.input.length; i++) {
-                    port = pluginData.ports.control.input[i]
-                    var address = settings.find('[mod-role=input-control-address][mod-port-symbol=' + port.symbol + ']')
-                    if (address.length == 0)
+                for (symbol in pluginGui.controls) {
+                    port = pluginGui.controls[symbol]
+                    if (symbol == ':bypass') {
+                        address = settings.find('[mod-role=bypass-address]')
+                    } else {
+                        address = settings.find('[mod-role=input-control-address][mod-port-symbol=' + symbol + ']')
+                    }
+                    if (address.length == 0) {
                         continue
+                    }
                     address.click(addressFactory(port))
                 }
-
-                // Let's define bypass like other ports.
-                settings.find('[mod-role=bypass-address]').click(function () {
-                    hardware.open(instance, pluginGui.controls[':bypass'], pluginGui.bypassed)
-                })
             } else {
+                settings.find('[mod-role=bypass-address]').hide()
                 settings.find('[mod-role=input-control-address]').hide()
             }
 

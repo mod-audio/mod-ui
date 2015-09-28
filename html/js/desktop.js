@@ -170,38 +170,43 @@ function Desktop(elements) {
         return false
     })
     this.userSession.tryConnectingToSocial()
-    this.hardwareManager = new HardwareManager({
-        address: function (instance, symbol, addressing, callback) {
-            addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
 
-            $.ajax({
-                url: '/effect/parameter/address/' + instance + "/" + symbol,
-                type: 'POST',
-                data: JSON.stringify(addressing),
-                success: function (resp) {
-                    callback(resp)
-                },
-                error: function () {
-                    new Bug("Couldn't address parameter")
-                    callback(false)
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-        getGui: function (instance) {
-            return self.pedalboard.pedalboard('getGui', instance)
-        },
-        renderForm: function (instance, port) {
-            context = $.extend({
-                plugin: self.pedalboard.pedalboard('getGui', instance).effect
-            }, port)
-            if (port.symbol == ':bypass')
-                return Mustache.render(TEMPLATES.bypass_addressing, context)
-            else
-                return Mustache.render(TEMPLATES.addressing, context)
-        }
-    })
+    if (HARDWARE_PROFILE.name != null) {
+        this.hardwareManager = new HardwareManager({
+            address: function (instance, symbol, addressing, callback) {
+                addressing.actuator = addressing.actuator || [-1, -1, -1, -1]
+
+                $.ajax({
+                    url: '/effect/parameter/address/' + instance + "/" + symbol,
+                    type: 'POST',
+                    data: JSON.stringify(addressing),
+                    success: function (resp) {
+                        callback(resp)
+                    },
+                    error: function () {
+                        new Bug("Couldn't address parameter")
+                        callback(false)
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
+            },
+            getGui: function (instance) {
+                return self.pedalboard.pedalboard('getGui', instance)
+            },
+            renderForm: function (instance, port) {
+                context = $.extend({
+                    plugin: self.pedalboard.pedalboard('getGui', instance).effect
+                }, port)
+                if (port.symbol == ':bypass')
+                    return Mustache.render(TEMPLATES.bypass_addressing, context)
+                else
+                    return Mustache.render(TEMPLATES.addressing, context)
+            }
+        })
+    } else {
+        this.hardwareManager = null
+    }
 
     this.isApp = false
     this.title = ''
