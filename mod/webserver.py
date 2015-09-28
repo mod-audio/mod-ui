@@ -46,12 +46,10 @@ from mod.settings import (APP, DESKTOP, LOG,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
-
 from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.effect import install_bundle, uninstall_bundle
-from mod.pedalboard import Pedalboard
 from mod.bank import list_banks, save_banks
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
@@ -921,7 +919,7 @@ class TemplateHandler(web.RequestHandler):
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
             'cloud_url': CLOUD_HTTP_ADDRESS,
-            'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
+            'hardware_profile': json.dumps(SESSION.get_hardware()),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
             'package_server_address': PACKAGE_SERVER_ADDRESS or '',

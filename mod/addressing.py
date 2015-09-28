@@ -49,8 +49,8 @@ HARDWARE_TYPE_CUSTOM = 4
 import logging
 import os
 
+from mod import get_hardware
 from mod.bank import list_banks
-from mod.hardware import get_hardware
 from mod.ingen import Host
 from mod.protocol import Protocol
 
