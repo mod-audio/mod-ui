@@ -109,9 +109,7 @@ class HMI(object):
 
                     msg.run_cmd(_callback)
         try:
-            print("TEST - START")
             self.sp.read_until(b'\0', self.checker)
-            print("TEST - END")
         except serial.SerialException as e:
             logging.error("[hmi] error while reading %s" % e)
 
