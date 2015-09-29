@@ -1168,7 +1168,7 @@ JqueryClass('pedalboard', {
             if (hardware) {
                 var addressFactory = function (port) {
                     return function () {
-                        hardware.open(pluginData.label, instance, port)
+                        hardware.open(instance, port, pluginData.label)
                     }
                 }
 

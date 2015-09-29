@@ -497,31 +497,20 @@ class EffectParameterAddress(web.RequestHandler):
     @gen.engine
     def post(self, port):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        uri  = data.get('uri', None)
 
-        addr_type = data.get('addressing_type', None)
-        actuator  = data.get('actuator', None)
-
-        if actuator is None or actuator[0] < 0:
-            actuator = (-1, -1, -1, -1)
-        else:
-            actuator = tuple(actuator)
-
-        try:
-            ctype = int(data['type'])
-        except:
-            ctype = 0
+        if uri is None:
+            print("ERROR in webserver.py: Attempting to address without an URI")
+            raise web.HTTPError(404)
 
         label   = data.get('label', '---') or '---'
         unit    = data.get('unit', 'none') or 'none'
-        value   = float(data['value'])
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
+        value   = float(data['value'])
         steps   = int(data.get('steps', 33))
-        options = data.get('options', [])
 
-        resp = yield gen.Task(SESSION.web_parameter_address, port, addr_type,
-                              label, ctype, unit, value, maximum, minimum, steps, actuator, options)
-
+        resp = yield gen.Task(SESSION.web_parameter_address, port, uri, label, unit, maximum, minimum, value, steps)
         self.write(json.dumps(resp))
         self.finish()
 

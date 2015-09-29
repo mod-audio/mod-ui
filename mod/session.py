@@ -224,15 +224,13 @@ class Session(object):
         #self.recorder.parameter(port, value)
 
     # Address a plugin parameter
-    def web_parameter_address(self, port, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
-                              actuator, options, callback):
+    def web_parameter_address(self, port, actuator_uri, label, unit, maximum, minimum, value, steps, callback):
         if self.addressings is None or not self.hmi_initialized:
             callback(False)
             return
 
         instance, port2 = port.rsplit("/",1)
-        self.addressings.address(instance, port2, addressing_type, label, ctype, unit, value, maximum, minimum, steps,
-                                 actuator, options, callback)
+        self.addressings.address(instance, port2, actuator_uri, label, unit, maximum, minimum, value, steps, callback)
 
     # Set a parameter for MIDI learn
     def web_parameter_midi_learn(self, port, callback):
