@@ -34,6 +34,7 @@ HARDWARE_TYPE_MOD    = 0
 HARDWARE_TYPE_PEDAL  = 1
 HARDWARE_TYPE_TOUCH  = 2
 HARDWARE_TYPE_ACCEL  = 3
+HARDWARE_TYPE_CUSTOM = 4
 
 import logging
 import os
@@ -100,6 +101,22 @@ class Addressing(object):
         #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
         #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
         #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
+
+    def get_addressings(self):
+        addressings = {}
+        for uri, addressing in self.addressings.items():
+            addrs = []
+            for addr in addressing['addrs']:
+                addrs.append({
+                    'instance': addr['instance'],
+                    'port'    : addr['port'],
+                    'label'   : addr['label'],
+                    'minimum' : addr['minimum'],
+                    'maximum' : addr['maximum'],
+                    'steps'   : addr['steps'],
+                })
+            addressings[uri] = addrs
+        return addressings
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -246,11 +263,11 @@ class Addressing(object):
         if "tap_tempo" in pprops: # TODO
             ctype |= ADDRESSING_CTYPE_TAP_TEMPO
 
-        if len(port_info["scalePoints"]) >= 2 and "enumeration" in pprops:
+        if len(port_info["scalePoints"]) >= 2: # and "enumeration" in pprops:
             ctype |= ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION
 
-            #if "enumeration" in pprops:
-                #ctype |= ADDRESSING_CTYPE_ENUMERATION
+            if "enumeration" in pprops:
+                ctype |= ADDRESSING_CTYPE_ENUMERATION
 
             for scalePoint in port_info["scalePoints"]:
                 options.append((scalePoint["value"], scalePoint["label"]))
@@ -345,6 +362,8 @@ class Addressing(object):
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
+        if hardware_type == HARDWARE_TYPE_MOD:
+            hardware_type = HARDWARE_TYPE_CUSTOM
         actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator_hw, callback)
 
@@ -443,8 +462,8 @@ class Addressing(object):
         self._uri2hw_map = {}
 
         for i in range(0, 4):
-            knob_hw  = (HARDWARE_TYPE_MOD, 0, ACTUATOR_TYPE_KNOB,       i)
-            foot_hw  = (HARDWARE_TYPE_MOD, 0, ACTUATOR_TYPE_FOOTSWITCH, i)
+            knob_hw  = (HARDWARE_TYPE_CUSTOM, 0, ACTUATOR_TYPE_KNOB,       i)
+            foot_hw  = (HARDWARE_TYPE_CUSTOM, 0, ACTUATOR_TYPE_FOOTSWITCH, i)
             knob_uri = "/hmi/knob%i"       % (i+1)
             foot_uri = "/hmi/footswitch%i" % (i+1)
 

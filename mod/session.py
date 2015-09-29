@@ -124,7 +124,9 @@ class Session(object):
     def get_hardware(self):
         if self.addressings is None:
             return {}
-        return get_hardware()
+        hw = deepcopy(get_hardware())
+        hw["addressings"] = self.addressings.get_addressings()
+        return hw
 
     # -----------------------------------------------------------------------------------------------------------------
     # App utilities, needed only for mod-app
