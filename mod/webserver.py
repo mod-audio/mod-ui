@@ -582,8 +582,11 @@ class PedalboardSave(web.RequestHandler):
     def post(self):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
-        resp  = yield gen.Task(SESSION.web_save_pedalboard, title, asNew)
-        self.write(json.dumps(resp))
+        saved = yield gen.Task(SESSION.web_save_pedalboard, title, asNew)
+        self.write(json.dumps({
+            'ok': saved,
+            'bundlepath': SESSION.bundlepath
+        }))
         self.finish()
 
 class PedalboardPackBundle(web.RequestHandler):
@@ -1205,7 +1208,7 @@ application = web.Application(
             (r"/banks/?", BankLoad),
             (r"/banks/save/?", BankSave),
 
-            (r"/hardware/?", HardwareLoad),
+            (r"/hardware", HardwareLoad),
 
             (r"/login/sign_session/(.+)", LoginSign),
             (r"/login/authenticate", LoginAuthenticate),

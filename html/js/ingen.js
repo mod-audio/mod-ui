@@ -182,8 +182,9 @@ $('document').ready(function() {
                                     }
                                     $(document).arrive(symbol, cb)
                                 } else {
-                                    var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                    gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                    console.log("FIXME: Got Set value too soon for " + instance)
+                                    //var gui = desktop.pedalboard.pedalboard("getGui", instance);
+                                    //gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
                                 }
                             } else if (type.length && type[0].object == "http://drobilla.net/ns/ingen#Arc") {
                                 // new port connection
@@ -271,11 +272,19 @@ $('document').ready(function() {
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(":bypass", value[0].object.indexOf("false") >= 0 ? 1 : 0, undefined, true);
                                 }
-                                else if (prop == "http://moddevices/ns/modpedal#addressing")
+                                else if (prop == "http://drobilla.net/ns/ingen#file")
                                 {
-                                    // setting addressings
-                                    //var value = value[0].object
-                                    console.log("TESTING: GOT ADDRESSING BACK!")
+                                    // Pedalboard changed, load new possible addressings
+                                    $.ajax({
+                                        url: '/hardware',
+                                        success: function (data) {
+                                            HARDWARE_PROFILE = data
+                                            if (desktop.hardwareManager)
+                                                desktop.hardwareManager.registerAllAddressings()
+                                        },
+                                        cache: false,
+                                        dataType: 'json'
+                                    })
                                 }
                                 else
                                 {
@@ -284,6 +293,7 @@ $('document').ready(function() {
                                         prop == "http://drobilla.net/ns/ingen#canvasY"     ||
                                         prop == "http://moddevices.com/ns/modpedal#width"  ||
                                         prop == "http://moddevices.com/ns/modpedal#height" ||
+                                        prop == "http://moddevices.com/ns/modpedal#addressing" ||
                                         prop == "http://moddevices.com/ns/modpedal#screenshot" ||
                                         prop == "http://moddevices.com/ns/modpedal#thumbnail"  ||
                                         prop == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type") {

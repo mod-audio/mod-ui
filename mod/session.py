@@ -182,6 +182,7 @@ class Session(object):
 
         # XXX REMOVE ME XXX
         if self.addressings:
+            # XXX REMOVE ME XXX
             self.addressings.init_host()
 
     def hmi_initialized_cb(self):
@@ -634,6 +635,11 @@ class Session(object):
         def remove_all_plugins(ok):
             remove_next_plugin(True)
 
+        # Reset addressing data
+        if self.addressings is not None:
+            self.addressings.clear()
+
+        # Wait for HMI if available
         if self.hmi_initialized:
             self.hmi.clear(remove_all_plugins)
         else:

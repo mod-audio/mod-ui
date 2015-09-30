@@ -86,6 +86,7 @@ class IngenAsync(object):
 
         self.msg_callback = lambda msg:None
         self.saved_callback = lambda bundlepath:None
+        self.loaded_callback = lambda bundlepath:None
         self.samplerate_callback = lambda srate:None
         self.plugin_added_callback = lambda instance,uri,enabled,x,y:None
         self.plugin_removed_callback = lambda instance:None
@@ -144,7 +145,6 @@ class IngenAsync(object):
 
         msg_str = msg.decode("utf-8", errors="ignore").replace("\0", "") if msg else ""
         if msg_str:
-            self.msg_callback(msg_str)
             msg_model = rdflib.Graph(namespace_manager=self.ns_manager)
             msg_model.parse(StringIO(msg_str), self.proto_base, format='n3')# self.server_base, format='n3')
 
@@ -213,9 +213,8 @@ class IngenAsync(object):
                     self.plugin_enabled_callback(subject, value)
 
                 elif property == NS.ingen.file:
-                    value = msg_model.value(bnode, NS.patch.value).toPython()
-                    print(property, value)
-                    #self.plugin_enabled_callback(subject, value)
+                    bundlepath = get_bundle_dirname(msg_model.value(bnode, NS.patch.value).toPython())
+                    self.loaded_callback(bundlepath)
 
                 elif property == NS.ingen.value:
                     port  = subject.partition(self.proto_base)[-1]
@@ -276,6 +275,9 @@ class IngenAsync(object):
                 subject = msg_model.value(bnode, NS.patch.subject)
                 if subject:
                     self.plugin_removed_callback(subject.partition(self.proto_base)[-1])
+
+            # this needs to be the last one
+            self.msg_callback(msg_str)
 
         self._reading = True
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)

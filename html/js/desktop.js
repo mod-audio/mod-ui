@@ -550,7 +550,7 @@ function Desktop(elements) {
                         callback(true, result.bundlepath, title)
                     }
                     else
-                        callback(false, result.error)
+                        callback(false, "Failed to save")
                 },
                 error: function (resp) {
                     self.saveBox.hide()
@@ -1107,7 +1107,6 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 bundlepath: bundlepath
             },
             success: function (resp) {
-                console.log(resp)
                 if (! resp.ok) {
                     callback(false)
                     return

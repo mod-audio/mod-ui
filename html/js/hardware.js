@@ -279,10 +279,10 @@ function HardwareManager(options) {
                 for (var i in addressings) {
                     addressing = addressings[i]
 
-                    if (addressing.instance != instance)
+                    if (instance != ":all" && addressing.instance != instance)
                         continue
 
-                    instanceAndSymbol = instance+"/"+addressing.port
+                    instanceAndSymbol = addressing.instance+"/"+addressing.port
 
                     self.addressingsByActuator  [uri].push(instanceAndSymbol)
                     self.addressingsByPortSymbol[instanceAndSymbol] = uri
@@ -295,10 +295,15 @@ function HardwareManager(options) {
                     }
 
                     // disable this control
-                    options.setEnabled(instance, addressing.port, false)
+                    options.setEnabled(addressing.instance, addressing.port, false)
                 }
             }
         }
+    }
+
+    this.registerAllAddressings = function () {
+        self.reset()
+        self.instanceAdded(":all")
     }
 
     // Removes an instance

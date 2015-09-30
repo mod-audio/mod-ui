@@ -38,6 +38,7 @@ HARDWARE_TYPE_CUSTOM = 4
 
 import logging
 import os
+import json
 
 from mod import get_hardware
 from mod.bank import list_banks
@@ -102,6 +103,11 @@ class Addressing(object):
         #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
         #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
+    def clear(self):
+        self.banks = []
+        self.instances = {}
+        self._init_addressings()
+
     def get_addressings(self):
         addressings = {}
         for uri, addressing in self.addressings.items():
@@ -114,6 +120,7 @@ class Addressing(object):
                     'minimum' : addr['minimum'],
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
+                    'value'   : addr['value'],
                 })
             addressings[uri] = addrs
         return addressings
@@ -128,6 +135,9 @@ class Addressing(object):
         # Later on this code will be a separate application so it all fits anyway
         self.host = Host(os.getenv("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
 
+        def loaded_callback(bundlepath):
+            self._load_addressings(bundlepath)
+
         def plugin_added_callback(instance, uri, enabled, x, y):
             self._add_instance(instance, uri, not enabled)
 
@@ -141,6 +151,7 @@ class Addressing(object):
             instance, port = port.rsplit("/", 1)
             self._set_value(instance, port, value)
 
+        self.host.loaded_callback = loaded_callback
         self.host.plugin_added_callback = plugin_added_callback
         self.host.plugin_removed_callback = plugin_removed_callback
         self.host.port_value_callback = port_value_callback
@@ -151,6 +162,28 @@ class Addressing(object):
         self.host.get("/graph")
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    def _load_addressings(self, bundlepath):
+        datafile = os.path.join(bundlepath, "addressings.json")
+        if not os.path.exists(datafile):
+            return
+
+        with open(datafile, 'r') as fh:
+            data = fh.read()
+        data = json.loads(data)
+
+        self._init_addressings()
+
+        stopNow = False
+        def callback(ok):
+            if not ok:
+                stopNow = True
+
+        for actuator_uri in data:
+            for addr in data[actuator_uri]:
+                self.address(addr["instance"], addr["port"], actuator_uri, addr["label"], addr["maximum"], addr["minimum"], addr['value'], addr["steps"], callback)
+                if stopNow: break
+            if stopNow: break
 
     def _add_instance(self, instance, uri, bypassed):
         instance_id = self.mapper.get_id(instance)
@@ -199,6 +232,11 @@ class Addressing(object):
         if data is None:
             return
         data['bypassed'] = bypassed
+
+        addr = data['addressing'].get(port, None)
+        if addr is None:
+            return
+        addr['value'] = 1 if bypassed else 0
 
     def _set_value(self, instance, port, value):
         data = self.instances.get(instance, None)
@@ -287,11 +325,6 @@ class Addressing(object):
             self._addressing_load(old_actuator_uri)
 
         self._addressing_load(actuator_uri, callback)
-
-    def clear(self):
-        self.banks = []
-        self.instances = {}
-        self._init_addressings()
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
