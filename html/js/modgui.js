@@ -334,6 +334,8 @@ function GUI(effect, options) {
                 self.settings.find(".mod-address").hide()
             }
 
+            /*
+            TESTING code for presets
             var p, _presets = []
             console.log(effect.presets)
             for (i in effect.presets) {
@@ -345,6 +347,7 @@ function GUI(effect, options) {
                 })
             }
             desktop.presetManager.presetManager("setPresets", instance, _presets)
+            */
 
             self.triggerJS({ 'type': 'start' })
 
