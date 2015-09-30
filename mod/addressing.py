@@ -108,7 +108,7 @@ class Addressing(object):
             addrs = []
             for addr in addressing['addrs']:
                 addrs.append({
-                    'instance': addr['instance'],
+                    'instance': self.mapper.get_instance(addr['instance_id']),
                     'port'    : addr['port'],
                     'label'   : addr['label'],
                     'minimum' : addr['minimum'],
@@ -213,14 +213,7 @@ class Addressing(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    """
-    label: lcd display label
-    unit: string representing the parameter unit (hz, bpm, seconds, etc)
-    options: array of options, each one being a tuple (value, label)
-    """
-    def address(self, instance, port, actuator_uri, label, unit, maximum, minimum, value, steps, callback):
-        print(instance, port, actuator_uri, label, unit, maximum, minimum, value, steps)
-
+    def address(self, instance, port, actuator_uri, label, maximum, minimum, value, steps, callback):
         instance_id      = self.mapper.get_id(instance)
         old_actuator_uri = self._unaddress(instance, port)
 
@@ -245,6 +238,7 @@ class Addressing(object):
             return
 
         pprops  = port_info["properties"]
+        unit    = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
         options = []
 
         if port == ":bypass":

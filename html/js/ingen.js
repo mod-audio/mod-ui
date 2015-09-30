@@ -95,7 +95,7 @@ $('document').ready(function() {
                                     $.ajax({
                                         url: '/effect/get?uri=' + escape(uri),
                                         success: function (pluginData) {
-                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, !enabled, parseInt(canvasX), parseInt(canvasY))
+                                            desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, !enabled, parseInt(canvasX), parseInt(canvasY), {})
                                             $("#pedalboard-dashboard").arrive('[mod-instance="' + instance + '"]', function () {
                                                 desktop.pedalboard.pedalboard('adapt')
                                                 if (waiter.plugins[instance])
@@ -104,7 +104,7 @@ $('document').ready(function() {
                                             })
                                         },
                                         cache: false,
-                                        'dataType': 'json'
+                                        dataType: 'json'
                                     })
                                 }
                             } else if (type.length == 2 && (type[0].object == "http://lv2plug.in/ns/lv2core#AudioPort" ||
@@ -248,7 +248,13 @@ $('document').ready(function() {
                             var value = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#value");
                             if (property.length && value.length) {
                                 var prop = property[0].object
-                                if (prop == "http://drobilla.net/ns/ingen#value")
+                                if (prop == "http://moddevices/ns/modpedal#cpuload")
+                                {
+                                    // setting cpuload
+                                    var value = value[0].object
+                                    $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
+                                }
+                                else if (prop == "http://drobilla.net/ns/ingen#value")
                                 {
                                     // setting a port value
                                     var sub = subject[0].object;
@@ -265,11 +271,11 @@ $('document').ready(function() {
                                     var gui = desktop.pedalboard.pedalboard("getGui", instance);
                                     gui.setPortWidgetsValue(":bypass", value[0].object.indexOf("false") >= 0 ? 1 : 0, undefined, true);
                                 }
-                                else if (prop == "http://moddevices/ns/mod#cpuload")
+                                else if (prop == "http://moddevices/ns/modpedal#addressing")
                                 {
-                                    // setting cpuload
-                                    var value = value[0].object
-                                    $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
+                                    // setting addressings
+                                    //var value = value[0].object
+                                    console.log("TESTING: GOT ADDRESSING BACK!")
                                 }
                                 else
                                 {

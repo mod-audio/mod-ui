@@ -37,6 +37,7 @@ class NS:
     presets     = rdflib.Namespace('http://lv2plug.in/ns/ext/presets#')
     parameters  = rdflib.Namespace('http://lv2plug.in/ns/ext/parameters#')
     midi        = rdflib.Namespace('http://lv2plug.in/ns/ext/midi#')
+    modpedal    = rdflib.Namespace('http://moddevices.com/ns/modpedal#')
 
 class Error(Exception):
     def __init__(self, msg, cause):
@@ -211,20 +212,33 @@ class IngenAsync(object):
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.plugin_enabled_callback(subject, value)
 
+                elif property == NS.ingen.file:
+                    value = msg_model.value(bnode, NS.patch.value).toPython()
+                    print(property, value)
+                    #self.plugin_enabled_callback(subject, value)
+
                 elif property == NS.ingen.value:
                     port  = subject.partition(self.proto_base)[-1]
                     value = msg_model.value(bnode, NS.patch.value).toPython()
                     self.port_value_callback(port, value)
-
-                elif property == NS.parameters.sampleRate:
-                    value = msg_model.value(bnode, NS.patch.value).toPython()
-                    self.samplerate_callback(value)
 
                 elif property == NS.midi.binding:
                     port = subject.partition(self.proto_base)[-1]
                     if msg_model.value(bnode, NS.rdf.type) == NS.midi.Controller:
                         cc = msg_model.value(msg_model.value(bnode, NS.patch.value), NS.midi.controllerNumber).toPython()
                         self.port_binding_callback(port, cc)
+
+                elif property == NS.parameters.sampleRate:
+                    value = msg_model.value(bnode, NS.patch.value).toPython()
+                    self.samplerate_callback(value)
+
+                #elif property not in (NS.rdf.type,
+                                      #NS.ingen.file,
+                                      #NS.modpedal.screenshot,
+                                      #NS.modpedal.thumbnail,
+                                      #NS.modpedal.width,
+                                      #NS.modpedal.height):
+                    #print("Received unknown property", property)
 
             # Put messages
             for i in msg_model.triples([None, NS.rdf.type, NS.patch.Put]):

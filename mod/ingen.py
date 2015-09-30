@@ -33,17 +33,21 @@ except ImportError:
 class Host(IngenAsync):
     def initial_setup(self, callback=lambda r:r):
         def step1(ok):
-            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#screenshot>",
-                                      "<ingen:/screenshot.png>", step2)
+            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#addressings>",
+                                      "<ingen:/addressings.json>", step2)
             else: callback(False)
         def step2(ok):
-            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#thumbnail>",
-                                      "<ingen:/thumbnail.png>", step3)
+            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#screenshot>",
+                                      "<ingen:/screenshot.png>", step3)
             else: callback(False)
         def step3(ok):
-            if ok: self.get("/engine", step4)
+            if ok: self.set("/graph", "<http://moddevices.com/ns/modpedal#thumbnail>",
+                                      "<ingen:/thumbnail.png>", step4)
             else: callback(False)
         def step4(ok):
+            if ok: self.get("/engine", step5)
+            else: callback(False)
+        def step5(ok):
             if ok: self.get("/graph", callback)
             else: callback(False)
 

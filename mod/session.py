@@ -19,9 +19,9 @@ import os, time, logging, copy, json
 
 from os import path
 
+from copy import deepcopy
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
-from queue import Empty
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
@@ -149,15 +149,15 @@ class Session(object):
             return
 
         for i in range(1, INGEN_NUM_AUDIO_INS+1):
-            jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:audio_port_%i_in" % (SESSION.backend_client_name, i))
+            jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:audio_port_%i_in" % (self.backend_client_name, i))
 
         for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
-            jacklib.connect(self.jack_client,"%s:audio_port_%i_out" % (SESSION.backend_client_name, i), "system:playback_%i" % i)
+            jacklib.connect(self.jack_client,"%s:audio_port_%i_out" % (self.backend_client_name, i), "system:playback_%i" % i)
 
         if not DEV_HMI:
             # this means we're using HMI, so very likely running MOD hardware
-            jacklib.connect(self.jack_client, "alsa_midi:ttymidi MIDI out in", "%s:midi_port_1_in" % SESSION.backend_client_name)
-            jacklib.connect(self.jack_client, "%s:midi_port_1_out" % SESSION.backend_client_name, "alsa_midi:ttymidi MIDI in out")
+            jacklib.connect(self.jack_client, "alsa_midi:ttymidi MIDI out in", "%s:midi_port_1_in" % self.backend_client_name)
+            jacklib.connect(self.jack_client, "%s:midi_port_1_out" % self.backend_client_name, "alsa_midi:ttymidi MIDI in out")
 
     def init_jack(self):
         self.jack_client = jacklib.client_open("%s-helper" % self.backend_client_name, jacklib.JackNoStartServer, None)
@@ -169,7 +169,7 @@ class Session(object):
 
         #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
         jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-        jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
+        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
         jacklib.activate(self.jack_client)
         print("jacklib client activated")
@@ -179,6 +179,10 @@ class Session(object):
 
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
+
+        # XXX REMOVE ME XXX
+        if self.addressings:
+            self.addressings.init_host()
 
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
@@ -226,13 +230,14 @@ class Session(object):
         #self.recorder.parameter(port, value)
 
     # Address a plugin parameter
-    def web_parameter_address(self, port, actuator_uri, label, unit, maximum, minimum, value, steps, callback):
-        if self.addressings is None or not self.hmi_initialized:
-            callback(False)
-            return
+    def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
+        # XXX UNCOMMENT THIS XXX
+        #if self.addressings is None or not self.hmi_initialized:
+            #callback(False)
+            #return
 
         instance, port2 = port.rsplit("/",1)
-        self.addressings.address(instance, port2, actuator_uri, label, unit, maximum, minimum, value, steps, callback)
+        self.addressings.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
 
     # Set a parameter for MIDI learn
     def web_parameter_midi_learn(self, port, callback):
@@ -253,6 +258,93 @@ class Session(object):
     # Disconnect 2 ports
     def web_disconnect(self, port_from, port_to, callback):
         self.host.disconnect(port_from, port_to, callback)
+
+    # Save the current pedalboard
+    # The order of events is:
+    #  1. set the graph name to 'title'
+    #  2. ask backend to save
+    #  3. create manifest.ttl
+    #  4. create addressings.json file
+    # Step 2 is asynchronous, so it happens while 3 and 4 are taking place.
+    def web_save_pedalboard(self, title, asNew, callback):
+        titlesym = symbolify(title)
+
+        # Save over existing bundlepath
+        if self.bundlepath and os.path.exists(self.bundlepath) and os.path.isdir(self.bundlepath) and not asNew:
+            bundlepath = self.bundlepath
+
+        # Save new
+        else:
+            lv2path = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
+
+            # if trypath already exists, generate a random bundlepath based on title
+            if os.path.exists(trypath):
+                from random import randint
+
+                while True:
+                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+                    if os.path.exists(trypath):
+                        continue
+                    bundlepath = trypath
+                    break
+
+            # trypath doesn't exist yet, use it
+            else:
+                bundlepath = trypath
+
+                # just in case..
+                if not os.path.exists(lv2path):
+                    os.mkdir(lv2path)
+
+            os.mkdir(bundlepath)
+
+        # Various steps triggered by callbacks
+        def step1(ok):
+            if ok: self.host.save(os.path.join(bundlepath, "%s.ttl" % titlesym), step2)
+            else: callback(False)
+
+        def step2(ok):
+            if ok:
+                self.bundlepath = bundlepath
+                self.title      = title
+            else:
+                self.bundlepath = None
+                self.title      = None
+
+            self.pedalboard_changed_callback(ok, bundlepath, title)
+
+            if not ok:
+                callback(False)
+                return
+
+            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
+            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
+                fh.write("""\
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pedal: <http://moddevices.com/ns/modpedal#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<%s.ttl>
+    lv2:prototype ingen:GraphPrototype ;
+    a lv2:Plugin ,
+        ingen:Graph ,
+        pedal:Pedalboard ;
+    rdfs:seeAlso <%s.ttl> .
+""" % (titlesym, titlesym))
+
+            # Create a addressings.json file
+            addressings = self.addressings.get_addressings() if self.addressings is not None else {}
+
+            with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
+                json.dump(addressings, fh)
+
+            # All ok!
+            callback(True)
+
+        # start here
+        self.host.set_pedalboard_name(title, step1)
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
@@ -443,7 +535,7 @@ class Session(object):
             msg = """[]
             a <http://lv2plug.in/ns/ext/patch#Set> ;
             <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
-            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/mod#cpuload> ;
+            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/modpedal#cpuload> ;
             <http://lv2plug.in/ns/ext/patch#value> "%i" .
             """ % round(100.0 - jacklib.cpu_load(self.jack_client))
 
@@ -519,24 +611,6 @@ class Session(object):
         self.title      = title
         self.host.load(bundlepath)
         self.pedalboard_changed_callback(True, bundlepath, title)
-
-    def save_pedalboard(self, bundlepath, title, callback):
-        def step1(ok):
-            if ok: self.host.save(os.path.join(bundlepath, "%s.ttl" % symbolify(title)), step2)
-            else: callback(False)
-
-        def step2(ok):
-            if ok:
-                self.bundlepath = bundlepath
-                self.title      = title
-            else:
-                self.bundlepath = None
-                self.title      = None
-
-            self.pedalboard_changed_callback(ok, bundlepath, title)
-            callback(ok)
-
-        self.host.set_pedalboard_name(title, step1)
 
     def reset(self, callback):
         self.bundlepath = None

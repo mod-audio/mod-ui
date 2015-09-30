@@ -504,13 +504,12 @@ class EffectParameterAddress(web.RequestHandler):
             raise web.HTTPError(404)
 
         label   = data.get('label', '---') or '---'
-        unit    = data.get('unit', 'none') or 'none'
         minimum = float(data['minimum'])
         maximum = float(data['maximum'])
         value   = float(data['value'])
         steps   = int(data.get('steps', 33))
 
-        resp = yield gen.Task(SESSION.web_parameter_address, port, uri, label, unit, maximum, minimum, value, steps)
+        resp = yield gen.Task(SESSION.web_parameter_address, port, uri, label, maximum, minimum, value, steps)
         self.write(json.dumps(resp))
         self.finish()
 
@@ -583,69 +582,9 @@ class PedalboardSave(web.RequestHandler):
     def post(self):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
-
-        titlesym = symbolify(title)
-
-        # Save over existing bundlepath
-        if SESSION.bundlepath and os.path.exists(SESSION.bundlepath) and os.path.isdir(SESSION.bundlepath) and not asNew:
-            bundlepath = SESSION.bundlepath
-
-        # Save new
-        else:
-            lv2path = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
-            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
-
-            # if trypath already exists, generate a random bundlepath based on title
-            if os.path.exists(trypath):
-                from random import randint
-
-                while True:
-                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
-                    if os.path.exists(trypath):
-                        continue
-                    bundlepath = trypath
-                    break
-
-            # trypath doesn't exist yet, use it
-            else:
-                bundlepath = trypath
-
-                # just in case..
-                if not os.path.exists(lv2path):
-                    os.mkdir(lv2path)
-
-            os.mkdir(bundlepath)
-
-        # callback for when ingen is done doing its business
-        def callback(ok):
-            if not ok:
-                self.write(json.dumps({ 'ok': False, 'error': "Failed" })) # TODO more descriptive error?
-                self.finish()
-                return
-
-            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
-            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fd:
-                fd.write('''\
-@prefix ingen: <http://drobilla.net/ns/ingen#> .
-@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
-@prefix pedal: <http://moddevices.com/ns/modpedal#> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
-<%s.ttl>
-    lv2:prototype ingen:GraphPrototype ;
-    a lv2:Plugin ,
-        ingen:Graph ,
-        pedal:Pedalboard ;
-    rdfs:seeAlso <%s.ttl> .
-''' % (titlesym, titlesym))
-
-            # All ok!
-            self.set_header('Content-Type', 'application/json')
-            self.write(json.dumps({ 'ok': True, 'bundlepath': bundlepath }, default=json_handler))
-            self.finish()
-
-        # Ask ingen to save
-        SESSION.save_pedalboard(bundlepath, title, callback)
+        resp  = yield gen.Task(SESSION.web_save_pedalboard, title, asNew)
+        self.write(json.dumps(resp))
+        self.finish()
 
 class PedalboardPackBundle(web.RequestHandler):
     @web.asynchronous
@@ -767,7 +706,7 @@ class PedalboardSize(web.RequestHandler):
     def get(self):
         width  = int(self.get_argument('width'))
         height = int(self.get_argument('height'))
-        resp = yield gen.Task(SESSION.pedalboard_size, width, height)
+        resp   = yield gen.Task(SESSION.pedalboard_size, width, height)
         self.write(json.dumps(resp))
         self.finish()
 

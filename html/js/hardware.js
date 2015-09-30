@@ -169,7 +169,6 @@ function HardwareManager(options) {
 
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
-        console.log('---------------------------- open')
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
@@ -179,8 +178,6 @@ function HardwareManager(options) {
         var actuators = self.availableActuators(instance, port)
         var actuatorSelect = form.find('select[name=actuator]')
         $('<option value="'+nullAddressURI+'">').text('None').appendTo(actuatorSelect)
-        console.log("actuators => ")
-        console.log(actuators)
 
         var actuator
         for (var i in actuators) {
@@ -218,7 +215,6 @@ function HardwareManager(options) {
             var addressing = {
                 uri    : actuator.uri || nullAddressURI,
                 label  : label.val() || pname,
-                unit   : port.units ? port.units.symbol : null,
                 minimum: minv,
                 maximum: maxv,
                 value  : port.value,
@@ -235,9 +231,14 @@ function HardwareManager(options) {
                             self.addressingsByActuator[actuator.uri].push(instanceAndSymbol)
                         }
 
+                        // remove data needed by the server, useless for us
+                        delete addressing.value
+
+                        // now save
                         self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
                         self.addressingsData        [instanceAndSymbol] = addressing
 
+                        // disable this control
                         options.setEnabled(instance, port.symbol, false)
                     }
                     // We're unaddressing
@@ -251,6 +252,7 @@ function HardwareManager(options) {
                         delete self.addressingsByPortSymbol[instanceAndSymbol]
                         delete self.addressingsData        [instanceAndSymbol]
 
+                        // enable this control
                         options.setEnabled(instance, port.symbol, true)
                     }
                 } else {
@@ -266,6 +268,37 @@ function HardwareManager(options) {
         })
 
         form.appendTo($('body'))
+    }
+
+    // Callback from pedalboard.js for when a plugin instance is added
+    this.instanceAdded = function (instance) {
+        if (HARDWARE_PROFILE.addressings) {
+            var addressing, addressings, instanceAndSymbol
+            for (var uri in HARDWARE_PROFILE.addressings) {
+                addressings = HARDWARE_PROFILE.addressings[uri]
+                for (var i in addressings) {
+                    addressing = addressings[i]
+
+                    if (addressing.instance != instance)
+                        continue
+
+                    instanceAndSymbol = instance+"/"+addressing.port
+
+                    self.addressingsByActuator  [uri].push(instanceAndSymbol)
+                    self.addressingsByPortSymbol[instanceAndSymbol] = uri
+                    self.addressingsData        [instanceAndSymbol] = {
+                        uri    : uri,
+                        label  : addressing.label,
+                        minimum: addressing.minimum,
+                        maximum: addressing.maximum,
+                        steps  : addressing.steps,
+                    }
+
+                    // disable this control
+                    options.setEnabled(instance, addressing.port, false)
+                }
+            }
+        }
     }
 
     // Removes an instance

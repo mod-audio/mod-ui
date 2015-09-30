@@ -397,24 +397,11 @@ JqueryClass('pedalboard', {
                 callback()
         }
 
-        var addressingErrors = []
-
         // Queue closures to all actions needed after everything is loaded
         var finalActions = []
         var finish = function () {
             for (var i in finalActions)
                 finalActions[i]()
-
-            // Now check for addressing errors
-            if (addressingErrors.length > 0) {
-                verboseErrors = []
-                var error
-                for (var i = 0; i < addressingErrors.length; i++) {
-                    verboseErrors.push(addressingErrors[i])
-                }
-                message = 'The following parameters could not be addressed: ' + verboseErrors.join(', ')
-                new Notification('warn', message)
-            }
 
             self.data('bypassApplication', false)
             setTimeout(function () {
@@ -454,9 +441,7 @@ JqueryClass('pedalboard', {
                             })
                     }
 
-                    self.pedalboard('addPlugin', pluginData, instance, plugin.bypassed, plugin.x, plugin.y, {},
-                                                 plugin.addressing, addressingErrors,
-                        function () {
+                    self.pedalboard('addPlugin', pluginData, instance, plugin.bypassed, plugin.x, plugin.y, {}, function () {
                             loadPlugin(pluginsData)
                         }
                     )
@@ -1052,7 +1037,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instance, now we need to put it in screen.
-    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, addressing, addressingErrors, renderCallback) {
+    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, renderCallback) {
         var self = $(this)
         var scale = self.data('scale')
 
@@ -1160,12 +1145,12 @@ JqueryClass('pedalboard', {
             icon.data('settings', settings)
             icon.data('instance', instance)
 
-            var hardware = self.data('hardwareManager')
-            if (addressing && hardware)
-                hardware.unserializeInstance(instance, addressing, self.data('bypassApplication'), addressingErrors)
-
             var address, symbol, port
+            var hardware = self.data('hardwareManager')
+
             if (hardware) {
+                hardware.instanceAdded(instance)
+
                 var addressFactory = function (port) {
                     return function () {
                         hardware.open(instance, port, pluginData.label)

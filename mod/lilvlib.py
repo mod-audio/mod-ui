@@ -1146,7 +1146,6 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
                     unsorted = dict(s for s in scalepoints_unsorted)
                     values   = list(v for v, l in scalepoints_unsorted)
                     values.sort()
-                    print(values)
                     scalepoints = list({ 'value': v, 'label': unsorted[v] } for v in values)
                     del unsorted, values
 
