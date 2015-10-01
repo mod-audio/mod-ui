@@ -51,7 +51,7 @@ function HardwareManager(options) {
         */
         self.addressingsData = {}
 
-        // Initializes addressings
+        // Initializes actuators
         if (HARDWARE_PROFILE.actuators) {
             var uri
             for (var i in HARDWARE_PROFILE.actuators) {

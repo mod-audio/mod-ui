@@ -1369,6 +1369,11 @@ JqueryClass('pedalboard', {
             if (!ok) {
                 return
             }
+            HARDWARE_PROFILE.addressings = []
+            var hardware = self.data('hardwareManager')
+            if (hardware) {
+                hardware.reset()
+            }
             self.data('connectionManager').iterate(function (jack) {
                 self.pedalboard('disconnect', jack)
             })
