@@ -180,11 +180,6 @@ class Session(object):
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
 
-        # XXX REMOVE ME XXX
-        if self.addressings:
-            # XXX REMOVE ME XXX
-            self.addressings.init_host()
-
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
         self.hmi_initialized = True
@@ -232,10 +227,9 @@ class Session(object):
 
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
-        # XXX UNCOMMENT THIS XXX
-        #if self.addressings is None or not self.hmi_initialized:
-            #callback(False)
-            #return
+        if self.addressings is None or not self.hmi_initialized:
+            callback(False)
+            return
 
         instance, port2 = port.rsplit("/",1)
         self.addressings.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
