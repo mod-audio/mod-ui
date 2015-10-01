@@ -105,20 +105,6 @@
     margin-left: -10px;
 }
 
-.mod-pedal-input-wrapper .mod-pedal-input-arrow {
-    /* Attention: pedalboard.js has hardcoded value related to this height */
-/*
-    border-bottom:12px solid transparent;
-    border-left:12px solid #000;
-    border-top:12px solid transparent;
-    height:0;
-    position:absolute;
-    right:-12px;
-    top:39px;
-    width:0;
-*/
-}
-
 .mod-pedal .mod-pedal-input {
     position: absolute;
     top: 106px;
@@ -143,46 +129,6 @@
     background-image:url(../img/audio-jack.png) !important;
     height: 40px;
 }
-
-/*
-.mod-pedal .mod-pedal-input {
-    height:170px;
-    left:-28px;
-    position:absolute;
-    top:106px;
-    width:45px;
-}
-
-.mod-pedal .mod-pedal-input .mod-input {
-    width:45px;
-    height:45px;
-    margin-bottom:10px
-}
-
-.mod-pedal .mod-pedal-input-image {
-    background:url(../img/input.png) no-repeat 50% 50%;
-    height:75px;
-    position:absolute;
-    right:0;
-    width:117px;
-    z-index:2;
-}
-
-.mod-pedal .mod-pedal-input .input-connected .mod-pedal-input-image {
-    background-image:url(../img/input-connected.png);
-}
-
-.mod-pedal .mod-pedal-input .input-connected .mod-output-jack {
-    background:none;
-    position:relative;
-    z-index:100;
-}
-
-.mod-pedal .input-disconnected {}
-.mod-pedal .input-connecting {}
-.mod-pedal .input-connected {}
-*/
-
 
 /* = OUTPUT
 ================================================ */
@@ -221,63 +167,6 @@
     margin-top: 10px;
 */
 }
-
-
-/*
-.mod-pedal .mod-audio-output .mod-output-jack,
-.mod-pedal .output-connected.mod-audio-output .mod-output-jack:hover {
-    background-image:url(../img/jack-p10.png);
-    background-repeat:no-repeat;
-    cursor:pointer;
-    height:75px;
-    left:2px;
-    position:absolute;
-    top:12px;
-    width:171px;
-}
-
-.mod-pedal .mod-output-jack:hover,
-.mod-pedal .mod-output-jack.jack-connecting {}
-
-.mod-pedal .mod-midi-output .mod-output-jack,
-.mod-pedal .output-connected.mod-midi-output .mod-output-jack:hover {
-    background-image:url(../img/midi-output-jack.png);
-    background-repeat:no-repeat;
-    cursor:pointer;
-    height:75px;
-    left:2px;
-    position:absolute;
-    width:104px;
-}
-.mod-pedal .mod-pedal-output {
-    height:170px;
-    position:absolute;
-    right:-27px;
-    top:106px;
-    width:45px;
-}
-
-.mod-pedal .mod-pedal-output .mod-output {
-    cursor:pointer;
-    height:45px;
-    margin-bottom:10px;
-    position:relative;
-    width:45px;
-}
-
-.mod-pedal .mod-pedal-output-image {
-    background:url(../img/output.png) no-repeat 0 0;
-    position:relative;
-    height:75px;
-    width:117px;
-    z-index:2;
-}
-
-.mod-pedal .output-disconnected .mod-output-jack { }
-.mod-pedal .output-connecting {}
-.mod-pedal .output-connected .mod-output-jack { background:none; }
-*/
-
 
 /* = PEDAL SETTINGS - Pop Up Window
 ================================================ */
