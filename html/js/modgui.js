@@ -125,16 +125,17 @@ function GUI(effect, options) {
     var self = this
 
     options = $.extend({
-        'change': new Function(),
-        'click': new Function(),
-        'dragStart': new Function(),
-        'drag': new Function(),
-        'dragStop': new Function(),
-        'presetLoad': new Function(),
-        'midiLearn': new Function(),
-        'bypassed': 1,
-        'defaultIconTemplate': 'Template missing',
-        'defaultSettingsTemplate': 'Template missing'
+        change: new Function(),
+        click: new Function(),
+        dragStart: new Function(),
+        drag: new Function(),
+        dragStop: new Function(),
+        presetLoad: new Function(),
+        midiLearn: new Function(),
+        bypassed: 1,
+        defaultIconTemplate: 'Template missing',
+        defaultSettingsTemplate: 'Template missing',
+        loadDependencies: true,
     }, options)
 
     if (!effect.gui)
@@ -142,16 +143,21 @@ function GUI(effect, options) {
 
     self.currentValues = {}
 
-    self.dependenciesLoaded = false
     self.dependenciesCallbacks = []
 
-    loadDependencies(this, effect, function () {
+    if (options.loadDependencies) {
+        self.dependenciesLoaded = false
+
+        loadDependencies(this, effect, function () {
+            self.dependenciesLoaded = true
+            for (var i in self.dependenciesCallbacks) {
+                self.dependenciesCallbacks[i]()
+            }
+            self.dependenciesCallbacks = []
+        })
+    } else {
         self.dependenciesLoaded = true
-        for (var i in self.dependenciesCallbacks) {
-            self.dependenciesCallbacks[i]()
-        }
-        self.dependenciesCallbacks = []
-    })
+    }
 
     self.effect = effect
 
