@@ -306,8 +306,23 @@ function GUI(effect, options) {
             else
                 self.icon = $('<div class="mod-pedal">')
 
-            self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
-                self.getTemplateData(effect, skipNamespace)))
+            var templateData = self.getTemplateData(effect, skipNamespace)
+            self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate, templateData))
+
+            // Check for old broken icons
+            var children = self.icon.children()
+            if (children.hasClass("mod-pedal-boxy")      ||
+                children.hasClass("mod-pedal-british")   ||
+                children.hasClass("mod-pedal-japanese")  ||
+                children.hasClass("mod-pedal-lata")      ||
+                children.hasClass("mod-combo-model-001") ||
+                children.hasClass("mod-head-model-001")  ||
+                children.hasClass("mod-rack-model-001"))
+            {
+                console.log("This icon uses old MOD reserved css classes, this is not allowed anymore")
+                self.icon.html(Mustache.render(options.defaultIconTemplate, templateData))
+            }
+
             self.assignIconFunctionality(self.icon)
             self.assignControlFunctionality(self.icon, false)
 
@@ -331,8 +346,8 @@ function GUI(effect, options) {
                 self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
             else
                 self.settings = $('<div class="mod-settings">')
-            self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate,
-                self.getTemplateData(effect, skipNamespace)))
+            self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
+
             self.assignControlFunctionality(self.settings, false)
 
             if (! instance) {
