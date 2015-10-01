@@ -195,8 +195,15 @@ function HardwareManager(options) {
         var max   = form.find('input[name=max]').val(maxv).attr("min", minv).attr("max", maxv)
         var label = form.find('input[name=label]').val(currentAddressing.label || pname)
 
-        if (port.properties.indexOf("integer") < 0) {
-            var step = (maxv-minv)/100
+        var step
+        if (port.properties.indexOf("toggled") >= 0) {
+            // boolean, always min or max value
+            step = maxv-minv
+            min.attr("step", step)
+            max.attr("step", step)
+        } else if (port.properties.indexOf("integer") < 0) {
+            // float, allow non-integer stepping
+            step = (maxv-minv)/100
             min.attr("step", step)
             max.attr("step", step)
         }

@@ -233,7 +233,7 @@ class Addressing(object):
             return
         data['bypassed'] = bypassed
 
-        addr = data['addressing'].get(port, None)
+        addr = data['addressing'].get(':bypass', None)
         if addr is None:
             return
         addr['value'] = 1 if bypassed else 0
@@ -267,42 +267,48 @@ class Addressing(object):
             callback(False)
             return
 
-        for port_info in get_plugin_info(data["uri"])["ports"]["control"]["input"]:
-            if port_info["symbol"] != port:
-                continue
-            break
-        else:
-            callback(False)
-            return
-
-        pprops  = port_info["properties"]
-        unit    = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
         options = []
 
         if port == ":bypass":
             ctype = ADDRESSING_CTYPE_BYPASS
-        elif "toggled" in pprops:
-            ctype = ADDRESSING_CTYPE_TOGGLED
-        elif "integer" in pprops:
-            ctype = ADDRESSING_CTYPE_INTEGER
+            unit  = "none"
+
         else:
-            ctype = ADDRESSING_CTYPE_LINEAR
+            for port_info in get_plugin_info(data["uri"])["ports"]["control"]["input"]:
+                if port_info["symbol"] != port:
+                    continue
+                break
+            else:
+                callback(False)
+                return
 
-        if "logarithmic" in pprops:
-            ctype |= ADDRESSING_CTYPE_LOGARITHMIC
-        if "trigger" in pprops:
-            ctype |= ADDRESSING_CTYPE_TRIGGER
-        if "tap_tempo" in pprops: # TODO
-            ctype |= ADDRESSING_CTYPE_TAP_TEMPO
+            pprops = port_info["properties"]
+            unit   = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
 
-        if len(port_info["scalePoints"]) >= 2: # and "enumeration" in pprops:
-            ctype |= ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION
+            if "toggled" in pprops:
+                ctype = ADDRESSING_CTYPE_TOGGLED
+            elif "integer" in pprops:
+                ctype = ADDRESSING_CTYPE_INTEGER
+            else:
+                ctype = ADDRESSING_CTYPE_LINEAR
 
-            if "enumeration" in pprops:
-                ctype |= ADDRESSING_CTYPE_ENUMERATION
+            if "logarithmic" in pprops:
+                ctype |= ADDRESSING_CTYPE_LOGARITHMIC
+            if "trigger" in pprops:
+                ctype |= ADDRESSING_CTYPE_TRIGGER
+            if "tap_tempo" in pprops: # TODO
+                ctype |= ADDRESSING_CTYPE_TAP_TEMPO
 
-            for scalePoint in port_info["scalePoints"]:
-                options.append((scalePoint["value"], scalePoint["label"]))
+            if len(port_info["scalePoints"]) >= 2: # and "enumeration" in pprops:
+                ctype |= ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION
+
+                if "enumeration" in pprops:
+                    ctype |= ADDRESSING_CTYPE_ENUMERATION
+
+                for scalePoint in port_info["scalePoints"]:
+                    options.append((scalePoint["value"], scalePoint["label"]))
+
+            del port_info, pprops
 
         addressing = {
             'actuator_uri': actuator_uri,
@@ -389,8 +395,6 @@ class Addressing(object):
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
-        if hardware_type == HARDWARE_TYPE_MOD:
-            hardware_type = HARDWARE_TYPE_CUSTOM
         actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator_hw, callback)
 
@@ -489,8 +493,8 @@ class Addressing(object):
         self._uri2hw_map = {}
 
         for i in range(0, 4):
-            knob_hw  = (HARDWARE_TYPE_CUSTOM, 0, ACTUATOR_TYPE_KNOB,       i)
-            foot_hw  = (HARDWARE_TYPE_CUSTOM, 0, ACTUATOR_TYPE_FOOTSWITCH, i)
+            knob_hw  = (HARDWARE_TYPE_MOD, 0, ACTUATOR_TYPE_KNOB,       i)
+            foot_hw  = (HARDWARE_TYPE_MOD, 0, ACTUATOR_TYPE_FOOTSWITCH, i)
             knob_uri = "/hmi/knob%i"       % (i+1)
             foot_uri = "/hmi/footswitch%i" % (i+1)
 
