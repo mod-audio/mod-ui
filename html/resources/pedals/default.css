@@ -8,6 +8,7 @@
     height:434px;
     position:absolute;
     width:251px;
+    border-radius: 80px 82px 80px 82px;
 }
 
 /* = LIGHT ON/OFF
@@ -55,22 +56,25 @@
     right:13px;
 }
 .mod-pedal-default .mod-footswitch.on {
-    background-position-y: top !important
+    background-position-y: top !important;
+    background-image:url(/resources/pedals/footswitch.png);
 }
 
 /* = NAME
 ================================================ */
 .mod-pedal-default .mod-plugin-name {
     color: #333;
-    left:30px;
-    right:30px;
-    overflow:hidden;
+    left:50px;
+    right:50px;
     position:absolute;
     text-align:center;
-    top:30px;
-    line-height:1;
+    top:60px;
 }
 
 .mod-pedal-default .mod-plugin-name h1 {
     font-family: "Ek Mukta",Helvetica,Arial,Sans-serif;
+    font-weight: bold;
+    text-shadow: 0 0 8px 2px white;
+    font-size: 30px;
+    line-height: 30px;
 }
