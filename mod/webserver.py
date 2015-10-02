@@ -840,10 +840,10 @@ class TemplateHandler(web.RequestHandler):
     def index(self):
         context = {}
 
-        with open(DEFAULT_ICON_TEMPLATE) as fd:
+        with open(DEFAULT_ICON_TEMPLATE, 'r') as fd:
             default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
-        with open(DEFAULT_SETTINGS_TEMPLATE) as fd:
+        with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fd:
             default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
         context = {
