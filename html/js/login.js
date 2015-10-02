@@ -253,3 +253,6 @@ function UserSession(options) {
 
     this.notify = options.notify
 }
+function goRegister() {
+    window.open('http://social.dev.moddevices.com/#/register', 'register', "height=600,width=800");
+}

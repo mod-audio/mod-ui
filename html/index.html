@@ -229,25 +229,23 @@ $('document').ready(function() {
             <!-- LOGIN WINDOW -->
             <div id="login-window" class="save-popup mod-hidden">
                 <div class="mod-box">
-                    <h1>Login</h1>
+                    <div class="clearfix">
+                    <h1 class="pull-left">Login</h1>
+                    <small class="pull-right"><a onclick="goRegister()" href="#register"><strong>REGISTER</strong></a></small>
+                    </div>
                     <!-- The div below will hold error message. It must have class "error" -->
                     <div class="error mod-hidden"></div>
                     <form class="bottom">
-                        <div class="control-group">
+                        <div class="form-group">
                             <label>User ID</label>
-                            <div class="mod-controls">
-                                <input type="text" name="user_id" value=""/>
-                            </div>
+                                <input type="text" class="form-control" name="user_id" value=""/>
                         </div>
-                        <div class="control-group">
+                        <div class="form-group">
                             <label>Password</label>
-                            <div class="mod-controls">
-                                <input type="password" name="password" value=""/>
-                            </div>
+                                <input type="password" class="form-control" name="password" value=""/>
                         </div>
-                        <div class="textright">
-                            <a id="register">Register</a>
-                            <input type="submit" class="btn btn-info"/>
+                        <div class="form-group">                            
+                            <input type="submit" class="form-control btn btn-info"/>
                         </div>
                     </form>
                 </div>
@@ -813,7 +811,7 @@ $('document').ready(function() {
                   <li class="hide" ui-sref-active="active">
                   </li>
                   <li ng-if="!logged" ui-sref-active="active">
-                      <a ui-sref="register">
+                      <a onclick="goRegister()">
                           Register
                       </a>
                   </li>
