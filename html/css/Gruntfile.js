@@ -11,13 +11,14 @@ module.exports = function(grunt) {
           optimization: 2
         },
         files: {
-          "social.css": "social.less" // destination file and source file
+          "social.css": "less/social.less", // destination file and source file
+          "main.css": "less/main.less" // destination file and source file
         }
       }
     },
     watch: {
       styles: {
-        files: ['social.less'], // which files to watch
+        files: ['less/social.less','less/main.less'], // which files to watch
         tasks: ['less'],
         options: {
           nospawn: true
