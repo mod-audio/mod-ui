@@ -22,16 +22,12 @@ from os.path import exists, join
 from tornado.ioloop import IOLoop
 from mod.settings import DOWNLOAD_TMP_DIR
 
-def install_bundle(uid, callback):
-    filename = join(DOWNLOAD_TMP_DIR, '%s' % uid)
+def install_package(filename, callback):
+    filename = join(DOWNLOAD_TMP_DIR, filename)
     assert exists(filename)
-    print("HERE: ", DOWNLOAD_TMP_DIR)
     proc = subprocess.Popen(['tar','zxf', filename],
                             cwd=DOWNLOAD_TMP_DIR,
                             stdout=subprocess.PIPE)
-
-
-    ioloop = IOLoop.instance()
 
     def install(fileno, event):
         if proc.poll() is None:
@@ -41,6 +37,7 @@ def install_bundle(uid, callback):
         result = install_all_bundles()
         callback(result)
 
+    ioloop = IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), install, 16)
 
 def install_all_bundles():
@@ -58,7 +55,7 @@ def remove_old_version(uri):
     """
     return
 
-def uninstall_bundle(package):
+def uninstall_package(package):
     """
     Uninstall a plugin package. Removes the whole bundle directory and
     all effects from filesystem and index

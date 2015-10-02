@@ -49,7 +49,7 @@ from mod.settings import (APP, DESKTOP, LOG,
 from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
-from mod.effect import install_bundle, uninstall_bundle
+from mod.effect import install_package, uninstall_package
 from mod.bank import list_banks, save_banks
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
 from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
@@ -210,7 +210,7 @@ class EffectInstaller(SimpleFileReceiver):
         def on_finish(result):
             self.result = result
             callback()
-        install_bundle(data['filename'], on_finish)
+        install_package(data['filename'], on_finish)
 
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
@@ -271,10 +271,16 @@ class SDKEffectInstaller(EffectInstaller):
     @gen.engine
     def post(self):
         upload = self.request.files['package'][0]
-        open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'w').write(upload['body'])
-        uid = upload['filename'].replace('.tgz', '')
-        res = yield gen.Task(install_bundle, uid)
-        self.write(json.dumps({ 'ok': True }))
+
+        with open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'wb') as fh:
+            fh.write(b64decode(upload['body']))
+
+        resp = yield gen.Task(install_package, upload['filename'])
+
+        self.write(json.dumps({
+            'ok'     : True,
+            'effects': resp,
+        }))
         self.finish()
 
 # TODO this is an obsolete implementation that does not work in new lv2 specs.
@@ -562,7 +568,7 @@ class PackageEffectList(web.RequestHandler):
 
 class PackageUninstall(web.RequestHandler):
     def post(self, package):
-        result = uninstall_bundle(package)
+        result = uninstall_package(package)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
