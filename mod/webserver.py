@@ -137,7 +137,7 @@ def install_package(filename, callback):
         os.remove(filename)
         callback(install_all_bundles())
 
-    ioloop = IOLoop.instance()
+    ioloop = tornado.ioloop.IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
 
 class SimpleFileReceiver(web.RequestHandler):
