@@ -513,7 +513,7 @@ def get_pedalboards(asDictionary):
 
 # add a bundle to our lilv world
 # returns true if the bundle was added
-def add_bundle_to_lilv_world(bundlepath):
+def add_bundle_to_lilv_world(bundlepath, returnPlugins = False):
     global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
     # lilv wants the last character as the separator
@@ -522,7 +522,10 @@ def add_bundle_to_lilv_world(bundlepath):
 
     # stop now if bundle is already loaded
     if bundlepath in BUNDLES:
-        return False
+        return [] if returnPlugins else False
+
+    # In case returnPlugins is used
+    addedPlugins = []
 
     # convert bundle string into a lilv node
     bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
@@ -533,7 +536,7 @@ def add_bundle_to_lilv_world(bundlepath):
     # free bundlenode, no longer needed
     lilv.lilv_node_free(bundlenode)
 
-    # add to world
+    # add to loaded list
     BUNDLES.append(bundlepath)
 
     # fill in for any new plugins that appeared
@@ -548,4 +551,73 @@ def add_bundle_to_lilv_world(bundlepath):
         PLUGNFO[uri] = get_plugin_info2(W, p)
         PLUGNFOk.append(uri)
 
-    return True
+        if returnPlugins:
+            addedPlugins.append(uri)
+
+    return addedPlugins if returnPlugins else True
+
+# remove a bundle to our lilv world
+# returns true if the bundle was removed
+def remove_bundle_to_lilv_world(bundlepath, returnPlugins = False):
+    global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
+
+    # lilv wants the last character as the separator
+    if not bundlepath.endswith(os.sep):
+        bundlepath += os.sep
+
+    # stop now if bundle is not loaded
+    if bundlepath not in BUNDLES:
+        return [] if returnPlugins else False
+
+    # In case returnPlugins is used
+    removedPlugins = []
+
+    # remove from loaded list
+    BUNDLES.remove(bundlepath)
+
+    # remove all plugins that are present on that bundle
+    for p in PLUGINS:
+        uri = p.get_uri().as_uri()
+
+        if uri not in PLUGNFOk:
+            continue
+
+        bundles = lilv.lilv_plugin_get_data_uris(p.me)
+
+        it = lilv.lilv_nodes_begin(bundles)
+        while not lilv.lilv_nodes_is_end(bundles, it):
+            bundle = lilv.lilv_nodes_get(bundles, it)
+            it     = lilv.lilv_nodes_next(bundles, it)
+
+            if bundle is None:
+                continue
+            if not lilv.lilv_node_is_uri(bundle):
+                continue
+
+            bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+
+            if not bundle.endswith(os.sep):
+                bundle += os.sep
+
+            if bundlepath != bundle:
+                continue
+
+            PLUGNFOk.remove(uri)
+            PLUGNFO.pop(uri)
+
+            if returnPlugins:
+                removedPlugins.append(uri)
+
+    # convert bundle string into a lilv node
+    bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
+
+    # unload the bundle
+    lilv.lilv_world_unload_bundle(W.me, bundlenode)
+
+    # free bundlenode, no longer needed
+    lilv.lilv_node_free(bundlenode)
+
+    # refresh lilv plugins
+    PLUGINS = W.get_all_plugins()
+
+    return removedPlugins if returnPlugins else True

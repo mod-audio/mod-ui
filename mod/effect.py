@@ -22,31 +22,6 @@ from os.path import exists, join
 from tornado.ioloop import IOLoop
 from mod.settings import DOWNLOAD_TMP_DIR
 
-def install_package(filename, callback):
-    filename = join(DOWNLOAD_TMP_DIR, filename)
-    assert exists(filename)
-    proc = subprocess.Popen(['tar','zxf', filename],
-                            cwd=DOWNLOAD_TMP_DIR,
-                            stdout=subprocess.PIPE)
-
-    def install(fileno, event):
-        if proc.poll() is None:
-            return
-        ioloop.remove_handler(fileno)
-        os.remove(filename)
-        result = install_all_bundles()
-        callback(result)
-
-    ioloop = IOLoop.instance()
-    ioloop.add_handler(proc.stdout.fileno(), install, 16)
-
-def install_all_bundles():
-    """
-    Install all bundles available in installation temp dir into domain's directory
-    Returns list of effects installed
-    """
-    return []
-
 def remove_old_version(uri):
     """
     This will remove old version of a plugin, although it does not remove the
