@@ -116,7 +116,7 @@ class ScreenshotGenerator(object):
 
         # if previous callback is still there it means we're too slow
         if self.callback is not None:
-            self.callback(True)
+            self.callback(False)
 
         # report back later
         self.callback = callback
