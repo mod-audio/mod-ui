@@ -78,39 +78,38 @@ class ScreenshotGenerator(object):
     def __init__(self):
         self.queue = []
         self.callback = None
-        self.processing = False
+        self.processing = None
 
     def schedule_screenshot(self, bundlepath):
         if bundlepath not in self.queue:
             self.queue.append(bundlepath)
-        if not self.processing:
+        if self.processing is None:
             self.process_next()
 
     def process_next(self):
         if len(self.queue) == 0:
-            self.processing = False
+            self.processing = None
             if self.callback is not None:
                 self.callback(True)
                 self.callback = None
             return
-        self.processing = True
 
-        bundlepath = self.queue.pop(0)
+        self.processing = self.queue.pop(0)
 
         def callback(img=None):
             if not img:
                 self.process_next()
                 return
 
-            path = os.path.join(bundlepath, 'thumbnail.png')
+            path = os.path.join(self.processing, 'thumbnail.png')
             img.save(path)
 
             self.process_next()
 
-        generate_screenshot(bundlepath, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
+        generate_screenshot(self.processing, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
 
     def wait_for_pending_jobs(self, bundlepath, callback):
-        if bundlepath not in self.queue:
+        if bundlepath not in self.queue and self.processing != bundlepath:
             # all ok
             callback(True)
             return
