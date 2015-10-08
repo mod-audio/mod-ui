@@ -282,7 +282,7 @@ class IngenAsync(object):
         self._reading = True
         self.sock.read_until(self.msgencode(".\n"), self.keep_reading)
 
-    def _send(self, msg, callback=lambda r:r, datatype='int'):
+    def _send(self, msg, callback=lambda r:r):
         self.sock.write(self.msgencode(msg), lambda: callback(True))
 
     def __del__(self):

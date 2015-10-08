@@ -101,9 +101,7 @@ class ScreenshotGenerator(object):
                 self.process_next()
                 return
 
-            path = os.path.join(self.processing, 'thumbnail.png')
-            img.save(path)
-
+            img.save(os.path.join(self.processing,  "thumbnail.png"))
             self.process_next()
 
         generate_screenshot(self.processing, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)

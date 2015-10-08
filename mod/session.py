@@ -77,7 +77,12 @@ class Session(object):
         self.xrun_count2 = 0
 
         self.ioloop = ioloop.IOLoop.instance()
-        self.host = Host(os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock"))
+
+        socketpath = os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock")
+        if DEV_HOST:
+            self.host = FakeHost(socketpath)
+        else:
+            self.host = Host(socketpath)
 
         # Try to open real HMI
         hmiOpened = False
