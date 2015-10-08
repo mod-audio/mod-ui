@@ -46,7 +46,7 @@ var NS_patch_value         = "http://lv2plug.in/ns/ext/patch#value"
 
 $('document').ready(function() {
     var ws = new WebSocket("ws://" + window.location.host + "/websocket");
-    var body, subject, type, type1, type2
+    var body, subject, type, type1, type2, property, value
 
     ws.onmessage = function (evt) {
         var parser = N3.Parser();
@@ -79,8 +79,9 @@ $('document').ready(function() {
                             {
                                 type = type[0].object
 
-                                // Deletes a connection between ports
-                                if (type == NS_ingen_Arc) {
+                                if (type == NS_ingen_Arc)
+                                {
+                                    // Deletes a connection between ports
                                     var connMgr    = desktop.pedalboard.data("connectionManager")
                                     var incidentTo = store.find(body, NS_ingen_incidentTo, null)
 
@@ -105,7 +106,9 @@ $('document').ready(function() {
                                             console.log("ERROR: Received patch:Delete ingen:Arg without incidentTo or tail&head")
                                         }
                                     }
-                                } else {
+                                }
+                                else
+                                {
                                         console.log("TESTING: Received unhandled patch:Delete message: " + type)
                                 }
                             }
@@ -163,9 +166,9 @@ $('document').ready(function() {
                             {
                                 type = type[0].object
 
-                                // add a new plugin
                                 if (type == NS_ingen_Block)
                                 {
+                                    // add a new plugin
                                     var prototype = store.find(body, NS_lv2core_prototype, null)
 
                                     if (prototype.length) {
@@ -183,7 +186,6 @@ $('document').ready(function() {
                                         var canvasY = store.find(body, NS_ingen_canvasY);
                                         canvasY = canvasY.length ? N3.Util.getLiteralValue(canvasY[0].object) : 0;
 
-                                        var waiter  = desktop.pedalboard.data('wait')
                                         var plugins = desktop.pedalboard.data('plugins')
 
                                         if (plugins[instance] == null) {
@@ -191,13 +193,23 @@ $('document').ready(function() {
                                             $.ajax({
                                                 url: '/effect/get?uri=' + escape(uri),
                                                 success: function (pluginData) {
+                                                    var instancekey = '[mod-instance="' + instance + '"]'
+
+                                                    if (!$(instancekey).length) {
+                                                        var cb = function () {
+                                                            desktop.pedalboard.pedalboard('adapt')
+
+                                                            var waiter = desktop.pedalboard.data('wait')
+
+                                                            if (waiter.plugins[instance])
+                                                                waiter.stopPlugin(instance)
+
+                                                            $(document).unbindArrive(instancekey, cb)
+                                                        }
+                                                        $(document).arrive(instancekey, cb)
+                                                    }
+
                                                     desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, !enabled, parseInt(canvasX), parseInt(canvasY), {})
-                                                    $("#pedalboard-dashboard").arrive('[mod-instance="' + instance + '"]', function () {
-                                                        desktop.pedalboard.pedalboard('adapt')
-                                                        if (waiter.plugins[instance])
-                                                            waiter.stopPlugin(instance)
-                                                        $("#pedalboard-dashboard").unbindArrive('[mod-instance="' + instance + '"]')
-                                                    })
                                                 },
                                                 cache: false,
                                                 dataType: 'json'
@@ -207,9 +219,9 @@ $('document').ready(function() {
                                         console.log("ERROR: Received patch:Put message without subject")
                                     }
                                 }
-                                // add new port connection
                                 else if (type == NS_ingen_Arc)
                                 {
+                                    // add new port connection
                                     var tail = store.find(body, NS_ingen_tail, null)
                                     var head = store.find(body, NS_ingen_head, null)
 
@@ -288,29 +300,37 @@ $('document').ready(function() {
                                         return
                                     }
 
-                                    var nameObj = store.find(body, NS_lv2core_name)[0]
-                                    if (nameObj == null)
+                                    var name  = store.find(body, NS_lv2core_name)
+                                    var index = store.find(body, NS_lv2core_index)
+
+                                    if (name.length == 0 || name[0] == null) {
+                                        console.log("ERROR: Received patch:Put ControlPort without name")
                                         return
-
-                                    var indexObj = store.find(body, NS_lv2core_index)[0]
-                                    if (indexObj == null)
+                                    }
+                                    if (index.length == 0 || index[0] == null) {
+                                        console.log("ERROR: Received patch:Put ControlPort without index")
                                         return
+                                    }
 
-                                    var name = N3.Util.getLiteralValue(nameObj.object)
-                                    var index = N3.Util.getLiteralValue(indexObj.object)
-                                    var types = [type1, type2]
+                                    name  = N3.Util.getLiteralValue(name[0].object)
+                                    index = N3.Util.getLiteralValue(index[0].object)
 
-                                    var port_type
-                                    if (types.indexOf(NS_atom_AtomPort) > -1) {
-                                        port_type = "midi"
+                                    var port_type, types = [type1, type2]
+
+                                    /*  */ if (types.indexOf(NS_lv2core_AudioPort) > -1) {
+                                        port_type = "audio"
                                     } else if (types.indexOf(NS_lv2core_CVPort) > -1) {
                                         port_type = "cv"
+                                    } else if (types.indexOf(NS_atom_AtomPort) > -1) {
+                                        port_type = "midi"
                                     } else {
-                                        port_type = "audio"
+                                        console.log("ERROR: Received patch:Put Port with unknown port type")
+                                        return
                                     }
 
                                     var el = $('[id="' + subject + '"]')
                                     if (el.length > 0) {
+                                        // already created
                                         return
                                     }
 
@@ -327,30 +347,59 @@ $('document').ready(function() {
                                 else if (type1 == NS_lv2core_ControlPort || type2 == NS_lv2core_ControlPort)
                                 {
                                     // set the value for the port
-                                    var value = store.find(body, NS_ingen_value);
-                                    var last_slash = subject.lastIndexOf("/");
-                                    var instance = subject.substring(0, last_slash);
-                                    var port = subject.substring(last_slash+1);
-                                    var symbol = '[mod-port="' + subject.replace("/", "\\/") + '"]'
-                                    if (!$(symbol).length) {
-                                        var cb = function () {
-                                            setTimeout(function() {
-                                                var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                                gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
-                                            }, 100)
-                                            $(document).unbindArrive(symbol, cb)
-                                        }
-                                        $(document).arrive(symbol, cb)
-                                    } else {
-                                        console.log("FIXME: Got Set value too soon for " + instance)
-                                        //var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                        //gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                    value = store.find(body, NS_ingen_value);
+
+                                    if (value.length) {
+                                        value = value[0].object
+                                        value = N3.Util.getLiteralValue(value)
+
+                                        var last_slash = subject.lastIndexOf("/");
+                                        var instance   = subject.substring(0, last_slash);
+                                        var symbol     = subject.substring(last_slash+1);
+
+                                        desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
+
+                                        /*
+                                        var symbolport = '[mod-port="' + subject.replace("/", "\\/") + '"]'
+                                        if ($(symbolport).length) {
+                                            console.log(symbol)
+                                            console.log(instance)
+                                            var instancekey = '[mod-instance="' + instance + '"]'
+
+                                            if ($(instancekey).length) {
+                                                setTimeout(function() {
+                                                    var gui =
+                                                    gui.setPortWidgetsValue(symbol, value, undefined, true);
+                                                }, 100)
+                                            } else {
+                                                var cb = function () {
+                                                    setTimeout(function() {
+                                                        var gui = desktop.pedalboard.pedalboard("getGui", instance);
+                                                        gui.setPortWidgetsValue(symbol, value, undefined, true);
+                                                    }, 100)
+                                                    $(document).unbindArrive(instancekey, cb)
+                                                }
+                                                $(document).arrive(instancekey, cb)
+                                            }
+                                        } else {
+                                            var cb = function () {
+                                                setTimeout(function() {
+                                                    var gui = desktop.pedalboard.pedalboard("getGui", instance);
+                                                    gui.setPortWidgetsValue(symbol, value, undefined, true);
+                                                }, 100)
+                                                $(document).unbindArrive(symbolport, cb)
+                                            }
+                                            $(document).arrive(symbolport, cb)
+                                        }*/
+                                    } else  {
+                                        console.log("ERROR: Received patch:Put ControlPort without value")
                                     }
                                 }
                             }
                             else
                             {
-                                console.log("ERROR: Received patch:Put message too many types")
+                                console.log("TESTING: Received unhandled patch:Put message with many types, subject: '" + subject + "'")
+                                console.log(type)
                             }
                         }
                         else
@@ -359,40 +408,42 @@ $('document').ready(function() {
                         }
                     });
 
-                    // Set messages
-                    store.find(null,
-                        NS_rdf_type,
-                        "http://lv2plug.in/ns/ext/patch#Set").forEach(function (msg) {
-                        var subject = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#subject", null);
-                        if (subject.length) {
-                            var property = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#property");
-                            var value = store.find(msg.subject, "http://lv2plug.in/ns/ext/patch#value");
-                            if (property.length && value.length) {
-                                var prop = property[0].object
-                                if (prop == "http://moddevices/ns/modpedal#cpuload")
+                    /**
+                      Set messages
+                    */
+                    store.find(null, NS_rdf_type, NS_patch_Set).forEach(function (msg) {
+                        subject = store.find(msg.subject, NS_patch_subject, null)
+
+                        if (subject.length)
+                        {
+                            subject  = subject[0].object
+                            property = store.find(msg.subject, NS_patch_property, null);
+                            value    = store.find(msg.subject, NS_patch_value, null);
+
+                            if (property.length && value.length)
+                            {
+                                property = property[0].object
+                                value    = value[0].object
+
+                                if (property == "http://moddevices/ns/modpedal#cpuload")
                                 {
                                     // setting cpuload
-                                    var value = value[0].object
                                     $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
                                 }
-                                else if (prop == "http://drobilla.net/ns/ingen#value")
+                                else if (property == NS_ingen_value)
                                 {
                                     // setting a port value
-                                    var sub = subject[0].object;
-                                    var last_slash = sub.lastIndexOf("/");
-                                    var instance = sub.substring(0, last_slash);
-                                    var port = sub.substring(last_slash+1);
-                                    var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                    gui.setPortWidgetsValue(port, N3.Util.getLiteralValue(value[0].object), undefined, true);
+                                    var last_slash = subject.lastIndexOf("/");
+                                    var instance = subject.substring(0, last_slash);
+                                    var symbol = subject.substring(last_slash+1);
+                                    desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, N3.Util.getLiteralValue(value));
                                 }
-                                else if (prop == "http://drobilla.net/ns/ingen#enabled")
+                                else if (property == NS_ingen_enabled)
                                 {
                                     // setting bypass
-                                    var instance = subject[0].object
-                                    var gui = desktop.pedalboard.pedalboard("getGui", instance);
-                                    gui.setPortWidgetsValue(":bypass", value[0].object.indexOf("false") >= 0 ? 1 : 0, undefined, true);
+                                    desktop.pedalboard.pedalboard("gsetPortWidgetsValue", subject, ":bypass", value.indexOf("false") >= 0 ? 1 : 0);
                                 }
-                                else if (prop == "http://drobilla.net/ns/ingen#file")
+                                else if (property == NS_ingen_file)
                                 {
                                     // Pedalboard changed, load new possible addressings
                                     $.ajax({
@@ -409,22 +460,28 @@ $('document').ready(function() {
                                 else
                                 {
                                     // ignore some properties
-                                    if (prop == "http://drobilla.net/ns/ingen#canvasX"     ||
-                                        prop == "http://drobilla.net/ns/ingen#canvasY"     ||
-                                        prop == "http://moddevices.com/ns/modpedal#width"  ||
-                                        prop == "http://moddevices.com/ns/modpedal#height" ||
-                                        prop == "http://moddevices.com/ns/modpedal#addressing" ||
-                                        prop == "http://moddevices.com/ns/modpedal#screenshot" ||
-                                        prop == "http://moddevices.com/ns/modpedal#thumbnail"  ||
-                                        prop == NS_rdf_type) {
+                                    if (property == NS_ingen_canvasX ||
+                                        property == NS_ingen_canvasY ||
+                                        property == "http://moddevices.com/ns/modpedal#width"  ||
+                                        property == "http://moddevices.com/ns/modpedal#height" ||
+                                        property == "http://moddevices.com/ns/modpedal#addressing" ||
+                                        property == "http://moddevices.com/ns/modpedal#screenshot" ||
+                                        property == "http://moddevices.com/ns/modpedal#thumbnail"  ||
+                                        property == NS_rdf_type) {
                                         return
                                     }
 
-                                    console.log("TESTING: Received unhandled patch:Set message")
-                                    console.log(subject[0])
-                                    console.log(property[0])
+                                    console.log("TESTING: Received unhandled patch:Set message subject: '" + subject + "', property '" + property + "'")
                                 }
                             }
+                            else
+                            {
+                                console.log("ERROR: Received patch:Set message without property or value")
+                            }
+                        }
+                        else
+                        {
+                            console.log("ERROR: Received patch:Set message without subject")
                         }
                     });
                 }

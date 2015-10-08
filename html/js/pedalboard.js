@@ -1236,6 +1236,30 @@ JqueryClass('pedalboard', {
         return plugin.data('gui')
     },
 
+    setPortWidgetsValue: function (instance, symbol, value) {
+        var self = $(this)
+        var gui, plugin
+        //var symbolport = '[mod-port="' + subject.replace("/", "\\/") + '"]'
+
+        // keep trying until instance is available
+        var trySetPortValue = function () {
+            plugin = self.data('plugins')[instance]
+
+            if (plugin != null && plugin.data != null/*&& $(symbolport).length*/) {
+                gui = plugin.data('gui')
+
+                if (gui.controls[symbol] != null) {
+                    gui.setPortWidgetsValue(symbol, value, undefined, true);
+                    return
+                }
+            }
+
+            setTimeout(trySetPortValue, 100)
+        }
+
+        trySetPortValue()
+    },
+
     // Redraw all connections from or to a plugin
     drawPluginJacks: function (plugin) {
         var self = $(this)
