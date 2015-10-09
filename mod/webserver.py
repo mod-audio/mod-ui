@@ -37,7 +37,7 @@ from glob import glob
 
 from mod.settings import (APP, DESKTOP, LOG,
                           HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
-                          DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR,
+                          DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR, LV2_PLUGIN_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
@@ -49,9 +49,9 @@ from mod.settings import (APP, DESKTOP, LOG,
 from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
-from mod.effect import install_bundle, uninstall_bundle
 from mod.bank import list_banks, save_banks
 from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
+from mod.lv2 import add_bundle_to_lilv_world, remove_bundle_to_lilv_world
 from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
@@ -82,6 +82,63 @@ def format_pedalboard(pedal):
         'width' : pedal['width'],
         'height': pedal['height']
     }
+
+def install_package(filename, callback):
+    filename = os.path.join(DOWNLOAD_TMP_DIR, filename)
+
+    if not os.path.exists(filename):
+        callback({
+            'ok'     : False,
+            'error'  : "Failed to find archive",
+            'removed': [],
+        })
+        return
+
+    proc = subprocess.Popen(['tar','zxf', filename],
+                            cwd=DOWNLOAD_TMP_DIR,
+                            stdout=subprocess.PIPE)
+
+    def install_all_bundles():
+        removed   = []
+        installed = []
+
+        for bundle in os.listdir(DOWNLOAD_TMP_DIR):
+            tmppath    = os.path.join(DOWNLOAD_TMP_DIR, bundle)
+            bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
+
+            if os.path.exists(bundlepath):
+                removed += remove_bundle_to_lilv_world(bundlepath, True)
+                shutil.rmtree(bundlepath)
+
+            shutil.move(tmppath, bundlepath)
+            installed += add_bundle_to_lilv_world(bundlepath, True)
+
+        # TODO - make ingen refresh lv2 world
+
+        if len(installed) == 0:
+            resp = {
+                'ok'     : False,
+                'error'  : "No plugins found in bundle",
+                'removed': removed,
+            }
+        else:
+            resp = {
+                'ok'       : True,
+                'removed'  : removed,
+                'installed': installed,
+            }
+
+        return resp
+
+    def end_untar_pkgs(fileno, event):
+        if proc.poll() is None:
+            return
+        ioloop.remove_handler(fileno)
+        os.remove(filename)
+        callback(install_all_bundles())
+
+    ioloop = tornado.ioloop.IOLoop.instance()
+    ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
@@ -207,10 +264,10 @@ class EffectInstaller(SimpleFileReceiver):
     destination_dir = DOWNLOAD_TMP_DIR
 
     def process_file(self, data, callback=lambda:None):
-        def on_finish(result):
-            self.result = result
+        def on_finish(resp):
+            self.result = resp
             callback()
-        install_bundle(data['filename'], on_finish)
+        install_package(data['filename'], on_finish)
 
 class SDKSysUpdate(web.RequestHandler):
     @web.asynchronous
@@ -271,10 +328,13 @@ class SDKEffectInstaller(EffectInstaller):
     @gen.engine
     def post(self):
         upload = self.request.files['package'][0]
-        open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'w').write(upload['body'])
-        uid = upload['filename'].replace('.tgz', '')
-        res = yield gen.Task(install_bundle, uid)
-        self.write(json.dumps({ 'ok': True }))
+
+        with open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'wb') as fh:
+            fh.write(b64decode(upload['body']))
+
+        resp = yield gen.Task(install_package, upload['filename'])
+
+        self.write(json.dumps(resp))
         self.finish()
 
 # TODO this is an obsolete implementation that does not work in new lv2 specs.
@@ -560,9 +620,10 @@ class PackageEffectList(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
 
+# TODO
 class PackageUninstall(web.RequestHandler):
     def post(self, package):
-        result = uninstall_bundle(package)
+        result = True # uninstall_package(package)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result, default=json_handler))
 
@@ -840,10 +901,10 @@ class TemplateHandler(web.RequestHandler):
     def index(self):
         context = {}
 
-        with open(DEFAULT_ICON_TEMPLATE) as fd:
+        with open(DEFAULT_ICON_TEMPLATE, 'r') as fd:
             default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
-        with open(DEFAULT_SETTINGS_TEMPLATE) as fd:
+        with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fd:
             default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
         context = {
