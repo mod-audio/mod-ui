@@ -1,3 +1,86 @@
+/**
+ * This is the main application stylesheet. It should include or import all
+ * stylesheets used throughout the application as this is the only stylesheet in
+ * the Grunt configuration that is automatically processed.
+ */
+
+
+/**
+ * First, we include the Twitter Bootstrap LESS files. Only the ones used in the
+ * project should be imported as the rest are just wasting space.
+ */
+//@import '../assets/social-icons/css/social.css';
+@import '../node_modules/bootstrap/less/bootstrap.less';
+
+
+/**
+ * This is our main variables file. We must include it last so we can overwrite any variable
+ * definitions in our imported stylesheets.
+ */
+
+@import 'variables.less';
+@import 'social.less';
+@import 'cloud_plugins.less';
+
+
+/**
+ * Typography
+ */
+
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-semibold-webfont.eot');
+    src: url('../fonts/cooper/cooperhewitt-semibold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/cooper/cooperhewitt-semibold-webfont.woff2') format('woff2'),
+         url('../fonts/cooper/cooperhewitt-semibold-webfont.woff') format('woff'),
+         url('../fonts/cooper/cooperhewitt-semibold-webfont.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-light-webfont.eot');
+    src: url('../fonts/cooper/cooperhewitt-light-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/cooper/cooperhewitt-light-webfont.woff2') format('woff2'),
+         url('../fonts/cooper/cooperhewitt-light-webfont.woff') format('woff'),
+         url('../fonts/cooper/cooperhewitt-light-webfont.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-lightitalic-webfont.eot');
+    src: url('../fonts/cooper/cooperhewitt-lightitalic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/cooper/cooperhewitt-lightitalic-webfont.woff2') format('woff2'),
+         url('../fonts/cooper/cooperhewitt-lightitalic-webfont.woff') format('woff'),
+         url('../fonts/cooper/cooperhewitt-lightitalic-webfont.ttf') format('truetype');
+    font-weight: 300;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-bookitalic-webfont.eot');
+    src: url('../fonts/cooper/cooperhewitt-bookitalic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/cooper/cooperhewitt-bookitalic-webfont.woff2') format('woff2'),
+         url('../fonts/cooper/cooperhewitt-bookitalic-webfont.woff') format('woff'),
+         url('../fonts/cooper/cooperhewitt-bookitalic-webfont.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-book-webfont.eot');
+    src: url('../fonts/cooper/cooperhewitt-book-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/cooper/cooperhewitt-book-webfont.woff2') format('woff2'),
+         url('../fonts/cooper/cooperhewitt-book-webfont.woff') format('woff'),
+         url('../fonts/cooper/cooperhewitt-book-webfont.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+* {
+  outline: 0 !important
+}
+
 html,
 body {
   height: 100%;
@@ -755,181 +838,7 @@ body {
   }
 }
 
-#cloud-plugins-library {
-  background: #000;
-  bottom: 46px;
-  left: 0;
-  overflow: auto;
-  position: absolute;
-  right: 0;
-  top: 0px;
-  z-index: 2;
-  h1 {
-    color: #fff;
-    display: inline-block;
-    font-size: 24px;
-    margin: 0 0 18px 0;
-    padding: 0;
-  }
-  header {
-    background-image: url(../img/header-pattern.png);
-    background-position: bottom center;
-    background-repeat: no-repeat;
-    display: block;
-    left: 0;
-    padding: 10px 10px 18px 10px;
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 2;
-    .help {
-      background-image: url(../img/icn-help-16x16.png);
-      background-position: center center;
-      background-repeat: no-repeat;
-      display: inline-block;
-      height: 21px;
-      width: 21px;
-    }
-    .close {
-      opacity: 1;
-      position: absolute;
-      right: 10px;
-      top: 16px;
-    }
-  }
-  .filter {
-    border-color: #111;
-    border-style: dotted;
-    border-width: 0 1px 0 0;
-    bottom: 46px;
-    left: 10px;
-    padding-top: 18px;
-    position: fixed;
-    right: 0;
-    top: 68px;
-    width: 240px;
-    overflow: hidden;
-    .control-group {
-      float: left;
-      margin-right: 9px;
-    }
-    .control-group label {
-      color: #fff;
-      display: inline-block;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .control-group select {
-      width: 50px;
-    }
-  }
-  .cloud-plugins {
-    left: 252px;
-    position: absolute;
-    right: 10px;
-    .cloud-plugin {
-      color: #fff;
-      float: left;
-      padding: 10px 10px 10px 10px;
-      width: 140px;
-      height: 120px;
-      text-align: center;
-    }
-    .cloud-plugin:hover {
-      background-color: #212121;
-      cursor: pointer;
-    }
-    .cloud-plugin .thumb {
-      height: 60%;
-    }
-    .cloud-plugin .img {
-      background: #2b2b2b;
-      border-radius: 4px;
-      display: block;
-      height: 80px;
-      margin-bottom: 9px;
-      width: 100%;
-      overflow: hidden;
-    }
-    .cloud-plugin .img img {
-      cursor: pointer;
-      height: auto;
-      width: 100%;
-    }
-    .cloud-plugin .title {
-      display: block;
-      height: 18px;
-      font-weight: bold;
-      overflow: hidden;
-      position: relative;
-    }
-    .cloud-plugin .status {
-      display: block;
-      height: 16px;
-      margin: 0 auto;
-      width: 16px;
-    }
-    .cloud-plugin .status.installed {
-      background-image: url(../img/icn-installed.png);
-      background-position: center center;
-      background-repeat: no-repeat;
-    }
-    .cloud-plugin .status.outdated {
-      background-image: url(../img/icn-outdated.png);
-      background-position: center center;
-      background-repeat: no-repeat;
-    }
-    .cloud-plugin .status.blocked {
-      background-image: url(../img/icn-blocked.png);
-      background-position: center center;
-      background-repeat: no-repeat;
-    }
-    .cloud-plugin .description {
-      display: block;
-      font-size: 12px;
-      height: 52px;
-      line-height: 1.5;
-      overflow: hidden;
-    }
-    .cloud-plugin .actions {
-      font-size: 11px;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-    .cloud-plugin .actions > span {
-      cursor: pointer;
-    }
-    .cloud-plugin .actions > span:hover {
-      text-decoration: underline;
-    }
-    .cloud-plugin .actions span.duplicate {
-      margin: 0 6px;
-    }
-  }
-  .categories {
-    width: 100%;
-    margin-left: 0px;
-    margin-right: 0px;
-    li {
-      display: block;
-      background: #222;
-      color: #888;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
-      height: 20px;
-      margin: 0 0 1px 0;
-      padding: 10px 5px;
-      position: relative;
-    }
-    li.selected {
-      background: transparent;
-    }
-    li:hover {
-      background: #333;
-    }
-  }
-}
+
 
 #pedalboards-library {
   background: #000;
