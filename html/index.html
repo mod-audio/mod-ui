@@ -510,19 +510,17 @@ $('document').ready(function() {
 
     <!-- Cloud Plugins LIBRARY -->
     <div id="cloud-plugins-library" class="mod-hidden">
-        <div class="box clearfix">
-            <header>
+        <div>
+            <header class="hide">
                 <h1 class="bottom top">
                     PLUGIN STORE
                     <!-- <span class="help"></span> -->
                 </h1>
                 <!-- <span class="close btn btn-danger js-close">Close</span> -->
             </header>
-            <div class="form-vertical filter clearfix">
-                <div class="control-group">
-                    <label>Keywords</label><br/>
-                    <input type="search"/>
-                </div>
+            <div class="filter clearfix">
+                <h1>PLUGIN STORE</h1>
+                <h2>Browse</h2>
                 <div class="control-group">
                     <input type="radio" name="installed" value="all" id="cloud-plugins-all" checked />
                     <label for="cloud-plugins-all">All</label>
@@ -530,8 +528,8 @@ $('document').ready(function() {
                     <label for="cloud-plugins-installed">Installed</label>
                     <input type="radio" name="installed" value="not-installed" id="cloud-plugins-uninstalled" />
                     <label for="cloud-plugins-uninstalled">Not Installed</label>
-                </div>
-                <ul class="categories control-group">
+                </div>                
+                <ul class="categories control-group list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
                     <li id="cloud-plugin-tab-Delay">Delay</li>
                     <li id="cloud-plugin-tab-Distortion">Distortion</li>
@@ -544,13 +542,18 @@ $('document').ready(function() {
                     <li id="cloud-plugin-tab-Spatial">Spatial</li>
                     <li id="cloud-plugin-tab-Spectral">Spectral</li>
                     <li id="cloud-plugin-tab-Utility">Utility</li>
+                </ul>
+                <h2>Filter:</h2>
+                <div class="form-group">                    
+                    <input class="form-control" placeholder="Keyword" type="search"/>
                 </div>
+
             </div>
             <div class="cloud-plugins clearfix js-cloud-plugins">
                 <!-- EFFECTS OF A CATEGORY -->
                 <div id="cloudplugin-results-wrapper">
                     <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
-                    <div id="cloud-plugin-content-Delay" class="plugins-wrapper">gags</div>
+                    <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Dynamics" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Filter" class="plugins-wrapper"></div>

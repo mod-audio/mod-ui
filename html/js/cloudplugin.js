@@ -125,7 +125,8 @@ JqueryClass('cloudPluginBox', {
             
             for (i in results.cloud) {
                 plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]        
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion]        
+                console.log(plugin.label+' - '+plugin.installedVersion+' - '+plugin.latestVersion)
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
@@ -135,11 +136,12 @@ JqueryClass('cloudPluginBox', {
                 }
                 if (results.local[plugin.uri]) {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
+                    console.log(results.local[plugin.uri].release);
                     plugin.installedVersion = [results.local[plugin.uri].minorVersion,
                         results.local[plugin.uri].microVersion,
                         results.local[plugin.uri].release || 0
                     ]
-                    //delete results.local[plugin.uri] ??
+                    delete results.local[plugin.uri] 
                 }    
                 plugins.push(plugin)
             }
@@ -302,7 +304,7 @@ JqueryClass('cloudPluginBox', {
         var empty = true
         for (category in count) {
             var tab = self.find('#cloud-plugin-tab-' + category)
-            tab.html(tab.html() + ' (' + count[category] + ')')
+            tab.html(tab.html() + ' <span class="plugin_count">(' + count[category] + ')</span>')
             if (category == currentCategory && count[category] > 0)
                 empty = false;
         }
