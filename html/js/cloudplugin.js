@@ -125,8 +125,7 @@ JqueryClass('cloudPluginBox', {
             
             for (i in results.cloud) {
                 plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion]        
-                console.log(plugin.label+' - '+plugin.installedVersion+' - '+plugin.latestVersion)
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]        
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
@@ -136,12 +135,11 @@ JqueryClass('cloudPluginBox', {
                 }
                 if (results.local[plugin.uri]) {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
-                    console.log(results.local[plugin.uri].release);
                     plugin.installedVersion = [results.local[plugin.uri].minorVersion,
                         results.local[plugin.uri].microVersion,
                         results.local[plugin.uri].release || 0
                     ]
-                    delete results.local[plugin.uri] 
+                    //delete results.local[plugin.uri] ??
                 }    
                 plugins.push(plugin)
             }
@@ -170,12 +168,11 @@ JqueryClass('cloudPluginBox', {
                 for (i in plugins) { // local thumbnails for installed plugins 
                     results.local[plugins[i].uri] = plugins[i]                    
                 }
-                if (results.cloud != null)
                     renderResults()
             },
             'dataType': 'json'
         })
-        $.ajax({
+        /*$.ajax({
             'method': 'GET',
             'url': SITEURLNEW + "/lv2/plugins",
             'data': {'search': query.term},
@@ -185,7 +182,7 @@ JqueryClass('cloudPluginBox', {
                     renderResults()
             },
             'dataType': 'json'
-        })
+        })*/
     },
 
     searchNotInstalled: function (query) {
@@ -321,6 +318,7 @@ JqueryClass('cloudPluginBox', {
     showPluginInfo: function (plugin) {
         var self = $(this)
         var uri = escape(plugin.uri)
+        console.log(self.data('plugins'));
 
         var plugin_data = {
             thumbnail_href: plugin.thumbnail_href,
@@ -424,6 +422,8 @@ JqueryClass('cloudPluginBox', {
         var plugin_data = {
             id: plugin.id || plugin._id,
             thumbnail_href: plugin.thumbnail_href,
+            screenshot_href: plugin.screenshot_href,
+            description: plugin.description,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
