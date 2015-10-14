@@ -139,6 +139,23 @@ $('document').ready(function() {
       desktop.setupApp({{using_desktop}})
   }
 
+  // start code for ajax loading bar
+
+  NProgress.configure({
+    template: '<div class="bar" role="bar"><div class="peg"></div></div><div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
+  });
+
+  $(document)
+  .ajaxStart(function(data) {
+    console.log(data)
+    NProgress.start();
+  })
+  .ajaxComplete(function() {
+    NProgress.done();  
+  });
+
+  // end code for ajax loading bar
+
   $.ajax({
       url: '/system/info',
       method: 'GET',
@@ -179,10 +196,10 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/xrun.js?v={{version}}"></script>
 <script type="text/javascript" src="js/ingen.js?v={{version}}"></script>
 <script type="text/javascript" src="js/presets.js?v={{version}}"></script>
+<script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 
 </head>
 <body class="mod-dark">
-
   <!-- NOTIFICATIONS -->
 
   <div id="notifications mod-hidden"></div>
@@ -528,7 +545,7 @@ $('document').ready(function() {
                     <label for="cloud-plugins-uninstalled">Not Installed</label>
                 </div>
                 <ul class="categories control-group list list-unstyled">
-                    <li id="cloud-plugin-tab-All">All</li>
+                    <!-- <li id="cloud-plugin-tab-All">All</li> -->
                     <li id="cloud-plugin-tab-Delay">Delay</li>
                     <li id="cloud-plugin-tab-Distortion">Distortion</li>
                     <li id="cloud-plugin-tab-Dynamics">Dynamics</li>
