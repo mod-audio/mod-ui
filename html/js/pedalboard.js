@@ -1289,8 +1289,6 @@ JqueryClass('pedalboard', {
         var plugins = self.data('plugins')
 
         if (instance in plugins) {
-            var plugin = plugins[instance]
-
             var connections = self.data('connectionManager')
             connections.iterateInstance(instance, function (jack) {
                 var input = jack.data('destination')
@@ -1306,7 +1304,11 @@ JqueryClass('pedalboard', {
 
             delete plugins[instance]
 
-            plugin.remove()
+            var plugin = plugins[instance]
+            if (plugin && plugin.uri) {
+                // plugin might have fail to register
+                plugin.remove()
+            }
         } else {
             var connections = self.data('connectionManager')
             connections.iterate(function (jack) {
