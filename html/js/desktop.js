@@ -248,31 +248,6 @@ function Desktop(elements) {
     })
 
     this.titleBox = elements.titleBox
-    this.effectBox = elements.effectBox.effectBox({
-        windowManager: this.windowManager,
-        userSession: this.userSession,
-        pedalboard: this.pedalboard,
-        removePlugin: function (plugin, callback) {
-            if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
-                return
-            $.ajax({
-                url: '/package/' + plugin.package + '/uninstall',
-                method: 'POST',
-                success: callback,
-                error: function () {
-                    new Notification('error', "Could not uninstall " + plugin.package)
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-        upgradePlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.uri, callback)
-        },
-        installPlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.uri, callback)
-        }
-    })
 
     this.cloudPluginListFunction = function (callback) {
         $.ajax({
@@ -402,6 +377,8 @@ function Desktop(elements) {
         }, 100)
     }
 
+    this.effectBox = self.makeEffectBox(elements.effectBox,
+            elements.effectBoxTrigger)
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
             elements.cloudPluginBoxTrigger)
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
@@ -1014,6 +991,36 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
     })
 }
 
+Desktop.prototype.makeEffectBox = function (el, trigger) {
+    var self = this
+    return el.effectBox({
+        trigger: trigger,
+        windowManager: this.windowManager,
+        userSession: this.userSession,
+        pedalboard: this.pedalboard,
+        removePlugin: function (plugin, callback) {
+            if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
+                return
+            $.ajax({
+                url: '/package/' + plugin.package + '/uninstall',
+                method: 'POST',
+                success: callback,
+                error: function () {
+                    new Notification('error', "Could not uninstall " + plugin.package)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+        upgradePlugin: function (plugin, callback) {
+            self.installationQueue.install(plugin.uri, callback)
+        },
+        installPlugin: function (plugin, callback) {
+            self.installationQueue.install(plugin.uri, callback)
+        }
+    })
+}
+
 Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
     var self = this
     return el.cloudPluginBox({
@@ -1042,6 +1049,7 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
         }
     })
 }
+
 Desktop.prototype.makeBankBox = function (el, trigger) {
     var self = this
     el.bankBox({
