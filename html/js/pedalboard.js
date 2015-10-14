@@ -1302,13 +1302,13 @@ JqueryClass('pedalboard', {
             if (hw)
                 hw.removeInstance(instance)
 
-            delete plugins[instance]
-
             var plugin = plugins[instance]
             if (plugin && plugin.uri) {
-                // plugin might have fail to register
+                // plugin might have failed to register
                 plugin.remove()
             }
+
+            delete plugins[instance]
         } else {
             var connections = self.data('connectionManager')
             connections.iterate(function (jack) {
