@@ -313,8 +313,11 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var results = self.data('results')
         var canvas = self.data('resultCanvas')
+        var category = plugin.category[0]
         self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-All'))
-        self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-' + plugin.category[0]))
+        if (category && category != 'All') {
+            self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-' + category))
+        }
     },
 
     showPluginInfo: function (plugin) {
