@@ -201,7 +201,7 @@ JqueryClass('cloudPluginBox', {
                 plugin = results.cloud[i]
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
                 plugin.status = 'blocked'
-                plugin.source = SITEURL.replace(/api\/?$/, '')
+                plugin.source = SITEURLNEW.replace(/api\/?$/, '')
                 if (!results.local[plugin.uri]) {
                     plugins.push(plugin)
                 }
@@ -213,7 +213,7 @@ JqueryClass('cloudPluginBox', {
 
         $.ajax({
             'method': 'GET',
-            'url':  SITEURL+url,
+            'url':  url,
             'data': query,
             'success': function (plugins) {
                 results.local = {}
@@ -250,10 +250,10 @@ JqueryClass('cloudPluginBox', {
 
         if (checked_filter == "all")
             return self.cloudPluginBox('searchAll', query)
-        else if (checked_filter == "not-installed")
+        if (checked_filter == "not-installed")
             return self.cloudPluginBox('searchNotInstalled', query)
 
-        var url = (query.term ? '/effect/search/' : '/effect/list/')
+        var url = query.term ? '/effect/search/' : '/effect/list/'
         $.ajax({
             'method': 'GET',
             'url': url,
