@@ -428,7 +428,9 @@ $('document').ready(function() {
                                 if (property == "http://moddevices/ns/modpedal#cpuload")
                                 {
                                     // setting cpuload
-                                    $("#cpu-bar").css("width", value.substring(1, value.length-1)+"%")
+                                    value = N3.Util.getLiteralValue(value)
+                                    $("#cpu-bar").css("width", (100.0-value).toFixed().toString()+"%")
+                                    $("#cpu-bar-text").text("CPU "+value.toString()+"%")
                                 }
                                 else if (property == NS_ingen_value)
                                 {

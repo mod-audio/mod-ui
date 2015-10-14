@@ -536,8 +536,8 @@ class Session(object):
             a <http://lv2plug.in/ns/ext/patch#Set> ;
             <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
             <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/modpedal#cpuload> ;
-            <http://lv2plug.in/ns/ext/patch#value> "%i" .
-            """ % round(100.0 - jacklib.cpu_load(self.jack_client))
+            <http://lv2plug.in/ns/ext/patch#value> "%.1f" .
+            """ % jacklib.cpu_load(self.jack_client)
 
             for ws in self.websockets:
                 ws.write_message(msg)
