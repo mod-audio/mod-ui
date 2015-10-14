@@ -279,14 +279,19 @@ body {
     text-align: center;
     text-transform: uppercase;
     width: 100px;
+    background: linear-gradient(to right, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#c40000',GradientType=1 );
+  }
     .progress {
       height: 45px;
       margin-bottom: 0;
       overflow: hidden;
-      background: linear-gradient(to right, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%);
-      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#c40000',GradientType=1 );
+      float: right;
+      background-color: #111;
       -moz-border-radius: 4px;
       border-radius: 0 !important;
+      -webkit-transition: width 1s; /* Safari */
+      transition: width 1s;
     }
     .progress .bar {
       float: right;
@@ -300,7 +305,7 @@ body {
       margin-left: 1em;
       color: white;
     }
-  }
+  
   #mod-bluetooth {
     background-image: url(../img/menu-icons-sprite.png);
     background-position: -225px bottom;
