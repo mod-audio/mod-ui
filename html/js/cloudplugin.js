@@ -159,32 +159,34 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('showPlugins', plugins)
         }
 
-        var url = query.term ? '/effect/search/' : '/effect/list'
         $.ajax({
             'method': 'GET',
-            'url': url,
-            'data': query,
+            'url':  query.term ? '/effect/search/' : '/effect/list',
+            'data': query.term ? query : null,
             'success': function (plugins) {
-                self.data('allplugins', plugins)
                 results.local = {}
-                for (i in plugins) { // local thumbnails for installed plugins
+                self.data('allplugins', plugins)
+                for (i in plugins)
                     results.local[plugins[i].uri] = plugins[i]
-                }
+                if (results.cloud != null)
                     renderResults()
             },
             'dataType': 'json'
         })
-        /*$.ajax({
+
+        $.ajax({
             'method': 'GET',
-            'url': SITEURLNEW + "/lv2/plugins",
-            'data': {'search': query.term},
+            'url': SITEURLNEW + "/lv2/plugins/",
+            'data': {
+                'search': query.term
+            },
             'success': function (plugins) {
                 results.cloud = plugins
                 if (results.local != null)
                     renderResults()
             },
             'dataType': 'json'
-        })*/
+        })
     },
 
     searchNotInstalled: function (query) {
@@ -209,12 +211,10 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('showPlugins', plugins)
         }
 
-        var url = query.term ? '/effect/search/' : '/effect/list/'
-
         $.ajax({
             'method': 'GET',
-            'url':  url,
-            'data': query,
+            'url':  query.term ? '/effect/search/' : '/effect/list',
+            'data': query.term ? query : null,
             'success': function (plugins) {
                 results.local = {}
                 self.data('allplugins', plugins)
@@ -229,7 +229,9 @@ JqueryClass('cloudPluginBox', {
         $.ajax({
             'method': 'GET',
             'url': SITEURLNEW + "/lv2/plugins/",
-            'data': {'search': query.term},
+            'data': {
+                'search': query.term
+            },
             'success': function (plugins) {
                 results.cloud = plugins
                 if (results.local != null)
@@ -253,11 +255,12 @@ JqueryClass('cloudPluginBox', {
         if (checked_filter == "not-installed")
             return self.cloudPluginBox('searchNotInstalled', query)
 
-        var url = query.term ? '/effect/search/' : '/effect/list/'
+        // installed only here
+
         $.ajax({
             'method': 'GET',
-            'url': url,
-            'data': query,
+            'url': query.term ? '/effect/search/' : '/effect/list',
+            'data': query.term ? query : null,
             'success': function (plugins) {
                 console.log(plugins);
                 for (var i = 0; i < plugins.length; i++) {
