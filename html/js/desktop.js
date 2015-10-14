@@ -998,26 +998,6 @@ Desktop.prototype.makeEffectBox = function (el, trigger) {
         windowManager: this.windowManager,
         userSession: this.userSession,
         pedalboard: this.pedalboard,
-        removePlugin: function (plugin, callback) {
-            if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
-                return
-            $.ajax({
-                url: '/package/' + plugin.package + '/uninstall',
-                method: 'POST',
-                success: callback,
-                error: function () {
-                    new Notification('error', "Could not uninstall " + plugin.package)
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-        upgradePlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.uri, callback)
-        },
-        installPlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.uri, callback)
-        }
     })
 }
 

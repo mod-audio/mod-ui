@@ -37,15 +37,6 @@ JqueryClass('effectBox', {
             pedalboard: $('<div>'),
             windowManager: null,
             userSession: null,
-            removePlugin: function (plugin, callback) {
-                callback(true)
-            },
-            installPlugin: function (plugin, callback) {
-                callback(plugin)
-            },
-            upgradePlugin: function (plugin, callback) {
-                callback(plugin)
-            }
         }, options)
 
         self.data(options)
@@ -232,7 +223,7 @@ JqueryClass('effectBox', {
             if (a.label < b.label)
                 return -1
             return 0
-        })        
+        })
         self.data('plugins', plugins)
 
         var currentCategory = self.data('category')
@@ -350,119 +341,51 @@ JqueryClass('effectBox', {
         if (plugin.rating)
             $(info.find('.rating')[0]).addClass(['', 'one', 'two', 'three', 'four', 'five'][Math.round(plugin.rating)])
 
-        // The remove button will remove the plugin, close window and re-render the plugins
-        // without the removed one
-        if (plugin.installedVersion) {
-            info.find('.js-remove').click(function () {
-                self.data('removePlugin')(plugin, function (ok) {
-                    if (ok) {
-                        info.window('close')
-                        delete plugins[index].installedVersion
-                        plugins[index].status = 'blocked'
-                        self.effectBox('showPlugins', plugins)
-                    }
-                })
-            }).show()
-        } else {
-            info.find('.js-installed-version').hide()
-            info.find('.js-install').show().click(function () {
-                // Install plugin
-                self.data('installPlugin')(plugin, function (plugin) {
-                    if (plugin) {
-                        plugins[index].installedVersion = plugins[index].latestVersion
-                        if (info.is(':visible')) {
-                            info.remove()
-                            self.effectBox('showPluginInfo', index)
-                        }
-                    }
-                })
-            })
-        }
+        if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
+            self.effectBox('getRating', plugin, info.find('.js-rate'))
 
-        var checkVersion = function () {
-            if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
-                info.find('.js-upgrade').click(function () {
-                    // Do the upgrade
-                    self.data('upgradePlugin')(plugin, function (plugin) {
-                        if (plugin) {
-                            plugin.installedVersion = plugins[index].latestVersion
-                            plugin.latestVersion = plugins[index].latestVersion
-                            plugins[index] = plugin
-                            if (info.is(':visible')) {
-                                info.remove()
-                                self.effectBox('showPluginInfo', index)
-                            }
-                        }
-                    })
-                }).show()
-            }
+        self.effectBox('getReviews', plugin.uri, info, function () {
 
-            if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
-                self.effectBox('getRating', plugin, info.find('.js-rate'))
+            var title = info.find('input[name=title]')
+            var comment = info.find('textarea[name=comment]')
 
-            self.effectBox('getReviews', plugin.uri, info, function () {
-
-                var title = info.find('input[name=title]')
-                var comment = info.find('textarea[name=comment]')
-
-                if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0) {
-                    info.find('.js-comment').click(function () {
-                        var userSession = self.data('userSession')
-                        userSession.login(function () {
-                            $.ajax({
-                                url: SITEURL + '/effect/comment/' + userSession.sid,
-                                method: 'POST',
-                                data: JSON.stringify({
-                                    'title': title.val(),
-                                    'comment': comment.val(),
-                                    'uri': plugin.uri,
-                                    'version': version(plugin.latestVersion)
-                                }),
-                                success: function (res) {
-                                    if (res.ok) {
-                                        title.val('')
-                                        comment.val('')
-                                        self.effectBox('getReviews', plugin.uri, info)
-                                    } else {
-                                        alert(res.error)
-                                    }
-                                },
-                                error: function () {
-                                    new Notification('error', "Couldn't post comment")
-                                },
-                                dataType: 'json'
-                            })
+            if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0) {
+                info.find('.js-comment').click(function () {
+                    var userSession = self.data('userSession')
+                    userSession.login(function () {
+                        $.ajax({
+                            url: SITEURL + '/effect/comment/' + userSession.sid,
+                            method: 'POST',
+                            data: JSON.stringify({
+                                'title': title.val(),
+                                'comment': comment.val(),
+                                'uri': plugin.uri,
+                                'version': version(plugin.latestVersion)
+                            }),
+                            success: function (res) {
+                                if (res.ok) {
+                                    title.val('')
+                                    comment.val('')
+                                    self.effectBox('getReviews', plugin.uri, info)
+                                } else {
+                                    alert(res.error)
+                                }
+                            },
+                            error: function () {
+                                new Notification('error', "Couldn't post comment")
+                            },
+                            dataType: 'json'
                         })
-                        return false
                     })
-                } else {
-                    title.attr('placeholder', 'Please install and test latest version before commenting')
-                    title.attr('disabled', true)
-                    comment.attr('disabled', true)
-                    info.find('.js-comment').attr('disabled', true)
-                }
-            })
-        }
-
-        if (plugin.latestVersion)
-            checkVersion()
-        else {
-            $.ajax({
-                url: SITEURL + '/effect/get/',
-                data: {
-                    uri: plugin.uri
-                },
-                success: function (pluginData) {
-                    plugin.latestVersion = [pluginData.minorVersion,
-                        pluginData.microVersion,
-                        pluginData.release
-                    ]
-                    info.find('.js-latest-version span').html(version(plugin.latestVersion))
-                    checkVersion()
-                },
-                dataType: 'json'
-            })
-        }
+                    return false
+                })
+            } else {
+                title.attr('placeholder', 'Please install and test latest version before commenting')
+                title.attr('disabled', true)
+                comment.attr('disabled', true)
+                info.find('.js-comment').attr('disabled', true)
+            }
+        })
 
         info.window({
             windowManager: self.data('windowManager'),
