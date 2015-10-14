@@ -41,56 +41,34 @@ JqueryClass('effectBox', {
 
         self.data(options)
 
-        var mode = getCookie('searchMode', 'installed')
-        self.find('input[name=mode][value=' + mode + ']').prop('checked', true)
-
-        self.find('input[type=radio]').change(function () {
-            self.effectBox('search')
-        })
-
-        var settingsBox = self.find('#plugins-library-settings-window')
         var searchbox = self.find('input[type=search]')
-
-        searchbox.cleanableInput()
         self.data('searchbox', searchbox)
-
-        //var categoryBrowse = self.find('div.categories')
-
-        var results = {}
-
-        settingsBox.window({
-            windowManager: options.windowManager,
-            trigger: self.find('.js-settings-trigger')
-        })
-
-            //self.data('categoryBrowse', categoryBrowse)
-
-        /*
-    self.data('mode', 'installed')
-    self.find('#js-mode-installed').addClass('current')
-    self.find('.js-mode').click(function() {
-        var mode = $(this).attr('id').replace(/^.+-/, '')
-        self.effectBox('mode', mode)
-        return false
-    })
-    */
-
+        searchbox.cleanableInput()
         searchbox.keydown(function (e) {
             if (e.keyCode == 13) {
                 self.effectBox('search')
                 return false
             }
         })
-        var lastKeyUp;
+        var lastKeyUp = null
         searchbox.keyup(function (e) {
             if (e.keyCode == 13)
                 return
-            clearTimeout(lastKeyUp)
+            if (lastKeyUp != null) {
+                clearTimeout(lastKeyUp)
+                lastKeyUp = null
+            }
             if (e.keyCode == 13)
                 return
             lastKeyUp = setTimeout(function () {
                 self.effectBox('search')
             }, 400);
+        })
+
+        var settingsBox = self.find('#plugins-library-settings-window')
+        settingsBox.window({
+            windowManager: options.windowManager,
+            trigger: self.find('.js-settings-trigger')
         })
 
         self.droppable({

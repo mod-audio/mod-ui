@@ -33,22 +33,24 @@ JqueryClass('cloudPluginBox', {
         }, options)
 
         self.data(options)
+
         var searchbox = self.find('input[type=search]')
-
-        searchbox.cleanableInput()
         self.data('searchbox', searchbox)
-
+        searchbox.cleanableInput()
         searchbox.keydown(function (e) {
             if (e.keyCode == 13) {
                 self.cloudPluginBox('search')
                 return false
             }
         })
-        var lastKeyUp;
+        var lastKeyUp = null
         searchbox.keyup(function (e) {
             if (e.keyCode == 13)
                 return
-            clearTimeout(lastKeyUp)
+            if (lastKeyUp != null) {
+                clearTimeout(lastKeyUp)
+                lastKeyUp = null
+            }
             if (e.keyCode == 13)
                 return
             lastKeyUp = setTimeout(function () {
@@ -103,7 +105,7 @@ JqueryClass('cloudPluginBox', {
             }
         }
         else {
-            if (!plugin.screenshot_href && !plugin.thumbnail_href) {                        
+            if (!plugin.screenshot_href && !plugin.thumbnail_href) {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
             }
@@ -111,7 +113,7 @@ JqueryClass('cloudPluginBox', {
     },
     searchAll: function (query) {
         // TODO: implement new cloud API
-        
+
         /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
        Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
        All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
@@ -122,10 +124,10 @@ JqueryClass('cloudPluginBox', {
         var plugin, i;
 
         renderResults = function () {
-            
+
             for (i in results.cloud) {
                 plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]        
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
@@ -140,7 +142,7 @@ JqueryClass('cloudPluginBox', {
                         results.local[plugin.uri].release || 0
                     ]
                     //delete results.local[plugin.uri] ??
-                }    
+                }
                 plugins.push(plugin)
             }
             for (uri in results.local) {
@@ -162,11 +164,11 @@ JqueryClass('cloudPluginBox', {
             'method': 'GET',
             'url': url,
             'data': query,
-            'success': function (plugins) {                
+            'success': function (plugins) {
                 self.data('allplugins', plugins)
                 results.local = {}
-                for (i in plugins) { // local thumbnails for installed plugins 
-                    results.local[plugins[i].uri] = plugins[i]                    
+                for (i in plugins) { // local thumbnails for installed plugins
+                    results.local[plugins[i].uri] = plugins[i]
                 }
                     renderResults()
             },
