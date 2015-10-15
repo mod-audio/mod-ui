@@ -297,43 +297,106 @@ JqueryClass('cloudPluginBox', {
                 return -1
             return 0
         })
-        var count = {
+        self.data('plugins', plugins)
+
+        // count plugins first
+        var pluginCount = plugins.length
+        var categories = {
             'All': 0
         }
         var category
-
-        for (var i in plugins) {
-            self.cloudPluginBox('showPlugin', plugins[i])
+        for (i in plugins) {
             category = plugins[i].category[0]
-            if (count[category] == null)
-                count[category] = 1
-            else
-                count[category] += 1
-            count.All += 1
+            if (category) {
+                if (categories[category] == null)
+                    categories[category] = 1
+                else
+                    categories[category] += 1
+            }
+            categories.All += 1
         }
-       self.data('plugins', plugins)
 
-        var currentCategory = self.data('category')
-        var empty = true
-        for (category in count) {
+        // display plugin count
+        for (category in categories) {
             var tab = self.find('#cloud-plugin-tab-' + category)
-            tab.html(tab.html() + ' <span class="plugin_count">(' + count[category] + ')</span>')
-            if (category == currentCategory && count[category] > 0)
-                empty = false;
+            tab.html(tab.html() + ' <span class="plugin_count">(' + categories[category] + ')</span>')
         }
+
+        // TODO: disable navigation while we render plugins
+        //self.find('.nav-left').addClass('disabled')
+        //self.find('.nav-right').addClass('disabled')
+
+        // render plugins
+        var plugin
+        function renderNextPlugin() {
+            if (self.renderedIndex >= pluginCount) {
+                // is this needed for cloud box?
+                //self.cloudPluginBox('calculateNavigation')
+                return
+            }
+
+            plugin   = plugins[self.renderedIndex]
+            category = plugin.category[0]
+
+            self.cloudPluginBox('renderPlugin', plugin, self.find('#cloud-plugin-content-All'))
+
+            if (category && category != 'All') {
+                self.cloudPluginBox('renderPlugin', plugin, self.find('#cloud-plugin-content-' + category))
+            }
+
+            self.renderedIndex += 1
+            setTimeout(renderNextPlugin, 1);
+        }
+
+        self.renderedIndex = 0
+        renderNextPlugin(0)
     },
 
-    showPlugin: function (plugin) {
+    renderPlugin: function (plugin, canvas) {
         var self = $(this)
-        var results = self.data('results')
-        var canvas = self.data('resultCanvas')
-        var category = plugin.category[0]
-        self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-All'))
-        if (category && category != 'All') {
-            self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-' + category))
+        var template = TEMPLATES.cloudplugin
+        var uri = escape(plugin.uri)
+        var plugin_data = {
+            id: plugin.id || plugin._id,
+            thumbnail_href: plugin.thumbnail_href,
+            screenshot_href: plugin.screenshot_href,
+            description: plugin.description,
+            uri: uri,
+            status: plugin.status,
+            brand : plugin.brand,
+            label : plugin.label
         }
-    },
 
+        var rendered = $(Mustache.render(template, plugin_data))
+        rendered.click(function () {
+            self.cloudPluginBox('showPluginInfo', plugin)
+        })
+
+
+        /*
+        var load = function () {
+            self.data('load')(pedalboard._id, function () {
+                self.window('close')
+            })
+            return false
+        }
+        rendered.find('.js-load').click(load)
+        rendered.find('img').click(load)
+        rendered.find('.js-duplicate').click(function () {
+            self.data('duplicate')(pedalboard, function (duplicated) {
+                var dupRendered = self.pedalboardBox('render', duplicated, canvas)
+                dupRendered.insertAfter(rendered)
+                dupRendered.css('opacity', 0)
+                dupRendered.animate({
+                    opacity: 1
+                }, 200)
+            })
+            return false
+        })
+        */
+        canvas.append(rendered)
+        return rendered
+    },
     showPluginInfo: function (plugin) {
         var self = $(this)
         var uri = escape(plugin.uri)
@@ -434,49 +497,4 @@ JqueryClass('cloudPluginBox', {
         self.data('info', info)
     },
 
-    render: function (plugin, canvas) {
-        var self = $(this)
-        var template = TEMPLATES.cloudplugin
-        var uri = escape(plugin.uri)
-        var plugin_data = {
-            id: plugin.id || plugin._id,
-            thumbnail_href: plugin.thumbnail_href,
-            screenshot_href: plugin.screenshot_href,
-            description: plugin.description,
-            uri: uri,
-            status: plugin.status,
-            brand : plugin.brand,
-            label : plugin.label
-        }
-
-        var rendered = $(Mustache.render(template, plugin_data))
-        rendered.click(function () {
-            self.cloudPluginBox('showPluginInfo', plugin)
-        })
-
-
-        /*
-        var load = function () {
-            self.data('load')(pedalboard._id, function () {
-                self.window('close')
-            })
-            return false
-        }
-        rendered.find('.js-load').click(load)
-        rendered.find('img').click(load)
-        rendered.find('.js-duplicate').click(function () {
-            self.data('duplicate')(pedalboard, function (duplicated) {
-                var dupRendered = self.pedalboardBox('render', duplicated, canvas)
-                dupRendered.insertAfter(rendered)
-                dupRendered.css('opacity', 0)
-                dupRendered.animate({
-                    opacity: 1
-                }, 200)
-            })
-            return false
-        })
-        */
-        canvas.append(rendered)
-        return rendered
-    }
 })
