@@ -291,7 +291,7 @@ $('document').ready(function() {
                                     type2 == NS_lv2core_AudioPort || type2 == NS_lv2core_CVPort || type2 == NS_atom_AtomPort)
                                 {
                                     // new port
-                                    if (subject.split("/").length != 3) {
+                                    if (subject.split("/").length != 3 && subject.split("/")[2] != "system") {
                                         // not a system/hardware port
                                         return
                                     }
@@ -394,6 +394,8 @@ $('document').ready(function() {
                                     } else  {
                                         console.log("ERROR: Received patch:Put ControlPort without value")
                                     }
+                                } else  {
+                                    console.log("ERROR: Received patch:Put with unknown Port type")
                                 }
                             }
                             else
