@@ -209,7 +209,7 @@ JqueryClass('cloudPluginBox', {
             var plugins = []
             for (i in results.cloud) {
                 plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                 plugin.status = 'blocked'
                 plugin.source = SITEURLNEW.replace(/api\/?$/, '')
                 if (!results.local[plugin.uri]) {
@@ -410,7 +410,7 @@ JqueryClass('cloudPluginBox', {
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion,
                         pluginData.microVersion,
-                        pluginData.release
+                        pluginData.release || 0
                     ]
                     info.find('.js-latest-version span').html(version(plugin.latestVersion))
                     checkVersion()
