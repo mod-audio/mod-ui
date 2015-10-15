@@ -121,13 +121,21 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var results = {}
         var plugins = []
-        var plugin, i;
+        var plugin, lplugin, i;
 
         renderResults = function () {
 
             for (i in results.cloud) {
-                plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                plugin  = results.cloud[i]
+                lplugin = results.local[plugin.uri]
+
+                if (lplugin) {
+                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                    delete results.local[plugin.uri]
+                }
+
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
@@ -135,16 +143,14 @@ JqueryClass('cloudPluginBox', {
                 } else {
                     plugin.status = 'outdated'
                 }
-                if (results.local[plugin.uri]) {
+
+                if (plugin.installedVersion != null) {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
-                    plugin.installedVersion = [results.local[plugin.uri].minorVersion,
-                        results.local[plugin.uri].microVersion,
-                        results.local[plugin.uri].release || 0
-                    ]
-                    //delete results.local[plugin.uri] ??
                 }
+
                 plugins.push(plugin)
             }
+
             for (uri in results.local) {
                 plugin = results.local[uri]
                 plugin.installedVersion = [
@@ -156,6 +162,7 @@ JqueryClass('cloudPluginBox', {
                 self.cloudPluginBox('checkLocalScreenshot', plugin)
                 plugins.push(plugin)
             }
+
             self.cloudPluginBox('showPlugins', plugins)
         }
 
@@ -164,8 +171,9 @@ JqueryClass('cloudPluginBox', {
             'url':  query.term ? '/effect/search/' : '/effect/list',
             'data': query.term ? query : null,
             'success': function (plugins) {
-                results.local = {}
                 self.data('allplugins', plugins)
+                // index by uri, needed later to check if it's installed
+                results.local = {}
                 for (i in plugins)
                     results.local[plugins[i].uri] = plugins[i]
                 if (results.cloud != null)
