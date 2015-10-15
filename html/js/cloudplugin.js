@@ -137,7 +137,7 @@ JqueryClass('cloudPluginBox', {
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
 
                 if (plugin.installedVersion == null) {
-                    plugin.status = 'not-installed'
+                    plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
                     plugin.status = 'installed'
                 } else {
@@ -210,7 +210,7 @@ JqueryClass('cloudPluginBox', {
             for (i in results.cloud) {
                 plugin = results.cloud[i]
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                plugin.status = 'not-installed'
+                plugin.status = 'blocked'
                 plugin.source = SITEURLNEW.replace(/api\/?$/, '')
                 if (!results.local[plugin.uri]) {
                     plugins.push(plugin)
@@ -359,7 +359,7 @@ JqueryClass('cloudPluginBox', {
                     if (ok) {
                         info.window('close')
                         delete plugins[index].installedVersion
-                        plugins[index].status = 'not-installed'
+                        plugins[index].status = 'blocked'
                         self.cloudPluginBox('showPlugins', plugins)
                     }
                 })
