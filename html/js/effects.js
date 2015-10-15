@@ -374,6 +374,10 @@ JqueryClass('effectBox', {
     },
 
     getReviews: function (uri, info, callback) {
+        // not implemented on cloud yet
+        if (callback) callback()
+        return
+
         var self = $(this)
         $.ajax({
             url: SITEURL + '/effect/reviews/',
