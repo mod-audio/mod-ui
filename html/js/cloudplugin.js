@@ -209,12 +209,14 @@ JqueryClass('cloudPluginBox', {
             var plugins = []
             for (i in results.cloud) {
                 plugin = results.cloud[i]
+                if (results.local[plugin.uri] != null) {
+                    continue
+                }
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                 plugin.status = 'blocked'
-                plugin.source = SITEURLNEW.replace(/api\/?$/, '')
-                if (!results.local[plugin.uri]) {
-                    plugins.push(plugin)
-                }
+                // FIXME: what is this for?
+                //plugin.source = SITEURLNEW.replace(/api\/?$/, '')
+                plugins.push(plugin)
             }
             self.cloudPluginBox('showPlugins', plugins)
         }
@@ -224,10 +226,11 @@ JqueryClass('cloudPluginBox', {
             'url':  query.term ? '/effect/search/' : '/effect/list',
             'data': query.term ? query : null,
             'success': function (plugins) {
-                results.local = {}
                 self.data('allplugins', plugins)
+                results.local = {}
+                // index by uri, needed later to check if it's installed
                 for (i in plugins)
-                    results.local[plugins[i].uri] = plugins[i]
+                    results.local[plugins[i].uri] = true // no need to keep plugin data
                 if (results.cloud != null)
                     renderResults()
             },
@@ -263,7 +266,7 @@ JqueryClass('cloudPluginBox', {
         if (checked_filter == "not-installed")
             return self.cloudPluginBox('searchNotInstalled', query)
 
-        // installed only here
+        // only search 'installed' here
 
         $.ajax({
             'method': 'GET',
