@@ -391,7 +391,7 @@ def refresh():
             if not lilv.lilv_node_is_uri(bundle):
                 continue
 
-            bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+            bundle = os.path.abspath(os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle))))
 
             if not bundle.endswith(os.sep):
                 bundle += os.sep
@@ -517,6 +517,7 @@ def add_bundle_to_lilv_world(bundlepath, returnPlugins = False):
     global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
     # lilv wants the last character as the separator
+    bundlepath = os.path.abspath(bundlepath)
     if not bundlepath.endswith(os.sep):
         bundlepath += os.sep
 
@@ -562,6 +563,7 @@ def remove_bundle_to_lilv_world(bundlepath, returnPlugins = False):
     global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
     # lilv wants the last character as the separator
+    bundlepath = os.path.abspath(bundlepath)
     if not bundlepath.endswith(os.sep):
         bundlepath += os.sep
 
@@ -594,7 +596,7 @@ def remove_bundle_to_lilv_world(bundlepath, returnPlugins = False):
             if not lilv.lilv_node_is_uri(bundle):
                 continue
 
-            bundle = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle)))
+            bundle = os.path.abspath(os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bundle))))
 
             if not bundle.endswith(os.sep):
                 bundle += os.sep

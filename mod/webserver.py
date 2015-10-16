@@ -648,9 +648,8 @@ class AtomWebSocket(websocket.WebSocketHandler):
 class PackageUninstall(web.RequestHandler):
     def post(self):
         bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        print(bundles)
-        bundles = []
-
+        # FIXME: check if all bundles are inside LV2_PATH
+        # we don't want users sending test messages and deleting randomly system files!
         resp = uninstall_bundles(bundles)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
