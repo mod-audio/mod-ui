@@ -113,6 +113,9 @@ def install_bundles_in_tmp_dir():
             'installed': installed,
         }
 
+    if len(removed) > 0:
+        lv2_init()
+
     return resp
 
 def uninstall_bundles(bundles):
@@ -125,15 +128,16 @@ def uninstall_bundles(bundles):
 
     # TODO - make ingen refresh lv2 world
 
-    if len(removed) == 0:
-        resp = {
-            'ok'   : False,
-            'error': "No plugins found",
-        }
-    else:
+    if len(removed) > 0:
+        lv2_init()
         resp = {
             'ok'     : True,
             'removed': removed,
+        }
+    else:
+        resp = {
+            'ok'   : False,
+            'error': "No plugins found",
         }
 
     return resp
@@ -648,9 +652,8 @@ class AtomWebSocket(websocket.WebSocketHandler):
 class PackageUninstall(web.RequestHandler):
     def post(self):
         bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        print(bundles)
-        bundles = []
-
+        # FIXME: check if all bundles are inside LV2_PATH
+        # we don't want users sending test messages and deleting randomly system files!
         resp = uninstall_bundles(bundles)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
@@ -1254,7 +1257,7 @@ application = web.Application(
             # plugin management
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
-            (r"/effect/get/?", EffectGet),
+            (r"/effect/get", EffectGet),
             (r"/effect/bulk/?", EffectBulk),
             (r"/effect/list", EffectList),
 
