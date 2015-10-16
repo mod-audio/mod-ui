@@ -147,7 +147,6 @@ $('document').ready(function() {
 
   $(document)
   .ajaxStart(function(data) {
-    console.log(data)
     NProgress.start();
   })
   .ajaxComplete(function() {
@@ -544,7 +543,7 @@ $('document').ready(function() {
                     <input type="radio" name="installed" value="not-installed" id="cloud-plugins-uninstalled" />
                     <label for="cloud-plugins-uninstalled">Not Installed</label>
                 </div>
-                <ul class="categories control-group list list-unstyled">
+                <ul class="categories pull-left list list-unstyled">
                     <!-- <li id="cloud-plugin-tab-All">All</li> -->
                     <li id="cloud-plugin-tab-Delay">Delay</li>
                     <li id="cloud-plugin-tab-Distortion">Distortion</li>
