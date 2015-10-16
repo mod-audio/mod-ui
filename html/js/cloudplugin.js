@@ -105,7 +105,7 @@ JqueryClass('cloudPluginBox', {
             }
         }
         else {
-            if (!plugin.screenshot_href && !plugin.thumbnail_href) {
+            if (!plugin.screenshot_available && !plugin.thumbnail_available) {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
             }
