@@ -52,6 +52,19 @@
     top: 68px;
     width: 240px;
     overflow: hidden;
+    	h1 {
+    		font-weight: 2em;
+    		text-transform: uppercase;
+    		font-weight: bold;
+    		margin: 0
+    	}
+    	h2 {
+    		color: white;
+    		font-size: 15px;
+    		text-transform: uppercase;
+    		font-weight: bold;
+    		margin-top: 1em;
+    	}
 	    .control-group {
 	      float: left;
 	      margin-right: 9px;
@@ -134,14 +147,20 @@
 			      	 .status.installed {
 			      	  background-color: @brand-success;
 			      	  &:after {
-			      	  	content: "installed"
+			      	  	content: "installed";
 			      	  }
 			      	}
 			      	 .status.outdated {
-			      	  background-color: @brand-warning
+			      	  background-color: @brand-warning;
+			      	  &:after {
+			      	  	content: "update";
+			      	  }
 			      	}
 			      	 .status.blocked {
-			      	  background-color: @brand-danger
+			      	  background-color: @brand-danger;
+			      	  &:after {
+			      	  	content: "install";
+			      	  }
 			      	}
 			      }
 			    }
