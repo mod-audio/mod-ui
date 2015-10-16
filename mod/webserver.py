@@ -275,8 +275,8 @@ class SystemInfo(web.RequestHandler):
             }
         }
 
-        if os.path.exists("/etc/mod-capabilities.json"):
-            with open("/etc/mod-capabilities.json", 'r') as fd:
+        if os.path.exists("/etc/mod-hardware-descriptor.json"):
+            with open("/etc/mod-hardware-descriptor.json", 'r') as fd:
                 info["hardware"] = json.loads(fd.read())
 
         self.write(json.dumps(info))
