@@ -89,7 +89,20 @@ function InstallationQueue() {
                 notification.closeAfter(3000)
             }
             desktop.rescanPlugins()
-            callback(effect)
+
+            $.ajax({
+                url: '/effect/get/',
+                data: {
+                    uri: effect.uri
+                },
+                success: function (plugin) {
+                    callback(plugin)
+                },
+                error: function () {
+                    callback(null)
+                },
+                dataType: 'json'
+            })
         }
 
         var abort = function (reason) {

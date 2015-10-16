@@ -1257,7 +1257,7 @@ application = web.Application(
             # plugin management
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
-            (r"/effect/get/?", EffectGet),
+            (r"/effect/get", EffectGet),
             (r"/effect/bulk/?", EffectBulk),
             (r"/effect/list", EffectList),
 
