@@ -1,6 +1,6 @@
 ## LESS compiler for MOD-UI's css
 
-Dependencies are all included in package.json. Simply run: 
+NodeJS and its package manager are required to install the dependencies, which are included in package.json. Once you have them installed, simply run: 
 
 ```shell
 sudo npm install
