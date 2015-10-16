@@ -311,40 +311,24 @@ JqueryClass('cloudPluginBox', {
             categories.All += 1
         }
 
+        // render plugins
+        var plugin
+        for (i in plugins) {
+            plugin   = plugins[i]
+            category = plugin.category[0]
+
+            self.cloudPluginBox('renderPlugin', plugin, i, self.find('#cloud-plugin-content-All'))
+
+            if (category && category != 'All') {
+                self.cloudPluginBox('renderPlugin', plugin, i, self.find('#cloud-plugin-content-' + category))
+            }
+        }
+
         // display plugin count
         for (category in categories) {
             var tab = self.find('#cloud-plugin-tab-' + category)
             tab.html(tab.html() + ' <span class="plugin_count">(' + categories[category] + ')</span>')
         }
-
-        // TODO: disable navigation while we render plugins
-        //self.find('.nav-left').addClass('disabled')
-        //self.find('.nav-right').addClass('disabled')
-
-        // render plugins
-        var plugin
-        function renderNextPlugin() {
-            if (self.renderedIndex >= pluginCount) {
-                // is this needed for cloud box?
-                //self.cloudPluginBox('calculateNavigation')
-                return
-            }
-
-            plugin   = plugins[self.renderedIndex]
-            category = plugin.category[0]
-
-            self.cloudPluginBox('renderPlugin', plugin, self.renderedIndex, self.find('#cloud-plugin-content-All'))
-
-            if (category && category != 'All') {
-                self.cloudPluginBox('renderPlugin', plugin, self.renderedIndex, self.find('#cloud-plugin-content-' + category))
-            }
-
-            self.renderedIndex += 1
-            setTimeout(renderNextPlugin, 1);
-        }
-
-        self.renderedIndex = 0
-        renderNextPlugin(0)
     },
 
     renderPlugin: function (plugin, index, canvas) {
