@@ -47,25 +47,8 @@ DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', join(DATA_DIR, 'tmp'))
 LV2_PLUGIN_DIR = os.path.expanduser("~/.lv2")
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
+HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT')
 
-def get_tty_acm():
-    if DEV_HMI:
-        return None # doesn't matter, connection won't ever be made
-    if os.path.exists("/usr/bin/mod-get-tty-hmi"):
-        from subprocess import getoutput
-        return getoutput("/usr/bin/mod-get-tty-hmi").strip() or None
-    import glob, serial
-    for tty in glob.glob("/dev/ttyACM*"):
-        try:
-            s = serial.Serial(tty, HMI_BAUD_RATE)
-        except (serial.serialutil.SerialException, ValueError) as e:
-            next
-        else:
-            s.close()
-            return tty
-    return "/dev/ttyACM0"
-
-HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', get_tty_acm())
 MANAGER_PORT = 5555
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
