@@ -95,7 +95,7 @@ JqueryClass('cloudPluginBox', {
         });
     },
     checkLocalScreenshot: function(plugin) {
-        if(plugin.status == 'installed') {
+        if (plugin.status == 'installed') {
             if (plugin.gui.thumbnail && plugin.gui.screenshot) {
                 plugin.screenshot_href =  "/effect/image/screenshot.png?uri=" + encodeURIComponent(plugin.uri)
                 plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + encodeURIComponent(plugin.uri)
@@ -103,8 +103,7 @@ JqueryClass('cloudPluginBox', {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
             }
-        }
-        else {
+        } else {
             if (!plugin.screenshot_href && !plugin.thumbnail_href) {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
@@ -153,11 +152,7 @@ JqueryClass('cloudPluginBox', {
 
             for (uri in results.local) {
                 plugin = results.local[uri]
-                plugin.installedVersion = [
-                    plugin.minorVersion,
-                    plugin.microVersion,
-                    plugin.release || 0
-                ]
+                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                 plugin.status = 'installed'
                 self.cloudPluginBox('checkLocalScreenshot', plugin)
                 plugins.push(plugin)
@@ -409,6 +404,7 @@ JqueryClass('cloudPluginBox', {
                         plugins[index].status = 'blocked'
 
                         self.cloudPluginBox('showPlugins', plugins)
+                        desktop.rescanPlugins()
                     }
                 })
             })
@@ -420,11 +416,13 @@ JqueryClass('cloudPluginBox', {
                 self.data('installPlugin')(plugin, function (plugin) {
                     if (plugin) {
                         plugin.status = 'installed'
+                        plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                         plugin.installedVersion = plugin.latestVersion
                         if (info.is(':visible')) {
                             info.remove()
                             self.cloudPluginBox('showPluginInfo', plugin, index)
                         }
+                        desktop.rescanPlugins()
                     }
                 })
             })
@@ -437,14 +435,14 @@ JqueryClass('cloudPluginBox', {
                     self.data('upgradePlugin')(plugin, function (plugin) {
                         if (plugin) {
                             var plugins = self.data('plugins')
-                            plugin.latestVersion = plugins[index].latestVersion
+                            plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                             plugin.installedVersion = plugin.latestVersion
                             plugins[index] = plugin
-
                             if (info.is(':visible')) {
                                 info.remove()
                                 self.effectBox('showPluginInfo', plugin, index)
                             }
+                            desktop.rescanPlugins()
                         }
                     })
                 })
@@ -465,10 +463,7 @@ JqueryClass('cloudPluginBox', {
                     uri: plugin.uri
                 },
                 success: function (pluginData) {
-                    plugin.latestVersion = [pluginData.minorVersion,
-                        pluginData.microVersion,
-                        pluginData.release || 0
-                    ]
+                    plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
                     info.find('.js-latest-version span').html(version(plugin.latestVersion))
                     checkVersion()
                 },

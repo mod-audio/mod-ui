@@ -12,7 +12,7 @@ from mod.settings import MODGUI_SHOW_MODE
 global W, BUNDLES, PLUGINS, PLUGNFO
 
 # our lilv world
-W = lilv.World()
+W = None
 
 # list of loaded bundles
 BUNDLES = []
@@ -359,6 +359,7 @@ CLOUD_PLUGINS = [
 def init():
     global W
 
+    W = lilv.World()
     W.load_all()
     refresh()
 
@@ -620,8 +621,5 @@ def remove_bundle_to_lilv_world(bundlepath, returnPlugins = False):
 
     # free bundlenode, no longer needed
     lilv.lilv_node_free(bundlenode)
-
-    # refresh lilv plugins
-    PLUGINS = W.get_all_plugins()
 
     return removedPlugins if returnPlugins else True

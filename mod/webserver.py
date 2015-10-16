@@ -113,6 +113,9 @@ def install_bundles_in_tmp_dir():
             'installed': installed,
         }
 
+    if len(removed) > 0:
+        lv2_init()
+
     return resp
 
 def uninstall_bundles(bundles):
@@ -125,15 +128,16 @@ def uninstall_bundles(bundles):
 
     # TODO - make ingen refresh lv2 world
 
-    if len(removed) == 0:
-        resp = {
-            'ok'   : False,
-            'error': "No plugins found",
-        }
-    else:
+    if len(removed) > 0:
+        lv2_init()
         resp = {
             'ok'     : True,
             'removed': removed,
+        }
+    else:
+        resp = {
+            'ok'   : False,
+            'error': "No plugins found",
         }
 
     return resp

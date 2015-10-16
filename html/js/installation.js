@@ -88,7 +88,7 @@ function InstallationQueue() {
             } else {
                 notification.closeAfter(3000)
             }
-            desktop.effectBox.effectBox('search')
+            desktop.rescanPlugins()
             callback(effect)
         }
 
