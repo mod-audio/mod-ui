@@ -121,13 +121,21 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var results = {}
         var plugins = []
-        var plugin, i;
+        var plugin, lplugin, i;
 
         renderResults = function () {
 
             for (i in results.cloud) {
-                plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                plugin  = results.cloud[i]
+                lplugin = results.local[plugin.uri]
+
+                if (lplugin) {
+                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                    delete results.local[plugin.uri]
+                }
+
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
@@ -135,16 +143,14 @@ JqueryClass('cloudPluginBox', {
                 } else {
                     plugin.status = 'outdated'
                 }
-                if (results.local[plugin.uri]) {
+
+                if (plugin.installedVersion != null) {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
-                    plugin.installedVersion = [results.local[plugin.uri].minorVersion,
-                        results.local[plugin.uri].microVersion,
-                        results.local[plugin.uri].release || 0
-                    ]
-                    //delete results.local[plugin.uri] ??
                 }
+
                 plugins.push(plugin)
             }
+
             for (uri in results.local) {
                 plugin = results.local[uri]
                 plugin.installedVersion = [
@@ -156,6 +162,7 @@ JqueryClass('cloudPluginBox', {
                 self.cloudPluginBox('checkLocalScreenshot', plugin)
                 plugins.push(plugin)
             }
+
             self.cloudPluginBox('showPlugins', plugins)
         }
 
@@ -164,8 +171,9 @@ JqueryClass('cloudPluginBox', {
             'url':  query.term ? '/effect/search/' : '/effect/list',
             'data': query.term ? query : null,
             'success': function (plugins) {
-                results.local = {}
                 self.data('allplugins', plugins)
+                // index by uri, needed later to check if it's installed
+                results.local = {}
                 for (i in plugins)
                     results.local[plugins[i].uri] = plugins[i]
                 if (results.cloud != null)
@@ -201,12 +209,14 @@ JqueryClass('cloudPluginBox', {
             var plugins = []
             for (i in results.cloud) {
                 plugin = results.cloud[i]
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
-                plugin.status = 'blocked'
-                plugin.source = SITEURLNEW.replace(/api\/?$/, '')
-                if (!results.local[plugin.uri]) {
-                    plugins.push(plugin)
+                if (results.local[plugin.uri] != null) {
+                    continue
                 }
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                plugin.status = 'blocked'
+                // FIXME: what is this for?
+                //plugin.source = SITEURLNEW.replace(/api\/?$/, '')
+                plugins.push(plugin)
             }
             self.cloudPluginBox('showPlugins', plugins)
         }
@@ -216,10 +226,11 @@ JqueryClass('cloudPluginBox', {
             'url':  query.term ? '/effect/search/' : '/effect/list',
             'data': query.term ? query : null,
             'success': function (plugins) {
-                results.local = {}
                 self.data('allplugins', plugins)
+                results.local = {}
+                // index by uri, needed later to check if it's installed
                 for (i in plugins)
-                    results.local[plugins[i].uri] = plugins[i]
+                    results.local[plugins[i].uri] = true // no need to keep plugin data
                 if (results.cloud != null)
                     renderResults()
             },
@@ -255,7 +266,7 @@ JqueryClass('cloudPluginBox', {
         if (checked_filter == "not-installed")
             return self.cloudPluginBox('searchNotInstalled', query)
 
-        // installed only here
+        // only search 'installed' here
 
         $.ajax({
             'method': 'GET',
@@ -286,47 +297,88 @@ JqueryClass('cloudPluginBox', {
                 return -1
             return 0
         })
-        var count = {
+        self.data('plugins', plugins)
+
+        // count plugins first
+        var pluginCount = plugins.length
+        var categories = {
             'All': 0
         }
         var category
-
-        for (var i in plugins) {
-            self.cloudPluginBox('showPlugin', plugins[i])
+        for (i in plugins) {
             category = plugins[i].category[0]
-            if (count[category] == null)
-                count[category] = 1
-            else
-                count[category] += 1
-            count.All += 1
+            if (category) {
+                if (categories[category] == null)
+                    categories[category] = 1
+                else
+                    categories[category] += 1
+            }
+            categories.All += 1
         }
-       self.data('plugins', plugins)
 
-        var currentCategory = self.data('category')
-        var empty = true
-        for (category in count) {
+        // display plugin count
+        for (category in categories) {
             var tab = self.find('#cloud-plugin-tab-' + category)
-            tab.html(tab.html() + ' <span class="plugin_count">(' + count[category] + ')</span>')
-            if (category == currentCategory && count[category] > 0)
-                empty = false;
+            tab.html(tab.html() + ' <span class="plugin_count">(' + categories[category] + ')</span>')
         }
+
+        // TODO: disable navigation while we render plugins
+        //self.find('.nav-left').addClass('disabled')
+        //self.find('.nav-right').addClass('disabled')
+
+        // render plugins
+        var plugin
+        function renderNextPlugin() {
+            if (self.renderedIndex >= pluginCount) {
+                // is this needed for cloud box?
+                //self.cloudPluginBox('calculateNavigation')
+                return
+            }
+
+            plugin   = plugins[self.renderedIndex]
+            category = plugin.category[0]
+
+            self.cloudPluginBox('renderPlugin', plugin, self.renderedIndex, self.find('#cloud-plugin-content-All'))
+
+            if (category && category != 'All') {
+                self.cloudPluginBox('renderPlugin', plugin, self.renderedIndex, self.find('#cloud-plugin-content-' + category))
+            }
+
+            self.renderedIndex += 1
+            setTimeout(renderNextPlugin, 1);
+        }
+
+        self.renderedIndex = 0
+        renderNextPlugin(0)
     },
 
-    showPlugin: function (plugin) {
+    renderPlugin: function (plugin, index, canvas) {
         var self = $(this)
-        var results = self.data('results')
-        var canvas = self.data('resultCanvas')
-        var category = plugin.category[0]
-        self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-All'))
-        if (category && category != 'All') {
-            self.cloudPluginBox('render', plugin, self.find('#cloud-plugin-content-' + category))
-        }
-    },
-
-    showPluginInfo: function (plugin) {
-        var self = $(this)
+        var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
-        console.log(self.data('plugins'));
+        var plugin_data = {
+            id: plugin.id || plugin._id,
+            thumbnail_href: plugin.thumbnail_href,
+            screenshot_href: plugin.screenshot_href,
+            description: plugin.description,
+            uri: uri,
+            status: plugin.status,
+            brand : plugin.brand,
+            label : plugin.label
+        }
+
+        var rendered = $(Mustache.render(template, plugin_data))
+        rendered.click(function () {
+            self.cloudPluginBox('showPluginInfo', plugin, index)
+        })
+
+        canvas.append(rendered)
+        return rendered
+    },
+
+    showPluginInfo: function (plugin, index) {
+        var self = $(this)
+        var uri  = escape(plugin.uri)
 
         var plugin_data = {
             thumbnail_href: plugin.thumbnail_href,
@@ -334,7 +386,7 @@ JqueryClass('cloudPluginBox', {
             category: plugin.category[0] || "",
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
-            package_name: "TODO",//plugin.package.replace(/\.lv2$/, ''),
+            package_name: (plugin.bundles[0] || "FIXME").replace(/\.lv2$/, ''),
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
@@ -346,26 +398,32 @@ JqueryClass('cloudPluginBox', {
         // The remove button will remove the plugin, close window and re-render the plugins
         // without the removed one
         if (plugin.installedVersion) {
-            info.find('.js-remove').click(function () {
+            info.find('.js-install').hide()
+            info.find('.js-remove').show().click(function () {
                 self.data('removePlugin')(plugin, function (ok) {
                     if (ok) {
                         info.window('close')
+
+                        var plugins = self.data('plugins')
                         delete plugins[index].installedVersion
                         plugins[index].status = 'blocked'
+
                         self.cloudPluginBox('showPlugins', plugins)
                     }
                 })
-            }).show()
+            })
         } else {
+            info.find('.js-remove').hide()
             info.find('.js-installed-version').hide()
             info.find('.js-install').show().click(function () {
                 // Install plugin
                 self.data('installPlugin')(plugin, function (plugin) {
                     if (plugin) {
+                        plugin.status = 'installed'
                         plugin.installedVersion = plugin.latestVersion
                         if (info.is(':visible')) {
                             info.remove()
-                            self.cloudPluginBox('showPluginInfo', plugin)
+                            self.cloudPluginBox('showPluginInfo', plugin, index)
                         }
                     }
                 })
@@ -374,26 +432,33 @@ JqueryClass('cloudPluginBox', {
 
         var checkVersion = function () {
             if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
-                info.find('.js-upgrade').click(function () {
+                info.find('.js-upgrade').show().click(function () {
                     // Do the upgrade
                     self.data('upgradePlugin')(plugin, function (plugin) {
                         if (plugin) {
-                            plugin.installedVersion = plugins[index].latestVersion
+                            var plugins = self.data('plugins')
                             plugin.latestVersion = plugins[index].latestVersion
+                            plugin.installedVersion = plugin.latestVersion
                             plugins[index] = plugin
+
                             if (info.is(':visible')) {
                                 info.remove()
-                                self.effectBox('showPluginInfo', plugin)
+                                self.effectBox('showPluginInfo', plugin, index)
                             }
                         }
                     })
-                }).show()
+                })
+            } else {
+                info.find('.js-upgrade').hide()
             }
         }
 
-        if (plugin.latestVersion)
+        if (plugin.latestVersion) {
             checkVersion()
-        else {
+        } else {
+            // wait for cloud info
+            info.find('.js-upgrade').hide()
+
             $.ajax({
                 url: SITEURLNEW + "/lv2/plugins",
                 data: {
@@ -402,7 +467,7 @@ JqueryClass('cloudPluginBox', {
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion,
                         pluginData.microVersion,
-                        pluginData.release
+                        pluginData.release || 0
                     ]
                     info.find('.js-latest-version span').html(version(plugin.latestVersion))
                     checkVersion()
@@ -423,49 +488,4 @@ JqueryClass('cloudPluginBox', {
         self.data('info', info)
     },
 
-    render: function (plugin, canvas) {
-        var self = $(this)
-        var template = TEMPLATES.cloudplugin
-        var uri = escape(plugin.uri)
-        var plugin_data = {
-            id: plugin.id || plugin._id,
-            thumbnail_href: plugin.thumbnail_href,
-            screenshot_href: plugin.screenshot_href,
-            description: plugin.description,
-            uri: uri,
-            status: plugin.status,
-            brand : plugin.brand,
-            label : plugin.label
-        }
-
-        var rendered = $(Mustache.render(template, plugin_data))
-        rendered.click(function () {
-            self.cloudPluginBox('showPluginInfo', plugin)
-        })
-
-
-        /*
-        var load = function () {
-            self.data('load')(pedalboard._id, function () {
-                self.window('close')
-            })
-            return false
-        }
-        rendered.find('.js-load').click(load)
-        rendered.find('img').click(load)
-        rendered.find('.js-duplicate').click(function () {
-            self.data('duplicate')(pedalboard, function (duplicated) {
-                var dupRendered = self.pedalboardBox('render', duplicated, canvas)
-                dupRendered.insertAfter(rendered)
-                dupRendered.css('opacity', 0)
-                dupRendered.animate({
-                    opacity: 1
-                }, 200)
-            })
-            return false
-        })
-        */
-        canvas.append(rendered)
-        return rendered
-    }
 })

@@ -1011,11 +1011,16 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
             if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
                 return
             $.ajax({
-                url: '/package/' + plugin.package + '/uninstall',
+                url: '/package/uninstall',
+                data: JSON.stringify(plugin.bundles),
                 method: 'POST',
-                success: callback,
+                success: function(resp) {
+                    self.effectBox.effectBox('search')
+                    if (callback)
+                        callback(resp)
+                },
                 error: function () {
-                    new Notification('error', "Could not uninstall " + plugin.package)
+                    new Notification('error', "Could not uninstall plugin")
                 },
                 cache: false,
                 dataType: 'json'

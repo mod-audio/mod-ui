@@ -204,11 +204,8 @@ JqueryClass('effectBox', {
         })
         self.data('plugins', plugins)
 
-        var currentCategory = self.data('category')
-        var pluginCount     = plugins.length
-        var showingAll      = currentCategory == 'All'
-
         // count plugins first
+        var pluginCount = plugins.length
         var categories = {
             'All': 0
         }
@@ -235,18 +232,20 @@ JqueryClass('effectBox', {
         self.find('.nav-right').addClass('disabled')
 
         // render plugins
+        var plugin
         function renderNextPlugin() {
             if (self.renderedIndex >= pluginCount) {
                 self.effectBox('calculateNavigation')
                 return
             }
 
-            category = plugins[self.renderedIndex].category[0]
+            plugin   = plugins[self.renderedIndex]
+            category = plugin.category[0]
 
-            self.effectBox('renderPlugin', self.renderedIndex, self.find('#effect-content-All'))
+            self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
 
             if (category && category != 'All') {
-                self.effectBox('renderPlugin', self.renderedIndex, self.find('#effect-content-' + category))
+                self.effectBox('renderPlugin', plugin, self.find('#effect-content-' + category))
             }
 
             self.renderedIndex += 1
@@ -257,11 +256,10 @@ JqueryClass('effectBox', {
         renderNextPlugin(0)
     },
 
-    renderPlugin: function (index, container) {
+    renderPlugin: function (plugin, container) {
         var self = $(this)
         if (container.length == 0)
             return
-        var plugin = self.data('plugins')[index]
         var uri = escape(plugin.uri)
 
         var plugin_data = {
@@ -291,7 +289,7 @@ JqueryClass('effectBox', {
         })
 
         rendered.click(function () {
-            self.effectBox('showPluginInfo', index)
+            self.effectBox('showPluginInfo', plugin)
         })
 
         container.append(rendered)
@@ -302,10 +300,8 @@ JqueryClass('effectBox', {
         container.parent().width(container.parent().width() + rendered.width() + 200)
     },
 
-    showPluginInfo: function (index) {
+    showPluginInfo: function (plugin) {
         var self = $(this)
-        var plugins = self.data('plugins')
-        var plugin = plugins[index]
 
         plugin.title = plugin.name.split(/\s*-\s*/)[0]
         plugin.subtitle = plugin.name.split(/\s*-\s*/)[1]
@@ -378,6 +374,10 @@ JqueryClass('effectBox', {
     },
 
     getReviews: function (uri, info, callback) {
+        // not implemented on cloud yet
+        if (callback) callback()
+        return
+
         var self = $(this)
         $.ajax({
             url: SITEURL + '/effect/reviews/',

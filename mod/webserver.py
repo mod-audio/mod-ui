@@ -83,8 +83,63 @@ def format_pedalboard(pedal):
         'height': pedal['height']
     }
 
-def install_package(filename, callback):
-    filename = os.path.join(DOWNLOAD_TMP_DIR, filename)
+def install_bundles_in_tmp_dir():
+    removed   = []
+    installed = []
+
+    for bundle in os.listdir(DOWNLOAD_TMP_DIR):
+        tmppath    = os.path.join(DOWNLOAD_TMP_DIR, bundle)
+        bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
+
+        if os.path.exists(bundlepath):
+            removed += remove_bundle_to_lilv_world(bundlepath, True)
+            shutil.rmtree(bundlepath)
+
+        shutil.move(tmppath, bundlepath)
+        installed += add_bundle_to_lilv_world(bundlepath, True)
+
+    # TODO - make ingen refresh lv2 world
+
+    if len(installed) == 0:
+        resp = {
+            'ok'     : False,
+            'error'  : "No plugins found in bundle",
+            'removed': removed,
+        }
+    else:
+        resp = {
+            'ok'       : True,
+            'removed'  : removed,
+            'installed': installed,
+        }
+
+    return resp
+
+def uninstall_bundles(bundles):
+    removed = []
+
+    for bundlepath in bundles:
+        if os.path.exists(bundlepath):
+            removed += remove_bundle_to_lilv_world(bundlepath, True)
+            shutil.rmtree(bundlepath)
+
+    # TODO - make ingen refresh lv2 world
+
+    if len(removed) == 0:
+        resp = {
+            'ok'   : False,
+            'error': "No plugins found",
+        }
+    else:
+        resp = {
+            'ok'     : True,
+            'removed': removed,
+        }
+
+    return resp
+
+def install_package(bundlename, callback):
+    filename = os.path.join(DOWNLOAD_TMP_DIR, bundlename)
 
     if not os.path.exists(filename):
         callback({
@@ -98,44 +153,12 @@ def install_package(filename, callback):
                             cwd=DOWNLOAD_TMP_DIR,
                             stdout=subprocess.PIPE)
 
-    def install_all_bundles():
-        removed   = []
-        installed = []
-
-        for bundle in os.listdir(DOWNLOAD_TMP_DIR):
-            tmppath    = os.path.join(DOWNLOAD_TMP_DIR, bundle)
-            bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
-
-            if os.path.exists(bundlepath):
-                removed += remove_bundle_to_lilv_world(bundlepath, True)
-                shutil.rmtree(bundlepath)
-
-            shutil.move(tmppath, bundlepath)
-            installed += add_bundle_to_lilv_world(bundlepath, True)
-
-        # TODO - make ingen refresh lv2 world
-
-        if len(installed) == 0:
-            resp = {
-                'ok'     : False,
-                'error'  : "No plugins found in bundle",
-                'removed': removed,
-            }
-        else:
-            resp = {
-                'ok'       : True,
-                'removed'  : removed,
-                'installed': installed,
-            }
-
-        return resp
-
     def end_untar_pkgs(fileno, event):
         if proc.poll() is None:
             return
         ioloop.remove_handler(fileno)
         os.remove(filename)
-        callback(install_all_bundles())
+        callback(install_bundles_in_tmp_dir())
 
     ioloop = tornado.ioloop.IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
@@ -609,23 +632,29 @@ class AtomWebSocket(websocket.WebSocketHandler):
         print("atom websocket close")
         SESSION.websocket_closed(self)
 
-class PackageEffectList(web.RequestHandler):
-    def get(self, bundle):
-        if not bundle.endswith(os.sep):
-            bundle += os.sep
-        result = []
-        for plugin in get_all_plugins():
-            if bundle in plugin['bundles']:
-                result.append(plugin)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result))
+# I think this is unused...
+#class PackageEffectList(web.RequestHandler):
+    #def get(self, bundle):
+        #if not bundle.endswith(os.sep):
+            #bundle += os.sep
+        #result = []
+        #for plugin in get_all_plugins():
+            #if bundle in plugin['bundles']:
+                #result.append(plugin)
+        #self.set_header('Content-Type', 'application/json')
+        #self.write(json.dumps(result))
 
 # TODO
 class PackageUninstall(web.RequestHandler):
-    def post(self, package):
-        result = True # uninstall_package(package)
+    def post(self):
+        bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        print(bundles)
+        bundles = []
+
+        resp = uninstall_bundles(bundles)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result, default=json_handler))
+        self.write(json.dumps(resp))
+        self.finish()
 
 class PedalboardList(web.RequestHandler):
     def get(self):
@@ -1250,8 +1279,8 @@ application = web.Application(
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
 
-            (r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
-            (r"/package/([A-Za-z0-9_.-]+)/uninstall/?", PackageUninstall),
+            #(r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
+            (r"/package/uninstall", PackageUninstall),
 
             # pedalboard stuff
             (r"/pedalboard/list", PedalboardList),
