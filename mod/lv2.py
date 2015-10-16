@@ -610,6 +610,8 @@ def remove_bundle_to_lilv_world(bundlepath, returnPlugins = False):
             if returnPlugins:
                 removedPlugins.append(uri)
 
+            break
+
     # convert bundle string into a lilv node
     bundlenode = lilv.lilv_new_file_uri(W.me, None, bundlepath)
 
