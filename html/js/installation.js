@@ -88,8 +88,21 @@ function InstallationQueue() {
             } else {
                 notification.closeAfter(3000)
             }
-            desktop.effectBox.effectBox('search')
-            callback(effect)
+            desktop.rescanPlugins()
+
+            $.ajax({
+                url: '/effect/get/',
+                data: {
+                    uri: effect.uri
+                },
+                success: function (plugin) {
+                    callback(plugin)
+                },
+                error: function () {
+                    callback(null)
+                },
+                dataType: 'json'
+            })
         }
 
         var abort = function (reason) {

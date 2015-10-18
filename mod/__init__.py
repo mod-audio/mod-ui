@@ -75,10 +75,10 @@ def symbolify(name):
     return name
 
 def get_hardware():
-    if not os.path.exists("/etc/mod-capabilities.json"):
+    if not os.path.exists("/etc/mod-hardware-descriptor.json"):
         return {}
 
-    with open("/etc/mod-capabilities.json") as fh:
+    with open("/etc/mod-hardware-descriptor.json") as fh:
         hw = fh.read()
 
     return json.loads(hw)

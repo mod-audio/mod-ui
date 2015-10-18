@@ -1015,7 +1015,7 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 data: JSON.stringify(plugin.bundles),
                 method: 'POST',
                 success: function(resp) {
-                    self.effectBox.effectBox('search')
+                    desktop.rescanPlugins()
                     if (callback)
                         callback(resp)
                 },
@@ -1083,6 +1083,10 @@ Desktop.prototype.reset = function (callback) {
     this.pedalboardModified = false
     this.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
+}
+
+Desktop.prototype.rescanPlugins = function () {
+    this.effectBox.effectBox('search')
 }
 
 Desktop.prototype.showMidiDeviceList = function () {

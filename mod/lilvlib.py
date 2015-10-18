@@ -165,6 +165,7 @@ def get_bundle_dirname(bundleuri):
 # @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
 def get_pedalboard_info(bundle):
     # lilv wants the last character as the separator
+    bundle = os.path.abspath(bundle)
     if not bundle.endswith(os.sep):
         bundle += os.sep
 
@@ -387,6 +388,7 @@ def get_pedalboard_info(bundle):
 # @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
 def get_pedalboard_name(bundle):
     # lilv wants the last character as the separator
+    bundle = os.path.abspath(bundle)
     if not bundle.endswith(os.sep):
         bundle += os.sep
 
@@ -674,7 +676,7 @@ def get_plugin_info(world, plugin, useAbsolutePath = True):
             if not lilv.lilv_node_is_uri(bnode):
                 continue
 
-            bpath = os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bnode)))
+            bpath = os.path.abspath(os.path.dirname(lilv.lilv_uri_to_path(lilv.lilv_node_as_uri(bnode))))
 
             if not bpath.endswith(os.sep):
                 bpath += os.sep
@@ -1313,6 +1315,7 @@ def get_plugins_info(bundles):
     # load all bundles
     for bundle in bundles:
         # lilv wants the last character as the separator
+        bundle = os.path.abspath(bundle)
         if not bundle.endswith(os.sep):
             bundle += os.sep
 
