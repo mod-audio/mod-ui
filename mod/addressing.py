@@ -486,7 +486,15 @@ class Addressing(object):
     def _init_addressings(self):
         # 'self.addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [], 'idx': 0}
-        self.addressings = dict((act["uri"], {'idx': 0, 'addrs': []}) for act in get_hardware()["actuators"])
+        hw = get_hardware()
+
+        if "actuators" not in hw.keys():
+            self.addressings = {}
+            self._hw2uri_map = {}
+            self._uri2hw_map = {}
+            return
+
+        self.addressings = dict((act["uri"], {'idx': 0, 'addrs': []}) for act in ["actuators"])
 
         # Store all possible hardcoded values
         self._hw2uri_map = {}

@@ -27,6 +27,9 @@ LOG = bool(int(os.environ.get('MOD_LOG', False)))
 APP     = bool(int(os.environ.get('MOD_APP', False)))
 DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 
+# Enable for testing carla instead of ingen
+HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
+
 # 0 means all; 1 means modguis only; 2 means cloud approved; 3 means whitelist
 MODGUI_SHOW_MODE = int(os.environ.get('MOD_GUI_SHOW_MODE', 0))
 

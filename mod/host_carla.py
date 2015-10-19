@@ -33,7 +33,7 @@ from tornado import ioloop
 import logging
 
 class Host(object):
-    def __init__(self):
+    def __init__(self, uri):
         self.carla = CarlaHostDLL("/usr/lib/carla/libcarla_standalone2.so")
         self.carla.set_engine_callback(self.carla_callback)
         self.carla.set_engine_option(ENGINE_OPTION_PREFER_PLUGIN_BRIDGES, 0, "")

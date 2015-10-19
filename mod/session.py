@@ -24,21 +24,17 @@ from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI,
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
-                          INGEN_AUTOCONNECT,
-                          INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
-                          INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS,
-                          INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
+                          INGEN_AUTOCONNECT, INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
+                          INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS, INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
 from mod import get_hardware, symbolify
 from mod import symbolify
 from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
-#from mod.ingen import Host
-from mod.host_carla import Host
 from mod.lv2 import add_bundle_to_lilv_world
 from mod.clipmeter import Clipmeter
 from mod.recorder import Recorder, Player
@@ -46,9 +42,10 @@ from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
-# TODO stuff:
-# - ingen command to remove all plugins?
-# - callback for loaded graph?
+if HOST_CARLA:
+    from mod.host_carla import Host
+else:
+    from mod.ingen import Host
 
 class Session(object):
     def __init__(self):
@@ -83,7 +80,7 @@ class Session(object):
         if DEV_HOST:
             self.host = FakeHost(socketpath)
         else:
-            self.host = Host()
+            self.host = Host(socketpath)
 
         # Try to open real HMI
         hmiOpened = False
