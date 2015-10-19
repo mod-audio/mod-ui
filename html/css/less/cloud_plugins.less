@@ -48,10 +48,10 @@
     left: 10px;
     padding-top: 18px;
     position: fixed;
+    top: 0;
     right: 0;
-    top: 68px;
     width: 240px;
-    overflow: hidden;
+    overflow: auto;
     	h1 {
     		font-weight: 2em;
     		text-transform: uppercase;
@@ -112,7 +112,11 @@
 	     .cloud-plugin {
 	      color: #fff;
 	      background-color: #111;
-	      .make-sm-column(4);
+	      .make-xs-column(12);
+	      .make-sm-column(6);
+	      .make-md-column(6);
+	      .make-lg-column(4);
+
 	      padding: 15px;
 			     &:hover {
 			      background-color: #212121;

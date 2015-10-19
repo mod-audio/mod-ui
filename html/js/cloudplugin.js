@@ -147,6 +147,10 @@ JqueryClass('cloudPluginBox', {
                 if (plugin.installedVersion != null) {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
                 }
+                if (!plugin.screenshot_available && !plugin.thumbnail_available) {
+                    plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                    plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                }
 
                 plugins.push(plugin)
             }
@@ -209,6 +213,10 @@ JqueryClass('cloudPluginBox', {
                 }
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                 plugin.status = 'blocked'
+                if (!plugin.screenshot_available && !plugin.thumbnail_available) {
+                    plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                    plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                }
                 plugins.push(plugin)
             }
             self.cloudPluginBox('showPlugins', plugins)
