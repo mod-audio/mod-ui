@@ -37,14 +37,14 @@ function Notification(type, message, timeout) {
             message: message
         }))
 
-        self.rendered.find('.js-close').click(function () {
+        container.click(function () {
             self.close()
         })
 
         self.barValue = $('<div class="progressbar-value">')
         self.rendered.find('.js-progressbar').html('').hide().append(self.barValue)
 
-        container.append(self.rendered)
+        container.append(self.rendered).show()
 
         if (timeout)
             self.closeAfter(timeout)
