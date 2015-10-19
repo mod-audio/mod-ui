@@ -20,8 +20,8 @@ function Bluetooth(options) {
     options = $.extend({
         icon: null, // jquery dom element
         frequency: 5000,
-        status: function (status) {},
-        notify: function (msg) {
+        status: function (status) {}
+,        notify: function (msg) {
             console.log(msg)
         },
     }, options)
@@ -35,6 +35,7 @@ function Bluetooth(options) {
         var start = Date.now()
         $.ajax({
             url: '/ping',
+            global: false,
             success: function (result) {
                 var time = Date.now() - start - result.ihm_time
                 self.status(true, time, result.ihm_time)

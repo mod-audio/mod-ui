@@ -147,7 +147,6 @@ $('document').ready(function() {
 
   $(document)
   .ajaxStart(function(data) {
-    console.log(data)
     NProgress.start();
   })
   .ajaxComplete(function() {
@@ -202,7 +201,7 @@ $('document').ready(function() {
 <body class="mod-dark">
   <!-- NOTIFICATIONS -->
 
-  <div id="notifications mod-hidden"></div>
+  <div id="notifications" class="mod-hidden"></div>
   <!-- END NOTIFICATIONS -->
     <!-- WRAPPER -->
     <div id="wrapper">
@@ -544,7 +543,7 @@ $('document').ready(function() {
                     <input type="radio" name="installed" value="not-installed" id="cloud-plugins-uninstalled" />
                     <label for="cloud-plugins-uninstalled">Not Installed</label>
                 </div>
-                <ul class="categories control-group list list-unstyled">
+                <ul class="categories pull-left list list-unstyled">
                     <!-- <li id="cloud-plugin-tab-All">All</li> -->
                     <li id="cloud-plugin-tab-Delay">Delay</li>
                     <li id="cloud-plugin-tab-Distortion">Distortion</li>
@@ -558,9 +557,8 @@ $('document').ready(function() {
                     <li id="cloud-plugin-tab-Spectral">Spectral</li>
                     <li id="cloud-plugin-tab-Utility">Utility</li>
                 </ul>
-                <h2>Filter:</h2>
                 <div class="form-group">
-                    <input class="form-control" placeholder="Keyword" type="search"/>
+                    <input class="form-control" placeholder="Filter by keyword" type="search"/>
                 </div>
 
             </div>

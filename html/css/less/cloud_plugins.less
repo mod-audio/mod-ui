@@ -48,10 +48,23 @@
     left: 10px;
     padding-top: 18px;
     position: fixed;
+    top: 0;
     right: 0;
-    top: 68px;
     width: 240px;
-    overflow: hidden;
+    overflow: auto;
+    	h1 {
+    		font-weight: 2em;
+    		text-transform: uppercase;
+    		font-weight: bold;
+    		margin: 0
+    	}
+    	h2 {
+    		color: white;
+    		font-size: 15px;
+    		text-transform: uppercase;
+    		font-weight: bold;
+    		margin-top: 1em;
+    	}
 	    .control-group {
 	      float: left;
 	      margin-right: 9px;
@@ -99,7 +112,11 @@
 	     .cloud-plugin {
 	      color: #fff;
 	      background-color: #111;
-	      .make-sm-column(4);
+	      .make-xs-column(12);
+	      .make-sm-column(6);
+	      .make-md-column(6);
+	      .make-lg-column(4);
+
 	      padding: 15px;
 			     &:hover {
 			      background-color: #212121;
@@ -134,14 +151,20 @@
 			      	 .status.installed {
 			      	  background-color: @brand-success;
 			      	  &:after {
-			      	  	content: "installed"
+			      	  	content: "installed";
 			      	  }
 			      	}
 			      	 .status.outdated {
-			      	  background-color: @brand-warning
+			      	  background-color: @brand-warning;
+			      	  &:after {
+			      	  	content: "update";
+			      	  }
 			      	}
 			      	 .status.blocked {
-			      	  background-color: @brand-danger
+			      	  background-color: @brand-danger;
+			      	  &:after {
+			      	  	content: "install";
+			      	  }
 			      	}
 			      }
 			    }
