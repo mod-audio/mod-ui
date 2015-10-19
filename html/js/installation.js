@@ -91,7 +91,7 @@ function InstallationQueue() {
             desktop.rescanPlugins()
 
             $.ajax({
-                url: '/effect/get/',
+                url: '/effect/get',
                 data: {
                     uri: effect.uri
                 },
