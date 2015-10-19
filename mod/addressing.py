@@ -494,7 +494,7 @@ class Addressing(object):
             self._uri2hw_map = {}
             return
 
-        self.addressings = dict((act["uri"], {'idx': 0, 'addrs': []}) for act in ["actuators"])
+        self.addressings = dict((act["uri"], {'idx': 0, 'addrs': []}) for act in hw["actuators"])
 
         # Store all possible hardcoded values
         self._hw2uri_map = {}
