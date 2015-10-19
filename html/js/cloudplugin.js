@@ -111,9 +111,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
     searchAll: function (query) {
-        // TODO: implement new cloud API
-
-        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
+    /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
        Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
        All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
      */
@@ -192,7 +190,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     searchNotInstalled: function (query) {
-        /* Get an array of plugins from cloud and a dict of installed plugins by uri.
+    /* Get an array of plugins from cloud and a dict of installed plugins by uri.
        Show only those plugins not installed
      */
         var self = $(this)
@@ -257,7 +255,7 @@ JqueryClass('cloudPluginBox', {
         if (checked_filter == "not-installed")
             return self.cloudPluginBox('searchNotInstalled', query)
 
-        // only search 'installed' here
+        // only show 'installed' here
         var results = {}
         var plugin, cplugin
 
