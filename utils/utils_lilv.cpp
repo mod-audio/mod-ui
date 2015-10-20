@@ -17,15 +17,17 @@
 
 #include "utils.h"
 
-#include <assert.h>
 #include <libgen.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <lilv/lilv.h>
+
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
+#include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
 #include <algorithm>
@@ -170,11 +172,17 @@ struct NamespaceDefinitions {
     LilvNode* doap_license;
     LilvNode* rdf_type;
     LilvNode* rdfs_comment;
+    LilvNode* rdfs_label;
+    LilvNode* lv2core_designation;
+    LilvNode* lv2core_index;
     LilvNode* lv2core_microVersion;
     LilvNode* lv2core_minorVersion;
+    LilvNode* lv2core_name;
     LilvNode* lv2core_shortname;
+    LilvNode* lv2core_symbol;
     LilvNode* mod_brand;
     LilvNode* mod_label;
+    LilvNode* mod_rangeSteps;
     LilvNode* modgui_gui;
     LilvNode* modgui_resourcesDirectory;
     LilvNode* modgui_iconTemplate;
@@ -189,19 +197,30 @@ struct NamespaceDefinitions {
     LilvNode* modgui_panel;
     LilvNode* modgui_color;
     LilvNode* modgui_knob;
+    LilvNode* modgui_port;
     LilvNode* atom_bufferType;
     LilvNode* atom_Sequence;
     LilvNode* midi_MidiEvent;
+    LilvNode* pprops_rangeSteps;
+    LilvNode* units_render;
+    LilvNode* units_symbol;
+    LilvNode* units_unit;
 
     NamespaceDefinitions()
         : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
           rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
           rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
+          rdfs_label               (lilv_new_uri(W, LILV_NS_RDFS   "label"             )),
+          lv2core_designation      (lilv_new_uri(W, LILV_NS_LV2    "designation"       )),
+          lv2core_index            (lilv_new_uri(W, LILV_NS_LV2    "index"             )),
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
           lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
+          lv2core_name             (lilv_new_uri(W, LILV_NS_LV2    "name"              )),
           lv2core_shortname        (lilv_new_uri(W, LILV_NS_LV2    "shortname"         )),
+          lv2core_symbol           (lilv_new_uri(W, LILV_NS_LV2    "symbol"            )),
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
+          mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
           modgui_iconTemplate      (lilv_new_uri(W, LILV_NS_MODGUI "iconTemplate"      )),
@@ -216,20 +235,31 @@ struct NamespaceDefinitions {
           modgui_panel             (lilv_new_uri(W, LILV_NS_MODGUI "panel"             )),
           modgui_color             (lilv_new_uri(W, LILV_NS_MODGUI "color"             )),
           modgui_knob              (lilv_new_uri(W, LILV_NS_MODGUI "knob"              )),
+          modgui_port              (lilv_new_uri(W, LILV_NS_MODGUI "port"              )),
           atom_bufferType          (lilv_new_uri(W, LV2_ATOM__bufferType               )),
           atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
-          midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )) {}
+          midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )),
+          pprops_rangeSteps        (lilv_new_uri(W, LV2_PORT_PROPS__rangeSteps         )),
+          units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
+          units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
+          units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )) {}
 
     ~NamespaceDefinitions()
     {
         lilv_node_free(doap_license);
         lilv_node_free(rdf_type);
         lilv_node_free(rdfs_comment);
+        lilv_node_free(rdfs_label);
+        lilv_node_free(lv2core_designation);
+        lilv_node_free(lv2core_index);
         lilv_node_free(lv2core_microVersion);
         lilv_node_free(lv2core_minorVersion);
+        lilv_node_free(lv2core_name);
         lilv_node_free(lv2core_shortname);
+        lilv_node_free(lv2core_symbol);
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
+        lilv_node_free(mod_rangeSteps);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
         lilv_node_free(modgui_iconTemplate);
@@ -244,9 +274,14 @@ struct NamespaceDefinitions {
         lilv_node_free(modgui_panel);
         lilv_node_free(modgui_color);
         lilv_node_free(modgui_knob);
+        lilv_node_free(modgui_port);
         lilv_node_free(atom_bufferType);
         lilv_node_free(atom_Sequence);
         lilv_node_free(midi_MidiEvent);
+        lilv_node_free(pprops_rangeSteps);
+        lilv_node_free(units_render);
+        lilv_node_free(units_symbol);
+        lilv_node_free(units_unit);
     }
 };
 
@@ -817,7 +852,67 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         else
             info.gui.knob = nc;
 
-        // TODO - ports
+        {
+            if (LilvNodes* modgui_ports = lilv_world_find_nodes(W, modguigui, ns.modgui_port, nullptr))
+            {
+                const unsigned int guiportscount = lilv_nodes_size(modgui_ports);
+                PluginGUIPort* guiports(new PluginGUIPort[guiportscount+1]);
+                memset(guiports, 0, sizeof(PluginGUIPort) * (guiportscount+1));
+
+                int index;
+                const LilvNode* modgui_port;
+
+                LILV_FOREACH(nodes, it, modgui_ports)
+                {
+                    modgui_port = lilv_nodes_get(modgui_ports, it);
+
+                    if (LilvNodes* guiports_index = lilv_world_find_nodes(W, modgui_port, ns.lv2core_index, nullptr))
+                    {
+                        index = lilv_node_as_int(lilv_nodes_get_first(guiports_index));
+                        lilv_nodes_free(guiports_index);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    if (index < 0)
+                        continue;
+                    if (index >= (int)guiportscount)
+                        continue;
+
+                    PluginGUIPort& guiport(guiports[index]);
+                    if (guiport.valid)
+                        continue;
+
+                    if (LilvNodes* guiports_symbol = lilv_world_find_nodes(W, modgui_port, ns.lv2core_symbol, nullptr))
+                    {
+                        guiport.symbol = strdup(lilv_node_as_string(lilv_nodes_get_first(guiports_symbol)));
+                        lilv_nodes_free(guiports_symbol);
+                    }
+                    else
+                    {
+                        guiport.symbol = nc;
+                    }
+
+                    if (LilvNodes* guiports_name = lilv_world_find_nodes(W, modgui_port, ns.lv2core_name, nullptr))
+                    {
+                        guiport.name = strdup(lilv_node_as_string(lilv_nodes_get_first(guiports_name)));
+                        lilv_nodes_free(guiports_name);
+                    }
+                    else
+                    {
+                        guiport.name = nc;
+                    }
+
+                    guiport.valid = true;
+                }
+
+                info.gui.ports = guiports;
+
+                lilv_nodes_free(modgui_ports);
+            }
+        }
 
         lilv_node_free(modguigui);
     }
@@ -1054,17 +1149,111 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
                 ((char*)portinfo.shortname)[16] = '\0';
 
             // ----------------------------------------------------------------------------------------------------
+            // designation
 
-            // TODO
-            portinfo.designation = nc;
-            portinfo.units.label = nc;
-            portinfo.units.render = nc;
-            portinfo.units.symbol = nc;
-            portinfo.ranges.max = 1.0f;
-
-            portinfo.valid = true;
+            nodes = lilv_port_get_value(p, port, ns.lv2core_designation);
+            if (nodes != nullptr)
+            {
+                portinfo.designation = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                lilv_nodes_free(nodes);
+            }
+            else
+            {
+                portinfo.designation = nc;
+            }
 
             // ----------------------------------------------------------------------------------------------------
+            // range steps
+
+            nodes = lilv_port_get_value(p, port, ns.mod_rangeSteps);
+            if (nodes != nullptr)
+            {
+                portinfo.rangeSteps = lilv_node_as_int(lilv_nodes_get_first(nodes));
+                lilv_nodes_free(nodes);
+            }
+            else
+            {
+                nodes = lilv_port_get_value(p, port, ns.pprops_rangeSteps);
+                if (nodes != nullptr)
+                {
+                    portinfo.rangeSteps = lilv_node_as_int(lilv_nodes_get_first(nodes));
+                    lilv_nodes_free(nodes);
+                }
+            }
+
+            // ----------------------------------------------------------------------------------------------------
+            // port properties
+
+            {
+                // TODO
+                //properties = [typ.rsplit("#",1)[-1] for typ in get_port_data(port, ns_lv2core.portProperty)]
+            }
+
+            // ----------------------------------------------------------------------------------------------------
+
+            // TODO
+            portinfo.ranges.max = 1.0f;
+
+            if (type == 2 || type == 3)
+            {
+            }
+
+            // ----------------------------------------------------------------------------------------------------
+            // control ports might contain unit
+
+            portinfo.units.label  = nc;
+            portinfo.units.render = nc;
+            portinfo.units.symbol = nc;
+
+            if (type == 2)
+            {
+                LilvNodes* uunits = lilv_port_get_value(p, port, ns.units_unit);
+                if (uunits != nullptr)
+                {
+                    LilvNode* uunit = lilv_nodes_get_first(uunits);
+                    const char* uuri = lilv_node_as_uri(uunit);
+
+                    // using pre-existing lv2 unit
+                    if (uuri != nullptr && strncmp(uuri, LV2_UNITS_PREFIX, 38) == 0)
+                    {
+                        uuri += 38; // strlen(LV2_UNITS_PREFIX)
+
+                        // TODO
+                        //if uuri.isalnum():
+                        //    ulabel, urender, usymbol = get_port_unit(uuri)
+                    }
+                    // using custom unit
+                    else
+                    {
+                        nodes = lilv_world_find_nodes(W, uunit, ns.rdfs_label, nullptr);
+                        if (nodes != nullptr)
+                        {
+                            portinfo.units.label = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                            lilv_nodes_free(nodes);
+                        }
+
+                        nodes = lilv_world_find_nodes(W, uunit, ns.units_render, nullptr);
+                        if (nodes != nullptr)
+                        {
+                            portinfo.units.render = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                            lilv_nodes_free(nodes);
+                        }
+
+                        nodes = lilv_world_find_nodes(W, uunit, ns.units_symbol, nullptr);
+                        if (nodes != nullptr)
+                        {
+                            portinfo.units.symbol = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                            lilv_nodes_free(nodes);
+                        }
+                    }
+
+                    lilv_nodes_free(uunits);
+                }
+            }
+
+            // ----------------------------------------------------------------------------------------------------
+
+            portinfo.valid = true;
 
             switch (type)
             {
@@ -1290,7 +1479,8 @@ const PluginInfo* const* get_all_plugins(void)
     // Make a list of all installed bundles
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
-        assert(retIndex < newsize);
+        if (retIndex >= newsize)
+            continue;
 
         const LilvPlugin* p = lilv_plugins_get(PLUGINS, itpls);
 
