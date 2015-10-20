@@ -55,7 +55,7 @@ class FakeHost(FakeCommunicator, Host):
 
         msg = msg.replace("[]","",1).strip()
         msg = [line.strip() for line in msg.split("\n")]
-        print("_send", msg)
+        #print("_send", msg)
 
         method = msg[0]
 

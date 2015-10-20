@@ -50,14 +50,26 @@ from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.bank import list_banks, save_banks
-from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
-from mod.lv2 import add_bundle_to_lilv_world, remove_bundle_to_lilv_world
-from mod.lv2 import get_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                                 pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
+
+try:
+    from mod.utils import (init as lv2_init,
+                           add_bundle_to_lilv_world,
+                           remove_bundle_from_lilv_world,
+                           get_all_plugins,
+                           get_plugin_info,
+                           get_all_pedalboards,
+                           get_pedalboard_info,
+                           get_pedalboard_name)
+except:
+    print("Failed to import new quick lilv parsing module, doing it the old slower way...")
+    from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
+    from mod.lv2 import add_bundle_to_lilv_world, remove_bundle_from_lilv_world
+    from mod.lv2 import get_all_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
 
 # Global fake timestamp used for pedalboard thumbnails
 # FIXME - use real timestamp
@@ -92,7 +104,7 @@ def install_bundles_in_tmp_dir():
         bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
 
         if os.path.exists(bundlepath):
-            removed += remove_bundle_to_lilv_world(bundlepath, True)
+            removed += remove_bundle_from_lilv_world(bundlepath, True)
             shutil.rmtree(bundlepath)
 
         shutil.move(tmppath, bundlepath)
@@ -123,7 +135,7 @@ def uninstall_bundles(bundles):
 
     for bundlepath in bundles:
         if os.path.exists(bundlepath):
-            removed += remove_bundle_to_lilv_world(bundlepath, True)
+            removed += remove_bundle_from_lilv_world(bundlepath, True)
             shutil.rmtree(bundlepath)
 
     # TODO - make ingen refresh lv2 world
@@ -663,7 +675,7 @@ class PedalboardList(web.RequestHandler):
     def get(self):
         result = []
 
-        for pedal in get_pedalboards(False):
+        for pedal in get_all_pedalboards(False):
             result.append(format_pedalboard(pedal))
 
         self.set_header('Content-Type', 'application/json')
@@ -856,7 +868,7 @@ class BankLoad(web.RequestHandler):
 
         # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
         # But the GUI needs the whole pedalboard metadata
-        pedalboards_dict = get_pedalboards(True)
+        pedalboards_dict = get_all_pedalboards(True)
         pedalboards_keys = pedalboards_dict.keys()
 
         for bank in banks:

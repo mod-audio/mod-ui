@@ -401,7 +401,7 @@ def refresh():
                 BUNDLES.append(bundle)
 
 # get all available plugins
-# this is trigger scanning of all plugins
+# this triggers scanning of all plugins
 # returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
     global W, PLUGINS, PLUGNFO, PLUGNFOk
@@ -460,7 +460,7 @@ def get_plugin_info(uri):
     raise Exception
 
 # get all available pedalboards (ie, plugins with pedalboard type)
-def get_pedalboards(asDictionary):
+def get_all_pedalboards(asDictionary):
     global W, PLUGINS
 
     # define needed namespaces
@@ -558,9 +558,9 @@ def add_bundle_to_lilv_world(bundlepath, returnPlugins = False):
 
     return addedPlugins if returnPlugins else True
 
-# remove a bundle to our lilv world
+# remove a bundle from our lilv world
 # returns true if the bundle was removed
-def remove_bundle_to_lilv_world(bundlepath, returnPlugins = False):
+def remove_bundle_from_lilv_world(bundlepath, returnPlugins = False):
     global W, BUNDLES, PLUGINS, PLUGNFO, PLUGNFOk
 
     # lilv wants the last character as the separator
