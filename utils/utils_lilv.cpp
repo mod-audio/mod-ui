@@ -48,16 +48,29 @@ std::map<std::string, PluginInfo> PLUGNFO;
 // cached keys() of PLUGNFO, for performance
 std::list<std::string> PLUGNFOk;
 
-#define PluginInfo_Init {          \
-    false,                         \
-    nullptr,                       \
-    nullptr,                       \
-    nullptr,                       \
-    nullptr,                       \
-    nullptr,                       \
-    nullptr,                       \
-    { nullptr, nullptr, nullptr }, \
-    { 0 }                          \
+#define PluginInfo_Init {                            \
+    false,                                           \
+    nullptr, nullptr,                                \
+    nullptr, nullptr, nullptr, nullptr, nullptr,     \
+    nullptr, 0, 0,                                   \
+    nullptr, nullptr,                                \
+    { nullptr, nullptr, nullptr },                   \
+    nullptr,                                         \
+    {                                                \
+        false, false,                                \
+        nullptr, nullptr, nullptr, nullptr, nullptr, \
+        nullptr, nullptr,                            \
+        nullptr, nullptr,                            \
+        nullptr, nullptr, nullptr, nullptr,          \
+        nullptr                                      \
+    },                                               \
+    {                                                \
+        { nullptr, nullptr },                        \
+        { nullptr, nullptr },                        \
+        { nullptr, nullptr },                        \
+        { nullptr, nullptr }                         \
+    },                                               \
+    nullptr                                          \
 }
 
 #if 0
@@ -150,19 +163,24 @@ struct NamespaceDefinitions {
     LilvNode* doap_license;
     LilvNode* rdf_type;
     LilvNode* rdfs_comment;
+    LilvNode* lv2core_microVersion;
+    LilvNode* lv2core_minorVersion;
 
     NamespaceDefinitions()
-        : doap_license(lilv_new_uri(W, LILV_NS_DOAP "license")),
-          rdf_type    (lilv_new_uri(W, LILV_NS_RDF  "type"   )),
-          rdfs_comment(lilv_new_uri(W, LILV_NS_RDFS "comment")) {}
+        : doap_license        (lilv_new_uri(W, LILV_NS_DOAP "license"     )),
+          rdf_type            (lilv_new_uri(W, LILV_NS_RDF  "type"        )),
+          rdfs_comment        (lilv_new_uri(W, LILV_NS_RDFS "comment"     )),
+          lv2core_microVersion(lilv_new_uri(W, LILV_NS_LV2  "microVersion")),
+          lv2core_minorVersion(lilv_new_uri(W, LILV_NS_LV2  "minorVersion")) {}
 
     ~NamespaceDefinitions()
     {
         lilv_node_free(doap_license);
         lilv_node_free(rdf_type);
         lilv_node_free(rdfs_comment);
+        lilv_node_free(lv2core_microVersion);
+        lilv_node_free(lv2core_minorVersion);
     }
-
 };
 
 static const char* kCategoryDelayPlugin[] = { "Delay", nullptr };
@@ -201,6 +219,11 @@ static const char* kCategoryAnalyserPlugin[] = { "Utility", "Analyser", nullptr 
 static const char* kCategoryConverterPlugin[] = { "Utility", "Converter", nullptr };
 static const char* kCategoryFunctionPlugin[] = { "Utility", "Function", nullptr };
 static const char* kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
+
+static const char* kStabilityExperimental = "experimental";
+static const char* kStabilityStable = "stable";
+static const char* kStabilityTesting = "testing";
+static const char* kStabilityUnstable = "unstable";
 
 // refresh everything
 // plugins are not truly scanned here, only later per request
@@ -282,6 +305,11 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     LilvNode* node;
     LilvNodes* nodes;
 
+    const char* bundleuri = lilv_node_as_uri(lilv_plugin_get_bundle_uri(p));
+    const char* bundle    = lilv_file_uri_parse(bundleuri, nullptr);
+
+    const size_t bundleurilen = strlen(bundleuri);
+
     // uri
     info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
@@ -301,7 +329,12 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     nodes = lilv_plugin_get_value(p, ns.doap_license);
     if (nodes != nullptr)
     {
-        info.license = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        const char* license = lilv_node_as_string(lilv_nodes_get_first(nodes));
+
+        if (strncmp(license, bundleuri, bundleurilen) == 0)
+            license += bundleurilen;
+
+        info.license = strdup(license);
         lilv_nodes_free(nodes);
     }
     else
@@ -416,6 +449,44 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     }
     lilv_nodes_free(nodes);
 
+    // version
+    {
+        LilvNodes* microvers = lilv_plugin_get_value(p, ns.lv2core_microVersion);
+        LilvNodes* minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion);
+
+        if (microvers == nullptr && minorvers == nullptr)
+        {
+            info.microVersion = 0;
+            info.minorVersion = 0;
+        }
+        else
+        {
+            if (microvers == nullptr)
+                info.microVersion = 0;
+            else
+                info.microVersion = lilv_node_as_int(lilv_nodes_get_first(microvers));
+
+            if (minorvers == nullptr)
+                info.minorVersion = 0;
+            else
+                info.minorVersion = lilv_node_as_int(lilv_nodes_get_first(minorvers));
+
+            lilv_nodes_free(microvers);
+            lilv_nodes_free(minorvers);
+        }
+
+        char versiontmpstr[32];
+        snprintf(versiontmpstr, 32, "%d.%d", info.microVersion, info.minorVersion);
+        info.version = strdup(versiontmpstr);
+    }
+
+    if (info.minorVersion == 0 && info.microVersion == 0)
+        info.stability = kStabilityExperimental;
+    else if (info.minorVersion % 2 == 0)
+        info.stability = info.microVersion % 2 == 0 ? kStabilityStable : kStabilityTesting;
+    else
+        info.stability = kStabilityUnstable;
+
     // author name
     node = lilv_plugin_get_author_name(p);
     if (node != nullptr)
@@ -451,6 +522,8 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     {
         info.author.email = nc;
     }
+
+    lilv_free((void*)bundle);
 
     info.valid = true;
     return info;

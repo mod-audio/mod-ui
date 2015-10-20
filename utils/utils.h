@@ -24,29 +24,105 @@ extern "C" {
 
 #define MOD_API __attribute__ ((visibility("default")))
 
-typedef struct _PluginAuthor {
+typedef struct {
     const char* name;
     const char* homepage;
     const char* email;
 } PluginAuthor;
 
-typedef struct _PluginGUI {
-    char dummy;
+typedef struct {
+    int index;
+    const char* name;
+    const char* symbol;
+} PluginGUIPort;
+
+typedef struct {
+    bool modificableInPlace;
+    bool usingSeeAlso;
+    const char* resourcesDirectory;
+    const char* iconTemplate;
+    const char* settingsTemplate;
+    const char* javascript;
+    const char* stylesheet;
+    const char* screenshot;
+    const char* thumbnail;
+    const char* brand;
+    const char* label;
+    const char* model;
+    const char* panel;
+    const char* color;
+    const char* knob;
+    const PluginGUIPort* ports;
 } PluginGUI;
 
-typedef struct _PluginInfo {
+typedef struct {
+    float min;
+    float max;
+    float def;
+} PluginPortRanges;
+
+typedef struct {
+    const char* label;
+    const char* render;
+    const char* symbol;
+} PluginPortUnits;
+
+typedef struct {
+    float value;
+    const char* label;
+} PluginPortScalePoint;
+
+typedef struct {
+    const char* name;
+    const char* symbol;
+    PluginPortRanges ranges;
+    PluginPortUnits units;
+    const char* designation;
+    const char* const* properties;
+    int rangeSteps;
+    const PluginPortScalePoint* scalePoints;
+    const char* shortname;
+} PluginPort;
+
+typedef struct {
+    const PluginPort* input;
+    const PluginPort* output;
+} PluginPortsI;
+
+typedef struct {
+    PluginPortsI audio;
+    PluginPortsI control;
+    PluginPortsI cv;
+    PluginPortsI midi;
+} PluginPorts;
+
+typedef struct {
+    const char* uri;
+    const char* label;
+} PluginPreset;
+
+typedef struct {
     bool valid;
     const char* uri;
     const char* name;
     const char* binary;
+    const char* brand;
+    const char* label;
     const char* license;
     const char* comment;
     const char* const* category;
+    int microVersion;
+    int minorVersion;
+    const char* version;
+    const char* stability;
     PluginAuthor author;
+    const char* const* bundles;
     PluginGUI gui;
+    PluginPorts ports;
+    const PluginPreset* presets;
 } PluginInfo;
 
-typedef struct _PedalboardInfo {
+typedef struct {
     bool valid;
 } PedalboardInfo;
 
