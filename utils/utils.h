@@ -37,8 +37,6 @@ typedef struct {
 } PluginGUIPort;
 
 typedef struct {
-    bool modificableInPlace;
-    bool usingSeeAlso;
     const char* resourcesDirectory;
     const char* iconTemplate;
     const char* settingsTemplate;

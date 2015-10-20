@@ -125,8 +125,6 @@ class PluginGUIPort(Structure):
 
 class PluginGUI(Structure):
     _fields_ = [
-        ("modificableInPlace", c_bool),
-        ("usingSeeAlso", c_bool),
         ("resourcesDirectory", c_char_p),
         ("iconTemplate", c_char_p),
         ("settingsTemplate", c_char_p),
@@ -290,7 +288,11 @@ def remove_bundle_from_lilv_world(bundlepath, returnPlugins = False):
 # this triggers scanning of all plugins
 # returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
-    return structPtrToList(utils.get_all_plugins())
+    ret = structPtrToList(utils.get_all_plugins())
+    print("-------------------------------------------------", len(ret))
+    for p in ret:
+        print(p["gui"])
+    return ret
 
 # get a specific plugin
 # NOTE: may throw

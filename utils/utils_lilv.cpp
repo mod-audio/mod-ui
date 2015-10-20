@@ -45,6 +45,10 @@ const LilvPlugins* PLUGINS = nullptr;
 // plugin info, mapped to URIs
 std::map<std::string, PluginInfo> PLUGNFO;
 
+// some other cached values
+static const char* const HOME = getenv("HOME");
+static size_t HOMElen = strlen(HOME);
+
 #define PluginInfo_Init {                            \
     false,                                           \
     nullptr, nullptr,                                \
@@ -54,7 +58,6 @@ std::map<std::string, PluginInfo> PLUGNFO;
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
     {                                                \
-        false, false,                                \
         nullptr, nullptr, nullptr, nullptr, nullptr, \
         nullptr, nullptr,                            \
         nullptr, nullptr,                            \
@@ -167,15 +170,43 @@ struct NamespaceDefinitions {
     LilvNode* lv2core_minorVersion;
     LilvNode* mod_brand;
     LilvNode* mod_label;
+    LilvNode* modgui_gui;
+    LilvNode* modgui_resourcesDirectory;
+    LilvNode* modgui_iconTemplate;
+    LilvNode* modgui_settingsTemplate;
+    LilvNode* modgui_javascript;
+    LilvNode* modgui_stylesheet;
+    LilvNode* modgui_screenshot;
+    LilvNode* modgui_thumbnail;
+    LilvNode* modgui_brand;
+    LilvNode* modgui_label;
+    LilvNode* modgui_model;
+    LilvNode* modgui_panel;
+    LilvNode* modgui_color;
+    LilvNode* modgui_knob;
 
     NamespaceDefinitions()
-        : doap_license        (lilv_new_uri(W, LILV_NS_DOAP "license"     )),
-          rdf_type            (lilv_new_uri(W, LILV_NS_RDF  "type"        )),
-          rdfs_comment        (lilv_new_uri(W, LILV_NS_RDFS "comment"     )),
-          lv2core_microVersion(lilv_new_uri(W, LILV_NS_LV2  "microVersion")),
-          lv2core_minorVersion(lilv_new_uri(W, LILV_NS_LV2  "minorVersion")),
-          mod_brand           (lilv_new_uri(W, LILV_NS_MOD  "brand"       )),
-          mod_label           (lilv_new_uri(W, LILV_NS_MOD  "label"       )) {}
+        : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
+          rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
+          rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
+          lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
+          lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
+          mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
+          mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
+          modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
+          modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
+          modgui_iconTemplate      (lilv_new_uri(W, LILV_NS_MODGUI "iconTemplate"      )),
+          modgui_settingsTemplate  (lilv_new_uri(W, LILV_NS_MODGUI "settingsTemplate"  )),
+          modgui_javascript        (lilv_new_uri(W, LILV_NS_MODGUI "javascript"        )),
+          modgui_stylesheet        (lilv_new_uri(W, LILV_NS_MODGUI "stylesheet"        )),
+          modgui_screenshot        (lilv_new_uri(W, LILV_NS_MODGUI "screenshot"        )),
+          modgui_thumbnail         (lilv_new_uri(W, LILV_NS_MODGUI "thumbnail"         )),
+          modgui_brand             (lilv_new_uri(W, LILV_NS_MODGUI "brand"             )),
+          modgui_label             (lilv_new_uri(W, LILV_NS_MODGUI "label"             )),
+          modgui_model             (lilv_new_uri(W, LILV_NS_MODGUI "model"             )),
+          modgui_panel             (lilv_new_uri(W, LILV_NS_MODGUI "panel"             )),
+          modgui_color             (lilv_new_uri(W, LILV_NS_MODGUI "color"             )),
+          modgui_knob              (lilv_new_uri(W, LILV_NS_MODGUI "knob"              )) {}
 
     ~NamespaceDefinitions()
     {
@@ -186,6 +217,20 @@ struct NamespaceDefinitions {
         lilv_node_free(lv2core_minorVersion);
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
+        lilv_node_free(modgui_gui);
+        lilv_node_free(modgui_resourcesDirectory);
+        lilv_node_free(modgui_iconTemplate);
+        lilv_node_free(modgui_settingsTemplate);
+        lilv_node_free(modgui_javascript);
+        lilv_node_free(modgui_stylesheet);
+        lilv_node_free(modgui_screenshot);
+        lilv_node_free(modgui_thumbnail);
+        lilv_node_free(modgui_brand);
+        lilv_node_free(modgui_label);
+        lilv_node_free(modgui_model);
+        lilv_node_free(modgui_panel);
+        lilv_node_free(modgui_color);
+        lilv_node_free(modgui_knob);
     }
 };
 
@@ -316,10 +361,14 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
 
     const size_t bundleurilen = strlen(bundleuri);
 
+    // --------------------------------------------------------------------------------------------------------
     // uri
+
     info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
+    // --------------------------------------------------------------------------------------------------------
     // name
+
     node = lilv_plugin_get_name(p);
     if (node != nullptr)
     {
@@ -332,14 +381,18 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.name = nc;
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // binary
+
     info.binary = lilv_node_as_string(lilv_plugin_get_library_uri(p));
     if (info.binary != nullptr)
         info.binary = lilv_file_uri_parse(info.binary, NULL);
     else
         info.binary = nc;
 
+    // --------------------------------------------------------------------------------------------------------
     // license
+
     nodes = lilv_plugin_get_value(p, ns.doap_license);
     if (nodes != nullptr)
     {
@@ -356,7 +409,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.license = nc;
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // comment
+
     nodes = lilv_plugin_get_value(p, ns.rdfs_comment);
     if (nodes != nullptr)
     {
@@ -368,7 +423,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.comment = nc;
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // categories
+
     nodes = lilv_plugin_get_value(p, ns.rdf_type);
     LILV_FOREACH(nodes, it, nodes)
     {
@@ -463,7 +520,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     }
     lilv_nodes_free(nodes);
 
+    // --------------------------------------------------------------------------------------------------------
     // version
+
     {
         LilvNodes* microvers = lilv_plugin_get_value(p, ns.lv2core_microVersion);
         LilvNodes* minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion);
@@ -501,7 +560,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     else
         info.stability = kStabilityUnstable;
 
+    // --------------------------------------------------------------------------------------------------------
     // author name
+
     node = lilv_plugin_get_author_name(p);
     if (node != nullptr)
     {
@@ -513,7 +574,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.author.name = nc;
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // author homepage
+
     node = lilv_plugin_get_author_homepage(p);
     if (node != nullptr)
     {
@@ -525,7 +588,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.author.homepage = nc;
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // author email
+
     node = lilv_plugin_get_author_email(p);
     if (node != nullptr)
     {
@@ -537,7 +602,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.author.email = nc;
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // brand
+
     nodes = lilv_plugin_get_value(p, ns.mod_brand);
     if (nodes != nullptr)
     {
@@ -566,7 +633,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         }
     }
 
+    // --------------------------------------------------------------------------------------------------------
     // label
+
     nodes = lilv_plugin_get_value(p, ns.mod_label);
 
     if (nodes != nullptr)
@@ -595,6 +664,128 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             info.label = strdup(label);
         }
     }
+
+    // --------------------------------------------------------------------------------------------------------
+    // get the proper modgui
+
+    LilvNode* modguigui = nullptr;
+    const char* resdir = nullptr;
+
+    nodes = lilv_plugin_get_value(p, ns.modgui_gui);
+
+    LILV_FOREACH(nodes, it, nodes)
+    {
+        const LilvNode* mgui = lilv_nodes_get(nodes, it);
+        LilvNodes* resdirs = lilv_world_find_nodes(W, mgui, ns.modgui_resourcesDirectory, nullptr);
+        if (resdirs == nullptr)
+            continue;
+
+        lilv_free((void*)resdir);
+        resdir = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(resdirs)), nullptr);
+
+        lilv_node_free(modguigui);
+        modguigui = lilv_node_duplicate(mgui);
+
+        lilv_nodes_free(resdirs);
+
+        if (strncmp(resdir, HOME, HOMElen) == 0)
+            // found a modgui in the home dir, stop here and use it
+            break;
+    }
+
+    lilv_nodes_free(nodes);
+
+    // --------------------------------------------------------------------------------------------------------
+    // gui
+
+    if (modguigui != nullptr)
+    {
+        info.gui.resourcesDirectory = strdup(resdir);
+        lilv_free((void*)resdir);
+        resdir = nullptr;
+
+        // icon and settings templates
+        if (LilvNodes* modgui_icon = lilv_world_find_nodes(W, modguigui, ns.modgui_iconTemplate, nullptr))
+        {
+            info.gui.iconTemplate = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_icon)), nullptr);
+            lilv_nodes_free(modgui_icon);
+        }
+
+        if (LilvNodes* modgui_setts = lilv_world_find_nodes(W, modguigui, ns.modgui_settingsTemplate, nullptr))
+        {
+            info.gui.settingsTemplate = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_setts)), nullptr);
+            lilv_nodes_free(modgui_setts);
+        }
+
+        // javascript and stylesheet files
+        if (LilvNodes* modgui_script = lilv_world_find_nodes(W, modguigui, ns.modgui_javascript, nullptr))
+        {
+            info.gui.javascript = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_script)), nullptr);
+            lilv_nodes_free(modgui_script);
+        }
+
+        if (LilvNodes* modgui_style = lilv_world_find_nodes(W, modguigui, ns.modgui_stylesheet, nullptr))
+        {
+            info.gui.stylesheet = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_style)), nullptr);
+            lilv_nodes_free(modgui_style);
+        }
+
+        // screenshot and thumbnail
+        if (LilvNodes* modgui_scrn = lilv_world_find_nodes(W, modguigui, ns.modgui_screenshot, nullptr))
+        {
+            info.gui.screenshot = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_scrn)), nullptr);
+            lilv_nodes_free(modgui_scrn);
+        }
+
+        if (LilvNodes* modgui_thumb = lilv_world_find_nodes(W, modguigui, ns.modgui_thumbnail, nullptr))
+        {
+            info.gui.thumbnail = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_thumb)), nullptr);
+            lilv_nodes_free(modgui_thumb);
+        }
+
+        // extra stuff, all optional
+        if (LilvNodes* modgui_brand = lilv_world_find_nodes(W, modguigui, ns.modgui_brand, nullptr))
+        {
+            info.gui.brand = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_brand)));
+            lilv_nodes_free(modgui_brand);
+        }
+
+        if (LilvNodes* modgui_label = lilv_world_find_nodes(W, modguigui, ns.modgui_label, nullptr))
+        {
+            info.gui.label = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_label)));
+            lilv_nodes_free(modgui_label);
+        }
+
+        if (LilvNodes* modgui_model = lilv_world_find_nodes(W, modguigui, ns.modgui_model, nullptr))
+        {
+            info.gui.model = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_model)));
+            lilv_nodes_free(modgui_model);
+        }
+
+        if (LilvNodes* modgui_panel = lilv_world_find_nodes(W, modguigui, ns.modgui_panel, nullptr))
+        {
+            info.gui.panel = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_panel)));
+            lilv_nodes_free(modgui_panel);
+        }
+
+        if (LilvNodes* modgui_color = lilv_world_find_nodes(W, modguigui, ns.modgui_color, nullptr))
+        {
+            info.gui.color = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_color)));
+            lilv_nodes_free(modgui_color);
+        }
+
+        if (LilvNodes* modgui_knob = lilv_world_find_nodes(W, modguigui, ns.modgui_knob, nullptr))
+        {
+            info.gui.knob = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_knob)));
+            lilv_nodes_free(modgui_knob);
+        }
+
+        // TODO - ports
+
+        lilv_node_free(modguigui);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
 
     lilv_free((void*)bundle);
 
@@ -652,6 +843,32 @@ void cleanup(void)
             free((void*)info.author.homepage);
         if (info.author.email != nullptr && info.author.email != nc)
             free((void*)info.author.email);
+        if (info.gui.resourcesDirectory != nullptr && info.gui.resourcesDirectory != nc)
+            free((void*)info.gui.resourcesDirectory);
+        if (info.gui.iconTemplate != nullptr && info.gui.iconTemplate != nc)
+            free((void*)info.gui.iconTemplate);
+        if (info.gui.settingsTemplate != nullptr && info.gui.settingsTemplate != nc)
+            free((void*)info.gui.settingsTemplate);
+        if (info.gui.javascript != nullptr && info.gui.javascript != nc)
+            free((void*)info.gui.javascript);
+        if (info.gui.stylesheet != nullptr && info.gui.stylesheet != nc)
+            free((void*)info.gui.stylesheet);
+        if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
+            free((void*)info.gui.screenshot);
+        if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
+            free((void*)info.gui.thumbnail);
+        if (info.gui.brand != nullptr && info.gui.brand != nc)
+            free((void*)info.gui.brand);
+        if (info.gui.label != nullptr && info.gui.label != nc)
+            free((void*)info.gui.label);
+        if (info.gui.model != nullptr && info.gui.model != nc)
+            free((void*)info.gui.model);
+        if (info.gui.panel != nullptr && info.gui.panel != nc)
+            free((void*)info.gui.panel);
+        if (info.gui.color != nullptr && info.gui.color != nc)
+            free((void*)info.gui.color);
+        if (info.gui.knob != nullptr && info.gui.knob != nc)
+            free((void*)info.gui.knob);
     }
 
     PLUGNFO.clear();
