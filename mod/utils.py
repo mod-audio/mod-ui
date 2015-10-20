@@ -240,6 +240,9 @@ c_structp_types = (POINTER(PluginGUIPort),
 utils.init.argtypes = None
 utils.init.restype  = None
 
+utils.cleanup.argtypes = None
+utils.cleanup.restype  = None
+
 utils.add_bundle_to_lilv_world.argtypes = [c_char_p]
 utils.add_bundle_to_lilv_world.restype  = c_bool
 
@@ -266,6 +269,10 @@ utils.get_pedalboard_name.restype  = c_char_p
 # initialize
 def init():
     utils.init()
+
+# cleanup, cannot be used afterwards
+def cleanup():
+    utils.cleanup()
 
 # add a bundle to our lilv world
 # returns true if the bundle was added

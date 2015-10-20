@@ -129,6 +129,9 @@ typedef struct {
 // initialize
 MOD_API void init(void);
 
+// cleanup, cannot be used afterwards
+MOD_API void cleanup(void);
+
 // add a bundle to our lilv world
 // returns true if the bundle was added
 MOD_API bool add_bundle_to_lilv_world(const char* bundle);

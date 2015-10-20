@@ -42,11 +42,8 @@ std::list<std::string> BUNDLES;
 // list of lilv plugins
 const LilvPlugins* PLUGINS = nullptr;
 
-// cached info about each plugin (using uri as key)
+// plugin info, mapped to URIs
 std::map<std::string, PluginInfo> PLUGNFO;
-
-// cached keys() of PLUGNFO, for performance
-std::list<std::string> PLUGNFOk;
 
 #define PluginInfo_Init {                            \
     false,                                           \
@@ -159,19 +156,26 @@ BLACKLIST = [
 
 // --------------------------------------------------------------------------------------------------------
 
+#define LILV_NS_MOD    "http://moddevices.com/ns/mod#"
+#define LILV_NS_MODGUI "http://moddevices.com/ns/modgui#"
+
 struct NamespaceDefinitions {
     LilvNode* doap_license;
     LilvNode* rdf_type;
     LilvNode* rdfs_comment;
     LilvNode* lv2core_microVersion;
     LilvNode* lv2core_minorVersion;
+    LilvNode* mod_brand;
+    LilvNode* mod_label;
 
     NamespaceDefinitions()
         : doap_license        (lilv_new_uri(W, LILV_NS_DOAP "license"     )),
           rdf_type            (lilv_new_uri(W, LILV_NS_RDF  "type"        )),
           rdfs_comment        (lilv_new_uri(W, LILV_NS_RDFS "comment"     )),
           lv2core_microVersion(lilv_new_uri(W, LILV_NS_LV2  "microVersion")),
-          lv2core_minorVersion(lilv_new_uri(W, LILV_NS_LV2  "minorVersion")) {}
+          lv2core_minorVersion(lilv_new_uri(W, LILV_NS_LV2  "minorVersion")),
+          mod_brand           (lilv_new_uri(W, LILV_NS_MOD  "brand"       )),
+          mod_label           (lilv_new_uri(W, LILV_NS_MOD  "label"       )) {}
 
     ~NamespaceDefinitions()
     {
@@ -180,6 +184,8 @@ struct NamespaceDefinitions {
         lilv_node_free(rdfs_comment);
         lilv_node_free(lv2core_microVersion);
         lilv_node_free(lv2core_minorVersion);
+        lilv_node_free(mod_brand);
+        lilv_node_free(mod_label);
     }
 };
 
@@ -225,6 +231,8 @@ static const char* kStabilityStable = "stable";
 static const char* kStabilityTesting = "testing";
 static const char* kStabilityUnstable = "unstable";
 
+static char nc[1] = { '\0' };
+
 // refresh everything
 // plugins are not truly scanned here, only later per request
 void _refresh()
@@ -233,7 +241,6 @@ void _refresh()
 
     BUNDLES.clear();
     PLUGNFO.clear();
-    PLUGNFOk.clear();
     PLUGINS = lilv_world_get_all_plugins(W);
 
     // Make a list of all installed bundles
@@ -247,7 +254,6 @@ void _refresh()
 
         // store empty dict for later
         PLUGNFO[uri] = PluginInfo_Init;
-        PLUGNFOk.push_back(uri);
 
         LILV_FOREACH(nodes, itbnds, bundles)
         {
@@ -259,18 +265,21 @@ void _refresh()
                 continue;
 
             char* bundleparsed;
+            char* tmp;
 
-            bundleparsed = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundle), nullptr);
-            if (bundleparsed == nullptr)
+            tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundle), nullptr);
+            if (tmp == nullptr)
                   continue;
-            // FIXME - leak
-            //lilv_free(bundleparsed);
 
-            bundleparsed = dirname(bundleparsed);
+            bundleparsed = dirname(tmp);
             if (bundleparsed == nullptr)
+            {
+                  lilv_free(tmp);
                   continue;
+            }
 
             bundleparsed = realpath(bundleparsed, tmppath);
+            lilv_free(tmp);
             if (bundleparsed == nullptr)
                   continue;
 
@@ -295,11 +304,8 @@ void _refresh()
 const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefinitions& ns)
 {
     static PluginInfo info = PluginInfo_Init;
-    static char nc[1] = { '\0' };
 
-    // cleanup
-    if (info.binary != nullptr && info.binary != nc)
-        lilv_free((void*)info.binary);
+    // reset
     memset(&info, 0, sizeof(PluginInfo));
 
     LilvNode* node;
@@ -314,9 +320,17 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
     // name
-    info.name = lilv_node_as_string(lilv_plugin_get_name(p));
-    if (info.name == nullptr)
+    node = lilv_plugin_get_name(p);
+    if (node != nullptr)
+    {
+        const char* name = lilv_node_as_string(node);
+        info.name = (name != nullptr) ? strdup(name) : nc;
+        lilv_node_free(node);
+    }
+    else
+    {
         info.name = nc;
+    }
 
     // binary
     info.binary = lilv_node_as_string(lilv_plugin_get_library_uri(p));
@@ -475,7 +489,7 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             lilv_nodes_free(minorvers);
         }
 
-        char versiontmpstr[32];
+        char versiontmpstr[32+1] = { '\0' };
         snprintf(versiontmpstr, 32, "%d.%d", info.microVersion, info.minorVersion);
         info.version = strdup(versiontmpstr);
     }
@@ -523,6 +537,65 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
         info.author.email = nc;
     }
 
+    // brand
+    nodes = lilv_plugin_get_value(p, ns.mod_brand);
+    if (nodes != nullptr)
+    {
+        info.brand = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+
+        if (strlen(info.brand) > 10)
+           ((char*)info.brand)[10] = '\0';
+
+        lilv_nodes_free(nodes);
+    }
+    else if (info.author.name == nc)
+    {
+        info.brand = nc;
+    }
+    else
+    {
+        if (strlen(info.author.name) <= 10)
+        {
+            info.brand = strdup(info.author.name);
+        }
+        else
+        {
+            char brand[10+1] = { '\0' };
+            strncpy(brand, info.author.name, 10);
+            info.brand = strdup(brand);
+        }
+    }
+
+    // label
+    nodes = lilv_plugin_get_value(p, ns.mod_label);
+
+    if (nodes != nullptr)
+    {
+        info.label = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+
+        if (strlen(info.label) > 16)
+           ((char*)info.label)[16] = '\0';
+
+        lilv_nodes_free(nodes);
+    }
+    else if (info.name == nc)
+    {
+        info.label = nc;
+    }
+    else
+    {
+        if (strlen(info.name) <= 16)
+        {
+            info.label = strdup(info.name);
+        }
+        else
+        {
+            char label[16+1] = { '\0' };
+            strncpy(label, info.name, 16);
+            info.label = strdup(label);
+        }
+    }
+
     lilv_free((void*)bundle);
 
     info.valid = true;
@@ -531,6 +604,9 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
 
 // --------------------------------------------------------------------------------------------------------
 
+static const PluginInfo** _plug_ret = nullptr;
+static unsigned int _plug_lastsize = 0;
+
 void init(void)
 {
     lilv_world_free(W);
@@ -538,6 +614,53 @@ void init(void)
     lilv_world_load_all(W);
     _refresh();
 }
+
+void cleanup(void)
+{
+    if (_plug_ret != nullptr)
+    {
+        delete[] _plug_ret;
+        _plug_ret = nullptr;
+    }
+
+    _plug_lastsize = 0;
+
+    PLUGINS = nullptr;
+    BUNDLES.clear();
+
+    for (auto& map : PLUGNFO)
+    {
+        PluginInfo& info = map.second;
+
+        if (info.name != nullptr && info.name != nc)
+            lilv_free((void*)info.name);
+        if (info.binary != nullptr && info.binary != nc)
+            lilv_free((void*)info.binary);
+        if (info.license != nullptr && info.license != nc)
+            free((void*)info.license);
+        if (info.comment != nullptr && info.comment != nc)
+            free((void*)info.comment);
+        if (info.version != nullptr && info.version != nc)
+            free((void*)info.version);
+        if (info.brand != nullptr && info.brand != nc)
+            free((void*)info.brand);
+        if (info.label != nullptr && info.label != nc)
+            free((void*)info.label);
+        if (info.author.name != nullptr && info.author.name != nc)
+            free((void*)info.author.name);
+        if (info.author.homepage != nullptr && info.author.homepage != nc)
+            free((void*)info.author.homepage);
+        if (info.author.email != nullptr && info.author.email != nc)
+            free((void*)info.author.email);
+    }
+
+    PLUGNFO.clear();
+
+    lilv_world_free(W);
+    W = nullptr;
+}
+
+// --------------------------------------------------------------------------------------------------------
 
 bool add_bundle_to_lilv_world(const char* /*bundle*/)
 {
@@ -551,23 +674,27 @@ bool remove_bundle_from_lilv_world(const char* /*bundle*/)
 
 const PluginInfo* const* get_all_plugins(void)
 {
-    static const PluginInfo** ret = nullptr;
-    static unsigned int lastsize = 0;
     unsigned int newsize = lilv_plugins_size(PLUGINS);
 
-    if (lastsize < newsize)
+    if (newsize == 0 && _plug_lastsize != 0)
     {
-        if (ret != nullptr)
-            delete[] ret;
-
-        if (newsize == 0)
+        if (_plug_ret != nullptr)
         {
-            ret = nullptr;
-            return nullptr;
+            delete[] _plug_ret;
+            _plug_ret = nullptr;
         }
+        return nullptr;
+    }
 
-        ret = new const PluginInfo*[newsize+1];
-        memset(ret, 0, sizeof(void*) * (newsize+1));
+    if (newsize > _plug_lastsize)
+    {
+        _plug_lastsize = newsize;
+
+        if (_plug_ret != nullptr)
+            delete[] _plug_ret;
+
+        _plug_ret = new const PluginInfo*[newsize+1];
+        memset(_plug_ret, 0, sizeof(void*) * (newsize+1));
     }
 
     const NamespaceDefinitions ns;
@@ -588,18 +715,19 @@ const PluginInfo* const* get_all_plugins(void)
         //    continue;
 
         // check if it's already cached
-        if (std::find(PLUGNFOk.begin(), PLUGNFOk.end(), uri) != PLUGNFOk.end() && PLUGNFO[uri].valid)
+        if (PLUGNFO.count(uri) > 0 && PLUGNFO[uri].valid)
         {
-            ret[retIndex++] = &PLUGNFO[uri];
+            _plug_ret[retIndex++] = &PLUGNFO[uri];
             continue;
         }
 
         // get new info
-        PLUGNFO[uri] = _get_plugin_info2(p, ns);
-        ret[retIndex++] = &PLUGNFO[uri];
+        const PluginInfo& info = _get_plugin_info2(p, ns);
+        PLUGNFO[uri] = info;
+        _plug_ret[retIndex++] = &info;
     }
 
-    return ret;
+    return _plug_ret;
 }
 
 const PluginInfo* get_plugin_info(const char* uri_)
@@ -607,7 +735,7 @@ const PluginInfo* get_plugin_info(const char* uri_)
     std::string uri = uri_;
 
     // check if it exists
-    if (std::find(PLUGNFOk.begin(), PLUGNFOk.end(), uri) == PLUGNFOk.end())
+    if (PLUGNFO.count(uri) == 0)
         return nullptr;
 
     // check if it's already cached

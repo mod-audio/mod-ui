@@ -19,3 +19,12 @@ utils_jack.cpp.o: utils_jack.cpp utils.h
 
 utils_lilv.cpp.o: utils_lilv.cpp utils.h
 	$(CXX) $< $(CXXFLAGS) $(shell pkg-config --cflags lilv-0) -c -o $@
+
+test.cpp.o: test.cpp utils.h
+	$(CXX) $< $(CXXFLAGS) -c -o $@
+
+test: utils_jack.cpp.o utils_lilv.cpp.o test.cpp.o
+	$(CXX) $^ $(LDFLAGS) $(shell pkg-config --libs jack lilv-0) -o $@
+
+test-run: test
+	valgrind --leak-check=full ./test
