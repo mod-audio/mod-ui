@@ -31,6 +31,7 @@ typedef struct {
 } PluginAuthor;
 
 typedef struct {
+    bool valid;
     int index;
     const char* name;
     const char* symbol;
@@ -66,11 +67,13 @@ typedef struct {
 } PluginPortUnits;
 
 typedef struct {
+    bool valid;
     float value;
     const char* label;
 } PluginPortScalePoint;
 
 typedef struct {
+    bool valid;
     const char* name;
     const char* symbol;
     PluginPortRanges ranges;
@@ -83,8 +86,8 @@ typedef struct {
 } PluginPort;
 
 typedef struct {
-    const PluginPort* input;
-    const PluginPort* output;
+    PluginPort* input;
+    PluginPort* output;
 } PluginPortsI;
 
 typedef struct {
@@ -95,6 +98,7 @@ typedef struct {
 } PluginPorts;
 
 typedef struct {
+    bool valid;
     const char* uri;
     const char* label;
 } PluginPreset;

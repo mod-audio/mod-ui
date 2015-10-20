@@ -53,9 +53,24 @@ def numPtrToList(numPtr):
     return numList
 
 # ------------------------------------------------------------------------------------------------------------
-# Convert a ctypes POINTER(Structure) into a python dictionary list
 
 def structPtrToList(structPtr):
+    if not structPtr:
+        return []
+
+    i      = 0
+    ret    = []
+    struct = structPtr[0]
+
+    while struct.valid:
+        ret.append(structToDict(struct))
+
+        i     += 1
+        struct = structPtr[i]
+
+    return ret
+
+def structPtrPtrToList(structPtr):
     if not structPtr:
         return []
 
@@ -74,16 +89,17 @@ def structPtrToList(structPtr):
 # ------------------------------------------------------------------------------------------------------------
 # Convert a ctypes value into a python one
 
-c_int_types     = (c_int, c_int8, c_int16, c_int32, c_int64, c_uint, c_uint8, c_uint16, c_uint32, c_uint64, c_long, c_longlong)
-c_float_types   = (c_float, c_double, c_longdouble)
-c_intp_types    = tuple(POINTER(i) for i in c_int_types)
-c_floatp_types  = tuple(POINTER(i) for i in c_float_types)
-c_struct_types  = () # redefined below
-c_structp_types = () # redefined below
+c_int_types      = (c_int, c_int8, c_int16, c_int32, c_int64, c_uint, c_uint8, c_uint16, c_uint32, c_uint64, c_long, c_longlong)
+c_float_types    = (c_float, c_double, c_longdouble)
+c_intp_types     = tuple(POINTER(i) for i in c_int_types)
+c_floatp_types   = tuple(POINTER(i) for i in c_float_types)
+c_struct_types   = () # redefined below
+c_structp_types  = () # redefined below
+c_structpp_types = () # redefined below
 
 def toPythonType(value, attr):
-    if value is None:
-        return ""
+    #if value is None:
+        #return ""
     if isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, bytes):
@@ -96,6 +112,8 @@ def toPythonType(value, attr):
         return structToDict(value)
     if isinstance(value, c_structp_types):
         return structPtrToList(value)
+    if isinstance(value, c_structpp_types):
+        return structPtrPtrToList(value)
     print("..............", attr, ".....................", value, ":", type(value))
     return value
 
@@ -118,6 +136,7 @@ class PluginAuthor(Structure):
 
 class PluginGUIPort(Structure):
     _fields_ = [
+        ("valid", c_bool),
         ("index", c_int),
         ("name", c_char_p),
         ("symbol", c_char_p),
@@ -157,12 +176,14 @@ class PluginPortUnits(Structure):
 
 class PluginPortScalePoint(Structure):
     _fields_ = [
+        ("valid", c_bool),
         ("value", c_float),
         ("label", c_char_p),
     ]
 
 class PluginPort(Structure):
     _fields_ = [
+        ("valid", c_bool),
         ("name", c_char_p),
         ("symbol", c_char_p),
         ("ranges", PluginPortRanges),
@@ -190,6 +211,7 @@ class PluginPorts(Structure):
 
 class PluginPreset(Structure):
     _fields_ = [
+        ("valid", c_bool),
         ("uri", c_char_p),
         ("label", c_char_p),
     ]
@@ -231,9 +253,10 @@ c_struct_types = (PluginAuthor,
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
                    POINTER(PluginPort),
-                   POINTER(PluginPreset),
-                   POINTER(PluginInfo),
-                   POINTER(PedalboardInfo))
+                   POINTER(PluginPreset))
+
+c_structpp_types = (POINTER(POINTER(PluginInfo)),
+                    POINTER(POINTER(PedalboardInfo)))
 
 utils.init.argtypes = None
 utils.init.restype  = None
@@ -288,7 +311,7 @@ def remove_bundle_from_lilv_world(bundlepath, returnPlugins = False):
 # this triggers scanning of all plugins
 # returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
-    return structPtrToList(utils.get_all_plugins())
+    return structPtrPtrToList(utils.get_all_plugins())
 
 # get a specific plugin
 # NOTE: may throw
@@ -302,7 +325,7 @@ def get_plugin_info(uri):
 
 # get all available pedalboards (ie, plugins with pedalboard type)
 def get_all_pedalboards(asDictionary):
-    pbs = structPtrToList(utils.get_all_pedalboards())
+    pbs = structPtrPtrToList(utils.get_all_pedalboards())
     if not asDictionary:
         return pbs
     return dict((pb["uri"], pb) for pb in pbs)

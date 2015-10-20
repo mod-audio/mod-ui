@@ -22,7 +22,11 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <lilv/lilv.h>
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
 #include <algorithm>
 #include <list>
@@ -168,6 +172,7 @@ struct NamespaceDefinitions {
     LilvNode* rdfs_comment;
     LilvNode* lv2core_microVersion;
     LilvNode* lv2core_minorVersion;
+    LilvNode* lv2core_shortname;
     LilvNode* mod_brand;
     LilvNode* mod_label;
     LilvNode* modgui_gui;
@@ -184,6 +189,9 @@ struct NamespaceDefinitions {
     LilvNode* modgui_panel;
     LilvNode* modgui_color;
     LilvNode* modgui_knob;
+    LilvNode* atom_bufferType;
+    LilvNode* atom_Sequence;
+    LilvNode* midi_MidiEvent;
 
     NamespaceDefinitions()
         : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
@@ -191,6 +199,7 @@ struct NamespaceDefinitions {
           rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
           lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
+          lv2core_shortname        (lilv_new_uri(W, LILV_NS_LV2    "shortname"         )),
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
@@ -206,7 +215,10 @@ struct NamespaceDefinitions {
           modgui_model             (lilv_new_uri(W, LILV_NS_MODGUI "model"             )),
           modgui_panel             (lilv_new_uri(W, LILV_NS_MODGUI "panel"             )),
           modgui_color             (lilv_new_uri(W, LILV_NS_MODGUI "color"             )),
-          modgui_knob              (lilv_new_uri(W, LILV_NS_MODGUI "knob"              )) {}
+          modgui_knob              (lilv_new_uri(W, LILV_NS_MODGUI "knob"              )),
+          atom_bufferType          (lilv_new_uri(W, LV2_ATOM__bufferType               )),
+          atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
+          midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )) {}
 
     ~NamespaceDefinitions()
     {
@@ -215,6 +227,7 @@ struct NamespaceDefinitions {
         lilv_node_free(rdfs_comment);
         lilv_node_free(lv2core_microVersion);
         lilv_node_free(lv2core_minorVersion);
+        lilv_node_free(lv2core_shortname);
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
         lilv_node_free(modgui_gui);
@@ -231,6 +244,9 @@ struct NamespaceDefinitions {
         lilv_node_free(modgui_panel);
         lilv_node_free(modgui_color);
         lilv_node_free(modgui_knob);
+        lilv_node_free(atom_bufferType);
+        lilv_node_free(atom_Sequence);
+        lilv_node_free(midi_MidiEvent);
     }
 };
 
@@ -709,12 +725,16 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             info.gui.iconTemplate = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_icon)), nullptr);
             lilv_nodes_free(modgui_icon);
         }
+        else
+            info.gui.iconTemplate = nc;
 
         if (LilvNodes* modgui_setts = lilv_world_find_nodes(W, modguigui, ns.modgui_settingsTemplate, nullptr))
         {
             info.gui.settingsTemplate = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_setts)), nullptr);
             lilv_nodes_free(modgui_setts);
         }
+        else
+            info.gui.settingsTemplate = nc;
 
         // javascript and stylesheet files
         if (LilvNodes* modgui_script = lilv_world_find_nodes(W, modguigui, ns.modgui_javascript, nullptr))
@@ -722,12 +742,16 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             info.gui.javascript = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_script)), nullptr);
             lilv_nodes_free(modgui_script);
         }
+        else
+            info.gui.javascript = nc;
 
         if (LilvNodes* modgui_style = lilv_world_find_nodes(W, modguigui, ns.modgui_stylesheet, nullptr))
         {
             info.gui.stylesheet = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_style)), nullptr);
             lilv_nodes_free(modgui_style);
         }
+        else
+            info.gui.stylesheet = nc;
 
         // screenshot and thumbnail
         if (LilvNodes* modgui_scrn = lilv_world_find_nodes(W, modguigui, ns.modgui_screenshot, nullptr))
@@ -735,12 +759,16 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             info.gui.screenshot = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_scrn)), nullptr);
             lilv_nodes_free(modgui_scrn);
         }
+        else
+            info.gui.screenshot = nc;
 
         if (LilvNodes* modgui_thumb = lilv_world_find_nodes(W, modguigui, ns.modgui_thumbnail, nullptr))
         {
             info.gui.thumbnail = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_thumb)), nullptr);
             lilv_nodes_free(modgui_thumb);
         }
+        else
+            info.gui.thumbnail = nc;
 
         // extra stuff, all optional
         if (LilvNodes* modgui_brand = lilv_world_find_nodes(W, modguigui, ns.modgui_brand, nullptr))
@@ -748,40 +776,326 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             info.gui.brand = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_brand)));
             lilv_nodes_free(modgui_brand);
         }
+        else
+            info.gui.brand = nc;
 
         if (LilvNodes* modgui_label = lilv_world_find_nodes(W, modguigui, ns.modgui_label, nullptr))
         {
             info.gui.label = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_label)));
             lilv_nodes_free(modgui_label);
         }
+        else
+            info.gui.label = nc;
 
         if (LilvNodes* modgui_model = lilv_world_find_nodes(W, modguigui, ns.modgui_model, nullptr))
         {
             info.gui.model = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_model)));
             lilv_nodes_free(modgui_model);
         }
+        else
+            info.gui.model = nc;
 
         if (LilvNodes* modgui_panel = lilv_world_find_nodes(W, modguigui, ns.modgui_panel, nullptr))
         {
             info.gui.panel = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_panel)));
             lilv_nodes_free(modgui_panel);
         }
+        else
+            info.gui.panel = nc;
 
         if (LilvNodes* modgui_color = lilv_world_find_nodes(W, modguigui, ns.modgui_color, nullptr))
         {
             info.gui.color = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_color)));
             lilv_nodes_free(modgui_color);
         }
+        else
+            info.gui.color = nc;
 
         if (LilvNodes* modgui_knob = lilv_world_find_nodes(W, modguigui, ns.modgui_knob, nullptr))
         {
             info.gui.knob = strdup(lilv_node_as_string(lilv_nodes_get_first(modgui_knob)));
             lilv_nodes_free(modgui_knob);
         }
+        else
+            info.gui.knob = nc;
 
         // TODO - ports
 
         lilv_node_free(modguigui);
+    }
+    else
+    {
+        info.gui.resourcesDirectory = nc;
+        info.gui.iconTemplate = nc;
+        info.gui.settingsTemplate = nc;
+        info.gui.javascript = nc;
+        info.gui.stylesheet = nc;
+        info.gui.screenshot = nc;
+        info.gui.thumbnail = nc;
+        info.gui.brand = nc;
+        info.gui.label = nc;
+        info.gui.model = nc;
+        info.gui.panel = nc;
+        info.gui.color = nc;
+        info.gui.knob = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // ports
+
+    if (const uint32_t count = lilv_plugin_get_num_ports(p))
+    {
+        uint32_t countAudioInput=0,   countAudioOutput=0;
+        uint32_t countControlInput=0, countControlOutput=0;
+        uint32_t countCvInput=0,      countCvOutput=0;
+        uint32_t countMidiInput=0,    countMidiOutput=0;
+
+        // precalculate port counts first
+        for (uint32_t i=0; i<count; ++i)
+        {
+            const LilvPort* port = lilv_plugin_get_port_by_index(p, i);
+
+            int direction = 0; // using -1 = input, +1 = output
+            int type      = 0; // using by order1-4: audio, control, cv, midi
+
+            nodes = lilv_port_get_value(p, port, ns.rdf_type);
+            LILV_FOREACH(nodes, it, nodes)
+            {
+                const LilvNode* node2 = lilv_nodes_get(nodes, it);
+                const char* nodestr = lilv_node_as_string(node2);
+
+                if (nodestr == nullptr)
+                    continue;
+
+                else if (strcmp(nodestr, LV2_CORE__InputPort) == 0)
+                    direction = -1;
+                else if (strcmp(nodestr, LV2_CORE__OutputPort) == 0)
+                    direction = +1;
+                else if (strcmp(nodestr, LV2_CORE__AudioPort) == 0)
+                    type = 1;
+                else if (strcmp(nodestr, LV2_CORE__ControlPort) == 0)
+                    type = 2;
+                else if (strcmp(nodestr, LV2_CORE__CVPort) == 0)
+                    type = 3;
+                else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
+                {
+                    if (LilvNodes* nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
+                    {
+                        if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
+                            type = 4;
+                        lilv_nodes_free(nodes2);
+                    }
+                }
+            }
+            lilv_nodes_free(nodes);
+
+            if (direction == 0 || type == 0)
+                continue;
+
+            switch (type)
+            {
+            case 1: // audio
+                if (direction == 1)
+                    ++countAudioOutput;
+                else
+                    ++countAudioInput;
+                break;
+            case 2: // control
+                if (direction == 1)
+                    ++countControlOutput;
+                else
+                    ++countControlInput;
+                break;
+            case 3: // cv
+                if (direction == 1)
+                    ++countCvOutput;
+                else
+                    ++countCvInput;
+                break;
+            case 4: // midi
+                if (direction == 1)
+                    ++countMidiOutput;
+                else
+                    ++countMidiInput;
+                break;
+            }
+        }
+
+        // allocate stuff
+        if (countAudioInput > 0)
+        {
+            info.ports.audio.input = new PluginPort[countAudioInput+1];
+            memset(info.ports.audio.input, 0, sizeof(PluginPort) * (countAudioInput+1));
+        }
+        if (countAudioOutput > 0)
+        {
+            info.ports.audio.output = new PluginPort[countAudioOutput+1];
+            memset(info.ports.audio.output, 0, sizeof(PluginPort) * (countAudioOutput+1));
+        }
+        if (countControlInput > 0)
+        {
+            info.ports.control.input = new PluginPort[countControlInput+1];
+            memset(info.ports.control.input, 0, sizeof(PluginPort) * (countControlInput+1));
+        }
+        if (countControlOutput > 0)
+        {
+            info.ports.control.output = new PluginPort[countControlOutput+1];
+            memset(info.ports.control.output, 0, sizeof(PluginPort) * (countControlOutput+1));
+        }
+        if (countCvInput > 0)
+        {
+            info.ports.cv.input = new PluginPort[countCvInput+1];
+            memset(info.ports.cv.input, 0, sizeof(PluginPort) * (countCvInput+1));
+        }
+        if (countCvOutput > 0)
+        {
+            info.ports.cv.output = new PluginPort[countCvOutput+1];
+            memset(info.ports.cv.output, 0, sizeof(PluginPort) * (countCvOutput+1));
+        }
+        if (countMidiInput > 0)
+        {
+            info.ports.midi.input = new PluginPort[countMidiInput+1];
+            memset(info.ports.midi.input, 0, sizeof(PluginPort) * (countMidiInput+1));
+        }
+        if (countMidiOutput > 0)
+        {
+            info.ports.midi.output = new PluginPort[countMidiOutput+1];
+            memset(info.ports.midi.output, 0, sizeof(PluginPort) * (countMidiOutput+1));
+        }
+
+        // use counters as indexes now
+        countAudioInput=countAudioOutput=countControlInput=countControlOutput=0;
+        countCvInput=countCvOutput=countMidiInput=countMidiOutput=0;
+
+        // now fill info
+        for (uint32_t i=0; i<count; ++i)
+        {
+            const LilvPort* port = lilv_plugin_get_port_by_index(p, i);
+
+            // ----------------------------------------------------------------------------------------------------
+
+            int direction = 0; // using -1 = input, +1 = output
+            int type      = 0; // using by order1-4: audio, control, cv, midi
+
+            nodes = lilv_port_get_value(p, port, ns.rdf_type);
+            LILV_FOREACH(nodes, it, nodes)
+            {
+                const LilvNode* node2 = lilv_nodes_get(nodes, it);
+                const char* nodestr = lilv_node_as_string(node2);
+
+                if (nodestr == nullptr)
+                    continue;
+
+                else if (strcmp(nodestr, LV2_CORE__InputPort) == 0)
+                    direction = -1;
+                else if (strcmp(nodestr, LV2_CORE__OutputPort) == 0)
+                    direction = +1;
+                else if (strcmp(nodestr, LV2_CORE__AudioPort) == 0)
+                    type = 1;
+                else if (strcmp(nodestr, LV2_CORE__ControlPort) == 0)
+                    type = 2;
+                else if (strcmp(nodestr, LV2_CORE__CVPort) == 0)
+                    type = 3;
+                else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
+                {
+                    if (LilvNodes* nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
+                    {
+                        if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
+                            type = 4;
+                        lilv_nodes_free(nodes2);
+                    }
+                }
+            }
+            lilv_nodes_free(nodes);
+
+            if (direction == 0 || type == 0)
+                continue;
+
+            // ----------------------------------------------------------------------------------------------------
+
+            PluginPort portinfo;
+            memset(&portinfo, 0, sizeof(PluginPort));
+
+            // ----------------------------------------------------------------------------------------------------
+            // name
+
+            node = lilv_port_get_name(p, port);
+            if (node != nullptr)
+            {
+                portinfo.name = strdup(lilv_node_as_string(node));
+                lilv_node_free(node);
+            }
+            else
+            {
+                portinfo.name = nc;
+            }
+
+            // ----------------------------------------------------------------------------------------------------
+            // symbol
+
+            if (const LilvNode* symbolnode = lilv_port_get_symbol(p, port))
+                portinfo.symbol = strdup(lilv_node_as_string(symbolnode));
+            else
+                portinfo.symbol = nc;
+
+            // ----------------------------------------------------------------------------------------------------
+            // short name
+
+            nodes = lilv_port_get_value(p, port, ns.lv2core_shortname);
+            if (nodes != nullptr)
+            {
+                portinfo.shortname = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                lilv_nodes_free(nodes);
+            }
+            else
+            {
+                portinfo.shortname = strdup(portinfo.name);
+            }
+
+            if (strlen(portinfo.shortname) > 16)
+                ((char*)portinfo.shortname)[16] = '\0';
+
+            // ----------------------------------------------------------------------------------------------------
+
+            // TODO
+            portinfo.designation = nc;
+            portinfo.units.label = nc;
+            portinfo.units.render = nc;
+            portinfo.units.symbol = nc;
+            portinfo.ranges.max = 1.0f;
+
+            portinfo.valid = true;
+
+            // ----------------------------------------------------------------------------------------------------
+
+            switch (type)
+            {
+            case 1: // audio
+                if (direction == 1)
+                    info.ports.audio.output[countAudioOutput++] = portinfo;
+                else
+                    info.ports.audio.input[countAudioInput++] = portinfo;
+                break;
+            case 2: // control
+                if (direction == 1)
+                    info.ports.control.output[countControlOutput++] = portinfo;
+                else
+                    info.ports.control.input[countControlInput++] = portinfo;
+                break;
+            case 3: // cv
+                if (direction == 1)
+                    info.ports.cv.output[countCvOutput++] = portinfo;
+                else
+                    info.ports.cv.input[countCvInput++] = portinfo;
+                break;
+            case 4: // midi
+                if (direction == 1)
+                    info.ports.midi.output[countMidiOutput++] = portinfo;
+                else
+                    info.ports.midi.input[countMidiInput++] = portinfo;
+                break;
+            }
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -803,6 +1117,16 @@ void init(void)
     W = lilv_world_new();
     lilv_world_load_all(W);
     _refresh();
+}
+
+void _clear_port_info(PluginPort& portinfo)
+{
+    if (portinfo.name != nullptr && portinfo.name != nc)
+        free((void*)portinfo.name);
+    if (portinfo.symbol != nullptr && portinfo.symbol != nc)
+        free((void*)portinfo.symbol);
+    if (portinfo.shortname != nullptr && portinfo.shortname != nc)
+        free((void*)portinfo.shortname);
 }
 
 void cleanup(void)
@@ -868,6 +1192,55 @@ void cleanup(void)
             free((void*)info.gui.color);
         if (info.gui.knob != nullptr && info.gui.knob != nc)
             free((void*)info.gui.knob);
+
+        if (info.ports.audio.input != nullptr)
+        {
+            for (int i=0; info.ports.audio.input[i].valid; ++i)
+                _clear_port_info(info.ports.audio.input[i]);
+            delete[] info.ports.audio.input;
+        }
+        if (info.ports.audio.output != nullptr)
+        {
+            for (int i=0; info.ports.audio.output[i].valid; ++i)
+                _clear_port_info(info.ports.audio.output[i]);
+            delete[] info.ports.audio.output;
+        }
+        if (info.ports.control.input != nullptr)
+        {
+            for (int i=0; info.ports.control.input[i].valid; ++i)
+                _clear_port_info(info.ports.control.input[i]);
+            delete[] info.ports.control.input;
+        }
+        if (info.ports.control.output != nullptr)
+        {
+            for (int i=0; info.ports.control.output[i].valid; ++i)
+                _clear_port_info(info.ports.control.output[i]);
+            delete[] info.ports.control.output;
+        }
+        if (info.ports.cv.input != nullptr)
+        {
+            for (int i=0; info.ports.cv.input[i].valid; ++i)
+                _clear_port_info(info.ports.cv.input[i]);
+            delete[] info.ports.cv.input;
+        }
+        if (info.ports.cv.output != nullptr)
+        {
+            for (int i=0; info.ports.cv.output[i].valid; ++i)
+                _clear_port_info(info.ports.cv.output[i]);
+            delete[] info.ports.cv.output;
+        }
+        if (info.ports.midi.input != nullptr)
+        {
+            for (int i=0; info.ports.midi.input[i].valid; ++i)
+                _clear_port_info(info.ports.midi.input[i]);
+            delete[] info.ports.midi.input;
+        }
+        if (info.ports.midi.output != nullptr)
+        {
+            for (int i=0; info.ports.midi.output[i].valid; ++i)
+                _clear_port_info(info.ports.midi.output[i]);
+            delete[] info.ports.midi.output;
+        }
     }
 
     PLUGNFO.clear();

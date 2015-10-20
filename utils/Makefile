@@ -1,7 +1,7 @@
 
 CXX ?= g++
 
-CXXFLAGS += -Wall -Wextra -std=gnu++0x -fPIC -O0 -g -DDEBUG
+CXXFLAGS += -Wall -Wextra -Wshadow -std=gnu++0x -fPIC -O0 -g -DDEBUG
 LDFLAGS += -Wl,--no-undefined
 
 all: build
