@@ -65,11 +65,13 @@ try:
                            get_all_pedalboards,
                            get_pedalboard_info,
                            get_pedalboard_name)
+    usingFastLilv = True
 except:
     print("Failed to import new quick lilv parsing module, doing it the old slower way...")
     from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
     from mod.lv2 import add_bundle_to_lilv_world, remove_bundle_from_lilv_world
     from mod.lv2 import get_all_pedalboards, get_plugin_info, get_all_plugins, init as lv2_init
+    usingFastLilv = False
 
 # Global fake timestamp used for pedalboard thumbnails
 # FIXME - use real timestamp
@@ -1374,7 +1376,7 @@ def prepare():
 
     lv2_init()
 
-    if not APP:
+    if not (APP or usingFastLilv):
         print("Scanning plugins, this may take a little...")
         get_all_plugins()
         print("Done!")
