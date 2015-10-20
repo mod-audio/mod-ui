@@ -52,145 +52,146 @@
     right: 0;
     width: 240px;
     overflow: auto;
-    	h1 {
-    		font-weight: 2em;
-    		text-transform: uppercase;
-    		font-weight: bold;
-    		margin: 0
-    	}
-    	h2 {
-    		color: white;
-    		font-size: 15px;
-    		text-transform: uppercase;
-    		font-weight: bold;
-    		margin-top: 1em;
-    	}
-	    .control-group {
-	      float: left;
-	      margin-right: 9px;
-	    }
-	    .control-group label {
-	      color: #fff;
-	      display: inline-block;
-	      font-size: 12px;
-	      font-weight: bold;
-	    }
-	    .control-group select {
-	      width: 50px;
-	    }
-		  .categories {
-		    width: 100%;
-		    margin-left: 0px;
-		    margin-right: 0px;
-		    li {
-		      display: block;
-		      background: #222;
-		      color: #888;
-		      cursor: pointer;
-		      font-size: 12px;
-		      font-weight: bold;
-		      margin: 0 0 1px 0;
-		      padding: 5px 5px;
-		      position: relative;
-		      span {
-		      	float: right
-		      }
-		    }
-		    li.selected {
-		      background: transparent;
-		    }
-		    li:hover {
-		      background: #333;
-		    }
-		  }
-	  }
-	}
-	  .cloud-plugins {
-	    left: 252px;
-	    position: absolute;
-	    right: 10px;
-	     .cloud-plugin {
-	      color: #fff;
-	      background-color: #111;
-	      .make-xs-column(12);
-	      .make-sm-column(6);
-	      .make-md-column(6);
-	      .make-lg-column(4);
+      h1 {
+        font-weight: 2em;
+        text-transform: uppercase;
+        font-weight: bold;
+        margin: 0
+      }
+      h2 {
+        color: white;
+        font-size: 15px;
+        text-transform: uppercase;
+        font-weight: bold;
+        margin-top: 1em;
+      }
+      .control-group {
+        float: left;
+        margin-right: 9px;
+      }
+      .control-group label {
+        color: #fff;
+        display: inline-block;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .control-group select {
+        width: 50px;
+      }
+      .categories {
+        width: 100%;
+        margin-left: 0px;
+        margin-right: 0px;
+        li {
+          display: block;
+          background: #222;
+          color: #888;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: bold;
+          margin: 0 0 1px 0;
+          padding: 5px 5px;
+          position: relative;
+          span {
+            float: right
+          }
+        }
+        li.selected {
+          background: transparent;
+        }
+        li:hover {
+          background: #333;
+        }
+      }
+    }
+  }
+  .cloud-plugins {
+    left: 252px;
+    position: absolute;
+    right: 10px;
+    .cloud-plugin {
+      color: #fff;
+      background-color: #111;
+      .make-xs-column(12);
+      .make-sm-column(6);
+      .make-md-column(6);
+      .make-lg-column(4);
 
-	      padding: 15px;
-			     &:hover {
-			      background-color: #212121;
-			      cursor: pointer;
-			    }
-		     	figure {
-		     		.make-sm-column(4);
-			      img {
-			      	max-height: 366px;
-			      	width: 100%;
-			      	background-size: contain !important;
-			      	margin-bottom: 10px;
-			      }
-			      figcaption {
-			      	 .title {
-			      	  display: block;
-			      	  height: 18px;
-			      	  text-transform: uppercase;
-			      	  font-weight: bold;
-			      	  overflow: hidden;
-			      	  position: relative;
-			      		}
-			      	 .status {
-			      	  display: block;
-			      	  width: 50%;
-			      	  text-align: center;
-			      	  border-radius: 2px;
-			      	  text-transform: uppercase;
-			      	  font-weight: bold;
-			      	  font-size: 9px;
-			      	}
-			      	 .status.installed {
-			      	  background-color: @brand-success;
-			      	  &:after {
-			      	  	content: "installed";
-			      	  }
-			      	}
-			      	 .status.outdated {
-			      	  background-color: @brand-warning;
-			      	  &:after {
-			      	  	content: "update";
-			      	  }
-			      	}
-			      	 .status.blocked {
-			      	  background-color: @brand-danger;
-			      	  &:after {
-			      	  	content: "install";
-			      	  }
-			      	}
-			      }
-			    }
-			    .description {
-			    	.make-sm-column(8);
-			     .description {
-			      display: block;
-			      font-size: 12px;
-			      height: 52px;
-			      line-height: 1.5;
-			      overflow: hidden;
-			    }
-			     .actions {
-			      font-size: 11px;
-			      font-weight: bold;
-			      text-transform: uppercase;
-			    }
-			     .actions > span {
-			      cursor: pointer;
-			    }
-			     .actions > span:hover {
-			      text-decoration: underline;
-			    }
-			     .actions span.duplicate {
-			      margin: 0 6px;
-			    }
-			  }
-		}
+      padding: 15px;
+      &:hover {
+        background-color: #212121;
+        cursor: pointer;
+      }
+      figure {
+        .make-sm-column(4);
+        img {
+          max-height: 366px;
+          width: 100%;
+          background-size: contain !important;
+          margin-bottom: 10px;
+        }
+        figcaption {
+          .title {
+            display: block;
+            height: 18px;
+            text-transform: uppercase;
+            font-weight: bold;
+            overflow: hidden;
+            position: relative;
+          }
+         .status {
+            display: block;
+            width: 50%;
+            text-align: center;
+            border-radius: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+            font-size: 9px;
+          }
+          .status.installed {
+            background-color: @brand-success;
+            &:after {
+              content: "installed";
+            }
+          }
+          .status.outdated {
+            background-color: @brand-warning;
+            &:after {
+              content: "update";
+            }
+          }
+          .status.blocked {
+            background-color: @brand-danger;
+            &:after {
+              content: "install";
+            }
+          }
+        }
+      }
+      .description {
+        .make-sm-column(8);
+        .no_description {
+          color: #444;
+        }        
+        display: block;
+        line-height: 1.5;
+        overflow: hidden;
+        max-height: 99px;
+        overflow: hidden;
+      }
+      .actions {
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+       .actions > span {
+        cursor: pointer;
+      }
+       .actions > span:hover {
+        text-decoration: underline;
+      }
+       .actions span.duplicate {
+        margin: 0 6px;
+      }
+  }
 }

@@ -368,11 +368,16 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
+        if(!plugin.comment) {
+            plugin.comment = 'No description available';
+            plugin.has_description = 'no_description';
+        }
         var plugin_data = {
             id: plugin.id || plugin._id,
             thumbnail_href: plugin.thumbnail_href,
             screenshot_href: plugin.screenshot_href,
-            description: plugin.description,
+            has_description: plugin.has_description,
+            description: plugin.comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
@@ -488,13 +493,13 @@ JqueryClass('cloudPluginBox', {
             })
         }
 
-        info.window({
+        /*info.window({
             windowManager: self.data('windowManager'),
             close: function () {
                 info.remove()
                 self.data('info', null)
             }
-        })
+        }) keep plugin info open in plugin store*/
         info.appendTo($('body'))
         info.window('open')
         self.data('info', info)
