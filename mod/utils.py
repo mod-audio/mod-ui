@@ -288,11 +288,7 @@ def remove_bundle_from_lilv_world(bundlepath, returnPlugins = False):
 # this triggers scanning of all plugins
 # returned value depends on MODGUI_SHOW_MODE
 def get_all_plugins():
-    ret = structPtrToList(utils.get_all_plugins())
-    print("-------------------------------------------------", len(ret))
-    for p in ret:
-        print(p["gui"])
-    return ret
+    return structPtrToList(utils.get_all_plugins())
 
 # get a specific plugin
 # NOTE: may throw
@@ -300,7 +296,7 @@ def get_plugin_info(uri):
     info = utils.get_plugin_info(uri.encode("utf-8"))
     if not info:
         raise Exception
-    return structToDict(info)
+    return structToDict(info.contents)
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -318,7 +314,7 @@ def get_pedalboard_info(bundle):
     info = utils.get_pedalboard_info(bundle.encode("utf-8"))
     if not info:
         raise Exception
-    return structToDict(info)
+    return structToDict(info.contents)
 
 # Faster version of get_pedalboard_info when we just need to know the pedalboard name
 # @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).

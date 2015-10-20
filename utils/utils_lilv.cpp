@@ -700,8 +700,7 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
 
     if (modguigui != nullptr)
     {
-        info.gui.resourcesDirectory = strdup(resdir);
-        lilv_free((void*)resdir);
+        info.gui.resourcesDirectory = resdir;
         resdir = nullptr;
 
         // icon and settings templates
@@ -844,19 +843,19 @@ void cleanup(void)
         if (info.author.email != nullptr && info.author.email != nc)
             free((void*)info.author.email);
         if (info.gui.resourcesDirectory != nullptr && info.gui.resourcesDirectory != nc)
-            free((void*)info.gui.resourcesDirectory);
+            lilv_free((void*)info.gui.resourcesDirectory);
         if (info.gui.iconTemplate != nullptr && info.gui.iconTemplate != nc)
-            free((void*)info.gui.iconTemplate);
+            lilv_free((void*)info.gui.iconTemplate);
         if (info.gui.settingsTemplate != nullptr && info.gui.settingsTemplate != nc)
-            free((void*)info.gui.settingsTemplate);
+            lilv_free((void*)info.gui.settingsTemplate);
         if (info.gui.javascript != nullptr && info.gui.javascript != nc)
-            free((void*)info.gui.javascript);
+            lilv_free((void*)info.gui.javascript);
         if (info.gui.stylesheet != nullptr && info.gui.stylesheet != nc)
-            free((void*)info.gui.stylesheet);
+            lilv_free((void*)info.gui.stylesheet);
         if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
-            free((void*)info.gui.screenshot);
+            lilv_free((void*)info.gui.screenshot);
         if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
-            free((void*)info.gui.thumbnail);
+            lilv_free((void*)info.gui.thumbnail);
         if (info.gui.brand != nullptr && info.gui.brand != nc)
             free((void*)info.gui.brand);
         if (info.gui.label != nullptr && info.gui.label != nc)
@@ -941,7 +940,7 @@ const PluginInfo* const* get_all_plugins(void)
         // get new info
         const PluginInfo& info = _get_plugin_info2(p, ns);
         PLUGNFO[uri] = info;
-        _plug_ret[retIndex++] = &info;
+        _plug_ret[retIndex++] = &PLUGNFO[uri];
     }
 
     return _plug_ret;
