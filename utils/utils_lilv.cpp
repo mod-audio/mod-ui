@@ -364,9 +364,7 @@ void _refresh()
 
 const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefinitions& ns)
 {
-    static PluginInfo info = PluginInfo_Init;
-
-    // reset
+    static PluginInfo info;
     memset(&info, 0, sizeof(PluginInfo));
 
     LilvNode* node;
