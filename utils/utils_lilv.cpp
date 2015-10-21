@@ -181,8 +181,14 @@ struct NamespaceDefinitions {
     LilvNode* lv2core_portProperty;
     LilvNode* lv2core_shortname;
     LilvNode* lv2core_symbol;
+    LilvNode* lv2core_default;
+    LilvNode* lv2core_minimum;
+    LilvNode* lv2core_maximum;
     LilvNode* mod_brand;
     LilvNode* mod_label;
+    LilvNode* mod_default;
+    LilvNode* mod_minimum;
+    LilvNode* mod_maximum;
     LilvNode* mod_rangeSteps;
     LilvNode* modgui_gui;
     LilvNode* modgui_resourcesDirectory;
@@ -220,8 +226,14 @@ struct NamespaceDefinitions {
           lv2core_portProperty     (lilv_new_uri(W, LILV_NS_LV2    "portProperty"      )),
           lv2core_shortname        (lilv_new_uri(W, LILV_NS_LV2    "shortname"         )),
           lv2core_symbol           (lilv_new_uri(W, LILV_NS_LV2    "symbol"            )),
+          lv2core_default          (lilv_new_uri(W, LILV_NS_LV2    "default"           )),
+          lv2core_minimum          (lilv_new_uri(W, LILV_NS_LV2    "minimum"           )),
+          lv2core_maximum          (lilv_new_uri(W, LILV_NS_LV2    "maximum"           )),
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
+          mod_default              (lilv_new_uri(W, LILV_NS_MOD    "default"           )),
+          mod_minimum              (lilv_new_uri(W, LILV_NS_MOD    "minimum"           )),
+          mod_maximum              (lilv_new_uri(W, LILV_NS_MOD    "maximum"           )),
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -260,8 +272,14 @@ struct NamespaceDefinitions {
         lilv_node_free(lv2core_portProperty);
         lilv_node_free(lv2core_shortname);
         lilv_node_free(lv2core_symbol);
+        lilv_node_free(lv2core_default);
+        lilv_node_free(lv2core_minimum);
+        lilv_node_free(lv2core_maximum);
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
+        lilv_node_free(mod_default);
+        lilv_node_free(mod_minimum);
+        lilv_node_free(mod_maximum);
         lilv_node_free(mod_rangeSteps);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -288,49 +306,86 @@ struct NamespaceDefinitions {
     }
 };
 
-static const char* kCategoryDelayPlugin[] = { "Delay", nullptr };
-static const char* kCategoryDistortionPlugin[] = { "Distortion", nullptr };
-static const char* kCategoryWaveshaperPlugin[] = { "Distortion", "Waveshaper", nullptr };
-static const char* kCategoryDynamicsPlugin[] = { "Dynamics", nullptr };
-static const char* kCategoryAmplifierPlugin[] = { "Dynamics", "Amplifier", nullptr };
-static const char* kCategoryCompressorPlugin[] = { "Dynamics", "Compressor", nullptr };
-static const char* kCategoryExpanderPlugin[] = { "Dynamics", "Expander", nullptr };
-static const char* kCategoryGatePlugin[] = { "Dynamics", "Gate", nullptr };
-static const char* kCategoryLimiterPlugin[] = { "Dynamics", "Limiter", nullptr };
-static const char* kCategoryFilterPlugin[] = { "Filter", nullptr };
-static const char* kCategoryAllpassPlugin[] = { "Filter", "Allpass", nullptr };
-static const char* kCategoryBandpassPlugin[] = { "Filter", "Bandpass", nullptr };
-static const char* kCategoryCombPlugin[] = { "Filter", "Comb", nullptr };
-static const char* kCategoryEQPlugin[] = { "Filter", "Equaliser", nullptr };
-static const char* kCategoryMultiEQPlugin[] = { "Filter", "Equaliser", "Multiband", nullptr };
-static const char* kCategoryParaEQPlugin[] = { "Filter", "Equaliser", "Parametric", nullptr };
-static const char* kCategoryHighpassPlugin[] = { "Filter", "Highpass", nullptr };
-static const char* kCategoryLowpassPlugin[] = { "Filter", "Lowpass", nullptr };
-static const char* kCategoryGeneratorPlugin[] = { "Generator", nullptr };
-static const char* kCategoryConstantPlugin[] = { "Generator", "Constant", nullptr };
-static const char* kCategoryInstrumentPlugin[] = { "Generator", "Instrument", nullptr };
-static const char* kCategoryOscillatorPlugin[] = { "Generator", "Oscillator", nullptr };
-static const char* kCategoryModulatorPlugin[] = { "Modulator", nullptr };
-static const char* kCategoryChorusPlugin[] = { "Modulator", "Chorus", nullptr };
-static const char* kCategoryFlangerPlugin[] = { "Modulator", "Flanger", nullptr };
-static const char* kCategoryPhaserPlugin[] = { "Modulator", "Phaser", nullptr };
-static const char* kCategoryReverbPlugin[] = { "Reverb", nullptr };
-static const char* kCategorySimulatorPlugin[] = { "Simulator", nullptr };
-static const char* kCategorySpatialPlugin[] = { "Spatial", nullptr };
-static const char* kCategorySpectralPlugin[] = { "Spectral", nullptr };
-static const char* kCategoryPitchPlugin[] = { "Spectral", "Pitch Shifter", nullptr };
-static const char* kCategoryUtilityPlugin[] = { "Utility", nullptr };
-static const char* kCategoryAnalyserPlugin[] = { "Utility", "Analyser", nullptr };
-static const char* kCategoryConverterPlugin[] = { "Utility", "Converter", nullptr };
-static const char* kCategoryFunctionPlugin[] = { "Utility", "Function", nullptr };
-static const char* kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
+static const char* const kCategoryDelayPlugin[] = { "Delay", nullptr };
+static const char* const kCategoryDistortionPlugin[] = { "Distortion", nullptr };
+static const char* const kCategoryWaveshaperPlugin[] = { "Distortion", "Waveshaper", nullptr };
+static const char* const kCategoryDynamicsPlugin[] = { "Dynamics", nullptr };
+static const char* const kCategoryAmplifierPlugin[] = { "Dynamics", "Amplifier", nullptr };
+static const char* const kCategoryCompressorPlugin[] = { "Dynamics", "Compressor", nullptr };
+static const char* const kCategoryExpanderPlugin[] = { "Dynamics", "Expander", nullptr };
+static const char* const kCategoryGatePlugin[] = { "Dynamics", "Gate", nullptr };
+static const char* const kCategoryLimiterPlugin[] = { "Dynamics", "Limiter", nullptr };
+static const char* const kCategoryFilterPlugin[] = { "Filter", nullptr };
+static const char* const kCategoryAllpassPlugin[] = { "Filter", "Allpass", nullptr };
+static const char* const kCategoryBandpassPlugin[] = { "Filter", "Bandpass", nullptr };
+static const char* const kCategoryCombPlugin[] = { "Filter", "Comb", nullptr };
+static const char* const kCategoryEQPlugin[] = { "Filter", "Equaliser", nullptr };
+static const char* const kCategoryMultiEQPlugin[] = { "Filter", "Equaliser", "Multiband", nullptr };
+static const char* const kCategoryParaEQPlugin[] = { "Filter", "Equaliser", "Parametric", nullptr };
+static const char* const kCategoryHighpassPlugin[] = { "Filter", "Highpass", nullptr };
+static const char* const kCategoryLowpassPlugin[] = { "Filter", "Lowpass", nullptr };
+static const char* const kCategoryGeneratorPlugin[] = { "Generator", nullptr };
+static const char* const kCategoryConstantPlugin[] = { "Generator", "Constant", nullptr };
+static const char* const kCategoryInstrumentPlugin[] = { "Generator", "Instrument", nullptr };
+static const char* const kCategoryOscillatorPlugin[] = { "Generator", "Oscillator", nullptr };
+static const char* const kCategoryModulatorPlugin[] = { "Modulator", nullptr };
+static const char* const kCategoryChorusPlugin[] = { "Modulator", "Chorus", nullptr };
+static const char* const kCategoryFlangerPlugin[] = { "Modulator", "Flanger", nullptr };
+static const char* const kCategoryPhaserPlugin[] = { "Modulator", "Phaser", nullptr };
+static const char* const kCategoryReverbPlugin[] = { "Reverb", nullptr };
+static const char* const kCategorySimulatorPlugin[] = { "Simulator", nullptr };
+static const char* const kCategorySpatialPlugin[] = { "Spatial", nullptr };
+static const char* const kCategorySpectralPlugin[] = { "Spectral", nullptr };
+static const char* const kCategoryPitchPlugin[] = { "Spectral", "Pitch Shifter", nullptr };
+static const char* const kCategoryUtilityPlugin[] = { "Utility", nullptr };
+static const char* const kCategoryAnalyserPlugin[] = { "Utility", "Analyser", nullptr };
+static const char* const kCategoryConverterPlugin[] = { "Utility", "Converter", nullptr };
+static const char* const kCategoryFunctionPlugin[] = { "Utility", "Function", nullptr };
+static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
 
-static const char* kStabilityExperimental = "experimental";
-static const char* kStabilityStable = "stable";
-static const char* kStabilityTesting = "testing";
-static const char* kStabilityUnstable = "unstable";
+static const char* const kStabilityExperimental = "experimental";
+static const char* const kStabilityStable = "stable";
+static const char* const kStabilityTesting = "testing";
+static const char* const kStabilityUnstable = "unstable";
 
-static char nc[1] = { '\0' };
+// label, render, symbol
+static const char* const kUnit_s[] = { "seconds", "%f s", "s" };
+static const char* const kUnit_ms[] = { "milliseconds", "%f ms", "ms" };
+static const char* const kUnit_min[] = { "minutes", "%f mins", "min" };
+static const char* const kUnit_bar[] = { "bars", "%f bars", "bars" };
+static const char* const kUnit_beat[] = { "beats", "%f beats", "beats" };
+static const char* const kUnit_frame[] = { "audio frames", "%f frames", "frames" };
+static const char* const kUnit_m[] = { "metres", "%f m", "m" };
+static const char* const kUnit_cm[] = { "centimetres", "%f cm", "cm" };
+static const char* const kUnit_mm[] = { "millimetres", "%f mm", "mm" };
+static const char* const kUnit_km[] = { "kilometres", "%f km", "km" };
+static const char* const kUnit_inch[] = { "inches", """%f\"""", "in" };
+static const char* const kUnit_mile[] = { "miles", "%f mi", "mi" };
+static const char* const kUnit_db[] = { "decibels", "%f dB", "dB" };
+static const char* const kUnit_pc[] = { "percent", "%f%%", "%" };
+static const char* const kUnit_coef[] = { "coefficient", "* %f", "*" };
+static const char* const kUnit_hz[] = { "hertz", "%f Hz", "Hz" };
+static const char* const kUnit_khz[] = { "kilohertz", "%f kHz", "kHz" };
+static const char* const kUnit_mhz[] = { "megahertz", "%f MHz", "MHz" };
+static const char* const kUnit_bpm[] = { "beats per minute", "%f BPM", "BPM" };
+static const char* const kUnit_oct[] = { "octaves", "%f octaves", "oct" };
+static const char* const kUnit_cent[] = { "cents", "%f ct", "ct" };
+static const char* const kUnit_semitone12TET[] = { "semitones", "%f semi", "semi" };
+static const char* const kUnit_degree[] = { "degrees", "%f deg", "deg" };
+static const char* const kUnit_midiNote[] = { "MIDI note", "MIDI note %d", "note" };
+
+static const char nc[1] = { '\0' };
+
+bool _isalnum(const char* const string)
+{
+    for (size_t i=0;; ++i)
+    {
+        if (string[i] == '\0')
+            return (i != 0);
+        if (! isalnum(string[i]))
+            return false;
+    }
+}
 
 // refresh everything
 // plugins are not truly scanned here, only later per request
@@ -1215,11 +1270,41 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
 
             // ----------------------------------------------------------------------------------------------------
 
-            // TODO
-            portinfo.ranges.max = 1.0f;
-
             if (type == 2 || type == 3)
             {
+                LilvNodes* xminimum = lilv_port_get_value(p, port, ns.mod_minimum);
+                if (xminimum == nullptr)
+                    xminimum = lilv_port_get_value(p, port, ns.lv2core_minimum);
+                LilvNodes* xmaximum = lilv_port_get_value(p, port, ns.mod_maximum);
+                if (xmaximum == nullptr)
+                    xmaximum = lilv_port_get_value(p, port, ns.lv2core_maximum);
+                LilvNodes* xdefault = lilv_port_get_value(p, port, ns.mod_default);
+                if (xdefault == nullptr)
+                    xdefault = lilv_port_get_value(p, port, ns.lv2core_default);
+
+                if (xminimum != nullptr && xmaximum != nullptr)
+                {
+                    portinfo.ranges.min = lilv_node_as_float(lilv_nodes_get_first(xminimum));
+                    portinfo.ranges.max = lilv_node_as_float(lilv_nodes_get_first(xmaximum));
+
+                    if (portinfo.ranges.min >= portinfo.ranges.max)
+                        portinfo.ranges.max = portinfo.ranges.min + 1.0f;
+
+                    if (xdefault != nullptr)
+                        portinfo.ranges.def = lilv_node_as_float(lilv_nodes_get_first(xdefault));
+                    else
+                        portinfo.ranges.def = portinfo.ranges.min;
+                }
+                else
+                {
+                    portinfo.ranges.min = (type == 3) ? -1.0f : 0.0f;
+                    portinfo.ranges.max = 1.0f;
+                    portinfo.ranges.def = 0.0f;
+                }
+
+                lilv_nodes_free(xminimum);
+                lilv_nodes_free(xmaximum);
+                lilv_nodes_free(xdefault);
             }
 
             // ----------------------------------------------------------------------------------------------------
@@ -1242,9 +1327,68 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
                     {
                         uuri += 38; // strlen(LV2_UNITS_PREFIX)
 
-                        // TODO
-                        //if uuri.isalnum():
-                        //    ulabel, urender, usymbol = get_port_unit(uuri)
+                        if (_isalnum(uuri))
+                        {
+                            const char* const* unittable;
+
+                            if (strcmp(uuri, "s") == 0)
+                                unittable = kUnit_s;
+                            else if (strcmp(uuri, "ms") == 0)
+                                unittable = kUnit_ms;
+                            else if (strcmp(uuri, "min") == 0)
+                                unittable = kUnit_min;
+                            else if (strcmp(uuri, "bar") == 0)
+                                unittable = kUnit_bar;
+                            else if (strcmp(uuri, "beat") == 0)
+                                unittable = kUnit_beat;
+                            else if (strcmp(uuri, "frame") == 0)
+                                unittable = kUnit_frame;
+                            else if (strcmp(uuri, "m") == 0)
+                                unittable = kUnit_m;
+                            else if (strcmp(uuri, "cm") == 0)
+                                unittable = kUnit_cm;
+                            else if (strcmp(uuri, "mm") == 0)
+                                unittable = kUnit_mm;
+                            else if (strcmp(uuri, "km") == 0)
+                                unittable = kUnit_km;
+                            else if (strcmp(uuri, "inch") == 0)
+                                unittable = kUnit_inch;
+                            else if (strcmp(uuri, "mile") == 0)
+                                unittable = kUnit_mile;
+                            else if (strcmp(uuri, "db") == 0)
+                                unittable = kUnit_db;
+                            else if (strcmp(uuri, "pc") == 0)
+                                unittable = kUnit_pc;
+                            else if (strcmp(uuri, "coef") == 0)
+                                unittable = kUnit_coef;
+                            else if (strcmp(uuri, "hz") == 0)
+                                unittable = kUnit_hz;
+                            else if (strcmp(uuri, "khz") == 0)
+                                unittable = kUnit_khz;
+                            else if (strcmp(uuri, "mhz") == 0)
+                                unittable = kUnit_mhz;
+                            else if (strcmp(uuri, "bpm") == 0)
+                                unittable = kUnit_bpm;
+                            else if (strcmp(uuri, "oct") == 0)
+                                unittable = kUnit_oct;
+                            else if (strcmp(uuri, "cent") == 0)
+                                unittable = kUnit_cent;
+                            else if (strcmp(uuri, "semitone12TET") == 0)
+                                unittable = kUnit_semitone12TET;
+                            else if (strcmp(uuri, "degree") == 0)
+                                unittable = kUnit_degree;
+                            else if (strcmp(uuri, "midiNote") == 0)
+                                unittable = kUnit_midiNote;
+                            else
+                                unittable = nullptr;
+
+                            if (unittable != nullptr)
+                            {
+                                portinfo.units.label  = unittable[0];
+                                portinfo.units.render = unittable[1];
+                                portinfo.units.symbol = unittable[2];
+                            }
+                        }
                     }
                     // using custom unit
                     else
@@ -1269,6 +1413,8 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
                             portinfo.units.symbol = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
                             lilv_nodes_free(nodes);
                         }
+
+                        portinfo.units._custom = true;
                     }
 
                     lilv_nodes_free(uunits);
@@ -1348,18 +1494,22 @@ void _clear_port_info(const PluginPort& portinfo)
         free((void*)portinfo.designation);
     if (portinfo.shortname != nullptr && portinfo.shortname != nc)
         free((void*)portinfo.shortname);
-    if (portinfo.units.label != nullptr && portinfo.units.label != nc)
-        free((void*)portinfo.units.label);
-    if (portinfo.units.render != nullptr && portinfo.units.render != nc)
-        free((void*)portinfo.units.render);
-    if (portinfo.units.symbol != nullptr && portinfo.units.symbol != nc)
-        free((void*)portinfo.units.symbol);
 
     if (portinfo.properties != nullptr)
     {
         for (int i=0; portinfo.properties[i] != nullptr; ++i)
             free((void*)portinfo.properties[i]);
         delete[] portinfo.properties;
+    }
+
+    if (portinfo.units._custom)
+    {
+        if (portinfo.units.label != nullptr && portinfo.units.label != nc)
+            free((void*)portinfo.units.label);
+        if (portinfo.units.render != nullptr && portinfo.units.render != nc)
+            free((void*)portinfo.units.render);
+        if (portinfo.units.symbol != nullptr && portinfo.units.symbol != nc)
+            free((void*)portinfo.units.symbol);
     }
 }
 

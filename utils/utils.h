@@ -64,6 +64,7 @@ typedef struct {
     const char* label;
     const char* render;
     const char* symbol;
+    bool _custom;
 } PluginPortUnits;
 
 typedef struct {
