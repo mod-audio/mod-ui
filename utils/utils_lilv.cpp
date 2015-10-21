@@ -51,6 +51,7 @@ const LilvPlugins* PLUGINS = nullptr;
 
 // plugin info, mapped to URIs
 std::map<std::string, PluginInfo> PLUGNFO;
+std::map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
 
 // some other cached values
 static const char* const HOME = getenv("HOME");
@@ -168,6 +169,33 @@ BLACKLIST = [
 
 #define LILV_NS_MOD    "http://moddevices.com/ns/mod#"
 #define LILV_NS_MODGUI "http://moddevices.com/ns/modgui#"
+
+struct NamespaceDefinitions_Mini {
+    LilvNode* rdf_type;
+    LilvNode* mod_brand;
+    LilvNode* mod_label;
+    LilvNode* modgui_gui;
+    LilvNode* modgui_resourcesDirectory;
+    LilvNode* modgui_thumbnail;
+
+    NamespaceDefinitions_Mini()
+        : rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
+          mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
+          mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
+          modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
+          modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
+          modgui_thumbnail         (lilv_new_uri(W, LILV_NS_MODGUI "thumbnail"         )) {}
+
+    ~NamespaceDefinitions_Mini()
+    {
+        lilv_node_free(rdf_type);
+        lilv_node_free(mod_brand);
+        lilv_node_free(mod_label);
+        lilv_node_free(modgui_gui);
+        lilv_node_free(modgui_resourcesDirectory);
+        lilv_node_free(modgui_thumbnail);
+    }
+};
 
 struct NamespaceDefinitions {
     LilvNode* doap_license;
@@ -459,7 +487,218 @@ void _refresh()
     }
 }
 
-const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefinitions& ns)
+const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const NamespaceDefinitions_Mini& ns)
+{
+    static PluginInfo_Mini info;
+    memset(&info, 0, sizeof(PluginInfo_Mini));
+
+    // --------------------------------------------------------------------------------------------------------
+    // uri
+
+    info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+    // --------------------------------------------------------------------------------------------------------
+    // brand
+
+    char brand[10+1] = { '\0' };
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.mod_brand))
+    {
+        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 10);
+        info.brand = strdup(brand);
+        lilv_nodes_free(nodes);
+    }
+    else if (LilvNode* node = lilv_plugin_get_author_name(p))
+    {
+        strncpy(brand, lilv_node_as_string(node), 10);
+        info.brand = strdup(brand);
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.brand = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // label
+
+    char label[16+1] = { '\0' };
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.mod_label))
+    {
+        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
+        info.label = strdup(label);
+        lilv_nodes_free(nodes);
+    }
+    else if (LilvNode* node = lilv_plugin_get_name(p))
+    {
+        strncpy(label, lilv_node_as_string(node), 16);
+        info.label = strdup(label);
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.label = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // categories
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.rdf_type))
+    {
+        LILV_FOREACH(nodes, it, nodes)
+        {
+            const LilvNode* node2 = lilv_nodes_get(nodes, it);
+            const char* nodestr = lilv_node_as_string(node2);
+
+            if (nodestr == nullptr)
+                continue;
+
+            if (const char* cat = strstr(nodestr, "http://lv2plug.in/ns/lv2core#"))
+            {
+                cat += 29; // strlen("http://lv2plug.in/ns/lv2core#")
+
+                if (cat[0] == '\0')
+                    continue;
+                if (strcmp(cat, "Plugin") == 0)
+                    continue;
+
+                else if (strcmp(cat, "DelayPlugin") == 0)
+                    info.category = kCategoryDelayPlugin;
+                else if (strcmp(cat, "DistortionPlugin") == 0)
+                    info.category = kCategoryDistortionPlugin;
+                else if (strcmp(cat, "WaveshaperPlugin") == 0)
+                    info.category = kCategoryWaveshaperPlugin;
+                else if (strcmp(cat, "DynamicsPlugin") == 0)
+                    info.category = kCategoryDynamicsPlugin;
+                else if (strcmp(cat, "AmplifierPlugin") == 0)
+                    info.category = kCategoryAmplifierPlugin;
+                else if (strcmp(cat, "CompressorPlugin") == 0)
+                    info.category = kCategoryCompressorPlugin;
+                else if (strcmp(cat, "ExpanderPlugin") == 0)
+                    info.category = kCategoryExpanderPlugin;
+                else if (strcmp(cat, "GatePlugin") == 0)
+                    info.category = kCategoryGatePlugin;
+                else if (strcmp(cat, "LimiterPlugin") == 0)
+                    info.category = kCategoryLimiterPlugin;
+                else if (strcmp(cat, "FilterPlugin") == 0)
+                    info.category = kCategoryFilterPlugin;
+                else if (strcmp(cat, "AllpassPlugin") == 0)
+                    info.category = kCategoryAllpassPlugin;
+                else if (strcmp(cat, "BandpassPlugin") == 0)
+                    info.category = kCategoryBandpassPlugin;
+                else if (strcmp(cat, "CombPlugin") == 0)
+                    info.category = kCategoryCombPlugin;
+                else if (strcmp(cat, "EQPlugin") == 0)
+                    info.category = kCategoryEQPlugin;
+                else if (strcmp(cat, "MultiEQPlugin") == 0)
+                    info.category = kCategoryMultiEQPlugin;
+                else if (strcmp(cat, "ParaEQPlugin") == 0)
+                    info.category = kCategoryParaEQPlugin;
+                else if (strcmp(cat, "HighpassPlugin") == 0)
+                    info.category = kCategoryHighpassPlugin;
+                else if (strcmp(cat, "LowpassPlugin") == 0)
+                    info.category = kCategoryLowpassPlugin;
+                else if (strcmp(cat, "GeneratorPlugin") == 0)
+                    info.category = kCategoryGeneratorPlugin;
+                else if (strcmp(cat, "ConstantPlugin") == 0)
+                    info.category = kCategoryConstantPlugin;
+                else if (strcmp(cat, "InstrumentPlugin") == 0)
+                    info.category = kCategoryInstrumentPlugin;
+                else if (strcmp(cat, "OscillatorPlugin") == 0)
+                    info.category = kCategoryOscillatorPlugin;
+                else if (strcmp(cat, "ModulatorPlugin") == 0)
+                    info.category = kCategoryModulatorPlugin;
+                else if (strcmp(cat, "ChorusPlugin") == 0)
+                    info.category = kCategoryChorusPlugin;
+                else if (strcmp(cat, "FlangerPlugin") == 0)
+                    info.category = kCategoryFlangerPlugin;
+                else if (strcmp(cat, "PhaserPlugin") == 0)
+                    info.category = kCategoryPhaserPlugin;
+                else if (strcmp(cat, "ReverbPlugin") == 0)
+                    info.category = kCategoryReverbPlugin;
+                else if (strcmp(cat, "SimulatorPlugin") == 0)
+                    info.category = kCategorySimulatorPlugin;
+                else if (strcmp(cat, "SpatialPlugin") == 0)
+                    info.category = kCategorySpatialPlugin;
+                else if (strcmp(cat, "SpectralPlugin") == 0)
+                    info.category = kCategorySpectralPlugin;
+                else if (strcmp(cat, "PitchPlugin") == 0)
+                    info.category = kCategoryPitchPlugin;
+                else if (strcmp(cat, "UtilityPlugin") == 0)
+                    info.category = kCategoryUtilityPlugin;
+                else if (strcmp(cat, "AnalyserPlugin") == 0)
+                    info.category = kCategoryAnalyserPlugin;
+                else if (strcmp(cat, "ConverterPlugin") == 0)
+                    info.category = kCategoryConverterPlugin;
+                else if (strcmp(cat, "FunctionPlugin") == 0)
+                    info.category = kCategoryFunctionPlugin;
+                else if (strcmp(cat, "MixerPlugin") == 0)
+                    info.category = kCategoryMixerPlugin;
+            }
+        }
+        lilv_nodes_free(nodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // gui
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.modgui_gui))
+    {
+        LilvNode* modguigui = nullptr;
+        const char* resdir = nullptr;
+
+        LILV_FOREACH(nodes, it, nodes)
+        {
+            const LilvNode* mgui = lilv_nodes_get(nodes, it);
+            LilvNodes* resdirs = lilv_world_find_nodes(W, mgui, ns.modgui_resourcesDirectory, nullptr);
+            if (resdirs == nullptr)
+                continue;
+
+            lilv_free((void*)resdir);
+            resdir = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(resdirs)), nullptr);
+
+            lilv_node_free(modguigui);
+            modguigui = lilv_node_duplicate(mgui);
+
+            lilv_nodes_free(resdirs);
+
+            if (strncmp(resdir, HOME, HOMElen) == 0)
+                // found a modgui in the home dir, stop here and use it
+                break;
+        }
+
+        lilv_free((void*)resdir);
+
+        if (modguigui != nullptr)
+        {
+            if (LilvNodes* modgui_thumb = lilv_world_find_nodes(W, modguigui, ns.modgui_thumbnail, nullptr))
+            {
+                info.gui.thumbnail = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_thumb)), nullptr);
+                lilv_nodes_free(modgui_thumb);
+            }
+            else
+            {
+                info.gui.thumbnail = nc;
+            }
+
+            lilv_node_free(modguigui);
+        }
+        else
+        {
+            info.gui.thumbnail = nc;
+        }
+
+        lilv_nodes_free(nodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+
+    info.valid = true;
+    return info;
+}
+
+const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitions& ns)
 {
     static PluginInfo info;
     memset(&info, 0, sizeof(PluginInfo));
@@ -1542,7 +1781,7 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
 
 // --------------------------------------------------------------------------------------------------------
 
-static const PluginInfo** _plug_ret = nullptr;
+static const PluginInfo_Mini** _plug_ret = nullptr;
 static unsigned int _plug_lastsize = 0;
 
 void init(void)
@@ -1609,6 +1848,18 @@ void cleanup(void)
 
     PLUGINS = nullptr;
     BUNDLES.clear();
+
+    for (auto& map : PLUGNFO_Mini)
+    {
+        PluginInfo_Mini& info = map.second;
+
+        if (info.brand != nullptr && info.brand != nc)
+            free((void*)info.brand);
+        if (info.label != nullptr && info.label != nc)
+            free((void*)info.label);
+        if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
+            lilv_free((void*)info.gui.thumbnail);
+    }
 
     for (auto& map : PLUGNFO)
     {
@@ -1728,6 +1979,7 @@ void cleanup(void)
         }
     }
 
+    PLUGNFO_Mini.clear();
     PLUGNFO.clear();
 
     lilv_world_free(W);
@@ -1746,7 +1998,7 @@ bool remove_bundle_from_lilv_world(const char* /*bundle*/)
     return false;
 }
 
-const PluginInfo* const* get_all_plugins(void)
+const PluginInfo_Mini* const* get_all_plugins(void)
 {
     unsigned int newsize = lilv_plugins_size(PLUGINS);
 
@@ -1767,11 +2019,11 @@ const PluginInfo* const* get_all_plugins(void)
         if (_plug_ret != nullptr)
             delete[] _plug_ret;
 
-        _plug_ret = new const PluginInfo*[newsize+1];
+        _plug_ret = new const PluginInfo_Mini*[newsize+1];
         memset(_plug_ret, 0, sizeof(void*) * (newsize+1));
     }
 
-    const NamespaceDefinitions ns;
+    const NamespaceDefinitions_Mini ns;
     unsigned int retIndex = 0;
 
     // Make a list of all installed bundles
@@ -1790,16 +2042,16 @@ const PluginInfo* const* get_all_plugins(void)
         //    continue;
 
         // check if it's already cached
-        if (PLUGNFO.count(uri) > 0 && PLUGNFO[uri].valid)
+        if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
         {
-            _plug_ret[retIndex++] = &PLUGNFO[uri];
+            _plug_ret[retIndex++] = &PLUGNFO_Mini[uri];
             continue;
         }
 
         // get new info
-        const PluginInfo& info = _get_plugin_info2(p, ns);
-        PLUGNFO[uri] = info;
-        _plug_ret[retIndex++] = &PLUGNFO[uri];
+        const PluginInfo_Mini& info = _get_plugin_info_mini(p, ns);
+        PLUGNFO_Mini[uri] = info;
+        _plug_ret[retIndex++] = &PLUGNFO_Mini[uri];
     }
 
     return _plug_ret;
@@ -1831,7 +2083,7 @@ const PluginInfo* get_plugin_info(const char* uri_)
 
         // found it
         printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
-        PLUGNFO[uri] = _get_plugin_info2(p, ns);
+        PLUGNFO[uri] = _get_plugin_info(p, ns);
         return &PLUGNFO[uri];
     }
 

@@ -55,6 +55,10 @@ typedef struct {
 } PluginGUI;
 
 typedef struct {
+    const char* thumbnail;
+} PluginGUI_Mini;
+
+typedef struct {
     float min;
     float max;
     float def;
@@ -127,6 +131,15 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* uri;
+    const char* brand;
+    const char* label;
+    const char* const* category;
+    PluginGUI_Mini gui;
+} PluginInfo_Mini;
+
+typedef struct {
+    bool valid;
 } PedalboardInfo;
 
 // initialize
@@ -145,7 +158,7 @@ MOD_API bool remove_bundle_from_lilv_world(const char* bundle);
 
 // get all available plugins
 // this triggers scanning of all plugins
-MOD_API const PluginInfo* const* get_all_plugins(void);
+MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 
 // get a specific plugin
 // NOTE: may return null

@@ -160,6 +160,11 @@ class PluginGUI(Structure):
         ("ports", POINTER(PluginGUIPort)),
     ]
 
+class PluginGUI_Mini(Structure):
+    _fields_ = [
+        ("thumbnail", c_char_p),
+    ]
+
 class PluginPortRanges(Structure):
     _fields_ = [
         ("minimum", c_float),
@@ -239,6 +244,16 @@ class PluginInfo(Structure):
         ("presets", POINTER(PluginPreset)),
     ]
 
+class PluginInfo_Mini(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("uri", c_char_p),
+        ("brand", c_char_p),
+        ("label", c_char_p),
+        ("category", POINTER(c_char_p)),
+        ("gui", PluginGUI_Mini),
+    ]
+
 class PedalboardInfo(Structure):
     _fields_ = [
         ("valid", c_bool),
@@ -246,6 +261,7 @@ class PedalboardInfo(Structure):
 
 c_struct_types = (PluginAuthor,
                   PluginGUI,
+                  PluginGUI_Mini,
                   PluginPortRanges,
                   PluginPortUnits,
                   PluginPortsI,
@@ -257,6 +273,7 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPreset))
 
 c_structpp_types = (POINTER(POINTER(PluginInfo)),
+                    POINTER(POINTER(PluginInfo_Mini)),
                     POINTER(POINTER(PedalboardInfo)))
 
 utils.init.argtypes = None
@@ -272,7 +289,7 @@ utils.remove_bundle_from_lilv_world.argtypes = [c_char_p]
 utils.remove_bundle_from_lilv_world.restype  = c_bool
 
 utils.get_all_plugins.argtypes = None
-utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo))
+utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
 
 utils.get_plugin_info.argtypes = [c_char_p]
 utils.get_plugin_info.restype  = POINTER(PluginInfo)
