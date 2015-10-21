@@ -27,6 +27,7 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
+#include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
@@ -209,6 +210,7 @@ struct NamespaceDefinitions {
     LilvNode* atom_Sequence;
     LilvNode* midi_MidiEvent;
     LilvNode* pprops_rangeSteps;
+    LilvNode* pset_Preset;
     LilvNode* units_render;
     LilvNode* units_symbol;
     LilvNode* units_unit;
@@ -254,6 +256,7 @@ struct NamespaceDefinitions {
           atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
           midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )),
           pprops_rangeSteps        (lilv_new_uri(W, LV2_PORT_PROPS__rangeSteps         )),
+          pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
           units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
           units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
           units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )) {}
@@ -300,6 +303,7 @@ struct NamespaceDefinitions {
         lilv_node_free(atom_Sequence);
         lilv_node_free(midi_MidiEvent);
         lilv_node_free(pprops_rangeSteps);
+        lilv_node_free(pset_Preset);
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
@@ -1488,6 +1492,47 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // presets
+
+    if (LilvNodes* presetnodes = lilv_plugin_get_related(p, ns.pset_Preset))
+    {
+        unsigned int prindex = 0;
+        const unsigned int presetcount = lilv_nodes_size(presetnodes);
+
+        PluginPreset* presets = new PluginPreset[presetcount+1];
+        memset(presets, 0, sizeof(PluginPreset) * (presetcount+1));
+
+        LILV_FOREACH(nodes, itprs, presetnodes)
+        {
+            if (prindex >= presetcount)
+                continue;
+
+            const LilvNode* presetnode = lilv_nodes_get(presetnodes, itprs);
+            if (lilv_world_load_resource(W, presetnode) == -1)
+                continue;
+
+            if (LilvNodes* xlabel = lilv_world_find_nodes(W, presetnode, ns.rdfs_label, nullptr))
+            {
+                presets[prindex++] = {
+                    true,
+                    strdup(lilv_node_as_uri(presetnode)),
+                    strdup(lilv_node_as_string(lilv_nodes_get_first(xlabel))),
+                };
+
+                lilv_nodes_free(xlabel);
+            }
+        }
+
+        LILV_FOREACH(nodes, itprs, presetnodes) {
+            lilv_world_unload_resource(W, lilv_nodes_get(presetnodes, itprs));
+        }
+
+        info.presets = presets;
+
+        lilv_nodes_free(presetnodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
 
     lilv_free((void*)bundle);
 
@@ -1670,6 +1715,16 @@ void cleanup(void)
             for (int i=0; info.ports.midi.output[i].valid; ++i)
                 _clear_port_info(info.ports.midi.output[i]);
             delete[] info.ports.midi.output;
+        }
+
+        if (info.presets != nullptr)
+        {
+            for (int i=0; info.presets[i].valid; ++i)
+            {
+                free((void*)info.presets[i].uri);
+                free((void*)info.presets[i].label);
+            }
+            delete[] info.presets;
         }
     }
 

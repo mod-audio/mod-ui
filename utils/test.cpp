@@ -17,11 +17,14 @@
 
 #include "utils.h"
 
+// #include <unistd.h>
+
 int main()
 {
     init();
     get_all_plugins();
     get_all_pedalboards();
+//     sleep(10);
     cleanup();
     return 0;
 }
