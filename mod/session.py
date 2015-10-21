@@ -197,7 +197,8 @@ class Session(object):
     # Timers (start and stop in sync with webserver IOLoop)
 
     def start_timers(self):
-        self.jack_cpu_load_timer.start()
+        if not HOST_ORIG:
+            self.jack_cpu_load_timer.start()
         self.jack_xrun_timer.start()
 
     def stop_timers(self):

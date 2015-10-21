@@ -51,6 +51,7 @@ $('document').ready(function() {
     ws.onmessage = function (evt) {
         var parser = N3.Parser();
         var store  = N3.Store();
+        //console.log(evt.data)
         parser.parse(evt.data,
             function (error, triple, prefixes) {
                 if (error) {
