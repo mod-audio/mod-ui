@@ -176,7 +176,6 @@ JqueryClass('effectBox', {
                     for (var i=0; i<plugins.length; i++) {
                         var plugin = plugins[i]
                         plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
-                        plugin.status = 'installed'
 
                         allplugins[plugin.uri] = plugin
                         desktop.pluginIndexer.add({
@@ -264,7 +263,6 @@ JqueryClass('effectBox', {
 
         var plugin_data = {
             uri   : uri,
-            status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
