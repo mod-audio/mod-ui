@@ -1305,6 +1305,38 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
                 lilv_nodes_free(xminimum);
                 lilv_nodes_free(xmaximum);
                 lilv_nodes_free(xdefault);
+
+                if (LilvScalePoints* scalepoints = lilv_port_get_scale_points(p, port))
+                {
+                    unsigned int spindex = 0;
+                    const unsigned int scalepointcount = lilv_scale_points_size(scalepoints);
+
+                    PluginPortScalePoint* portsps = new PluginPortScalePoint[scalepointcount+1];
+                    memset(portsps, 0, sizeof(PluginPortScalePoint) * (scalepointcount+1));
+
+                    LILV_FOREACH(scale_points, itscl, scalepoints)
+                    {
+                        if (spindex >= scalepointcount)
+                            continue;
+
+                        const LilvScalePoint* scalepoint = lilv_scale_points_get(scalepoints, itscl);
+                        const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint);
+                        const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint);
+
+                        if (xlabel == nullptr || xvalue == nullptr)
+                            continue;
+
+                        portsps[spindex++] = {
+                            true,
+                            lilv_node_as_float(xvalue),
+                            strdup(lilv_node_as_string(xlabel)),
+                        };
+                    }
+
+                    portinfo.scalePoints = portsps;
+
+                    lilv_scale_points_free(scalepoints);
+                }
             }
 
             // ----------------------------------------------------------------------------------------------------
@@ -1500,6 +1532,13 @@ void _clear_port_info(const PluginPort& portinfo)
         for (int i=0; portinfo.properties[i] != nullptr; ++i)
             free((void*)portinfo.properties[i]);
         delete[] portinfo.properties;
+    }
+
+    if (portinfo.scalePoints != nullptr)
+    {
+        for (int i=0; portinfo.scalePoints[i].valid; ++i)
+            free((void*)portinfo.scalePoints[i].label);
+        delete[] portinfo.scalePoints;
     }
 
     if (portinfo.units._custom)
