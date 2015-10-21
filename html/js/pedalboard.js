@@ -582,20 +582,31 @@ JqueryClass('pedalboard', {
         element.draggable($.extend({
             helper: function () {
                 var element = $('<div class="mod-pedal dummy">')
-                new GUI(pluginData, options).renderDummyIcon(function (icon) {
-                    element.attr('class', icon.attr('class'))
-                    element.addClass('dragging')
 
-                    var scale = self.data('scale')
-                    var w = icon.width()
-                    var h = icon.height()
-                    var dx = w / (4 * scale) - w / 4
-                    var dy = h / (2 * scale) - h / 2
-                    element.css({
-                        webkitTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
-                    })
-                    element.append(icon.children())
+                $.ajax({
+                    url: '/effect/get',
+                    data: {
+                        uri: pluginData.uri
+                    },
+                    success: function (plugin) {
+                        new GUI(plugin, options).renderDummyIcon(function (icon) {
+                            element.attr('class', icon.attr('class'))
+                            element.addClass('dragging')
+
+                            var scale = self.data('scale')
+                            var w = icon.width()
+                            var h = icon.height()
+                            var dx = w / (4 * scale) - w / 4
+                            var dy = h / (2 * scale) - h / 2
+                            element.css({
+                                webkitTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
+                            })
+                            element.append(icon.children())
+                        })
+                    },
+                    dataType: 'json'
                 })
+
                 $('body').append(element)
 
                 return element
