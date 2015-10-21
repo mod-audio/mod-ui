@@ -178,6 +178,7 @@ struct NamespaceDefinitions {
     LilvNode* lv2core_microVersion;
     LilvNode* lv2core_minorVersion;
     LilvNode* lv2core_name;
+    LilvNode* lv2core_portProperty;
     LilvNode* lv2core_shortname;
     LilvNode* lv2core_symbol;
     LilvNode* mod_brand;
@@ -216,6 +217,7 @@ struct NamespaceDefinitions {
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
           lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
           lv2core_name             (lilv_new_uri(W, LILV_NS_LV2    "name"              )),
+          lv2core_portProperty     (lilv_new_uri(W, LILV_NS_LV2    "portProperty"      )),
           lv2core_shortname        (lilv_new_uri(W, LILV_NS_LV2    "shortname"         )),
           lv2core_symbol           (lilv_new_uri(W, LILV_NS_LV2    "symbol"            )),
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
@@ -255,6 +257,7 @@ struct NamespaceDefinitions {
         lilv_node_free(lv2core_microVersion);
         lilv_node_free(lv2core_minorVersion);
         lilv_node_free(lv2core_name);
+        lilv_node_free(lv2core_portProperty);
         lilv_node_free(lv2core_shortname);
         lilv_node_free(lv2core_symbol);
         lilv_node_free(mod_brand);
@@ -1184,9 +1187,30 @@ const PluginInfo& _get_plugin_info2(const LilvPlugin* p, const NamespaceDefiniti
             // ----------------------------------------------------------------------------------------------------
             // port properties
 
+            nodes = lilv_port_get_value(p, port, ns.lv2core_portProperty);
+            if (nodes != nullptr)
             {
-                // TODO
-                //properties = [typ.rsplit("#",1)[-1] for typ in get_port_data(port, ns_lv2core.portProperty)]
+                unsigned int pindex = 0;
+                unsigned int propcount = lilv_nodes_size(nodes);
+
+                const char** props = new const char*[propcount+1];
+                memset(props, 0, sizeof(const char*) * (propcount+1));
+
+                LILV_FOREACH(nodes, itprop, nodes)
+                {
+                    if (pindex >= propcount)
+                        continue;
+
+                    if (const char* prop = strrchr(lilv_node_as_string(lilv_nodes_get(nodes, itprop)), '#'))
+                    {
+                        prop += 1;
+                        if (prop[0] != '\0')
+                            props[pindex++] = strdup(prop);
+                    }
+                }
+
+                portinfo.properties = props;
+                lilv_nodes_free(nodes);
             }
 
             // ----------------------------------------------------------------------------------------------------
@@ -1330,6 +1354,13 @@ void _clear_port_info(const PluginPort& portinfo)
         free((void*)portinfo.units.render);
     if (portinfo.units.symbol != nullptr && portinfo.units.symbol != nc)
         free((void*)portinfo.units.symbol);
+
+    if (portinfo.properties != nullptr)
+    {
+        for (int i=0; portinfo.properties[i] != nullptr; ++i)
+            free((void*)portinfo.properties[i]);
+        delete[] portinfo.properties;
+    }
 }
 
 void cleanup(void)
