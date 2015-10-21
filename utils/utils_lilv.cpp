@@ -1306,14 +1306,30 @@ void init(void)
     _refresh();
 }
 
-void _clear_port_info(PluginPort& portinfo)
+void _clear_gui_port_info(const PluginGUIPort& guiportinfo)
+{
+    if (guiportinfo.name != nullptr && guiportinfo.name != nc)
+        free((void*)guiportinfo.name);
+    if (guiportinfo.symbol != nullptr && guiportinfo.symbol != nc)
+        free((void*)guiportinfo.symbol);
+}
+
+void _clear_port_info(const PluginPort& portinfo)
 {
     if (portinfo.name != nullptr && portinfo.name != nc)
         free((void*)portinfo.name);
     if (portinfo.symbol != nullptr && portinfo.symbol != nc)
         free((void*)portinfo.symbol);
+    if (portinfo.designation != nullptr && portinfo.designation != nc)
+        free((void*)portinfo.designation);
     if (portinfo.shortname != nullptr && portinfo.shortname != nc)
         free((void*)portinfo.shortname);
+    if (portinfo.units.label != nullptr && portinfo.units.label != nc)
+        free((void*)portinfo.units.label);
+    if (portinfo.units.render != nullptr && portinfo.units.render != nc)
+        free((void*)portinfo.units.render);
+    if (portinfo.units.symbol != nullptr && portinfo.units.symbol != nc)
+        free((void*)portinfo.units.symbol);
 }
 
 void cleanup(void)
@@ -1379,6 +1395,13 @@ void cleanup(void)
             free((void*)info.gui.color);
         if (info.gui.knob != nullptr && info.gui.knob != nc)
             free((void*)info.gui.knob);
+
+        if (info.gui.ports != nullptr)
+        {
+            for (int i=0; info.gui.ports[i].valid; ++i)
+                _clear_gui_port_info(info.gui.ports[i]);
+            delete[] info.gui.ports;
+        }
 
         if (info.ports.audio.input != nullptr)
         {
