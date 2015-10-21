@@ -12,7 +12,6 @@ module.exports = function(grunt) {
         },
         files: {
           "main.css": "less/main.less" // destination file and source file
-          "bootstrap.css": "less/bootstrap.less" // destination file and source file
         }
       }
     },

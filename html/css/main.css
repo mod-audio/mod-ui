@@ -5981,10 +5981,23 @@ button.close {
   left: 10px;
   padding-top: 18px;
   position: fixed;
+  top: 0;
   right: 0;
-  top: 68px;
   width: 240px;
-  overflow: hidden;
+  overflow: auto;
+}
+#cloud-plugins-library .filter h1 {
+  font-weight: 2em;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin: 0;
+}
+#cloud-plugins-library .filter h2 {
+  color: white;
+  font-size: 15px;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-top: 1em;
 }
 #cloud-plugins-library .filter .control-group {
   float: left;
@@ -6032,6 +6045,8 @@ button.close {
 .cloud-plugins .cloud-plugin {
   color: #fff;
   background-color: #111;
+  float: left;
+  width: 100%;
   position: relative;
   min-height: 1px;
   padding-left: 15px;
@@ -6039,6 +6054,18 @@ button.close {
   padding: 15px;
 }
 @media (min-width: 768px) {
+  .cloud-plugins .cloud-plugin {
+    float: left;
+    width: 50%;
+  }
+}
+@media (min-width: 992px) {
+  .cloud-plugins .cloud-plugin {
+    float: left;
+    width: 50%;
+  }
+}
+@media (min-width: 1240px) {
   .cloud-plugins .cloud-plugin {
     float: left;
     width: 33.33333333%;
@@ -6092,14 +6119,24 @@ button.close {
 .cloud-plugins .cloud-plugin figure figcaption .status.outdated {
   background-color: #c67d0f;
 }
+.cloud-plugins .cloud-plugin figure figcaption .status.outdated:after {
+  content: "update";
+}
 .cloud-plugins .cloud-plugin figure figcaption .status.blocked {
   background-color: #d9534f;
+}
+.cloud-plugins .cloud-plugin figure figcaption .status.blocked:after {
+  content: "install";
 }
 .cloud-plugins .cloud-plugin .description {
   position: relative;
   min-height: 1px;
   padding-left: 15px;
   padding-right: 15px;
+  display: block;
+  line-height: 1.5;
+  max-height: 99px;
+  overflow: hidden;
 }
 @media (min-width: 768px) {
   .cloud-plugins .cloud-plugin .description {
@@ -6107,25 +6144,21 @@ button.close {
     width: 66.66666667%;
   }
 }
-.cloud-plugins .cloud-plugin .description .description {
-  display: block;
-  font-size: 12px;
-  height: 52px;
-  line-height: 1.5;
-  overflow: hidden;
+.cloud-plugins .cloud-plugin .description .no_description {
+  color: #444;
 }
-.cloud-plugins .cloud-plugin .description .actions {
+.cloud-plugins .cloud-plugin .actions {
   font-size: 11px;
   font-weight: bold;
   text-transform: uppercase;
 }
-.cloud-plugins .cloud-plugin .description .actions > span {
+.cloud-plugins .cloud-plugin .actions > span {
   cursor: pointer;
 }
-.cloud-plugins .cloud-plugin .description .actions > span:hover {
+.cloud-plugins .cloud-plugin .actions > span:hover {
   text-decoration: underline;
 }
-.cloud-plugins .cloud-plugin .description .actions span.duplicate {
+.cloud-plugins .cloud-plugin .actions span.duplicate {
   margin: 0 6px;
 }
 /* Make clicks pass-through */
