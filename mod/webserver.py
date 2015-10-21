@@ -62,6 +62,7 @@ try:
                            remove_bundle_from_lilv_world,
                            get_all_plugins,
                            get_plugin_info,
+                           get_plugin_info_mini,
                            get_all_pedalboards,
                            get_pedalboard_info,
                            get_pedalboard_name)
@@ -441,7 +442,10 @@ class EffectImage(web.RequestHandler):
         uri = self.get_argument('uri')
 
         try:
-            data = get_plugin_info(uri)
+            if usingFastLilv and image == "thumbnail":
+                data = get_plugin_info_mini(uri)
+            else:
+                data = get_plugin_info(uri)
         except:
             raise web.HTTPError(404)
 

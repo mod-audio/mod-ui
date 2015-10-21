@@ -248,6 +248,7 @@ class PluginInfo_Mini(Structure):
     _fields_ = [
         ("valid", c_bool),
         ("uri", c_char_p),
+        ("name", c_char_p),
         ("brand", c_char_p),
         ("label", c_char_p),
         ("category", POINTER(c_char_p)),
@@ -294,6 +295,9 @@ utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
 utils.get_plugin_info.argtypes = [c_char_p]
 utils.get_plugin_info.restype  = POINTER(PluginInfo)
 
+utils.get_plugin_info_mini.argtypes = [c_char_p]
+utils.get_plugin_info_mini.restype  = POINTER(PluginInfo_Mini)
+
 utils.get_all_pedalboards.argtypes = None
 utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo))
 
@@ -335,6 +339,14 @@ def get_all_plugins():
 # NOTE: may throw
 def get_plugin_info(uri):
     info = utils.get_plugin_info(uri.encode("utf-8"))
+    if not info:
+        raise Exception
+    return structToDict(info.contents)
+
+# get a specific plugin
+# NOTE: may throw
+def get_plugin_info_mini(uri):
+    info = utils.get_plugin_info_mini(uri.encode("utf-8"))
     if not info:
         raise Exception
     return structToDict(info.contents)

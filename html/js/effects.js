@@ -181,7 +181,7 @@ JqueryClass('effectBox', {
                         allplugins[plugin.uri] = plugin
                         desktop.pluginIndexer.add({
                             id: plugin.uri,
-                            data: [plugin.uri, plugin.brand, plugin.name, plugin.author.name, plugin.category.join(" ")].join(" ")
+                            data: [plugin.uri, plugin.brand, plugin.name, plugin.category.join(" ")].join(" ")
                         })
                     }
                     self.data('allplugins', allplugins)

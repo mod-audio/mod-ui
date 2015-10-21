@@ -57,6 +57,12 @@ std::map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
 static const char* const HOME = getenv("HOME");
 static size_t HOMElen = strlen(HOME);
 
+#define PluginInfo_Mini_Init {                   \
+    false,                                       \
+    nullptr, nullptr, nullptr, nullptr, nullptr, \
+    { nullptr }                                  \
+}
+
 #define PluginInfo_Init {                            \
     false,                                           \
     nullptr, nullptr,                                \
@@ -427,6 +433,7 @@ void _refresh()
 
     BUNDLES.clear();
     PLUGNFO.clear();
+    PLUGNFO_Mini.clear();
     PLUGINS = lilv_world_get_all_plugins(W);
 
     // Make a list of all installed bundles
@@ -440,6 +447,7 @@ void _refresh()
 
         // store empty dict for later
         PLUGNFO[uri] = PluginInfo_Init;
+        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
 
         LILV_FOREACH(nodes, itbnds, bundles)
         {
@@ -498,6 +506,20 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
     info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
     // --------------------------------------------------------------------------------------------------------
+    // name
+
+    if (LilvNode* node = lilv_plugin_get_name(p))
+    {
+        const char* name = lilv_node_as_string(node);
+        info.name = (name != nullptr) ? strdup(name) : nc;
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.name = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // brand
 
     char brand[10+1] = { '\0' };
@@ -530,15 +552,21 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
         info.label = strdup(label);
         lilv_nodes_free(nodes);
     }
-    else if (LilvNode* node = lilv_plugin_get_name(p))
+    else if (info.name == nc)
     {
-        strncpy(label, lilv_node_as_string(node), 16);
-        info.label = strdup(label);
-        lilv_node_free(node);
+        info.label = nc;
     }
     else
     {
-        info.label = nc;
+        if (strlen(info.name) <= 16)
+        {
+            info.label = strdup(info.name);
+        }
+        else
+        {
+            strncpy(label, info.name, 16);
+            info.label = strdup(label);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -690,6 +718,10 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
         }
 
         lilv_nodes_free(nodes);
+    }
+    else
+    {
+        info.gui.thumbnail = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -2085,6 +2117,40 @@ const PluginInfo* get_plugin_info(const char* uri_)
         printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
         PLUGNFO[uri] = _get_plugin_info(p, ns);
         return &PLUGNFO[uri];
+    }
+
+    // not found
+    return nullptr;
+}
+
+const PluginInfo_Mini* get_plugin_info_mini(const char* uri_)
+{
+    std::string uri = uri_;
+
+    // check if it exists
+    if (PLUGNFO_Mini.count(uri) == 0)
+        return nullptr;
+
+    // check if it's already cached
+    if (PLUGNFO_Mini[uri].valid)
+        return &PLUGNFO_Mini[uri];
+
+    const NamespaceDefinitions_Mini ns;
+
+    // look for it
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* p = lilv_plugins_get(PLUGINS, itpls);
+
+        std::string uri2 = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        if (uri2 != uri)
+            continue;
+
+        // found it
+        printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
+        PLUGNFO_Mini[uri] = _get_plugin_info_mini(p, ns);
+        return &PLUGNFO_Mini[uri];
     }
 
     // not found

@@ -132,6 +132,7 @@ typedef struct {
 typedef struct {
     bool valid;
     const char* uri;
+    const char* name;
     const char* brand;
     const char* label;
     const char* const* category;
@@ -163,6 +164,10 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // get a specific plugin
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
+
+// get a specific plugin
+// NOTE: may return null
+MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
 
 // get all available pedalboards (ie, plugins with pedalboard type)
 MOD_API const PedalboardInfo* const* get_all_pedalboards(void);
