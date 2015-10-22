@@ -75,6 +75,8 @@ class Host(object):
         self._idle = True
         self.mapper = InstanceIdMapper()
         self.plugins = {}
+        self.pedalboard_name = ""
+        self.pedalboard_size = [0,0]
 
         self.cputimerok = True
         self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
@@ -186,10 +188,28 @@ class Host(object):
             self.msg_callback(get_port("audio", True, "playback_2"))
             self.msg_callback(get_port("midi", False, "midi_capture_1"))
             self.msg_callback(get_port("midi", True, "midi_playback_1"))
+
+            for plugin in self.plugins.values():
+                x, y = plugin['pos']
+                msg = """[]
+                a <http://lv2plug.in/ns/ext/patch#Put> ;
+                <http://lv2plug.in/ns/ext/patch#subject> <%s> ;
+                <http://lv2plug.in/ns/ext/patch#body> [
+                    <http://drobilla.net/ns/ingen#canvasX> "%.1f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+                    <http://drobilla.net/ns/ingen#canvasY> "%.1f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+                    <http://drobilla.net/ns/ingen#enabled> %s ;
+                    <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+                    a <http://drobilla.net/ns/ingen#Block> ;
+                ] .
+                """ % (plugin['instance'], x, y, "false" if plugin['bypass'] else "true", plugin['uri'])
+                self.plugin_added_callback(plugin['instance'], plugin['uri'], plugin['bypass'], x, y)
+                self.msg_callback(msg)
             return
 
     def add_plugin(self, instance, uri, enabled, x, y, callback):
         instance_id = self.mapper.get_id(instance)
+        x = float(x)
+        y = float(y)
 
         def ingen_callback(ok):
             if not ok:
@@ -205,7 +225,15 @@ class Host(object):
                 <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
                 a <http://drobilla.net/ns/ingen#Block> ;
             ] .
-            """ % (instance, float(x), float(y), uri)
+            """ % (instance, x, y, uri)
+
+            self.plugins[instance_id] = {
+                "instance": instance,
+                "uri"     : uri,
+                "bypass"  : not enabled,
+                "pos"     : [x,y],
+                "values"  : {},
+            }
 
             self.plugin_added_callback(instance, uri, False, x, y)
             self.msg_callback(msg)
@@ -215,6 +243,7 @@ class Host(object):
 
     def remove_plugin(self, instance, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
+        self.plugins.pop(instance_id)
 
         def ingen_callback(ok):
             if not ok:
@@ -232,31 +261,21 @@ class Host(object):
 
     def enable(self, instance, enabled, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
+        self.plugins[instance_id]['bypass'] = not enabled
 
-        def ingen_callback(ok):
-            if not ok:
-                callback(False)
-                return
-            # TODO
-            callback(True)
-
-        self.send("bypass %d %d" % (instance_id, 0 if enabled else 1), ingen_callback, datatype='boolean')
+        self.send("bypass %d %d" % (instance_id, 0 if enabled else 1), callback, datatype='boolean')
 
     def param_set(self, port, value, callback):
         instance, symbol = port.rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
+        self.plugins[instance_id]['values'][symbol] = value
 
-        def ingen_callback(ok):
-            if not ok:
-                callback(False)
-                return
-            # TODO
-            callback(True)
-
-        self.send("param_set %d %s %f" % (instance_id, symbol, value), ingen_callback, datatype='boolean')
+        self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
     def set_position(self, instance, x, y, callback):
-        # TODO
+        instance_id = self.mapper.get_id_without_creating(instance)
+
+        self.plugins[instance_id]['pos'] = float(x), float(y)
         callback(True)
 
     def connect(self, port_from, port_to, callback):
@@ -323,11 +342,11 @@ class Host(object):
         self.send("disconnect %s %s" % (host_port_from, host_port_to), ingen_callback, datatype='boolean')
 
     def set_pedalboard_name(self, title, callback):
-        # TODO
+        self.pedalboard_name = title
         callback(True)
 
     def set_pedalboard_size(self, width, height, callback):
-        # TODO
+        self.pedalboard_size = [width, height]
         callback(True)
 
     def add_external_port(self, name, mode, typ, callback):
