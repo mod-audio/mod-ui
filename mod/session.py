@@ -98,7 +98,6 @@ class Session(object):
         self.player = Player()
         self.mute_state = True
         self.recording = None
-        self.instances = []
         self.screenshot_generator = ScreenshotGenerator()
 
         self._clipmeter = Clipmeter(self.hmi)
@@ -513,22 +512,11 @@ class Session(object):
                 ws.write_message(msg)
 
         def saved_callback(bundlepath):
-            if add_bundle_to_lilv_world(bundlepath):
-                pass #self.host.add_bundle(bundlepath)
+            #add_bundle_to_lilv_world(bundlepath)
             self.screenshot_generator.schedule_screenshot(bundlepath)
-
-        def plugin_added_callback(instance, uri, enabled, x, y):
-            if instance not in self.instances:
-                self.instances.append(instance)
-
-        def plugin_removed_callback(instance):
-            if instance in self.instances:
-                self.instances.remove(instance)
 
         self.host.msg_callback = msg_callback
         self.host.saved_callback = saved_callback
-        self.host.plugin_added_callback = plugin_added_callback
-        self.host.plugin_removed_callback = plugin_removed_callback
 
         yield gen.Task(self.host.initial_setup)
 
@@ -542,33 +530,19 @@ class Session(object):
         self.bundlepath = None
         self.title      = None
 
-        # Callback from socket
-        def remove_next_plugin(ok):
-            if not ok:
-                callback(False)
-                return
-
-            try:
-                instance = self.instances.pop(0)
-            except IndexError:
-                callback(True)
-                return
-
-            self.host.remove_plugin(instance, remove_next_plugin)
-
-        # Callback from HMI, ignore ok status
-        def remove_all_plugins(ok):
-            remove_next_plugin(True)
-
         # Reset addressing data
         if self.addressings is not None:
             self.addressings.clear()
+
+        # Callback from HMI, ignore ok status
+        def remove_all_plugins(ok):
+            self.host.remove(-1, callback)
 
         # Wait for HMI if available
         if self.hmi_initialized:
             self.hmi.clear(remove_all_plugins)
         else:
-            remove_next_plugin(True)
+            remove_all_plugins(True)
 
         self.pedalboard_changed_callback(True, "", "")
 
