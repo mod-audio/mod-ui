@@ -74,6 +74,7 @@ class Host(object):
         self._queue = []
         self._idle = True
         self.mapper = InstanceIdMapper()
+        self.plugins = {}
 
         self.cputimerok = True
         self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
@@ -81,7 +82,6 @@ class Host(object):
         self.msg_callback = lambda msg:None
         self.saved_callback = lambda bundlepath:None
         self.loaded_callback = lambda bundlepath:None
-        self.samplerate_callback = lambda srate:None
         self.plugin_added_callback = lambda instance,uri,enabled,x,y:None
         self.plugin_removed_callback = lambda instance:None
         self.plugin_enabled_callback = lambda instance,enabled:None

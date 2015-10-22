@@ -560,6 +560,9 @@ class Session(object):
 
         self.host_initialized = True
 
+        if self.jack_client is not None:
+            self.engine_samplerate = jacklib.get_sample_rate(self.jack_client)
+
         def msg_callback(msg):
             for ws in self.websockets:
                 ws.write_message(msg)
@@ -568,9 +571,6 @@ class Session(object):
             if add_bundle_to_lilv_world(bundlepath):
                 pass #self.host.add_bundle(bundlepath)
             self.screenshot_generator.schedule_screenshot(bundlepath)
-
-        def samplerate_callback(srate):
-            self.engine_samplerate = srate
 
         def plugin_added_callback(instance, uri, enabled, x, y):
             if instance not in self.instances:
@@ -582,7 +582,6 @@ class Session(object):
 
         self.host.msg_callback = msg_callback
         self.host.saved_callback = saved_callback
-        self.host.samplerate_callback = samplerate_callback
         self.host.plugin_added_callback = plugin_added_callback
         self.host.plugin_removed_callback = plugin_removed_callback
 

@@ -88,7 +88,6 @@ class IngenAsync(object):
         self.msg_callback = lambda msg:None
         self.saved_callback = lambda bundlepath:None
         self.loaded_callback = lambda bundlepath:None
-        self.samplerate_callback = lambda srate:None
         self.plugin_added_callback = lambda instance,uri,enabled,x,y:None
         self.plugin_removed_callback = lambda instance:None
         self.plugin_enabled_callback = lambda instance,enabled:None
@@ -228,10 +227,6 @@ class IngenAsync(object):
                     if msg_model.value(bnode, NS.rdf.type) == NS.midi.Controller:
                         cc = msg_model.value(msg_model.value(bnode, NS.patch.value), NS.midi.controllerNumber).toPython()
                         self.port_binding_callback(port, cc)
-
-                elif property == NS.parameters.sampleRate:
-                    value = msg_model.value(bnode, NS.patch.value).toPython()
-                    self.samplerate_callback(value)
 
                 #elif property not in (NS.rdf.type,
                                       #NS.ingen.file,
