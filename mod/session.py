@@ -170,7 +170,7 @@ class Session(object):
 
     # Add a new plugin, starts enabled (ie, not bypassed)
     def web_add(self, instance, uri, x, y, callback):
-        self.host.add_plugin(instance, uri, True, x, y, callback)
+        self.host.add_plugin(instance, uri, x, y, callback)
 
     # Remove a plugin
     def web_remove(self, instance, callback):
@@ -183,7 +183,7 @@ class Session(object):
 
         if port2 == ":bypass":
             value = value >= 0.5
-            self.host.enable(instance, not value, callback)
+            self.host.bypass(instance, value, callback)
         else:
             self.host.param_set(port, value, callback)
 
@@ -207,8 +207,8 @@ class Session(object):
         self.host.preset_load(instance, uri, callback)
 
     # Set a plugin block position within the canvas
-    def web_set_position(self, instance, x, y, callback):
-        self.host.set_position(instance, x, y, callback)
+    def web_set_position(self, instance, x, y):
+        self.host.set_position(instance, x, y)
 
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
@@ -535,14 +535,14 @@ class Session(object):
             self.addressings.clear()
 
         # Callback from HMI, ignore ok status
-        def remove_all_plugins(ok):
-            self.host.remove(-1, callback)
+        def reset_host(ok):
+            self.host.reset(callback)
 
         # Wait for HMI if available
         if self.hmi_initialized:
-            self.hmi.clear(remove_all_plugins)
+            self.hmi.clear(reset_host)
         else:
-            remove_all_plugins(True)
+            reset_host(True)
 
         self.pedalboard_changed_callback(True, "", "")
 

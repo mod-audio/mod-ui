@@ -532,8 +532,8 @@ class EffectAdd(web.RequestHandler):
     @gen.engine
     def get(self, instance):
         uri = self.get_argument('uri')
-        x   = self.request.arguments.get('x', [0])[0]
-        y   = self.request.arguments.get('y', [0])[0]
+        x   = float(self.request.arguments.get('x', [0])[0])
+        y   = float(self.request.arguments.get('y', [0])[0])
 
         resp = yield gen.Task(SESSION.web_add, instance, uri, x, y)
 
@@ -639,9 +639,9 @@ class EffectPosition(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        x    = int(float(self.get_argument('x')))
-        y    = int(float(self.get_argument('y')))
-        resp = yield gen.Task(SESSION.web_set_position, instance, x, y)
+        x = float(self.get_argument('x'))
+        y = float(self.get_argument('y'))
+        resp = SESSION.web_set_position(instance, x, y)
         self.write(json.dumps(resp))
         self.finish()
 

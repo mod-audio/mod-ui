@@ -150,7 +150,7 @@ $('document').ready(function() {
     NProgress.start();
   })
   .ajaxComplete(function() {
-    NProgress.done();  
+    NProgress.done();
   });
 
   // end code for ajax loading bar
@@ -193,7 +193,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/bluetooth.js?v={{version}}"></script>
 <script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/xrun.js?v={{version}}"></script>
-<script type="text/javascript" src="js/ingen.js?v={{version}}"></script>
+<script type="text/javascript" src="js/host.js?v={{version}}"></script>
 <script type="text/javascript" src="js/presets.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 
@@ -452,8 +452,8 @@ $('document').ready(function() {
         <div id="mod-bluetooth" class="icon"></div>
         <div id="mod-cloud" class="icon"></div>
         <div id="mod-cpu" class="icon">
-          <div class="progress" id="cpu-bar">
-            <div class="bar" style="width: 80%;"></div> <!-- not sure if this is needed -->
+          <div class="progress" id="cpu-bar" style="width: 100%;">
+            <div class="bar"></div> <!-- not sure if this is needed -->
           </div>
           <p class="progress-title" id="cpu-bar-text">
             cpu
