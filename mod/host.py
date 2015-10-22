@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
+# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@portalmod.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 """
 This module works as an interface for mod-host, it uses a socket to communicate
-with mod-host, the protocol is described in <http://github.com/moddevices/mod-host>
+with mod-host, the protocol is described in <http://github.com/portalmod/mod-host>
 
 The module relies on tornado.ioloop stuff, but you need to start the ioloop
 by yourself:
@@ -28,60 +28,105 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
-from tornado import iostream, ioloop
-
 from mod.protocol import ProtocolError, process_resp
-from mod import ingen
-
+from tornado import iostream, ioloop
 import socket, logging
 
+# class to map between numeric ids and string instances
+class InstanceIdMapper(object):
+    def __init__(self):
+        # last used id, always incrementing
+        self.last_id = 0
+        # map id <-> instances
+        self.id_map = {}
+        # map instances <-> ids
+        self.instance_map = {}
+
+    # get a numeric id from a string instance
+    def get_id(self, instance):
+        # check if it already exists
+        if instance in self.instance_map.keys():
+            return self.instance_map[instance]
+
+        # increment last id
+        id = self.last_id
+        self.last_id += 1
+
+        # create mapping
+        self.instance_map[instance] = id
+        self.id_map[id] = instance
+
+        # ready
+        return self.instance_map[instance]
+
+    def get_id_without_creating(self, instance):
+        return self.instance_map[instance]
+
+    # get a string instance from a numeric id
+    def get_instance(self, id):
+        return self.id_map[id]
+
 class Host(object):
-    def __init__(self, port, address="localhost", callback=lambda:None):
-        self.port = port
-        self.address = address
-        self.queue = []
-        self.latest_callback = None
-        self.open_connection(callback)
+    def __init__(self, uri):
+        self.addr = ("localhost", 5555)
+        self.sock = None
+        self.connected = False
+        self._queue = []
+        self._idle = True
+        self.mapper = InstanceIdMapper()
+        self.plugins = {}
+        self.pedalboard_name = ""
+        self.pedalboard_size = [0,0]
 
-    def open_connection(self, callback=None):
-        self.socket_idle = False
+        self.cputimerok = True
+        self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
 
-        if (self.latest_callback):
-            # There's a connection waiting, let's just send an error
-            # for it to finish properly
-            try:
-                self.latest_callback("finish\0".encode("utf-8"))
-            except Exception as e:
-                logging.warn("[host] latest callback failed: %s" % str(e))
+        self.msg_callback = lambda msg:None
+        self.saved_callback = lambda bundlepath:None
+        self.loaded_callback = lambda bundlepath:None
+        self.plugin_added_callback = lambda instance,uri,enabled,x,y:None
+        self.plugin_removed_callback = lambda instance:None
+        self.plugin_enabled_callback = lambda instance,enabled:None
+        self.plugin_position_callback = lambda instance,x,y:None
+        self.port_value_callback = lambda port,value:None
+        self.port_binding_callback = lambda port,cc:None
+        self.connection_added_callback = lambda port1,port2:None
+        self.connection_removed_callback = lambda port1,port2:None
 
-        self.latest_callback = None
+        ioloop.IOLoop.instance().add_callback(self.init_connection)
+
+    def init_connection(self):
+        self.open_connection_if_needed(lambda:None)
+
+    def open_connection_if_needed(self, callback):
+        if self.sock is not None:
+            callback()
+            return
+
+        self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self._idle = False
 
         def check_response():
-            if callback is not None:
-                callback()
-            if len(self.queue):
+            self.connected = True
+            callback()
+            self.cputimer.start()
+            if len(self._queue):
                 self.process_queue()
             else:
-                self.socket_idle = True
-            #self.setup_monitor()
+                self._idle = True
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s = iostream.IOStream(s)
-        self.s.set_close_callback(self.open_connection)
+        def closed():
+            self.sock = None
 
-        ioloop.IOLoop.instance().add_callback(lambda: self.s.connect((self.address, self.port), check_response))
-
-    def send(self, msg, callback, datatype='int'):
-        self.queue.append((msg, callback, datatype))
-        if self.socket_idle:
-            self.process_queue()
+        self.sock.set_close_callback(closed)
+        self.sock.connect(self.addr, check_response)
 
     def process_queue(self):
         try:
-            msg, callback, datatype = self.queue.pop(0)
+            msg, callback, datatype = self._queue.pop(0)
             logging.info("[host] popped from queue: %s" % msg)
         except IndexError:
-            self.socket_idle = True
+            self._idle = True
             return
 
         def check_response(resp):
@@ -95,44 +140,237 @@ class Host(object):
             callback(process_resp(r, datatype))
             self.process_queue()
 
-        self.socket_idle = False
+        self._idle = False
         logging.info("[host] sending -> %s" % msg)
 
         encmsg = "%s\0" % str(msg)
-        self.s.write(encmsg.encode("utf-8"))
-        self.s.read_until("\0".encode("utf-8"), check_response)
+        self.sock.write(encmsg.encode("utf-8"))
+        self.sock.read_until("\0".encode("utf-8"), check_response)
 
-        self.latest_callback = check_response
+    def send(self, msg, callback, datatype='int'):
+        self._queue.append((msg, callback, datatype))
+        if self._idle:
+            self.process_queue()
 
-    def add(self, uri, instance_id, callback=lambda result: None):
-        self.send("add %s %d" % (uri, instance_id), callback)
+    # host stuff
+    def initial_setup(self, callback):
+        callback(True)
 
-    def remove(self, instance_id, callback=lambda result: None):
-        self.send("remove %d" % instance_id, callback, datatype='boolean')
+    def get(self, subject):
+        if subject == "/graph":
+            def get_port(type, isInput, name):
+                if type == "midi":
+                    types = "<http://lv2plug.in/ns/ext/atom#bufferType> <http://lv2plug.in/ns/ext/atom#Sequence> ;\n"
+                    types += "a <http://lv2plug.in/ns/ext/atom#AtomPort> ,\n"
+                elif type == "audio":
+                    types = "a <http://lv2plug.in/ns/lv2core#AudioPort> ,\n"
+                elif type == "cv":
+                    types = "a <http://lv2plug.in/ns/lv2core#CVPort> ,\n"
+                else:
+                    return
+                if isInput:
+                    types += "<http://lv2plug.in/ns/lv2core#OutputPort>\n"
+                else:
+                    types += "<http://lv2plug.in/ns/lv2core#InputPort>\n"
+                msg = """[]
+                a <http://lv2plug.in/ns/ext/patch#Put> ;
+                <http://lv2plug.in/ns/ext/patch#subject> </graph/system/%s> ;
+                <http://lv2plug.in/ns/ext/patch#body> [
+                    <http://lv2plug.in/ns/lv2core#index> "0"^^<http://www.w3.org/2001/XMLSchema#int> ;
+                    <http://lv2plug.in/ns/lv2core#name> "%s" ;
+                    %s
+                ] .
+                """ % (name, name.title().replace("_", " "), types)
+                return msg
+            self.msg_callback(get_port("audio", False, "capture_1"))
+            self.msg_callback(get_port("audio", False, "capture_2"))
+            self.msg_callback(get_port("audio", True, "playback_1"))
+            self.msg_callback(get_port("audio", True, "playback_2"))
+            self.msg_callback(get_port("midi", False, "midi_capture_1"))
+            self.msg_callback(get_port("midi", True, "midi_playback_1"))
 
-    def connect(self, origin_port, destination_port, callback=lambda result: None):
-        self.send("connect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
+            for plugin in self.plugins.values():
+                x, y = plugin['pos']
+                msg = """[]
+                a <http://lv2plug.in/ns/ext/patch#Put> ;
+                <http://lv2plug.in/ns/ext/patch#subject> <%s> ;
+                <http://lv2plug.in/ns/ext/patch#body> [
+                    <http://drobilla.net/ns/ingen#canvasX> "%.1f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+                    <http://drobilla.net/ns/ingen#canvasY> "%.1f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+                    <http://drobilla.net/ns/ingen#enabled> %s ;
+                    <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+                    a <http://drobilla.net/ns/ingen#Block> ;
+                ] .
+                """ % (plugin['instance'], x, y, "false" if plugin['bypass'] else "true", plugin['uri'])
+                self.plugin_added_callback(plugin['instance'], plugin['uri'], plugin['bypass'], x, y)
+                self.msg_callback(msg)
+            return
 
-    def disconnect(self, origin_port, destination_port, callback=lambda result: None):
-        self.send("disconnect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
+    def add_plugin(self, instance, uri, enabled, x, y, callback):
+        instance_id = self.mapper.get_id(instance)
+        x = float(x)
+        y = float(y)
 
-    def param_set(self, instance_id, symbol, value, callback=lambda result: None):
+        def ingen_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            msg = """[]
+            a <http://lv2plug.in/ns/ext/patch#Put> ;
+            <http://lv2plug.in/ns/ext/patch#subject> <%s> ;
+            <http://lv2plug.in/ns/ext/patch#body> [
+                <http://drobilla.net/ns/ingen#canvasX> "%.1f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+                <http://drobilla.net/ns/ingen#canvasY> "%.1f"^^<http://www.w3.org/2001/XMLSchema#float> ;
+                <http://drobilla.net/ns/ingen#enabled> true ;
+                <http://lv2plug.in/ns/lv2core#prototype> <%s> ;
+                a <http://drobilla.net/ns/ingen#Block> ;
+            ] .
+            """ % (instance, x, y, uri)
+
+            self.plugins[instance_id] = {
+                "instance": instance,
+                "uri"     : uri,
+                "bypass"  : not enabled,
+                "pos"     : [x,y],
+                "values"  : {},
+            }
+
+            self.plugin_added_callback(instance, uri, False, x, y)
+            self.msg_callback(msg)
+            callback(True)
+
+        self.send("add %s %d" % (uri, instance_id), ingen_callback, datatype='boolean')
+
+    def remove_plugin(self, instance, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        self.plugins.pop(instance_id)
+
+        def ingen_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            msg = """[]
+            a <http://lv2plug.in/ns/ext/patch#Delete> ;
+            <http://lv2plug.in/ns/ext/patch#subject> <%s> .
+            """ % instance
+            self.plugin_removed_callback(instance)
+            self.msg_callback(msg)
+            callback(True)
+
+        self.send("remove %d" % instance_id, ingen_callback, datatype='boolean')
+
+    def enable(self, instance, enabled, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        self.plugins[instance_id]['bypass'] = not enabled
+
+        self.send("bypass %d %d" % (instance_id, 0 if enabled else 1), callback, datatype='boolean')
+
+    def param_set(self, port, value, callback):
+        instance, symbol = port.rsplit("/", 1)
+        instance_id = self.mapper.get_id_without_creating(instance)
+        self.plugins[instance_id]['values'][symbol] = value
+
         self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
-    def param_get(self, instance_id, symbol, callback=lambda result: None):
-        self.send("param_get %d %s" % (instance_id, symbol), callback, datatype='float_structure')
+    def set_position(self, instance, x, y, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
 
-    def preset_load(self, instance_id, label, callback=lambda result: None):
-        self.send('preset %d "%s"' % (instance_id, label), callback, datatype='boolean')
+        self.plugins[instance_id]['pos'] = float(x), float(y)
+        callback(True)
 
-    def param_monitor(self, instance_id, symbol, op, value, callback=lambda result: None):
-        self.send("param_monitor %d %s %s %f" % (instance_id, symbol, op, value), callback, datatype='boolean')
+    def connect(self, port_from, port_to, callback):
+        if port_from.startswith("/graph/system/"):
+            host_port_from = port_from.replace("/graph/system/","system:")
+        else:
+            instance, symbol = port_from.rsplit("/", 1)
+            instance_id = self.mapper.get_id_without_creating(instance)
+            host_port_from = "effect_%d:%s" % (instance_id, symbol)
 
-    def monitor(self, addr, port, status, callback=lambda result: None):
-        self.send("monitor %s %d %d" % (addr, port, status), callback, datatype='boolean')
+        if port_to.startswith("/graph/system/"):
+            host_port_to = port_to.replace("/graph/system/","system:")
+        else:
+            instance, symbol = port_to.rsplit("/", 1)
+            instance_id = self.mapper.get_id_without_creating(instance)
+            host_port_to = "effect_%d:%s" % (instance_id, symbol)
 
-    def bypass(self, instance_id, value, callback=lambda result: None):
-        self.send("bypass %d %d" % (instance_id, value), callback, datatype='boolean')
+        def ingen_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            msg = """[]
+            a <http://lv2plug.in/ns/ext/patch#Put> ;
+            <http://lv2plug.in/ns/ext/patch#subject> </graph/> ;
+            <http://lv2plug.in/ns/ext/patch#body> [
+                    a <http://drobilla.net/ns/ingen#Arc> ;
+                    <http://drobilla.net/ns/ingen#tail> <%s> ;
+                    <http://drobilla.net/ns/ingen#head> <%s>
+            ] .""" % (port_from, port_to)
+            self.msg_callback(msg)
+            callback(True)
 
-    def cpu_load(self, callback=lambda result: None):
-        self.send("cpu_load", callback, datatype='float_structure')
+        self.send("connect %s %s" % (host_port_from, host_port_to), ingen_callback, datatype='boolean')
+
+    def disconnect(self, port_from, port_to, callback):
+        if port_from.startswith("/graph/system/"):
+            host_port_from = port_from.replace("/graph/system/","system:")
+        else:
+            instance, symbol = port_from.rsplit("/", 1)
+            instance_id = self.mapper.get_id_without_creating(instance)
+            host_port_from = "effect_%d:%s" % (instance_id, symbol)
+
+        if port_to.startswith("/graph/system/"):
+            host_port_to = port_to.replace("/graph/system/","system:")
+        else:
+            instance, symbol = port_to.rsplit("/", 1)
+            instance_id = self.mapper.get_id_without_creating(instance)
+            host_port_to = "effect_%d:%s" % (instance_id, symbol)
+
+        def ingen_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            msg = """[]
+            a <http://lv2plug.in/ns/ext/patch#Delete> ;
+            <http://lv2plug.in/ns/ext/patch#body> [
+                    a <http://drobilla.net/ns/ingen#Arc> ;
+                    <http://drobilla.net/ns/ingen#tail> <%s> ;
+                    <http://drobilla.net/ns/ingen#head> <%s>
+            ] .""" % (port_from, port_to)
+            self.msg_callback(msg)
+            callback(True)
+
+        self.send("disconnect %s %s" % (host_port_from, host_port_to), ingen_callback, datatype='boolean')
+
+    def set_pedalboard_name(self, title, callback):
+        self.pedalboard_name = title
+        callback(True)
+
+    def set_pedalboard_size(self, width, height, callback):
+        self.pedalboard_size = [width, height]
+        callback(True)
+
+    def add_external_port(self, name, mode, typ, callback):
+        # ignored
+        callback(True)
+
+    def remove_external_port(self, name, callback):
+        # ignored
+        callback(True)
+
+    def cputimer_callback(self):
+        if not self.cputimerok:
+            return
+
+        def cpu_callback(resp):
+            if not resp['ok']:
+                return
+            msg = """[]
+            a <http://lv2plug.in/ns/ext/patch#Set> ;
+            <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
+            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/modpedal#cpuload> ;
+            <http://lv2plug.in/ns/ext/patch#value> "%0.1f" .""" % resp['value']
+            self.msg_callback(msg)
+            self.cputimerok = True
+
+        self.cputimerok = False
+        self.send("cpu_load", cpu_callback, datatype='float_structure')
