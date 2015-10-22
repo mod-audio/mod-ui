@@ -67,7 +67,7 @@ class InstanceIdMapper(object):
         return self.id_map[id]
 
 class Host(object):
-    def __init__(self, uri):
+    def __init__(self):
         self.addr = ("localhost", 5555)
         self.sock = None
         self.connected = False

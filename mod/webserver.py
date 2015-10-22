@@ -1396,12 +1396,10 @@ def prepare():
     ioinstance.add_callback(check)
 
 def start():
-    SESSION.start_timers()
     tornado.ioloop.IOLoop.instance().start()
 
 def stop():
     tornado.ioloop.IOLoop.instance().stop()
-    SESSION.stop_timers()
 
 def run():
     prepare()

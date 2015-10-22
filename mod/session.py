@@ -24,13 +24,13 @@ from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA, HOST_ORIG,
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
 from mod import get_hardware, symbolify
 from mod import symbolify
-from mod.addressing import Addressing
+#from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.lv2 import add_bundle_to_lilv_world
@@ -85,10 +85,11 @@ class Session(object):
 
         print("Using HMI =>", hmiOpened)
 
-        if hmiOpened:
-            # If all ok, use addressings
-            self.addressings = Addressing(self.hmi)
-        else:
+        #if hmiOpened:
+            ## If all ok, use addressings
+            #self.addressings = Addressing(self.hmi)
+        #else:
+        if 1:
             # Otherwise disable HMI entirely
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
             self.addressings = None
@@ -103,9 +104,6 @@ class Session(object):
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
         self.mididevuuids = []
-
-        self.jack_cpu_load_timer = ioloop.PeriodicCallback(self.jack_cpu_load_timer_callback, 1000)
-        self.jack_xrun_timer     = ioloop.PeriodicCallback(self.jack_xrun_timer_callback, 500)
 
         self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
@@ -165,18 +163,6 @@ class Session(object):
 
         if self.addressings is not None:
             self.addressings.init_host()
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Timers (start and stop in sync with webserver IOLoop)
-
-    def start_timers(self):
-        if not HOST_ORIG:
-            self.jack_cpu_load_timer.start()
-        self.jack_xrun_timer.start()
-
-    def stop_timers(self):
-        self.jack_xrun_timer.stop()
-        self.jack_cpu_load_timer.stop()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
@@ -507,25 +493,6 @@ class Session(object):
                 jacklib.connect(self.jack_client, midi_name, self.backend_client_name+":control_in")
             else:
                 jacklib.connect(self.jack_client, mod_name, midi_name)
-
-    # Callback for getting the current JACK cpu load and report it to the browser side.
-    def jack_cpu_load_timer_callback(self):
-        if self.jack_client is not None:
-            msg = """[]
-            a <http://lv2plug.in/ns/ext/patch#Set> ;
-            <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
-            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/modpedal#cpuload> ;
-            <http://lv2plug.in/ns/ext/patch#value> "%.1f" .
-            """ % jacklib.cpu_load(self.jack_client)
-
-            for ws in self.websockets:
-                ws.write_message(msg)
-
-    # Callback that checks if xruns have occured.
-    def jack_xrun_timer_callback(self):
-        for i in range(self.xrun_count2, self.xrun_count):
-            self.xrun_count2 += 1
-            #self.hmi.xrun()
 
     # -----------------------------------------------------------------------------------------------------------------
     # TODO

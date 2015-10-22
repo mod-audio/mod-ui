@@ -18,7 +18,7 @@
 import logging
 from tornado import ioloop
 from mod.hmi import HMI
-from mod.ingen import Host
+from mod.host import Host
 
 class FakeCommunicator(object):
     def init(self, callback):
