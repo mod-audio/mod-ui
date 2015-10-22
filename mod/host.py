@@ -196,7 +196,7 @@ class Host(object):
             #self.msg_callback(get_port("midi", True, "midi_playback_1"))
 
             for instance_id, plugin in self.plugins.items():
-                self.msg_callback("add %s %s %f %f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
+                self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
 
                 for symbol, value in plugin['ports'].items():
                     self.msg_callback("param_set %s %s %f" % (plugin['instance'], symbol, value))
@@ -228,7 +228,7 @@ class Host(object):
                 "addressing": {}, # symbol: addressing
                 "ports"     : dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
             }
-            self.msg_callback("add %s %s %f %f %d" % (instance, uri, x, y, int(bypassed)))
+            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
             callback(resp)
 
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
@@ -259,7 +259,6 @@ class Host(object):
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
-        print("set set_position", x, y)
 
         self.plugins[instance_id]['x'] = x
         self.plugins[instance_id]['y'] = y

@@ -17,38 +17,38 @@
 
 $('document').ready(function() {
     var ws = new WebSocket("ws://" + window.location.host + "/websocket");
-    var cmd, data, value, instance, symbol, uri
 
     ws.onmessage = function (evt) {
-        data = evt.data.split(" ")
+        var data = evt.data.split(" ")
 
         if (!data.length) {
             return
         }
 
-        cmd = data[0]
+        var cmd = data[0]
 
         if (cmd == "cpu_load") {
-            value = data[1]
+            var value = data[1]
             $("#cpu-bar").css("width", (100.0-value).toFixed().toString()+"%")
             $("#cpu-bar-text").text("CPU "+value.toString()+"%")
             return
         }
 
         if (cmd == "param_set") {
-            instance = data[1]
-            symbol   = data[2]
-            value    = parseFloat(data[3])
+            var instance = data[1]
+            var symbol   = data[2]
+            var value    = parseFloat(data[3])
             desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
             return
         }
 
         if (cmd == "add") {
-            console.log(data)
-            instance = data[1]
-            uri      = data[2]
-
-            var plugins = desktop.pedalboard.data('plugins')
+            var instance = data[1]
+            var uri      = data[2]
+            var x        = parseFloat(data[3])
+            var y        = parseFloat(data[4])
+            var bypassed = parseInt(data[5]) != 0
+            var plugins  = desktop.pedalboard.data('plugins')
 
             if (plugins[instance] == null) {
                 plugins[instance] = {} // register plugin
@@ -71,7 +71,7 @@ $('document').ready(function() {
                             $(document).arrive(instancekey, cb)
                         }
 
-                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, parseInt(data[5]) != 0, parseFloat(data[3]), parseFloat(data[4]), {})
+                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {})
                     },
                     cache: false,
                     dataType: 'json'
