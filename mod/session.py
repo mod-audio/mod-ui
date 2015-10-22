@@ -27,9 +27,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA, HOST_ORIG,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
-                          INGEN_AUTOCONNECT, INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
-                          INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS, INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
 from mod import get_hardware, symbolify
 from mod import symbolify
 from mod.addressing import Addressing
@@ -42,12 +40,10 @@ from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
-if HOST_ORIG:
-    from mod.host_orig import Host
-elif HOST_CARLA:
+if HOST_CARLA:
     from mod.host_carla import Host
 else:
-    from mod.ingen import Host
+    from mod.host import Host
 
 class Session(object):
     def __init__(self):
@@ -60,9 +56,6 @@ class Session(object):
         self.monitor_server = None
         self.current_bank = None
         self.hmi_initialized = False
-
-        # JACK client name of the backend
-        self.backend_client_name = "ingen"
 
         # Used in mod-app to know when the current pedalboard changed
         self.pedalboard_changed_callback = lambda ok,bundlepath,title:None
@@ -78,11 +71,10 @@ class Session(object):
 
         self.ioloop = ioloop.IOLoop.instance()
 
-        socketpath = os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock")
         if DEV_HOST:
-            self.host = FakeHost(socketpath)
+            self.host = FakeHost()
         else:
-            self.host = Host(socketpath)
+            self.host = Host()
 
         # Try to open real HMI
         hmiOpened = False
@@ -136,8 +128,7 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # App utilities, needed only for mod-app
 
-    def setupApp(self, clientName, pedalboardChangedCallback):
-        self.backend_client_name = clientName
+    def setupApp(self, pedalboardChangedCallback):
         self.pedalboard_changed_callback = pedalboardChangedCallback
 
     def reconnectApp(self):
@@ -149,23 +140,8 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
-    def autoconnect_jack(self):
-        if self.jack_client is None:
-            return
-
-        for i in range(1, INGEN_NUM_AUDIO_INS+1):
-            jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:audio_port_%i_in" % (self.backend_client_name, i))
-
-        for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
-            jacklib.connect(self.jack_client,"%s:audio_port_%i_out" % (self.backend_client_name, i), "system:playback_%i" % i)
-
-        if not DEV_HMI:
-            # this means we're using HMI, so very likely running MOD hardware
-            jacklib.connect(self.jack_client, "alsa_midi:ttymidi MIDI out in", "%s:midi_port_1_in" % self.backend_client_name)
-            jacklib.connect(self.jack_client, "%s:midi_port_1_out" % self.backend_client_name, "alsa_midi:ttymidi MIDI in out")
-
     def init_jack(self):
-        self.jack_client = jacklib.client_open("%s-helper" % self.backend_client_name, jacklib.JackNoStartServer, None)
+        self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
         self.xrun_count  = 0
         self.xrun_count2 = 0
 
@@ -178,9 +154,6 @@ class Session(object):
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
         jacklib.activate(self.jack_client)
         print("jacklib client activated")
-
-        if INGEN_AUTOCONNECT:
-            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
 
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
@@ -350,12 +323,14 @@ class Session(object):
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
     def web_get_midi_device_list(self):
+        return [], []
         return self.get_midi_ports(self.backend_client_name), self.get_midi_ports("alsa_midi")
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
     @gen.engine
     def web_set_midi_devices(self, newDevs):
+        return
         curDevs = self.get_midi_ports(self.backend_client_name)
 
         # remove
@@ -453,6 +428,8 @@ class Session(object):
 
     # Get all available MIDI ports of a specific JACK client.
     def get_midi_ports(self, client_name):
+        return []
+
         if self.jack_client is None:
             return []
 
@@ -507,6 +484,7 @@ class Session(object):
 
     # Single-shot callback that automatically connects new backend JACK MIDI ports to their hardware counterparts.
     def jack_midi_devs_callback(self):
+        return
         while len(self.mididevuuids) != 0:
             subject = self.mididevuuids.pop()
 
@@ -586,25 +564,6 @@ class Session(object):
         self.host.plugin_removed_callback = plugin_removed_callback
 
         yield gen.Task(self.host.initial_setup)
-
-        # Add ports
-        for i in range(1, INGEN_NUM_AUDIO_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("Audio Port-%i in" % i, "Input", "Audio", callback))
-
-        for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("Audio Port-%i out" % i, "Output", "Audio", callback))
-
-        for i in range(1, INGEN_NUM_MIDI_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Port-%i in" % i, "Input", "MIDI", callback))
-
-        for i in range(1, INGEN_NUM_MIDI_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Port-%i out" % i, "Output", "MIDI", callback))
-
-        for i in range(1, INGEN_NUM_CV_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i in" % i, "Input", "CV", callback))
-
-        for i in range(1, INGEN_NUM_CV_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i out" % i, "Output", "CV", callback))
 
     def load_pedalboard(self, bundlepath, title):
         self.bundlepath = bundlepath
@@ -743,7 +702,7 @@ class Session(object):
     def start_recording(self):
         if self.player.playing:
             self.player.stop()
-        self.recorder.start(self.backend_client_name)
+        self.recorder.start()
 
     def stop_recording(self):
         if self.recorder.recording:

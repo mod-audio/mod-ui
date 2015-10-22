@@ -27,8 +27,7 @@ LOG = bool(int(os.environ.get('MOD_LOG', False)))
 APP     = bool(int(os.environ.get('MOD_APP', False)))
 DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 
-# Enable for testing carla or mod-host instead of ingen
-HOST_ORIG = bool(int(os.environ.get('MOD_HOST_ORIG', False)))
+# Enable for testing carla instead of mod-host
 HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
 
 # 0 means all; 1 means modguis only; 2 means cloud approved; 3 means whitelist
@@ -130,14 +129,6 @@ TUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner"
 TUNER = 9994
 TUNER_PORT = "in"
 TUNER_MON_PORT = "FREQ"
-
-INGEN_AUTOCONNECT    = bool(int(os.environ.get('MOD_INGEN_AUTOCONNECT', True)))
-INGEN_NUM_AUDIO_INS  = int(os.environ.get('MOD_INGEN_NUM_AUDIO_INS', 2))
-INGEN_NUM_AUDIO_OUTS = int(os.environ.get('MOD_INGEN_NUM_AUDIO_OUTS', 2))
-INGEN_NUM_MIDI_INS   = int(os.environ.get('MOD_INGEN_NUM_MIDI_INS', 1))
-INGEN_NUM_MIDI_OUTS  = int(os.environ.get('MOD_INGEN_NUM_MIDI_OUTS', 1))
-INGEN_NUM_CV_INS     = int(os.environ.get('MOD_INGEN_NUM_CV_INS', 0))
-INGEN_NUM_CV_OUTS    = int(os.environ.get('MOD_INGEN_NUM_CV_OUTS', 0))
 
 JS_CUSTOM_CHANNEL = bool(int(os.environ.get('MOD_JS_CUSTOM_CHANNEL', False)))
 AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))
