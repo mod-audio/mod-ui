@@ -1371,12 +1371,17 @@ def prepare():
         if LOG:
             tornado.log.enable_pretty_logging()
 
-    def check():
+    def checkhost():
         if SESSION.host.sock is None:
-            print("Host failed to initialize, is ingen running?")
+            print("Host failed to initialize, is the backend running?")
             sys.exit(1)
 
+        elif not SESSION.host.connected:
+            ioinstance.add_callback(checkhost)
+
+    def check():
         check_environment()
+        checkhost()
 
     lv2_init()
 
@@ -1386,7 +1391,9 @@ def prepare():
         print("Done!")
 
     run_server()
-    tornado.ioloop.IOLoop.instance().add_callback(check)
+
+    ioinstance = tornado.ioloop.IOLoop.instance()
+    ioinstance.add_callback(check)
 
 def start():
     SESSION.start_timers()

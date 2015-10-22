@@ -44,6 +44,7 @@ class Host(object):
         self.carla.set_engine_option(ENGINE_OPTION_PATH_RESOURCES, 0, "/usr/share/carla/resources/")
         self.sock  = None
         self.timer = ioloop.PeriodicCallback(self.timer_callback, 300)
+        self.connected = False
 
         self.msg_callback = lambda msg:None
         self.saved_callback = lambda bundlepath:None
@@ -90,6 +91,7 @@ class Host(object):
         if self.carla.engine_init("JACK", "MOD"):
             self.timer.start()
             self.sock = True
+            self.connected = True
 
     # host stuff
     def initial_setup(self, callback):

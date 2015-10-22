@@ -81,6 +81,7 @@ class IngenAsync(object):
         self.ns_manager.bind('server', self.server_base)
 
         self.sock = None
+        self.connected = False
         self._queue = []
         self._idle = True
 
@@ -135,6 +136,7 @@ class IngenAsync(object):
             self.sock = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
 
         def check_response():
+            self.connected = True
             callback()
             self.sock.read_until(b"\0", self.keep_reading)
 

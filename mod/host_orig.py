@@ -70,6 +70,7 @@ class Host(object):
     def __init__(self, uri):
         self.addr = ("localhost", 5555)
         self.sock = None
+        self.connected = False
         self._queue = []
         self._idle = True
         self.mapper = InstanceIdMapper()
@@ -104,6 +105,7 @@ class Host(object):
         self._idle = False
 
         def check_response():
+            self.connected = True
             callback()
             self.cputimer.start()
             if len(self._queue):
@@ -111,6 +113,10 @@ class Host(object):
             else:
                 self._idle = True
 
+        def closed():
+            self.sock = None
+
+        self.sock.set_close_callback(closed)
         self.sock.connect(self.addr, check_response)
 
     def process_queue(self):
