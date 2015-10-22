@@ -84,7 +84,7 @@ class HMI(object):
         if data is not None:
             logging.info('[hmi] received <- %s' % repr(data))
             try:
-                msg = Protocol(data.decode())
+                msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
                 logging.error('[hmi] error parsing msg %s' % repr(data))
                 self.reply_protocol_error(e.error_code())
