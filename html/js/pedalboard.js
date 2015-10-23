@@ -1314,7 +1314,7 @@ JqueryClass('pedalboard', {
                 hw.removeInstance(instance)
 
             var plugin = plugins[instance]
-            if (plugin && plugin.uri) {
+            if (plugin && plugin.length) {
                 // plugin might have failed to register
                 plugin.remove()
             }
@@ -1411,7 +1411,22 @@ JqueryClass('pedalboard', {
             if (hardware) {
                 hardware.reset()
             }
-            self.data('connectionManager').iterate(function (jack) {
+            var connMgr = self.data('connectionManager')
+            var plugins = self.data('plugins')
+
+            for (var instance in plugins) {
+                var plugin = plugins[instance]
+
+                connMgr.removeInstance(instance)
+
+                if (plugin && plugin.length) {
+                    // plugin might have failed to register
+                    plugin.remove()
+                }
+            }
+            self.data('plugins', {})
+
+            connMgr.iterate(function (jack) {
                 self.pedalboard('disconnect', jack)
             })
             self.pedalboard('resetSize')

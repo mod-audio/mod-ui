@@ -71,11 +71,6 @@ class Session(object):
 
         self.ioloop = ioloop.IOLoop.instance()
 
-        if DEV_HOST:
-            self.host = FakeHost()
-        else:
-            self.host = Host()
-
         # Try to open real HMI
         hmiOpened = False
 
@@ -93,6 +88,11 @@ class Session(object):
             # Otherwise disable HMI entirely
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
             self.addressings = None
+
+        if DEV_HOST:
+            self.host = FakeHost(self.hmi)
+        else:
+            self.host = Host(self.hmi)
 
         self.recorder = Recorder()
         self.player = Player()

@@ -42,6 +42,67 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "connect") {
+            var source  = data[1]
+            var target  = data[2]
+            var connMgr = desktop.pedalboard.data("connectionManager")
+
+            if (! connMgr.connected(source, target)) {
+                var sourceport = '[mod-port="' + source.replace("/", "\\/") + '"]'
+                var targetport = '[mod-port="' + target.replace("/", "\\/") + '"]'
+
+                var output = $(sourceport)
+
+                if (output.length) {
+                    var input = $(targetport)
+                    var jack  = output.find('[mod-role=output-jack]')
+
+                    if (input.length) {
+                        desktop.pedalboard.pedalboard('connect', jack, input)
+                    } else {
+                        var cb = function () {
+                            var input = $(targetport)
+                            desktop.pedalboard.pedalboard('connect', jack, input)
+                            $(document).unbindArrive(targetport, cb)
+                        }
+                        $(document).arrive(targetport, cb)
+                    }
+                } else {
+                    var cb = function () {
+                        var output = $(sourceport)
+                        var input  = $(targetport)
+                        var jack   = output.find('[mod-role=output-jack]')
+
+                        if (input.length) {
+                            desktop.pedalboard.pedalboard('connect', jack, input)
+                        } else {
+                            var incb = function () {
+                                var input = $(targetport)
+                                desktop.pedalboard.pedalboard('connect', jack, input)
+                                $(document).unbindArrive(targetport, incb)
+                            }
+                            $(document).arrive(targetport, incb)
+                        }
+                        $(document).unbindArrive(sourceport, cb)
+                    }
+                    $(document).arrive(sourceport, cb)
+                }
+            }
+            return
+        }
+
+        if (cmd == "disconnect") {
+            var source  = data[1]
+            var target  = data[2]
+            var connMgr = desktop.pedalboard.data("connectionManager")
+
+            if (connMgr.connected(source, target)) {
+                var jack = connMgr.origIndex[source][target]
+                desktop.pedalboard.pedalboard('destroyJack', jack)
+            }
+            return
+        }
+
         if (cmd == "add") {
             var instance = data[1]
             var uri      = data[2]
@@ -52,6 +113,7 @@ $('document').ready(function() {
 
             if (plugins[instance] == null) {
                 plugins[instance] = {} // register plugin
+
                 $.ajax({
                     url: '/effect/get?uri=' + escape(uri),
                     success: function (pluginData) {
@@ -76,6 +138,17 @@ $('document').ready(function() {
                     cache: false,
                     dataType: 'json'
                 })
+            }
+            return
+        }
+
+        if (cmd == "remove") {
+            var instance = data[1]
+
+            if (instance == ":all") {
+                desktop.pedalboard.pedalboard('reset')
+            } else {
+                desktop.pedalboard.pedalboard('removeItemFromCanvas', instance)
             }
             return
         }
