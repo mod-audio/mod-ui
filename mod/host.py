@@ -387,14 +387,14 @@ class Host(object):
         if not self.cputimerok:
             return
 
-        #def cpu_callback(resp):
-            #if not resp['ok']:
-                #return
-            #self.msg_callback("cpu_load %0.1f" % resp['value'])
-            #self.cputimerok = True
+        def cpu_callback(resp):
+            if not resp['ok']:
+                return
+            self.msg_callback("cpu_load %0.1f" % resp['value'])
+            self.cputimerok = True
 
-        #self.cputimerok = False
-        #self.send("cpu_load", cpu_callback, datatype='float_structure')
+        self.cputimerok = False
+        self.send("cpu_load", cpu_callback, datatype='float_structure')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (public stuff)
