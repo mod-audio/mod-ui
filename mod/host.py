@@ -210,7 +210,7 @@ class Host(object):
     # Host stuff
 
     def initial_setup(self, callback):
-        callback(True)
+        self.send("remove -1", callback, datatype='boolean')
 
     def get(self, subject):
         if subject == "/graph":

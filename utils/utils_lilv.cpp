@@ -500,6 +500,42 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
     static PluginInfo_Mini info;
     memset(&info, 0, sizeof(PluginInfo_Mini));
 
+    // check if plugin if supported
+    bool supported = true;
+
+    for (unsigned int i=0, numports=lilv_plugin_get_num_ports(p); i<numports; ++i)
+    {
+        const LilvPort* port = lilv_plugin_get_port_by_index(p, i);
+
+        LilvNodes* typenodes = lilv_port_get_value(p, port, ns.rdf_type);
+        LILV_FOREACH(nodes, it, typenodes)
+        {
+            const char* const typestr = lilv_node_as_string(lilv_nodes_get(typenodes, it));
+
+            if (typestr == nullptr)
+                continue;
+            if (strcmp(typestr, LV2_CORE__InputPort) == 0)
+                continue;
+            if (strcmp(typestr, LV2_CORE__OutputPort) == 0)
+                continue;
+            if (strcmp(typestr, LV2_CORE__AudioPort) == 0)
+                continue;
+            if (strcmp(typestr, LV2_CORE__ControlPort) == 0)
+                continue;
+            //if (strcmp(typestr, LV2_CORE__CVPort) == 0)
+            //    continue;
+            if (strcmp(typestr, LV2_ATOM__AtomPort) == 0) // && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
+                continue;
+
+            supported = false;
+            break;
+        }
+        lilv_nodes_free(typenodes);
+    }
+
+    if (! supported)
+        return info;
+
     // --------------------------------------------------------------------------------------------------------
     // uri
 
@@ -2082,6 +2118,10 @@ const PluginInfo_Mini* const* get_all_plugins(void)
 
         // get new info
         const PluginInfo_Mini& info = _get_plugin_info_mini(p, ns);
+
+        if (! info.valid)
+            continue;
+
         PLUGNFO_Mini[uri] = info;
         _plug_ret[retIndex++] = &PLUGNFO_Mini[uri];
     }

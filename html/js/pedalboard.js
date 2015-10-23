@@ -1406,33 +1406,41 @@ JqueryClass('pedalboard', {
             if (!ok) {
                 return
             }
-            HARDWARE_PROFILE.addressings = []
-            var hardware = self.data('hardwareManager')
-            if (hardware) {
-                hardware.reset()
-            }
-            var connMgr = self.data('connectionManager')
-            var plugins = self.data('plugins')
-
-            for (var instance in plugins) {
-                var plugin = plugins[instance]
-
-                connMgr.removeInstance(instance)
-
-                if (plugin && plugin.length) {
-                    // plugin might have failed to register
-                    plugin.remove()
-                }
-            }
-            self.data('plugins', {})
-
-            connMgr.iterate(function (jack) {
-                self.pedalboard('disconnect', jack)
-            })
-            self.pedalboard('resetSize')
+            self.pedalboard('resetData')
             if (callback)
                 callback()
         })
+    },
+
+    // Removes all plugins and restore pedalboard initial state, so that a new pedalboard
+    // can be created
+    resetData: function () {
+        var self = $(this)
+
+        HARDWARE_PROFILE.addressings = []
+        var hardware = self.data('hardwareManager')
+        if (hardware) {
+            hardware.reset()
+        }
+        var connMgr = self.data('connectionManager')
+        var plugins = self.data('plugins')
+
+        for (var instance in plugins) {
+            var plugin = plugins[instance]
+
+            connMgr.removeInstance(instance)
+
+            if (plugin && plugin.length) {
+                // plugin might have failed to register
+                plugin.remove()
+            }
+        }
+        self.data('plugins', {})
+
+        connMgr.iterate(function (jack) {
+            self.pedalboard('disconnect', jack)
+        })
+        self.pedalboard('resetSize')
     },
 
     // Make element an audio/midi inputs, to which jacks can be dragged to make connections

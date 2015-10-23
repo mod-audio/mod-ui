@@ -146,7 +146,7 @@ $('document').ready(function() {
             var instance = data[1]
 
             if (instance == ":all") {
-                desktop.pedalboard.pedalboard('reset')
+                desktop.pedalboard.pedalboard('resetData')
             } else {
                 desktop.pedalboard.pedalboard('removeItemFromCanvas', instance)
             }
