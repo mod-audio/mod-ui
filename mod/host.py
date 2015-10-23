@@ -214,37 +214,12 @@ class Host(object):
 
     def get(self, subject):
         if subject == "/graph":
-            #def get_port(type, isInput, name):
-                #if type == "midi":
-                    #types = "<http://lv2plug.in/ns/ext/atom#bufferType> <http://lv2plug.in/ns/ext/atom#Sequence> ;\n"
-                    #types += "a <http://lv2plug.in/ns/ext/atom#AtomPort> ,\n"
-                #elif type == "audio":
-                    #types = "a <http://lv2plug.in/ns/lv2core#AudioPort> ,\n"
-                #elif type == "cv":
-                    #types = "a <http://lv2plug.in/ns/lv2core#CVPort> ,\n"
-                #else:
-                    #return
-                #if isInput:
-                    #types += "<http://lv2plug.in/ns/lv2core#OutputPort>\n"
-                #else:
-                    #types += "<http://lv2plug.in/ns/lv2core#InputPort>\n"
-                #msg = """[]
-                #a <http://lv2plug.in/ns/ext/patch#Put> ;
-                #<http://lv2plug.in/ns/ext/patch#subject> </graph/system/%s> ;
-                #<http://lv2plug.in/ns/ext/patch#body> [
-                    #<http://lv2plug.in/ns/lv2core#index> "0"^^<http://www.w3.org/2001/XMLSchema#int> ;
-                    #<http://lv2plug.in/ns/lv2core#name> "%s" ;
-                    #%s
-                #] .
-                #""" % (name, name.title().replace("_", " "), types)
-                #return msg
-
-            #self.msg_callback(get_port("audio", False, "capture_1"))
-            #self.msg_callback(get_port("audio", False, "capture_2"))
-            #self.msg_callback(get_port("audio", True, "playback_1"))
-            #self.msg_callback(get_port("audio", True, "playback_2"))
-            #self.msg_callback(get_port("midi", False, "midi_capture_1"))
-            #self.msg_callback(get_port("midi", True, "midi_playback_1"))
+            self.msg_callback("add_hw_port /graph/system/capture_1 audio 0 Capture_1 1")
+            self.msg_callback("add_hw_port /graph/system/capture_2 audio 0 Capture_2 2")
+            self.msg_callback("add_hw_port /graph/system/midi_capture_1 midi 0 Capture_1 1")
+            self.msg_callback("add_hw_port /graph/system/playback_1 audio 1 Playback_1 1")
+            self.msg_callback("add_hw_port /graph/system/playback_2 audio 1 Playback_2 2")
+            self.msg_callback("add_hw_port /graph/system/midi_playback_1 midi 1 MIDI_Playback_1 1")
 
             for instance_id, plugin in self.plugins.items():
                 self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))

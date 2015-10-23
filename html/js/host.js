@@ -153,6 +153,25 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "add_hw_port") {
+            var instance = data[1]
+            var type     = data[2]
+            var isOutput = parseInt(data[3]) == 0 // reversed
+            var name     = data[4].replace("_"," ")
+            var index    = parseInt(data[5])
+
+            if (isOutput) {
+                var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
+                desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
+            } else {
+                var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')
+                desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)
+            }
+
+            desktop.pedalboard.pedalboard('positionHardwarePorts')
+            return
+        }
+
         console.log(data)
     }
 })
