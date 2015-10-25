@@ -48,7 +48,7 @@ JqueryClass('pedalboard', {
 
             // Loads a plugin with given plugin uri and instance
             // Application MUST use this instance. Overriding this is mandatory.
-            pluginLoad: function (uri, instance, x, y, callback) {
+            pluginLoad: function (uri, instance, x, y, callback, errorCallback) {
                 callback(true)
             },
 
@@ -561,18 +561,19 @@ JqueryClass('pedalboard', {
             var instance = self.pedalboard('generateInstance', pluginData.uri)
             waiter.startPlugin(instance, position)
             var pluginLoad = self.data('pluginLoad')
-            pluginLoad(pluginData.uri, instance, position.x, position.y, function () {})
-/*                function () {
+            pluginLoad(pluginData.uri, instance, position.x, position.y,
+                function () {
+                    /*
                     self.pedalboard('addPlugin', pluginData, instance, false, position.x, position.y)
                     setTimeout(function () {
                         self.pedalboard('adapt')
                     }, 1)
+                    */
                     waiter.stopPlugin(instance)
                 },
                 function () {
                     waiter.stopPlugin(instance)
                 })
-*/
         })
 
         var options = {
@@ -1402,6 +1403,11 @@ JqueryClass('pedalboard', {
 
         self.data('bypassApplication', false)
 
+        var connMgr = self.data('connectionManager')
+        connMgr.iterate(function (jack) {
+            self.pedalboard('disconnect', jack)
+        })
+
         self.data('reset')(function (ok) {
             if (!ok) {
                 return
@@ -1423,15 +1429,11 @@ JqueryClass('pedalboard', {
         }
 
         var connMgr = self.data('connectionManager')
-        connMgr.iterate(function (jack) {
-            self.pedalboard('disconnect', jack)
-        })
+        connMgr.reset()
 
         var plugins = self.data('plugins')
         for (var instance in plugins) {
             var plugin = plugins[instance]
-
-            connMgr.removeInstance(instance)
 
             if (plugin && plugin.length) {
                 // plugin might have failed to register

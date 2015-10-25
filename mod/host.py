@@ -63,6 +63,9 @@ HARDWARE_TYPE_CUSTOM = 4
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
     def __init__(self):
+        self.clear()
+
+    def clear(self):
         # last used id, always incrementing
         self.last_id = 0
         # map id <-> instances
@@ -242,6 +245,7 @@ class Host(object):
         self.banks = []
         self.plugins = {}
         self.connections = []
+        self.mapper.clear()
         self._init_addressings()
 
         def host_callback(ok):

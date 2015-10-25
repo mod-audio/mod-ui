@@ -16,7 +16,8 @@
  */
 
 $('document').ready(function() {
-    var ws = new WebSocket("ws://" + window.location.host + "/websocket");
+    var ws = new WebSocket("ws://" + window.location.host + "/websocket")
+    var waiting = false
 
     ws.onmessage = function (evt) {
         var data = evt.data.split(" ")
@@ -117,20 +118,22 @@ $('document').ready(function() {
                 $.ajax({
                     url: '/effect/get?uri=' + escape(uri),
                     success: function (pluginData) {
-                        var instancekey = '[mod-instance="' + instance + '"]'
+                        if (! waiting) {
+                            var instancekey = '[mod-instance="' + instance + '"]'
 
-                        if (!$(instancekey).length) {
-                            var cb = function () {
-                                desktop.pedalboard.pedalboard('adapt')
+                            if (!$(instancekey).length) {
+                                var cb = function () {
+                                    desktop.pedalboard.pedalboard('adapt')
 
-                                var waiter = desktop.pedalboard.data('wait')
+                                    var waiter = desktop.pedalboard.data('wait')
 
-                                if (waiter.plugins[instance])
-                                    waiter.stopPlugin(instance)
+                                    if (waiter.plugins[instance])
+                                        waiter.stopPlugin(instance)
 
-                                $(document).unbindArrive(instancekey, cb)
+                                    $(document).unbindArrive(instancekey, cb)
+                                }
+                                $(document).arrive(instancekey, cb)
                             }
-                            $(document).arrive(instancekey, cb)
                         }
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {})
@@ -173,14 +176,17 @@ $('document').ready(function() {
         }
 
         if (cmd == "wait_start") {
-            var waiter = desktop.pedalboard.data('wait')
-            waiter.start('Loading pedalboard...')
+            waiting = true
+            desktop.pedalboard.data('wait').start('Loading pedalboard...')
             return
         }
 
         if (cmd == "wait_end") {
-            var waiter = desktop.pedalboard.data('wait')
-            waiter.stop()
+            waiting = false
+            setTimeout(function () {
+                desktop.pedalboard.pedalboard('adapt')
+                desktop.pedalboard.data('wait').stop()
+            }, 1)
             return
         }
 

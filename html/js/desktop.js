@@ -728,11 +728,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 $.ajax({
                     url: '/effect/add/' + instance + '?x=' + x + '&y=' + y + '&uri=' + escape(uri),
                     success: function (pluginData) {
-                        if (pluginData)
+                        if (pluginData) {
                             callback(pluginData)
-                        else
-                            new Notification('error',
-                                'Error adding effect')
+                        } else {
+                            new Notification('error', 'Error adding effect')
+                        }
                     },
                     error: function (resp) {
                         if (resp.status == 404 && firstTry) {
@@ -745,7 +745,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                         }
                     },
                     cache: false,
-                    'dataType': 'json'
+                    dataType: 'json'
                 })
             }
             add()
