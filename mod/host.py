@@ -104,8 +104,8 @@ class Host(object):
         self._idle = True
         self.mapper = InstanceIdMapper()
         self.banks = []
-        self.connections = []
         self.plugins = {}
+        self.connections = []
         self.pedalboard_name = ""
         self.pedalboard_size = [0,0]
 
@@ -238,6 +238,7 @@ class Host(object):
     def reset(self, callback):
         self.banks = []
         self.plugins = {}
+        self.connections = []
         self._init_addressings()
 
         def host_callback(ok):
