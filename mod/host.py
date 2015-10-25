@@ -214,6 +214,8 @@ class Host(object):
 
     def get(self, subject):
         if subject == "/graph":
+            self.msg_callback("wait_start")
+
             self.msg_callback("add_hw_port /graph/system/capture_1 audio 0 Capture_1 1")
             self.msg_callback("add_hw_port /graph/system/capture_2 audio 0 Capture_2 2")
             self.msg_callback("add_hw_port /graph/system/midi_capture_1 midi 0 Capture_1 1")
@@ -230,6 +232,7 @@ class Host(object):
             for port_from, port_to in self.connections:
                 self.msg_callback("connect %s %s" % (port_from, port_to))
 
+            self.msg_callback("wait_end")
             return
 
     # -----------------------------------------------------------------------------------------------------------------

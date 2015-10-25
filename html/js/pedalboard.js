@@ -1412,8 +1412,7 @@ JqueryClass('pedalboard', {
         })
     },
 
-    // Removes all plugins and restore pedalboard initial state, so that a new pedalboard
-    // can be created
+    // Removes all pedalboard data
     resetData: function () {
         var self = $(this)
 
@@ -1422,9 +1421,13 @@ JqueryClass('pedalboard', {
         if (hardware) {
             hardware.reset()
         }
-        var connMgr = self.data('connectionManager')
-        var plugins = self.data('plugins')
 
+        var connMgr = self.data('connectionManager')
+        connMgr.iterate(function (jack) {
+            self.pedalboard('disconnect', jack)
+        })
+
+        var plugins = self.data('plugins')
         for (var instance in plugins) {
             var plugin = plugins[instance]
 
@@ -1437,9 +1440,6 @@ JqueryClass('pedalboard', {
         }
         self.data('plugins', {})
 
-        connMgr.iterate(function (jack) {
-            self.pedalboard('disconnect', jack)
-        })
         self.pedalboard('resetSize')
     },
 

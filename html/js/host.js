@@ -172,6 +172,18 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "wait_start") {
+            var waiter = desktop.pedalboard.data('wait')
+            waiter.start('Loading pedalboard...')
+            return
+        }
+
+        if (cmd == "wait_end") {
+            var waiter = desktop.pedalboard.data('wait')
+            waiter.stop()
+            return
+        }
+
         console.log(data)
     }
 })
