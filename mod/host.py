@@ -249,59 +249,57 @@ class Host(object):
     def initial_setup(self, callback):
         self.send("remove -1", callback, datatype='boolean')
 
-    def get(self, subject):
-        if subject == "/graph":
-            self.msg_callback("wait_start")
+    def report_current_state(self):
+        self.msg_callback("wait_start")
 
-            # get input and outputs separately
-            if self.jack_client is not None:
-                # Audio In
-                ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
-                for i in range(len(ports)):
-                    name  = ports[i].replace("system:","",1)
-                    title = name.title().replace(" ","_")
-                    self.msg_callback("add_hw_port /graph/system/%s audio 0 %s %i" % (name, title, i+1))
+        # get input and outputs separately
+        if self.jack_client is not None:
+            # Audio In
+            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+            for i in range(len(ports)):
+                name  = ports[i].replace("system:","",1)
+                title = name.title().replace(" ","_")
+                self.msg_callback("add_hw_port /graph/system/%s audio 0 %s %i" % (name, title, i+1))
 
-                # Audio Out
-                ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
-                for i in range(len(ports)):
-                    name  = ports[i].replace("system:","",1)
-                    title = name.title().replace(" ","_")
-                    self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, title, i+1))
+            # Audio Out
+            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+            for i in range(len(ports)):
+                name  = ports[i].replace("system:","",1)
+                title = name.title().replace(" ","_")
+                self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, title, i+1))
 
-                # MIDI In
-                ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
-                for i in range(len(ports)):
-                    name = ports[i]
-                    ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
-                    if ret == 1 and alias1:
-                        title = alias1.split("-",5)[-1].replace("-","_")
-                    else:
-                        title = name.replace("system:","",1).title().replace(" ","_")
-                    self.msg_callback("add_hw_port /graph/system/%s midi 0 %s %i" % (name, title, i+1))
+            # MIDI In
+            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+            for i in range(len(ports)):
+                name = ports[i]
+                ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
+                if ret == 1 and alias1:
+                    title = alias1.split("-",5)[-1].replace("-","_")
+                else:
+                    title = name.replace("system:","",1).title().replace(" ","_")
+                self.msg_callback("add_hw_port /graph/system/%s midi 0 %s %i" % (name, title, i+1))
 
-                # MIDI Out
-                ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
-                for i in range(len(ports)):
-                    name = ports[i]
-                    ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
-                    if ret == 1 and alias1:
-                        title = alias1.split("-",5)[-1].replace("-","_")
-                    else:
-                        title = name.replace("system:","",1).title().replace(" ","_")
-                    self.msg_callback("add_hw_port /graph/system/%s midi 1 %s %i" % (name, title, i+1))
+            # MIDI Out
+            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+            for i in range(len(ports)):
+                name = ports[i]
+                ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
+                if ret == 1 and alias1:
+                    title = alias1.split("-",5)[-1].replace("-","_")
+                else:
+                    title = name.replace("system:","",1).title().replace(" ","_")
+                self.msg_callback("add_hw_port /graph/system/%s midi 1 %s %i" % (name, title, i+1))
 
-            for instance_id, plugin in self.plugins.items():
-                self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
+        for instance_id, plugin in self.plugins.items():
+            self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
 
-                for symbol, value in plugin['ports'].items():
-                    self.msg_callback("param_set %s %s %f" % (plugin['instance'], symbol, value))
+            for symbol, value in plugin['ports'].items():
+                self.msg_callback("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
-            for port_from, port_to in self.connections:
-                self.msg_callback("connect %s %s" % (port_from, port_to))
+        for port_from, port_to in self.connections:
+            self.msg_callback("connect %s %s" % (port_from, port_to))
 
-            self.msg_callback("wait_end")
-            return
+        self.msg_callback("wait_end")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove

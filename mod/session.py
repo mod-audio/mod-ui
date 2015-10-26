@@ -284,7 +284,6 @@ class Session(object):
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
-    @gen.engine
     def web_set_midi_devices(self, newDevs):
         return
         curDevs = self.get_midi_ports(self.backend_client_name)
@@ -336,9 +335,7 @@ class Session(object):
     # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws):
         self.websockets.append(ws)
-
         self.host.open_connection_if_needed(self.host_callback)
-        self.host.get("/graph")
 
     # Webbrowser page closed
     def websocket_closed(self, ws):
@@ -380,7 +377,12 @@ class Session(object):
 
     @gen.engine
     def host_callback(self):
+        def finish():
+            if len(self.websockets) > 0:
+                self.host.report_current_state()
+
         if self.host_initialized:
+            finish()
             return
 
         self.engine_samplerate = self.host.get_sample_rate()
@@ -398,6 +400,8 @@ class Session(object):
         self.host.saved_callback = saved_callback
 
         yield gen.Task(self.host.initial_setup)
+
+        finish()
 
     def load_pedalboard(self, bundlepath, title):
         self.bundlepath = bundlepath
