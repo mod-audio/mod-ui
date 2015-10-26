@@ -154,6 +154,30 @@ class Host(object):
         ioloop.IOLoop.instance().add_callback(self.init_connection)
 
     def __del__(self):
+        self.close_jack()
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Initialization
+
+    def init_jack(self):
+        if self.jack_client is not None:
+            return
+
+        self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
+        self.xrun_count  = 0
+        self.xrun_count2 = 0
+
+        if self.jack_client is None:
+            return
+
+        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
+        #jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
+        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
+        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
+        jacklib.activate(self.jack_client)
+        print("jacklib client activated")
+
+    def close_jack(self):
         if self.jack_client is None:
             print("jacklib client deactivated NOT")
             return
@@ -161,9 +185,6 @@ class Host(object):
         jacklib.client_close(self.jack_client)
         self.jack_client = None
         print("jacklib client deactivated")
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Initialization
 
     def init_connection(self):
         self.open_connection_if_needed(lambda:None)
@@ -190,24 +211,6 @@ class Host(object):
 
         self.sock.set_close_callback(closed)
         self.sock.connect(self.addr, check_response)
-
-    def init_jack(self):
-        if self.jack_client is not None:
-            return
-
-        self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
-        self.xrun_count  = 0
-        self.xrun_count2 = 0
-
-        if self.jack_client is None:
-            return
-
-        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
-        #jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
-        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
-        jacklib.activate(self.jack_client)
-        print("jacklib client activated")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling

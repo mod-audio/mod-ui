@@ -1375,6 +1375,7 @@ def prepare():
     def checkhost():
         if SESSION.host.sock is None:
             print("Host failed to initialize, is the backend running?")
+            SESSION.host.close_jack()
             sys.exit(1)
 
         elif not SESSION.host.connected:
