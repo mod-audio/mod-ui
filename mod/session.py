@@ -280,8 +280,7 @@ class Session(object):
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
     def web_get_midi_device_list(self):
-        return [], []
-        return self.get_midi_ports(self.backend_client_name), self.get_midi_ports("alsa_midi")
+        return [], self.host.get_midi_ports()
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed

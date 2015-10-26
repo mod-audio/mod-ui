@@ -272,23 +272,23 @@ class Host(object):
                 # MIDI In
                 ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
                 for i in range(len(ports)):
-                    name = ports[i].replace("system:","",1)
+                    name = ports[i]
                     ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
                     if ret == 1 and alias1:
                         title = alias1.split("-",5)[-1].replace("-","_")
                     else:
-                        title = name.title().replace(" ","_")
+                        title = name.replace("system:","",1).title().replace(" ","_")
                     self.msg_callback("add_hw_port /graph/system/%s midi 0 %s %i" % (name, title, i+1))
 
                 # MIDI Out
                 ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
                 for i in range(len(ports)):
-                    name = ports[i].replace("system:","",1)
+                    name = ports[i]
                     ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
                     if ret == 1 and alias1:
                         title = alias1.split("-",5)[-1].replace("-","_")
                     else:
-                        title = name.title().replace(" ","_")
+                        title = name.replace("system:","",1).title().replace(" ","_")
                     self.msg_callback("add_hw_port /graph/system/%s midi 1 %s %i" % (name, title, i+1))
 
             for instance_id, plugin in self.plugins.items():
@@ -732,45 +732,35 @@ class Host(object):
         return float(jacklib.get_sample_rate(self.jack_client))
 
     # Get all available MIDI ports of a specific JACK client.
-    def get_midi_ports(self, client_name):
-        return []
-
+    def get_midi_ports(self):
         if self.jack_client is None:
             return []
 
-        # get input and outputs separately
-        in_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
-                                                            if client_name == "alsa_midi" else
-                                                            jacklib.JackPortIsInput
-                                                            ))
-        out_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsInput
-                                                             if client_name == "alsa_midi" else
-                                                             jacklib.JackPortIsOutput
-                                                             ))
+        in_ports = []
+        out_ports = []
 
-        if client_name != "alsa_midi":
-            if "ingen:control_in" in in_ports:
-                in_ports.remove("ingen:control_in")
-            if "ingen:control_out" in out_ports:
-                out_ports.remove("ingen:control_out")
+        # MIDI In
+        ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+        for port in ports:
+            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, port))
+            if ret == 1 and alias1:
+                title = alias1.split("-",5)[-1].replace("-"," ")
+                #in_ports[alias1] = title
+            else:
+                title = port.replace("system:","",1).title().replace("_"," ")
 
-            for i in range(len(in_ports)):
-                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
-                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                if ret == 0 and type_ == b"text/plain":
-                    in_ports[i] = charPtrToString(value)
+            in_ports.append(title)
 
-            for i in range(len(out_ports)):
-                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
-                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                if ret == 0 and type_ == b"text/plain":
-                    out_ports[i] = charPtrToString(value)
-
-        # remove suffixes from ports
-        in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
-        out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
+        # MIDI Out
+        ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+        for port in ports:
+            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, port))
+            if ret == 1 and alias1:
+                title = alias1.split("-",5)[-1].replace("-"," ")
+                #out_ports[alias1] = title
+            else:
+                title = port.replace("system:","",1).title().replace("_"," ")
+            out_ports.append(title)
 
         # add our own suffix now
         ports = []
@@ -781,6 +771,7 @@ class Host(object):
                 continue
             ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
 
+        print(ports)
         return ports
 
     # Callback for when a port appears or disappears
