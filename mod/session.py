@@ -280,52 +280,12 @@ class Session(object):
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
     def web_get_midi_device_list(self):
-        return [], self.host.get_midi_ports()
+        return self.host.get_midi_ports()
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
     def web_set_midi_devices(self, newDevs):
-        return
-        curDevs = self.get_midi_ports(self.backend_client_name)
-
-        # remove
-        for dev in curDevs:
-            if dev in newDevs:
-                continue
-            if dev.startswith("MIDI Port-"):
-                continue
-            dev, modes = dev.rsplit(" (",1)
-            jacklib.disconnect(self.jack_client, "alsa_midi:%s in" % dev, self.backend_client_name+":control_in")
-
-            def remove_external_port_in(callback):
-                self.host.remove_external_port(dev+" in")
-                callback(True)
-            def remove_external_port_out(callback):
-                self.host.remove_external_port(dev+" out")
-                callback(True)
-
-            yield gen.Task(remove_external_port_in)
-
-            if "out" in modes:
-                yield gen.Task(remove_external_port_out)
-
-        # add
-        for dev in newDevs:
-            if dev in curDevs:
-                continue
-            dev, modes = dev.rsplit(" (",1)
-
-            def add_external_port_in(callback):
-                self.host.add_external_port(dev+" in", "Input", "MIDI")
-                callback(True)
-            def add_external_port_out(callback):
-                self.host.add_external_port(dev+" out", "Output", "MIDI")
-                callback(True)
-
-            yield gen.Task(add_external_port_in)
-
-            if "out" in modes:
-                yield gen.Task(add_external_port_out)
+        return self.host.set_midi_devices(newDevs)
 
     # Send a ping to HMI
     def web_ping_hmi(self, callback):
