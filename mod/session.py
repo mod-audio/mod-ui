@@ -230,52 +230,12 @@ class Session(object):
 
             os.mkdir(bundlepath)
 
-        # Various steps triggered by callbacks
-        def step1(ok):
-            if ok: self.host.save(os.path.join(bundlepath, "%s.ttl" % titlesym), step2)
-            else: callback(False)
+        # save
+        self.host.save(bundlepath, title, titlesym)
 
-        def step2(ok):
-            if ok:
-                self.bundlepath = bundlepath
-                self.title      = title
-            else:
-                self.bundlepath = None
-                self.title      = None
-
-            self.pedalboard_changed_callback(ok, bundlepath, title)
-
-            if not ok:
-                callback(False)
-                return
-
-            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
-            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
-                fh.write("""\
-@prefix ingen: <http://drobilla.net/ns/ingen#> .
-@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
-@prefix pedal: <http://moddevices.com/ns/modpedal#> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
-<%s.ttl>
-    lv2:prototype ingen:GraphPrototype ;
-    a lv2:Plugin ,
-        ingen:Graph ,
-        pedal:Pedalboard ;
-    rdfs:seeAlso <%s.ttl> .
-""" % (titlesym, titlesym))
-
-            # Create a addressings.json file
-            addressings = self.addressings.get_addressings() if self.addressings is not None else {}
-
-            with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
-                json.dump(addressings, fh)
-
-            # All ok!
-            callback(True)
-
-        # start here
-        self.host.set_pedalboard_name(title, step1)
+        self.bundlepath = bundlepath
+        self.title      = title
+        self.pedalboard_changed_callback(True, bundlepath, title)
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
@@ -463,8 +423,8 @@ class Session(object):
         """
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
-    def pedalboard_size(self, width, height, callback):
-        self.host.set_pedalboard_size(width, height, callback)
+    def pedalboard_size(self, width, height):
+        self.host.set_pedalboard_size(width, height)
 
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)

@@ -29,7 +29,7 @@ This will start the mainloop and will handle the callbacks and the async functio
 """
 
 from tornado import iostream, ioloop
-import socket, logging
+import os, json, socket, logging
 
 from mod import get_hardware
 from mod.bank import list_banks
@@ -271,6 +271,8 @@ class Host(object):
                 title = name.title().replace(" ","_")
                 self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, title, i+1))
 
+            # TODO midiports split(";")
+
             # MIDI In
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
             for i in range(len(ports)):
@@ -305,6 +307,8 @@ class Host(object):
 
         for port_from, port_to in self.connections:
             self.msg_callback("connect %s %s" % (port_from, port_to))
+
+        # TODO - set addressings?
 
         self.msg_callback("wait_end")
 
@@ -440,15 +444,124 @@ class Host(object):
                                         self._fix_host_connection_port(port_to)), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
+    # Host stuff - load & save
+
+    def save(self, bundlepath, title, titlesym):
+        # Write manifest.ttl
+        with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
+            fh.write("""\
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pedal: <http://moddevices.com/ns/modpedal#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<%s.ttl>
+    lv2:prototype ingen:GraphPrototype ;
+    a lv2:Plugin ,
+        ingen:Graph ,
+        pedal:Pedalboard ;
+    rdfs:seeAlso <%s.ttl> .
+""" % (titlesym, titlesym))
+
+        # Write addressings.json
+        addressings = self.get_addressings()
+
+        with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
+            json.dump(addressings, fh)
+
+        # Write the main pedalboard file
+        arcs = """\
+_:b1
+        ingen:head <control_out> ;
+        ingen:tail <_b_synth/notify> .
+"""
+
+        plugins = """\
+<_Pulsator>
+        ingen:canvasX 314.0 ;
+        ingen:canvasY 200.0 ;
+        ingen:enabled true ;
+        lv2:port <_Pulsator/amount> ,
+                <_Pulsator/bypass> ,
+                <_Pulsator/clip_inL>  ;
+        lv2:prototype <http://calf.sourceforge.net/plugins/Pulsator> ;
+        a ingen:Block .
+
+<_Pulsator/amount>
+        ingen:value 1.0 ;
+        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#hasStrictBounds> ;
+        a lv2:ControlPort ,
+                lv2:InputPort .
+"""
+
+        ports = """\
+<control_in>
+    ingen:canvasX 0.0 ;
+    ingen:canvasY 0.0 ;
+    atom:bufferType atom:Sequence ;
+    atom:supports midi:MidiEvent ;
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+    lv2:index 0 ;
+    lv2:name "Control" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "control_in" ;
+    a atom:AtomPort , lv2:InputPort .
+
+<control_out>
+        ingen:canvasX 0.0 ;
+        ingen:canvasY 0.0 ;
+        atom:bufferType atom:Sequence ;
+        atom:supports midi:MidiEvent ;
+        <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+        lv2:index 1 ;
+        lv2:name "Control" ;
+        lv2:symbol "control_out" ;
+        a atom:AtomPort , lv2:OutputPort .
+"""
+
+        ports += """\
+<audio_in_1>
+    ingen:canvasX 5.0 ;
+    ingen:canvasY 135.0 ;
+    lv2:index 2 ;
+    lv2:name "Audio In 1" ;
+    lv2:symbol "audio_in_1" ;
+    a lv2:AudioPort , lv2:InputPort .
+"""
+
+        # Write the main pedalboard file
+        with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
+            fh.write("""\
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pedal: <http://moddevices.com/ns/modpedal#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<>
+    a lv2:Plugin ,
+        ingen:Graph ,
+        pedal:Pedalboard ;
+    doap:name "%s" ;
+    pedal:width %i ;
+    pedal:height %i ;
+    pedal:addressings <addressings.json> ;
+    pedal:screenshot <screenshot.png> ;
+    pedal:thumbnail <thumbnail.png> ;
+    ingen:arc _:b2 ,
+              _:b3 ,
+    ingen:block <_Pulsator> ,
+                <_b_synth> ;
+    ingen:polyphony 1 ;
+    lv2:port <audio_in_1> ,
+             <audio_in_2> ;
+    lv2:extensionData <http://lv2plug.in/ns/ext/state#interface> .
+""" % (title, self.pedalboard_size[0], self.pedalboard_size[1]))
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - misc
 
-    def set_pedalboard_name(self, title, callback):
-        self.pedalboard_name = title
-        callback(True)
-
-    def set_pedalboard_size(self, width, height, callback):
+    def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
-        callback(True)
 
     def add_external_port(self, name, mode, typ, callback):
         # ignored
@@ -566,6 +679,22 @@ class Host(object):
 
         # if we reach this line there was no old actuator, we can just address now
         address_now(True)
+
+    def get_addressings(self):
+        addressings = {}
+        for uri, addressing in self.addressings.items():
+            addrs = []
+            for addr in addressing['addrs']:
+                addrs.append({
+                    'instance': self.mapper.get_instance(addr['instance_id']),
+                    'port'    : addr['port'],
+                    'label'   : addr['label'],
+                    'minimum' : addr['minimum'],
+                    'maximum' : addr['maximum'],
+                    'steps'   : addr['steps'],
+                })
+            addressings[uri] = addrs
+        return addressings
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (private stuff)
