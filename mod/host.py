@@ -33,6 +33,7 @@ import socket, logging
 
 from mod import get_hardware
 from mod.bank import list_banks
+from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
 
 try:
@@ -112,6 +113,10 @@ class Host(object):
         self.pedalboard_name = ""
         self.pedalboard_size = [0,0]
 
+        self.jack_client = None
+        self.xrun_count = 0
+        self.xrun_count2 = 0
+
         self.cputimerok = True
         self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
 
@@ -145,6 +150,16 @@ class Host(object):
         #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
         ioloop.IOLoop.instance().add_callback(self.init_connection)
+        ioloop.IOLoop.instance().add_callback(self.init_jack)
+
+    def __del__(self):
+        if self.jack_client is None:
+            print("jacklib client deactivated NOT")
+            return
+        jacklib.deactivate(self.jack_client)
+        jacklib.client_close(self.jack_client)
+        self.jack_client = None
+        print("jacklib client deactivated")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
@@ -174,6 +189,24 @@ class Host(object):
 
         self.sock.set_close_callback(closed)
         self.sock.connect(self.addr, check_response)
+
+    def init_jack(self):
+        if self.jack_client is not None:
+            return
+
+        self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
+        self.xrun_count  = 0
+        self.xrun_count2 = 0
+
+        if self.jack_client is None:
+            return
+
+        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
+        jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
+        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
+        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
+        jacklib.activate(self.jack_client)
+        print("jacklib client activated")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -659,6 +692,94 @@ class Host(object):
         logging.info("hmi parameter addressing next")
         actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator_hw, callback)
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # JACK stuff
+
+    def get_sample_rate(self):
+        return float(jacklib.get_sample_rate(self.jack_client))
+
+    # Get all available MIDI ports of a specific JACK client.
+    def get_midi_ports(self, client_name):
+        return []
+
+        if self.jack_client is None:
+            return []
+
+        # get input and outputs separately
+        in_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
+                                                            if client_name == "alsa_midi" else
+                                                            jacklib.JackPortIsInput
+                                                            ))
+        out_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
+                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsInput
+                                                             if client_name == "alsa_midi" else
+                                                             jacklib.JackPortIsOutput
+                                                             ))
+
+        if client_name != "alsa_midi":
+            if "ingen:control_in" in in_ports:
+                in_ports.remove("ingen:control_in")
+            if "ingen:control_out" in out_ports:
+                out_ports.remove("ingen:control_out")
+
+            for i in range(len(in_ports)):
+                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
+                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
+                if ret == 0 and type_ == b"text/plain":
+                    in_ports[i] = charPtrToString(value)
+
+            for i in range(len(out_ports)):
+                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
+                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
+                if ret == 0 and type_ == b"text/plain":
+                    out_ports[i] = charPtrToString(value)
+
+        # remove suffixes from ports
+        in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
+        out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
+
+        # add our own suffix now
+        ports = []
+        for port in in_ports:
+            #if "Midi Through" in port:
+                #continue
+            if port in ("jackmidi", "OSS sequencer"):
+                continue
+            ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
+
+        return ports
+
+    # Callback for when a port appears or disappears
+    # We use this to trigger a auto-connect mode
+    #def JackPortRegistrationCallback(self, port, registered, arg):
+        #if self.jack_client is None:
+            #return
+        #if not registered:
+            #return
+
+    # Callback for when a client or port property changes.
+    # We use this to know the full length name of ingen created ports.
+    def JackPropertyChangeCallback(self, subject, key, change, arg):
+        if self.jack_client is None:
+            return
+        if change != jacklib.PropertyCreated:
+            return
+        if key != jacklib.bJACK_METADATA_PRETTY_NAME:
+            return
+
+        self.mididevuuids.append(subject)
+        self.ioloop.add_callback(self.jack_midi_devs_callback)
+
+    # Callback for when an xrun occurs
+    def JackXRunCallback(self, arg):
+        self.xrun_count += 1
+        return 0
+
+    # Callback for when JACK has shutdown or our client zombified
+    def JackShutdownCallback(self, arg):
+        self.jack_client = None
 
     # -----------------------------------------------------------------------------------------------------------------
     # ...

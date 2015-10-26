@@ -38,7 +38,6 @@ from mod.clipmeter import Clipmeter
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
-from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
 if HOST_CARLA:
     from mod.host_carla import Host
@@ -65,9 +64,6 @@ class Session(object):
         self.title      = None
 
         self.engine_samplerate = 48000 # default value
-        self.jack_client = None
-        self.xrun_count = 0
-        self.xrun_count2 = 0
 
         self.ioloop = ioloop.IOLoop.instance()
 
@@ -104,16 +100,7 @@ class Session(object):
         self.websockets = []
         self.mididevuuids = []
 
-        self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
-
-    def __del__(self):
-        if self.jack_client is None:
-            return
-        jacklib.deactivate(self.jack_client)
-        jacklib.client_close(self.jack_client)
-        self.jack_client = None
-        print("jacklib client deactivated")
 
     def get_hardware(self):
         if self.addressings is None:
@@ -136,21 +123,6 @@ class Session(object):
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
-
-    def init_jack(self):
-        self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
-        self.xrun_count  = 0
-        self.xrun_count2 = 0
-
-        if self.jack_client is None:
-            return
-
-        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
-        jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
-        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
-        jacklib.activate(self.jack_client)
-        print("jacklib client activated")
 
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
@@ -374,96 +346,6 @@ class Session(object):
         self.websockets.remove(ws)
 
     # -----------------------------------------------------------------------------------------------------------------
-    # JACK callbacks, called by JACK itself
-    # We must take care to ensure not to block for long periods of time or else audio will skip or xrun.
-
-    # Callback for when a port appears or disappears
-    # We use this to trigger a auto-connect mode
-    #def JackPortRegistrationCallback(self, port, registered, arg):
-        #if self.jack_client is None:
-            #return
-        #if not registered:
-            #return
-
-    # Callback for when a client or port property changes.
-    # We use this to know the full length name of ingen created ports.
-    def JackPropertyChangeCallback(self, subject, key, change, arg):
-        if self.jack_client is None:
-            return
-        if change != jacklib.PropertyCreated:
-            return
-        if key != jacklib.bJACK_METADATA_PRETTY_NAME:
-            return
-
-        self.mididevuuids.append(subject)
-        self.ioloop.add_callback(self.jack_midi_devs_callback)
-
-    # Callback for when an xrun occurs
-    def JackXRunCallback(self, arg):
-        self.xrun_count += 1
-        return 0
-
-    # Callback for when JACK has shutdown or our client zombified
-    def JackShutdownCallback(self, arg):
-        self.jack_client = None
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Misc/Utility functions
-    # We use these to save possibly duplicated code.
-
-    # Get all available MIDI ports of a specific JACK client.
-    def get_midi_ports(self, client_name):
-        return []
-
-        if self.jack_client is None:
-            return []
-
-        # get input and outputs separately
-        in_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
-                                                            if client_name == "alsa_midi" else
-                                                            jacklib.JackPortIsInput
-                                                            ))
-        out_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsInput
-                                                             if client_name == "alsa_midi" else
-                                                             jacklib.JackPortIsOutput
-                                                             ))
-
-        if client_name != "alsa_midi":
-            if "ingen:control_in" in in_ports:
-                in_ports.remove("ingen:control_in")
-            if "ingen:control_out" in out_ports:
-                out_ports.remove("ingen:control_out")
-
-            for i in range(len(in_ports)):
-                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
-                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                if ret == 0 and type_ == b"text/plain":
-                    in_ports[i] = charPtrToString(value)
-
-            for i in range(len(out_ports)):
-                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
-                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                if ret == 0 and type_ == b"text/plain":
-                    out_ports[i] = charPtrToString(value)
-
-        # remove suffixes from ports
-        in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
-        out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
-
-        # add our own suffix now
-        ports = []
-        for port in in_ports:
-            #if "Midi Through" in port:
-                #continue
-            if port in ("jackmidi", "OSS sequencer"):
-                continue
-            ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
-
-        return ports
-
-    # -----------------------------------------------------------------------------------------------------------------
     # Timer callbacks
     # These are functions called by the IO loop at regular intervals.
 
@@ -502,10 +384,8 @@ class Session(object):
         if self.host_initialized:
             return
 
+        self.engine_samplerate = self.host.get_sample_rate()
         self.host_initialized = True
-
-        if self.jack_client is not None:
-            self.engine_samplerate = jacklib.get_sample_rate(self.jack_client)
 
         def msg_callback(msg):
             for ws in self.websockets:
