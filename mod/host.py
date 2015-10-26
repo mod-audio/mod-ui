@@ -149,8 +149,8 @@ class Host(object):
         #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
         #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
-        ioloop.IOLoop.instance().add_callback(self.init_connection)
         ioloop.IOLoop.instance().add_callback(self.init_jack)
+        ioloop.IOLoop.instance().add_callback(self.init_connection)
 
     def __del__(self):
         if self.jack_client is None:
@@ -202,7 +202,7 @@ class Host(object):
             return
 
         #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
-        jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
+        #jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
         #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
         jacklib.activate(self.jack_client)
@@ -252,12 +252,37 @@ class Host(object):
         if subject == "/graph":
             self.msg_callback("wait_start")
 
-            self.msg_callback("add_hw_port /graph/system/capture_1 audio 0 Capture_1 1")
-            self.msg_callback("add_hw_port /graph/system/capture_2 audio 0 Capture_2 2")
-            self.msg_callback("add_hw_port /graph/system/midi_capture_1 midi 0 Capture_1 1")
-            self.msg_callback("add_hw_port /graph/system/playback_1 audio 1 Playback_1 1")
-            self.msg_callback("add_hw_port /graph/system/playback_2 audio 1 Playback_2 2")
-            self.msg_callback("add_hw_port /graph/system/midi_playback_1 midi 1 MIDI_Playback_1 1")
+            # get input and outputs separately
+            if self.jack_client is not None:
+                in_ports  = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+                out_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+
+                for i in range(len(in_ports)):
+                    name = in_ports[i]
+                    #ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
+                    #if ret == 1 and alias1:
+                        #alias1 = alias1.replace(":"," ",1).replace("capture_","Capture ",1)
+                    #else:
+                    alias1 = name.replace("system:","",1).title()
+
+                    self.msg_callback("add_hw_port /graph/system/%s audio 0 %s %i" % (name, alias1.replace(" ","_"), i+1))
+
+                for i in range(len(out_ports)):
+                    name = out_ports[i]
+                    #ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
+                    #if ret == 1 and alias1:
+                        #alias1 = alias1.replace(":"," ",1).replace("playback_","Playback ",1)
+                    #else:
+                    alias1 = name.replace("system:","",1).title()
+
+                    self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, alias1.replace(" ","_"), i+1))
+
+            #self.msg_callback("add_hw_port /graph/system/capture_1 audio 0 Capture_1 1")
+            #self.msg_callback("add_hw_port /graph/system/capture_2 audio 0 Capture_2 2")
+            #self.msg_callback("add_hw_port /graph/system/midi_capture_1 midi 0 Capture_1 1")
+            #self.msg_callback("add_hw_port /graph/system/playback_1 audio 1 Playback_1 1")
+            #self.msg_callback("add_hw_port /graph/system/playback_2 audio 1 Playback_2 2")
+            #self.msg_callback("add_hw_port /graph/system/midi_playback_1 midi 1 MIDI_Playback_1 1")
 
             for instance_id, plugin in self.plugins.items():
                 self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
