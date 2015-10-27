@@ -535,75 +535,6 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
         return info;
 
     // --------------------------------------------------------------------------------------------------------
-    // uri
-
-    info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
-
-    // --------------------------------------------------------------------------------------------------------
-    // name
-
-    if (LilvNode* node = lilv_plugin_get_name(p))
-    {
-        const char* name = lilv_node_as_string(node);
-        info.name = (name != nullptr) ? strdup(name) : nc;
-        lilv_node_free(node);
-    }
-    else
-    {
-        info.name = nc;
-    }
-
-    // --------------------------------------------------------------------------------------------------------
-    // brand
-
-    char brand[10+1] = { '\0' };
-
-    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.mod_brand))
-    {
-        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 10);
-        info.brand = strdup(brand);
-        lilv_nodes_free(nodes);
-    }
-    else if (LilvNode* node = lilv_plugin_get_author_name(p))
-    {
-        strncpy(brand, lilv_node_as_string(node), 10);
-        info.brand = strdup(brand);
-        lilv_node_free(node);
-    }
-    else
-    {
-        info.brand = nc;
-    }
-
-    // --------------------------------------------------------------------------------------------------------
-    // label
-
-    char label[16+1] = { '\0' };
-
-    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.mod_label))
-    {
-        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
-        info.label = strdup(label);
-        lilv_nodes_free(nodes);
-    }
-    else if (info.name == nc)
-    {
-        info.label = nc;
-    }
-    else
-    {
-        if (strlen(info.name) <= 16)
-        {
-            info.label = strdup(info.name);
-        }
-        else
-        {
-            strncpy(label, info.name, 16);
-            info.label = strdup(label);
-        }
-    }
-
-    // --------------------------------------------------------------------------------------------------------
     // categories
 
     if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.rdf_type))
@@ -615,6 +546,12 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
 
             if (nodestr == nullptr)
                 continue;
+
+            if (strcmp(nodestr, "http://moddevices.com/ns/modpedal#Pedalboard") == 0)
+            {
+                supported = false;
+                break;
+            }
 
             if (const char* cat = strstr(nodestr, "http://lv2plug.in/ns/lv2core#"))
             {
@@ -700,6 +637,78 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
             }
         }
         lilv_nodes_free(nodes);
+    }
+
+    if (! supported)
+        return info;
+
+    // --------------------------------------------------------------------------------------------------------
+    // uri
+
+    info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+    // --------------------------------------------------------------------------------------------------------
+    // name
+
+    if (LilvNode* node = lilv_plugin_get_name(p))
+    {
+        const char* name = lilv_node_as_string(node);
+        info.name = (name != nullptr) ? strdup(name) : nc;
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.name = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // brand
+
+    char brand[10+1] = { '\0' };
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.mod_brand))
+    {
+        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 10);
+        info.brand = strdup(brand);
+        lilv_nodes_free(nodes);
+    }
+    else if (LilvNode* node = lilv_plugin_get_author_name(p))
+    {
+        strncpy(brand, lilv_node_as_string(node), 10);
+        info.brand = strdup(brand);
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.brand = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // label
+
+    char label[16+1] = { '\0' };
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.mod_label))
+    {
+        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
+        info.label = strdup(label);
+        lilv_nodes_free(nodes);
+    }
+    else if (info.name == nc)
+    {
+        info.label = nc;
+    }
+    else
+    {
+        if (strlen(info.name) <= 16)
+        {
+            info.label = strdup(info.name);
+        }
+        else
+        {
+            strncpy(label, info.name, 16);
+            info.label = strdup(label);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------
