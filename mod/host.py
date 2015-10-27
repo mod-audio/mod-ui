@@ -281,13 +281,13 @@ class Host(object):
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/__system_%s audio 0 %s %i" % (name, title, i+1))
+            self.msg_callback("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
         # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/__system_%s audio 1 %s %i" % (name, title, i+1))
+            self.msg_callback("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         if self.jack_client is not None:
             # TODO midiports split(";")
@@ -303,7 +303,7 @@ class Host(object):
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/__system_%s midi 0 %s %i" % (name, title, i+1))
+                self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name, title, i+1))
 
             # MIDI Out
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
@@ -316,7 +316,7 @@ class Host(object):
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/__system_%s midi 1 %s %i" % (name, title, i+1))
+                self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (name, title, i+1))
 
         for instance_id, plugin in self.plugins.items():
             self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
@@ -447,10 +447,13 @@ class Host(object):
     # Host stuff - connections
 
     def _fix_host_connection_port(self, port):
-        if port.startswith("/graph/__system_"):
-            return port.replace("/graph/__system_","system:")
+        data = port.split("/")
 
-        instance, portsymbol = port.rsplit("/", 1)
+        if len(data) == 3:
+            return "system:%s" % data[2]
+
+        instance    = "/graph/%s" % data[2]
+        portsymbol  = data[3]
         instance_id = self.mapper.get_id_without_creating(instance)
         return "effect_%d:%s" % (instance_id, portsymbol)
 
@@ -557,7 +560,7 @@ class Host(object):
 _:b%i
     ingen:tail <%s> ;
     ingen:head <%s> .
-""" % (index, port_from.replace("/graph/__system_","",1).replace("/graph/","",1), port_to.replace("/graph/__system_","",1).replace("/graph/","",1))
+""" % (index, port_from.replace("/graph/","",1), port_to.replace("/graph/","",1))
 
         # Blocks (plugins)
         blocks = ""
