@@ -110,6 +110,8 @@ class Host(object):
         self.banks = []
         self.plugins = {}
         self.connections = []
+        self.audioportsIn = []
+        self.audioportsOut = []
         self.midiports = []
         self.pedalboard_name = ""
         self.pedalboard_size = [0,0]
@@ -163,9 +165,12 @@ class Host(object):
         if self.jack_client is not None:
             return
 
+
         self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
         self.xrun_count  = 0
         self.xrun_count2 = 0
+        self.audioportsIn  = []
+        self.audioportsOut = []
 
         if self.jack_client is None:
             return
@@ -176,6 +181,12 @@ class Host(object):
         jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
         jacklib.activate(self.jack_client)
         print("jacklib client activated")
+
+        for port in charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput)):
+            self.audioportsIn.append(port.replace("system:","",1))
+
+        for port in charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput)):
+            self.audioportsOut.append(port.replace("system:","",1))
 
     def close_jack(self):
         if self.jack_client is None:
@@ -255,22 +266,19 @@ class Host(object):
     def report_current_state(self):
         self.msg_callback("wait_start")
 
-        # get input and outputs separately
+        # Audio In
+        for i in range(len(self.audioportsIn)):
+            name  = self.audioportsIn[i]
+            title = name.title().replace(" ","_")
+            self.msg_callback("add_hw_port /graph/system/%s audio 0 %s %i" % (name, title, i+1))
+
+        # Audio Out
+        for i in range(len(self.audioportsOut)):
+            name  = self.audioportsOut[i]
+            title = name.title().replace(" ","_")
+            self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, title, i+1))
+
         if self.jack_client is not None:
-            # Audio In
-            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
-            for i in range(len(ports)):
-                name  = ports[i].replace("system:","",1)
-                title = name.title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/system/%s audio 0 %s %i" % (name, title, i+1))
-
-            # Audio Out
-            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
-            for i in range(len(ports)):
-                name  = ports[i].replace("system:","",1)
-                title = name.title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, title, i+1))
-
             # TODO midiports split(";")
 
             # MIDI In
@@ -469,93 +477,250 @@ class Host(object):
         with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
             json.dump(addressings, fh)
 
-        # Write the main pedalboard file
-        arcs = """\
-_:b1
-        ingen:head <control_out> ;
-        ingen:tail <_b_synth/notify> .
-"""
+        # Create list of midi in/out ports
+        midiportsIn  = []
+        midiportsOut = []
 
-        plugins = """\
-<_Pulsator>
-        ingen:canvasX 314.0 ;
-        ingen:canvasY 200.0 ;
-        ingen:enabled true ;
-        lv2:port <_Pulsator/amount> ,
-                <_Pulsator/bypass> ,
-                <_Pulsator/clip_inL>  ;
-        lv2:prototype <http://calf.sourceforge.net/plugins/Pulsator> ;
-        a ingen:Block .
+        for port in self.midiports:
+            if ";" in port:
+                inp, outp = port.split(";",1)
+                midiportsIn.append(inp)
+                midiportsOut.append(outp)
+            else:
+                midiportsIn.append(port)
 
-<_Pulsator/amount>
-        ingen:value 1.0 ;
-        lv2:portProperty <http://lv2plug.in/ns/ext/port-props#hasStrictBounds> ;
-        a lv2:ControlPort ,
-                lv2:InputPort .
-"""
+        # Arcs (connections)
+        arcs = ""
+        index = 0
+        for port_from, port_to in self.connections:
+            index += 1
+            arcs += """
+_:b%i
+    ingen:tail <%s> ;
+    ingen:head <%s> .
+""" % (index, port_from.replace("/graph/system/","",1).replace("/graph/","",1), port_to.replace("/graph/system/","",1).replace("/graph/","",1))
 
-        ports = """\
-<control_in>
-    ingen:canvasX 0.0 ;
-    ingen:canvasY 0.0 ;
+        # Blocks (plugins)
+        blocks = ""
+        for plugin in self.plugins.values():
+            info = get_plugin_info(plugin['uri'])
+            instance = plugin['instance'].replace("/graph/","",1)
+            blocks += """
+<%s>
+    ingen:canvasX %.1f ;
+    ingen:canvasY %.1f ;
+    ingen:enabled %s ;
+    ingen:polyphonic false ;
+    lv2:microVersion %i ;
+    lv2:minorVersion %i ;
+    lv2:port <%s> ;
+    lv2:prototype <%s> ;
+    a ingen:Block .
+""" % (instance, plugin['x'], plugin['y'], "false" if plugin['bypassed'] else "true",
+       info['microVersion'], info['microVersion'],
+       "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
+                                                                                          info['ports']['audio']['output']+
+                                                                                          info['ports']['control']['input']+
+                                                                                          info['ports']['control']['output']+
+                                                                                          info['ports']['cv']['input']+
+                                                                                          info['ports']['cv']['output']+
+                                                                                          info['ports']['midi']['input']+
+                                                                                          info['ports']['midi']['output']))),
+       plugin['uri'],)
+
+            # audio input
+            for port in info['ports']['audio']['input']:
+                blocks += """
+<%s/%s>
+    a lv2:AudioPort ,
+        lv2:InputPort .
+""" % (instance, port['symbol'])
+
+            # audio output
+            for port in info['ports']['audio']['input']:
+                blocks += """
+<%s/%s>
+    a lv2:AudioPort ,
+        lv2:OutputPort .
+""" % (instance, port['symbol'])
+
+            # cv input
+            for port in info['ports']['cv']['input']:
+                blocks += """
+<%s/%s>
+    a lv2:CVPort ,
+        lv2:InputPort .
+""" % (instance, port['symbol'])
+
+            # cv output
+            for port in info['ports']['cv']['output']:
+                blocks += """
+<%s/%s>
+    a lv2:CVPort ,
+        lv2:OutputPort .
+""" % (instance, port['symbol'])
+
+            # midi input
+            for port in info['ports']['midi']['input']:
+                blocks += """
+<%s/%s>
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
-    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+    a atom:AtomPort ,
+        lv2:InputPort .
+""" % (instance, port['symbol'])
+
+            # midi output
+            for port in info['ports']['midi']['output']:
+                blocks += """
+<%s/%s>
+    atom:bufferType atom:Sequence ;
+    atom:supports midi:MidiEvent ;
+    a atom:AtomPort ,
+        lv2:OutputPort .
+""" % (instance, port['symbol'])
+
+            # control input, save values
+            for symbol, value in plugin['ports'].items():
+                blocks += """
+<%s/%s>
+    ingen:value %f ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (instance, symbol, value)
+
+            # control output
+            for port in info['ports']['control']['output']:
+                blocks += """
+<%s/%s>
+    a lv2:ControlPort ,
+        lv2:OutputPort .
+""" % (instance, port['symbol'])
+
+        # Ports
+        ports = """
+<control_in>
+    atom:bufferType atom:Sequence ;
     lv2:index 0 ;
     lv2:name "Control" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_in" ;
-    a atom:AtomPort , lv2:InputPort .
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+    a atom:AtomPort ,
+        lv2:InputPort .
 
 <control_out>
-        ingen:canvasX 0.0 ;
-        ingen:canvasY 0.0 ;
-        atom:bufferType atom:Sequence ;
-        atom:supports midi:MidiEvent ;
-        <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
-        lv2:index 1 ;
-        lv2:name "Control" ;
-        lv2:symbol "control_out" ;
-        a atom:AtomPort , lv2:OutputPort .
+    atom:bufferType atom:Sequence ;
+    lv2:index 1 ;
+    lv2:name "Control" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "control_out" ;
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+    a atom:AtomPort ,
+        lv2:OutputPort .
 """
+        index = 1
 
-        ports += """\
-<audio_in_1>
-    ingen:canvasX 5.0 ;
-    ingen:canvasY 135.0 ;
-    lv2:index 2 ;
-    lv2:name "Audio In 1" ;
-    lv2:symbol "audio_in_1" ;
-    a lv2:AudioPort , lv2:InputPort .
-"""
+        # Ports (Audio In)
+        for port in self.audioportsIn:
+            index += 1
+            ports += """
+<%s>
+    lv2:index %i ;
+    lv2:name "%s" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "%s" ;
+    a lv2:AudioPort ,
+        lv2:InputPort .
+""" % (port, index, port, port)
+
+        # Ports (Audio Out)
+        for port in self.audioportsOut:
+            index += 1
+            ports += """
+<%s>
+    lv2:index %i ;
+    lv2:name "%s" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "%s" ;
+    a lv2:AudioPort ,
+        lv2:OutputPort .
+""" % (port, index, port, port)
+
+        # Ports (MIDI In)
+        for port in midiportsIn:
+            index += 1
+            ports += """
+<%s>
+    atom:bufferType atom:Sequence ;
+    atom:supports midi:MidiEvent ;
+    lv2:index %i ;
+    lv2:name "%s" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "%s" ;
+    a atom:AtomPort ,
+        lv2:OutputPort .
+""" % (port, index, port, port)
+
+        # Ports (MIDI Out)
+        for port in midiportsOut:
+            index += 1
+            ports += """
+<%s>
+    atom:bufferType atom:Sequence ;
+    atom:supports midi:MidiEvent ;
+    lv2:index %i ;
+    lv2:name "%s" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "%s" ;
+    a atom:AtomPort ,
+        lv2:OutputPort .
+""" % (port, index, port, port)
 
         # Write the main pedalboard file
-        with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
-            fh.write("""\
+        pbdata = """\
+@prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
 @prefix pedal: <http://moddevices.com/ns/modpedal#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
+%s%s%s
 <>
-    a lv2:Plugin ,
-        ingen:Graph ,
-        pedal:Pedalboard ;
     doap:name "%s" ;
     pedal:width %i ;
     pedal:height %i ;
     pedal:addressings <addressings.json> ;
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
-    ingen:arc _:b2 ,
-              _:b3 ,
-    ingen:block <_Pulsator> ,
-                <_b_synth> ;
     ingen:polyphony 1 ;
-    lv2:port <audio_in_1> ,
-             <audio_in_2> ;
-    lv2:extensionData <http://lv2plug.in/ns/ext/state#interface> .
-""" % (title, self.pedalboard_size[0], self.pedalboard_size[1]))
+""" % (arcs, blocks, ports, title, self.pedalboard_size[0], self.pedalboard_size[1])
+
+        # Arcs (connections)
+        if len(self.connections) > 0:
+            pbdata += "    ingen:arc _:b%s ;\n" % (" ,\n              _:b".join(tuple(str(i+1) for i in range(len(self.connections)))))
+
+        # Blocks (plugins)
+        if len(self.plugins) > 0:
+            pbdata += "    ingen:block <%s> ;\n" % ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for p in self.plugins.values())))
+
+        # Ports
+        pbdata += "    lv2:port <%s> ;\n" % ("> ,\n             <".join(["control_in","control_out"]+
+                                                                         self.audioportsIn+
+                                                                         self.audioportsOut))
+
+        # End
+        pbdata += """\
+    lv2:extensionData <http://lv2plug.in/ns/ext/state#interface> ;
+    a lv2:Plugin ,
+        ingen:Graph ,
+        pedal:Pedalboard .
+"""
+
+        # Write the main pedalboard file
+        with open(os.path.join(bundlepath, "%s.ttl" % titlesym), 'w') as fh:
+            fh.write(pbdata)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - misc

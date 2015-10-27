@@ -237,6 +237,10 @@ class Session(object):
         self.title      = title
         self.pedalboard_changed_callback(True, bundlepath, title)
 
+        self.screenshot_generator.schedule_screenshot(bundlepath)
+
+        callback(True)
+
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
     def web_get_midi_device_list(self):
