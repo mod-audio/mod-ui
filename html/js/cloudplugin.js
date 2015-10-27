@@ -100,13 +100,13 @@ JqueryClass('cloudPluginBox', {
                 plugin.screenshot_href =  "/effect/image/screenshot.png?uri=" + encodeURIComponent(plugin.uri)
                 plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + encodeURIComponent(plugin.uri)
             } else {
-                plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                plugin.screenshot_href = "/resources/pedals/default-screenshot-bw.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
             }
         }
         else {
             if (!plugin.screenshot_available && !plugin.thumbnail_available) {
-                plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                plugin.screenshot_href = "/resources/pedals/default-screenshot-bw.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
             }
         }
@@ -146,7 +146,7 @@ JqueryClass('cloudPluginBox', {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
                 }
                 if (!plugin.screenshot_available && !plugin.thumbnail_available) {
-                    plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                    plugin.screenshot_href = "/resources/pedals/default-screenshot-bw.png"
                     plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                 }
 
@@ -212,7 +212,7 @@ JqueryClass('cloudPluginBox', {
                 plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                 plugin.status = 'blocked'
                 if (!plugin.screenshot_available && !plugin.thumbnail_available) {
-                    plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                    plugin.screenshot_href = "/resources/pedals/default-screenshot-bw.png"
                     plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                 }
                 plugins.push(plugin)
