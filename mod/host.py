@@ -104,6 +104,7 @@ class Host(object):
         self.hmi = hmi
         self.addr = ("localhost", 5555)
         self.sock = None
+        self.crashed = False
         self.connected = False
         self._queue = []
         self._idle = True
@@ -157,6 +158,7 @@ class Host(object):
         ioloop.IOLoop.instance().add_callback(self.init_connection)
 
     def __del__(self):
+        self.msg_callback("stop")
         self.close_jack()
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -165,7 +167,6 @@ class Host(object):
     def init_jack(self):
         if self.jack_client is not None:
             return
-
 
         self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
         self.xrun_count  = 0
@@ -212,6 +213,7 @@ class Host(object):
         def check_response():
             self.connected = True
             callback()
+            self.cputimerok = True
             self.cputimer.start()
             if len(self._queue):
                 self.process_queue()
@@ -220,7 +222,8 @@ class Host(object):
 
         def closed():
             self.sock = None
-            self.msg_callback("stop")
+            self.crashed = True
+            self.msg_callback("disconnected")
 
         self.sock.set_close_callback(closed)
         self.sock.connect(self.addr, check_response)
@@ -271,6 +274,9 @@ class Host(object):
     def report_current_state(self):
         self.msg_callback("wait_start")
 
+        crashed = self.crashed
+        self.crashed = False
+
         # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
@@ -315,11 +321,23 @@ class Host(object):
         for instance_id, plugin in self.plugins.items():
             self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
 
+            if crashed:
+                self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
+                if plugin['bypassed']:
+                    self.send("bypass %d 1" % (instance_id,), lambda r:None, datatype='boolean')
+
             for symbol, value in plugin['ports'].items():
                 self.msg_callback("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
+                if crashed:
+                    self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
+
         for port_from, port_to in self.connections:
             self.msg_callback("connect %s %s" % (port_from, port_to))
+
+            if crashed:
+                self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
+                                             self._fix_host_connection_port(port_to)), lambda r:None, datatype='boolean')
 
         # TODO - set addressings?
 

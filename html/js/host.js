@@ -190,8 +190,13 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "stop") {
+        if (cmd == "disconnected") {
             desktop.disconnect()
+            return
+        }
+
+        if (cmd == "stop") {
+            desktop.blockUI()
             return
         }
 
