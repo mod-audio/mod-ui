@@ -34,6 +34,7 @@ import os, json, socket, logging
 from mod import get_hardware
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
+from mod.lilvlib import get_pedalboard_info
 from mod.protocol import Protocol, ProtocolError, process_resp
 
 try:
@@ -274,13 +275,13 @@ class Host(object):
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/system/%s audio 0 %s %i" % (name, title, i+1))
+            self.msg_callback("add_hw_port /graph/__system_%s audio 0 %s %i" % (name, title, i+1))
 
         # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/system/%s audio 1 %s %i" % (name, title, i+1))
+            self.msg_callback("add_hw_port /graph/__system_%s audio 1 %s %i" % (name, title, i+1))
 
         if self.jack_client is not None:
             # TODO midiports split(";")
@@ -296,7 +297,7 @@ class Host(object):
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/system/%s midi 0 %s %i" % (name, title, i+1))
+                self.msg_callback("add_hw_port /graph/__system_%s midi 0 %s %i" % (name, title, i+1))
 
             # MIDI Out
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
@@ -309,7 +310,7 @@ class Host(object):
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/system/%s midi 1 %s %i" % (name, title, i+1))
+                self.msg_callback("add_hw_port /graph/__system_%s midi 1 %s %i" % (name, title, i+1))
 
         for instance_id, plugin in self.plugins.items():
             self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
@@ -428,8 +429,8 @@ class Host(object):
     # Host stuff - connections
 
     def _fix_host_connection_port(self, port):
-        if port.startswith("/graph/system/"):
-            return port.replace("/graph/system/","system:")
+        if port.startswith("/graph/__system_"):
+            return port.replace("/graph/__system_","system:")
 
         instance, portsymbol = port.rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -457,6 +458,42 @@ class Host(object):
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
+
+    def load(self, bundlepath):
+        self.msg_callback("wait_start")
+
+        pb = get_pedalboard_info(bundlepath)
+
+        for p in pb['plugins']:
+            instance    = "/graph/%s" % p['instance']
+            instance_id = self.mapper.get_id(instance)
+            bypassed    = not p['enabled']
+
+            self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
+
+            if bypassed:
+                self.send("bypass %d 1" % (instance_id,), lambda r:None)
+
+            self.plugins[instance_id] = {
+                "instance"  : instance,
+                "uri"       : p['uri'],
+                "bypassed"  : bypassed,
+                "x"         : p['x'],
+                "y"         : p['y'],
+                "addressing": {}, # symbol: addressing
+                "ports"     : {}, # dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
+            }
+            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(bypassed)))
+
+        for c in pb['connections']:
+            port_from = "/graph/%s" % c['source']
+            port_to   = "/graph/%s" % c['target']
+            self.send("connect %s %s" % (self._fix_host_connection_port(port_from), self._fix_host_connection_port(port_to)), lambda r:None)
+
+            self.connections.append((port_from, port_to))
+            self.msg_callback("connect %s %s" % (port_from, port_to))
+
+        self.msg_callback("wait_end")
 
     def save(self, bundlepath, title, titlesym):
         # Write manifest.ttl
@@ -502,7 +539,7 @@ class Host(object):
 _:b%i
     ingen:tail <%s> ;
     ingen:head <%s> .
-""" % (index, port_from.replace("/graph/system/","",1).replace("/graph/","",1), port_to.replace("/graph/system/","",1).replace("/graph/","",1))
+""" % (index, port_from.replace("/graph/__system_","",1).replace("/graph/","",1), port_to.replace("/graph/__system_","",1).replace("/graph/","",1))
 
         # Blocks (plugins)
         blocks = ""
