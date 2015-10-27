@@ -219,6 +219,7 @@ class Host(object):
 
         def closed():
             self.sock = None
+            self.msg_callback("stop")
 
         self.sock.set_close_callback(closed)
         self.sock.connect(self.addr, check_response)
@@ -247,6 +248,9 @@ class Host(object):
 
         self._idle = False
         logging.info("[host] sending -> %s" % msg)
+
+        if self.sock is None:
+            return
 
         encmsg = "%s\0" % str(msg)
         self.sock.write(encmsg.encode("utf-8"))

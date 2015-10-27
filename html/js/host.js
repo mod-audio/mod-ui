@@ -190,6 +190,11 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "stop") {
+            desktop.disconnect()
+            return
+        }
+
         console.log(data)
     }
 })

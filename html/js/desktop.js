@@ -331,6 +331,12 @@ function Desktop(elements) {
                 block.height($(window).height() * 5)
                 block.css('margin-left', -$(window).width() * 2)
                 $('#wrapper').css('z-index', -1)
+                $('#plugins-library').css('z-index', -1)
+                $('#cloud-plugins-library').css('z-index', -1)
+                $('#pedalboards-library').css('z-index', -1)
+                $('#bank-library').css('z-index', -1)
+                $('#mod-social-network').css('z-index', -1)
+                $('#main-menu').css('z-index', -1)
             },
             error: function () {
                 new Bug("Couldn't disconnect")
