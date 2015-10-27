@@ -87,9 +87,8 @@ static size_t HOMElen = strlen(HOME);
     nullptr                                          \
 }
 
-#if 0
 // Blacklisted plugins, which don't work properly on MOD for various reasons
-BLACKLIST = [
+static const std::vector<std::string> BLACKLIST = {
     "urn:50m30n3:plugins:SO-404",
     "urn:50m30n3:plugins:SO-666",
     "urn:50m30n3:plugins:SO-kl5",
@@ -168,8 +167,7 @@ BLACKLIST = [
     "http://www.klangfreund.com/lufsmetermultichannel",
     "http://www.wodgod.com/newtonator/1.0",
     "https://github.com/HiFi-LoFi/KlangFalter",
-]
-#endif
+};
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -2104,10 +2102,8 @@ const PluginInfo_Mini* const* get_all_plugins(void)
 
         std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
-        //if (uri in BLACKLIST)
-        //    continue;
-        //if (MODGUI_SHOW_MODE == 3 and uri not in WHITELIST)
-        //    continue;
+        if (std::find(BLACKLIST.begin(), BLACKLIST.end(), uri) != BLACKLIST.end())
+            continue;
 
         // check if it's already cached
         if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
