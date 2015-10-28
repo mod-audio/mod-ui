@@ -99,11 +99,11 @@ def install_bundles_in_tmp_dir():
         bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
 
         if os.path.exists(bundlepath):
-            removed += remove_bundle_from_lilv_world(bundlepath, True)
+            removed += remove_bundle_from_lilv_world(bundlepath)
             shutil.rmtree(bundlepath)
 
         shutil.move(tmppath, bundlepath)
-        installed += add_bundle_to_lilv_world(bundlepath, True)
+        installed += add_bundle_to_lilv_world(bundlepath)
 
     # TODO - make ingen refresh lv2 world
 
@@ -130,7 +130,7 @@ def uninstall_bundles(bundles):
 
     for bundlepath in bundles:
         if os.path.exists(bundlepath):
-            removed += remove_bundle_from_lilv_world(bundlepath, True)
+            removed += remove_bundle_from_lilv_world(bundlepath)
             shutil.rmtree(bundlepath)
 
     # TODO - make ingen refresh lv2 world
