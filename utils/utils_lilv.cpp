@@ -1816,16 +1816,33 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
         PluginPreset* presets = new PluginPreset[presetcount+1];
         memset(presets, 0, sizeof(PluginPreset) * (presetcount+1));
 
+        std::vector<const LilvNode*> loadedPresetResourceNodes;
+
         LILV_FOREACH(nodes, itprs, presetnodes)
         {
             if (prindex >= presetcount)
                 continue;
 
             const LilvNode* presetnode = lilv_nodes_get(presetnodes, itprs);
-            if (lilv_world_load_resource(W, presetnode) == -1)
-                continue;
 
-            if (LilvNodes* xlabel = lilv_world_find_nodes(W, presetnode, ns.rdfs_label, nullptr))
+            // try to find label without loading the preset resource first
+            LilvNodes* xlabel = lilv_world_find_nodes(W, presetnode, ns.rdfs_label, nullptr);
+
+            // failed, try loading resource
+            if (xlabel == nullptr)
+            {
+                // if loading resource fails, skip this preset
+                if (lilv_world_load_resource(W, presetnode) == -1)
+                    continue;
+
+                // ok, let's try again
+                xlabel = lilv_world_find_nodes(W, presetnode, ns.rdfs_label, nullptr);
+
+                // need to unload later
+                loadedPresetResourceNodes.push_back(presetnode);
+            }
+
+            if (xlabel != nullptr)
             {
                 presets[prindex++] = {
                     true,
@@ -1837,12 +1854,12 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
             }
         }
 
-        LILV_FOREACH(nodes, itprs, presetnodes) {
-            lilv_world_unload_resource(W, lilv_nodes_get(presetnodes, itprs));
-        }
+        for (const LilvNode* presetnode : loadedPresetResourceNodes)
+            lilv_world_unload_resource(W, presetnode);
 
         info.presets = presets;
 
+        loadedPresetResourceNodes.clear();
         lilv_nodes_free(presetnodes);
     }
 
