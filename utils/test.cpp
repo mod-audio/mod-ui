@@ -15,15 +15,19 @@
  * For a full copy of the GNU General Public License see the COPYING file.
  */
 
+#ifndef DEBUG
+#define DEBUG
+#endif
+
 #include "utils.h"
 
+#include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-int main()
+void scanPlugins()
 {
-    init();
-
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -53,9 +57,28 @@ int main()
             get_pedalboard_name(pedalboards[i]->bundle);
         }
     }
+}
 
-    //sleep(10);
-
+int main()
+{
+    init();
+    scanPlugins();
     cleanup();
+
+    setenv("LV2_PATH", "/NOT", 1);
+    init();
+    assert(get_all_plugins() == nullptr);
+    assert(add_bundle_to_lilv_world("/NOT") == nullptr);
+    assert(add_bundle_to_lilv_world("/NOT/") == nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/calf.lv2") != nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/calf.lv2/") == nullptr);
+    assert(get_all_plugins() != nullptr);
+    scanPlugins();
+    assert(remove_bundle_from_lilv_world("/usr/lib/lv2/calf.lv2") != nullptr);
+    assert(remove_bundle_from_lilv_world("/usr/lib/lv2/calf.lv2") == nullptr);
+    assert(get_all_plugins() == nullptr);
+    scanPlugins();
+    cleanup();
+
     return 0;
 }

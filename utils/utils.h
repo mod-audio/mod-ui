@@ -51,7 +51,7 @@ typedef struct {
     const char* panel;
     const char* color;
     const char* knob;
-    const PluginGUIPort* ports;
+    PluginGUIPort* ports;
 } PluginGUI;
 
 typedef struct {
@@ -152,12 +152,12 @@ MOD_API void init(void);
 MOD_API void cleanup(void);
 
 // add a bundle to our lilv world
-// returns true if the bundle was added
-MOD_API bool add_bundle_to_lilv_world(const char* bundle);
+// returns uri list of added plugins (null for none)
+MOD_API const char* const* add_bundle_to_lilv_world(const char* bundle);
 
 // remove a bundle from our lilv world
-// returns true if the bundle was removed
-MOD_API bool remove_bundle_from_lilv_world(const char* bundle);
+// returns uri list of removed plugins (null for none)
+MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle);
 
 // get all available plugins
 // this triggers scanning of all plugins

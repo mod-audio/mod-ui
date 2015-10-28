@@ -427,7 +427,7 @@ bool _isalnum(const char* const string)
 // plugins are not truly scanned here, only later per request
 void _refresh()
 {
-    char tmppath[PATH_MAX+1];
+    char tmppath[PATH_MAX+2];
 
     BUNDLES.clear();
     PLUGNFO.clear();
@@ -449,39 +449,39 @@ void _refresh()
 
         LILV_FOREACH(nodes, itbnds, bundles)
         {
-            const LilvNode* bundle = lilv_nodes_get(bundles, itbnds);
+            const LilvNode* bundlenode = lilv_nodes_get(bundles, itbnds);
 
-            if (bundle == nullptr)
+            if (bundlenode == nullptr)
                 continue;
-            if (! lilv_node_is_uri(bundle))
+            if (! lilv_node_is_uri(bundlenode))
                 continue;
 
             char* bundleparsed;
             char* tmp;
 
-            tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundle), nullptr);
+            tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
             if (tmp == nullptr)
-                  continue;
+                continue;
 
             bundleparsed = dirname(tmp);
             if (bundleparsed == nullptr)
             {
-                  lilv_free(tmp);
-                  continue;
+                lilv_free(tmp);
+                continue;
             }
 
             bundleparsed = realpath(bundleparsed, tmppath);
             lilv_free(tmp);
             if (bundleparsed == nullptr)
-                  continue;
+                continue;
 
             const size_t size = strlen(bundleparsed);
             if (size <= 1)
                 continue;
 
-            if (bundleparsed[size] != '/')
+            if (bundleparsed[size] != OS_SEP)
             {
-                bundleparsed[size  ] = '/';
+                bundleparsed[size  ] = OS_SEP;
                 bundleparsed[size+1] = '\0';
             }
 
@@ -1875,6 +1875,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
 
 static const PluginInfo_Mini** _plug_ret = nullptr;
 static unsigned int _plug_lastsize = 0;
+static const char** _bundles_ret = nullptr;
 
 void init(void)
 {
@@ -1884,15 +1885,17 @@ void init(void)
     _refresh();
 }
 
-void _clear_gui_port_info(const PluginGUIPort& guiportinfo)
+void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 {
     if (guiportinfo.name != nullptr && guiportinfo.name != nc)
         free((void*)guiportinfo.name);
     if (guiportinfo.symbol != nullptr && guiportinfo.symbol != nc)
         free((void*)guiportinfo.symbol);
+
+    memset(&guiportinfo, 0, sizeof(PluginGUIPort));
 }
 
-void _clear_port_info(const PluginPort& portinfo)
+void _clear_port_info(PluginPort& portinfo)
 {
     if (portinfo.name != nullptr && portinfo.name != nc)
         free((void*)portinfo.name);
@@ -1926,10 +1929,152 @@ void _clear_port_info(const PluginPort& portinfo)
         if (portinfo.units.symbol != nullptr && portinfo.units.symbol != nc)
             free((void*)portinfo.units.symbol);
     }
+
+    memset(&portinfo, 0, sizeof(PluginPort));
+}
+
+void _clear_plugin_info(PluginInfo& info)
+{
+    if (info.name != nullptr && info.name != nc)
+        lilv_free((void*)info.name);
+    if (info.binary != nullptr && info.binary != nc)
+        lilv_free((void*)info.binary);
+    if (info.license != nullptr && info.license != nc)
+        free((void*)info.license);
+    if (info.comment != nullptr && info.comment != nc)
+        free((void*)info.comment);
+    if (info.version != nullptr && info.version != nc)
+        free((void*)info.version);
+    if (info.brand != nullptr && info.brand != nc)
+        free((void*)info.brand);
+    if (info.label != nullptr && info.label != nc)
+        free((void*)info.label);
+    if (info.author.name != nullptr && info.author.name != nc)
+        free((void*)info.author.name);
+    if (info.author.homepage != nullptr && info.author.homepage != nc)
+        free((void*)info.author.homepage);
+    if (info.author.email != nullptr && info.author.email != nc)
+        free((void*)info.author.email);
+    if (info.gui.resourcesDirectory != nullptr && info.gui.resourcesDirectory != nc)
+        lilv_free((void*)info.gui.resourcesDirectory);
+    if (info.gui.iconTemplate != nullptr && info.gui.iconTemplate != nc)
+        lilv_free((void*)info.gui.iconTemplate);
+    if (info.gui.settingsTemplate != nullptr && info.gui.settingsTemplate != nc)
+        lilv_free((void*)info.gui.settingsTemplate);
+    if (info.gui.javascript != nullptr && info.gui.javascript != nc)
+        lilv_free((void*)info.gui.javascript);
+    if (info.gui.stylesheet != nullptr && info.gui.stylesheet != nc)
+        lilv_free((void*)info.gui.stylesheet);
+    if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
+        lilv_free((void*)info.gui.screenshot);
+    if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
+        lilv_free((void*)info.gui.thumbnail);
+    if (info.gui.brand != nullptr && info.gui.brand != nc)
+        free((void*)info.gui.brand);
+    if (info.gui.label != nullptr && info.gui.label != nc)
+        free((void*)info.gui.label);
+    if (info.gui.model != nullptr && info.gui.model != nc)
+        free((void*)info.gui.model);
+    if (info.gui.panel != nullptr && info.gui.panel != nc)
+        free((void*)info.gui.panel);
+    if (info.gui.color != nullptr && info.gui.color != nc)
+        free((void*)info.gui.color);
+    if (info.gui.knob != nullptr && info.gui.knob != nc)
+        free((void*)info.gui.knob);
+
+    if (info.gui.ports != nullptr)
+    {
+        for (int i=0; info.gui.ports[i].valid; ++i)
+            _clear_gui_port_info(info.gui.ports[i]);
+        delete[] info.gui.ports;
+    }
+
+    if (info.ports.audio.input != nullptr)
+    {
+        for (int i=0; info.ports.audio.input[i].valid; ++i)
+            _clear_port_info(info.ports.audio.input[i]);
+        delete[] info.ports.audio.input;
+    }
+    if (info.ports.audio.output != nullptr)
+    {
+        for (int i=0; info.ports.audio.output[i].valid; ++i)
+            _clear_port_info(info.ports.audio.output[i]);
+        delete[] info.ports.audio.output;
+    }
+    if (info.ports.control.input != nullptr)
+    {
+        for (int i=0; info.ports.control.input[i].valid; ++i)
+            _clear_port_info(info.ports.control.input[i]);
+        delete[] info.ports.control.input;
+    }
+    if (info.ports.control.output != nullptr)
+    {
+        for (int i=0; info.ports.control.output[i].valid; ++i)
+            _clear_port_info(info.ports.control.output[i]);
+        delete[] info.ports.control.output;
+    }
+    if (info.ports.cv.input != nullptr)
+    {
+        for (int i=0; info.ports.cv.input[i].valid; ++i)
+            _clear_port_info(info.ports.cv.input[i]);
+        delete[] info.ports.cv.input;
+    }
+    if (info.ports.cv.output != nullptr)
+    {
+        for (int i=0; info.ports.cv.output[i].valid; ++i)
+            _clear_port_info(info.ports.cv.output[i]);
+        delete[] info.ports.cv.output;
+    }
+    if (info.ports.midi.input != nullptr)
+    {
+        for (int i=0; info.ports.midi.input[i].valid; ++i)
+            _clear_port_info(info.ports.midi.input[i]);
+        delete[] info.ports.midi.input;
+    }
+    if (info.ports.midi.output != nullptr)
+    {
+        for (int i=0; info.ports.midi.output[i].valid; ++i)
+            _clear_port_info(info.ports.midi.output[i]);
+        delete[] info.ports.midi.output;
+    }
+
+    if (info.presets != nullptr)
+    {
+        for (int i=0; info.presets[i].valid; ++i)
+        {
+            free((void*)info.presets[i].uri);
+            free((void*)info.presets[i].label);
+        }
+        delete[] info.presets;
+    }
+
+    memset(&info, 0, sizeof(PluginInfo));
+}
+
+void _clear_plugin_info_mini(PluginInfo_Mini& info)
+{
+    if (info.brand != nullptr && info.brand != nc)
+        free((void*)info.brand);
+    if (info.label != nullptr && info.label != nc)
+        free((void*)info.label);
+    if (info.name != nullptr && info.name != nc)
+        free((void*)info.name);
+    if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
+        lilv_free((void*)info.gui.thumbnail);
+
+    memset(&info, 0, sizeof(PluginInfo_Mini));
 }
 
 void cleanup(void)
 {
+    if (_bundles_ret != nullptr)
+    {
+        for (int i=0; _bundles_ret[i] != nullptr; ++i)
+            free((void*)_bundles_ret[i]);
+        delete[] _bundles_ret;
+        _bundles_ret = nullptr;
+    }
+
     if (_plug_ret != nullptr)
     {
         delete[] _plug_ret;
@@ -1944,133 +2089,13 @@ void cleanup(void)
     for (auto& map : PLUGNFO_Mini)
     {
         PluginInfo_Mini& info = map.second;
-
-        if (info.brand != nullptr && info.brand != nc)
-            free((void*)info.brand);
-        if (info.label != nullptr && info.label != nc)
-            free((void*)info.label);
-        if (info.name != nullptr && info.name != nc)
-            free((void*)info.name);
-        if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
-            lilv_free((void*)info.gui.thumbnail);
+        _clear_plugin_info_mini(info);
     }
 
     for (auto& map : PLUGNFO)
     {
         PluginInfo& info = map.second;
-
-        if (info.name != nullptr && info.name != nc)
-            lilv_free((void*)info.name);
-        if (info.binary != nullptr && info.binary != nc)
-            lilv_free((void*)info.binary);
-        if (info.license != nullptr && info.license != nc)
-            free((void*)info.license);
-        if (info.comment != nullptr && info.comment != nc)
-            free((void*)info.comment);
-        if (info.version != nullptr && info.version != nc)
-            free((void*)info.version);
-        if (info.brand != nullptr && info.brand != nc)
-            free((void*)info.brand);
-        if (info.label != nullptr && info.label != nc)
-            free((void*)info.label);
-        if (info.author.name != nullptr && info.author.name != nc)
-            free((void*)info.author.name);
-        if (info.author.homepage != nullptr && info.author.homepage != nc)
-            free((void*)info.author.homepage);
-        if (info.author.email != nullptr && info.author.email != nc)
-            free((void*)info.author.email);
-        if (info.gui.resourcesDirectory != nullptr && info.gui.resourcesDirectory != nc)
-            lilv_free((void*)info.gui.resourcesDirectory);
-        if (info.gui.iconTemplate != nullptr && info.gui.iconTemplate != nc)
-            lilv_free((void*)info.gui.iconTemplate);
-        if (info.gui.settingsTemplate != nullptr && info.gui.settingsTemplate != nc)
-            lilv_free((void*)info.gui.settingsTemplate);
-        if (info.gui.javascript != nullptr && info.gui.javascript != nc)
-            lilv_free((void*)info.gui.javascript);
-        if (info.gui.stylesheet != nullptr && info.gui.stylesheet != nc)
-            lilv_free((void*)info.gui.stylesheet);
-        if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
-            lilv_free((void*)info.gui.screenshot);
-        if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
-            lilv_free((void*)info.gui.thumbnail);
-        if (info.gui.brand != nullptr && info.gui.brand != nc)
-            free((void*)info.gui.brand);
-        if (info.gui.label != nullptr && info.gui.label != nc)
-            free((void*)info.gui.label);
-        if (info.gui.model != nullptr && info.gui.model != nc)
-            free((void*)info.gui.model);
-        if (info.gui.panel != nullptr && info.gui.panel != nc)
-            free((void*)info.gui.panel);
-        if (info.gui.color != nullptr && info.gui.color != nc)
-            free((void*)info.gui.color);
-        if (info.gui.knob != nullptr && info.gui.knob != nc)
-            free((void*)info.gui.knob);
-
-        if (info.gui.ports != nullptr)
-        {
-            for (int i=0; info.gui.ports[i].valid; ++i)
-                _clear_gui_port_info(info.gui.ports[i]);
-            delete[] info.gui.ports;
-        }
-
-        if (info.ports.audio.input != nullptr)
-        {
-            for (int i=0; info.ports.audio.input[i].valid; ++i)
-                _clear_port_info(info.ports.audio.input[i]);
-            delete[] info.ports.audio.input;
-        }
-        if (info.ports.audio.output != nullptr)
-        {
-            for (int i=0; info.ports.audio.output[i].valid; ++i)
-                _clear_port_info(info.ports.audio.output[i]);
-            delete[] info.ports.audio.output;
-        }
-        if (info.ports.control.input != nullptr)
-        {
-            for (int i=0; info.ports.control.input[i].valid; ++i)
-                _clear_port_info(info.ports.control.input[i]);
-            delete[] info.ports.control.input;
-        }
-        if (info.ports.control.output != nullptr)
-        {
-            for (int i=0; info.ports.control.output[i].valid; ++i)
-                _clear_port_info(info.ports.control.output[i]);
-            delete[] info.ports.control.output;
-        }
-        if (info.ports.cv.input != nullptr)
-        {
-            for (int i=0; info.ports.cv.input[i].valid; ++i)
-                _clear_port_info(info.ports.cv.input[i]);
-            delete[] info.ports.cv.input;
-        }
-        if (info.ports.cv.output != nullptr)
-        {
-            for (int i=0; info.ports.cv.output[i].valid; ++i)
-                _clear_port_info(info.ports.cv.output[i]);
-            delete[] info.ports.cv.output;
-        }
-        if (info.ports.midi.input != nullptr)
-        {
-            for (int i=0; info.ports.midi.input[i].valid; ++i)
-                _clear_port_info(info.ports.midi.input[i]);
-            delete[] info.ports.midi.input;
-        }
-        if (info.ports.midi.output != nullptr)
-        {
-            for (int i=0; info.ports.midi.output[i].valid; ++i)
-                _clear_port_info(info.ports.midi.output[i]);
-            delete[] info.ports.midi.output;
-        }
-
-        if (info.presets != nullptr)
-        {
-            for (int i=0; info.presets[i].valid; ++i)
-            {
-                free((void*)info.presets[i].uri);
-                free((void*)info.presets[i].label);
-            }
-            delete[] info.presets;
-        }
+        _clear_plugin_info(info);
     }
 
     PLUGNFO_Mini.clear();
@@ -2082,14 +2107,225 @@ void cleanup(void)
 
 // --------------------------------------------------------------------------------------------------------
 
-bool add_bundle_to_lilv_world(const char* /*bundle*/)
+const char* const* add_bundle_to_lilv_world(const char* bundle)
 {
-    return false;
+    // lilv wants the last character as the separator
+    char tmppath[PATH_MAX+2];
+    char* cbundlepath = realpath(bundle, tmppath);
+
+    if (cbundlepath == nullptr)
+        return nullptr;
+
+    {
+        const size_t size = strlen(cbundlepath);
+        if (size <= 1)
+            return nullptr;
+
+        if (cbundlepath[size] != OS_SEP)
+        {
+            cbundlepath[size  ] = OS_SEP;
+            cbundlepath[size+1] = '\0';
+        }
+    }
+
+    std::string bundlepath(cbundlepath);
+
+    // stop now if bundle is already loaded
+    if (std::find(BUNDLES.begin(), BUNDLES.end(), bundlepath) != BUNDLES.end())
+        return nullptr;
+
+    // convert bundle string into a lilv node
+    LilvNode* bundlenode = lilv_new_file_uri(W, nullptr, cbundlepath);
+
+    // load the bundle
+    lilv_world_load_bundle(W, bundlenode);
+
+    // free bundlenode, no longer needed
+    lilv_node_free(bundlenode);
+
+    // add to loaded list
+    BUNDLES.push_back(bundlepath);
+
+    // fill in for any new plugins that appeared
+    std::vector<std::string> addedPlugins;
+
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* p = lilv_plugins_get(PLUGINS, itpls);
+
+        std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        if (std::find(BLACKLIST.begin(), BLACKLIST.end(), uri) != BLACKLIST.end())
+            continue;
+
+        // check if it's already cached
+        if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
+            continue;
+
+        // store new empty data
+        PLUGNFO[uri] = PluginInfo_Init;
+        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+
+        addedPlugins.push_back(uri);
+    }
+
+    if (size_t plugCount = addedPlugins.size())
+    {
+        if (_bundles_ret != nullptr)
+        {
+            for (int i=0; _bundles_ret[i] != nullptr; ++i)
+                free((void*)_bundles_ret[i]);
+            delete[] _bundles_ret;
+        }
+
+        _bundles_ret = new const char*[plugCount+1];
+        memset(_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
+
+        plugCount = 0;
+        for (const std::string& uri : addedPlugins)
+            _bundles_ret[plugCount++] = strdup(uri.c_str());
+
+        addedPlugins.clear();
+
+        return _bundles_ret;
+    }
+
+    return nullptr;
 }
 
-bool remove_bundle_from_lilv_world(const char* /*bundle*/)
+const char* const* remove_bundle_from_lilv_world(const char* bundle)
 {
-    return false;
+    // lilv wants the last character as the separator
+    char tmppath[PATH_MAX+2];
+    char* cbundlepath = realpath(bundle, tmppath);
+
+    if (cbundlepath == nullptr)
+        return nullptr;
+
+    {
+        const size_t size = strlen(cbundlepath);
+        if (size <= 1)
+            return nullptr;
+
+        if (cbundlepath[size] != OS_SEP)
+        {
+            cbundlepath[size  ] = OS_SEP;
+            cbundlepath[size+1] = '\0';
+        }
+    }
+
+    std::string bundlepath(cbundlepath);
+
+    // stop now if bundle is not loaded
+    if (std::find(BUNDLES.begin(), BUNDLES.end(), bundlepath) == BUNDLES.end())
+        return nullptr;
+
+    // remove from loaded list
+    BUNDLES.remove(bundlepath);
+
+    std::vector<std::string> removedPlugins;
+
+    // remove all plugins that are present on that bundle
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* p = lilv_plugins_get(PLUGINS, itpls);
+
+        const LilvNodes* bundles = lilv_plugin_get_data_uris(p);
+
+        std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        if (PLUGNFO.count(uri) == 0)
+            continue;
+
+        LILV_FOREACH(nodes, itbnds, bundles)
+        {
+            const LilvNode* bundlenode = lilv_nodes_get(bundles, itbnds);
+
+            if (bundlenode == nullptr)
+                continue;
+            if (! lilv_node_is_uri(bundlenode))
+                continue;
+
+            char* bundleparsed;
+            char* tmp;
+
+            tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
+            if (tmp == nullptr)
+                continue;
+
+            bundleparsed = dirname(tmp);
+            if (bundleparsed == nullptr)
+            {
+                lilv_free(tmp);
+                continue;
+            }
+
+            bundleparsed = realpath(bundleparsed, tmppath); // note: this invalidates cbundlepath
+            lilv_free(tmp);
+            if (bundleparsed == nullptr)
+                continue;
+
+            const size_t size = strlen(bundleparsed);
+            if (size <= 1)
+                continue;
+
+            if (bundleparsed[size] != OS_SEP)
+            {
+                bundleparsed[size  ] = OS_SEP;
+                bundleparsed[size+1] = '\0';
+            }
+
+            if (bundlepath != bundleparsed)
+                continue;
+
+            _clear_plugin_info(PLUGNFO[uri]);
+            PLUGNFO.erase(uri);
+
+            _clear_plugin_info_mini(PLUGNFO_Mini[uri]);
+            PLUGNFO_Mini.erase(uri);
+
+            removedPlugins.push_back(uri);
+            break;
+        }
+    }
+
+    // convert bundle string into a lilv node
+    LilvNode* bundlenode = lilv_new_file_uri(W, nullptr, bundlepath.c_str());
+
+    // unload the bundle
+    lilv_world_unload_bundle(W, bundlenode);
+
+    // free bundlenode, no longer needed
+    lilv_node_free(bundlenode);
+
+    // lilv world is now messed up because of removing stuff, need to rebuild it
+    lilv_world_free(W);
+    W = lilv_world_new();
+    lilv_world_load_all(W);
+    PLUGINS = lilv_world_get_all_plugins(W);
+
+    if (size_t plugCount = removedPlugins.size())
+    {
+        if (_bundles_ret != nullptr)
+        {
+            for (int i=0; _bundles_ret[i] != nullptr; ++i)
+                free((void*)_bundles_ret[i]);
+            delete[] _bundles_ret;
+        }
+
+        _bundles_ret = new const char*[plugCount+1];
+        memset(_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
+
+        plugCount = 0;
+        for (const std::string& uri : removedPlugins)
+            _bundles_ret[plugCount++] = strdup(uri.c_str());
+
+        removedPlugins.clear();
+
+        return _bundles_ret;
+    }
+
+    return nullptr;
 }
 
 const PluginInfo_Mini* const* get_all_plugins(void)
