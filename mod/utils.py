@@ -286,10 +286,10 @@ utils.cleanup.argtypes = None
 utils.cleanup.restype  = None
 
 utils.add_bundle_to_lilv_world.argtypes = [c_char_p]
-utils.add_bundle_to_lilv_world.restype  = c_bool
+utils.add_bundle_to_lilv_world.restype  = POINTER(c_char_p)
 
 utils.remove_bundle_from_lilv_world.argtypes = [c_char_p]
-utils.remove_bundle_from_lilv_world.restype  = c_bool
+utils.remove_bundle_from_lilv_world.restype  = POINTER(c_char_p)
 
 utils.get_all_plugins.argtypes = None
 utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
@@ -320,16 +320,14 @@ def cleanup():
     utils.cleanup()
 
 # add a bundle to our lilv world
-# returns true if the bundle was added
-def add_bundle_to_lilv_world(bundlepath, returnPlugins = False):
-    ret = utils.add_bundle_to_lilv_world(bundlepath.encode("utf-8"))
-    return [] if returnPlugins else ret
+# returns uri list of added plugins
+def add_bundle_to_lilv_world(bundlepath):
+    return charPtrPtrToStringList(utils.add_bundle_to_lilv_world(bundlepath.encode("utf-8")))
 
 # remove a bundle to our lilv world
-# returns true if the bundle was removed
-def remove_bundle_from_lilv_world(bundlepath, returnPlugins = False):
-    ret = utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8"))
-    return [] if returnPlugins else ret
+# returns uri list of removed plugins
+def remove_bundle_from_lilv_world(bundlepath):
+    return charPtrPtrToStringList(utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8")))
 
 # get all available plugins
 # this triggers scanning of all plugins
