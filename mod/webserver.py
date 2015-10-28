@@ -105,7 +105,7 @@ def install_bundles_in_tmp_dir():
         shutil.move(tmppath, bundlepath)
         installed += add_bundle_to_lilv_world(bundlepath)
 
-    # TODO - make ingen refresh lv2 world
+    # TODO - make mod-host refresh lv2 world
 
     if len(installed) == 0:
         resp = {
@@ -120,9 +120,6 @@ def install_bundles_in_tmp_dir():
             'installed': installed,
         }
 
-    if len(removed) > 0:
-        lv2_init()
-
     return resp
 
 def uninstall_bundles(bundles):
@@ -133,10 +130,7 @@ def uninstall_bundles(bundles):
             removed += remove_bundle_from_lilv_world(bundlepath)
             shutil.rmtree(bundlepath)
 
-    # TODO - make ingen refresh lv2 world
-
     if len(removed) > 0:
-        lv2_init()
         resp = {
             'ok'     : True,
             'removed': removed,

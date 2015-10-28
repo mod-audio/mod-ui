@@ -2143,6 +2143,9 @@ const char* const* add_bundle_to_lilv_world(const char* bundle)
     // free bundlenode, no longer needed
     lilv_node_free(bundlenode);
 
+    // refresh PLUGINS
+    PLUGINS = lilv_world_get_all_plugins(W);
+
     // add to loaded list
     BUNDLES.push_back(bundlepath);
 
