@@ -352,8 +352,8 @@ class Host(object):
         self._init_addressings()
 
         def host_callback(ok):
-            self.msg_callback("remove :all")
             callback(ok)
+            self.msg_callback("remove :all")
 
         self.send("remove -1", host_callback, datatype='boolean')
 
@@ -370,6 +370,7 @@ class Host(object):
             if resp < 0:
                 callback(resp)
                 return
+            callback(resp)
             bypassed = False
             self.plugins[instance_id] = {
                 "instance"  : instance,
@@ -381,7 +382,6 @@ class Host(object):
                 "ports"     : dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
-            callback(resp)
 
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -405,6 +405,7 @@ class Host(object):
                     i += 1
 
         def host_callback(ok):
+            callback(ok)
             removed_connections = []
             for ports in self.connections:
                 if ports[0].startswith(instance) or ports[1].startswith(instance):
@@ -414,7 +415,6 @@ class Host(object):
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
             self.msg_callback("remove %s" % (instance))
-            callback(ok)
 
         self.hmi.control_rm(instance_id, ":all")
         self.send("remove %d" % instance_id, host_callback, datatype='boolean')
@@ -457,23 +457,23 @@ class Host(object):
 
     def connect(self, port_from, port_to, callback):
         def host_callback(ok):
+            callback(ok)
             if ok:
                 self.connections.append((port_from, port_to))
                 self.msg_callback("connect %s %s" % (port_from, port_to))
-            callback(ok)
 
         self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
                                      self._fix_host_connection_port(port_to)), host_callback, datatype='boolean')
 
     def disconnect(self, port_from, port_to, callback):
         def host_callback(ok):
+            callback(ok)
             if ok:
                 try:
                     self.connections.remove((port_from, port_to))
                 except:
                     pass
                 self.msg_callback("disconnect %s %s" % (port_from, port_to))
-            callback(ok)
 
         self.send("disconnect %s %s" % (self._fix_host_connection_port(port_from),
                                         self._fix_host_connection_port(port_to)), host_callback, datatype='boolean')
@@ -1068,8 +1068,8 @@ _:b%i
             self.plugins[instance_id]['bypassed'] = bypassed
 
             def host_callback(ok):
-                self.msg_callback("bypass %s %d" % (instance, int(bypassed)))
                 callback(ok)
+                self.msg_callback("bypass %s %d" % (instance, int(bypassed)))
 
             self.send("bypass %d %d" % (instance_id, int(bypassed)), host_callback, datatype='boolean')
 
@@ -1077,8 +1077,8 @@ _:b%i
             self.plugins[instance_id]['ports'][portsymbol] = value
 
             def host_callback(ok):
-                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
                 callback(ok)
+                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
             self.send("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
 
