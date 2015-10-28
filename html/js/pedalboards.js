@@ -167,7 +167,7 @@ JqueryClass('pedalboardBox', {
         var self = $(this)
 
         var metadata = {
-            title: pedalboard.metadata.title,
+            title: pedalboard.title,
             // FIXME: proper gif image
             image: "/img/loading-pedalboard.gif"
         }
@@ -211,7 +211,7 @@ JqueryClass('pedalboardBox', {
                     var img = $(this)
 
                     // set the actual image
-                    img.attr("src", "/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+pedalboard.metadata.tstamp)
+                    img.attr("src", "/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)) //+"&tstamp="+pedalboard.tstamp)
 
                     // center
                     img.css({ top: (img.parent().height() - img.height()) / 2 })
