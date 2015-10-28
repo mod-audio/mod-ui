@@ -28,6 +28,7 @@
 
 void scanPlugins()
 {
+#if 0
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -42,6 +43,7 @@ void scanPlugins()
             get_plugin_info_mini(plugins[i]->uri);
         }
     }
+#endif
 
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
     {
@@ -61,10 +63,13 @@ void scanPlugins()
 
 int main()
 {
+#if 1
     init();
     scanPlugins();
     cleanup();
+#endif
 
+#if 0
     setenv("LV2_PATH", "/NOT", 1);
     init();
     assert(get_all_plugins() == nullptr);
@@ -79,6 +84,7 @@ int main()
     assert(get_all_plugins() == nullptr);
     scanPlugins();
     cleanup();
+#endif
 
     return 0;
 }

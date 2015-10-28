@@ -767,13 +767,13 @@ class PedalboardRemove(web.RequestHandler):
         #self.write(json.dumps(result))
         #self.finish()
 
-#class PedalboardSize(web.RequestHandler):
-    #def get(self):
-        #width  = int(self.get_argument('width'))
-        #height = int(self.get_argument('height'))
-        #SESSION.pedalboard_size(width, height)
-        #self.write(json.dumps(True))
-        #self.finish()
+class PedalboardSize(web.RequestHandler):
+    def get(self):
+        width  = int(self.get_argument('width'))
+        height = int(self.get_argument('height'))
+        SESSION.pedalboard_size(width, height)
+        self.write(json.dumps(True))
+        self.finish()
 
 class PedalboardImage(web.RequestHandler):
     def get(self, image):
@@ -824,7 +824,7 @@ class BankLoad(web.RequestHandler):
         banks = list_banks()
 
         # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
-        # But the GUI needs the whole pedalboard metadata
+        # But the GUI needs some extra pedalboard data
         pedalboards_dict = get_all_pedalboards(True)
         pedalboards_keys = pedalboards_dict.keys()
 
@@ -1263,7 +1263,7 @@ application = web.Application(
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/remove/?", PedalboardRemove),
             #(r"/pedalboard/screenshot/?", PedalboardScreenshot),
-            #(r"/pedalboard/size/?", PedalboardSize),
+            (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
