@@ -468,7 +468,10 @@ class Host(object):
     def disconnect(self, port_from, port_to, callback):
         def host_callback(ok):
             if ok:
-                self.connections.remove((port_from, port_to))
+                try:
+                    self.connections.remove((port_from, port_to))
+                except:
+                    pass
                 self.msg_callback("disconnect %s %s" % (port_from, port_to))
             callback(ok)
 
