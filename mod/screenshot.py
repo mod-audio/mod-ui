@@ -88,33 +88,36 @@ class ScreenshotGenerator(object):
 
     def process_next(self):
         if len(self.queue) == 0:
+            bundlepath = self.processing
             self.processing = None
             if self.callback is not None:
-                self.callback(True)
+                ctime = os.path.getctime(os.path.join(bundlepath, "thumbnail.png"))
+                self.callback((True, ctime))
                 self.callback = None
             return
 
         self.processing = self.queue.pop(0)
 
-        def callback(img=None):
+        def img_callback(img=None):
             if not img:
                 self.process_next()
                 return
 
-            img.save(os.path.join(self.processing,  "thumbnail.png"))
+            img.save(os.path.join(self.processing, "thumbnail.png"))
             self.process_next()
 
-        generate_screenshot(self.processing, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
+        generate_screenshot(self.processing, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, img_callback)
 
     def wait_for_pending_jobs(self, bundlepath, callback):
         if bundlepath not in self.queue and self.processing != bundlepath:
             # all ok
-            callback(True)
+            ctime = os.path.getctime(os.path.join(bundlepath, "thumbnail.png"))
+            callback((True, ctime))
             return
 
         # if previous callback is still there it means we're too slow
         if self.callback is not None:
-            self.callback(False)
+            self.callback((False, 0.0))
 
         # report back later
         self.callback = callback

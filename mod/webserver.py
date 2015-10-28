@@ -796,9 +796,12 @@ class PedalboardImageWait(web.RequestHandler):
     @gen.engine
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
-        resp = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
+        ok, ctime = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(resp))
+        self.write(json.dumps({
+            'ok'   : ok,
+            'ctime': "%.1f" % ctime,
+        }))
         self.finish()
 
 class DashboardClean(web.RequestHandler):
