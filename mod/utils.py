@@ -258,6 +258,8 @@ class PluginInfo_Mini(Structure):
 class PedalboardInfo(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("uri", c_char_p),
+        ("bundle", c_char_p),
     ]
 
 c_struct_types = (PluginAuthor,

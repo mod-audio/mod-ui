@@ -141,6 +141,8 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* uri;
+    const char* bundle;
 } PedalboardInfo;
 
 // initialize

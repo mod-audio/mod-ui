@@ -1932,6 +1932,8 @@ void cleanup(void)
             free((void*)info.brand);
         if (info.label != nullptr && info.label != nc)
             free((void*)info.label);
+        if (info.name != nullptr && info.name != nc)
+            free((void*)info.name);
         if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
             lilv_free((void*)info.gui.thumbnail);
     }

@@ -17,14 +17,45 @@
 
 #include "utils.h"
 
-// #include <unistd.h>
+#include <stdio.h>
+#include <unistd.h>
 
 int main()
 {
     init();
-    get_all_plugins();
-    get_all_pedalboards();
-//     sleep(10);
+
+    if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
+    {
+        for (int i=0; plugins[i] != nullptr; ++i)
+        {
+            if (! plugins[i]->valid)
+            {
+                printf("Invalid plugin found\n");
+                break;
+            }
+
+            get_plugin_info(plugins[i]->uri);
+            get_plugin_info_mini(plugins[i]->uri);
+        }
+    }
+
+    if (const PedalboardInfo* const* const pedalboards = get_all_pedalboards())
+    {
+        for (int i=0; pedalboards[i] != nullptr; ++i)
+        {
+            if (! pedalboards[i]->valid)
+            {
+                printf("Invalid pedalboard found\n");
+                break;
+            }
+
+            get_pedalboard_info(pedalboards[i]->bundle);
+            get_pedalboard_name(pedalboards[i]->bundle);
+        }
+    }
+
+    //sleep(10);
+
     cleanup();
     return 0;
 }
