@@ -61,34 +61,16 @@ from mod.utils import (init as lv2_init,
                        remove_bundle_from_lilv_world,
                        get_all_plugins,
                        get_plugin_info,
-                       get_plugin_info_mini)
+                       get_plugin_info_mini,
+                       get_all_pedalboards,
+                       get_pedalboard_info_mini)
 # TODO
-from mod.lilvlib import get_pedalboard_info, get_pedalboard_name
-from mod.lv2 import get_all_pedalboards, init as lv2_init_compat
+from mod.lilvlib import get_pedalboard_info
 
 # Global fake timestamp used for pedalboard thumbnails
 # FIXME - use real timestamp
 global fake_tstamp
 fake_tstamp = 0
-
-# Formats the pedalboard in a way that the javascript side understands
-def format_pedalboard(pedal):
-    global fake_tstamp
-    fake_tstamp += 1
-
-    return {
-        'instances'  : {},
-        'connections': [],
-        'metadata'   : {
-            'title'    : pedal['name'],
-            'thumbnail': pedal['thumbnail'],
-            'tstamp'   : fake_tstamp,
-        },
-        'uri'   : pedal['uri'],
-        'bundle': pedal['bundlepath'],
-        'width' : pedal['width'],
-        'height': pedal['height']
-    }
 
 def install_bundles_in_tmp_dir():
     removed   = []
@@ -665,13 +647,9 @@ class PackageUninstall(web.RequestHandler):
 
 class PedalboardList(web.RequestHandler):
     def get(self):
-        result = []
-
-        for pedal in get_all_pedalboards(False):
-            result.append(format_pedalboard(pedal))
-
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result))
+        self.write(json.dumps(get_all_pedalboards(False)))
+        self.finish()
 
 class PedalboardSave(web.RequestHandler):
     @web.asynchronous
@@ -719,15 +697,7 @@ class PedalboardLoadBundle(web.RequestHandler):
     def post(self):
         bundlepath = self.get_argument("bundlepath")
 
-        try:
-            name = get_pedalboard_name(bundlepath)
-        except Exception as e:
-            self.set_header('Content-Type', 'application/json')
-            self.write(json.dumps({ 'ok': False, 'error': str(e).split(") - ",1)[-1] }))
-            self.finish()
-            return
-
-        SESSION.load_pedalboard(bundlepath, name)
+        name = SESSION.load_pedalboard(bundlepath)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({
@@ -758,10 +728,7 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         if not os.path.exists(bundlepath):
             raise IOError(bundlepath)
 
-        # make sure pedalboard is valid
-        name = get_pedalboard_name(bundlepath)
-
-        SESSION.load_pedalboard(bundlepath, name)
+        SESSION.load_pedalboard(bundlepath)
 
         os.remove(filename)
         callback()
@@ -776,37 +743,37 @@ class PedalboardRemove(web.RequestHandler):
         # 5 - tell ingen the bundle (plugin) is gone
         pass
 
-class PedalboardScreenshot(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, pedalboard_id):
-        img = yield gen.Task(generate_screenshot, pedalboard_id,
-                             MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT)
-        output = StringIO.StringIO()
-        img.save(output, format="PNG")
-        screenshot_data = output.getvalue()
+#class PedalboardScreenshot(web.RequestHandler):
+    #@web.asynchronous
+    #@gen.engine
+    #def get(self, pedalboard_id):
+        #img = yield gen.Task(generate_screenshot, pedalboard_id,
+                             #MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT)
+        #output = StringIO.StringIO()
+        #img.save(output, format="PNG")
+        #screenshot_data = output.getvalue()
 
-        resize_image(img, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT)
-        output = StringIO.StringIO()
-        img.save(output, format="PNG")
-        thumbnail_data = output.getvalue()
+        #resize_image(img, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT)
+        #output = StringIO.StringIO()
+        #img.save(output, format="PNG")
+        #thumbnail_data = output.getvalue()
 
-        result = {
-            'screenshot': b64encode(screenshot_data),
-            'thumbnail': b64encode(thumbnail_data),
-        }
+        #result = {
+            #'screenshot': b64encode(screenshot_data),
+            #'thumbnail': b64encode(thumbnail_data),
+        #}
 
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result))
-        self.finish()
+        #self.set_header('Content-Type', 'application/json')
+        #self.write(json.dumps(result))
+        #self.finish()
 
-class PedalboardSize(web.RequestHandler):
-    def get(self):
-        width  = int(self.get_argument('width'))
-        height = int(self.get_argument('height'))
-        SESSION.pedalboard_size(width, height)
-        self.write(json.dumps(True))
-        self.finish()
+#class PedalboardSize(web.RequestHandler):
+    #def get(self):
+        #width  = int(self.get_argument('width'))
+        #height = int(self.get_argument('height'))
+        #SESSION.pedalboard_size(width, height)
+        #self.write(json.dumps(True))
+        #self.finish()
 
 class PedalboardImage(web.RequestHandler):
     def get(self, image):
@@ -866,7 +833,7 @@ class BankLoad(web.RequestHandler):
 
             for pedalboard in bank['pedalboards']:
                 if pedalboard['uri'] in pedalboards_keys:
-                    pedalboards.append(format_pedalboard(pedalboards_dict[pedalboard['uri']]))
+                    pedalboards.append(pedalboards_dict[pedalboard['uri']])
 
             bank['pedalboards'] = pedalboards
 
@@ -1295,8 +1262,8 @@ application = web.Application(
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/remove/?", PedalboardRemove),
-            (r"/pedalboard/screenshot/?", PedalboardScreenshot),
-            (r"/pedalboard/size/?", PedalboardSize),
+            #(r"/pedalboard/screenshot/?", PedalboardScreenshot),
+            #(r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
@@ -1370,7 +1337,6 @@ def prepare():
         checkhost()
 
     lv2_init()
-    lv2_init_compat()
 
     if False:
         print("Scanning plugins, this may take a little...")

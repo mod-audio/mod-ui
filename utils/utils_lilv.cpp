@@ -811,7 +811,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
 
     info.binary = lilv_node_as_string(lilv_plugin_get_library_uri(p));
     if (info.binary != nullptr)
-        info.binary = lilv_file_uri_parse(info.binary, NULL);
+        info.binary = lilv_file_uri_parse(info.binary, nullptr);
     else
         info.binary = nc;
 
@@ -1873,6 +1873,75 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
 
 // --------------------------------------------------------------------------------------------------------
 
+const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* p, const LilvNode* rdftypenode)
+{
+    static PedalboardInfo_Mini info;
+    memset(&info, 0, sizeof(PedalboardInfo_Mini));
+
+    // --------------------------------------------------------------------------------------------------------
+    // check if plugin is pedalboard
+
+    bool isPedalboard = false;
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, rdftypenode))
+    {
+        LILV_FOREACH(nodes, it, nodes)
+        {
+            const LilvNode* node = lilv_nodes_get(nodes, it);
+
+            if (const char* const nodestr = lilv_node_as_string(node))
+            {
+                if (strcmp(nodestr, "http://moddevices.com/ns/modpedal#Pedalboard") == 0)
+                {
+                    isPedalboard = true;
+                    break;
+                }
+            }
+        }
+
+        lilv_nodes_free(nodes);
+    }
+
+    if (! isPedalboard)
+        return info;
+
+    // --------------------------------------------------------------------------------------------------------
+    // bundle (required)
+
+    if (const LilvNode* node = lilv_plugin_get_bundle_uri(p))
+    {
+        info.bundle = lilv_file_uri_parse(lilv_node_as_string(node), nullptr);
+    }
+    else
+    {
+        return info;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // uri
+
+    info.uri = strdup(lilv_node_as_uri(lilv_plugin_get_uri(p)));
+
+    // --------------------------------------------------------------------------------------------------------
+    // title
+
+    if (LilvNode* node = lilv_plugin_get_name(p))
+    {
+        const char* name = lilv_node_as_string(node);
+        info.title = (name != nullptr) ? strdup(name) : nc;
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.title = nc;
+    }
+
+    info.valid = true;
+    return info;
+}
+
+// --------------------------------------------------------------------------------------------------------
+
 static const PluginInfo_Mini** _plug_ret = nullptr;
 static unsigned int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
@@ -2063,6 +2132,18 @@ void _clear_plugin_info_mini(PluginInfo_Mini& info)
         lilv_free((void*)info.gui.thumbnail);
 
     memset(&info, 0, sizeof(PluginInfo_Mini));
+}
+
+void _clear_pedalboard_info_mini(PedalboardInfo_Mini& info)
+{
+    if (info.uri != nullptr)
+        free((void*)info.uri);
+    if (info.bundle != nullptr)
+        lilv_free((void*)info.bundle);
+    if (info.title != nullptr && info.title != nc)
+        free((void*)info.title);
+
+    memset(&info, 0, sizeof(PedalboardInfo_Mini));
 }
 
 void cleanup(void)
@@ -2462,8 +2543,34 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* uri_)
 
 // --------------------------------------------------------------------------------------------------------
 
-const PedalboardInfo* const* get_all_pedalboards(void)
+const PedalboardInfo_Mini* const* get_all_pedalboards(void)
 {
+    std::vector<PedalboardInfo_Mini> allpedals;
+
+    LilvWorld* w = lilv_world_new();
+    LilvNode* rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
+
+    // Make a list of all installed bundles
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* p = lilv_plugins_get(PLUGINS, itpls);
+
+        // get new info
+        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, rdftypenode);
+
+        if (! info.valid)
+            continue;
+
+        allpedals.push_back(info);
+    }
+
+    lilv_free(rdftypenode);
+    lilv_world_free(w);
+
+    // TESTING
+    for (PedalboardInfo_Mini& info : allpedals)
+        _clear_pedalboard_info_mini(info);
+
     return nullptr;
 }
 
@@ -2472,7 +2579,7 @@ const PedalboardInfo* get_pedalboard_info(const char* /*bundle*/)
     return nullptr;
 }
 
-const char* get_pedalboard_name(const char* /*bundle*/)
+const PedalboardInfo_Mini* get_pedalboard_info_mini(const char* /*bundle*/)
 {
     return nullptr;
 }

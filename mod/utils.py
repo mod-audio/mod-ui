@@ -260,6 +260,15 @@ class PedalboardInfo(Structure):
         ("valid", c_bool),
         ("uri", c_char_p),
         ("bundle", c_char_p),
+        ("title", c_char_p),
+    ]
+
+class PedalboardInfo_Mini(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("uri", c_char_p),
+        ("bundle", c_char_p),
+        ("title", c_char_p),
     ]
 
 c_struct_types = (PluginAuthor,
@@ -277,7 +286,8 @@ c_structp_types = (POINTER(PluginGUIPort),
 
 c_structpp_types = (POINTER(POINTER(PluginInfo)),
                     POINTER(POINTER(PluginInfo_Mini)),
-                    POINTER(POINTER(PedalboardInfo)))
+                    POINTER(POINTER(PedalboardInfo)),
+                    POINTER(POINTER(PedalboardInfo_Mini)))
 
 utils.init.argtypes = None
 utils.init.restype  = None
@@ -301,13 +311,13 @@ utils.get_plugin_info_mini.argtypes = [c_char_p]
 utils.get_plugin_info_mini.restype  = POINTER(PluginInfo_Mini)
 
 utils.get_all_pedalboards.argtypes = None
-utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo))
+utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo_Mini))
 
 utils.get_pedalboard_info.argtypes = [c_char_p]
 utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
-utils.get_pedalboard_name.argtypes = [c_char_p]
-utils.get_pedalboard_name.restype  = c_char_p
+utils.get_pedalboard_info_mini.argtypes = [c_char_p]
+utils.get_pedalboard_info_mini.restype  = POINTER(PedalboardInfo_Mini)
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -360,8 +370,7 @@ def get_all_pedalboards(asDictionary):
         return pbs
     return dict((pb["uri"], pb) for pb in pbs)
 
-# Get info from an lv2 bundle
-# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
+# Get a specific pedalboard
 # NOTE: may throw
 def get_pedalboard_info(bundle):
     info = utils.get_pedalboard_info(bundle.encode("utf-8"))
@@ -369,9 +378,12 @@ def get_pedalboard_info(bundle):
         raise Exception
     return structToDict(info.contents)
 
-# Faster version of get_pedalboard_info when we just need to know the pedalboard name
-# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
-def get_pedalboard_name(bundle):
-    return charPtrToString(utils.get_pedalboard_name(bundle.encode("utf-8")))
+# Get a specific pedalboard (mini)
+# NOTE: may throw
+def get_pedalboard_info_mini(bundle):
+    info = utils.get_pedalboard_info_mini(bundle.encode("utf-8"))
+    if not info:
+        raise Exception
+    return structToDict(info.contents)
 
 # ------------------------------------------------------------------------------------------------------------

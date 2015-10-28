@@ -276,10 +276,10 @@ function Desktop(elements) {
                 var allpedals = {}
                 for (var i=0; i<pedals.length; i++) {
                     var pedal = pedals[i]
-                    allpedals[pedal.uri] = pedal
+                    allpedals[pedal.bundle] = pedal
                     self.pedalboardIndexer.add({
-                        id: pedal.uri,
-                        data: [pedal.uri, pedal.metadata.title].join(" ")
+                        id: pedal.bundle,
+                        data: [pedal.bundle, pedal.metadata.title].join(" ")
                     })
                 }
                 self.pedalboardIndexerData = allpedals

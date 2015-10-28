@@ -143,7 +143,15 @@ typedef struct {
     bool valid;
     const char* uri;
     const char* bundle;
+    const char* title;
 } PedalboardInfo;
+
+typedef struct {
+    bool valid;
+    const char* uri;
+    const char* bundle;
+    const char* title;
+} PedalboardInfo_Mini;
 
 // initialize
 MOD_API void init(void);
@@ -167,20 +175,20 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
 
-// get a specific plugin
+// get a specific plugin (mini)
 // NOTE: may return null
 MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
 
 // get all available pedalboards (ie, plugins with pedalboard type)
-MOD_API const PedalboardInfo* const* get_all_pedalboards(void);
+MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
 
-// Get info from an lv2 bundle
-// @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
-MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
+// Get a specific pedalboard
+// NOTE: may return null
+MOD_API const PedalboardInfo* get_pedalboard_info(const char* uri);
 
-// Faster version of get_pedalboard_info when we just need to know the pedalboard name
-// @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
-MOD_API const char* get_pedalboard_name(const char* bundle);
+// Get a specific pedalboard (mini)
+// NOTE: may return null
+MOD_API const PedalboardInfo_Mini* get_pedalboard_info_mini(const char* bundle);
 
 #ifdef __cplusplus
 } // extern "C"

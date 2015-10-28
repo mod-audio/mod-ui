@@ -34,13 +34,11 @@ import os, json, socket, logging
 from mod import get_hardware
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
-from mod.lilvlib import get_pedalboard_info
 from mod.protocol import Protocol, ProtocolError, process_resp
+from mod.utils import get_plugin_info
 
-try:
-    from mod.utils import get_plugin_info
-except:
-    from mod.lv2 import get_plugin_info
+# TODO
+from mod.lilvlib import get_pedalboard_info
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1

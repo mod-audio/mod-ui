@@ -327,11 +327,12 @@ class Session(object):
 
         finish()
 
-    def load_pedalboard(self, bundlepath, title):
+    def load_pedalboard(self, bundlepath):
+        title = self.host.load(bundlepath)
         self.bundlepath = bundlepath
         self.title      = title
-        self.host.load(bundlepath)
         self.pedalboard_changed_callback(True, bundlepath, title)
+        return title
 
     def reset(self, callback):
         self.bundlepath = None
