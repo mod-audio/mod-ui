@@ -520,9 +520,9 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
                 continue;
             if (strcmp(typestr, LV2_CORE__ControlPort) == 0)
                 continue;
-            //if (strcmp(typestr, LV2_CORE__CVPort) == 0)
-            //    continue;
-            if (strcmp(typestr, LV2_ATOM__AtomPort) == 0) // && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
+            if (strcmp(typestr, LV2_CORE__CVPort) == 0)
+                continue;
+            if (strcmp(typestr, LV2_ATOM__AtomPort) == 0)
                 continue;
 
             supported = false;
