@@ -316,8 +316,8 @@ utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo_Mini))
 utils.get_pedalboard_info.argtypes = [c_char_p]
 utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
-utils.get_pedalboard_info_mini.argtypes = [c_char_p]
-utils.get_pedalboard_info_mini.restype  = POINTER(PedalboardInfo_Mini)
+utils.get_pedalboard_size.argtypes = [c_char_p]
+utils.get_pedalboard_size.restype  = POINTER(c_int)
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -378,12 +378,17 @@ def get_pedalboard_info(bundle):
         raise Exception
     return structToDict(info.contents)
 
-# Get a specific pedalboard (mini)
+# Get the size of a specific pedalboard
+# Returns a 2-size array with width and height
 # NOTE: may throw
-def get_pedalboard_info_mini(bundle):
-    info = utils.get_pedalboard_info_mini(bundle.encode("utf-8"))
-    if not info:
+def get_pedalboard_size(bundle):
+    size = utils.get_pedalboard_size(bundle.encode("utf-8"))
+    if not size:
         raise Exception
-    return structToDict(info.contents)
+    width  = int(size[0])
+    height = int(size[1])
+    if 0 in (width, height):
+        raise Exception
+    return (width, height)
 
 # ------------------------------------------------------------------------------------------------------------

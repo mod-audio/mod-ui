@@ -50,9 +50,8 @@ from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
 from mod.bank import list_banks, save_banks
-from mod.screenshot import generate_screenshot, resize_image
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
-                                pacman_upgrade, set_bluetooth_pin)
+                        pacman_upgrade, set_bluetooth_pin)
 from mod import register
 from mod import check_environment
 
@@ -62,8 +61,7 @@ from mod.utils import (init as lv2_init,
                        get_all_plugins,
                        get_plugin_info,
                        get_plugin_info_mini,
-                       get_all_pedalboards,
-                       get_pedalboard_info_mini)
+                       get_all_pedalboards)
 # TODO
 from mod.lilvlib import get_pedalboard_info
 
@@ -743,30 +741,6 @@ class PedalboardRemove(web.RequestHandler):
         # 5 - tell ingen the bundle (plugin) is gone
         pass
 
-#class PedalboardScreenshot(web.RequestHandler):
-    #@web.asynchronous
-    #@gen.engine
-    #def get(self, pedalboard_id):
-        #img = yield gen.Task(generate_screenshot, pedalboard_id,
-                             #MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT)
-        #output = StringIO.StringIO()
-        #img.save(output, format="PNG")
-        #screenshot_data = output.getvalue()
-
-        #resize_image(img, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT)
-        #output = StringIO.StringIO()
-        #img.save(output, format="PNG")
-        #thumbnail_data = output.getvalue()
-
-        #result = {
-            #'screenshot': b64encode(screenshot_data),
-            #'thumbnail': b64encode(thumbnail_data),
-        #}
-
-        #self.set_header('Content-Type', 'application/json')
-        #self.write(json.dumps(result))
-        #self.finish()
-
 class PedalboardSize(web.RequestHandler):
     def get(self):
         width  = int(self.get_argument('width'))
@@ -1265,7 +1239,6 @@ application = web.Application(
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/remove/?", PedalboardRemove),
-            #(r"/pedalboard/screenshot/?", PedalboardScreenshot),
             (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/wait", PedalboardImageWait),

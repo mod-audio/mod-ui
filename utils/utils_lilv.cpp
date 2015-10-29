@@ -171,8 +171,9 @@ static const std::vector<std::string> BLACKLIST = {
 
 // --------------------------------------------------------------------------------------------------------
 
-#define LILV_NS_MOD    "http://moddevices.com/ns/mod#"
-#define LILV_NS_MODGUI "http://moddevices.com/ns/modgui#"
+#define LILV_NS_MOD      "http://moddevices.com/ns/mod#"
+#define LILV_NS_MODGUI   "http://moddevices.com/ns/modgui#"
+#define LILV_NS_MODPEDAL "http://moddevices.com/ns/modpedal#"
 
 struct NamespaceDefinitions_Mini {
     LilvNode* rdf_type;
@@ -2575,7 +2576,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     lilv_world_load_all(w);
 
     LilvNode* rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
-    const LilvPlugins* plugins = lilv_world_get_all_plugins(w);;
+    const LilvPlugins* plugins = lilv_world_get_all_plugins(w);
 
     // Make a list of all installed bundles
     LILV_FOREACH(plugins, itpls, plugins)
@@ -2618,9 +2619,79 @@ const PedalboardInfo* get_pedalboard_info(const char* /*bundle*/)
     return nullptr;
 }
 
-const PedalboardInfo_Mini* get_pedalboard_info_mini(const char* /*bundle*/)
+int* get_pedalboard_size(const char* bundle)
 {
-    return nullptr;
+    static int size[2] = { 0, 0 };
+
+    // lilv wants the last character as the separator
+    char tmppath[PATH_MAX+2];
+    char* bundlepath = realpath(bundle, tmppath);
+
+    if (bundlepath == nullptr)
+        return nullptr;
+
+    {
+        const size_t bsize = strlen(bundlepath);
+        if (bsize <= 1)
+            return nullptr;
+
+        if (bundlepath[bsize] != OS_SEP)
+        {
+            bundlepath[bsize  ] = OS_SEP;
+            bundlepath[bsize+1] = '\0';
+        }
+    }
+
+    LilvWorld* w = lilv_world_new();
+    LilvNode* b = lilv_new_file_uri(w, nullptr, bundlepath);
+    lilv_world_load_bundle(w, b);
+    lilv_node_free(b);
+
+    const LilvPlugins* plugins = lilv_world_get_all_plugins(w);
+
+    if (lilv_plugins_size(plugins) != 1)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    const LilvPlugin* p = nullptr;
+
+    LILV_FOREACH(plugins, itpls, plugins) {
+        p = lilv_plugins_get(plugins, itpls);
+    }
+
+    if (p == nullptr)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    LilvNode* widthnode  = lilv_new_uri(w, LILV_NS_MODPEDAL "width");
+    LilvNode* heightnode = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
+
+    LilvNodes* widthnodes  = lilv_plugin_get_value(p, widthnode);
+    LilvNodes* heightnodes = lilv_plugin_get_value(p, heightnode);
+
+    if (widthnodes == nullptr || heightnodes == nullptr)
+    {
+        lilv_nodes_free(widthnodes);
+        lilv_nodes_free(heightnodes);
+        lilv_node_free(widthnode);
+        lilv_node_free(heightnode);
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    size[0] = lilv_node_as_int(lilv_nodes_get_first(widthnodes));
+    size[1] = lilv_node_as_int(lilv_nodes_get_first(heightnodes));
+
+    lilv_nodes_free(widthnodes);
+    lilv_nodes_free(heightnodes);
+    lilv_node_free(widthnode);
+    lilv_node_free(heightnode);
+    lilv_world_free(w);
+    return size;
 }
 
 // --------------------------------------------------------------------------------------------------------

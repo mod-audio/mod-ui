@@ -184,11 +184,11 @@ MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
 
 // Get a specific pedalboard
 // NOTE: may return null
-MOD_API const PedalboardInfo* get_pedalboard_info(const char* uri);
+MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
 
-// Get a specific pedalboard (mini)
-// NOTE: may return null
-MOD_API const PedalboardInfo_Mini* get_pedalboard_info_mini(const char* bundle);
+// Get the size of a specific pedalboard
+// Returns a 2-size array with width and height
+MOD_API int* get_pedalboard_size(const char* bundle);
 
 #ifdef __cplusplus
 } // extern "C"
