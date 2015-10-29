@@ -435,6 +435,17 @@ class Host(object):
         self.plugins[instance_id]['ports'][symbol] = value
         self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
+    def preset_load(self, instance, uri, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+
+        def host_callback(ok):
+            callback(ok)
+            if not ok:
+                return
+            # TODO: store new port values
+
+        self.send("preset %d %s" % (instance_id, uri), host_callback, datatype='boolean')
+
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
 
