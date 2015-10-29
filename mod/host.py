@@ -446,6 +446,12 @@ class Host(object):
 
         self.send("preset %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
+    def preset_save(self, instance, label, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        labelsymbol = simbolify(label)
+
+        self.send("save_preset %d \"%s\" ~/.lv2/%s %s.ttl" % (instance_id, label.replace('"','\\"'), labelsymbol, labelsymbol), callback, datatype='boolean')
+
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
 
