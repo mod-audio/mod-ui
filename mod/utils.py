@@ -255,12 +255,37 @@ class PluginInfo_Mini(Structure):
         ("gui", PluginGUI_Mini),
     ]
 
-class PedalboardInfo(Structure):
+class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("instance", c_char_p),
         ("uri", c_char_p),
-        ("bundle", c_char_p),
+        ("bypassed", c_bool),
+        ("x", c_float),
+        ("y", c_float),
+    ]
+
+class PedalboardConnection(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("source", c_char_p),
+        ("target", c_char_p),
+    ]
+
+class PedalboardHardware(Structure):
+    _fields_ = [
+        ("audio_ins", POINTER(c_char_p)),
+        ("audio_outs", POINTER(c_char_p)),
+        ("midi_ins", POINTER(c_char_p)),
+        ("midi_outs", POINTER(c_char_p)),
+    ]
+
+class PedalboardInfo(Structure):
+    _fields_ = [
         ("title", c_char_p),
+        ("plugins", POINTER(PedalboardPlugin)),
+        ("connections", POINTER(PedalboardConnection)),
+        ("hardware", PedalboardHardware),
     ]
 
 class PedalboardInfo_Mini(Structure):
@@ -277,16 +302,17 @@ c_struct_types = (PluginAuthor,
                   PluginPortRanges,
                   PluginPortUnits,
                   PluginPortsI,
-                  PluginPorts)
+                  PluginPorts,
+                  PedalboardHardware)
 
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
                    POINTER(PluginPort),
-                   POINTER(PluginPreset))
+                   POINTER(PluginPreset),
+                   POINTER(PedalboardPlugin),
+                   POINTER(PedalboardConnection))
 
-c_structpp_types = (POINTER(POINTER(PluginInfo)),
-                    POINTER(POINTER(PluginInfo_Mini)),
-                    POINTER(POINTER(PedalboardInfo)),
+c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),
                     POINTER(POINTER(PedalboardInfo_Mini)))
 
 utils.init.argtypes = None

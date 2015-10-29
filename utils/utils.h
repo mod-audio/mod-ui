@@ -141,9 +141,31 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* instance;
     const char* uri;
-    const char* bundle;
+    bool bypassed;
+    float x;
+    float y;
+} PedalboardPlugin;
+
+typedef struct {
+    bool valid;
+    const char* source;
+    const char* target;
+} PedalboardConnection;
+
+typedef struct {
+    const char* const* audio_ins;
+    const char* const* audio_outs;
+    const char* const* midi_ins;
+    const char* const* midi_outs;
+} PedalboardHardware;
+
+typedef struct {
     const char* title;
+    const PedalboardPlugin* plugins;
+    const PedalboardConnection* connections;
+    PedalboardHardware hardware;
 } PedalboardInfo;
 
 typedef struct {

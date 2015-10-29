@@ -45,6 +45,7 @@ void scanPlugins()
     }
 #endif
 
+#if 1
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
     {
         for (int i=0; pedalboards[i] != nullptr; ++i)
@@ -56,9 +57,10 @@ void scanPlugins()
             }
 
             get_pedalboard_info(pedalboards[i]->bundle);
-            get_pedalboard_info_mini(pedalboards[i]->bundle);
+            get_pedalboard_size(pedalboards[i]->bundle);
         }
     }
+#endif
 }
 
 int main()

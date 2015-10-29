@@ -548,7 +548,7 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
             if (nodestr == nullptr)
                 continue;
 
-            if (strcmp(nodestr, "http://moddevices.com/ns/modpedal#Pedalboard") == 0)
+            if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
             {
                 supported = false;
                 break;
@@ -1892,7 +1892,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* p, const 
 
             if (const char* const nodestr = lilv_node_as_string(node))
             {
-                if (strcmp(nodestr, "http://moddevices.com/ns/modpedal#Pedalboard") == 0)
+                if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
                 {
                     isPedalboard = true;
                     break;
@@ -1945,6 +1945,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* p, const 
 
 static const PluginInfo_Mini** _plug_ret = nullptr;
 static PedalboardInfo_Mini** _pedals_ret = nullptr;
+static PedalboardInfo* _pedal_ret;
 static unsigned int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
 
@@ -2128,6 +2129,12 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
     memset(&info, 0, sizeof(PluginInfo_Mini));
 }
 
+static void _clear_pedalboard_info(PedalboardInfo& info)
+{
+    if (info.title != nullptr && info.title != nc)
+        free((void*)info.title);
+}
+
 static void _clear_pedalboard_info_mini(PedalboardInfo_Mini& info)
 {
     if (info.uri != nullptr)
@@ -2140,6 +2147,12 @@ static void _clear_pedalboard_info_mini(PedalboardInfo_Mini& info)
 
 static void _clear_pedalboards()
 {
+    if (_pedal_ret != nullptr)
+    {
+        _clear_pedalboard_info(*_pedal_ret);
+        _pedal_ret = nullptr;
+    }
+
     if (_pedals_ret == nullptr)
         return;
 
@@ -2155,8 +2168,8 @@ static void _clear_pedalboards()
         delete info;
     }
 
-    delete[] info;
-    info = nullptr;
+    delete[] _pedals_ret;
+    _pedals_ret = nullptr;
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -2614,9 +2627,123 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     return nullptr;
 }
 
-const PedalboardInfo* get_pedalboard_info(const char* /*bundle*/)
+const PedalboardInfo* get_pedalboard_info(const char* bundle)
 {
-    return nullptr;
+    static PedalboardInfo info;
+
+    // lilv wants the last character as the separator
+    char tmppath[PATH_MAX+2];
+    char* bundlepath = realpath(bundle, tmppath);
+
+    if (bundlepath == nullptr)
+        return nullptr;
+
+    {
+        const size_t bsize = strlen(bundlepath);
+        if (bsize <= 1)
+            return nullptr;
+
+        if (bundlepath[bsize] != OS_SEP)
+        {
+            bundlepath[bsize  ] = OS_SEP;
+            bundlepath[bsize+1] = '\0';
+        }
+    }
+
+    LilvWorld* w = lilv_world_new();
+    lilv_world_load_specifications(w);
+    lilv_world_load_plugin_classes(w);
+
+    LilvNode* b = lilv_new_file_uri(w, nullptr, bundlepath);
+    lilv_world_load_bundle(w, b);
+    lilv_node_free(b);
+
+    const LilvPlugins* plugins = lilv_world_get_all_plugins(w);
+
+    if (lilv_plugins_size(plugins) != 1)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    const LilvPlugin* p = nullptr;
+
+    LILV_FOREACH(plugins, itpls, plugins) {
+        p = lilv_plugins_get(plugins, itpls);
+    }
+
+    if (p == nullptr)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    bool isPedalboard = false;
+    LilvNode* rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, rdftypenode))
+    {
+        LILV_FOREACH(nodes, it, nodes)
+        {
+            const LilvNode* node = lilv_nodes_get(nodes, it);
+
+            if (const char* const nodestr = lilv_node_as_string(node))
+            {
+                if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
+                {
+                    isPedalboard = true;
+                    break;
+                }
+            }
+        }
+
+        lilv_nodes_free(nodes);
+    }
+
+    if (! isPedalboard)
+    {
+        lilv_node_free(rdftypenode);
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    if (_pedal_ret != nullptr)
+    {
+        _clear_pedalboard_info(*_pedal_ret);
+        _pedal_ret = nullptr;
+    }
+
+    memset(&info, 0, sizeof(PedalboardInfo));
+
+/*
+    // define the needed stuff
+    ns_rdf      = NS(world, lilv.LILV_NS_RDF)
+    ns_lv2core  = NS(world, lilv.LILV_NS_LV2)
+    ns_ingen    = NS(world, "http://drobilla.net/ns/ingen#")
+    ns_modpedal = NS(world, "http://moddevices.com/ns/modpedal#")
+    */
+
+    // --------------------------------------------------------------------------------------------------------
+    // title
+
+    if (LilvNode* node = lilv_plugin_get_name(p))
+    {
+        const char* name = lilv_node_as_string(node);
+        info.title = (name != nullptr) ? strdup(name) : nc;
+        lilv_node_free(node);
+    }
+    else
+    {
+        info.title = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+
+    lilv_node_free(rdftypenode);
+    lilv_world_free(w);
+
+    _pedal_ret = &info;
+    return &info;
 }
 
 int* get_pedalboard_size(const char* bundle)
