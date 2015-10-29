@@ -106,9 +106,12 @@
     }
   }
   .cloud-plugins {
-    left: 252px;
+    left: 252px;    
     position: absolute;
     right: 10px;
+    .plugins-wrapper {
+    	width: 100%;
+    }
     .cloud-plugin {
       color: #fff;
       background-color: #111;
@@ -143,43 +146,6 @@
           background-size: contain !important;
           margin-bottom: 10px;
         }
-        figcaption {
-          .title {
-            display: block;
-            height: 18px;
-            text-transform: uppercase;
-            font-weight: bold;
-            overflow: hidden;
-            position: relative;
-          }
-         .status {
-            display: block;
-            width: 50%;
-            text-align: center;
-            border-radius: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-            font-size: 9px;
-          }
-          .status.installed {
-            background-color: @brand-success;
-            &:after {
-              content: "installed";
-            }
-          }
-          .status.outdated {
-            background-color: @brand-warning;
-            &:after {
-              content: "update";
-            }
-          }
-          .status.blocked {
-            background-color: @brand-danger;
-            &:after {
-              content: "install";
-            }
-          }
-        }
       }
       .description {
         .make-sm-column(8);
@@ -207,7 +173,44 @@
           background: linear-gradient(to bottom, @gradient1 0%,@gradient2 100%); /* W3C */
           filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00222222', endColorstr='#222222',GradientType=0 ); /* IE6-9 */
         }
+         .title {
+           display: block;
+           height: 18px;
+           text-transform: uppercase;
+           font-weight: bold;
+           overflow: hidden;
+           position: relative;
+         }
       }
+      .status {
+         display: inline-block;
+         padding: 1px 4px;
+         margin: 10px 15px;
+         text-align: center;
+         border-radius: 2px;
+         text-transform: uppercase;
+         font-weight: bold;
+         font-size: 9px;
+       }
+       .status.installed {
+         background-color: @brand-success;
+         &:after {
+           content: "installed";
+         }
+       }
+       .status.outdated {
+         background-color: @brand-warning;
+         &:after {
+           content: "update";
+         }
+       }
+       .status.blocked {
+         background-color: @brand-danger;
+         &:after {
+           content: "install";
+         }
+       }
+
       .actions {
         font-size: 11px;
         font-weight: bold;

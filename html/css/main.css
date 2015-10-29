@@ -6042,6 +6042,9 @@ button.close {
   position: absolute;
   right: 10px;
 }
+.cloud-plugins .plugins-wrapper {
+  width: 100%;
+}
 .cloud-plugins .cloud-plugin {
   color: #fff;
   background-color: #111;
@@ -6109,41 +6112,6 @@ button.close {
   background-size: contain !important;
   margin-bottom: 10px;
 }
-.cloud-plugins .cloud-plugin figure figcaption .title {
-  display: block;
-  height: 18px;
-  text-transform: uppercase;
-  font-weight: bold;
-  overflow: hidden;
-  position: relative;
-}
-.cloud-plugins .cloud-plugin figure figcaption .status {
-  display: block;
-  width: 50%;
-  text-align: center;
-  border-radius: 2px;
-  text-transform: uppercase;
-  font-weight: bold;
-  font-size: 9px;
-}
-.cloud-plugins .cloud-plugin figure figcaption .status.installed {
-  background-color: #5cb85c;
-}
-.cloud-plugins .cloud-plugin figure figcaption .status.installed:after {
-  content: "installed";
-}
-.cloud-plugins .cloud-plugin figure figcaption .status.outdated {
-  background-color: #c67d0f;
-}
-.cloud-plugins .cloud-plugin figure figcaption .status.outdated:after {
-  content: "update";
-}
-.cloud-plugins .cloud-plugin figure figcaption .status.blocked {
-  background-color: #d9534f;
-}
-.cloud-plugins .cloud-plugin figure figcaption .status.blocked:after {
-  content: "install";
-}
 .cloud-plugins .cloud-plugin .description {
   position: relative;
   min-height: 1px;
@@ -6183,6 +6151,42 @@ button.close {
   /* W3C */
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00222222', endColorstr='#222222', GradientType=0);
   /* IE6-9 */
+}
+.cloud-plugins .cloud-plugin .description .title {
+  display: block;
+  height: 18px;
+  text-transform: uppercase;
+  font-weight: bold;
+  overflow: hidden;
+  position: relative;
+}
+.cloud-plugins .cloud-plugin .status {
+  display: inline-block;
+  padding: 1px 4px;
+  margin: 10px 15px;
+  text-align: center;
+  border-radius: 2px;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 9px;
+}
+.cloud-plugins .cloud-plugin .status.installed {
+  background-color: #5cb85c;
+}
+.cloud-plugins .cloud-plugin .status.installed:after {
+  content: "installed";
+}
+.cloud-plugins .cloud-plugin .status.outdated {
+  background-color: #c67d0f;
+}
+.cloud-plugins .cloud-plugin .status.outdated:after {
+  content: "update";
+}
+.cloud-plugins .cloud-plugin .status.blocked {
+  background-color: #d9534f;
+}
+.cloud-plugins .cloud-plugin .status.blocked:after {
+  content: "install";
 }
 .cloud-plugins .cloud-plugin .actions {
   font-size: 11px;
@@ -6332,6 +6336,10 @@ body {
   position: absolute;
   right: 0;
   top: 0;
+}
+hr.dotted {
+  border: 1px dotted #444;
+  margin: 2px 0 3px 0;
 }
 #notifications {
   position: absolute;

@@ -1,16 +1,15 @@
 <div class="cloud-plugin available-plugin js-available-effect" mod-role="cloud-plugin" mod-plugin-id="{{id}}">
     <figure class="thumb">
-        <img src="img/px.gif" style="background: url({{screenshot_href}}) center center no-repeat;">
-        <figcaption>
-            <span class="title">{{label}}</span>
-            <span class="author">{{brand}}</span>
-            <span class="status {{status}}"></span>
-        </figcaption>
+        <img src="img/px.gif" style="background: url({{screenshot_href}}) center top no-repeat;">
     </figure>
     <div class="description">
+        <span class="title">{{label}}</span>
+        <span class="author">{{brand}}</span>        
+        <hr class="dotted" />
         <p class="{{has_description}}">{{description}}<span class="limiter"></span></p>
-        <span class="see_more"></span>
+        <span class="see_more"></span>        
     </div>
+    <span class="status {{status}}"></span> 
 
     <!--
     <span class="rating four"></span>
