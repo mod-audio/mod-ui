@@ -845,8 +845,8 @@ _:b%i
 
         old_actuator_uri = self._unaddress(data, port)
 
-        # we might have to unaddress first, so define a function as possible callback
-        def address_now(ok):
+        if actuator_uri and actuator_uri != "null":
+            # we're addressing
             options = []
 
             if port == ":bypass":
@@ -906,26 +906,28 @@ _:b%i
             self.addressings[actuator_uri]['addrs'].append(addressing)
             self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
 
+            #if old_actuator_uri is not None:
+                #def nextStepAddressing(ok):
+                    #self._addressing_load(actuator_uri, callback)
+                #self._addressing_load(old_actuator_uri, nextStepAddressing)
+
+            #else:
+            self._addressing_load(actuator_uri, callback)
+
+        else:
+            # we're unaddressing
             if old_actuator_uri is not None:
-                def nextStep(ok):
-                    self._addressing_load(actuator_uri, callback)
-                self._addressing_load(old_actuator_uri, nextStep)
+                def nextStepUnaddressing(ok):
+                    old_actuator_hw = self._uri2hw_map[old_actuator_uri]
+                    self._address_next(old_actuator_hw, callback)
+                self.hmi.control_rm(instance_id, port, nextStepUnaddressing)
 
             else:
-                self._addressing_load(actuator_uri, callback)
-
-        # starting point here
-        if (not actuator_uri) or actuator_uri == "null":
-            self.hmi.control_rm(instance_id, port) # FIXME, callback)
-            if old_actuator_uri is not None:
-                  old_actuator_hw = self._uri2hw_map[old_actuator_uri]
-                  self._address_next(old_actuator_hw, address_now)
-            return
-
-        # if we reach this line there was no old actuator, we can just address now
-        address_now(True)
+                self.hmi.control_rm(instance_id, port, callback)
 
     def get_addressings(self):
+        if len(self.addressings) == 0:
+            return {}
         addressings = {}
         for uri, addressing in self.addressings.items():
             addrs = []
@@ -986,9 +988,14 @@ _:b%i
 
         actuator_hw = self._uri2hw_map[actuator_uri]
 
+        if addressing['port'] == ":bypass":
+            curvalue = 1.0 if self.plugins[addressing['instance_id']]['bypassed'] else 0.0
+        else:
+            curvalue = self.plugins[addressing['instance_id']]['ports'][addressing['port']]
+
         self.hmi.control_add(addressing['instance_id'], addressing['port'],
                              addressing['label'], addressing['type'], addressing['unit'],
-                             addressing['value'], addressing['maximum'], addressing['minimum'], addressing['steps'],
+                             curvalue, addressing['maximum'], addressing['minimum'], addressing['steps'],
                              actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3],
                              len(addressings_addrs), # num controllers
                              addressings_idx+1,      # index
@@ -1044,19 +1051,19 @@ _:b%i
     def hmi_list_banks(self, callback):
         logging.info("hmi list banks")
         self.banks = list_banks()
-        banks = " ".join('"%s" %d' % (bank['title'], i) for i,bank in enumerate(self.banks))
+        banks = " ".join('"%s" %d' % (bank['title'], i) for i, bank in enumerate(self.banks))
         callback(True, banks)
 
     def hmi_list_bank_pedalboards(self, bank_id, callback):
         logging.info("hmi list bank pedalboards")
         if bank_id < len(self.banks):
             #pedalboards = " ".join('"%s" %d' % (pb['title'], i) for i,pb in enumerate(self.banks[bank_id]['pedalboards']))
-            pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['uri']) for pb in self.banks[bank_id]['pedalboards'])
+            pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['bundle']) for pb in self.banks[bank_id]['pedalboards'])
         else:
             pedalboards = ""
         callback(True, pedalboards)
 
-    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_uri, callback):
+    def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
 
         ##if bank_id >= len(self.banks):
@@ -1070,7 +1077,7 @@ _:b%i
 
         ##uri = pedalboards[pedalboard_id]['uri']
 
-        #self.host.load_uri(pedalboard_uri)
+        self.load(bundlepath)
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
         logging.info("hmi parameter get")
@@ -1086,7 +1093,7 @@ _:b%i
 
             def host_callback(ok):
                 callback(ok)
-                self.msg_callback("bypass %s %d" % (instance, int(bypassed)))
+                self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             self.send("bypass %d %d" % (instance_id, int(bypassed)), host_callback, datatype='boolean')
 
@@ -1097,7 +1104,7 @@ _:b%i
                 callback(ok)
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), host_callback, datatype='boolean')
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")

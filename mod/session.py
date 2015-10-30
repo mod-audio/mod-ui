@@ -76,14 +76,8 @@ class Session(object):
 
         print("Using HMI =>", hmiOpened)
 
-        #if hmiOpened:
-            ## If all ok, use addressings
-            #self.addressings = Addressing(self.hmi)
-        #else:
-        if 1:
-            # Otherwise disable HMI entirely
+        if not hmiOpened:
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
-            self.addressings = None
 
         if DEV_HOST:
             self.host = FakeHost(self.hmi)
@@ -103,10 +97,8 @@ class Session(object):
         self.ioloop.add_callback(self.init_socket)
 
     def get_hardware(self):
-        if self.addressings is None:
-            return {}
         hw = deepcopy(get_hardware())
-        hw["addressings"] = self.addressings.get_addressings()
+        hw["addressings"] = self.host.get_addressings()
         return hw
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -131,9 +123,6 @@ class Session(object):
         logging.info("hmi initialized")
         self.hmi_initialized = True
         self.hmi.clear()
-
-        if self.addressings is not None:
-            self.addressings.init_host()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
@@ -163,12 +152,12 @@ class Session(object):
 
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
-        if self.addressings is None or not self.hmi_initialized:
+        if not self.hmi_initialized:
             callback(False)
             return
 
         instance, port2 = port.rsplit("/",1)
-        self.addressings.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
+        self.host.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
 
     # Set a parameter for MIDI learn
     def web_parameter_midi_learn(self, port, callback):
@@ -337,10 +326,6 @@ class Session(object):
     def reset(self, callback):
         self.bundlepath = None
         self.title      = None
-
-        # Reset addressing data
-        if self.addressings is not None:
-            self.addressings.clear()
 
         # Callback from HMI, ignore ok status
         def reset_host(ok):
