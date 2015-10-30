@@ -190,13 +190,7 @@ function Desktop(elements) {
                 })
             },
             setEnabled: function (instance, portSymbol, enabled) {
-                var gui = self.pedalboard.pedalboard('getGui', instance)
-
-                if (enabled) {
-                    gui.enable(portSymbol)
-                } else {
-                    gui.disable(portSymbol)
-                }
+                self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
             },
             renderForm: function (instance, port) {
                 context = $.extend({

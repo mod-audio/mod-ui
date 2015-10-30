@@ -504,6 +504,9 @@ class Host(object):
         pb = get_pedalboard_info(bundlepath)
 
         for p in pb['plugins']:
+            # TODO: method to get only the port control inputs
+            info = get_plugin_info(p['uri'])
+
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
             bypassed    = not p['enabled']
@@ -519,8 +522,8 @@ class Host(object):
                 "bypassed"  : bypassed,
                 "x"         : p['x'],
                 "y"         : p['y'],
-                "addressing": {}, # symbol: addressing
-                "ports"     : {}, # dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
+                "addressing": {}, # filled in later in _load_addressings()
+                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(bypassed)))
 
@@ -531,6 +534,8 @@ class Host(object):
 
             self.connections.append((port_from, port_to))
             self.msg_callback("connect %s %s" % (port_from, port_to))
+
+        self._load_addressings(bundlepath)
 
         self.msg_callback("wait_end")
 
@@ -1036,6 +1041,31 @@ _:b%i
             #addressings['idx'] = addressings_idx - 1
 
         return actuator_uri
+
+    def _load_addressings(self, bundlepath):
+        datafile = os.path.join(bundlepath, "addressings.json")
+        if not os.path.exists(datafile):
+            return
+
+        with open(datafile, 'r') as fh:
+            data = fh.read()
+        data = json.loads(data)
+
+        stopNow = False
+        def callback(ok):
+            if not ok:
+                stopNow = True
+
+        for actuator_uri in data:
+            for addr in data[actuator_uri]:
+                instance_id = self.mapper.get_id_without_creating(addr['instance'])
+                if addr['port'] == ":bypass":
+                    curvalue = 1.0 if self.plugins[instance_id]['bypassed'] else 0.0
+                else:
+                    curvalue = self.plugins[instance_id]['ports'][addr['port']]
+                self.address(addr["instance"], addr["port"], actuator_uri, addr["label"], addr["maximum"], addr["minimum"], curvalue, addr["steps"], callback)
+                if stopNow: break
+            if stopNow: break
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

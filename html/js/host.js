@@ -183,10 +183,21 @@ $('document').ready(function() {
 
         if (cmd == "wait_end") {
             waiting = false
-            setTimeout(function () {
-                desktop.pedalboard.pedalboard('adapt')
-                desktop.pedalboard.data('wait').stop()
-            }, 1)
+
+            // load new possible addressings
+            $.ajax({
+                url: '/hardware',
+                success: function (data) {
+                    HARDWARE_PROFILE = data
+                    if (desktop.hardwareManager)
+                        desktop.hardwareManager.registerAllAddressings()
+
+                    desktop.pedalboard.pedalboard('adapt')
+                    desktop.pedalboard.data('wait').stop()
+                },
+                cache: false,
+                dataType: 'json'
+            })
             return
         }
 

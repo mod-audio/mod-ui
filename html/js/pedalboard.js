@@ -1248,6 +1248,33 @@ JqueryClass('pedalboard', {
         return plugin.data('gui')
     },
 
+    setPortEnabled: function (instance, symbol, enabled) {
+        var self = $(this)
+        var gui, plugin
+
+        // keep trying until instance is available
+        var trySetEnabled = function () {
+            plugin = self.data('plugins')[instance]
+
+            if (plugin != null && plugin.data != null/*&& $(symbolport).length*/) {
+                gui = plugin.data('gui')
+
+                if (gui.controls[symbol] != null) {
+                    if (enabled) {
+                        gui.enable(symbol);
+                    } else {
+                        gui.disable(symbol)
+                    }
+                    return
+                }
+            }
+
+            setTimeout(trySetEnabled, 100)
+        }
+
+        trySetEnabled()
+    },
+
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
         var gui, plugin
