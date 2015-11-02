@@ -175,6 +175,12 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "remove_hw_port") {
+            var port = data[1]
+            desktop.pedalboard.pedalboard('removeItemFromCanvas', port)
+            return
+        }
+
         if (cmd == "wait_start") {
             waiting = true
             desktop.pedalboard.data('wait').start('Loading pedalboard...')

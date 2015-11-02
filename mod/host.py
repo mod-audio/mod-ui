@@ -288,33 +288,40 @@ class Host(object):
             self.msg_callback("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         if self.jack_client is not None:
-            # TODO midiports split(";")
+            midiports = []
+            for port in self.midiports:
+                if ";" in port:
+                    inp, outp = port.split(";",1)
+                    midiports.append(inp)
+                    midiports.append(outp)
+                else:
+                    midiports.append(port)
 
             # MIDI In
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
             for i in range(len(ports)):
                 name = ports[i]
-                if name not in self.midiports:
+                if name not in midiports:
                     continue
                 ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
                 if ret == 1 and alias1:
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name, title, i+1))
+                self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
 
             # MIDI Out
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
             for i in range(len(ports)):
                 name = ports[i]
-                if name not in self.midiports:
+                if name not in midiports:
                     continue
                 ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
                 if ret == 1 and alias1:
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (name, title, i+1))
+                self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (name.replace("system:","",1), title, i+1))
 
         for instance_id, plugin in self.plugins.items():
             self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
@@ -1192,65 +1199,59 @@ _:b%i
         if self.jack_client is None:
             return
 
-        out_ports = {}
-        full_ports = {}
-
-        # MIDI Out
-        ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
-        for port in ports:
-            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, port))
+        def add_port(name, isOutput):
+            index = int(name[-1])
+            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
             if ret == 1 and alias1:
-                title = alias1.split("-",5)[-1].replace("-"," ")
-                out_ports[title] = port
+                title = alias1.split("-",5)[-1].replace("-","_")
+            else:
+                title = name.replace("system:","",1).title().replace(" ","_")
 
-        # MIDI In
-        ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
-        for port in ports:
-            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, port))
-            if ret == 1 and alias1:
-                title = alias1.split("-",5)[-1].replace("-"," ")
-                if title in out_ports.keys():
-                    port = "%s;%s" % (port, out_ports[title])
-                full_ports[port] = title
+            self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.replace("system:","",1), int(isOutput), title, index))
+
+        def remove_port(name):
+            removed_ports = []
+
+            for ports in self.connections:
+                jackports = (self._fix_host_connection_port(ports[0]), self._fix_host_connection_port(ports[1]))
+                if name not in jackports:
+                    continue
+                self.send("disconnect %s %s" % (jackports[0], jackports[1]), lambda r:None, datatype='boolean')
+                removed_ports.append(ports)
+
+            for ports in removed_ports:
+                self.connections.remove(ports)
+                self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+
+            self.msg_callback("remove_hw_port /graph/%s" % (name.replace("system:","",1)))
 
         # remove
-        #for port in self.midiports:
-            #if port in newDevs:
-                #continue
-            #if dev.startswith("MIDI Port-"):
-                #continue
-            #dev, modes = dev.rsplit(" (",1)
-            #jacklib.disconnect(self.jack_client, "alsa_midi:%s in" % dev, self.backend_client_name+":control_in")
+        for port in self.midiports:
+            if port in newDevs:
+                continue
 
-            #def remove_external_port_in(callback):
-                #self.host.remove_external_port(dev+" in")
-                #callback(True)
-            #def remove_external_port_out(callback):
-                #self.host.remove_external_port(dev+" out")
-                #callback(True)
+            if ";" in port:
+                inp, outp = port.split(";",1)
+                remove_port(inp)
+                remove_port(outp)
+            else:
+                remove_port(port)
 
-            #yield gen.Task(remove_external_port_in)
+            self.midiports.remove(port)
 
-            #if "out" in modes:
-                #yield gen.Task(remove_external_port_out)
+        # add
+        for port in newDevs:
+            if port in self.midiports:
+                continue
 
-        ## add
-        #for dev in newDevs:
-            #if dev in curDevs:
-                #continue
-            #dev, modes = dev.rsplit(" (",1)
+            if ";" in port:
+                inp, outp = port.split(";",1)
+                add_port(inp, False)
+                add_port(outp, True)
+            else:
+                add_port(port, False)
 
-            #def add_external_port_in(callback):
-                #self.host.add_external_port(dev+" in", "Input", "MIDI")
-                #callback(True)
-            #def add_external_port_out(callback):
-                #self.host.add_external_port(dev+" out", "Output", "MIDI")
-                #callback(True)
-
-            #yield gen.Task(add_external_port_in)
-
-            #if "out" in modes:
-                #yield gen.Task(add_external_port_out)
+            self.midiports.append(port)
 
     # Callback for when a port appears or disappears
     # We use this to trigger a auto-connect mode
