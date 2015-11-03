@@ -35,7 +35,7 @@ from mod import get_hardware
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import get_plugin_info, get_state_port_values
+from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_state_port_values
 
 # TODO
 from mod.lilvlib import get_pedalboard_info
@@ -362,12 +362,6 @@ class Host(object):
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
 
-        try:
-            info = get_plugin_info(uri)
-        except:
-            callback(-1)
-            return
-
         def host_callback(resp):
             if resp < 0:
                 callback(resp)
@@ -381,7 +375,7 @@ class Host(object):
                 "x"         : x,
                 "y"         : y,
                 "addressing": {}, # symbol: addressing
-                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
+                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(uri)),
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
@@ -523,9 +517,6 @@ class Host(object):
         pb = get_pedalboard_info(bundlepath)
 
         for p in pb['plugins']:
-            # TODO: method to get only the port control inputs
-            info = get_plugin_info(p['uri'])
-
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
             bypassed    = not p['enabled']
@@ -542,9 +533,11 @@ class Host(object):
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
-                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in info['ports']['control']['input']),
+                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(p['uri'])),
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(bypassed)))
+
+        # TODO: set port values
 
         for c in pb['connections']:
             port_from = "/graph/%s" % c['source']
@@ -878,7 +871,7 @@ _:b%i
                 unit  = "none"
 
             else:
-                for port_info in get_plugin_info(data["uri"])["ports"]["control"]["input"]:
+                for port_info in get_plugin_control_input_ports(data["uri"]):
                     if port_info["symbol"] != port:
                         continue
                     break
