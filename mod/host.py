@@ -241,10 +241,15 @@ class Host(object):
             resp = resp.decode("utf-8", errors="ignore")
 
             logging.info("[host] received <- %s" % repr(resp))
-            if not resp.startswith("resp"):
-                logging.error("[host] protocol error: %s" % ProtocolError(resp)) # TODO: proper error handling
 
-            r = resp.replace("resp ", "").replace("\0", "").strip()
+            if datatype == 'string':
+                r = resp
+            elif not resp.startswith("resp"):
+                logging.error("[host] protocol error: %s" % ProtocolError(resp))
+                r = None
+            else:
+                r = resp.replace("resp ", "").replace("\0", "").strip()
+
             callback(process_resp(r, datatype))
             self.process_queue()
 
@@ -445,19 +450,26 @@ class Host(object):
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        def host_callback(ok):
-            callback(ok)
-            if not ok:
+        def preset_callback(state):
+            if not state:
+                callback(False)
                 return
-            # TODO: store new port values
 
-        self.send("preset %d %s" % (instance_id, uri), host_callback, datatype='boolean')
+            callback(True)
+
+        def host_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            self.send("preset_show %d %s" % (instance_id, uri), preset_callback, datatype='string')
+
+        self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
     def preset_save(self, instance, label, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         labelsymbol = simbolify(label)
 
-        self.send("save_preset %d \"%s\" ~/.lv2/%s %s.ttl" % (instance_id, label.replace('"','\\"'), labelsymbol, labelsymbol), callback, datatype='boolean')
+        self.send("preset_save %d \"%s\" ~/.lv2/%s %s.ttl" % (instance_id, label.replace('"','\\"'), labelsymbol, labelsymbol), callback, datatype='boolean')
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)

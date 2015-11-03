@@ -47,6 +47,17 @@ class ProtocolError(Exception):
             return self.err
 
 def process_resp(resp, datatype):
+    if resp is None:
+        if datatype == 'boolean':
+            return False
+        if datatype == 'int':
+            return 0
+        if datatype == 'float_structure':
+            return { 'ok': False }
+        if datatype == 'string':
+            return ""
+        return None
+
     if datatype == 'float_structure':
         # resp is first an int representing status
         # then the float
@@ -56,6 +67,10 @@ def process_resp(resp, datatype):
             resp['value'] = float(resps[1])
         except IndexError:
             resp['ok'] = False
+
+    elif datatype == 'string':
+        # resp is a simple string, just pass it direcly
+        pass
 
     else:
         try:
