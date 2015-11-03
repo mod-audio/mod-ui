@@ -28,7 +28,7 @@
 
 void scanPlugins()
 {
-#if 0
+#if 1
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -41,6 +41,7 @@ void scanPlugins()
 
             get_plugin_info(plugins[i]->uri);
             get_plugin_info_mini(plugins[i]->uri);
+            get_plugin_control_input_ports(plugins[i]->uri);
         }
     }
 #endif
@@ -71,7 +72,7 @@ int main()
     cleanup();
 #endif
 
-#if 0
+#if 1
     setenv("LV2_PATH", "/NOT", 1);
     init();
     assert(get_all_plugins() == nullptr);

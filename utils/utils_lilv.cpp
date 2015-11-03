@@ -2593,6 +2593,40 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* uri_)
     return nullptr;
 }
 
+const PluginPort* get_plugin_control_input_ports(const char* uri_)
+{
+    std::string uri = uri_;
+
+    // check if plugin exists
+    if (PLUGNFO.count(uri) == 0)
+        return nullptr;
+
+    // check if plugin is already cached
+    if (PLUGNFO[uri].valid)
+        return PLUGNFO[uri].ports.control.input;
+
+    const NamespaceDefinitions ns;
+
+    // look for it
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* p = lilv_plugins_get(PLUGINS, itpls);
+
+        std::string uri2 = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        if (uri2 != uri)
+            continue;
+
+        // found the plugin
+        printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
+        PLUGNFO[uri] = _get_plugin_info(p, ns);
+        return PLUGNFO[uri].ports.control.input;
+    }
+
+    // plugin not found
+    return nullptr;
+}
+
 // --------------------------------------------------------------------------------------------------------
 
 const PedalboardInfo_Mini* const* get_all_pedalboards(void)

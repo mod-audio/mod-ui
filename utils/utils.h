@@ -207,6 +207,9 @@ MOD_API const PluginInfo* get_plugin_info(const char* uri);
 // NOTE: may return null
 MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
 
+// get all control input ports for a specific plugin
+MOD_API const PluginPort* get_plugin_control_input_ports(const char* uri);
+
 // get all available pedalboards (ie, plugins with pedalboard type)
 MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
 

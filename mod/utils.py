@@ -344,6 +344,9 @@ utils.get_plugin_info.restype  = POINTER(PluginInfo)
 utils.get_plugin_info_mini.argtypes = [c_char_p]
 utils.get_plugin_info_mini.restype  = POINTER(PluginInfo_Mini)
 
+utils.get_plugin_control_input_ports.argtypes = [c_char_p]
+utils.get_plugin_control_input_ports.restype  = POINTER(PluginPort)
+
 utils.get_all_pedalboards.argtypes = None
 utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo_Mini))
 
@@ -397,6 +400,9 @@ def get_plugin_info_mini(uri):
     if not info:
         raise Exception
     return structToDict(info.contents)
+
+def get_plugin_control_input_ports(uri):
+    return structPtrToList(utils.get_plugin_control_input_ports(uri.encode("utf-8")))
 
 # ------------------------------------------------------------------------------------------------------------
 
