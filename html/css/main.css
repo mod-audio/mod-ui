@@ -6887,6 +6887,19 @@ hr.dotted {
 }
 .plugin-info .screenshot {
   padding: 18px 0 0;
+  min-width: 3em;
+  min-height: 9em;
+  display: inline-block;
+  z-index: 0;
+}
+.plugin-info .plugin_desciption {
+  background: -moz-linear-gradient(left, rgba(255, 255, 255, 0) 1em, #ffffff 2em);
+  background: -webkit-gradient(linear, left top, right top, color-stop(1em, rgba(255, 255, 255, 0)), color-stop(2em, #ffffff));
+  /* background: -webkit-linear-gradient(left, rgba(255,255,255,0) 1em, #fff 2em); */
+  background: -o-linear-gradient(left, rgba(255, 255, 255, 0) 1em, #ffffff 2em);
+  background: -ms-linear-gradient(left, rgba(255, 255, 255, 0) 1em, #ffffff 2em);
+  /* background: linear-gradient(to right, rgba(255,255,255,0) 1em, #fff 2em); */
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00ffffff', endColorstr='#ffffff', GradientType=1);
 }
 .plugin-info header {
   padding: 18px 0 0;
