@@ -461,6 +461,10 @@ class Host(object):
             for symbol, value in self.plugins[instance_id]['ports'].items():
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
+                addressing = self.plugins[instance_id]['addressing'].get(symbol, None)
+                if addressing is not None:
+                    self._addressing_load(addressing['actuator_uri'], None, value)
+
             callback(True)
 
         def host_callback(ok):
@@ -942,7 +946,7 @@ _:b%i
                 #self._addressing_load(old_actuator_uri, nextStepAddressing)
 
             #else:
-            self._addressing_load(actuator_uri, callback)
+            self._addressing_load(actuator_uri, callback, value)
 
         else:
             # we're unaddressing
@@ -1006,7 +1010,7 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def _addressing_load(self, actuator_uri, callback=None):
+    def _addressing_load(self, actuator_uri, callback=None, value=None):
         addressings       = self.addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         addressings_idx   = addressings['idx']
@@ -1018,7 +1022,9 @@ _:b%i
 
         actuator_hw = self._uri2hw_map[actuator_uri]
 
-        if addressing['port'] == ":bypass":
+        if value is not None:
+            curvalue = value
+        elif addressing['port'] == ":bypass":
             curvalue = 1.0 if self.plugins[addressing['instance_id']]['bypassed'] else 0.0
         else:
             curvalue = self.plugins[addressing['instance_id']]['ports'][addressing['port']]
