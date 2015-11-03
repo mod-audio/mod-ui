@@ -35,7 +35,7 @@ from mod import get_hardware
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import get_plugin_info
+from mod.utils import get_plugin_info, get_state_port_values
 
 # TODO
 from mod.lilvlib import get_pedalboard_info
@@ -454,6 +454,12 @@ class Host(object):
             if not state:
                 callback(False)
                 return
+
+            portValues = get_state_port_values(state)
+            self.plugins[instance_id]['ports'].update(portValues)
+
+            for symbol, value in self.plugins[instance_id]['ports'].items():
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
             callback(True)
 

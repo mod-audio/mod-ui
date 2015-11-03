@@ -175,6 +175,12 @@ typedef struct {
     const char* title;
 } PedalboardInfo_Mini;
 
+typedef struct {
+    bool valid;
+    const char* symbol;
+    float value;
+} StatePortValue;
+
 // initialize
 MOD_API void init(void);
 
@@ -211,6 +217,9 @@ MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
 // Get the size of a specific pedalboard
 // Returns a 2-size array with width and height
 MOD_API int* get_pedalboard_size(const char* bundle);
+
+// Get port values from a plugin state
+MOD_API StatePortValue* get_state_port_values(const char* state);
 
 #ifdef __cplusplus
 } // extern "C"

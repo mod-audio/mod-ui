@@ -1948,6 +1948,7 @@ static PedalboardInfo_Mini** _pedals_ret = nullptr;
 static PedalboardInfo* _pedal_ret;
 static unsigned int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
+static StatePortValue* _state_ret = nullptr;
 
 static void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 {
@@ -2172,6 +2173,18 @@ static void _clear_pedalboards()
     _pedals_ret = nullptr;
 }
 
+static void _clear_state_values()
+{
+    if (_state_ret == nullptr)
+        return;
+
+    for (int i=0; _state_ret[i].valid; ++i)
+        free((void*)_state_ret[i].symbol);
+
+    delete[] _state_ret;
+    _state_ret = nullptr;
+}
+
 // --------------------------------------------------------------------------------------------------------
 
 void init(void)
@@ -2222,6 +2235,7 @@ void cleanup(void)
     W = nullptr;
 
     _clear_pedalboards();
+    _clear_state_values();
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -2819,6 +2833,71 @@ int* get_pedalboard_size(const char* bundle)
     lilv_node_free(heightnode);
     lilv_world_free(w);
     return size;
+}
+
+// --------------------------------------------------------------------------------------------------------
+
+static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* uri_)
+{
+    static std::vector<std::string> mapping = {
+        LV2_ATOM__Float
+    };
+
+    const std::string uri(uri_);
+
+    LV2_URID urid = 1;
+    for (const std::string& uri2 : mapping)
+    {
+        if (uri2 == uri)
+            return urid;
+        ++urid;
+    }
+    mapping.push_back(uri);
+    return urid;
+}
+
+static void lilv_set_port_value(const char* portSymbol, void* userData, const void* value, uint32_t size, uint32_t type)
+{
+    std::vector<StatePortValue>* values = (std::vector<StatePortValue>*)userData;
+
+    if (type != 1) // LV2_ATOM__Float
+        return;
+    if (size != sizeof(float))
+        return;
+
+    float fvalue = *(const float*)value;
+    values->push_back({ true, strdup(portSymbol), fvalue });
+}
+
+StatePortValue* get_state_port_values(const char* state)
+{
+    static LV2_URID_Map uridMap = {
+        (void*)0x1, // non-null
+        lv2_urid_map
+    };
+
+    if (LilvState* lstate = lilv_state_new_from_string(W, &uridMap, state))
+    {
+        std::vector<StatePortValue> values;
+        lilv_state_emit_port_values(lstate, lilv_set_port_value, &values);
+        lilv_state_free(lstate);
+
+        if (size_t count = values.size())
+        {
+            _clear_state_values();
+
+            _state_ret = new StatePortValue[count+1];
+            memset(_state_ret, 0, sizeof(StatePortValue) * (count+1));
+
+            count = 0;
+            for (const StatePortValue& v : values)
+                _state_ret[count++] = v;
+
+            return _state_ret;
+        }
+    }
+
+    return nullptr;
 }
 
 // --------------------------------------------------------------------------------------------------------

@@ -296,6 +296,13 @@ class PedalboardInfo_Mini(Structure):
         ("title", c_char_p),
     ]
 
+class StatePortValue(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("symbol", c_char_p),
+        ("value", c_float),
+    ]
+
 c_struct_types = (PluginAuthor,
                   PluginGUI,
                   PluginGUI_Mini,
@@ -310,7 +317,8 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPort),
                    POINTER(PluginPreset),
                    POINTER(PedalboardPlugin),
-                   POINTER(PedalboardConnection))
+                   POINTER(PedalboardConnection),
+                   POINTER(StatePortValue))
 
 c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),
                     POINTER(POINTER(PedalboardInfo_Mini)))
@@ -344,6 +352,9 @@ utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
 utils.get_pedalboard_size.argtypes = [c_char_p]
 utils.get_pedalboard_size.restype  = POINTER(c_int)
+
+utils.get_state_port_values.argtypes = [c_char_p]
+utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -394,7 +405,7 @@ def get_all_pedalboards(asDictionary):
     pbs = structPtrPtrToList(utils.get_all_pedalboards())
     if not asDictionary:
         return pbs
-    return dict((pb["uri"], pb) for pb in pbs)
+    return dict((pb['uri'], pb) for pb in pbs)
 
 # Get a specific pedalboard
 # NOTE: may throw
@@ -416,5 +427,10 @@ def get_pedalboard_size(bundle):
     if 0 in (width, height):
         raise Exception
     return (width, height)
+
+# Get port values from a plugin state
+def get_state_port_values(state):
+    values = structPtrToList(utils.get_state_port_values(state.encode("utf-8")))
+    return dict((v['symbol'], v['value']) for v in values)
 
 # ------------------------------------------------------------------------------------------------------------
