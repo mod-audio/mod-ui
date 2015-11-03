@@ -124,16 +124,6 @@ class Host(object):
         self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
 
         self.msg_callback = lambda msg:None
-        self.saved_callback = lambda bundlepath:None
-        #self.loaded_callback = lambda bundlepath:None
-        #self.plugin_added_callback = lambda instance,uri,enabled,x,y:None
-        #self.plugin_removed_callback = lambda instance:None
-        #self.plugin_enabled_callback = lambda instance,enabled:None
-        #self.plugin_position_callback = lambda instance,x,y:None
-        #self.port_value_callback = lambda port,value:None
-        #self.port_binding_callback = lambda port,cc:None
-        #self.connection_added_callback = lambda port1,port2:None
-        #self.connection_removed_callback = lambda port1,port2:None
 
         # Register HMI protocol callbacks
         self._init_addressings()

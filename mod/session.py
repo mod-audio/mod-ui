@@ -305,12 +305,7 @@ class Session(object):
             for ws in self.websockets:
                 ws.write_message(msg)
 
-        def saved_callback(bundlepath):
-            #add_bundle_to_lilv_world(bundlepath)
-            self.screenshot_generator.schedule_screenshot(bundlepath)
-
         self.host.msg_callback = msg_callback
-        self.host.saved_callback = saved_callback
 
         yield gen.Task(self.host.initial_setup)
 
