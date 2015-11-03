@@ -125,7 +125,13 @@ def structToDict(struct):
 
 # ------------------------------------------------------------------------------------------------------------
 
-utils = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "..", "utils", "libmod_utils.so"))
+tryPath1 = os.path.join(os.path.dirname(__file__), "libmod_utils.so")
+tryPath2 = os.path.join(os.path.dirname(__file__), "..", "utils", "libmod_utils.so")
+
+if os.path.exists(tryPath1):
+    utils = cdll.LoadLibrary(tryPath1)
+else:
+    utils = cdll.LoadLibrary(tryPath2)
 
 class PluginAuthor(Structure):
     _fields_ = [
