@@ -564,6 +564,7 @@ JqueryClass("presetManager", {
     },
 
     entryKeyup: function(e) {
+        e.stopPropagation();
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
         entry.attr('size', Math.max(entry.val().length, 1));
@@ -587,9 +588,10 @@ JqueryClass("presetManager", {
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
         var p = self.presetManager("getPresetByName", entry.val());
-        if (p)
+        if (p) {
             self.trigger("load", [self.data("presetManagerOptions").instance, p.data("presetEntryOptions")]);
-        self.presetManager("deactivate");
+            self.presetManager("deactivate");
+        }
         return self;
     },
 
