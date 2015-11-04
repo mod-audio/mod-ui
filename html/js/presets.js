@@ -487,7 +487,7 @@ JqueryClass("presetManager", {
         var e = self.data("presetManagerElements");
         e.list.children().each( function () {
             var t = $(this);
-            if (t.data("presetManagerOptions").name.toLowerCase().indexOf(string.toLowerCase()) >= 0)
+            if (t.data("presetEntryOptions").name.toLowerCase().indexOf(string.toLowerCase()) >= 0)
                 t.css("height", "");
             else
                 t.css("height", 0);
