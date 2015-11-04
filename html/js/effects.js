@@ -40,6 +40,7 @@ JqueryClass('effectBox', {
         }, options)
 
         self.data(options)
+        self.data('showPluginsRenderId', 0)
 
         var searchbox = self.find('input[type=search]')
         self.data('searchbox', searchbox)
@@ -230,15 +231,32 @@ JqueryClass('effectBox', {
         self.find('.nav-left').addClass('disabled')
         self.find('.nav-right').addClass('disabled')
 
+        var renderedIndex = 0
+
+        // current render id, to check if another render has been called
+        var currentRenderId = self.data('showPluginsRenderId')+1
+        self.data('showPluginsRenderId', currentRenderId)
+
         // render plugins
         var plugin
         function renderNextPlugin() {
-            if (self.renderedIndex >= pluginCount) {
-                self.effectBox('calculateNavigation')
+            if (self.data('showPluginsRenderId') != currentRenderId) {
+                // another render is in place, stop this one
                 return
             }
 
-            plugin   = plugins[self.renderedIndex]
+            if (renderedIndex >= pluginCount) {
+                // if we get here it means we finished rendering
+                self.effectBox('calculateNavigation')
+
+                if (self.data('showPluginsRenderId') == currentRenderId) {
+                    // no other renders in queue, take the change and reset the id
+                    self.data('showPluginsRenderId', 0)
+                }
+                return
+            }
+
+            plugin   = plugins[renderedIndex]
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
@@ -247,11 +265,10 @@ JqueryClass('effectBox', {
                 self.effectBox('renderPlugin', plugin, self.find('#effect-content-' + category))
             }
 
-            self.renderedIndex += 1
+            renderedIndex += 1
             setTimeout(renderNextPlugin, 1);
         }
 
-        self.renderedIndex = 0
         renderNextPlugin(0)
     },
 

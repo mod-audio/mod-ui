@@ -27,4 +27,4 @@ test: utils_jack.cpp.o utils_lilv.cpp.o test.cpp.o
 	$(CXX) $^ $(LDFLAGS) $(shell pkg-config --libs jack lilv-0) -o $@
 
 test-run: test
-	valgrind --leak-check=full ./test
+	valgrind --leak-check=full --show-leak-kinds=all ./test

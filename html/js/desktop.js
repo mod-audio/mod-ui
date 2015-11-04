@@ -190,13 +190,7 @@ function Desktop(elements) {
                 })
             },
             setEnabled: function (instance, portSymbol, enabled) {
-                var gui = self.pedalboard.pedalboard('getGui', instance)
-
-                if (enabled) {
-                    gui.enable(portSymbol)
-                } else {
-                    gui.disable(portSymbol)
-                }
+                self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
             },
             renderForm: function (instance, port) {
                 context = $.extend({
@@ -276,10 +270,10 @@ function Desktop(elements) {
                 var allpedals = {}
                 for (var i=0; i<pedals.length; i++) {
                     var pedal = pedals[i]
-                    allpedals[pedal.uri] = pedal
+                    allpedals[pedal.bundle] = pedal
                     self.pedalboardIndexer.add({
-                        id: pedal.uri,
-                        data: [pedal.uri, pedal.metadata.title].join(" ")
+                        id: pedal.bundle,
+                        data: [pedal.bundle, pedal.title].join(" ")
                     })
                 }
                 self.pedalboardIndexerData = allpedals
@@ -317,20 +311,32 @@ function Desktop(elements) {
         }
     }
 
+    this.blockUI = function () {
+        var block = $('<div class="screen-disconnected">')
+        block.html('<p>Disconnected</p>')
+        $('body').append(block).css('overflow', 'hidden')
+        block.width($(window).width() * 5)
+        block.height($(window).height() * 5)
+        block.css('margin-left', -$(window).width() * 2)
+        $('#wrapper').css('z-index', -1)
+        $('#plugins-library').css('z-index', -1)
+        $('#cloud-plugins-library').css('z-index', -1)
+        $('#pedalboards-library').css('z-index', -1)
+        $('#bank-library').css('z-index', -1)
+        $('#mod-social-network').css('z-index', -1)
+        $('#main-menu').css('z-index', -1)
+    }
+
     this.disconnect = function () {
+        var self = this
         $.ajax({
             url: '/disconnect',
             success: function (resp) {
-                if (!resp)
+                if (!resp) {
                     return new Notification('error',
                         "Couldn't disconnect")
-                var block = $('<div class="screen-disconnected">')
-                block.html('<p>Disconnected</p>')
-                $('body').append(block).css('overflow', 'hidden')
-                block.width($(window).width() * 5)
-                block.height($(window).height() * 5)
-                block.css('margin-left', -$(window).width() * 2)
-                $('#wrapper').css('z-index', -1)
+                }
+                self.blockUI()
             },
             error: function () {
                 new Bug("Couldn't disconnect")
@@ -728,11 +734,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 $.ajax({
                     url: '/effect/add/' + instance + '?x=' + x + '&y=' + y + '&uri=' + escape(uri),
                     success: function (pluginData) {
-                        if (pluginData)
+                        if (pluginData) {
                             callback(pluginData)
-                        else
-                            new Notification('error',
-                                'Error adding effect')
+                        } else {
+                            new Notification('error', 'Error adding effect')
+                        }
                     },
                     error: function (resp) {
                         if (resp.status == 404 && firstTry) {
@@ -745,7 +751,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                         }
                     },
                     cache: false,
-                    'dataType': 'json'
+                    dataType: 'json'
                 })
             }
             add()

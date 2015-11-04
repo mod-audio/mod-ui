@@ -1,4 +1,5 @@
 .DS_Store
+.kdev_include_paths
 *~
 *.o
 *.so
@@ -38,5 +39,6 @@ html/pedalboards/*.png
 modui-env/
 build/
 dist/
+utils/test
 *.orig
 *node_modules/

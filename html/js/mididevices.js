@@ -47,15 +47,16 @@ function MidiDevicesWindow(options) {
         options.midiDevicesList.find('input').remove()
         options.midiDevicesList.find('span').remove()
 
-        self.getDeviceList(function (devsInUse, devList) {
+        self.getDeviceList(function (devsInUse, devList, names) {
             if (devList.length == 0)
                 return new Notification("info", "No MIDI devices available")
 
             // add new ones
             for (var i in devList) {
                 var dev  = devList[i]
-                var elem = $('<input type="checkbox" name="" value="' + dev + '" '
-                         + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + dev + '<br/></span>')
+                var name = names[dev]
+                var elem = $('<input type="checkbox" name="' + name + '" value="' + dev + '" '
+                         + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + name + '<br/></span>')
 
                 elem.appendTo(options.midiDevicesList)
             }
@@ -69,7 +70,7 @@ function MidiDevicesWindow(options) {
             url: '/jack/get_midi_devices',
             type: 'GET',
             success: function (resp) {
-                callback(resp.devsInUse, resp.devList)
+                callback(resp.devsInUse, resp.devList, resp.names)
             },
             error: function () {
                 new Bug("Failed to get list of MIDI devices")

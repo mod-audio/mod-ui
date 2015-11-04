@@ -51,7 +51,7 @@ typedef struct {
     const char* panel;
     const char* color;
     const char* knob;
-    const PluginGUIPort* ports;
+    PluginGUIPort* ports;
 } PluginGUI;
 
 typedef struct {
@@ -141,7 +141,45 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* instance;
+    const char* uri;
+    bool bypassed;
+    float x;
+    float y;
+} PedalboardPlugin;
+
+typedef struct {
+    bool valid;
+    const char* source;
+    const char* target;
+} PedalboardConnection;
+
+typedef struct {
+    const char* const* audio_ins;
+    const char* const* audio_outs;
+    const char* const* midi_ins;
+    const char* const* midi_outs;
+} PedalboardHardware;
+
+typedef struct {
+    const char* title;
+    const PedalboardPlugin* plugins;
+    const PedalboardConnection* connections;
+    PedalboardHardware hardware;
 } PedalboardInfo;
+
+typedef struct {
+    bool valid;
+    const char* uri;
+    const char* bundle;
+    const char* title;
+} PedalboardInfo_Mini;
+
+typedef struct {
+    bool valid;
+    const char* symbol;
+    float value;
+} StatePortValue;
 
 // initialize
 MOD_API void init(void);
@@ -150,12 +188,12 @@ MOD_API void init(void);
 MOD_API void cleanup(void);
 
 // add a bundle to our lilv world
-// returns true if the bundle was added
-MOD_API bool add_bundle_to_lilv_world(const char* bundle);
+// returns uri list of added plugins (null for none)
+MOD_API const char* const* add_bundle_to_lilv_world(const char* bundle);
 
 // remove a bundle from our lilv world
-// returns true if the bundle was removed
-MOD_API bool remove_bundle_from_lilv_world(const char* bundle);
+// returns uri list of removed plugins (null for none)
+MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle);
 
 // get all available plugins
 // this triggers scanning of all plugins
@@ -165,20 +203,26 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
 
-// get a specific plugin
+// get a specific plugin (mini)
 // NOTE: may return null
 MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
 
-// get all available pedalboards (ie, plugins with pedalboard type)
-MOD_API const PedalboardInfo* const* get_all_pedalboards(void);
+// get all control input ports for a specific plugin
+MOD_API const PluginPort* get_plugin_control_input_ports(const char* uri);
 
-// Get info from an lv2 bundle
-// @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
+// get all available pedalboards (ie, plugins with pedalboard type)
+MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
+
+// Get a specific pedalboard
+// NOTE: may return null
 MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
 
-// Faster version of get_pedalboard_info when we just need to know the pedalboard name
-// @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
-MOD_API const char* get_pedalboard_name(const char* bundle);
+// Get the size of a specific pedalboard
+// Returns a 2-size array with width and height
+MOD_API int* get_pedalboard_size(const char* bundle);
+
+// Get port values from a plugin state
+MOD_API StatePortValue* get_state_port_values(const char* state);
 
 #ifdef __cplusplus
 } // extern "C"

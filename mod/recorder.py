@@ -10,7 +10,7 @@ class Recorder(object):
         self.last_event = None
         self.proc = None
 
-    def start(self, client_name):
+    def start(self):
         if self.recording:
             self.stop()
         self.tstamp = time.time()
@@ -19,9 +19,7 @@ class Recorder(object):
         self.proc = subprocess.Popen(['jack_capture',
                                       '-f', 'ogg',
                                       '-V',
-                                      '-d', '65',
-                                      '--port', '%s:audio_out_*' % client_name,
-                                      CAPTURE_PATH],
+                                      '-d', '65'],
                                      stdout=open('/tmp/capture.err', 'w'),
                                      stderr=open('/tmp/capture.out', 'w')
                                      )

@@ -24,15 +24,13 @@ from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA, HOST_ORIG,
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT,
-                          INGEN_AUTOCONNECT, INGEN_NUM_AUDIO_INS, INGEN_NUM_AUDIO_OUTS,
-                          INGEN_NUM_MIDI_INS, INGEN_NUM_MIDI_OUTS, INGEN_NUM_CV_INS, INGEN_NUM_CV_OUTS)
+                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
 from mod import get_hardware, symbolify
 from mod import symbolify
-from mod.addressing import Addressing
+#from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.lv2 import add_bundle_to_lilv_world
@@ -40,14 +38,11 @@ from mod.clipmeter import Clipmeter
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
-from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 
-if HOST_ORIG:
-    from mod.host_orig import Host
-elif HOST_CARLA:
+if HOST_CARLA:
     from mod.host_carla import Host
 else:
-    from mod.ingen import Host
+    from mod.host import Host
 
 class Session(object):
     def __init__(self):
@@ -61,9 +56,6 @@ class Session(object):
         self.current_bank = None
         self.hmi_initialized = False
 
-        # JACK client name of the backend
-        self.backend_client_name = "ingen"
-
         # Used in mod-app to know when the current pedalboard changed
         self.pedalboard_changed_callback = lambda ok,bundlepath,title:None
 
@@ -72,17 +64,8 @@ class Session(object):
         self.title      = None
 
         self.engine_samplerate = 48000 # default value
-        self.jack_client = None
-        self.xrun_count = 0
-        self.xrun_count2 = 0
 
         self.ioloop = ioloop.IOLoop.instance()
-
-        socketpath = os.environ.get("MOD_INGEN_SOCKET_URI", "unix:///tmp/ingen.sock")
-        if DEV_HOST:
-            self.host = FakeHost(socketpath)
-        else:
-            self.host = Host(socketpath)
 
         # Try to open real HMI
         hmiOpened = False
@@ -93,51 +76,35 @@ class Session(object):
 
         print("Using HMI =>", hmiOpened)
 
-        if hmiOpened:
-            # If all ok, use addressings
-            self.addressings = Addressing(self.hmi)
-        else:
-            # Otherwise disable HMI entirely
+        if not hmiOpened:
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
-            self.addressings = None
+
+        if DEV_HOST:
+            self.host = FakeHost(self.hmi)
+        else:
+            self.host = Host(self.hmi)
 
         self.recorder = Recorder()
         self.player = Player()
         self.mute_state = True
         self.recording = None
-        self.instances = []
         self.screenshot_generator = ScreenshotGenerator()
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
         self.mididevuuids = []
 
-        self.jack_cpu_load_timer = ioloop.PeriodicCallback(self.jack_cpu_load_timer_callback, 1000)
-        self.jack_xrun_timer     = ioloop.PeriodicCallback(self.jack_xrun_timer_callback, 500)
-
-        self.ioloop.add_callback(self.init_jack)
         self.ioloop.add_callback(self.init_socket)
 
-    def __del__(self):
-        if self.jack_client is None:
-            return
-        jacklib.deactivate(self.jack_client)
-        jacklib.client_close(self.jack_client)
-        self.jack_client = None
-        print("jacklib client deactivated")
-
     def get_hardware(self):
-        if self.addressings is None:
-            return {}
         hw = deepcopy(get_hardware())
-        hw["addressings"] = self.addressings.get_addressings()
+        hw["addressings"] = self.host.get_addressings()
         return hw
 
     # -----------------------------------------------------------------------------------------------------------------
     # App utilities, needed only for mod-app
 
-    def setupApp(self, clientName, pedalboardChangedCallback):
-        self.backend_client_name = clientName
+    def setupApp(self, pedalboardChangedCallback):
         self.pedalboard_changed_callback = pedalboardChangedCallback
 
     def reconnectApp(self):
@@ -149,39 +116,6 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
-    def autoconnect_jack(self):
-        if self.jack_client is None:
-            return
-
-        for i in range(1, INGEN_NUM_AUDIO_INS+1):
-            jacklib.connect(self.jack_client, "system:capture_%i" % i, "%s:audio_port_%i_in" % (self.backend_client_name, i))
-
-        for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
-            jacklib.connect(self.jack_client,"%s:audio_port_%i_out" % (self.backend_client_name, i), "system:playback_%i" % i)
-
-        if not DEV_HMI:
-            # this means we're using HMI, so very likely running MOD hardware
-            jacklib.connect(self.jack_client, "alsa_midi:ttymidi MIDI out in", "%s:midi_port_1_in" % self.backend_client_name)
-            jacklib.connect(self.jack_client, "%s:midi_port_1_out" % self.backend_client_name, "alsa_midi:ttymidi MIDI in out")
-
-    def init_jack(self):
-        self.jack_client = jacklib.client_open("%s-helper" % self.backend_client_name, jacklib.JackNoStartServer, None)
-        self.xrun_count  = 0
-        self.xrun_count2 = 0
-
-        if self.jack_client is None:
-            return
-
-        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
-        jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
-        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
-        jacklib.activate(self.jack_client)
-        print("jacklib client activated")
-
-        if INGEN_AUTOCONNECT:
-            self.ioloop.add_timeout(timedelta(seconds=3.0), self.autoconnect_jack)
-
     def init_socket(self):
         self.host.open_connection_if_needed(self.host_callback)
 
@@ -190,21 +124,6 @@ class Session(object):
         self.hmi_initialized = True
         self.hmi.clear()
 
-        if self.addressings is not None:
-            self.addressings.init_host()
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Timers (start and stop in sync with webserver IOLoop)
-
-    def start_timers(self):
-        if not HOST_ORIG:
-            self.jack_cpu_load_timer.start()
-        self.jack_xrun_timer.start()
-
-    def stop_timers(self):
-        self.jack_xrun_timer.stop()
-        self.jack_cpu_load_timer.stop()
-
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
     # These will be called as a reponse to an action in the browser.
@@ -212,7 +131,7 @@ class Session(object):
 
     # Add a new plugin, starts enabled (ie, not bypassed)
     def web_add(self, instance, uri, x, y, callback):
-        self.host.add_plugin(instance, uri, True, x, y, callback)
+        self.host.add_plugin(instance, uri, x, y, callback)
 
     # Remove a plugin
     def web_remove(self, instance, callback):
@@ -225,7 +144,7 @@ class Session(object):
 
         if port2 == ":bypass":
             value = value >= 0.5
-            self.host.enable(instance, not value, callback)
+            self.host.bypass(instance, value, callback)
         else:
             self.host.param_set(port, value, callback)
 
@@ -233,12 +152,12 @@ class Session(object):
 
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
-        if self.addressings is None or not self.hmi_initialized:
+        if not self.hmi_initialized:
             callback(False)
             return
 
         instance, port2 = port.rsplit("/",1)
-        self.addressings.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
+        self.host.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
 
     # Set a parameter for MIDI learn
     def web_parameter_midi_learn(self, port, callback):
@@ -249,8 +168,8 @@ class Session(object):
         self.host.preset_load(instance, uri, callback)
 
     # Set a plugin block position within the canvas
-    def web_set_position(self, instance, x, y, callback):
-        self.host.set_position(instance, x, y, callback)
+    def web_set_position(self, instance, x, y):
+        self.host.set_position(instance, x, y)
 
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
@@ -300,102 +219,26 @@ class Session(object):
 
             os.mkdir(bundlepath)
 
-        # Various steps triggered by callbacks
-        def step1(ok):
-            if ok: self.host.save(os.path.join(bundlepath, "%s.ttl" % titlesym), step2)
-            else: callback(False)
+        # save
+        self.host.save(bundlepath, title, titlesym)
 
-        def step2(ok):
-            if ok:
-                self.bundlepath = bundlepath
-                self.title      = title
-            else:
-                self.bundlepath = None
-                self.title      = None
+        self.bundlepath = bundlepath
+        self.title      = title
+        self.pedalboard_changed_callback(True, bundlepath, title)
 
-            self.pedalboard_changed_callback(ok, bundlepath, title)
+        self.screenshot_generator.schedule_screenshot(bundlepath)
 
-            if not ok:
-                callback(False)
-                return
-
-            # Create a custom manifest.ttl, not created by ingen because we want *.pedalboard extension
-            with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
-                fh.write("""\
-@prefix ingen: <http://drobilla.net/ns/ingen#> .
-@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
-@prefix pedal: <http://moddevices.com/ns/modpedal#> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
-<%s.ttl>
-    lv2:prototype ingen:GraphPrototype ;
-    a lv2:Plugin ,
-        ingen:Graph ,
-        pedal:Pedalboard ;
-    rdfs:seeAlso <%s.ttl> .
-""" % (titlesym, titlesym))
-
-            # Create a addressings.json file
-            addressings = self.addressings.get_addressings() if self.addressings is not None else {}
-
-            with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
-                json.dump(addressings, fh)
-
-            # All ok!
-            callback(True)
-
-        # start here
-        self.host.set_pedalboard_name(title, step1)
+        callback(True)
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
     def web_get_midi_device_list(self):
-        return self.get_midi_ports(self.backend_client_name), self.get_midi_ports("alsa_midi")
+        return self.host.get_midi_ports()
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
-    @gen.engine
     def web_set_midi_devices(self, newDevs):
-        curDevs = self.get_midi_ports(self.backend_client_name)
-
-        # remove
-        for dev in curDevs:
-            if dev in newDevs:
-                continue
-            if dev.startswith("MIDI Port-"):
-                continue
-            dev, modes = dev.rsplit(" (",1)
-            jacklib.disconnect(self.jack_client, "alsa_midi:%s in" % dev, self.backend_client_name+":control_in")
-
-            def remove_external_port_in(callback):
-                self.host.remove_external_port(dev+" in")
-                callback(True)
-            def remove_external_port_out(callback):
-                self.host.remove_external_port(dev+" out")
-                callback(True)
-
-            yield gen.Task(remove_external_port_in)
-
-            if "out" in modes:
-                yield gen.Task(remove_external_port_out)
-
-        # add
-        for dev in newDevs:
-            if dev in curDevs:
-                continue
-            dev, modes = dev.rsplit(" (",1)
-
-            def add_external_port_in(callback):
-                self.host.add_external_port(dev+" in", "Input", "MIDI")
-                callback(True)
-            def add_external_port_out(callback):
-                self.host.add_external_port(dev+" out", "Output", "MIDI")
-                callback(True)
-
-            yield gen.Task(add_external_port_in)
-
-            if "out" in modes:
-                yield gen.Task(add_external_port_out)
+        return self.host.set_midi_devices(newDevs)
 
     # Send a ping to HMI
     def web_ping_hmi(self, callback):
@@ -405,101 +248,11 @@ class Session(object):
     # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws):
         self.websockets.append(ws)
-
         self.host.open_connection_if_needed(self.host_callback)
-        self.host.get("/graph")
 
     # Webbrowser page closed
     def websocket_closed(self, ws):
         self.websockets.remove(ws)
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # JACK callbacks, called by JACK itself
-    # We must take care to ensure not to block for long periods of time or else audio will skip or xrun.
-
-    # Callback for when a port appears or disappears
-    # We use this to trigger a auto-connect mode
-    #def JackPortRegistrationCallback(self, port, registered, arg):
-        #if self.jack_client is None:
-            #return
-        #if not registered:
-            #return
-
-    # Callback for when a client or port property changes.
-    # We use this to know the full length name of ingen created ports.
-    def JackPropertyChangeCallback(self, subject, key, change, arg):
-        if self.jack_client is None:
-            return
-        if change != jacklib.PropertyCreated:
-            return
-        if key != jacklib.bJACK_METADATA_PRETTY_NAME:
-            return
-
-        self.mididevuuids.append(subject)
-        self.ioloop.add_callback(self.jack_midi_devs_callback)
-
-    # Callback for when an xrun occurs
-    def JackXRunCallback(self, arg):
-        self.xrun_count += 1
-        return 0
-
-    # Callback for when JACK has shutdown or our client zombified
-    def JackShutdownCallback(self, arg):
-        self.jack_client = None
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Misc/Utility functions
-    # We use these to save possibly duplicated code.
-
-    # Get all available MIDI ports of a specific JACK client.
-    def get_midi_ports(self, client_name):
-        if self.jack_client is None:
-            return []
-
-        # get input and outputs separately
-        in_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                            jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput
-                                                            if client_name == "alsa_midi" else
-                                                            jacklib.JackPortIsInput
-                                                            ))
-        out_ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, client_name+":", jacklib.JACK_DEFAULT_MIDI_TYPE,
-                                                             jacklib.JackPortIsPhysical|jacklib.JackPortIsInput
-                                                             if client_name == "alsa_midi" else
-                                                             jacklib.JackPortIsOutput
-                                                             ))
-
-        if client_name != "alsa_midi":
-            if "ingen:control_in" in in_ports:
-                in_ports.remove("ingen:control_in")
-            if "ingen:control_out" in out_ports:
-                out_ports.remove("ingen:control_out")
-
-            for i in range(len(in_ports)):
-                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, in_ports[i]))
-                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                if ret == 0 and type_ == b"text/plain":
-                    in_ports[i] = charPtrToString(value)
-
-            for i in range(len(out_ports)):
-                uuid = jacklib.port_uuid(jacklib.port_by_name(self.jack_client, out_ports[i]))
-                ret, value, type_ = jacklib.get_property(uuid, jacklib.JACK_METADATA_PRETTY_NAME)
-                if ret == 0 and type_ == b"text/plain":
-                    out_ports[i] = charPtrToString(value)
-
-        # remove suffixes from ports
-        in_ports  = [port.replace(client_name+":","",1).rsplit(" in" ,1)[0] for port in in_ports ]
-        out_ports = [port.replace(client_name+":","",1).rsplit(" out",1)[0] for port in out_ports]
-
-        # add our own suffix now
-        ports = []
-        for port in in_ports:
-            #if "Midi Through" in port:
-                #continue
-            if port in ("jackmidi", "OSS sequencer"):
-                continue
-            ports.append(port + (" (in+out)" if port in out_ports else " (in)"))
-
-        return ports
 
     # -----------------------------------------------------------------------------------------------------------------
     # Timer callbacks
@@ -507,6 +260,7 @@ class Session(object):
 
     # Single-shot callback that automatically connects new backend JACK MIDI ports to their hardware counterparts.
     def jack_midi_devs_callback(self):
+        return
         while len(self.mididevuuids) != 0:
             subject = self.mididevuuids.pop()
 
@@ -530,119 +284,53 @@ class Session(object):
             else:
                 jacklib.connect(self.jack_client, mod_name, midi_name)
 
-    # Callback for getting the current JACK cpu load and report it to the browser side.
-    def jack_cpu_load_timer_callback(self):
-        if self.jack_client is not None:
-            msg = """[]
-            a <http://lv2plug.in/ns/ext/patch#Set> ;
-            <http://lv2plug.in/ns/ext/patch#subject> </engine/> ;
-            <http://lv2plug.in/ns/ext/patch#property> <http://moddevices/ns/modpedal#cpuload> ;
-            <http://lv2plug.in/ns/ext/patch#value> "%.1f" .
-            """ % jacklib.cpu_load(self.jack_client)
-
-            for ws in self.websockets:
-                ws.write_message(msg)
-
-    # Callback that checks if xruns have occured.
-    def jack_xrun_timer_callback(self):
-        for i in range(self.xrun_count2, self.xrun_count):
-            self.xrun_count2 += 1
-            #self.hmi.xrun()
-
     # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
 
     @gen.engine
     def host_callback(self):
+        def finish():
+            if len(self.websockets) > 0:
+                self.host.report_current_state()
+
         if self.host_initialized:
+            finish()
             return
 
+        self.engine_samplerate = self.host.get_sample_rate()
         self.host_initialized = True
-
-        if self.jack_client is not None:
-            self.engine_samplerate = jacklib.get_sample_rate(self.jack_client)
 
         def msg_callback(msg):
             for ws in self.websockets:
                 ws.write_message(msg)
 
-        def saved_callback(bundlepath):
-            if add_bundle_to_lilv_world(bundlepath):
-                pass #self.host.add_bundle(bundlepath)
-            self.screenshot_generator.schedule_screenshot(bundlepath)
-
-        def plugin_added_callback(instance, uri, enabled, x, y):
-            if instance not in self.instances:
-                self.instances.append(instance)
-
-        def plugin_removed_callback(instance):
-            if instance in self.instances:
-                self.instances.remove(instance)
-
         self.host.msg_callback = msg_callback
-        self.host.saved_callback = saved_callback
-        self.host.plugin_added_callback = plugin_added_callback
-        self.host.plugin_removed_callback = plugin_removed_callback
 
         yield gen.Task(self.host.initial_setup)
 
-        # Add ports
-        for i in range(1, INGEN_NUM_AUDIO_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("Audio Port-%i in" % i, "Input", "Audio", callback))
+        finish()
 
-        for i in range(1, INGEN_NUM_AUDIO_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("Audio Port-%i out" % i, "Output", "Audio", callback))
-
-        for i in range(1, INGEN_NUM_MIDI_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Port-%i in" % i, "Input", "MIDI", callback))
-
-        for i in range(1, INGEN_NUM_MIDI_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("MIDI Port-%i out" % i, "Output", "MIDI", callback))
-
-        for i in range(1, INGEN_NUM_CV_INS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i in" % i, "Input", "CV", callback))
-
-        for i in range(1, INGEN_NUM_CV_OUTS+1):
-            yield gen.Task(lambda callback: self.host.add_external_port("CV Port-%i out" % i, "Output", "CV", callback))
-
-    def load_pedalboard(self, bundlepath, title):
+    def load_pedalboard(self, bundlepath):
+        title = self.host.load(bundlepath)
         self.bundlepath = bundlepath
         self.title      = title
-        self.host.load(bundlepath)
         self.pedalboard_changed_callback(True, bundlepath, title)
+        return title
 
     def reset(self, callback):
         self.bundlepath = None
         self.title      = None
 
-        # Callback from socket
-        def remove_next_plugin(ok):
-            if not ok:
-                callback(False)
-                return
-
-            try:
-                instance = self.instances.pop(0)
-            except IndexError:
-                callback(True)
-                return
-
-            self.host.remove_plugin(instance, remove_next_plugin)
-
         # Callback from HMI, ignore ok status
-        def remove_all_plugins(ok):
-            remove_next_plugin(True)
-
-        # Reset addressing data
-        if self.addressings is not None:
-            self.addressings.clear()
+        def reset_host(ok):
+            self.host.reset(callback)
 
         # Wait for HMI if available
         if self.hmi_initialized:
-            self.hmi.clear(remove_all_plugins)
+            self.hmi.clear(reset_host)
         else:
-            remove_next_plugin(True)
+            reset_host(True)
 
         self.pedalboard_changed_callback(True, "", "")
 
@@ -720,8 +408,8 @@ class Session(object):
         """
         self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
-    def pedalboard_size(self, width, height, callback):
-        self.host.set_pedalboard_size(width, height, callback)
+    def pedalboard_size(self, width, height):
+        self.host.set_pedalboard_size(width, height)
 
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)
@@ -743,7 +431,7 @@ class Session(object):
     def start_recording(self):
         if self.player.playing:
             self.player.stop()
-        self.recorder.start(self.backend_client_name)
+        self.recorder.start()
 
     def stop_recording(self):
         if self.recorder.recording:

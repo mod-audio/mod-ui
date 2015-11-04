@@ -15,16 +15,79 @@
  * For a full copy of the GNU General Public License see the COPYING file.
  */
 
+#ifndef DEBUG
+#define DEBUG
+#endif
+
 #include "utils.h"
 
-// #include <unistd.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void scanPlugins()
+{
+#if 1
+    if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
+    {
+        for (int i=0; plugins[i] != nullptr; ++i)
+        {
+            if (! plugins[i]->valid)
+            {
+                printf("Invalid plugin found\n");
+                break;
+            }
+
+            get_plugin_info(plugins[i]->uri);
+            get_plugin_info_mini(plugins[i]->uri);
+            get_plugin_control_input_ports(plugins[i]->uri);
+        }
+    }
+#endif
+
+#if 1
+    if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
+    {
+        for (int i=0; pedalboards[i] != nullptr; ++i)
+        {
+            if (! pedalboards[i]->valid)
+            {
+                printf("Invalid pedalboard found\n");
+                break;
+            }
+
+            get_pedalboard_info(pedalboards[i]->bundle);
+            get_pedalboard_size(pedalboards[i]->bundle);
+        }
+    }
+#endif
+}
 
 int main()
 {
+#if 1
     init();
-    get_all_plugins();
-    get_all_pedalboards();
-//     sleep(10);
+    scanPlugins();
     cleanup();
+#endif
+
+#if 1
+    setenv("LV2_PATH", "/NOT", 1);
+    init();
+    assert(get_all_plugins() == nullptr);
+    assert(add_bundle_to_lilv_world("/NOT") == nullptr);
+    assert(add_bundle_to_lilv_world("/NOT/") == nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/calf.lv2") != nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/calf.lv2/") == nullptr);
+    assert(get_all_plugins() != nullptr);
+    scanPlugins();
+    assert(remove_bundle_from_lilv_world("/usr/lib/lv2/calf.lv2") != nullptr);
+    assert(remove_bundle_from_lilv_world("/usr/lib/lv2/calf.lv2") == nullptr);
+    assert(get_all_plugins() == nullptr);
+    scanPlugins();
+    cleanup();
+#endif
+
     return 0;
 }

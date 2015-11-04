@@ -125,7 +125,13 @@ def structToDict(struct):
 
 # ------------------------------------------------------------------------------------------------------------
 
-utils = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "..", "utils", "libmod_utils.so"))
+tryPath1 = os.path.join(os.path.dirname(__file__), "libmod_utils.so")
+tryPath2 = os.path.join(os.path.dirname(__file__), "..", "utils", "libmod_utils.so")
+
+if os.path.exists(tryPath1):
+    utils = cdll.LoadLibrary(tryPath1)
+else:
+    utils = cdll.LoadLibrary(tryPath2)
 
 class PluginAuthor(Structure):
     _fields_ = [
@@ -255,9 +261,52 @@ class PluginInfo_Mini(Structure):
         ("gui", PluginGUI_Mini),
     ]
 
-class PedalboardInfo(Structure):
+class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("instance", c_char_p),
+        ("uri", c_char_p),
+        ("bypassed", c_bool),
+        ("x", c_float),
+        ("y", c_float),
+    ]
+
+class PedalboardConnection(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("source", c_char_p),
+        ("target", c_char_p),
+    ]
+
+class PedalboardHardware(Structure):
+    _fields_ = [
+        ("audio_ins", POINTER(c_char_p)),
+        ("audio_outs", POINTER(c_char_p)),
+        ("midi_ins", POINTER(c_char_p)),
+        ("midi_outs", POINTER(c_char_p)),
+    ]
+
+class PedalboardInfo(Structure):
+    _fields_ = [
+        ("title", c_char_p),
+        ("plugins", POINTER(PedalboardPlugin)),
+        ("connections", POINTER(PedalboardConnection)),
+        ("hardware", PedalboardHardware),
+    ]
+
+class PedalboardInfo_Mini(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("uri", c_char_p),
+        ("bundle", c_char_p),
+        ("title", c_char_p),
+    ]
+
+class StatePortValue(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("symbol", c_char_p),
+        ("value", c_float),
     ]
 
 c_struct_types = (PluginAuthor,
@@ -266,16 +315,19 @@ c_struct_types = (PluginAuthor,
                   PluginPortRanges,
                   PluginPortUnits,
                   PluginPortsI,
-                  PluginPorts)
+                  PluginPorts,
+                  PedalboardHardware)
 
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
                    POINTER(PluginPort),
-                   POINTER(PluginPreset))
+                   POINTER(PluginPreset),
+                   POINTER(PedalboardPlugin),
+                   POINTER(PedalboardConnection),
+                   POINTER(StatePortValue))
 
-c_structpp_types = (POINTER(POINTER(PluginInfo)),
-                    POINTER(POINTER(PluginInfo_Mini)),
-                    POINTER(POINTER(PedalboardInfo)))
+c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),
+                    POINTER(POINTER(PedalboardInfo_Mini)))
 
 utils.init.argtypes = None
 utils.init.restype  = None
@@ -284,10 +336,10 @@ utils.cleanup.argtypes = None
 utils.cleanup.restype  = None
 
 utils.add_bundle_to_lilv_world.argtypes = [c_char_p]
-utils.add_bundle_to_lilv_world.restype  = c_bool
+utils.add_bundle_to_lilv_world.restype  = POINTER(c_char_p)
 
 utils.remove_bundle_from_lilv_world.argtypes = [c_char_p]
-utils.remove_bundle_from_lilv_world.restype  = c_bool
+utils.remove_bundle_from_lilv_world.restype  = POINTER(c_char_p)
 
 utils.get_all_plugins.argtypes = None
 utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
@@ -298,14 +350,20 @@ utils.get_plugin_info.restype  = POINTER(PluginInfo)
 utils.get_plugin_info_mini.argtypes = [c_char_p]
 utils.get_plugin_info_mini.restype  = POINTER(PluginInfo_Mini)
 
+utils.get_plugin_control_input_ports.argtypes = [c_char_p]
+utils.get_plugin_control_input_ports.restype  = POINTER(PluginPort)
+
 utils.get_all_pedalboards.argtypes = None
-utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo))
+utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo_Mini))
 
 utils.get_pedalboard_info.argtypes = [c_char_p]
 utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
-utils.get_pedalboard_name.argtypes = [c_char_p]
-utils.get_pedalboard_name.restype  = c_char_p
+utils.get_pedalboard_size.argtypes = [c_char_p]
+utils.get_pedalboard_size.restype  = POINTER(c_int)
+
+utils.get_state_port_values.argtypes = [c_char_p]
+utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -318,16 +376,14 @@ def cleanup():
     utils.cleanup()
 
 # add a bundle to our lilv world
-# returns true if the bundle was added
-def add_bundle_to_lilv_world(bundlepath, returnPlugins = False):
-    ret = utils.add_bundle_to_lilv_world(bundlepath.encode("utf-8"))
-    return [] if returnPlugins else ret
+# returns uri list of added plugins
+def add_bundle_to_lilv_world(bundlepath):
+    return charPtrPtrToStringList(utils.add_bundle_to_lilv_world(bundlepath.encode("utf-8")))
 
 # remove a bundle to our lilv world
-# returns true if the bundle was removed
-def remove_bundle_from_lilv_world(bundlepath, returnPlugins = False):
-    ret = utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8"))
-    return [] if returnPlugins else ret
+# returns uri list of removed plugins
+def remove_bundle_from_lilv_world(bundlepath):
+    return charPtrPtrToStringList(utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8")))
 
 # get all available plugins
 # this triggers scanning of all plugins
@@ -351,6 +407,9 @@ def get_plugin_info_mini(uri):
         raise Exception
     return structToDict(info.contents)
 
+def get_plugin_control_input_ports(uri):
+    return structPtrToList(utils.get_plugin_control_input_ports(uri.encode("utf-8")))
+
 # ------------------------------------------------------------------------------------------------------------
 
 # get all available pedalboards (ie, plugins with pedalboard type)
@@ -358,10 +417,9 @@ def get_all_pedalboards(asDictionary):
     pbs = structPtrPtrToList(utils.get_all_pedalboards())
     if not asDictionary:
         return pbs
-    return dict((pb["uri"], pb) for pb in pbs)
+    return dict((pb['uri'], pb) for pb in pbs)
 
-# Get info from an lv2 bundle
-# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
+# Get a specific pedalboard
 # NOTE: may throw
 def get_pedalboard_info(bundle):
     info = utils.get_pedalboard_info(bundle.encode("utf-8"))
@@ -369,9 +427,22 @@ def get_pedalboard_info(bundle):
         raise Exception
     return structToDict(info.contents)
 
-# Faster version of get_pedalboard_info when we just need to know the pedalboard name
-# @a bundle is a string, consisting of a directory in the filesystem (absolute pathname).
-def get_pedalboard_name(bundle):
-    return charPtrToString(utils.get_pedalboard_name(bundle.encode("utf-8")))
+# Get the size of a specific pedalboard
+# Returns a 2-size array with width and height
+# NOTE: may throw
+def get_pedalboard_size(bundle):
+    size = utils.get_pedalboard_size(bundle.encode("utf-8"))
+    if not size:
+        raise Exception
+    width  = int(size[0])
+    height = int(size[1])
+    if 0 in (width, height):
+        raise Exception
+    return (width, height)
+
+# Get port values from a plugin state
+def get_state_port_values(state):
+    values = structPtrToList(utils.get_state_port_values(state.encode("utf-8")))
+    return dict((v['symbol'], v['value']) for v in values)
 
 # ------------------------------------------------------------------------------------------------------------

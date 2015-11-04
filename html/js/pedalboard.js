@@ -48,7 +48,7 @@ JqueryClass('pedalboard', {
 
             // Loads a plugin with given plugin uri and instance
             // Application MUST use this instance. Overriding this is mandatory.
-            pluginLoad: function (uri, instance, x, y, callback) {
+            pluginLoad: function (uri, instance, x, y, callback, errorCallback) {
                 callback(true)
             },
 
@@ -561,18 +561,19 @@ JqueryClass('pedalboard', {
             var instance = self.pedalboard('generateInstance', pluginData.uri)
             waiter.startPlugin(instance, position)
             var pluginLoad = self.data('pluginLoad')
-            pluginLoad(pluginData.uri, instance, position.x, position.y, function () {})
-/*                function () {
+            pluginLoad(pluginData.uri, instance, position.x, position.y,
+                function () {
+                    /*
                     self.pedalboard('addPlugin', pluginData, instance, false, position.x, position.y)
                     setTimeout(function () {
                         self.pedalboard('adapt')
                     }, 1)
+                    */
                     waiter.stopPlugin(instance)
                 },
                 function () {
                     waiter.stopPlugin(instance)
                 })
-*/
         })
 
         var options = {
@@ -1247,6 +1248,33 @@ JqueryClass('pedalboard', {
         return plugin.data('gui')
     },
 
+    setPortEnabled: function (instance, symbol, enabled) {
+        var self = $(this)
+        var gui, plugin
+
+        // keep trying until instance is available
+        var trySetEnabled = function () {
+            plugin = self.data('plugins')[instance]
+
+            if (plugin != null && plugin.data != null/*&& $(symbolport).length*/) {
+                gui = plugin.data('gui')
+
+                if (gui.controls[symbol] != null) {
+                    if (enabled) {
+                        gui.enable(symbol);
+                    } else {
+                        gui.disable(symbol)
+                    }
+                    return
+                }
+            }
+
+            setTimeout(trySetEnabled, 100)
+        }
+
+        trySetEnabled()
+    },
+
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
         var gui, plugin
@@ -1314,7 +1342,7 @@ JqueryClass('pedalboard', {
                 hw.removeInstance(instance)
 
             var plugin = plugins[instance]
-            if (plugin && plugin.uri) {
+            if (plugin && plugin.length) {
                 // plugin might have failed to register
                 plugin.remove()
             }
@@ -1402,22 +1430,46 @@ JqueryClass('pedalboard', {
 
         self.data('bypassApplication', false)
 
+        var connMgr = self.data('connectionManager')
+        connMgr.iterate(function (jack) {
+            self.pedalboard('disconnect', jack)
+        })
+
         self.data('reset')(function (ok) {
             if (!ok) {
                 return
             }
-            HARDWARE_PROFILE.addressings = []
-            var hardware = self.data('hardwareManager')
-            if (hardware) {
-                hardware.reset()
-            }
-            self.data('connectionManager').iterate(function (jack) {
-                self.pedalboard('disconnect', jack)
-            })
-            self.pedalboard('resetSize')
+            self.pedalboard('resetData')
             if (callback)
                 callback()
         })
+    },
+
+    // Removes all pedalboard data
+    resetData: function () {
+        var self = $(this)
+
+        HARDWARE_PROFILE.addressings = []
+        var hardware = self.data('hardwareManager')
+        if (hardware) {
+            hardware.reset()
+        }
+
+        var connMgr = self.data('connectionManager')
+        connMgr.reset()
+
+        var plugins = self.data('plugins')
+        for (var instance in plugins) {
+            var plugin = plugins[instance]
+
+            if (plugin && plugin.length) {
+                // plugin might have failed to register
+                plugin.remove()
+            }
+        }
+        self.data('plugins', {})
+
+        self.pedalboard('resetSize')
     },
 
     // Make element an audio/midi inputs, to which jacks can be dragged to make connections

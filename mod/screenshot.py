@@ -23,35 +23,28 @@ except ImportError:
     from PIL import Image
 
 from tornado import ioloop
-from mod.lilvlib import get_pedalboard_info
+from mod.utils import get_pedalboard_size
 from mod.settings import (DEVICE_WEBSERVER_PORT,
                           PHANTOM_BINARY, SCREENSHOT_JS,
                           MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
 
-def generate_screenshot(bundlepath, max_width, max_height, callback):
+def generate_screenshot(bundlepath, callback):
     if not os.path.exists(PHANTOM_BINARY):
         return callback()
-    #try: # TESTING let us receive exceptions for now
-    pedalboard = get_pedalboard_info(bundlepath)
+    if not os.path.exists(SCREENSHOT_JS):
+        return callback()
+
+    #try:
+    width, height = get_pedalboard_size(bundlepath)
     #except:
         #return callback()
 
     path = '%s/screenshot.png' % bundlepath
-    port = DEVICE_WEBSERVER_PORT
-
-    proc = subprocess.Popen([ PHANTOM_BINARY,
-                              SCREENSHOT_JS,
-                              'http://localhost:%d/pedalboard.html?bundlepath=%s' % (port, bundlepath),
-                              path,
-                              str(pedalboard['size']['width']),
-                              str(pedalboard['size']['height']),
-                             ],
+    proc = subprocess.Popen([ PHANTOM_BINARY, SCREENSHOT_JS,
+                              'http://localhost:%d/pedalboard.html?bundlepath=%s' % (DEVICE_WEBSERVER_PORT, bundlepath),
+                              path, str(width), str(height),
+                            ],
                             stdout=subprocess.PIPE)
-
-    def handle_image():
-        img = Image.open(path)
-        resize_image(img, max_width, max_height)
-        callback(img)
 
     loop = ioloop.IOLoop.instance()
 
@@ -59,20 +52,22 @@ def generate_screenshot(bundlepath, max_width, max_height, callback):
         if proc.poll() is None:
             return
         loop.remove_handler(fileno)
-        handle_image()
+        img = Image.open(path)
+        resize_image(img)
+        callback(img)
 
     loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
 
-def resize_image(img, max_width, max_height):
-        width, height = img.size
-        if width > max_width:
-            height = height * max_width / width
-            width = max_width
-        if height > max_height:
-            width = width * max_height / height
-            height = max_height
-        img.convert('RGB')
-        img.thumbnail((width, height), Image.ANTIALIAS)
+def resize_image(img):
+    width, height = img.size
+    if width > MAX_THUMB_WIDTH:
+        height = height * MAX_THUMB_WIDTH / width
+        width = MAX_THUMB_WIDTH
+    if height > MAX_THUMB_HEIGHT:
+        width = width * MAX_THUMB_HEIGHT / height
+        height = MAX_THUMB_HEIGHT
+    img.convert('RGB')
+    img.thumbnail((width, height), Image.ANTIALIAS)
 
 class ScreenshotGenerator(object):
     def __init__(self):
@@ -88,33 +83,40 @@ class ScreenshotGenerator(object):
 
     def process_next(self):
         if len(self.queue) == 0:
+            bundlepath = self.processing
             self.processing = None
             if self.callback is not None:
-                self.callback(True)
+                ctime = os.path.getctime(os.path.join(bundlepath, "thumbnail.png"))
+                self.callback((True, ctime))
                 self.callback = None
             return
 
         self.processing = self.queue.pop(0)
 
-        def callback(img=None):
+        def img_callback(img=None):
             if not img:
                 self.process_next()
                 return
 
-            img.save(os.path.join(self.processing,  "thumbnail.png"))
+            img.save(os.path.join(self.processing, "thumbnail.png"))
             self.process_next()
 
-        generate_screenshot(self.processing, MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT, callback)
+        generate_screenshot(self.processing, img_callback)
 
     def wait_for_pending_jobs(self, bundlepath, callback):
         if bundlepath not in self.queue and self.processing != bundlepath:
             # all ok
-            callback(True)
+            thumbnail = os.path.join(bundlepath, "thumbnail.png")
+            if os.path.exists(thumbnail):
+                ctime = os.path.getctime(thumbnail)
+                callback((True, ctime))
+            else:
+                callback((False, 0.0))
             return
 
         # if previous callback is still there it means we're too slow
         if self.callback is not None:
-            self.callback(False)
+            self.callback((False, 0.0))
 
         # report back later
         self.callback = callback

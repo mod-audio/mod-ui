@@ -69,6 +69,8 @@ def check_environment():
         open(DEVICE_MODEL, 'w').write(model)
 
 def symbolify(name):
+    if len(name) == 0:
+        return "_"
     name = re.sub("[^_a-zA-Z0-9]+", "_", name)
     if name[0].isdigit():
         name = "_" + name
