@@ -1,5 +1,4 @@
 Pillow==2.8.1
 pyserial==2.7
 pystache==0.5.4
-rdflib==4.2.0
 tornado==4.1
