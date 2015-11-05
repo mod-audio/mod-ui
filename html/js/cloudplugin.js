@@ -198,6 +198,10 @@ JqueryClass('cloudPluginBox', {
             var ret = desktop.pluginIndexer.search(query.term)
             for (var i in ret) {
                 var uri = ret[i].ref
+                if (! allplugins[uri]) {
+                    console.log("ERROR: Plugin '" + uri + "' was not previously cached, cannot show it")
+                    continue
+                }
                 lplugins[uri] = allplugins[uri]
             }
 
@@ -314,6 +318,10 @@ JqueryClass('cloudPluginBox', {
             var ret = desktop.pluginIndexer.search(term)
             for (var i in ret) {
                 var uri = ret[i].ref
+                if (! allplugins[uri]) {
+                    console.log("ERROR: Plugin '" + uri + "' was not previously cached, cannot show it")
+                    continue
+                }
                 lplugins.push(allplugins[uri])
             }
 
