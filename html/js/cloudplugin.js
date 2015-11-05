@@ -96,7 +96,7 @@ JqueryClass('cloudPluginBox', {
     },
     checkLocalScreenshot: function(plugin) {
         if (plugin.status == 'installed') {
-            if (plugin.gui.thumbnail && plugin.gui.screenshot) {
+            if (plugin.gui) {
                 plugin.screenshot_href =  "/effect/image/screenshot.png?uri=" + encodeURIComponent(plugin.uri)
                 plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + encodeURIComponent(plugin.uri)
             } else {
@@ -105,7 +105,8 @@ JqueryClass('cloudPluginBox', {
             }
         }
         else {
-            if (!plugin.screenshot_available && !plugin.thumbnail_available) {
+            //if (!plugin.screenshot_available && !plugin.thumbnail_available) {
+            if (!plugin.screenshot_href && !plugin.thumbnail_href) {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
             }
@@ -128,26 +129,31 @@ JqueryClass('cloudPluginBox', {
                 lplugin = results.local[plugin.uri]
 
                 if (lplugin) {
-                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                    //plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] RELEASE NOT WORKING
+                    console.log(lplugin)
+                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion|| 0]
                     delete results.local[plugin.uri]
                 }
 
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WRKIN
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion|| 0]
 
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
                     plugin.status = 'installed'
-                } else {
-                    plugin.status = 'outdated'
+                } else {                    
+                    plugin.status = 'outdated'                    
                 }
 
                 if (plugin.installedVersion != null) {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
                 }
                 if (!plugin.screenshot_available && !plugin.thumbnail_available) {
-                    plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
-                    plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                    if (!plugin.screenshot_href && !plugin.thumbnail_href) {
+                        plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                        plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                    }
                 }
 
                 plugins.push(plugin)
@@ -163,22 +169,69 @@ JqueryClass('cloudPluginBox', {
 
             self.cloudPluginBox('showPlugins', plugins)
         }
+        renderSearch = function() {
+            for (i in results.cloud) {
+                plugin  = results.cloud[i]
+                lplugin = results.local[plugin.uri]
+                if (lplugin) {                    
+                    //plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] RELEASE NOT WORKING
+                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion|| 0]
+                    //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WRKIN
+                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion|| 0]
 
-        $.ajax({
-            'method': 'GET',
-            'url':  query.term ? '/effect/search/' : '/effect/list',
-            'data': query.term ? query : null,
-            'success': function (plugins) {
-                // index by uri, needed later to check if it's installed
-                results.local = {}
-                for (i in plugins)
-                    results.local[plugins[i].uri] = plugins[i]
-                if (results.cloud != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
+                    if (plugin.installedVersion == null) {
+                        plugin.status = 'blocked'
+                    } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
+                        plugin.status = 'installed'
+                    } else {                    
+                        plugin.status = 'outdated'                    
+                    }
 
+                    if (plugin.installedVersion != null) {
+                        self.cloudPluginBox('checkLocalScreenshot', plugin)
+                    }
+                    if (!plugin.screenshot_available && !plugin.thumbnail_available) {
+                        if (!plugin.screenshot_href && !plugin.thumbnail_href) {
+                            plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                            plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                        }
+                    }
+                    plugins.push(plugin)                    
+                }
+                else {
+                    self.cloudPluginBox('checkLocalScreenshot', plugin)
+                    plugin.status = 'blocked'
+                    plugins.push(plugin)
+                }
+                self.cloudPluginBox('showPlugins', plugins)
+
+            }
+        }
+        if(!query.term) {
+            $.ajax({
+                'method': 'GET',
+                'url': '/effect/list',
+                'success': function (plugins) {
+                    // index by uri, needed later to check if it's installed
+                    results.local = {}
+                    for (i in plugins)
+                        results.local[plugins[i].uri] = plugins[i]
+                    self.data('localPlugins',plugins)
+                    console.log(plugins);
+                    if (results.cloud != null)
+                        renderResults()
+                },
+                'dataType': 'json'
+            })
+        }
+        else {
+            var results = {}
+            renderResults()
+            local = self.data('localPlugins');
+            results.local = {};
+            for (i in local)
+                results.local[local[i].uri] = local[i]
+        }
         $.ajax({
             'method': 'GET',
             'url': SITEURLNEW + "/lv2/plugins/",
@@ -187,17 +240,20 @@ JqueryClass('cloudPluginBox', {
             },
             'success': function (plugins) {
                 results.cloud = plugins
-                if (results.local != null)
-                    renderResults()
+                if (results.local != null) {
+                    if(!query.term) {
+                        renderResults()
+                    }
+                    else {
+                        renderSearch()
+                    }
+                }
             },
             'dataType': 'json'
         })
     },
 
-    searchNotInstalled: function (query) {
-    /* Get an array of plugins from cloud and a dict of installed plugins by uri.
-       Show only those plugins not installed
-     */
+    /*searchNotInstalled: function (query) {
         var self = $(this)
         var results = {}
         var plugin, i;
@@ -214,26 +270,29 @@ JqueryClass('cloudPluginBox', {
                 if (!plugin.screenshot_available && !plugin.thumbnail_available) {
                     plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                     plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
-                }
+                }                
                 plugins.push(plugin)
             }
+            self.data('allPlugins', plugins)
             self.cloudPluginBox('showPlugins', plugins)
         }
-
-        $.ajax({
-            'method': 'GET',
-            'url':  query.term ? '/effect/search/' : '/effect/list',
-            'data': query.term ? query : null,
-            'success': function (plugins) {
-                // index by uri, needed later to check if it's installed
-                results.local = {}
-                for (i in plugins)
-                    results.local[plugins[i].uri] = true // no need to keep plugin data
-                if (results.cloud != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
+        if(!query.term) {
+            $.ajax({
+                'method': 'GET',
+                'url':  query.term ? '/effect/search/' : '/effect/list',
+                'data': query.term ? query : null,
+                'success': function (plugins) {
+                    // index by uri, needed later to check if it's installed
+                    results.local = {}
+                    for (i in plugins)
+                        results.local[plugins[i].uri] = true // no need to keep plugin data
+                    self.data('localPlugins',plugins)
+                    if (results.cloud != null)
+                        renderResults()
+                },
+                'dataType': 'json'
+            })
+        }
 
         $.ajax({
             'method': 'GET',
@@ -242,13 +301,15 @@ JqueryClass('cloudPluginBox', {
                 'search': query.term
             },
             'success': function (plugins) {
+                if(query)
+                    results.cloud = self.data('localPlugins')
                 results.cloud = plugins
                 if (results.local != null)
                     renderResults()
             },
             'dataType': 'json'
         })
-    },
+    },*/
 
     search: function () {
         var self = $(this)
@@ -259,7 +320,7 @@ JqueryClass('cloudPluginBox', {
             'term': term
         }
 
-        if (checked_filter == "all")
+        if (checked_filter == "all" || checked_filter == "installed")
             return self.cloudPluginBox('searchAll', query)
         if (checked_filter == "not-installed")
             return self.cloudPluginBox('searchNotInstalled', query)
@@ -274,28 +335,17 @@ JqueryClass('cloudPluginBox', {
                 plugin = results.local[i]
                 if (results.cloud[plugin.uri] != null) {
                     cplugin = results.cloud[plugin.uri]
-                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                    //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WORKING AS FOR NOW
+                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion|| 0]
                 } else {
-                    plugin.latestVersion = [0, 0, 0]
+                    plugin.latestVersion = [0, 0]
                 }
-                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion || 0]                
                 plugin.status = 'installed'
                 plugins.push(plugin)
             }
             self.cloudPluginBox('showPlugins', plugins)
         }
-
-        $.ajax({
-            'method': 'GET',
-            'url': query.term ? '/effect/search/' : '/effect/list',
-            'data': query.term ? query : null,
-            'success': function (plugins) {
-                results.local = plugins
-                if (results.cloud != null)
-                    renderResults()
-            },
-            'dataType': 'json'
-        })
 
         $.ajax({
             'method': 'GET',
@@ -305,9 +355,7 @@ JqueryClass('cloudPluginBox', {
             },
             'success': function (plugins) {
                 // index by uri, needed later to check its latest version
-                results.cloud = {}
-                for (i in plugins)
-                    results.cloud[plugins[i].uri] = plugins[i]
+                results.cloud = plugins
                 if (results.local != null)
                     renderResults()
             },
@@ -396,6 +444,19 @@ JqueryClass('cloudPluginBox', {
     showPluginInfo: function (plugin, index) {
         var self = $(this)
         var uri  = escape(plugin.uri)
+        var bundle
+        if(plugin.bundles) { // FIXME
+            if(plugin.bundles.length > 0) {
+                bundle = plugin.bundles[0].replace(/\.lv2$/, '')
+            }            
+            else {
+                bundle = plugin.bundles[0]
+            }
+        }
+        else {
+            bundle = plugin.brand
+        }
+        
 
         var plugin_data = {
             thumbnail_href: plugin.thumbnail_href,
@@ -403,7 +464,7 @@ JqueryClass('cloudPluginBox', {
             category: plugin.category[0] || "",
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
-            package_name: (plugin.bundles[0] || "FIXME").replace(/\.lv2$/, ''),
+            package_name: bundle,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
@@ -506,3 +567,18 @@ JqueryClass('cloudPluginBox', {
     },
 
 })
+function compareVersions(a, b) {
+    if (!a && !b)
+        return 0
+    if (!b)
+        return 1
+    if (!a)
+        return -1
+    for (var i = 0; i < 3; i++) {
+        if (a[i] > b[i])
+            return 1
+        if (a[i] < b[i])
+            return -1
+    }
+    return 0
+}
