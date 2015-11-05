@@ -6180,13 +6180,14 @@ button.close {
   background-color: #c67d0f;
 }
 .cloud-plugins .cloud-plugin .status.outdated:after {
-  content: "update";
+  content: "new version";
 }
 .cloud-plugins .cloud-plugin .status.blocked {
-  background-color: #d9534f;
+  border: 1px solid #c67d0f;
+  color: #c67d0f;
 }
 .cloud-plugins .cloud-plugin .status.blocked:after {
-  content: "install";
+  content: "not installed";
 }
 .cloud-plugins .cloud-plugin .actions {
   font-size: 11px;

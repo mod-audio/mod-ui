@@ -201,13 +201,14 @@
        .status.outdated {
          background-color: @brand-warning;
          &:after {
-           content: "update";
+           content: "new version";
          }
        }
        .status.blocked {
-         background-color: @brand-danger;
+         border: 1px solid @brand-warning;
+         color: @brand-warning;
          &:after {
-           content: "install";
+           content: "not installed";
          }
        }
 
