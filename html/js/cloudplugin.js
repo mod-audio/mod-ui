@@ -129,14 +129,12 @@ JqueryClass('cloudPluginBox', {
                 lplugin = results.local[plugin.uri]
 
                 if (lplugin) {
-                    //plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] RELEASE NOT WORKING
                     console.log(lplugin)
-                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion|| 0]
+                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
                     delete results.local[plugin.uri]
                 }
 
-                //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WRKIN
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion|| 0]
+                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
 
                 if (plugin.installedVersion == null) {
                     plugin.status = 'blocked'
@@ -174,10 +172,8 @@ JqueryClass('cloudPluginBox', {
                 plugin  = results.cloud[i]
                 lplugin = results.local[plugin.uri]
                 if (lplugin) {
-                    //plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] RELEASE NOT WORKING
-                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion|| 0]
-                    //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WRKIN
-                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion|| 0]
+                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
 
                     if (plugin.installedVersion == null) {
                         plugin.status = 'blocked'
@@ -335,12 +331,11 @@ JqueryClass('cloudPluginBox', {
                 plugin = results.local[i]
                 if (results.cloud[plugin.uri] != null) {
                     cplugin = results.cloud[plugin.uri]
-                    //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WORKING AS FOR NOW
-                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion|| 0]
+                    plugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
                 } else {
-                    plugin.latestVersion = [0, 0]
+                    plugin.latestVersion = [0, 0, 0]
                 }
-                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion || 0]
+                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
                 plugin.status = 'installed'
                 plugins.push(plugin)
             }
