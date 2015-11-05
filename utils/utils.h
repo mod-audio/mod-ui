@@ -55,6 +55,7 @@ typedef struct {
 } PluginGUI;
 
 typedef struct {
+    const char* screenshot;
     const char* thumbnail;
 } PluginGUI_Mini;
 
@@ -120,6 +121,7 @@ typedef struct {
     const char* const* category;
     int microVersion;
     int minorVersion;
+    int release;
     const char* version;
     const char* stability;
     PluginAuthor author;
@@ -135,7 +137,11 @@ typedef struct {
     const char* name;
     const char* brand;
     const char* label;
+    const char* comment;
     const char* const* category;
+    int microVersion;
+    int minorVersion;
+    int release;
     PluginGUI_Mini gui;
 } PluginInfo_Mini;
 

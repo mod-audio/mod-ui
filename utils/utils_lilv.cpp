@@ -60,14 +60,15 @@ static size_t HOMElen = strlen(HOME);
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
-    { nullptr }                                  \
+    nullptr, 0, 0, 0,                            \
+    { nullptr, nullptr }                         \
 }
 
 #define PluginInfo_Init {                            \
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, 0, 0,                                   \
+    nullptr, 0, 0, 0,                                \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -177,27 +178,42 @@ static const std::vector<std::string> BLACKLIST = {
 
 struct NamespaceDefinitions_Mini {
     LilvNode* rdf_type;
+    LilvNode* rdfs_comment;
+    LilvNode* lv2core_microVersion;
+    LilvNode* lv2core_minorVersion;
     LilvNode* mod_brand;
     LilvNode* mod_label;
+    LilvNode* mod_release;
     LilvNode* modgui_gui;
     LilvNode* modgui_resourcesDirectory;
+    LilvNode* modgui_screenshot;
     LilvNode* modgui_thumbnail;
 
     NamespaceDefinitions_Mini()
         : rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
+          rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
+          lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
+          lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
+          mod_release              (lilv_new_uri(W, LILV_NS_MOD    "release"           )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
+          modgui_screenshot        (lilv_new_uri(W, LILV_NS_MODGUI "screenshot"        )),
           modgui_thumbnail         (lilv_new_uri(W, LILV_NS_MODGUI "thumbnail"         )) {}
 
     ~NamespaceDefinitions_Mini()
     {
         lilv_node_free(rdf_type);
+        lilv_node_free(rdfs_comment);
+        lilv_node_free(lv2core_microVersion);
+        lilv_node_free(lv2core_minorVersion);
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
+        lilv_node_free(mod_release);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
+        lilv_node_free(modgui_screenshot);
         lilv_node_free(modgui_thumbnail);
     }
 };
@@ -224,6 +240,7 @@ struct NamespaceDefinitions {
     LilvNode* mod_minimum;
     LilvNode* mod_maximum;
     LilvNode* mod_rangeSteps;
+    LilvNode* mod_release;
     LilvNode* modgui_gui;
     LilvNode* modgui_resourcesDirectory;
     LilvNode* modgui_iconTemplate;
@@ -270,6 +287,7 @@ struct NamespaceDefinitions {
           mod_minimum              (lilv_new_uri(W, LILV_NS_MOD    "minimum"           )),
           mod_maximum              (lilv_new_uri(W, LILV_NS_MOD    "maximum"           )),
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
+          mod_release              (lilv_new_uri(W, LILV_NS_MOD    "release"           )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
           modgui_iconTemplate      (lilv_new_uri(W, LILV_NS_MODGUI "iconTemplate"      )),
@@ -317,6 +335,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_minimum);
         lilv_node_free(mod_maximum);
         lilv_node_free(mod_rangeSteps);
+        lilv_node_free(mod_release);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
         lilv_node_free(modgui_iconTemplate);
@@ -713,6 +732,58 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // comment
+
+    if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.rdfs_comment))
+    {
+        info.comment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        lilv_nodes_free(nodes);
+    }
+    else
+    {
+        info.comment = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // version
+
+    {
+        LilvNodes* microvers = lilv_plugin_get_value(p, ns.lv2core_microVersion);
+        LilvNodes* minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion);
+
+        if (microvers == nullptr && minorvers == nullptr)
+        {
+            info.microVersion = 0;
+            info.minorVersion = 0;
+        }
+        else
+        {
+            if (microvers == nullptr)
+                info.microVersion = 0;
+            else
+                info.microVersion = lilv_node_as_int(lilv_nodes_get_first(microvers));
+
+            if (minorvers == nullptr)
+                info.minorVersion = 0;
+            else
+                info.minorVersion = lilv_node_as_int(lilv_nodes_get_first(minorvers));
+
+            lilv_nodes_free(microvers);
+            lilv_nodes_free(minorvers);
+        }
+    }
+
+    if (LilvNodes* releasenode = lilv_plugin_get_value(p, ns.mod_release))
+    {
+        info.release = lilv_node_as_int(lilv_nodes_get_first(releasenode));
+        lilv_nodes_free(releasenode);
+    }
+    else
+    {
+        info.release = 0;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // gui
 
     if (LilvNodes* nodes = lilv_plugin_get_value(p, ns.modgui_gui))
@@ -744,6 +815,16 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
 
         if (modguigui != nullptr)
         {
+            if (LilvNodes* modgui_scrn = lilv_world_find_nodes(W, modguigui, ns.modgui_screenshot, nullptr))
+            {
+                info.gui.screenshot = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_scrn)), nullptr);
+                lilv_nodes_free(modgui_scrn);
+            }
+            else
+            {
+                info.gui.screenshot = nc;
+            }
+
             if (LilvNodes* modgui_thumb = lilv_world_find_nodes(W, modguigui, ns.modgui_thumbnail, nullptr))
             {
                 info.gui.thumbnail = lilv_file_uri_parse(lilv_node_as_string(lilv_nodes_get_first(modgui_thumb)), nullptr);
@@ -758,14 +839,16 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* p, const Namespac
         }
         else
         {
-            info.gui.thumbnail = nc;
+            info.gui.screenshot = nc;
+            info.gui.thumbnail  = nc;
         }
 
         lilv_nodes_free(nodes);
     }
     else
     {
-        info.gui.thumbnail = nc;
+        info.gui.screenshot = nc;
+        info.gui.thumbnail  = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -977,6 +1060,16 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
         char versiontmpstr[32+1] = { '\0' };
         snprintf(versiontmpstr, 32, "%d.%d", info.microVersion, info.minorVersion);
         info.version = strdup(versiontmpstr);
+    }
+
+    if (LilvNodes* releasenode = lilv_plugin_get_value(p, ns.mod_release))
+    {
+        info.release = lilv_node_as_int(lilv_nodes_get_first(releasenode));
+        lilv_nodes_free(releasenode);
+    }
+    else
+    {
+        info.release = 0;
     }
 
     if (info.minorVersion == 0 && info.microVersion == 0)
@@ -2124,6 +2217,10 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
         free((void*)info.label);
     if (info.name != nullptr && info.name != nc)
         free((void*)info.name);
+    if (info.comment != nullptr && info.comment != nc)
+        free((void*)info.comment);
+    if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
+        lilv_free((void*)info.gui.screenshot);
     if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
         lilv_free((void*)info.gui.thumbnail);
 

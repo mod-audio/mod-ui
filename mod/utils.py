@@ -168,6 +168,7 @@ class PluginGUI(Structure):
 
 class PluginGUI_Mini(Structure):
     _fields_ = [
+        ("screenshot", c_char_p),
         ("thumbnail", c_char_p),
     ]
 
@@ -241,6 +242,7 @@ class PluginInfo(Structure):
         ("category", POINTER(c_char_p)),
         ("microVersion", c_int),
         ("minorVersion", c_int),
+        ("release", c_int),
         ("version", c_char_p),
         ("stability", c_char_p),
         ("author", PluginAuthor),
@@ -257,7 +259,11 @@ class PluginInfo_Mini(Structure):
         ("name", c_char_p),
         ("brand", c_char_p),
         ("label", c_char_p),
+        ("comment", c_char_p),
         ("category", POINTER(c_char_p)),
+        ("microVersion", c_int),
+        ("minorVersion", c_int),
+        ("release", c_int),
         ("gui", PluginGUI_Mini),
     ]
 

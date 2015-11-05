@@ -324,12 +324,14 @@ class EffectBulk(web.RequestHandler):
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(result))
+        self.finish()
 
 class EffectList(web.RequestHandler):
     def get(self):
         data = get_all_plugins()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(data))
+        self.finish()
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
@@ -408,10 +410,7 @@ class EffectImage(web.RequestHandler):
         uri = self.get_argument('uri')
 
         try:
-            if image == "thumbnail":
-                data = get_plugin_info_mini(uri)
-            else:
-                data = get_plugin_info(uri)
+            data = get_plugin_info_mini(uri)
         except:
             raise web.HTTPError(404)
 
