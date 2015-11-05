@@ -338,7 +338,7 @@ JqueryClass('cloudPluginBox', {
                         allplugins[lplugin.uri] = lplugin
                         desktop.pluginIndexer.add({
                             id: lplugin.uri,
-                            data: [lplugin.uri, lplugin.brand, lplugin.name, lplugin.category.join(" ")].join(" ")
+                            data: [lplugin.uri, lplugin.name, lplugin.brand, lplugin.comment, lplugin.category.join(" ")].join(" "),
                         })
                     }
                     desktop.pluginIndexerData = allplugins
