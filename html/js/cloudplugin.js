@@ -121,10 +121,11 @@ JqueryClass('cloudPluginBox', {
         */
         var self = $(this)
         var results = {}
-        var plugins = []
-        var plugin, lplugin;
+        var cplugin, lplugin;
 
         renderResults = function () {
+            var plugin, plugins = []
+
             for (var i in results.cloud) {
                 plugin  = results.cloud[i]
                 lplugin = results.local[plugin.uri]
@@ -206,10 +207,10 @@ JqueryClass('cloudPluginBox', {
             $.ajax({
                 'method': 'GET',
                 'url': '/effect/list',
-                'success': function (lplugins) {
+                'success': function (plugins) {
                     var allplugins = {}
-                    for (var i in lplugins) {
-                        lplugin = lplugins[i]
+                    for (var i in plugins) {
+                        lplugin = plugins[i]
                         lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
 
                         allplugins[lplugin.uri] = lplugin
@@ -243,10 +244,11 @@ JqueryClass('cloudPluginBox', {
             return self.cloudPluginBox('searchAll', query)
 
         var results = {}
-        var plugin, cplugin, lplugin
+        var cplugin, lplugin
 
         renderResults = function () {
-            var plugins = []
+            var plugin, plugins = []
+
             for (var i in results.local) {
                 plugin  = results.local[i]
                 cplugin = results.cloud[plugin.uri]
@@ -268,6 +270,7 @@ JqueryClass('cloudPluginBox', {
                 self.cloudPluginBox('checkLocalScreenshot', plugin)
                 plugins.push(plugin)
             }
+
             self.cloudPluginBox('showPlugins', plugins)
         }
 
@@ -294,15 +297,15 @@ JqueryClass('cloudPluginBox', {
         if (term)
         {
             var allplugins = desktop.pluginIndexerData
-            var plugins    = []
+            var lplugins   = []
 
             var ret = desktop.pluginIndexer.search(term)
             for (var i in ret) {
                 var uri = ret[i].ref
-                plugins.push(allplugins[uri])
+                lplugins.push(allplugins[uri])
             }
 
-            results.local = plugins
+            results.local = lplugins
             if (results.cloud != null)
                 renderResults()
         }
@@ -313,14 +316,14 @@ JqueryClass('cloudPluginBox', {
                 'url': '/effect/list',
                 'success': function (plugins) {
                     var allplugins = {}
-                    for (var i=0; i<plugins.length; i++) {
+                    for (var i in plugins) {
                         lplugin = plugins[i]
-                        lplugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
 
-                        allplugins[plugin.uri] = plugin
+                        allplugins[lplugin.uri] = lplugin
                         desktop.pluginIndexer.add({
-                            id: plugin.uri,
-                            data: [plugin.uri, plugin.brand, plugin.name, plugin.category.join(" ")].join(" ")
+                            id: lplugin.uri,
+                            data: [lplugin.uri, lplugin.brand, lplugin.name, lplugin.category.join(" ")].join(" ")
                         })
                     }
                     desktop.pluginIndexerData = allplugins
