@@ -142,8 +142,8 @@ JqueryClass('cloudPluginBox', {
                     plugin.status = 'blocked'
                 } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
                     plugin.status = 'installed'
-                } else {                    
-                    plugin.status = 'outdated'                    
+                } else {
+                    plugin.status = 'outdated'
                 }
 
                 if (plugin.installedVersion != null) {
@@ -173,7 +173,7 @@ JqueryClass('cloudPluginBox', {
             for (i in results.cloud) {
                 plugin  = results.cloud[i]
                 lplugin = results.local[plugin.uri]
-                if (lplugin) {                    
+                if (lplugin) {
                     //plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] RELEASE NOT WORKING
                     plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion|| 0]
                     //plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0] RELEASE NOT WRKIN
@@ -183,8 +183,8 @@ JqueryClass('cloudPluginBox', {
                         plugin.status = 'blocked'
                     } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
                         plugin.status = 'installed'
-                    } else {                    
-                        plugin.status = 'outdated'                    
+                    } else {
+                        plugin.status = 'outdated'
                     }
 
                     if (plugin.installedVersion != null) {
@@ -196,7 +196,7 @@ JqueryClass('cloudPluginBox', {
                             plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                         }
                     }
-                    plugins.push(plugin)                    
+                    plugins.push(plugin)
                 }
                 else {
                     self.cloudPluginBox('checkLocalScreenshot', plugin)
@@ -270,7 +270,7 @@ JqueryClass('cloudPluginBox', {
                 if (!plugin.screenshot_available && !plugin.thumbnail_available) {
                     plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                     plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
-                }                
+                }
                 plugins.push(plugin)
             }
             self.data('allPlugins', plugins)
@@ -340,7 +340,7 @@ JqueryClass('cloudPluginBox', {
                 } else {
                     plugin.latestVersion = [0, 0]
                 }
-                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion || 0]                
+                plugin.installedVersion = [plugin.minorVersion, plugin.microVersion || 0]
                 plugin.status = 'installed'
                 plugins.push(plugin)
             }
@@ -448,7 +448,7 @@ JqueryClass('cloudPluginBox', {
         if(plugin.bundles) { // FIXME
             if(plugin.bundles.length > 0) {
                 bundle = plugin.bundles[0].replace(/\.lv2$/, '')
-            }            
+            }
             else {
                 bundle = plugin.bundles[0]
             }
@@ -456,7 +456,7 @@ JqueryClass('cloudPluginBox', {
         else {
             bundle = plugin.brand
         }
-        
+
 
         var plugin_data = {
             thumbnail_href: plugin.thumbnail_href,
