@@ -430,27 +430,32 @@ JqueryClass("presetManager", {
 
     addPresets: function (presets) {
         var self = $(this);
-        for (p in presets) {
-            var li = $("<li>");
-            li.presetEntry(presets[p]);
-            li.appendTo(self.data("presetManagerElements").list);
-            li.on("clicked", function (e) {
-                self.presetManager("setPresetName", $(this).data("presetEntryOptions").name);
-            });
-            li.on("rename", function (e, name, options) {
-                self.trigger("rename", [self.data("presetManagerOptions").instance, name, options]);
-            });
-            li.click( function (e) { e.stopPropagation(); });
-            li.data("presetEntryElements").remove.on("confirm", function () {
-                self.data("presetManagerOptions").confirmations++;
-            });
-            li.data("presetEntryElements").remove.on("cancel", function () {
-                self.data("presetManagerOptions").confirmations--;
-            });
-        }
+        for (p in presets)
+            self.presetManager("addPreset", presets[p]);
         return self;
     },
-
+    
+    addPreset: function (preset) {
+        var self = $(this);
+        var li = $("<li>");
+        li.presetEntry(preset);
+        li.appendTo(self.data("presetManagerElements").list);
+        li.on("clicked", function (e) {
+            self.presetManager("setPresetName", $(this).data("presetEntryOptions").name);
+        });
+        li.on("rename", function (e, name, options) {
+            self.trigger("rename", [self.data("presetManagerOptions").instance, name, options]);
+        });
+        li.click( function (e) { e.stopPropagation(); });
+        li.data("presetEntryElements").remove.on("confirm", function () {
+            self.data("presetManagerOptions").confirmations++;
+        });
+        li.data("presetEntryElements").remove.on("cancel", function () {
+            self.data("presetManagerOptions").confirmations--;
+        });
+        return self;
+    },
+    
     setPresets: function (instance, presets) {
         var self = $(this);
         self.data("presetManagerOptions").instance = instance
@@ -487,7 +492,7 @@ JqueryClass("presetManager", {
         var e = self.data("presetManagerElements");
         e.list.children().each( function () {
             var t = $(this);
-            if (t.data("presetManagerOptions").name.toLowerCase().indexOf(string.toLowerCase()) >= 0)
+            if (t.data("presetEntryOptions").name.toLowerCase().indexOf(string.toLowerCase()) >= 0)
                 t.css("height", "");
             else
                 t.css("height", 0);
@@ -559,6 +564,7 @@ JqueryClass("presetManager", {
     },
 
     entryKeyup: function(e) {
+        e.stopPropagation();
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
         entry.attr('size', Math.max(entry.val().length, 1));
@@ -582,9 +588,10 @@ JqueryClass("presetManager", {
         var self = $(this);
         var entry = self.data("presetManagerElements").entry;
         var p = self.presetManager("getPresetByName", entry.val());
-        if (p)
+        if (p) {
             self.trigger("load", [self.data("presetManagerOptions").instance, p.data("presetEntryOptions")]);
-        self.presetManager("deactivate");
+            self.presetManager("deactivate");
+        }
         return self;
     },
 
@@ -623,27 +630,36 @@ JqueryClass("presetEntry", {
         e.bind   = self.find(".mod-button-bind");
         e.edit   = self.find(".mod-button-edit");
         e.remove = self.find(".mod-button-remove");
-
-        e.bind.modButton({
-            icon: "bind",
-            tooltip: "Bind the preset to a controller",
-        }).on("action",function (e) { self.presetEntry("bind", e); });
-
-        e.edit.modButton({
-            icon: "edit",
-            tooltip: "Edit the presets name",
-        }).on("action", function (e) { self.presetEntry("editName", e); });
-
-        e.remove.modButton({
-            confirm: true,
-            question: "",
-            icon: "remove",
-            tooltip: "Remove this preset",
-        }).on("action", function (e) {
-                self.trigger("remove", [self.data("presetManagerOptions").instance, self.data("presetEntryOptions")]);
-                self.remove();
-        });
-
+        
+        if (options.bind) {
+            e.bind.modButton({
+                icon: "bind",
+                tooltip: "Bind the preset to a controller",
+            }).on("action",function (e) { self.presetEntry("bind", e); });
+            self.presetEntry("setBind", options.bind);
+        } else {
+            e.bind.css("display", "none");
+        }
+        if (!options.readonly) {
+            e.edit.modButton({
+                icon: "edit",
+                tooltip: "Edit the presets name",
+            }).on("action", function (e) { self.presetEntry("editName", e); });
+    
+            e.remove.modButton({
+                confirm: true,
+                question: "",
+                icon: "remove",
+                tooltip: "Remove this preset",
+            }).on("action", function (e) {
+                    self.trigger("remove", [self.data("presetManagerOptions").instance, self.data("presetEntryOptions")]);
+                    self.remove();
+            });
+        } else {
+            e.edit.css("display", "none");
+            e.remove.css("display", "none");
+        }
+        
         e.entry.on("keyup", function (e) { self.presetEntry("typing", e); });
 
         e.name.on("click", function () { self.trigger("clicked"); });
@@ -652,7 +668,6 @@ JqueryClass("presetEntry", {
 
         self.data("presetEntryOptions", options);
         self.data("presetEntryElements", e);
-        self.presetEntry("setBind", options.bind);
         self.presetEntry("setName", options.name);
         return self;
     },
@@ -661,6 +676,7 @@ JqueryClass("presetEntry", {
         var e = self.data("presetEntryElements");
         switch (bind) {
             default:
+                break;
             case MOD_BIND_NONE:
                 e.bind.modButton("setIcon", "disconnected");
                 break;

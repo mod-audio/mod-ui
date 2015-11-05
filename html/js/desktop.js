@@ -561,13 +561,17 @@ function Desktop(elements) {
     })
 
     this.presetManager = elements.presetManager.presetManager({});
+    /*
+     * bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
+     */
+    
     this.presetManager.presetManager("setPresets", "", [
-        { name: "Foobar", uri: "whatever", bind: MOD_BIND_MIDI },
-        { name: "Barfoo", uri: "whatever", bind: MOD_BIND_NONE },
-        { name: "myFirstPreset", uri: "whatever", bind: MOD_BIND_KNOB },
-        { name: "Two Presets One Plugin", uri: "whatever", bind: MOD_BIND_FOOTSWITCH },
-        { name: "Teserp", uri: "whatever", bind: MOD_BIND_MIDI },
-        { name: "ƚɘƨɘɿꟼ", uri: "whatever", bind: MOD_BIND_NONE },
+        { name: "Foobar", uri: "whatever", bind: false, readonly: true },
+        { name: "Barfoo", uri: "whatever", bind: false, readonly: true },
+        { name: "myFirstPreset", uri: "whatever", bind: false, readonly: true },
+        { name: "Two Presets One Plugin", uri: "whatever", bind: false, readonly: true },
+        { name: "Teserp", uri: "whatever", bind: false, readonly: true },
+        { name: "ƚɘƨɘɿꟼ", uri: "whatever", bind: false, readonly: true },
     ]);
     this.presetManager.on("load", function (e, instance, options) {
         console.log("load", options);
