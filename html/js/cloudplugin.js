@@ -113,7 +113,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    // search cloud and local plugins, show all
+    // search cloud and local plugins, show all but prefer cloud
     searchAll: function (query) {
        /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
           Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
@@ -124,44 +124,47 @@ JqueryClass('cloudPluginBox', {
         var cplugin, lplugin;
 
         renderResults = function () {
-            var plugin, plugins = []
+            var plugins = []
 
             for (var i in results.cloud) {
-                plugin  = results.cloud[i]
-                lplugin = results.local[plugin.uri]
+                cplugin = results.cloud[i]
+                lplugin = results.local[cplugin.uri]
 
                 if (lplugin) {
-                    plugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
-                    delete results.local[plugin.uri]
-                }
-
-                plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
-
-                if (plugin.installedVersion == null) {
-                    plugin.status = 'blocked'
-                } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
-                    plugin.status = 'installed'
+                    cplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                    delete results.local[cplugin.uri]
                 } else {
-                    plugin.status = 'outdated'
+                    cplugin.installedVersion = [0, 0, 0]
                 }
 
-                if (plugin.installedVersion != null) {
-                    self.cloudPluginBox('checkLocalScreenshot', plugin)
+                cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
+
+                if (cplugin.installedVersion == null) {
+                    cplugin.status = 'blocked'
+                } else if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) == 0) {
+                    cplugin.status = 'installed'
+                } else {
+                    cplugin.status = 'outdated'
                 }
-                if (!plugin.screenshot_available && !plugin.thumbnail_available) {
-                    if (!plugin.screenshot_href && !plugin.thumbnail_href) {
-                        plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
-                        plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+
+                if (cplugin.installedVersion != null) {
+                    self.cloudPluginBox('checkLocalScreenshot', cplugin)
+                }
+                if (!cplugin.screenshot_available && !cplugin.thumbnail_available) {
+                    if (!cplugin.screenshot_href && !cplugin.thumbnail_href) {
+                        cplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                        cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
 
-                plugins.push(plugin)
+                plugins.push(cplugin)
             }
 
             for (var uri in results.local) {
                 lplugin = results.local[uri]
                 // FIXME
-                if (!lplugin) { continue }
+                //if (!lplugin) { continue }
+                lplugin.latestVersion = [0, 0, 0]
                 lplugin.status = 'installed'
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
                 plugins.push(lplugin)
@@ -247,28 +250,37 @@ JqueryClass('cloudPluginBox', {
         var cplugin, lplugin
 
         renderResults = function () {
-            var plugin, plugins = []
+            var plugins = []
 
             for (var i in results.local) {
-                plugin  = results.local[i]
-                cplugin = results.cloud[plugin.uri]
+                lplugin = results.local[i]
+                cplugin = results.cloud[lplugin.uri]
 
                 if (cplugin) {
-                    plugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
+                    lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
                 } else {
-                    plugin.latestVersion = [0, 0, 0]
+                    lplugin.latestVersion = [0, 0, 0]
                 }
 
-                if (plugin.installedVersion == null) {
-                    plugin.status = 'blocked'
-                } else if (compareVersions(plugin.installedVersion, plugin.latestVersion) == 0) {
-                    plugin.status = 'installed'
+                /*if (lplugin.installedVersion == null) {
+                    lplugin.status = 'blocked'
+                } else*/
+                if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) == 0) {
+                    lplugin.status = 'installed'
                 } else {
-                    plugin.status = 'outdated'
+                    lplugin.status = 'outdated'
                 }
 
-                self.cloudPluginBox('checkLocalScreenshot', plugin)
-                plugins.push(plugin)
+                // we're showing installed only, so prefer to show installed modgui screenshot
+                if (lplugin.gui) {
+                    lplugin.screenshot_href = "/effect/image/screenshot.png?uri=" + escape(lplugin.uri)
+                    lplugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + escape(lplugin.uri)
+                } else {
+                    lplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
+                    lplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
+                }
+
+                plugins.push(lplugin)
             }
 
             self.cloudPluginBox('showPlugins', plugins)
