@@ -721,20 +721,35 @@ hr.dotted {
     display: inline-block;
     z-index: 0;
   }
-  .plugin_desciption {
-    background: -moz-linear-gradient(left, rgba(255,255,255,0) 1em, #fff 2em);
-    background: -webkit-gradient(linear, left top, right top, color-stop(1em, rgba(255,255,255,0)), color-stop(2em, #fff));
-    /* background: -webkit-linear-gradient(left, rgba(255,255,255,0) 1em, #fff 2em); */
-    background: -o-linear-gradient(left, rgba(255,255,255,0) 1em, #fff 2em);
-    background: -ms-linear-gradient(left, rgba(255,255,255,0) 1em, #fff 2em);
-    /* background: linear-gradient(to right, rgba(255,255,255,0) 1em, #fff 2em); */
+  figure {
+    .make-md-column(4);
+    &:hover {
+      z-index: 10 !important;
+    }
+  }
+  .plugin-description {
+    .make-md-column(7);    
+    height: 100%;
+    display: block;
+    position: a;
+    padding-bottom: 20%;
+    padding-left: 45px;
+    @gradient1: rgba(17,17,17,0);
+    @gradient2: rgba(17,17,17,1);
+    background: -moz-linear-gradient(left, @gradient1 1em, @gradient2 2em);
+    background: -webkit-gradient(linear, left top, right top, color-stop(1em, @gradient1), color-stop(2em, @gradient2));
+    background: -webkit-linear-gradient(left, @gradient1 1em, @gradient2 2em);
+    background: -o-linear-gradient(left, @gradient1 1em, @gradient2 2em);
+    background: -ms-linear-gradient(left, @gradient1 1em, @gradient2 2em);
+    background: linear-gradient(to right, @gradient1 1em, @gradient2 2em);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00ffffff', endColorstr='#ffffff', GradientType=1);
   }
   header {
     padding: 18px 0 0;
     h1 {
       color: #fff;
-      font-size: 21px;
+      font-size: 27px;
+      font-weight: bold;
       line-height: 1;
       margin: 0;
       padding: 0;
