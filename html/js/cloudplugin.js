@@ -130,26 +130,25 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
+                cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
+
                 if (lplugin) {
                     cplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
                     delete results.local[cplugin.uri]
+
+                    if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) == 0) {
+                        cplugin.status = 'installed'
+                    } else {
+                        cplugin.status = 'outdated'
+                    }
+
+                    self.cloudPluginBox('checkLocalScreenshot', cplugin)
+
                 } else {
                     cplugin.installedVersion = [0, 0, 0]
-                }
-
-                cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
-
-                if (cplugin.installedVersion == null) {
                     cplugin.status = 'blocked'
-                } else if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) == 0) {
-                    cplugin.status = 'installed'
-                } else {
-                    cplugin.status = 'outdated'
                 }
 
-                if (cplugin.installedVersion != null) {
-                    self.cloudPluginBox('checkLocalScreenshot', cplugin)
-                }
                 if (!cplugin.screenshot_available && !cplugin.thumbnail_available) {
                     if (!cplugin.screenshot_href && !cplugin.thumbnail_href) {
                         cplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
@@ -260,17 +259,15 @@ JqueryClass('cloudPluginBox', {
 
                 if (cplugin) {
                     lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
+
+                    if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) == 0) {
+                        lplugin.status = 'installed'
+                    } else {
+                        lplugin.status = 'outdated'
+                    }
                 } else {
                     lplugin.latestVersion = [0, 0, 0]
-                }
-
-                /*if (lplugin.installedVersion == null) {
-                    lplugin.status = 'blocked'
-                } else*/
-                if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) == 0) {
                     lplugin.status = 'installed'
-                } else {
-                    lplugin.status = 'outdated'
                 }
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
