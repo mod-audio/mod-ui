@@ -162,8 +162,6 @@ JqueryClass('cloudPluginBox', {
 
             for (var uri in results.local) {
                 lplugin = results.local[uri]
-                // FIXME
-                //if (!lplugin) { continue }
                 lplugin.latestVersion = [0, 0, 0]
                 lplugin.status = 'installed'
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
@@ -228,7 +226,7 @@ JqueryClass('cloudPluginBox', {
                     }
                     desktop.pluginIndexerData = allplugins
 
-                    results.local = allplugins
+                    results.local = $.extend({}, allplugins)
                     if (results.cloud != null)
                         renderResults()
                 },
