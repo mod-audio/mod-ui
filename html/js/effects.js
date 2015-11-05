@@ -156,10 +156,10 @@ JqueryClass('effectBox', {
 
         if (term)
         {
-            allplugins = self.data('allplugins')
-            plugins    = []
+            var allplugins = desktop.pluginIndexerData
+            var plugins    = []
 
-            ret = desktop.pluginIndexer.search(term)
+            var ret = desktop.pluginIndexer.search(term)
             for (var i in ret) {
                 var uri = ret[i].ref
                 plugins.push(allplugins[uri])
@@ -174,7 +174,7 @@ JqueryClass('effectBox', {
                 'url': '/effect/list',
                 'success': function (plugins) {
                     var allplugins = {}
-                    for (var i=0; i<plugins.length; i++) {
+                    for (var i in plugins) {
                         var plugin = plugins[i]
                         plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
 
@@ -184,7 +184,7 @@ JqueryClass('effectBox', {
                             data: [plugin.uri, plugin.brand, plugin.name, plugin.category.join(" ")].join(" ")
                         })
                     }
-                    self.data('allplugins', allplugins)
+                    desktop.pluginIndexerData = allplugins
                     self.effectBox('showPlugins', plugins)
                 },
                 'dataType': 'json'

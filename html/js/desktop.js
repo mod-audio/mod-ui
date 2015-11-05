@@ -91,6 +91,7 @@ function Desktop(elements) {
         this.requireAllTerms = true
     })
 
+    this.pluginIndexerData = {}
     this.pedalboardIndexerData = {}
 
     this.netStatus = elements.networkIcon.statusTooltip()
@@ -564,7 +565,7 @@ function Desktop(elements) {
     /*
      * bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
      */
-    
+
     this.presetManager.presetManager("setPresets", "", [
         { name: "Foobar", uri: "whatever", bind: false, readonly: true },
         { name: "Barfoo", uri: "whatever", bind: false, readonly: true },
