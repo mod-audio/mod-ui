@@ -454,11 +454,13 @@ JqueryClass('cloudPluginBox', {
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: bundle,
+            description: plugin.comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label
         }
+        console.log(plugin_data)
 
         var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
 
