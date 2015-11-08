@@ -6113,20 +6113,10 @@ button.close {
   margin-bottom: 10px;
 }
 .cloud-plugins .cloud-plugin .description {
-  position: relative;
-  min-height: 1px;
-  padding-left: 15px;
-  padding-right: 15px;
   display: block;
   line-height: 1.5;
-  max-height: 99px;
+  height: 99px;
   overflow: hidden;
-}
-@media (min-width: 768px) {
-  .cloud-plugins .cloud-plugin .description {
-    float: left;
-    width: 66.66666667%;
-  }
 }
 .cloud-plugins .cloud-plugin .description .no_description {
   color: #444;
@@ -6136,6 +6126,7 @@ button.close {
   width: 100%;
   height: 18px;
   bottom: 0;
+  margin-bottom: 32px;
   z-index: 10;
   background: -moz-linear-gradient(top, rgba(17, 17, 17, 0) 0%, #111111 100%);
   /* FF3.6+ */
@@ -6163,7 +6154,7 @@ button.close {
 .cloud-plugins .cloud-plugin .status {
   display: inline-block;
   padding: 1px 4px;
-  margin: 10px 15px;
+  margin-top: 10px;
   text-align: center;
   border-radius: 2px;
   text-transform: uppercase;
@@ -6918,12 +6909,12 @@ hr.dotted {
   position: a;
   padding-bottom: 20%;
   padding-left: 45px;
-  background: -moz-linear-gradient(left, rgba(17, 17, 17, 0) 1em, #111111 2em);
-  background: -webkit-gradient(linear, left top, right top, color-stop(1em, rgba(17, 17, 17, 0)), color-stop(2em, #111111));
-  background: -webkit-linear-gradient(left, rgba(17, 17, 17, 0) 1em, #111111 2em);
-  background: -o-linear-gradient(left, rgba(17, 17, 17, 0) 1em, #111111 2em);
-  background: -ms-linear-gradient(left, rgba(17, 17, 17, 0) 1em, #111111 2em);
-  background: linear-gradient(to right, rgba(17, 17, 17, 0) 1em, #111111 2em);
+  background: -moz-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: -webkit-gradient(linear, left top, right top, color-stop(1em, rgba(17, 17, 17, 0.1)), color-stop(2em, #111111));
+  background: -webkit-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: -o-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: -ms-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: linear-gradient(to right, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00ffffff', endColorstr='#ffffff', GradientType=1);
 }
 @media (min-width: 992px) {

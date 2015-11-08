@@ -10,7 +10,7 @@
                 <div class="plugin-description">
                     <header>
                         <h1>{{label}}</h1>
-                        <p>{{category.0}}</p>
+                        <p>{{category}}</p>
                         <p class="version">
                             <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span></span>
                             <br/>
@@ -21,7 +21,26 @@
                             <button class="js-remove btn btn-danger btn-mini">Remove</button>
                         </p>
                     </header>
-                    <p><a href="http://wiki.moddevices.com/wiki/Plugins/{{package_name}}" target="_blank">More info at <b>{{package_name}}</b>'s wiki page</a></p>
+                    <p>{{comment}}</p>
+                        <table class="plugin-specs table table-bordered">
+                        <tr>
+                            <th>control</th>
+                            <th>default</th>
+                            <th>min</th>
+                            <th>max</th>
+                        </tr>
+                        {{#ports.control.input}}
+                        <tr>
+                            <td>{{name}}</td>
+                            <td>{{ranges.default}}</td>
+                            <td>{{ranges.minimum}}</td>
+                            <td>{{ranges.maximum}}</td>
+                        </tr>
+                        {{/ports.control.input}}
+                        </table>
+                    <footer>
+                        <p><a href="http://wiki.moddevices.com/wiki/Plugins/{{package_name}}" target="_blank">More info at <b>{{package_name}}</b>'s wiki page</a></p>
+                    </footer>
             </div>
         </div>
     </div>
