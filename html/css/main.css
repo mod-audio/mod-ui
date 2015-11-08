@@ -6317,6 +6317,9 @@ body {
 * {
   font-family: "cooper hewitt", Sans-serif !important;
 }
+.ui-draggable:active {
+  cursor: -webkit-grabbing !important;
+}
 .form-control {
   width: 100% !important;
 }
@@ -6669,10 +6672,13 @@ hr.dotted {
 }
 #plugins-library #plugins-library-settings-window {
   background: #000;
-  bottom: 167px;
+  bottom: 166px;
   color: #fff;
   position: absolute;
-  right: 0;
+  right: 37px;
+  padding: 5px 0;
+  border-radius: 5px;
+  border-bottom-right-radius: 0;
 }
 #plugins-library #plugins-library-settings-window h1 {
   font-size: 14px;
@@ -6699,20 +6705,24 @@ hr.dotted {
   border-radius: 12px;
   color: #fff;
   cursor: pointer;
-  font-size: 8px;
   height: 18px;
   left: auto !important;
   position: absolute;
   right: 13px !important;
   text-align: center;
   text-transform: uppercase;
-  top: 31px !important;
+  top: 47px !important;
   width: 18px;
 }
+#plugins-library #plugins-library-settings-window .input-clean:after {
+  content: "&times;";
+  content: "\00d7";
+  font-size: 13px;
+  font-weight: bold;
+}
 #plugins-library ul {
-  height: 26px;
   list-style: none;
-  margin: 0 73px 0 0;
+  margin: 6px 73px 0 0;
   overflow: hidden;
   padding: 10px 0 0 0;
   position: relative;
@@ -6721,7 +6731,7 @@ hr.dotted {
 #plugins-library ul li {
   background: #1b1b1b;
   color: #fff;
-  cursor: pointer;
+  cursor: pointer !important;
   display: inline-block;
   float: left;
   font-size: 11px;
@@ -6786,7 +6796,11 @@ hr.dotted {
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .thumb {
   height: 67px;
+  cursor: -webkit-grab !important;
   position: relative;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .thumb:active {
+  cursor: -webkit-grabbing !important;
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .thumb img {
   height: auto;
@@ -7418,7 +7432,7 @@ hr.dotted {
 #bank-pedalboards .pedalboard {
   border-top: 1px dotted #111;
   color: #fff;
-  cursor: move;
+  cursor: -webkit-grabbing !important;
   padding-top: 10px;
   width: 100%;
 }
@@ -7506,7 +7520,7 @@ hr.dotted {
 #bank-pedalboards-result .pedalboard {
   border-top: 1px dotted #444;
   color: #fff;
-  cursor: move;
+  cursor: -webkit-grabbing !important;
   float: left;
   margin: 10px 2.5% 0;
   padding: 10px 0;
@@ -7664,7 +7678,7 @@ hr.dotted {
 }
 .drag-handle {
   bottom: 0;
-  cursor: move;
+  cursor: -webkit-grabbing !important;
   left: 0;
   position: absolute;
   right: 0;

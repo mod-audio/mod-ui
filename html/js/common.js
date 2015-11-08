@@ -40,7 +40,7 @@ function JqueryClass(name, methods) {
 (function ($) {
     $.fn.cleanableInput = function (options) {
         var self = $(this)
-        var remove = $('<span class="input-clean">x</span>')
+        var remove = $('<span class="input-clean"></span>')
         remove.insertAfter(self)
 
         var position = function () {
