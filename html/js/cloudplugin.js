@@ -403,7 +403,6 @@ JqueryClass('cloudPluginBox', {
 
     renderPlugin: function (plugin, index, canvas) {
         var self = $(this)
-        var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
         var comment = plugin.comment
         var has_description = ""
@@ -419,10 +418,11 @@ JqueryClass('cloudPluginBox', {
             description: comment,
             uri: uri,
             status: plugin.status,
+            brand : plugin.brand,
             label : plugin.label,
         }
 
-        var rendered = $(Mustache.render(template, plugin_data))
+        var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin, index)
         })
