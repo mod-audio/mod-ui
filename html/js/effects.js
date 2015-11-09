@@ -318,20 +318,39 @@ JqueryClass('effectBox', {
     showPluginInfo: function (plugin) {
         var self = $(this)
 
-        plugin.title = plugin.name.split(/\s*-\s*/)[0]
-        plugin.subtitle = plugin.name.split(/\s*-\s*/)[1]
-        plugin.installed_version = version(plugin.installedVersion)
-        plugin.latest_version = version(plugin.latestVersion)
-        plugin.package_name = "TODO" //plugin.package.replace(/\.lv2$/, '')
-        plugin.description = (plugin.description || '').replace(/\n/g, '<br\>\n') // API RETURNS NO DESCRIPTIONS AT ALL
-        plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + escape(plugin.uri)
+        var uri = escape(plugin.uri)
+        var comment = plugin.comment
+        var has_description = ""
+        if(!comment) {
+            comment = "No description available";
+            has_description = "no_description";
+        }
+        var plugin_data = {
+            thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
+                          ? "/effect/image/thumbnail.png?uri=" + uri
+                          : "/resources/pedals/default-thumbnail.png",
+            screenshot_href: (plugin.gui && plugin.gui.screenshot)
+                           ? "/effect/image/screenshot.png?uri=" + uri
+                           : "/resources/pedals/default-screenshot.png",
+            category: plugin.category[0] || "",
+            installed_version: plugin.installedVersion.join("."),
+            latest_version: plugin.latestVersion ? plugin.latestVersion.join(".") : "none",
+            package_name: "", // TODO
+            description: comment,
+            uri: uri,
+            status: plugin.status,
+            name  : plugin.name
+        }
 
-        var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin))
+        var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
 
         //hide install etc buttons
         info.find('.js-remove').hide()
         info.find('.js-install').hide()
         info.find('.js-upgrade').hide()
+
+        //hide latest version on plugin bar
+        info.find('.js-latest-version').hide()
 
         if (plugin.rating)
             $(info.find('.rating')[0]).addClass(['', 'one', 'two', 'three', 'four', 'five'][Math.round(plugin.rating)])

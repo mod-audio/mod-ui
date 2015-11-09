@@ -405,20 +405,21 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
-        if(!plugin.comment) {
-            plugin.comment = 'No description available';
-            plugin.has_description = 'no_description';
+        var comment = plugin.comment
+        var has_description = ""
+        if(!comment) {
+            comment = "No description available";
+            has_description = "no_description";
         }
         var plugin_data = {
-            id: plugin.id || plugin._id,
+            id: plugin.id || plugin._id, // FIXME: id or _id??
             thumbnail_href: plugin.thumbnail_href,
             screenshot_href: plugin.screenshot_href,
-            has_description: plugin.has_description,
-            description: plugin.comment,
+            has_description: has_description,
+            description: comment,
             uri: uri,
             status: plugin.status,
-            brand : plugin.brand,
-            label : plugin.label
+            label : plugin.label,
         }
 
         var rendered = $(Mustache.render(template, plugin_data))
@@ -454,11 +455,11 @@ JqueryClass('cloudPluginBox', {
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: bundle,
-            description: plugin.comment,
+            comment: plugin.comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
-            label : plugin.label
+            name  : plugin.name
         }
         console.log(plugin_data)
 
