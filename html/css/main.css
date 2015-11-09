@@ -5978,7 +5978,7 @@ button.close {
   border-style: dotted;
   border-width: 0 1px 0 0;
   bottom: 46px;
-  left: 10px;
+  left: 0;
   padding-top: 18px;
   position: fixed;
   top: 0;
@@ -5990,7 +5990,7 @@ button.close {
   font-weight: 2em;
   text-transform: uppercase;
   font-weight: bold;
-  margin: 0;
+  margin: 0 0 0 10px;
 }
 #cloud-plugins-library .filter h2 {
   color: white;
@@ -5998,10 +5998,12 @@ button.close {
   text-transform: uppercase;
   font-weight: bold;
   margin-top: 1em;
+  margin-left: 10px;
 }
 #cloud-plugins-library .filter .control-group {
   float: left;
   margin-right: 9px;
+  margin-left: 10px;
 }
 #cloud-plugins-library .filter .control-group label {
   color: #fff;
@@ -6011,6 +6013,9 @@ button.close {
 }
 #cloud-plugins-library .filter .control-group select {
   width: 50px;
+}
+#cloud-plugins-library .filter > .form-group {
+  padding: 15px;
 }
 #cloud-plugins-library .filter .categories {
   width: 100%;
@@ -6025,22 +6030,23 @@ button.close {
   font-size: 12px;
   font-weight: bold;
   margin: 0 0 1px 0;
-  padding: 5px 5px;
+  padding: 5px 15px;
   position: relative;
 }
 #cloud-plugins-library .filter .categories li span {
   float: right;
 }
 #cloud-plugins-library .filter .categories li.selected {
-  background: transparent;
+  background: #fff !important;
 }
 #cloud-plugins-library .filter .categories li:hover {
   background: #333;
 }
 .cloud-plugins {
-  left: 252px;
+  left: 242px;
   position: absolute;
-  right: 10px;
+  right: 0;
+  background: #111 !important;
 }
 .cloud-plugins .plugins-wrapper {
   width: 100%;
@@ -6077,6 +6083,7 @@ button.close {
 .cloud-plugins .cloud-plugin:hover {
   background-color: #212121;
   cursor: pointer;
+  border-radius: 5px;
 }
 .cloud-plugins .cloud-plugin:hover .description .see_more {
   background: -moz-linear-gradient(top, rgba(33, 33, 33, 0) 0%, #212121 100%);
@@ -6126,7 +6133,7 @@ button.close {
   width: 100%;
   height: 18px;
   bottom: 0;
-  margin-bottom: 32px;
+  margin-bottom: 25px;
   z-index: 10;
   background: -moz-linear-gradient(top, rgba(17, 17, 17, 0) 0%, #111111 100%);
   /* FF3.6+ */
@@ -6796,7 +6803,7 @@ hr.dotted {
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .thumb {
   height: 67px;
-  cursor: -webkit-grab !important;
+  cursor: pointer !important;
   position: relative;
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .thumb:active {
@@ -7166,7 +7173,7 @@ hr.dotted {
   border-style: dotted;
   border-width: 0 1px 0 0;
   bottom: 46px;
-  left: 10px;
+  left: 0;
   padding-top: 18px;
   position: fixed;
   right: 0;

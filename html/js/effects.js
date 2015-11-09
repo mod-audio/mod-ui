@@ -325,9 +325,13 @@ JqueryClass('effectBox', {
         plugin.package_name = "TODO" //plugin.package.replace(/\.lv2$/, '')
         plugin.description = (plugin.description || '').replace(/\n/g, '<br\>\n') // API RETURNS NO DESCRIPTIONS AT ALL
         plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + escape(plugin.uri)
-        console.log(plugin)
 
         var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin))
+
+        //hide install etc buttons
+        info.find('.js-remove').hide()
+        info.find('.js-install').hide()
+        info.find('.js-upgrade').hide()
 
         if (plugin.rating)
             $(info.find('.rating')[0]).addClass(['', 'one', 'two', 'three', 'four', 'five'][Math.round(plugin.rating)])
