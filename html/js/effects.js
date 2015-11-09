@@ -335,7 +335,7 @@ JqueryClass('effectBox', {
             category: plugin.category[0] || "",
             installed_version: plugin.installedVersion.join("."),
             package_name: "", // TODO
-            description: comment,
+            comment: comment,
             uri: uri,
             status: plugin.status,
             name  : plugin.name
