@@ -334,7 +334,6 @@ JqueryClass('effectBox', {
                            : "/resources/pedals/default-screenshot.png",
             category: plugin.category[0] || "",
             installed_version: plugin.installedVersion.join("."),
-            latest_version: plugin.latestVersion ? plugin.latestVersion.join(".") : "none",
             package_name: "", // TODO
             description: comment,
             uri: uri,
