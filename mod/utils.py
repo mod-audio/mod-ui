@@ -197,6 +197,7 @@ class PluginPortScalePoint(Structure):
 class PluginPort(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("index", c_uint),
         ("name", c_char_p),
         ("symbol", c_char_p),
         ("ranges", PluginPortRanges),

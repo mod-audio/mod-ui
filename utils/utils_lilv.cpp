@@ -1579,6 +1579,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
             PluginPort portinfo;
             memset(&portinfo, 0, sizeof(PluginPort));
 
+            portinfo.index = i;
+
             // ----------------------------------------------------------------------------------------------------
             // name
 

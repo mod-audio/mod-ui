@@ -80,6 +80,7 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    unsigned int index;
     const char* name;
     const char* symbol;
     PluginPortRanges ranges;
