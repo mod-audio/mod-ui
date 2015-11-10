@@ -6899,7 +6899,7 @@ hr.dotted {
   top: 10px;
 }
 .plugin-info .screenshot {
-  padding: 18px 0 0;
+  padding: 18px;
   min-width: 3em;
   min-height: 9em;
   display: inline-block;
@@ -6943,6 +6943,11 @@ hr.dotted {
     float: left;
     width: 58.33333333%;
   }
+}
+.plugin-info .plugin-description > p {
+  font-size: 16px;
+  margin-bottom: 27px;
+  white-space: pre-wrap;
 }
 .plugin-info header {
   padding: 18px 0 0;

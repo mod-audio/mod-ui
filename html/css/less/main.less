@@ -731,7 +731,7 @@ hr.dotted {
     top: 10px;
   }
   .screenshot {
-    padding: 18px 0 0;
+    padding: 18px;
     min-width: 3em;
     min-height: 9em;
     display: inline-block;
@@ -744,7 +744,7 @@ hr.dotted {
     }
   }
   .plugin-description {
-    .make-md-column(7);    
+    .make-md-column(7);
     height: 100%;
     display: block;
     position: a;
@@ -759,6 +759,11 @@ hr.dotted {
     background: -ms-linear-gradient(left, @gradient1 1em, @gradient2 2em);
     background: linear-gradient(to right, @gradient1 1em, @gradient2 2em);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00ffffff', endColorstr='#ffffff', GradientType=1);
+    >p {
+      font-size: 16px;
+      margin-bottom: 27px;
+      white-space: pre-wrap;
+    }
   }
   header {
     padding: 18px 0 0;
