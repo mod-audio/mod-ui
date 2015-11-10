@@ -145,7 +145,7 @@ JqueryClass('cloudPluginBox', {
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
 
                 } else {
-                    cplugin.installedVersion = [0, 0, 0]
+                    cplugin.latestVersion = null //  if set to [0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
                 }
 
@@ -178,6 +178,7 @@ JqueryClass('cloudPluginBox', {
                 'search': query.term
             },
             'success': function (plugins) {
+                console.log('cloud: '+plugins.length)
                 results.cloud = plugins
                 if (results.local != null) {
                     renderResults()
@@ -212,6 +213,7 @@ JqueryClass('cloudPluginBox', {
                 'method': 'GET',
                 'url': '/effect/list',
                 'success': function (plugins) {
+                    console.log(' local: '+plugins.length)
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
@@ -403,26 +405,25 @@ JqueryClass('cloudPluginBox', {
 
     renderPlugin: function (plugin, index, canvas) {
         var self = $(this)
+        var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
-        var comment = plugin.comment
-        var has_description = ""
-        if(!comment) {
-            comment = "No description available";
-            has_description = "no_description";
+        if(!plugin.comment) {
+            plugin.comment = 'No description available';
+            plugin.has_description = 'no_description';
         }
         var plugin_data = {
-            id: plugin.id || plugin._id, // FIXME: id or _id??
+            id: plugin.id || plugin._id,
             thumbnail_href: plugin.thumbnail_href,
             screenshot_href: plugin.screenshot_href,
-            has_description: has_description,
-            description: comment,
+            has_description: plugin.has_description,
+            description: plugin.comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
-            label : plugin.label,
+            label : plugin.label
         }
 
-        var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
+        var rendered = $(Mustache.render(template, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin, index)
         })
@@ -455,11 +456,11 @@ JqueryClass('cloudPluginBox', {
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: bundle,
-            comment: plugin.comment,
+            comment: plugin.comment, //we need to decide between comment and description for overall use
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
-            name  : plugin.name
+            name : plugin.label // same here. name or label
         }
         console.log(plugin_data)
 
