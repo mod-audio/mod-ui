@@ -1722,32 +1722,46 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
 
                 if (LilvScalePoints* scalepoints = lilv_port_get_scale_points(p, port))
                 {
-                    unsigned int spindex = 0;
-                    const unsigned int scalepointcount = lilv_scale_points_size(scalepoints);
-
-                    PluginPortScalePoint* portsps = new PluginPortScalePoint[scalepointcount+1];
-                    memset(portsps, 0, sizeof(PluginPortScalePoint) * (scalepointcount+1));
-
-                    LILV_FOREACH(scale_points, itscl, scalepoints)
+                    if (const unsigned int scalepointcount = lilv_scale_points_size(scalepoints))
                     {
-                        if (spindex >= scalepointcount)
-                            continue;
+                        PluginPortScalePoint* portsps = new PluginPortScalePoint[scalepointcount+1];
+                        memset(portsps, 0, sizeof(PluginPortScalePoint) * (scalepointcount+1));
 
-                        const LilvScalePoint* scalepoint = lilv_scale_points_get(scalepoints, itscl);
-                        const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint);
-                        const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint);
+                        // get all scalepoints and sort them by value
+                        std::map<double,const LilvScalePoint*> sortedpoints;
 
-                        if (xlabel == nullptr || xvalue == nullptr)
-                            continue;
+                        LILV_FOREACH(scale_points, itscl, scalepoints)
+                        {
+                            const LilvScalePoint* scalepoint = lilv_scale_points_get(scalepoints, itscl);
+                            const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint);
+                            const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint);
 
-                        portsps[spindex++] = {
-                            true,
-                            lilv_node_as_float(xvalue),
-                            strdup(lilv_node_as_string(xlabel)),
-                        };
+                            if (xlabel == nullptr || xvalue == nullptr)
+                                continue;
+
+                            const double valueid = lilv_node_as_float(xvalue);
+                            sortedpoints[valueid] = scalepoint;
+                        }
+
+                        // now store them sorted
+                        unsigned int spindex = 0;
+                        for (auto& scalepoint : sortedpoints)
+                        {
+                            if (spindex >= scalepointcount)
+                                continue;
+
+                            const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint.second);
+                            const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint.second);
+
+                            portsps[spindex++] = {
+                                true,
+                                lilv_node_as_float(xvalue),
+                                strdup(lilv_node_as_string(xlabel)),
+                            };
+                        }
+
+                        portinfo.scalePoints = portsps;
                     }
-
-                    portinfo.scalePoints = portsps;
 
                     lilv_scale_points_free(scalepoints);
                 }
