@@ -33,7 +33,6 @@ from mod import symbolify
 #from mod.addressing import Addressing
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
-from mod.lv2 import add_bundle_to_lilv_world
 from mod.clipmeter import Clipmeter
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
