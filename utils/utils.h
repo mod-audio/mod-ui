@@ -226,6 +226,7 @@ MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
 
 // Get the size of a specific pedalboard
 // Returns a 2-size array with width and height
+// NOTE: may return null
 MOD_API int* get_pedalboard_size(const char* bundle);
 
 // Get port values from a plugin state

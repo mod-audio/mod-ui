@@ -432,7 +432,9 @@ def get_pedalboard_info(bundle):
     info = utils.get_pedalboard_info(bundle.encode("utf-8"))
     if not info:
         raise Exception
-    return structToDict(info.contents)
+    ret = structToDict(info.contents)
+    print(ret)
+    return ret
 
 # Get the size of a specific pedalboard
 # Returns a 2-size array with width and height

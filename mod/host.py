@@ -35,10 +35,7 @@ from mod import get_hardware
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_state_port_values
-
-# TODO
-from mod.lilvlib import get_pedalboard_info
+from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1
@@ -519,23 +516,22 @@ class Host(object):
         for p in pb['plugins']:
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
-            bypassed    = not p['enabled']
 
             self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
 
-            if bypassed:
+            if p['bypassed']:
                 self.send("bypass %d 1" % (instance_id,), lambda r:None)
 
             self.plugins[instance_id] = {
                 "instance"  : instance,
                 "uri"       : p['uri'],
-                "bypassed"  : bypassed,
+                "bypassed"  : p['bypassed'],
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
                 "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(p['uri'])),
             }
-            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(bypassed)))
+            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
         # TODO: set port values
 
