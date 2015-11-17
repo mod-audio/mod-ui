@@ -2928,13 +2928,21 @@ const PedalboardInfo* get_pedalboard_info(const char* bundle)
                     LilvNode* x       = lilv_world_get(w, block, ingen_canvasX, nullptr);
                     LilvNode* y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
 
+                    PedalboardPluginPort* ports = nullptr;
+
+                    if (LilvNodes* portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
+                    {
+                        lilv_nodes_free(portnodes);
+                    }
+
                     plugs[count++] = {
                         true,
                         instance,
                         strdup(uri),
                         enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
                         x != nullptr ? lilv_node_as_float(x) : 0.0f,
-                        y != nullptr ? lilv_node_as_float(y) : 0.0f
+                        y != nullptr ? lilv_node_as_float(y) : 0.0f,
+                        ports
                     };
                 }
             }

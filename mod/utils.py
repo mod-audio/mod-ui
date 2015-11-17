@@ -268,6 +268,13 @@ class PluginInfo_Mini(Structure):
         ("gui", PluginGUI_Mini),
     ]
 
+class PedalboardPluginPort(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("symbol", c_char_p),
+        ("value", c_float),
+    ]
+
 class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
@@ -276,6 +283,7 @@ class PedalboardPlugin(Structure):
         ("bypassed", c_bool),
         ("x", c_float),
         ("y", c_float),
+        ("ports", POINTER(PedalboardPluginPort)),
     ]
 
 class PedalboardConnection(Structure):
@@ -331,6 +339,7 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPreset),
                    POINTER(PedalboardPlugin),
                    POINTER(PedalboardConnection),
+                   POINTER(PedalboardPluginPort),
                    POINTER(StatePortValue))
 
 c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),

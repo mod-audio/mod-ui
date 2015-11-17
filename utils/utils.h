@@ -148,11 +148,18 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* symbol;
+    float value;
+} PedalboardPluginPort;
+
+typedef struct {
+    bool valid;
     const char* instance;
     const char* uri;
     bool bypassed;
     float x;
     float y;
+    const PedalboardPluginPort* ports;
 } PedalboardPlugin;
 
 typedef struct {
