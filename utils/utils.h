@@ -239,6 +239,9 @@ MOD_API int* get_pedalboard_size(const char* bundle);
 // Get port values from a plugin state
 MOD_API StatePortValue* get_state_port_values(const char* state);
 
+// Convert a file URI to a local path string.
+MOD_API const char* file_uri_parse(const char* fileuri);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

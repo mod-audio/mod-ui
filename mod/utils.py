@@ -381,6 +381,9 @@ utils.get_pedalboard_size.restype  = POINTER(c_int)
 utils.get_state_port_values.argtypes = [c_char_p]
 utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
+utils.file_uri_parse.argtypes = [c_char_p]
+utils.file_uri_parse.restype  = c_char_p
+
 # ------------------------------------------------------------------------------------------------------------
 
 # initialize
@@ -462,5 +465,20 @@ def get_pedalboard_size(bundle):
 def get_state_port_values(state):
     values = structPtrToList(utils.get_state_port_values(state.encode("utf-8")))
     return dict((v['symbol'], v['value']) for v in values)
+
+# ------------------------------------------------------------------------------------------------------------
+
+# Get the absolute directory of a file or bundle uri.
+def get_bundle_dirname(bundleuri):
+    bundle = utils.file_uri_parse(bundleuri)
+
+    if not bundle:
+        raise IOError(bundleuri)
+    if not os.path.exists(bundle):
+        raise IOError(bundleuri)
+    if os.path.isfile(bundle):
+        bundle = os.path.dirname(bundle)
+
+    return bundle
 
 # ------------------------------------------------------------------------------------------------------------

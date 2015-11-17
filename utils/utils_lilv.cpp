@@ -2059,6 +2059,7 @@ static PedalboardInfo* _pedal_ret;
 static unsigned int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
 static StatePortValue* _state_ret = nullptr;
+static char* _uri_parsed = nullptr;
 
 static void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 {
@@ -2347,6 +2348,9 @@ void cleanup(void)
 
     lilv_world_free(W);
     W = nullptr;
+
+    lilv_free(_uri_parsed);
+    _uri_parsed = nullptr;
 
     _clear_pedalboards();
     _clear_state_values();
@@ -3169,6 +3173,17 @@ StatePortValue* get_state_port_values(const char* state)
     }
 
     return nullptr;
+}
+
+// --------------------------------------------------------------------------------------------------------
+
+const char* file_uri_parse(const char* fileuri)
+{
+    if (_uri_parsed)
+        lilv_free(_uri_parsed);
+
+    _uri_parsed = lilv_file_uri_parse(fileuri, nullptr);
+    return _uri_parsed != nullptr ? _uri_parsed : nc;
 }
 
 // --------------------------------------------------------------------------------------------------------
