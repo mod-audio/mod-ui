@@ -267,6 +267,9 @@ class Host(object):
         crashed = self.crashed
         self.crashed = False
 
+        if crashed:
+            self.init_jack()
+
         # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
