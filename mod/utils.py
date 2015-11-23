@@ -197,6 +197,7 @@ class PluginPortScalePoint(Structure):
 class PluginPort(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("index", c_uint),
         ("name", c_char_p),
         ("symbol", c_char_p),
         ("ranges", PluginPortRanges),
@@ -267,6 +268,13 @@ class PluginInfo_Mini(Structure):
         ("gui", PluginGUI_Mini),
     ]
 
+class PedalboardPluginPort(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("symbol", c_char_p),
+        ("value", c_float),
+    ]
+
 class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
@@ -275,6 +283,7 @@ class PedalboardPlugin(Structure):
         ("bypassed", c_bool),
         ("x", c_float),
         ("y", c_float),
+        ("ports", POINTER(PedalboardPluginPort)),
     ]
 
 class PedalboardConnection(Structure):
@@ -330,6 +339,7 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPreset),
                    POINTER(PedalboardPlugin),
                    POINTER(PedalboardConnection),
+                   POINTER(PedalboardPluginPort),
                    POINTER(StatePortValue))
 
 c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),
@@ -370,6 +380,9 @@ utils.get_pedalboard_size.restype  = POINTER(c_int)
 
 utils.get_state_port_values.argtypes = [c_char_p]
 utils.get_state_port_values.restype  = POINTER(StatePortValue)
+
+utils.file_uri_parse.argtypes = [c_char_p]
+utils.file_uri_parse.restype  = c_char_p
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -431,7 +444,9 @@ def get_pedalboard_info(bundle):
     info = utils.get_pedalboard_info(bundle.encode("utf-8"))
     if not info:
         raise Exception
-    return structToDict(info.contents)
+    ret = structToDict(info.contents)
+    print(ret)
+    return ret
 
 # Get the size of a specific pedalboard
 # Returns a 2-size array with width and height
@@ -450,5 +465,20 @@ def get_pedalboard_size(bundle):
 def get_state_port_values(state):
     values = structPtrToList(utils.get_state_port_values(state.encode("utf-8")))
     return dict((v['symbol'], v['value']) for v in values)
+
+# ------------------------------------------------------------------------------------------------------------
+
+# Get the absolute directory of a file or bundle uri.
+def get_bundle_dirname(bundleuri):
+    bundle = utils.file_uri_parse(bundleuri)
+
+    if not bundle:
+        raise IOError(bundleuri)
+    if not os.path.exists(bundle):
+        raise IOError(bundleuri)
+    if os.path.isfile(bundle):
+        bundle = os.path.dirname(bundle)
+
+    return bundle
 
 # ------------------------------------------------------------------------------------------------------------

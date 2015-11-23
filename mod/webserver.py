@@ -61,9 +61,8 @@ from mod.utils import (init as lv2_init,
                        get_all_plugins,
                        get_plugin_info,
                        get_plugin_info_mini,
-                       get_all_pedalboards)
-# TODO
-from mod.lilvlib import get_pedalboard_info
+                       get_all_pedalboards,
+                       get_pedalboard_info)
 
 # Global fake timestamp used for pedalboard thumbnails
 # FIXME - use real timestamp

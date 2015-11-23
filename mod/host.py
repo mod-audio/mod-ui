@@ -35,10 +35,7 @@ from mod import get_hardware
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_state_port_values
-
-# TODO
-from mod.lilvlib import get_pedalboard_info
+from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1
@@ -270,6 +267,9 @@ class Host(object):
         crashed = self.crashed
         self.crashed = False
 
+        if crashed:
+            self.init_jack()
+
         # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
@@ -293,6 +293,9 @@ class Host(object):
                     midiports.append(port)
 
             # MIDI In
+            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in") is not None:
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
             for i in range(len(ports)):
                 name = ports[i]
@@ -306,6 +309,9 @@ class Host(object):
                 self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
 
             # MIDI Out
+            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out") is not None:
+                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
             for i in range(len(ports)):
                 name = ports[i]
@@ -478,6 +484,10 @@ class Host(object):
         data = port.split("/")
 
         if len(data) == 3:
+            if data[2] == "serial_midi_in":
+                return "ttymidi:MIDI_in"
+            if data[2] == "serial_midi_out":
+                return "ttymidi:MIDI_out"
             return "system:%s" % data[2]
 
         instance    = "/graph/%s" % data[2]
@@ -519,23 +529,22 @@ class Host(object):
         for p in pb['plugins']:
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
-            bypassed    = not p['enabled']
 
             self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
 
-            if bypassed:
+            if p['bypassed']:
                 self.send("bypass %d 1" % (instance_id,), lambda r:None)
 
             self.plugins[instance_id] = {
                 "instance"  : instance,
                 "uri"       : p['uri'],
-                "bypassed"  : bypassed,
+                "bypassed"  : p['bypassed'],
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
                 "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(p['uri'])),
             }
-            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(bypassed)))
+            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
         # TODO: set port values
 

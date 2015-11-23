@@ -80,6 +80,7 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    unsigned int index;
     const char* name;
     const char* symbol;
     PluginPortRanges ranges;
@@ -147,11 +148,18 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* symbol;
+    float value;
+} PedalboardPluginPort;
+
+typedef struct {
+    bool valid;
     const char* instance;
     const char* uri;
     bool bypassed;
     float x;
     float y;
+    const PedalboardPluginPort* ports;
 } PedalboardPlugin;
 
 typedef struct {
@@ -225,10 +233,14 @@ MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
 
 // Get the size of a specific pedalboard
 // Returns a 2-size array with width and height
+// NOTE: may return null
 MOD_API int* get_pedalboard_size(const char* bundle);
 
 // Get port values from a plugin state
 MOD_API StatePortValue* get_state_port_values(const char* state);
+
+// Convert a file URI to a local path string.
+MOD_API const char* file_uri_parse(const char* fileuri);
 
 #ifdef __cplusplus
 } // extern "C"

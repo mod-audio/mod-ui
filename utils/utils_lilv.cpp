@@ -172,6 +172,7 @@ static const std::vector<std::string> BLACKLIST = {
 
 // --------------------------------------------------------------------------------------------------------
 
+#define LILV_NS_INGEN    "http://drobilla.net/ns/ingen#"
 #define LILV_NS_MOD      "http://moddevices.com/ns/mod#"
 #define LILV_NS_MODGUI   "http://moddevices.com/ns/modgui#"
 #define LILV_NS_MODPEDAL "http://moddevices.com/ns/modpedal#"
@@ -1579,6 +1580,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
             PluginPort portinfo;
             memset(&portinfo, 0, sizeof(PluginPort));
 
+            portinfo.index = i;
+
             // ----------------------------------------------------------------------------------------------------
             // name
 
@@ -1720,32 +1723,46 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
 
                 if (LilvScalePoints* scalepoints = lilv_port_get_scale_points(p, port))
                 {
-                    unsigned int spindex = 0;
-                    const unsigned int scalepointcount = lilv_scale_points_size(scalepoints);
-
-                    PluginPortScalePoint* portsps = new PluginPortScalePoint[scalepointcount+1];
-                    memset(portsps, 0, sizeof(PluginPortScalePoint) * (scalepointcount+1));
-
-                    LILV_FOREACH(scale_points, itscl, scalepoints)
+                    if (const unsigned int scalepointcount = lilv_scale_points_size(scalepoints))
                     {
-                        if (spindex >= scalepointcount)
-                            continue;
+                        PluginPortScalePoint* portsps = new PluginPortScalePoint[scalepointcount+1];
+                        memset(portsps, 0, sizeof(PluginPortScalePoint) * (scalepointcount+1));
 
-                        const LilvScalePoint* scalepoint = lilv_scale_points_get(scalepoints, itscl);
-                        const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint);
-                        const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint);
+                        // get all scalepoints and sort them by value
+                        std::map<double,const LilvScalePoint*> sortedpoints;
 
-                        if (xlabel == nullptr || xvalue == nullptr)
-                            continue;
+                        LILV_FOREACH(scale_points, itscl, scalepoints)
+                        {
+                            const LilvScalePoint* scalepoint = lilv_scale_points_get(scalepoints, itscl);
+                            const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint);
+                            const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint);
 
-                        portsps[spindex++] = {
-                            true,
-                            lilv_node_as_float(xvalue),
-                            strdup(lilv_node_as_string(xlabel)),
-                        };
+                            if (xlabel == nullptr || xvalue == nullptr)
+                                continue;
+
+                            const double valueid = lilv_node_as_float(xvalue);
+                            sortedpoints[valueid] = scalepoint;
+                        }
+
+                        // now store them sorted
+                        unsigned int spindex = 0;
+                        for (auto& scalepoint : sortedpoints)
+                        {
+                            if (spindex >= scalepointcount)
+                                continue;
+
+                            const LilvNode* xlabel = lilv_scale_point_get_label(scalepoint.second);
+                            const LilvNode* xvalue = lilv_scale_point_get_value(scalepoint.second);
+
+                            portsps[spindex++] = {
+                                true,
+                                lilv_node_as_float(xvalue),
+                                strdup(lilv_node_as_string(xlabel)),
+                            };
+                        }
+
+                        portinfo.scalePoints = portsps;
                     }
-
-                    portinfo.scalePoints = portsps;
 
                     lilv_scale_points_free(scalepoints);
                 }
@@ -2042,6 +2059,7 @@ static PedalboardInfo* _pedal_ret;
 static unsigned int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
 static StatePortValue* _state_ret = nullptr;
+static char* _uri_parsed = nullptr;
 
 static void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 {
@@ -2330,6 +2348,9 @@ void cleanup(void)
 
     lilv_world_free(W);
     W = nullptr;
+
+    lilv_free(_uri_parsed);
+    _uri_parsed = nullptr;
 
     _clear_pedalboards();
     _clear_state_values();
@@ -2783,16 +2804,15 @@ const PedalboardInfo* get_pedalboard_info(const char* bundle)
     if (bundlepath == nullptr)
         return nullptr;
 
-    {
-        const size_t bsize = strlen(bundlepath);
-        if (bsize <= 1)
-            return nullptr;
+    const size_t bundlepathsize = strlen(bundlepath);
 
-        if (bundlepath[bsize] != OS_SEP)
-        {
-            bundlepath[bsize  ] = OS_SEP;
-            bundlepath[bsize+1] = '\0';
-        }
+    if (bundlepathsize <= 1)
+        return nullptr;
+
+    if (bundlepath[bundlepathsize] != OS_SEP)
+    {
+        bundlepath[bundlepathsize  ] = OS_SEP;
+        bundlepath[bundlepathsize+1] = '\0';
     }
 
     LilvWorld* w = lilv_world_new();
@@ -2860,13 +2880,16 @@ const PedalboardInfo* get_pedalboard_info(const char* bundle)
 
     memset(&info, 0, sizeof(PedalboardInfo));
 
-/*
     // define the needed stuff
-    ns_rdf      = NS(world, lilv.LILV_NS_RDF)
-    ns_lv2core  = NS(world, lilv.LILV_NS_LV2)
-    ns_ingen    = NS(world, "http://drobilla.net/ns/ingen#")
-    ns_modpedal = NS(world, "http://moddevices.com/ns/modpedal#")
-    */
+    LilvNode* ingen_arc     = lilv_new_uri(w, LILV_NS_INGEN "arc");
+    LilvNode* ingen_block   = lilv_new_uri(w, LILV_NS_INGEN "block");
+    LilvNode* ingen_canvasX = lilv_new_uri(w, LILV_NS_INGEN "canvasX");
+    LilvNode* ingen_canvasY = lilv_new_uri(w, LILV_NS_INGEN "canvasY");
+    LilvNode* ingen_enabled = lilv_new_uri(w, LILV_NS_INGEN "enabled");
+    LilvNode* ingen_head    = lilv_new_uri(w, LILV_NS_INGEN "head");
+    LilvNode* ingen_tail    = lilv_new_uri(w, LILV_NS_INGEN "tail");
+    LilvNode* lv2_port      = lilv_new_uri(w, LILV_NS_LV2   "port");
+    LilvNode* lv2_prototype = lilv_new_uri(w, LILV_NS_LV2   "prototype");
 
     // --------------------------------------------------------------------------------------------------------
     // title
@@ -2883,7 +2906,128 @@ const PedalboardInfo* get_pedalboard_info(const char* bundle)
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // plugins
 
+    if (LilvNodes* blocks = lilv_plugin_get_value(p, ingen_block))
+    {
+        if (unsigned int count = lilv_nodes_size(blocks))
+        {
+            PedalboardPlugin* plugs = new PedalboardPlugin[count+1];
+            memset(plugs, 0, sizeof(PedalboardPlugin) * (count+1));
+
+            count = 0;
+            LILV_FOREACH(nodes, itblocks, blocks)
+            {
+                const LilvNode* block = lilv_nodes_get(blocks, itblocks);
+
+                if (LilvNode* proto = lilv_world_get(w, block, lv2_prototype, nullptr))
+                {
+                    const char* uri = lilv_node_as_uri(proto);
+                    char* instance  = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
+
+                    if (strstr(instance, bundlepath) != nullptr)
+                        memmove(instance, instance+bundlepathsize+1, strlen(instance)-bundlepathsize+1);
+
+                    LilvNode* enabled = lilv_world_get(w, block, ingen_enabled, nullptr);
+                    LilvNode* x       = lilv_world_get(w, block, ingen_canvasX, nullptr);
+                    LilvNode* y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
+
+                    PedalboardPluginPort* ports = nullptr;
+
+                    if (LilvNodes* portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
+                    {
+                        lilv_nodes_free(portnodes);
+                    }
+
+                    plugs[count++] = {
+                        true,
+                        instance,
+                        strdup(uri),
+                        enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
+                        x != nullptr ? lilv_node_as_float(x) : 0.0f,
+                        y != nullptr ? lilv_node_as_float(y) : 0.0f,
+                        ports
+                    };
+                }
+            }
+
+            info.plugins = plugs;
+        }
+
+        lilv_nodes_free(blocks);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // connections
+
+    if (LilvNodes* arcs = lilv_plugin_get_value(p, ingen_arc))
+    {
+        if (unsigned int count = lilv_nodes_size(arcs))
+        {
+            PedalboardConnection* conns = new PedalboardConnection[count+1];
+            memset(conns, 0, sizeof(PedalboardConnection) * (count+1));
+
+            count = 0;
+            LILV_FOREACH(nodes, itarcs, arcs)
+            {
+                const LilvNode* arc  = lilv_nodes_get(arcs, itarcs);
+                const LilvNode* head = lilv_world_get(w, arc, ingen_head, nullptr);
+                const LilvNode* tail = lilv_world_get(w, arc, ingen_tail, nullptr);
+
+                if (head == nullptr || tail == nullptr)
+                    continue;
+
+                char* tailstr = lilv_file_uri_parse(lilv_node_as_string(tail), nullptr);
+                char* headstr = lilv_file_uri_parse(lilv_node_as_string(head), nullptr);
+
+                if (strstr(tailstr, bundlepath) != nullptr)
+                    memmove(tailstr, tailstr+bundlepathsize+1, strlen(tailstr)-bundlepathsize+1);
+
+                if (strstr(headstr, bundlepath) != nullptr)
+                    memmove(headstr, headstr+bundlepathsize+1, strlen(headstr)-bundlepathsize+1);
+
+                conns[count++] = {
+                    true,
+                    tailstr,
+                    headstr
+                };
+            }
+
+            info.connections = conns;
+        }
+
+        lilv_nodes_free(arcs);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // hardware ports
+
+    if (LilvNodes* hwports = lilv_plugin_get_value(p, lv2_port))
+    {
+        std::vector<std::string> handled_port_uris;
+
+        LILV_FOREACH(nodes, ithwp, hwports)
+        {
+            const LilvNode* hwport = lilv_nodes_get(hwports, ithwp);
+
+           // TODO
+            (void)hwport;
+        }
+
+        lilv_nodes_free(hwports);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+
+    lilv_node_free(ingen_arc);
+    lilv_node_free(ingen_block);
+    lilv_node_free(ingen_canvasX);
+    lilv_node_free(ingen_canvasY);
+    lilv_node_free(ingen_enabled);
+    lilv_node_free(ingen_head);
+    lilv_node_free(ingen_tail);
+    lilv_node_free(lv2_port);
+    lilv_node_free(lv2_prototype);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 
@@ -3029,6 +3173,17 @@ StatePortValue* get_state_port_values(const char* state)
     }
 
     return nullptr;
+}
+
+// --------------------------------------------------------------------------------------------------------
+
+const char* file_uri_parse(const char* fileuri)
+{
+    if (_uri_parsed)
+        lilv_free(_uri_parsed);
+
+    _uri_parsed = lilv_file_uri_parse(fileuri, nullptr);
+    return _uri_parsed != nullptr ? _uri_parsed : nc;
 }
 
 // --------------------------------------------------------------------------------------------------------
