@@ -405,25 +405,26 @@ JqueryClass('cloudPluginBox', {
 
     renderPlugin: function (plugin, index, canvas) {
         var self = $(this)
-        var template = TEMPLATES.cloudplugin
         var uri = escape(plugin.uri)
-        if(!plugin.comment) {
-            plugin.comment = 'No description available';
-            plugin.has_description = 'no_description';
+        var comment = plugin.comment
+        var has_description = ""
+        if(!comment) {
+            comment = "No description available";
+            has_description = "no_description";
         }
         var plugin_data = {
-            id: plugin.id || plugin._id,
+            id: plugin.id || plugin._id, // FIXME: id or _id??
             thumbnail_href: plugin.thumbnail_href,
             screenshot_href: plugin.screenshot_href,
-            has_description: plugin.has_description,
-            description: plugin.comment,
+            has_description: has_description,
+            description: comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label
         }
 
-        var rendered = $(Mustache.render(template, plugin_data))
+        var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin, index)
         })
@@ -448,7 +449,6 @@ JqueryClass('cloudPluginBox', {
             bundle = plugin.brand
         }
 
-
         var plugin_data = {
             thumbnail_href: plugin.thumbnail_href,
             screenshot_href: plugin.screenshot_href,
@@ -456,11 +456,12 @@ JqueryClass('cloudPluginBox', {
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
             package_name: bundle,
-            comment: plugin.comment, //we need to decide between comment and description for overall use
+            comment: plugin.comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
-            name : plugin.label // same here. name or label
+            name  : plugin.name,
+            label : plugin.label
         }
         console.log(plugin_data)
 
