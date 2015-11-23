@@ -130,7 +130,6 @@ function GUI(effect, options) {
         dragStart: new Function(),
         drag: new Function(),
         dragStop: new Function(),
-        presetLoad: new Function(),
         midiLearn: new Function(),
         bypassed: 1,
         defaultIconTemplate: 'Template missing',
@@ -342,33 +341,86 @@ function GUI(effect, options) {
                 self.icon.height(self.icon.children().height())
             }, 1)
 
-            if(instance)
+            if (instance)
                 self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
             else
                 self.settings = $('<div class="mod-settings">')
+
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
 
             self.assignControlFunctionality(self.settings, false)
 
-            if (! instance) {
+            if (instance)
+            {
+                var prmel = self.settings.find('.preset-manager')
+                self.presetManager = prmel.presetManager({})
+
+                self.presetManager.on("load", function (e, instance, options) {
+                    console.log("load", options);
+                    $.ajax({
+                        url: '/effect/preset/load/' + instance,
+                        data: {
+                            uri: options.uri
+                        },
+                        success: function (resp) {
+                            self.presetManager.presetManager("setPresetName", options.label)
+                        },
+                        error: function () {
+                        },
+                        cache: false,
+                        dataType: 'json'
+                    })
+                })
+                self.presetManager.on("save", function (e, instance, name, options) {
+                    $.ajax({
+                        url: '/effect/preset/save/' + instance,
+                        data: {
+                            name: name
+                        },
+                        success: function (resp) {
+                            //self.presetManager.presetManager("setPresetName", options.label)
+                            console.log(resp)
+                        },
+                        error: function () {
+                        },
+                        cache: false,
+                        dataType: 'json'
+                    })
+                    console.log("save", name, options)
+                })
+                self.presetManager.on("rename", function (e, instance, name, options) {
+                    console.log("rename", name, options)
+                })
+                self.presetManager.on("bind", function (e, instance, options) {
+                    console.log("bind", options)
+                })
+                self.presetManager.on("bindlist", function (e, instance, options) {
+                    console.log("bindlist", options)
+                })
+
+                /*
+                 * bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
+                 */
+                var p, _presets = []
+                console.log(effect.presets)
+                for (var i in effect.presets) {
+                    p = effect.presets[i]
+                    _presets.push({
+                        name: p.label,
+                        uri: p.uri,
+                        bind: MOD_BIND_NONE,
+                        readonly: true,
+                    })
+                }
+                // FIXME
+                // self.presetManager.presetManager("setPresets", instance, _presets)
+            }
+            else
+            {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
+                self.settings.find(".preset-manager").hide()
             }
-
-            /*
-            TESTING code for presets
-            var p, _presets = []
-            console.log(effect.presets)
-            for (i in effect.presets) {
-                p = effect.presets[i]
-                _presets.push({
-                    name: p.label,
-                    uri: p.uri,
-                    bind: MOD_BIND_NONE,
-                })
-            }
-            desktop.presetManager.presetManager("setPresets", instance, _presets)
-            */
 
             self.triggerJS({ 'type': 'start' })
 

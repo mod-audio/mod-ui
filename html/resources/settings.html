@@ -3,13 +3,7 @@
         <h1 class="alignleft">{{effect.name}}</h1>
         <button class="js-close alignright btn btn-danger">Close</button>
     </header>
-    <div class="mod-presets clearfix">
-        <select  mod-role="presets">
-            <option value="">---</option>
-            {{#effect.presets}}
-            <option mod-role="preset-label" value="{{uri}}">{{label}}</option>
-            {{/effect.presets}}
-        </select>
+    <div class="preset-manager">
     </div>
     <div class="mod-controls clearfix">
         <div class="mod-control-group clearfix">

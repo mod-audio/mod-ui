@@ -599,6 +599,15 @@ class EffectPresetLoad(web.RequestHandler):
         self.write(json.dumps(resp))
         self.finish()
 
+class EffectPresetSave(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        name = self.get_argument('uri')
+        resp = yield gen.Task(SESSION.web_preset_save, instance, name)
+        self.write(json.dumps(resp))
+        self.finish()
+
 class EffectPosition(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1213,6 +1222,7 @@ application = web.Application(
 
             # plugin presets
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
+            (r"/effect/preset/save/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetSave),
 
             # misc plugin stuff
             (r"/effect/position/*(/[A-Za-z0-9_/]+[^/])/?", EffectPosition),

@@ -469,7 +469,19 @@ class Host(object):
         instance_id = self.mapper.get_id_without_creating(instance)
         labelsymbol = simbolify(label)
 
-        self.send("preset_save %d \"%s\" ~/.lv2/%s %s.ttl" % (instance_id, label.replace('"','\\"'), labelsymbol, labelsymbol), callback, datatype='boolean')
+        def host_callback(ok):
+            if not ok:
+                callback({
+                    'ok': False,
+                })
+                return
+
+            callback({
+                'ok' : True,
+                'uri': "file://%s" % os.path.expanduser("~/.lv2/%s/%s.ttl" % (labelsymbol, labelsymbol))
+            })
+
+        self.send("preset_save %d \"%s\" ~/.lv2/%s %s.ttl" % (instance_id, label.replace('"','\\"'), labelsymbol, labelsymbol), host_callback, datatype='boolean')
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)

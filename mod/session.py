@@ -165,6 +165,10 @@ class Session(object):
     def web_preset_load(self, instance, uri, callback):
         self.host.preset_load(instance, uri, callback)
 
+    # Save a plugin preset
+    def web_preset_save(self, instance, name, callback):
+        self.host.preset_save(instance, name, callback)
+
     # Set a plugin block position within the canvas
     def web_set_position(self, instance, x, y):
         self.host.set_position(instance, x, y)

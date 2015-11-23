@@ -30,7 +30,6 @@ function Desktop(elements) {
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
-        presetManager: $('<div>'),
         resetButton: $('<div>'),
         disconnectButton: $('<div>'),
         effectBox: $('<div>'),
@@ -561,49 +560,6 @@ function Desktop(elements) {
         self.disconnect()
     })
 
-    this.presetManager = elements.presetManager.presetManager({});
-    /*
-     * bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
-     */
-
-    this.presetManager.presetManager("setPresets", "", [
-        { name: "Foobar", uri: "whatever", bind: false, readonly: true },
-        { name: "Barfoo", uri: "whatever", bind: false, readonly: true },
-        { name: "myFirstPreset", uri: "whatever", bind: false, readonly: true },
-        { name: "Two Presets One Plugin", uri: "whatever", bind: false, readonly: true },
-        { name: "Teserp", uri: "whatever", bind: false, readonly: true },
-        { name: "ƚɘƨɘɿꟼ", uri: "whatever", bind: false, readonly: true },
-    ]);
-    this.presetManager.on("load", function (e, instance, options) {
-        console.log("load", options);
-
-            $.ajax({
-                url: '/effect/preset/load/' + instance,
-                data: {
-                    uri: options.uri
-                },
-                success: function (resp) {
-                    self.presetManager.presetManager("setPresetName", options.label)
-                },
-                error: function () {
-                },
-                cache: false,
-                'dataType': 'json'
-            })
-
-    });
-    this.presetManager.on("save", function (e, instance, name, options) {
-        console.log("save", name, options);
-    });
-    this.presetManager.on("rename", function (e, instance, name, options) {
-        console.log("rename", name, options);
-    });
-    this.presetManager.on("bind", function (e, instance, options) {
-        console.log("bind", options);
-    });
-    this.presetManager.on("bindlist", function (e, instance, options) {
-        console.log("bindlist", options);
-    })
     elements.shareButton.click(function () {
         var share = function () {
             self.userSession.login(function () {
@@ -773,34 +729,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 },
                 cache: false,
                 dataType: 'json'
-            })
-        },
-
-        pluginPresetLoad: function (instance, uri, callback) {
-            $.ajax({
-                url: '/effect/preset/load/' + instance,
-                data: {
-                    uri: uri
-                },
-                success: function (resp) {
-                    /*
-               // TODO trigger
-               if (!resp || self.data('trigger')) {
-               self.data('value', oldValue)
-               self.widget('sync')
-               }
-             */
-                    callback(resp)
-                },
-                error: function () {
-                    /*
-               self.data('value', oldValue)
-               self.widget('sync')
-               alert('erro no request (6)')
-             */
-                },
-                cache: false,
-                'dataType': 'json'
             })
         },
 
