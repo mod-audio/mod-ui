@@ -356,7 +356,7 @@ function GUI(effect, options) {
                 self.presetManager = prmel.presetManager({})
 
                 self.presetManager.on("load", function (e, instance, options) {
-                    console.log("load", options);
+                    console.log("load", instance, options);
                     $.ajax({
                         url: '/effect/preset/load/' + instance,
                         data: {
@@ -372,30 +372,32 @@ function GUI(effect, options) {
                     })
                 })
                 self.presetManager.on("save", function (e, instance, name, options) {
+                    console.log("save", instance, name, options)
                     $.ajax({
                         url: '/effect/preset/save/' + instance,
                         data: {
                             name: name
                         },
                         success: function (resp) {
-                            //self.presetManager.presetManager("setPresetName", options.label)
-                            console.log(resp)
+                            if (resp.ok) {
+                                //self.presetManager.presetManager("setPresetName", name)
+                                //self.presetManager.presetManager("setPreseURI", resp.uri)
+                            }
                         },
                         error: function () {
                         },
                         cache: false,
                         dataType: 'json'
                     })
-                    console.log("save", name, options)
                 })
                 self.presetManager.on("rename", function (e, instance, name, options) {
-                    console.log("rename", name, options)
+                    console.log("rename", instance, name, options)
                 })
                 self.presetManager.on("bind", function (e, instance, options) {
-                    console.log("bind", options)
+                    console.log("bind", instance, options)
                 })
                 self.presetManager.on("bindlist", function (e, instance, options) {
-                    console.log("bindlist", options)
+                    console.log("bindlist", instance, options)
                 })
 
                 /*
@@ -412,8 +414,7 @@ function GUI(effect, options) {
                         readonly: true,
                     })
                 }
-                // FIXME
-                // self.presetManager.presetManager("setPresets", instance, _presets)
+                self.presetManager.presetManager("setPresets", instance, _presets)
             }
             else
             {

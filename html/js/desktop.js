@@ -361,7 +361,6 @@ function Desktop(elements) {
 
         // TODO
         $('#mod-cloud-plugins').hide()
-        $('#pb-preset-manager').hide()
 
         if (usingDesktop)
         {
