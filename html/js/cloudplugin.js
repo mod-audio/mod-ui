@@ -436,18 +436,12 @@ JqueryClass('cloudPluginBox', {
     showPluginInfo: function (plugin, index) {
         var self = $(this)
         var uri  = escape(plugin.uri)
-        var bundle
-        if(plugin.bundles) { // FIXME
-            if(plugin.bundles.length > 0) {
-                bundle = plugin.bundles[0].replace(/\.lv2$/, '')
-            }
-            else {
-                bundle = plugin.bundles[0]
-            }
+        var bundle_name = plugin.bundle_name
+        if (! bundle_name) {
+            bundle_name = "TODO" // FIXME, ask full info
+            //bundle_name = plugin.bundles[0]
         }
-        else {
-            bundle = plugin.brand
-        }
+        bundle_name = bundle_name.replace(/\.lv2$/, '')
 
         var plugin_data = {
             thumbnail_href: plugin.thumbnail_href,
@@ -455,13 +449,14 @@ JqueryClass('cloudPluginBox', {
             category: plugin.category[0] || "",
             installed_version: version(plugin.installedVersion),
             latest_version: version(plugin.latestVersion),
-            package_name: bundle,
+            package_name: bundle_name,
             comment: plugin.comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
             name  : plugin.name,
-            label : plugin.label
+            label : plugin.label,
+            ports : plugin.ports
         }
         console.log(plugin_data)
 
