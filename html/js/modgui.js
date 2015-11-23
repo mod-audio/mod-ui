@@ -379,9 +379,14 @@ function GUI(effect, options) {
                             name: name
                         },
                         success: function (resp) {
+                            console.log(resp)
                             if (resp.ok) {
-                                //self.presetManager.presetManager("setPresetName", name)
-                                //self.presetManager.presetManager("setPreseURI", resp.uri)
+                                self.presetManager.presetManager("addPreset", {
+                                    name: name,
+                                    uri: resp.uri,
+                                    bind: MOD_BIND_NONE,
+                                    readonly: false,
+                                })
                             }
                         },
                         error: function () {

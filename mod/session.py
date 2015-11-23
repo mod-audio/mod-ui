@@ -29,7 +29,6 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
 from mod import get_hardware, symbolify
-from mod import symbolify
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.clipmeter import Clipmeter

@@ -31,10 +31,11 @@ This will start the mainloop and will handle the callbacks and the async functio
 from tornado import iostream, ioloop
 import os, json, socket, logging
 
-from mod import get_hardware
+from mod import get_hardware, symbolify
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
+from mod.utils import add_bundle_to_lilv_world, remove_bundle_from_lilv_world
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 
 ADDRESSING_CTYPE_LINEAR       = 0
@@ -350,6 +351,23 @@ class Host(object):
         self.msg_callback("wait_end")
 
     # -----------------------------------------------------------------------------------------------------------------
+    # Host stuff - add & remove bundles
+
+    def add_bundle(self, bundlepath, callback):
+        def host_callback(ok):
+            plugins = add_bundle_to_lilv_world(bundlepath)
+            callback(plugins)
+
+        self.send("add_bundle", host_callback, datatype='boolean')
+
+    def remove_bundle(self, bundlepath, callback):
+        def host_callback(ok):
+            plugins = remove_bundle_to_lilv_world(bundlepath)
+            callback(plugins)
+
+        self.send("remove_bundle", host_callback, datatype='boolean')
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
     def reset(self, callback):
@@ -466,8 +484,19 @@ class Host(object):
         self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
     def preset_save(self, instance, label, callback):
-        instance_id = self.mapper.get_id_without_creating(instance)
-        labelsymbol = simbolify(label)
+        instance_id  = self.mapper.get_id_without_creating(instance)
+        labelsymbol  = symbolify(label)
+        presetbundle = os.path.expanduser("~/.lv2/%s.lv2") % labelsymbol
+
+        # if presetbundle already exists, generate a new random bundle path
+        if os.path.exists(presetbundle):
+            from random import randint
+
+            while True:
+                presetbundle = os.path.expanduser("~/.lv2/%s-%i.lv2" % (labelsymbol, randint(1,99999)))
+                if os.path.exists(presetbundle):
+                    continue
+                break
 
         def host_callback(ok):
             if not ok:
@@ -476,12 +505,16 @@ class Host(object):
                 })
                 return
 
-            callback({
-                'ok' : True,
-                'uri': "file://%s" % os.path.expanduser("~/.lv2/%s/%s.ttl" % (labelsymbol, labelsymbol))
-            })
+            def preset_callback(ok):
+                callback({
+                    'ok' : True,
+                    'uri': "file://%s" % os.path.join(presetbundle, labelsymbol)
+                })
 
-        self.send("preset_save %d \"%s\" ~/.lv2/%s %s.ttl" % (instance_id, label.replace('"','\\"'), labelsymbol, labelsymbol), host_callback, datatype='boolean')
+            self.add_bundle(presetbundle, preset_callback)
+
+        print("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol))
+        self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol), host_callback, datatype='boolean')
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)

@@ -56,8 +56,6 @@ from mod import register
 from mod import check_environment
 
 from mod.utils import (init as lv2_init,
-                       add_bundle_to_lilv_world,
-                       remove_bundle_from_lilv_world,
                        get_all_plugins,
                        get_plugin_info,
                        get_plugin_info_mini,
@@ -78,13 +76,13 @@ def install_bundles_in_tmp_dir():
         bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
 
         if os.path.exists(bundlepath):
-            removed += remove_bundle_from_lilv_world(bundlepath)
+            plugins  = yield gen.Task(SESSION.host.remove_bundle, bundlepath)
+            removed += plugins
             shutil.rmtree(bundlepath)
 
         shutil.move(tmppath, bundlepath)
-        installed += add_bundle_to_lilv_world(bundlepath)
-
-    # TODO - make mod-host refresh lv2 world
+        plugins    = yield gen.Task(SESSION.host.add_bundle, bundlepath)
+        installed += plugins
 
     if len(installed) == 0:
         resp = {
@@ -106,7 +104,8 @@ def uninstall_bundles(bundles):
 
     for bundlepath in bundles:
         if os.path.exists(bundlepath):
-            removed += remove_bundle_from_lilv_world(bundlepath)
+            plugins  = yield gen.Task(SESSION.host.remove_bundle, bundlepath)
+            removed += plugins
             shutil.rmtree(bundlepath)
 
     if len(removed) > 0:
@@ -270,6 +269,8 @@ class EffectInstaller(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB
     destination_dir = DOWNLOAD_TMP_DIR
 
+    @web.asynchronous
+    @gen.engine
     def process_file(self, data, callback=lambda:None):
         def on_finish(resp):
             self.result = resp
@@ -603,7 +604,7 @@ class EffectPresetSave(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        name = self.get_argument('uri')
+        name = self.get_argument('name')
         resp = yield gen.Task(SESSION.web_preset_save, instance, name)
         self.write(json.dumps(resp))
         self.finish()
@@ -641,6 +642,8 @@ class AtomWebSocket(websocket.WebSocketHandler):
 
 # TODO
 class PackageUninstall(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
         bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         # FIXME: check if all bundles are inside LV2_PATH
