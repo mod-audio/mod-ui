@@ -407,17 +407,17 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         var uri = escape(plugin.uri)
         var comment = plugin.comment
-        var has_description = ""
+        var has_comment = ""
         if(!comment) {
             comment = "No description available";
-            has_description = "no_description";
+            has_comment = "no_description";
         }
         var plugin_data = {
             id: plugin.id || plugin._id, // FIXME: id or _id??
             thumbnail_href: plugin.thumbnail_href,
             screenshot_href: plugin.screenshot_href,
-            has_description: has_description,
-            description: comment,
+            has_comment: has_comment,
+            comment: comment,
             uri: uri,
             status: plugin.status,
             brand : plugin.brand,
