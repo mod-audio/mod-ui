@@ -412,8 +412,7 @@ function GUI(effect, options) {
                         readonly: true,
                     })
                 }
-                // FIXME
-                // self.presetManager.presetManager("setPresets", instance, _presets)
+                self.presetManager.presetManager("setPresets", instance, _presets);
             }
             else
             {
