@@ -636,7 +636,6 @@ JqueryClass("presetEntry", {
                 icon: "bind",
                 tooltip: "Bind the preset to a controller",
             }).on("action",function (e) { self.presetEntry("bind", e); });
-            self.presetEntry("setBind", options.bind);
         } else {
             e.bind.css("display", "none");
         }
@@ -669,6 +668,8 @@ JqueryClass("presetEntry", {
         self.data("presetEntryOptions", options);
         self.data("presetEntryElements", e);
         self.presetEntry("setName", options.name);
+        if (options.bind)
+            self.presetEntry("setBind", options.bind);
         return self;
     },
     setBind: function (bind) {
