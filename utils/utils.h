@@ -201,6 +201,9 @@ MOD_API void init(void);
 // cleanup, cannot be used afterwards
 MOD_API void cleanup(void);
 
+// check if a bundle is loaded in our lilv world
+MOD_API bool is_bundle_loaded(const char* bundle);
+
 // add a bundle to our lilv world
 // returns uri list of added plugins (null for none)
 MOD_API const char* const* add_bundle_to_lilv_world(const char* bundle);

@@ -35,7 +35,7 @@ from mod import get_hardware, symbolify
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import add_bundle_to_lilv_world, remove_bundle_from_lilv_world
+from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 
 ADDRESSING_CTYPE_LINEAR       = 0
@@ -354,6 +354,10 @@ class Host(object):
     # Host stuff - add & remove bundles
 
     def add_bundle(self, bundlepath, callback):
+        if is_bundle_loaded(bundlepath):
+            callback([])
+            return
+
         def host_callback(ok):
             plugins = add_bundle_to_lilv_world(bundlepath)
             callback(plugins)
@@ -361,8 +365,12 @@ class Host(object):
         self.send("add_bundle", host_callback, datatype='boolean')
 
     def remove_bundle(self, bundlepath, callback):
+        if not is_bundle_loaded(bundlepath):
+            callback([])
+            return
+
         def host_callback(ok):
-            plugins = remove_bundle_to_lilv_world(bundlepath)
+            plugins = remove_bundle_from_lilv_world(bundlepath)
             callback(plugins)
 
         self.send("remove_bundle", host_callback, datatype='boolean')

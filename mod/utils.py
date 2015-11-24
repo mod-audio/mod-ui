@@ -351,6 +351,9 @@ utils.init.restype  = None
 utils.cleanup.argtypes = None
 utils.cleanup.restype  = None
 
+utils.is_bundle_loaded.argtypes = [c_char_p]
+utils.is_bundle_loaded.restype  = c_bool
+
 utils.add_bundle_to_lilv_world.argtypes = [c_char_p]
 utils.add_bundle_to_lilv_world.restype  = POINTER(c_char_p)
 
@@ -394,6 +397,12 @@ def init():
 def cleanup():
     utils.cleanup()
 
+# ------------------------------------------------------------------------------------------------------------
+
+# check if a bundle is loaded in our lilv world
+def is_bundle_loaded(bundlepath):
+    return bool(utils.is_bundle_loaded(bundlepath.encode("utf-8")))
+
 # add a bundle to our lilv world
 # returns uri list of added plugins
 def add_bundle_to_lilv_world(bundlepath):
@@ -403,6 +412,8 @@ def add_bundle_to_lilv_world(bundlepath):
 # returns uri list of removed plugins
 def remove_bundle_from_lilv_world(bundlepath):
     return charPtrPtrToStringList(utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8")))
+
+# ------------------------------------------------------------------------------------------------------------
 
 # get all available plugins
 # this triggers scanning of all plugins

@@ -2358,6 +2358,32 @@ void cleanup(void)
 
 // --------------------------------------------------------------------------------------------------------
 
+bool is_bundle_loaded(const char* bundle)
+{
+    // lilv wants the last character as the separator
+    char tmppath[PATH_MAX+2];
+    char* cbundlepath = realpath(bundle, tmppath);
+
+    if (cbundlepath == nullptr)
+        return nullptr;
+
+    {
+        const size_t size = strlen(cbundlepath);
+        if (size <= 1)
+            return nullptr;
+
+        if (cbundlepath[size] != OS_SEP)
+        {
+            cbundlepath[size  ] = OS_SEP;
+            cbundlepath[size+1] = '\0';
+        }
+    }
+
+    std::string bundlepath(cbundlepath);
+
+    return (std::find(BUNDLES.begin(), BUNDLES.end(), bundlepath) != BUNDLES.end());
+}
+
 const char* const* add_bundle_to_lilv_world(const char* bundle)
 {
     // lilv wants the last character as the separator
@@ -2552,10 +2578,14 @@ const char* const* remove_bundle_from_lilv_world(const char* bundle)
     // free bundlenode, no longer needed
     lilv_node_free(bundlenode);
 
+#if 0
     // lilv world is now messed up because of removing stuff, need to rebuild it
     lilv_world_free(W);
     W = lilv_world_new();
     lilv_world_load_all(W);
+#endif
+
+    // refresh PLUGINS
     PLUGINS = lilv_world_get_all_plugins(W);
 
     if (size_t plugCount = removedPlugins.size())
