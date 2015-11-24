@@ -206,7 +206,7 @@ class PluginPort(Structure):
         ("properties", POINTER(c_char_p)),
         ("rangeSteps", c_int),
         ("scalePoints", POINTER(PluginPortScalePoint)),
-        ("shortname", c_char_p),
+        ("shortName", c_char_p),
     ]
 
 class PluginPortsI(Structure):

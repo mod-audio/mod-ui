@@ -355,6 +355,7 @@ class Host(object):
 
     def add_bundle(self, bundlepath, callback):
         if is_bundle_loaded(bundlepath):
+            print("SKIPPED add_bundle, already in world")
             callback([])
             return
 
@@ -362,10 +363,11 @@ class Host(object):
             plugins = add_bundle_to_lilv_world(bundlepath)
             callback(plugins)
 
-        self.send("add_bundle", host_callback, datatype='boolean')
+        self.send("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     def remove_bundle(self, bundlepath, callback):
         if not is_bundle_loaded(bundlepath):
+            print("SKIPPED remove_bundle, not in world")
             callback([])
             return
 
@@ -373,7 +375,7 @@ class Host(object):
             plugins = remove_bundle_from_lilv_world(bundlepath)
             callback(plugins)
 
-        self.send("remove_bundle", host_callback, datatype='boolean')
+        self.send("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
@@ -487,8 +489,9 @@ class Host(object):
             if not ok:
                 callback(False)
                 return
-            self.send("preset_show %d %s" % (instance_id, uri), preset_callback, datatype='string')
+            self.send("preset_show %s" % uri, preset_callback, datatype='string')
 
+        print("preset_load %d %s" % (instance_id, uri))
         self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
     def preset_save(self, instance, label, callback):
@@ -516,8 +519,9 @@ class Host(object):
             def preset_callback(ok):
                 callback({
                     'ok' : True,
-                    'uri': "file://%s" % os.path.join(presetbundle, labelsymbol)
+                    'uri': "file://%s.ttl" % os.path.join(presetbundle, labelsymbol)
                 })
+                print("uri saved as 'file://%s.ttl'" % os.path.join(presetbundle, labelsymbol))
 
             self.add_bundle(presetbundle, preset_callback)
 

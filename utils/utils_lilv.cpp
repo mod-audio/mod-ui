@@ -24,21 +24,21 @@
 
 #include <lilv/lilv.h>
 
+#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
-#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
 #include <algorithm>
+#include <cassert>
 #include <list>
 #include <map>
 #include <string>
 #include <vector>
 
-#define OS_SEP     '/'
-#define OS_SEP_STR "/"
+#define OS_SEP '/'
 
 // our lilv world
 LilvWorld* W = nullptr;
@@ -221,6 +221,8 @@ struct NamespaceDefinitions_Mini {
 
 struct NamespaceDefinitions {
     LilvNode* doap_license;
+    LilvNode* doap_maintainer;
+    LilvNode* foaf_homepage;
     LilvNode* rdf_type;
     LilvNode* rdfs_comment;
     LilvNode* rdfs_label;
@@ -229,8 +231,9 @@ struct NamespaceDefinitions {
     LilvNode* lv2core_microVersion;
     LilvNode* lv2core_minorVersion;
     LilvNode* lv2core_name;
+    LilvNode* lv2core_project;
     LilvNode* lv2core_portProperty;
-    LilvNode* lv2core_shortname;
+    LilvNode* lv2core_shortName;
     LilvNode* lv2core_symbol;
     LilvNode* lv2core_default;
     LilvNode* lv2core_minimum;
@@ -268,6 +271,8 @@ struct NamespaceDefinitions {
 
     NamespaceDefinitions()
         : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
+          doap_maintainer          (lilv_new_uri(W, LILV_NS_DOAP   "maintainer"        )),
+          foaf_homepage            (lilv_new_uri(W, LILV_NS_FOAF   "homepage"          )),
           rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
           rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
           rdfs_label               (lilv_new_uri(W, LILV_NS_RDFS   "label"             )),
@@ -276,8 +281,9 @@ struct NamespaceDefinitions {
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
           lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
           lv2core_name             (lilv_new_uri(W, LILV_NS_LV2    "name"              )),
+          lv2core_project          (lilv_new_uri(W, LILV_NS_LV2    "project"           )),
           lv2core_portProperty     (lilv_new_uri(W, LILV_NS_LV2    "portProperty"      )),
-          lv2core_shortname        (lilv_new_uri(W, LILV_NS_LV2    "shortname"         )),
+          lv2core_shortName        (lilv_new_uri(W, LILV_NS_LV2    "shortName"         )),
           lv2core_symbol           (lilv_new_uri(W, LILV_NS_LV2    "symbol"            )),
           lv2core_default          (lilv_new_uri(W, LILV_NS_LV2    "default"           )),
           lv2core_minimum          (lilv_new_uri(W, LILV_NS_LV2    "minimum"           )),
@@ -316,6 +322,8 @@ struct NamespaceDefinitions {
     ~NamespaceDefinitions()
     {
         lilv_node_free(doap_license);
+        lilv_node_free(doap_maintainer);
+        lilv_node_free(foaf_homepage);
         lilv_node_free(rdf_type);
         lilv_node_free(rdfs_comment);
         lilv_node_free(rdfs_label);
@@ -324,8 +332,9 @@ struct NamespaceDefinitions {
         lilv_node_free(lv2core_microVersion);
         lilv_node_free(lv2core_minorVersion);
         lilv_node_free(lv2core_name);
+        lilv_node_free(lv2core_project);
         lilv_node_free(lv2core_portProperty);
-        lilv_node_free(lv2core_shortname);
+        lilv_node_free(lv2core_shortName);
         lilv_node_free(lv2core_symbol);
         lilv_node_free(lv2core_default);
         lilv_node_free(lv2core_minimum);
@@ -1098,6 +1107,38 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
     // author homepage
 
     node = lilv_plugin_get_author_homepage(p);
+
+#if 0
+    // FIXME: this code currently causes a crash
+    // This is used for getting homepage of some plugins (currently just calf),
+    // so it's not the most important thing for now.
+    if (node == nullptr)
+    {
+        if (LilvNodes* prj = lilv_plugin_get_value(p, ns.lv2core_project))
+        {
+            LilvNode* prj1 = lilv_nodes_get_first(prj);
+            assert(prj1 != nullptr);
+
+            if (LilvNodes* mntnr = lilv_world_get(W, prj1, ns.doap_maintainer, nullptr))
+            {
+                LilvNode* mntnr1 = lilv_nodes_get_first(mntnr);
+                assert(mntnr1 != nullptr);
+
+                if (LilvNodes* hmpg = lilv_world_get(W, mntnr1, ns.foaf_homepage, nullptr))
+                {
+                    LilvNode* hmpg1 = lilv_nodes_get_first(hmpg);
+                    assert(hmpg1);
+
+                    node = lilv_node_duplicate(hmpg1);
+                    lilv_nodes_free(hmpg);
+                }
+                lilv_nodes_free(mntnr);
+            }
+            lilv_nodes_free(prj);
+        }
+    }
+#endif
+
     if (node != nullptr)
     {
         info.author.homepage = strdup(lilv_node_as_string(node));
@@ -1607,19 +1648,19 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* p, const NamespaceDefinitio
             // ----------------------------------------------------------------------------------------------------
             // short name
 
-            nodes = lilv_port_get_value(p, port, ns.lv2core_shortname);
+            nodes = lilv_port_get_value(p, port, ns.lv2core_shortName);
             if (nodes != nullptr)
             {
-                portinfo.shortname = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                portinfo.shortName = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
                 lilv_nodes_free(nodes);
             }
             else
             {
-                portinfo.shortname = strdup(portinfo.name);
+                portinfo.shortName = strdup(portinfo.name);
             }
 
-            if (strlen(portinfo.shortname) > 16)
-                ((char*)portinfo.shortname)[16] = '\0';
+            if (strlen(portinfo.shortName) > 16)
+                ((char*)portinfo.shortName)[16] = '\0';
 
             // ----------------------------------------------------------------------------------------------------
             // designation
@@ -2079,8 +2120,8 @@ static void _clear_port_info(PluginPort& portinfo)
         free((void*)portinfo.symbol);
     if (portinfo.designation != nullptr && portinfo.designation != nc)
         free((void*)portinfo.designation);
-    if (portinfo.shortname != nullptr && portinfo.shortname != nc)
-        free((void*)portinfo.shortname);
+    if (portinfo.shortName != nullptr && portinfo.shortName != nc)
+        free((void*)portinfo.shortName);
 
     if (portinfo.properties != nullptr)
     {

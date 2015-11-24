@@ -89,7 +89,7 @@ typedef struct {
     const char* const* properties;
     int rangeSteps;
     const PluginPortScalePoint* scalePoints;
-    const char* shortname;
+    const char* shortName;
 } PluginPort;
 
 typedef struct {
