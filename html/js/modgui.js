@@ -384,8 +384,8 @@ function GUI(effect, options) {
                                 self.presetManager.presetManager("addPreset", {
                                     name: name,
                                     uri: resp.uri,
-                                    bind: MOD_BIND_NONE,
-                                    readonly: false,
+                                    bind: false,
+                                    readonly: true,
                                 })
                             }
                         },
@@ -415,7 +415,7 @@ function GUI(effect, options) {
                     _presets.push({
                         name: p.label,
                         uri: p.uri,
-                        bind: MOD_BIND_NONE,
+                        bind: false,
                         readonly: true,
                     })
                 }
