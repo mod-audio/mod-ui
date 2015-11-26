@@ -69,7 +69,7 @@ int main()
 #if 1
     init();
     scanPlugins();
-    get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
+    //get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
     cleanup();
 #endif
 
