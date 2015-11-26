@@ -456,7 +456,9 @@ def get_pedalboard_info(bundle):
     if not info:
         raise Exception
     ret = structToDict(info.contents)
-    print(ret)
+    from pprint import PrettyPrinter
+    pp = PrettyPrinter(width=120, indent=4)
+    pp.pprint(ret)
     return ret
 
 # Get the size of a specific pedalboard

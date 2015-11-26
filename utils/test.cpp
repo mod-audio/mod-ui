@@ -28,7 +28,7 @@
 
 void scanPlugins()
 {
-#if 1
+#if 0
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -57,7 +57,7 @@ void scanPlugins()
                 break;
             }
 
-            //get_pedalboard_info(pedalboards[i]->bundle);
+            get_pedalboard_info(pedalboards[i]->bundle);
             get_pedalboard_size(pedalboards[i]->bundle);
         }
     }
@@ -69,13 +69,13 @@ int main()
 #if 1
     init();
     scanPlugins();
-    get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
     cleanup();
 #endif
 
-#if 1
+#if 0
     setenv("LV2_PATH", "/NOT", 1);
     init();
+    get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
     assert(get_all_plugins() == nullptr);
     assert(add_bundle_to_lilv_world("/NOT") == nullptr);
     assert(add_bundle_to_lilv_world("/NOT/") == nullptr);

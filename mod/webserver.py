@@ -931,21 +931,7 @@ class TemplateHandler(web.RequestHandler):
             context['pedalboard'] = ""
             return context
 
-        data = {
-            "instances": [],
-            "connections": pedalboard['connections'],
-            "hardware": pedalboard['hardware'],
-        }
-
-        for plugin in pedalboard['plugins']:
-            data["instances"].append({
-                "uri": plugin['uri'],
-                "x": plugin['x'],
-                "y": plugin['y'],
-                "bypassed": not plugin['enabled'],
-            })
-
-        context['pedalboard'] = b64encode(json.dumps(data).encode("utf-8"))
+        context['pedalboard'] = b64encode(json.dumps(pedalboard).encode("utf-8"))
         return context
 
 class EditionLoader(TemplateHandler):
