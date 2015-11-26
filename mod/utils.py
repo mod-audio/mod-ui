@@ -143,7 +143,7 @@ class PluginAuthor(Structure):
 class PluginGUIPort(Structure):
     _fields_ = [
         ("valid", c_bool),
-        ("index", c_int),
+        ("index", c_uint),
         ("name", c_char_p),
         ("symbol", c_char_p),
     ]

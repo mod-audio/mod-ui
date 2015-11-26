@@ -32,7 +32,7 @@ typedef struct {
 
 typedef struct {
     bool valid;
-    int index;
+    unsigned int index;
     const char* name;
     const char* symbol;
 } PluginGUIPort;

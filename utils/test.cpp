@@ -46,7 +46,7 @@ void scanPlugins()
     }
 #endif
 
-#if 0
+#if 1
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
     {
         for (int i=0; pedalboards[i] != nullptr; ++i)
@@ -69,11 +69,11 @@ int main()
 #if 1
     init();
     scanPlugins();
-    //get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
+    get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
     cleanup();
 #endif
 
-#if 0
+#if 1
     setenv("LV2_PATH", "/NOT", 1);
     init();
     assert(get_all_plugins() == nullptr);

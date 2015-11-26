@@ -1370,8 +1370,12 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         if (LilvNodes* const modgui_ports = lilv_world_find_nodes(W, modguigui, ns.modgui_port, nullptr))
         {
             const unsigned int guiportscount = lilv_nodes_size(modgui_ports);
-            PluginGUIPort* const guiports(new PluginGUIPort[guiportscount+1]);
+
+            PluginGUIPort* const guiports = new PluginGUIPort[guiportscount+1];
             memset(guiports, 0, sizeof(PluginGUIPort) * (guiportscount+1));
+
+            for (unsigned int i=0; i<guiportscount; ++i)
+                guiports[i] = { true, i, nc, nc };
 
             int index;
 
@@ -1383,54 +1387,36 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 {
                     index = lilv_node_as_int(guiports_index);
                     lilv_node_free(guiports_index);
-                    printf("Info: got modgui port index %i / %i\n", index, (int)guiportscount);
                 }
                 else
                 {
-                    printf("Warning: Failed to get modgui port index\n");
                     continue;
                 }
 
-                if (index < 0)
-                {
-                    assert(false);
+                if (index < 0 || index >= (int)guiportscount)
                     continue;
-                }
-                if (index >= (int)guiportscount)
-                {
-                    assert(false);
-                    continue;
-                }
 
                 PluginGUIPort& guiport(guiports[index]);
-                if (guiport.valid)
-                {
-                    assert(false);
-                    continue;
-                }
 
                 if (LilvNode* const guiports_symbol = lilv_world_get(W, modgui_port, ns.lv2core_symbol, nullptr))
                 {
+                    // in case of duplicated indexes
+                    if (guiport.symbol != nullptr && guiport.symbol != nc)
+                        free((void*)guiport.symbol);
+
                     guiport.symbol = strdup(lilv_node_as_string(guiports_symbol));
                     lilv_node_free(guiports_symbol);
                 }
-                else
-                {
-                    guiport.symbol = nc;
-                }
 
-                /*
                 if (LilvNode* const guiports_name = lilv_world_get(W, modgui_port, ns.lv2core_name, nullptr))
                 {
+                    // in case of duplicated indexes
+                    if (guiport.name != nullptr && guiport.name != nc)
+                        free((void*)guiport.name);
+
                     guiport.name = strdup(lilv_node_as_string(guiports_name));
                     lilv_node_free(guiports_name);
                 }
-                else
-                {
-                    guiport.name = nc;
-                }*/
-
-                guiport.valid = true;
             }
 
             info.gui.ports = guiports;
@@ -2208,10 +2194,7 @@ static void _clear_plugin_info(PluginInfo& info)
     if (info.gui.ports != nullptr)
     {
         for (int i=0; info.gui.ports[i].valid; ++i)
-        {
-            printf("Cleaning port info %i\n", i);
             _clear_gui_port_info(info.gui.ports[i]);
-        }
         delete[] info.gui.ports;
     }
 
@@ -2848,8 +2831,9 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         if (! info.valid)
             continue;
 
-        PedalboardInfo_Mini* const infop(new PedalboardInfo_Mini);
+        PedalboardInfo_Mini* const infop = new PedalboardInfo_Mini;
         memcpy(infop, &info, sizeof(PedalboardInfo_Mini));
+
         allpedals.push_back(infop);
     }
 
