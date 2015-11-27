@@ -28,7 +28,7 @@
 
 void scanPlugins()
 {
-#if 0
+#if 1
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -69,10 +69,18 @@ int main()
 #if 1
     init();
     scanPlugins();
+# if 1
+# define PLUGIN_TEST_URI "http://code.google.com/p/amsynth/amsynth"
+    rescan_plugin_presets(PLUGIN_TEST_URI);
+    get_plugin_info(PLUGIN_TEST_URI);
+    get_plugin_info_mini(PLUGIN_TEST_URI);
+    get_plugin_control_input_ports(PLUGIN_TEST_URI);
+# undef PLUGIN_TEST_URI
+# endif
     cleanup();
 #endif
 
-#if 0
+#if 1
     setenv("LV2_PATH", "/NOT", 1);
     init();
     get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");

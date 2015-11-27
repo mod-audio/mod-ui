@@ -227,6 +227,9 @@ MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
 // get all control input ports for a specific plugin
 MOD_API const PluginPort* get_plugin_control_input_ports(const char* uri);
 
+// trigger a preset rescan for a plugin the next time it's loaded
+MOD_API void rescan_plugin_presets(const char* uri);
+
 // get all available pedalboards (ie, plugins with pedalboard type)
 MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
 

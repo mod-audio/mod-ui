@@ -53,6 +53,9 @@ const LilvPlugins* PLUGINS = nullptr;
 std::map<std::string, PluginInfo> PLUGNFO;
 std::map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
 
+// list of loaded bundles
+std::list<std::string> PLUGINStoReload;
+
 // some other cached values
 static const char* const HOME = getenv("HOME");
 static size_t HOMElen = strlen(HOME);
@@ -2282,6 +2285,39 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
 {
     if (info.title != nullptr && info.title != nc)
         free((void*)info.title);
+
+    if (info.connections != nullptr)
+    {
+        for (int i=0; info.connections[i].valid; ++i)
+        {
+            lilv_free((void*)info.connections[i].source);
+            lilv_free((void*)info.connections[i].target);
+        }
+        delete[] info.connections;
+    }
+
+    if (info.plugins != nullptr)
+    {
+        for (int i=0; info.plugins[i].valid; ++i)
+        {
+            lilv_free((void*)info.plugins[i].instance);
+            free((void*)info.plugins[i].uri);
+        }
+        delete[] info.plugins;
+    }
+
+#if 0
+    for (int i=0; info.hardware.audio_ins[i] != nullptr; ++i)
+        free((void*)info.hardware.audio_ins[i]);
+    for (int i=0; info.hardware.audio_outs[i] != nullptr; ++i)
+        free((void*)info.hardware.audio_outs[i]);
+    for (int i=0; info.hardware.midi_ins[i] != nullptr; ++i)
+        free((void*)info.hardware.midi_ins[i]);
+    for (int i=0; info.hardware.midi_outs[i] != nullptr; ++i)
+        free((void*)info.hardware.midi_outs[i]);
+#endif
+
+    memset(&info, 0, sizeof(PedalboardInfo));
 }
 
 static void _clear_pedalboard_info_mini(PedalboardInfo_Mini& info)
@@ -2331,6 +2367,98 @@ static void _clear_state_values()
 
     delete[] _state_ret;
     _state_ret = nullptr;
+}
+
+static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const std::string& uri)
+{
+    if (std::find(PLUGINStoReload.begin(), PLUGINStoReload.end(), uri) == PLUGINStoReload.end())
+        return &info;
+
+    PLUGINStoReload.remove(uri);
+
+    LilvNode* node = lilv_new_uri(W, uri.c_str());
+    const LilvPlugin* const p = lilv_plugins_get_by_uri(PLUGINS, node);
+    lilv_node_free(node);
+
+    if (p == nullptr)
+        return &info;
+
+    if (info.presets != nullptr)
+    {
+        for (int i=0; info.presets[i].valid; ++i)
+        {
+            free((void*)info.presets[i].uri);
+            free((void*)info.presets[i].label);
+        }
+        delete[] info.presets;
+        info.presets = nullptr;
+    }
+
+    LilvNode* const pset_Preset = lilv_new_uri(W, LV2_PRESETS__Preset);
+    LilvNode* const rdfs_label  = lilv_new_uri(W, LILV_NS_RDFS "label");
+
+    // --------------------------------------------------------------------------------------------------------
+    // presets
+
+    if (LilvNodes* const presetnodes = lilv_plugin_get_related(p, pset_Preset))
+    {
+        const unsigned int presetcount = lilv_nodes_size(presetnodes);
+        unsigned int prindex = 0;
+
+        PluginPreset* const presets = new PluginPreset[presetcount+1];
+        memset(presets, 0, sizeof(PluginPreset) * (presetcount+1));
+
+        std::vector<const LilvNode*> loadedPresetResourceNodes;
+
+        LILV_FOREACH(nodes, itprs, presetnodes)
+        {
+            if (prindex >= presetcount)
+                continue;
+
+            const LilvNode* const presetnode = lilv_nodes_get(presetnodes, itprs);
+
+            // try to find label without loading the preset resource first
+            LilvNode* xlabel = lilv_world_get(W, presetnode, rdfs_label, nullptr);
+
+            // failed, try loading resource
+            if (xlabel == nullptr)
+            {
+                // if loading resource fails, skip this preset
+                if (lilv_world_load_resource(W, presetnode) == -1)
+                    continue;
+
+                // ok, let's try again
+                xlabel = lilv_world_get(W, presetnode, rdfs_label, nullptr);
+
+                // need to unload later
+                loadedPresetResourceNodes.push_back(presetnode);
+            }
+
+            if (xlabel != nullptr)
+            {
+                presets[prindex++] = {
+                    true,
+                    strdup(lilv_node_as_uri(presetnode)),
+                    strdup(lilv_node_as_string(xlabel)),
+                };
+
+                lilv_node_free(xlabel);
+            }
+        }
+
+        for (const LilvNode* presetnode : loadedPresetResourceNodes)
+            lilv_world_unload_resource(W, presetnode);
+
+        info.presets = presets;
+
+        loadedPresetResourceNodes.clear();
+        lilv_nodes_free(presetnodes);
+    }
+
+    lilv_node_free(pset_Preset);
+    lilv_node_free(rdfs_label);
+
+    return &info;
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -2716,7 +2844,7 @@ const PluginInfo* get_plugin_info(const char* const uri_)
 
     // check if it's already cached
     if (PLUGNFO[uri].valid)
-        return &PLUGNFO[uri];
+        return _fill_plugin_info_with_presets(PLUGNFO[uri], uri);
 
     const NamespaceDefinitions ns;
 
@@ -2774,6 +2902,8 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* const uri_)
     return nullptr;
 }
 
+// --------------------------------------------------------------------------------------------------------
+
 const PluginPort* get_plugin_control_input_ports(const char* const uri_)
 {
     const std::string uri = uri_;
@@ -2806,6 +2936,15 @@ const PluginPort* get_plugin_control_input_ports(const char* const uri_)
 
     // plugin not found
     return nullptr;
+}
+
+// trigger a preset rescan for a plugin the next time it's loaded
+void rescan_plugin_presets(const char* const uri_)
+{
+    const std::string uri(uri_);
+
+    if (std::find(PLUGINStoReload.begin(), PLUGINStoReload.end(), uri) == PLUGINStoReload.end())
+        PLUGINStoReload.push_back(uri);
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -2992,6 +3131,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     const char* const uri = lilv_node_as_uri(proto);
                     char* instance  = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
 
+                    // FIXME: Invalid read reported by valgrind
                     if (strstr(instance, bundlepath) != nullptr)
                         memmove(instance, instance+bundlepathsize+1, strlen(instance)-bundlepathsize+1);
 
@@ -3016,6 +3156,11 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         y != nullptr ? lilv_node_as_float(y) : 0.0f,
                         ports
                     };
+
+                    lilv_node_free(enabled);
+                    lilv_node_free(x);
+                    lilv_node_free(y);
+                    lilv_node_free(proto);
                 }
             }
 
@@ -3039,18 +3184,28 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
             LILV_FOREACH(nodes, itarcs, arcs)
             {
                 const LilvNode* const arc  = lilv_nodes_get(arcs, itarcs);
-                const LilvNode* const head = lilv_world_get(w, arc, ingen_head, nullptr);
-                const LilvNode* const tail = lilv_world_get(w, arc, ingen_tail, nullptr);
 
-                if (head == nullptr || tail == nullptr)
+                LilvNode* const head = lilv_world_get(w, arc, ingen_head, nullptr);
+
+                if (head == nullptr)
                     continue;
+
+                LilvNode* const tail = lilv_world_get(w, arc, ingen_tail, nullptr);
+
+                if (head == nullptr)
+                {
+                    lilv_node_free(head);
+                    continue;
+                }
 
                 char* tailstr = lilv_file_uri_parse(lilv_node_as_string(tail), nullptr);
                 char* headstr = lilv_file_uri_parse(lilv_node_as_string(head), nullptr);
 
+                // FIXME: Invalid read reported by valgrind
                 if (strstr(tailstr, bundlepath) != nullptr)
                     memmove(tailstr, tailstr+bundlepathsize+1, strlen(tailstr)-bundlepathsize+1);
 
+                // FIXME: Invalid read reported by valgrind
                 if (strstr(headstr, bundlepath) != nullptr)
                     memmove(headstr, headstr+bundlepathsize+1, strlen(headstr)-bundlepathsize+1);
 
@@ -3059,6 +3214,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     tailstr,
                     headstr
                 };
+
+                lilv_node_free(head);
+                lilv_node_free(tail);
             }
 
             info.connections = conns;
