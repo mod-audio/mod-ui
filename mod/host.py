@@ -35,7 +35,7 @@ from mod import get_hardware, symbolify
 from mod.bank import list_banks
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world
+from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 
 ADDRESSING_CTYPE_LINEAR       = 0
@@ -498,6 +498,7 @@ class Host(object):
         instance_id  = self.mapper.get_id_without_creating(instance)
         labelsymbol  = symbolify(label)
         presetbundle = os.path.expanduser("~/.lv2/%s.lv2") % labelsymbol
+        plugin_uri   = self.plugins[instance_id]['uri']
 
         # if presetbundle already exists, generate a new random bundle path
         if os.path.exists(presetbundle):
@@ -524,6 +525,9 @@ class Host(object):
                 print("uri saved as 'file://%s.ttl'" % os.path.join(presetbundle, labelsymbol))
 
             self.add_bundle(presetbundle, preset_callback)
+
+            # rescan presets next time the plugin is loaded
+            rescan_plugin_presets(plugin_uri)
 
         print("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol))
         self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol), host_callback, datatype='boolean')
