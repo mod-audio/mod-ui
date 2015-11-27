@@ -45,21 +45,21 @@ JqueryClass('effectBox', {
         var searchbox = self.find('input[type=search]')
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
-        searchbox.keydown(function (e) {
-            if (e.keyCode == 13) {
+        searchbox.keypress(function (e) {
+            if (e.which == 13 || e.which == 8 || e.which == 43)
                 self.effectBox('search')
                 return false
             }
         })
         var lastKeyUp = null
-        searchbox.keyup(function (e) {
-            if (e.keyCode == 13)
+        searchbox.keypress(function (e) {
+            if (e.which == 13 || e.which == 8 || e.which == 43)
                 return
             if (lastKeyUp != null) {
                 clearTimeout(lastKeyUp)
                 lastKeyUp = null
             }
-            if (e.keyCode == 13)
+            if (e.which == 13 || e.which == 8 || e.which == 43)
                 return
             lastKeyUp = setTimeout(function () {
                 self.effectBox('search')
