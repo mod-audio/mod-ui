@@ -45,21 +45,24 @@ JqueryClass('effectBox', {
         var searchbox = self.find('input[type=search]')
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
-        searchbox.keypress(function (e) {
-            if (e.which == 13 || e.which == 8 || e.which == 43)
+        searchbox.keydown(function (e) {
+            if (e.keyCode == 13) { //detect enter
                 self.effectBox('search')
                 return false
             }
+            else if (e.keyCode == 8 || e.keyCode == 43) { //detect delete and backspace
+                self.effectBox('search')                
+            }
         })
         var lastKeyUp = null
-        searchbox.keypress(function (e) {
-            if (e.which == 13 || e.which == 8 || e.which == 43)
+        searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+            if (e.which == 13)
                 return
             if (lastKeyUp != null) {
                 clearTimeout(lastKeyUp)
                 lastKeyUp = null
             }
-            if (e.which == 13 || e.which == 8 || e.which == 43)
+            if (e.which == 13)
                 return
             lastKeyUp = setTimeout(function () {
                 self.effectBox('search')
