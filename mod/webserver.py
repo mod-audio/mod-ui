@@ -20,7 +20,6 @@ import json, socket
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import lilv
 import time, uuid
 from datetime import timedelta
 from io import StringIO
