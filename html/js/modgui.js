@@ -409,7 +409,6 @@ function GUI(effect, options) {
                  * bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
                  */
                 var p, _presets = []
-                console.log(effect.presets)
                 for (var i in effect.presets) {
                     p = effect.presets[i]
                     _presets.push({
