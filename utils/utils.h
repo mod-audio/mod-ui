@@ -169,10 +169,10 @@ typedef struct {
 } PedalboardConnection;
 
 typedef struct {
-    const char* const* audio_ins;
-    const char* const* audio_outs;
-    const char* const* midi_ins;
-    const char* const* midi_outs;
+    unsigned int audio_ins;
+    unsigned int audio_outs;
+    unsigned int midi_ins;
+    unsigned int midi_outs;
 } PedalboardHardware;
 
 typedef struct {

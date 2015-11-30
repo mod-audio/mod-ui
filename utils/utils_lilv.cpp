@@ -175,6 +175,15 @@ static const std::vector<std::string> BLACKLIST = {
 
 // --------------------------------------------------------------------------------------------------------
 
+inline bool ends_with(const std::string& value, const std::string ending)
+{
+    if (ending.size() > value.size())
+        return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+// --------------------------------------------------------------------------------------------------------
+
 #define LILV_NS_INGEN    "http://drobilla.net/ns/ingen#"
 #define LILV_NS_MOD      "http://moddevices.com/ns/mod#"
 #define LILV_NS_MODGUI   "http://moddevices.com/ns/modgui#"
@@ -2300,8 +2309,17 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
     {
         for (int i=0; info.plugins[i].valid; ++i)
         {
-            lilv_free((void*)info.plugins[i].instance);
-            free((void*)info.plugins[i].uri);
+            const PedalboardPlugin& p(info.plugins[i]);
+
+            free((void*)p.instance);
+            free((void*)p.uri);
+
+            if (p.ports != nullptr)
+            {
+                for (int j=0; p.ports[j].valid; ++j)
+                    free((void*)p.ports[j].symbol);
+                delete[] p.ports;
+            }
         }
         delete[] info.plugins;
     }
@@ -3091,6 +3109,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const ingen_enabled = lilv_new_uri(w, LILV_NS_INGEN "enabled");
     LilvNode* const ingen_head    = lilv_new_uri(w, LILV_NS_INGEN "head");
     LilvNode* const ingen_tail    = lilv_new_uri(w, LILV_NS_INGEN "tail");
+    LilvNode* const ingen_value   = lilv_new_uri(w, LILV_NS_INGEN "value");
     LilvNode* const lv2_port      = lilv_new_uri(w, LILV_NS_LV2   "port");
     LilvNode* const lv2_prototype = lilv_new_uri(w, LILV_NS_LV2   "prototype");
 
@@ -3129,11 +3148,14 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 if (LilvNode* const proto = lilv_world_get(w, block, lv2_prototype, nullptr))
                 {
                     const char* const uri = lilv_node_as_uri(proto);
-                    char* instance  = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
+                    char* full_instance = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
+                    char* instance;
 
                     // FIXME: Invalid read reported by valgrind
-                    if (strstr(instance, bundlepath) != nullptr)
-                        memmove(instance, instance+bundlepathsize+1, strlen(instance)-bundlepathsize+1);
+                    if (strstr(full_instance, bundlepath) != nullptr)
+                        instance = strdup(full_instance+(bundlepathsize+1));
+                    else
+                        instance = strdup(full_instance);
 
                     LilvNode* const enabled = lilv_world_get(w, block, ingen_enabled, nullptr);
                     LilvNode* const x       = lilv_world_get(w, block, ingen_canvasX, nullptr);
@@ -3143,7 +3165,37 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                     if (LilvNodes* const portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
                     {
-                        // TODO
+                        unsigned int portcount = lilv_nodes_size(portnodes);
+
+                        ports = new PedalboardPluginPort[portcount+1];
+                        memset(ports, 0, sizeof(PedalboardPluginPort) * (portcount+1));
+
+                        const size_t full_instance_size = strlen(full_instance);
+
+                        portcount = 0;
+                        LILV_FOREACH(nodes, itport, portnodes)
+                        {
+                              const LilvNode* const portnode = lilv_nodes_get(portnodes, itport);
+
+                              LilvNode* const portvalue = lilv_world_get(w, portnode, ingen_value, nullptr);
+
+                              if (portvalue == nullptr)
+                                  continue;
+
+                              char* portsymbol = lilv_file_uri_parse(lilv_node_as_string(portnode), nullptr);
+
+                              if (strstr(portsymbol, full_instance) != nullptr)
+                                  memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
+
+                              ports[portcount++] = {
+                                  true,
+                                  portsymbol,
+                                  lilv_node_as_float(portvalue)
+                              };
+
+                              lilv_node_free(portvalue);
+                        }
+
                         lilv_nodes_free(portnodes);
                     }
 
@@ -3157,6 +3209,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         ports
                     };
 
+                    lilv_free(full_instance);
                     lilv_node_free(enabled);
                     lilv_node_free(x);
                     lilv_node_free(y);
@@ -3201,13 +3254,11 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 char* tailstr = lilv_file_uri_parse(lilv_node_as_string(tail), nullptr);
                 char* headstr = lilv_file_uri_parse(lilv_node_as_string(head), nullptr);
 
-                // FIXME: Invalid read reported by valgrind
                 if (strstr(tailstr, bundlepath) != nullptr)
-                    memmove(tailstr, tailstr+bundlepathsize+1, strlen(tailstr)-bundlepathsize+1);
+                    memmove(tailstr, tailstr+(bundlepathsize+1), strlen(tailstr)-bundlepathsize);
 
-                // FIXME: Invalid read reported by valgrind
                 if (strstr(headstr, bundlepath) != nullptr)
-                    memmove(headstr, headstr+bundlepathsize+1, strlen(headstr)-bundlepathsize+1);
+                    memmove(headstr, headstr+(bundlepathsize+1), strlen(headstr)-bundlepathsize);
 
                 conns[count++] = {
                     true,
@@ -3236,8 +3287,68 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         {
             const LilvNode* const hwport = lilv_nodes_get(hwports, ithwp);
 
-           // TODO
-            (void)hwport;
+            // check if we already handled this port
+            const std::string port_uri = lilv_node_as_uri(hwport);
+            if (std::find(handled_port_uris.begin(), handled_port_uris.end(), port_uri) != handled_port_uris.end())
+                continue;
+            if (ends_with(port_uri, "/control_in") || ends_with(port_uri, "/control_out"))
+                continue;
+            handled_port_uris.push_back(port_uri);
+
+            // get types
+            if (LilvNodes* const port_types = lilv_world_find_nodes(w, hwport, rdftypenode, NULL))
+            {
+                int portDir  = -1; // input or output
+                int portType = -1; // atom, audio or cv
+
+                LILV_FOREACH(nodes, itptyp, port_types)
+                {
+                    const LilvNode* const ptyp = lilv_nodes_get(port_types, itptyp);
+
+                    if (const char* const port_type_uri = lilv_node_as_uri(ptyp))
+                    {
+                        if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#InputPort") == 0)
+                            portDir = 'i';
+                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#OutputPort") == 0)
+                            portDir = 'o';
+                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#AudioPort") == 0)
+                            portType = 'a';
+                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#CVPort") == 0)
+                            portType = 'c';
+                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/ext/atom#AtomPort") == 0)
+                            portType = 't';
+                    }
+                }
+
+                if (portDir == -1 || portType == -1)
+                    continue;
+
+                if (portType == 'a')
+                {
+                    if (portDir == 'i')
+                        info.hardware.audio_ins += 1;
+                    else
+                        info.hardware.audio_outs += 1;
+                }
+                else if (portType == 't')
+                {
+                    if (portDir == 'i')
+                        info.hardware.midi_ins += 1;
+                    else
+                        info.hardware.midi_outs += 1;
+                }
+                else if (portType == 'c')
+                {
+                    /*
+                    if (portDir == 'i')
+                        info.hardware.cv_ins += 1;
+                    else
+                        info.hardware.cv_outs += 1;
+                    */
+                }
+
+                lilv_nodes_free(port_types);
+            }
         }
 
         lilv_nodes_free(hwports);
@@ -3252,6 +3363,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(ingen_enabled);
     lilv_node_free(ingen_head);
     lilv_node_free(ingen_tail);
+    lilv_node_free(ingen_value);
     lilv_node_free(lv2_port);
     lilv_node_free(lv2_prototype);
     lilv_node_free(rdftypenode);

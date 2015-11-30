@@ -295,10 +295,10 @@ class PedalboardConnection(Structure):
 
 class PedalboardHardware(Structure):
     _fields_ = [
-        ("audio_ins", POINTER(c_char_p)),
-        ("audio_outs", POINTER(c_char_p)),
-        ("midi_ins", POINTER(c_char_p)),
-        ("midi_outs", POINTER(c_char_p)),
+        ("audio_ins", c_uint),
+        ("audio_outs", c_uint),
+        ("midi_ins", c_uint),
+        ("midi_outs", c_uint),
     ]
 
 class PedalboardInfo(Structure):
