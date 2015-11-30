@@ -497,7 +497,7 @@ class Host(object):
     def preset_save(self, instance, label, callback):
         instance_id  = self.mapper.get_id_without_creating(instance)
         labelsymbol  = symbolify(label)
-        presetbundle = os.path.expanduser("~/.lv2/%s.lv2") % labelsymbol
+        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance, labelsymbol)
         plugin_uri   = self.plugins[instance_id]['uri']
 
         # if presetbundle already exists, generate a new random bundle path
@@ -505,7 +505,7 @@ class Host(object):
             from random import randint
 
             while True:
-                presetbundle = os.path.expanduser("~/.lv2/%s-%i.lv2" % (labelsymbol, randint(1,99999)))
+                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance, labelsymbol, randint(1,99999)))
                 if os.path.exists(presetbundle):
                     continue
                 break
@@ -614,8 +614,6 @@ class Host(object):
 
                 self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
-
-            print(self.plugins[instance_id])
 
         for c in pb['connections']:
             port_from = "/graph/%s" % c['source']
