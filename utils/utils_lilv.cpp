@@ -2544,12 +2544,12 @@ bool is_bundle_loaded(const char* const bundle)
     char* cbundlepath = realpath(bundle, tmppath);
 
     if (cbundlepath == nullptr)
-        return nullptr;
+        return false;
 
     {
         const size_t size = strlen(cbundlepath);
         if (size <= 1)
-            return nullptr;
+            return false;
 
         if (cbundlepath[size] != OS_SEP)
         {

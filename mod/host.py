@@ -607,7 +607,15 @@ class Host(object):
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
-        # TODO: set port values
+            for port in p['ports']:
+                symbol = port['symbol']
+                value  = port['value']
+                self.plugins[instance_id]['ports'][symbol] = value
+
+                self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+
+            print(self.plugins[instance_id])
 
         for c in pb['connections']:
             port_from = "/graph/%s" % c['source']
