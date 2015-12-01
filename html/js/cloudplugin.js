@@ -43,8 +43,10 @@ JqueryClass('cloudPluginBox', {
                 self.cloudPluginBox('search')
                 return false
             }
-            else if (e.keyCode == 8 || e.keyCode == 43) { //detect delete and backspace
-                self.cloudPluginBox('search')                
+            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+                setTimeout(function () {
+                    self.cloudPluginBox('search')
+                }, 400);
             }
         })
         var lastKeyUp = null

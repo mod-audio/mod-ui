@@ -50,8 +50,10 @@ JqueryClass('effectBox', {
                 self.effectBox('search')
                 return false
             }
-            else if (e.keyCode == 8 || e.keyCode == 43) { //detect delete and backspace
-                self.effectBox('search')                
+            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+                setTimeout(function () {
+                    self.effectBox('search')
+                }, 400);
             }
         })
         var lastKeyUp = null

@@ -169,6 +169,31 @@ hr.dotted {
   margin: 2px 0 3px 0;
 }
 
+.input-clean {
+  &:after {
+    content: "&times;";
+    content: "\00d7";
+    font-size: 14px;
+    font-weight: bold;
+  }  
+  background: #333;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  height: 18px;
+  left: auto !important;
+  position: absolute;
+  right: 0;
+  margin-right: 18px !important;
+  text-align: center;
+  text-transform: uppercase;
+  margin-top: -26px !important;
+  width: 18px;
+}
+.form-control::selection {
+    background: @brand-primary !important;
+    color: white !important;
+  }
 #notifications {
   position: absolute;
   top: 0;
@@ -536,27 +561,7 @@ hr.dotted {
     }
     .control-group {
       position: relative;
-    }
-    .input-clean {
-      &:after {
-        content: "&times;";
-        content: "\00d7";
-        font-size: 13px;
-        font-weight: bold;
-      }
-      background: #333;
-      border-radius: 12px;
-      color: #fff;
-      cursor: pointer;
-      height: 18px;
-      left: auto !important;
-      position: absolute;
-      right: 13px !important;
-      text-align: center;
-      text-transform: uppercase;
-      top: 47px !important;
-      width: 18px;
-    }
+    }    
   }
   ul {
     list-style: none;

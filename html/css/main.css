@@ -6343,6 +6343,31 @@ hr.dotted {
   border: 1px dotted #444;
   margin: 2px 0 3px 0;
 }
+.input-clean {
+  background: #333;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  height: 18px;
+  left: auto !important;
+  position: absolute;
+  right: 0;
+  margin-right: 18px !important;
+  text-align: center;
+  text-transform: uppercase;
+  margin-top: -26px !important;
+  width: 18px;
+}
+.input-clean:after {
+  content: "&times;";
+  content: "\00d7";
+  font-size: 14px;
+  font-weight: bold;
+}
+.form-control::selection {
+  background: #40c25d !important;
+  color: white !important;
+}
 #notifications {
   position: absolute;
   top: 0;
@@ -6706,26 +6731,6 @@ hr.dotted {
 }
 #plugins-library #plugins-library-settings-window .control-group {
   position: relative;
-}
-#plugins-library #plugins-library-settings-window .input-clean {
-  background: #333;
-  border-radius: 12px;
-  color: #fff;
-  cursor: pointer;
-  height: 18px;
-  left: auto !important;
-  position: absolute;
-  right: 13px !important;
-  text-align: center;
-  text-transform: uppercase;
-  top: 47px !important;
-  width: 18px;
-}
-#plugins-library #plugins-library-settings-window .input-clean:after {
-  content: "&times;";
-  content: "\00d7";
-  font-size: 13px;
-  font-weight: bold;
 }
 #plugins-library ul {
   list-style: none;

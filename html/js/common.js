@@ -45,14 +45,14 @@ function JqueryClass(name, methods) {
 
         var position = function () {
             remove.show()
-            remove.css('left', self.position().left + self.width() - 3)
+/*            remove.css('left', self.position().left + self.width() - 3)
             remove.css('top', self.position().top + self.height() - 22)
-        }
+*/        }
 
         remove.click(function () {
             self.val('')
             remove.hide()
-            self.trigger('keyup')
+            self.trigger('keypress')
         })
 
         if (self.val().length == 0)
