@@ -133,7 +133,7 @@ function GUI(effect, options) {
         drag: new Function(),
         dragStop: new Function(),
         midiLearn: new Function(),
-        bypassed: 1,
+        bypassed: true,
         defaultIconTemplate: 'Template missing',
         defaultSettingsTemplate: 'Template missing',
         loadDependencies: true,
@@ -573,47 +573,6 @@ function GUI(effect, options) {
             }
         });
 
-        if (onlySetValues)
-            return
-
-        element.find('[mod-role=input-control-minimum]').each(function () {
-            var symbol = $(this).attr('mod-port-symbol')
-            if (!symbol) {
-                $(this).html('missing mod-port-symbol attribute')
-                return
-            }
-            var port = self.controls[symbol]
-            if (port === undefined)
-                return
-            var format
-            if (port.units.render)
-                format = port.units.render.replace('%f', '%.2f')
-            else
-                format = '%.2f'
-            if (port.properties.indexOf("integer") >= 0)
-                format = format.replace(/%\.\d+f/, '%d')
-            $(this).html(sprintf(format, port.ranges.minimum))
-        });
-
-        element.find('[mod-role=input-control-maximum]').each(function () {
-            var symbol = $(this).attr('mod-port-symbol')
-            if (!symbol) {
-                $(this).html('missing mod-port-symbol attribute')
-                return
-            }
-            var port = self.controls[symbol]
-            if (port === undefined)
-                return
-            var format
-            if (port.units.render)
-                format = port.units.render.replace('%f', '%.2f')
-            else
-                format = '%.2f'
-            if (port.properties.indexOf("integer") >= 0)
-                format = format.replace(/%\.\d+f/, '%d')
-            $(this).html(sprintf(format, port.ranges.maximum))
-        });
-
         element.find('[mod-role=bypass]').each(function () {
             var control = $(this)
             var port = self.controls[':bypass']
@@ -635,6 +594,7 @@ function GUI(effect, options) {
                             $(this).addClass('on').removeClass('off')
                     });
                     */
+                    self.bypassed = !!value
 
                     self.setPortValue(':bypass', value ? 1 : 0, control)
 
@@ -644,16 +604,17 @@ function GUI(effect, options) {
                         control.addClass('off').removeClass('on')
                 },
                 changeLights: function (value) {
-                    self.bypassed = value
+                    console.log("CHANGE LIGHTS!!", value)
 
                     element.find('[mod-role=bypass-light]').each(function () {
                         // NOTE
                         // the element itself will get inverse class ("on" when light is "off"),
                         // because of the switch widget.
-                        if (value)
-                            $(this).addClass('off').removeClass('on')
-                        else
-                            $(this).addClass('on').removeClass('off')
+//                         if (value)
+//                             $(this).addClass('off').removeClass('on')
+//                         else
+//                             $(this).addClass('on').removeClass('off')
+                      self.setPortWidgetsValue(':bypass', value, $(this), true)
                     });
                 },
             })
@@ -665,10 +626,71 @@ function GUI(effect, options) {
             control.addClass("mod-port")
         })
 
-        if (self.bypassed)
-            element.find('[mod-role=bypass-light]').addClass('off').removeClass('on')
-        else
-            element.find('[mod-role=bypass-light]').addClass('on').removeClass('off')
+        element.find('[mod-role=bypass-light]').each(function () {
+            self.setPortWidgetsValue(':bypass', self.bypassed ? 1 : 0, $(this), true)
+        })
+
+        if (onlySetValues)
+            return
+
+        element.find('[mod-role=input-control-minimum]').each(function () {
+            var symbol = $(this).attr('mod-port-symbol')
+            if (!symbol) {
+                $(this).html('missing mod-port-symbol attribute')
+                return
+            }
+            var port = self.controls[symbol]
+            if (port === undefined)
+                return
+
+            var format, value
+            if (port.units.render)
+                format = port.units.render
+            else
+                format = '%f'
+
+            if (port.properties.indexOf("integer") >= 0) {
+                format = format.replace(/%\.\d+f/, '%d')
+                value = sprintf(format, port.ranges.minimum)
+            }
+            else {
+                value = sprintf(format, port.ranges.minimum)
+                if (value.length > 8) {
+                    format = format.replace('%f', '%.2f')
+                    value  = sprintf(format, port.ranges.minimum)
+                }
+            }
+            $(this).html(value)
+        });
+
+        element.find('[mod-role=input-control-maximum]').each(function () {
+            var symbol = $(this).attr('mod-port-symbol')
+            if (!symbol) {
+                $(this).html('missing mod-port-symbol attribute')
+                return
+            }
+            var port = self.controls[symbol]
+            if (port === undefined)
+                return
+
+            var format, value
+            if (port.units.render)
+                format = port.units.render
+            else
+                format = '%f'
+
+            if (port.properties.indexOf("integer") >= 0) {
+                format = format.replace(/%\.\d+f/, '%d')
+                value  = sprintf(format, port.ranges.maximum)
+            } else {
+                value = sprintf(format, port.ranges.maximum)
+                if (value.length > 8) {
+                    format = format.replace('%f', '%.2f')
+                    value  = sprintf(format, port.ranges.maximum)
+                }
+            }
+            $(this).html(value)
+        });
 
         // Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
         // Following events will be forwarded to proper widget
@@ -1258,10 +1280,10 @@ JqueryClass('bypassWidget', baseWidget, {
             var value = self.data('value')
             if (value == self.data('minimum')) {
                 self.bypassWidget('setValue', self.data('maximum'))
-                self.addClass('on').removeClass('off')
+//                 self.addClass('on').removeClass('off')
             } else {
                 self.bypassWidget('setValue', self.data('minimum'))
-                self.addClass('off').removeClass('on')
+//                 self.addClass('off').removeClass('on')
             }
         })
         return self
