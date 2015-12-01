@@ -6101,11 +6101,20 @@ button.close {
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00222222', endColorstr='#222222', GradientType=0);
   /* IE6-9 */
 }
+.cloud-plugins .cloud-plugin:hover figure div {
+  /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#000000+0,000000+100&1+65,0+100 */
+  background: -webkit-linear-gradient(left, rgba(33, 33, 33, 0) 0%, #212121 70%);
+  /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to right, rgba(33, 33, 33, 0) 0%, gradient4 70%);
+  /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+}
 .cloud-plugins .cloud-plugin figure {
   position: relative;
   min-height: 1px;
   padding-left: 15px;
   padding-right: 15px;
+  overflow: hidden;
+  height: 166px;
 }
 @media (min-width: 768px) {
   .cloud-plugins .cloud-plugin figure {
@@ -6114,10 +6123,22 @@ button.close {
   }
 }
 .cloud-plugins .cloud-plugin figure img {
-  max-height: 366px;
-  width: 100%;
+  max-height: 166px;
   background-size: contain !important;
-  margin-bottom: 10px;
+  margin: auto;
+  max-width: 270px;
+}
+.cloud-plugins .cloud-plugin figure div {
+  position: absolute;
+  width: 30px;
+  height: 100%;
+  top: 0;
+  right: -3px;
+  /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#000000+0,000000+100&1+65,0+100 */
+  background: -webkit-linear-gradient(left, rgba(17, 17, 17, 0) 0%, #111111 70%);
+  /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to right, rgba(17, 17, 17, 0) 0%, gradient2 70%);
+  /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
 }
 .cloud-plugins .cloud-plugin .description {
   display: block;
