@@ -137,7 +137,10 @@ JqueryClass('cloudPluginBox', {
                 cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
 
                 if (lplugin) {
-                    cplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                    //cplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] is this correct? doesn't show updated plugins, as we can see by screenshots and info table
+                    if(!lplugin.latestVersion)
+                        lplugin.latestVersion = [0,0,0]
+                    cplugin.installedVersion = lplugin.latestVersion
                     delete results.local[cplugin.uri]
 
                     if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) == 0) {
@@ -149,7 +152,7 @@ JqueryClass('cloudPluginBox', {
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
 
                 } else {
-                    cplugin.latestVersion = null //  if set to [0, 0, 0], it appears as intalled on cloudplugininfo
+                    cplugin.installedVersion = null //  if set to [0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
                 }
 
@@ -165,7 +168,8 @@ JqueryClass('cloudPluginBox', {
 
             for (var uri in results.local) {
                 lplugin = results.local[uri]
-                lplugin.latestVersion = [0, 0, 0]
+                if(!lplugin.latestVersion)
+                    lplugin.latestVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release]
                 lplugin.status = 'installed'
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
                 plugins.push(lplugin)
@@ -361,13 +365,22 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-        plugins.sort(function (a, b) {
-            if (a.label > b.label)
+        /*plugins.sort(function (a, b) { // not sure if this is working
+            if (a.status > b.label)
                 return 1
             if (a.label < b.label)
                 return -1
             return 0
+        })*/
+        plugins.sort(function(a,b) { // show not installed first, then outdated. is there a better way to sort?z
+            if (a.status =='blocked')
+                return -1;
+            if (a.status ==' installed')
+                return 1;
+            return 0;
         })
+        //plugins.reverse()
+
         self.data('plugins', plugins)
 
         // count plugins first
