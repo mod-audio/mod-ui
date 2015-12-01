@@ -1184,7 +1184,7 @@ JqueryClass('selectWidget', baseWidget, {
     init: function (options) {
         var self = $(this)
         self.selectWidget('config', options)
-        //self.selectWidget('setValue', options.port.ranges.default)
+        self.selectWidget('setValue', options.port.ranges.default, true)
         self.change(function () {
             self.trigger('valuechange', parseFloat(self.val()))
         })
@@ -1215,7 +1215,7 @@ JqueryClass('switchWidget', baseWidget, {
     init: function (options) {
         var self = $(this)
         self.switchWidget('config', options)
-        //self.switchWidget('setValue', options.port.ranges.default, true)
+        self.switchWidget('setValue', options.port.ranges.default, true)
         self.click(function (e) {
             if (!self.data('enabled'))
                 return self.switchWidget('prevent', e)
@@ -1251,7 +1251,7 @@ JqueryClass('bypassWidget', baseWidget, {
         var self = $(this)
         self.data('changeLights', options.changeLights)
         self.bypassWidget('config', options)
-        //self.bypassWidget('setValue', options.port.ranges.default, true)
+        self.bypassWidget('setValue', options.port.ranges.default, true)
         self.click(function (e) {
             if (!self.data('enabled'))
                 return self.bypassWidget('prevent', e)
@@ -1285,21 +1285,20 @@ JqueryClass('customSelect', baseWidget, {
     init: function (options) {
         var self = $(this)
         self.customSelect('config', options)
-        //self.customSelect('setValue', options.port.ranges.default)
+        self.customSelect('setValue', options.port.ranges.default, true)
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
-            var value = opt.attr('mod-port-value')
             opt.click(function (e) {
                 if (self.data('enabled')) {
+                    var value = opt.attr('mod-port-value')
                     self.customSelect('setValue', value)
                 } else {
                     self.customSelect('prevent', e)
                 }
             })
         });
-        var enumlist = self.find('.mod-enumerated-list')
         self.click(function () {
-            enumlist.toggle()
+            self.find('.mod-enumerated-list').toggle()
         })
 
         return self
