@@ -74,6 +74,9 @@ JqueryClass('effectBox', {
             windowManager: options.windowManager,
             trigger: self.find('.js-settings-trigger')
         })
+        self.find('.js-settings-trigger').click(function(){
+            $('#effectSearch').focus() // will focus the input when clicking the search icon
+        })
 
         self.droppable({
             accept: '.js-available-effect',
