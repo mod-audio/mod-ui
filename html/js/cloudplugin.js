@@ -37,21 +37,25 @@ JqueryClass('cloudPluginBox', {
         var searchbox = self.find('input[type=search]')
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
+        
         searchbox.keydown(function (e) {
-            if (e.keyCode == 13) {
+            if (e.keyCode == 13) { //detect enter
                 self.cloudPluginBox('search')
                 return false
             }
+            else if (e.keyCode == 8 || e.keyCode == 43) { //detect delete and backspace
+                self.cloudPluginBox('search')                
+            }
         })
         var lastKeyUp = null
-        searchbox.keyup(function (e) {
-            if (e.keyCode == 13)
+        searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+            if (e.which == 13)
                 return
             if (lastKeyUp != null) {
                 clearTimeout(lastKeyUp)
                 lastKeyUp = null
             }
-            if (e.keyCode == 13)
+            if (e.which == 13)
                 return
             lastKeyUp = setTimeout(function () {
                 self.cloudPluginBox('search')
