@@ -6222,6 +6222,451 @@ button.close {
 .cloud-plugins .cloud-plugin .actions span.duplicate {
   margin: 0 6px;
 }
+#bank-library {
+  background: url('../img/social/back.png') repeat fixed;
+  bottom: 46px;
+  left: 0;
+  overflow: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 2;
+}
+#bank-library input::selection {
+  background: #40c25d !important;
+  color: white;
+}
+#bank-library header {
+  background-image: url(../img/header-pattern.png);
+  background-position: center top;
+  background-repeat: no-repeat;
+  display: block;
+  left: 0;
+  padding: 10px 10px 18px 10px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid #111;
+}
+#bank-library header h1 {
+  font-weight: 2em;
+  text-transform: uppercase;
+  font-weight: bold;
+  color: #fff;
+  display: inline-block;
+  font-size: 24px;
+  margin: 0 0 18px 0;
+  padding: 0;
+}
+#bank-library header .help {
+  background-image: url(../img/icn-help-16x16.png);
+  background-position: center center;
+  background-repeat: no-repeat;
+  display: inline-block;
+  height: 21px;
+  width: 21px;
+}
+#bank-library header .close {
+  opacity: 1;
+  position: absolute;
+  right: 10px;
+  top: 16px;
+}
+#bank-library .icon-add {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  font-size: inherit;
+  vertical-align: baseline;
+}
+#bank-library .icon-add i {
+  position: absolute;
+  width: 1em;
+  margin-top: 0.3em;
+  border-top: 0.4em solid #888;
+}
+#bank-library .icon-add b {
+  position: absolute;
+  height: 1em;
+  margin-left: 0.3em;
+  border-left: 0.4em solid #888;
+}
+#bank-library #bank-list {
+  bottom: 0;
+  left: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  top: 54px;
+  width: 19.95%;
+  border-color: #111;
+  border-style: dotted;
+  border-width: 0 1px 0 0;
+}
+#bank-library #bank-list > div.add-bank {
+  color: #fff;
+  cursor: pointer;
+  padding-left: 45px;
+  text-transform: uppercase;
+}
+#bank-library #bank-list > div.add-bank small {
+  text-transform: lowercase;
+  color: #666;
+  margin-left: 1em;
+}
+#bank-library #bank-list > div.selected span.move {
+  background-position: right center;
+}
+#bank-library #bank-list > div.selected span.remove {
+  background-position: right center;
+}
+#bank-library #bank-list .edit-bank {
+  color: #555;
+  width: 100% !important;
+  height: 1.8em;
+  padding-left: 1em;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+  -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+  transition: border-color ease-in-out;
+}
+#bank-library #bank-list div {
+  background: #222;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  margin: 0 0 1px 0;
+  padding: 10px 5px;
+  content: \002B;
+  position: relative;
+}
+#bank-library #bank-list div.selected {
+  background: #111;
+  color: #fff;
+}
+#bank-library #bank-list div:hover {
+  background: #333;
+}
+#bank-library #bank-list .bank-item {
+  display: block;
+  background: #222;
+  color: #888;
+  height: 35px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  margin: 0 0 1px 0;
+  padding: 5px 15px;
+  line-height: 1.8em;
+  position: relative;
+}
+#bank-library #bank-list .bank-item span.move {
+  background-image: url(../img/move.png);
+  background-position: left center;
+  background-repeat: no-repeat;
+  display: block;
+  float: left;
+  height: 22px;
+  left: 0;
+  cursor: move !important;
+  margin: -1px 6px 0 0;
+  width: 24px;
+}
+#bank-library #bank-list .bank-item span.remove {
+  background-image: url(../img/icn-remove-bank.png);
+  background-position: left center;
+  background-repeat: no-repeat;
+  display: block;
+  float: right;
+  height: 22px;
+  margin: -1px 6px 0 0;
+  width: 24px;
+}
+#bank-library #bank-list .bank-item span.title {
+  display: block;
+  float: left;
+  height: 22px;
+  overflow: hidden;
+  max-width: 70%;
+  white-space: nowrap;
+}
+#bank-library #bank-list .filter_ {
+  border-color: #111;
+  border-style: dotted;
+  border-width: 0 1px 0 0;
+  bottom: 46px;
+  left: 0;
+  padding-top: 18px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 240px;
+  overflow: auto;
+}
+#bank-library #bank-list .filter_ h1 {
+  font-weight: 2em;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin: 0 0 0 10px;
+}
+#bank-library #bank-list .filter_ h2 {
+  color: white;
+  font-size: 15px;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-top: 1em;
+  margin-left: 10px;
+}
+#bank-library #bank-list .filter_ .control-group {
+  float: left;
+  margin-right: 9px;
+  margin-left: 10px;
+}
+#bank-library #bank-list .filter_ .control-group label {
+  color: #fff;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+}
+#bank-library #bank-list .filter_ .control-group select {
+  width: 50px;
+}
+#bank-library #bank-list .filter_ > .form-group {
+  padding: 15px;
+}
+#bank-library #bank-addressings {
+  background: #111;
+  left: 20%;
+  height: 92px;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  text-align: left;
+  top: 54px;
+  width: 45%;
+}
+#bank-library #bank-addressings h1 {
+  font-size: 2em;
+  padding: 0em;
+  max-height: 2em;
+  display: block;
+  border-bottom: 2px dotted #333;
+  margin: 1em;
+  padding-bottom: 1em;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+}
+#bank-library #bank-addressings h2 {
+  margin: 4px 0 0 14px;
+  display: block;
+  text-transform: initial !Important;
+  color: white;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: left;
+}
+#bank-library #bank-addressings small {
+  font-size: 10px;
+  color: #BBBBBB;
+  text-align: left;
+  display: block;
+  margin-left: 14px;
+}
+#bank-library #bank-addressings select {
+  display: block;
+  float: left;
+  height: 22px;
+  margin: 5px 2.5%;
+  width: 20%;
+  font-size: 10px;
+}
+#bank-library #bank-pedalboards {
+  background: #111;
+  bottom: 46px;
+  left: 20%;
+  list-style: none;
+  margin: 0;
+  overflow: auto;
+  padding: 0 0 200px 0;
+  position: fixed;
+  top: 144px;
+  width: 45%;
+}
+#bank-library #bank-pedalboards > div {
+  margin: 10px 10px 0 10px;
+  padding: 10px 10px 0 10px;
+}
+#bank-library #bank-pedalboards .pedalboard {
+  border-bottom: 1px dotted #333;
+  color: #fff;
+  cursor: -webkit-grabbing !important;
+  padding-bottom: 30px;
+  width: 100%;
+}
+#bank-library #bank-pedalboards .pedalboard .info {
+  margin-bottom: 3px;
+}
+#bank-library #bank-pedalboards .pedalboard .title {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 3px;
+  overflow: hidden;
+  position: relative;
+}
+#bank-library #bank-pedalboards .pedalboard .img {
+  background: #2b2b2b;
+  border-radius: 4px;
+  display: inline-block;
+  float: left;
+  height: auto;
+  margin: 0 9px 0 0;
+  text-align: center;
+  width: 100%;
+}
+#bank-library #bank-pedalboards .mode {
+  border: none;
+  margin: 22px 0 18px 0;
+  text-align: center;
+}
+#bank-library #bank-pedalboards-search {
+  bottom: 45px;
+  left: 65.01%;
+  overflow: auto;
+  position: fixed;
+  top: 55px;
+  background-color: #222;
+  border-left: 1px dotted #333;
+  width: 34.98%;
+}
+#bank-library #bank-pedalboards-search h2 {
+  text-transform: uppercase;
+  color: white;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+#bank-library #bank-pedalboards-search input {
+  width: 50%;
+  padding-left: 1em;
+}
+#bank-library #bank-pedalboards-search .form-group {
+  padding-left: 15px;
+}
+#bank-library #bank-pedalboards-search label {
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+#bank-library #bank-pedalboards-search .control-group {
+  margin-bottom: 10px;
+  padding: 0 2%;
+  position: relative;
+  width: 29.3%;
+}
+#bank-library #bank-pedalboards-search input[type="search"] {
+  width: 50% !important;
+}
+#bank-library #bank-pedalboards-search select {
+  width: 100%;
+}
+#bank-library #bank-pedalboards-search .input-clean {
+  background: #333;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 8px;
+  height: 18px;
+  left: auto !important;
+  position: absolute;
+  right: 8px !important;
+  text-align: center;
+  text-transform: uppercase;
+  top: 31px !important;
+  width: 18px;
+}
+#bank-pedalboards-mode {
+  background: #333;
+  left: 30%;
+  height: 30px;
+  margin: 0;
+  padding: 20px 0 0 0;
+  position: absolute;
+  text-align: center;
+  top: 68px;
+  width: 45%;
+}
+#bank-pedalboards-mode .grid {
+  background: url(../img/icn-grid-list.png) no-repeat left bottom;
+  display: inline-block;
+  height: 14px;
+  width: 14px;
+}
+#bank-pedalboards-mode .grid.selected {
+  background-position: left top;
+}
+#bank-pedalboards-mode .list {
+  background: url(../img/icn-grid-list.png) no-repeat right bottom;
+  display: inline-block;
+  height: 14px;
+  width: 14px;
+}
+#bank-pedalboards-mode .list.selected {
+  background-position: right top;
+}
+.pedalboard .addressings {
+  width: 100%;
+}
+.pedalboard .addressings .footswitch {
+  background: #2b2b2b url(../img/footswitch-free.png) no-repeat center top;
+  float: left;
+  height: 20px;
+  width: 25%;
+}
+.pedalboard .addressings .footswitch.addressed {
+  background: #2b2b2b url(../img/footswitch-addressed.png) no-repeat center top;
+}
+#bank-pedalboards-result .pedalboard {
+  border-top: 1px dotted #444;
+  color: #fff;
+  cursor: -webkit-grabbing !important;
+  float: left;
+  margin: 10px 2.5% 0;
+  padding: 10px 0;
+  width: 95%;
+}
+#bank-pedalboards-result .pedalboard .img {
+  background: #2b2b2b;
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+#bank-pedalboards-result .pedalboard .title {
+  display: block;
+  height: 18px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  overflow: hidden;
+  position: relative;
+}
+#bank-pedalboards-result .pedalboard .description {
+  display: block;
+  font-size: 11px;
+  height: 27px;
+  line-height: 1.5;
+  overflow: hidden;
+}
 /* Make clicks pass-through */
 #nprogress {
   pointer-events: none;
@@ -7176,7 +7621,7 @@ hr.dotted {
 }
 #pedalboards-library header {
   background-image: url(../img/header-pattern.png);
-  background-position: bottom center;
+  background-position: center top;
   background-repeat: no-repeat;
   display: block;
   left: 0;
@@ -7278,316 +7723,6 @@ hr.dotted {
 }
 #pedalboards-library .pedalboards .pedalboard .actions span.duplicate {
   margin: 0 6px;
-}
-#bank-library {
-  background: #000;
-  bottom: 46px;
-  left: 0;
-  overflow: auto;
-  position: absolute;
-  right: 0;
-  top: 0;
-  z-index: 2;
-}
-#bank-library h1 {
-  color: #fff;
-  display: inline-block;
-  font-size: 24px;
-  margin: 0 0 18px 0;
-  padding: 0;
-}
-#bank-library header {
-  background-image: url(../img/header-pattern.png);
-  background-position: bottom center;
-  background-repeat: no-repeat;
-  display: block;
-  left: 0;
-  padding: 10px 10px 18px 10px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 2;
-}
-#bank-library header .help {
-  background-image: url(../img/icn-help-16x16.png);
-  background-position: center center;
-  background-repeat: no-repeat;
-  display: inline-block;
-  height: 21px;
-  width: 21px;
-}
-#bank-library header .close {
-  opacity: 1;
-  position: absolute;
-  right: 10px;
-  top: 16px;
-}
-#bank-list {
-  bottom: 0;
-  left: 0;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  position: absolute;
-  top: 68px;
-  width: 20%;
-}
-#bank-list div {
-  background: #222;
-  color: #888;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  height: 20px;
-  margin: 0 0 1px 0;
-  padding: 10px 5px;
-  position: relative;
-}
-#bank-list div.selected {
-  background: #333;
-  color: #fff;
-}
-#bank-list > div.add-bank {
-  color: #fff;
-  cursor: pointer;
-  padding-left: 35px;
-}
-#bank-list > div.selected span.move {
-  background-position: right center;
-}
-#bank-list > div.selected span.remove {
-  background-position: right center;
-}
-#bank-list span.move {
-  background-image: url(../img/move.png);
-  background-position: left center;
-  background-repeat: no-repeat;
-  display: block;
-  float: left;
-  height: 22px;
-  left: 0;
-  margin: -1px 6px 0 0;
-  position: absolute;
-  width: 24px;
-}
-#bank-list span.remove {
-  background-image: url(../img/icn-remove-bank.png);
-  background-position: left center;
-  background-repeat: no-repeat;
-  display: block;
-  float: right;
-  height: 22px;
-  margin: -1px 6px 0 0;
-  position: absolute;
-  right: 0;
-  width: 24px;
-}
-#bank-list span.title {
-  height: 22px;
-  left: 26px;
-  overflow: hidden;
-  position: absolute;
-  right: 26px;
-}
-#bank-pedalboards-mode {
-  background: #333;
-  left: 30%;
-  height: 30px;
-  margin: 0;
-  padding: 20px 0 0 0;
-  position: absolute;
-  text-align: center;
-  top: 68px;
-  width: 45%;
-}
-#bank-pedalboards-mode .grid {
-  background: url(../img/icn-grid-list.png) no-repeat left bottom;
-  display: inline-block;
-  height: 14px;
-  width: 14px;
-}
-#bank-pedalboards-mode .grid.selected {
-  background-position: left top;
-}
-#bank-pedalboards-mode .list {
-  background: url(../img/icn-grid-list.png) no-repeat right bottom;
-  display: inline-block;
-  height: 14px;
-  width: 14px;
-}
-#bank-pedalboards-mode .list.selected {
-  background-position: right top;
-}
-#bank-addressings {
-  background: #333;
-  left: 20%;
-  height: 75px;
-  margin: 0;
-  padding: 0;
-  position: absolute;
-  text-align: center;
-  top: 69px;
-  width: 45%;
-}
-#bank-addressings h2 {
-  margin: 4px 0 0 14px;
-  display: block;
-  color: white;
-  font-size: 12px;
-  line-height: 20px;
-  text-align: left;
-}
-#bank-addressings small {
-  font-size: 10px;
-  color: #BBBBBB;
-  text-align: left;
-  display: block;
-  margin-left: 14px;
-}
-#bank-addressings select {
-  display: block;
-  float: left;
-  height: 22px;
-  margin: 5px 2.5%;
-  width: 20%;
-  font-size: 10px;
-}
-#bank-pedalboards {
-  background: #333;
-  bottom: 46px;
-  left: 20%;
-  list-style: none;
-  margin: 0;
-  overflow: auto;
-  padding: 0 0 200px 0;
-  position: fixed;
-  top: 144px;
-  width: 45%;
-}
-#bank-pedalboards > div {
-  margin: 10px 10px 0 10px;
-  padding: 10px 10px 0 10px;
-}
-#bank-pedalboards .pedalboard {
-  border-top: 1px dotted #111;
-  color: #fff;
-  cursor: -webkit-grabbing !important;
-  padding-top: 10px;
-  width: 100%;
-}
-#bank-pedalboards .pedalboard .info {
-  margin-bottom: 3px;
-}
-#bank-pedalboards .pedalboard .title {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 3px;
-  overflow: hidden;
-  position: relative;
-}
-#bank-pedalboards .pedalboard .img {
-  background: #2b2b2b;
-  border-radius: 4px;
-  display: inline-block;
-  float: left;
-  height: auto;
-  margin: 0 9px 0 0;
-  text-align: center;
-  width: 100%;
-}
-#bank-pedalboards .mode {
-  border: none;
-  margin: 22px 0 18px 0;
-  text-align: center;
-}
-.pedalboard .addressings {
-  width: 100%;
-}
-.pedalboard .addressings .footswitch {
-  background: #2b2b2b url(../img/footswitch-free.png) no-repeat center top;
-  float: left;
-  height: 20px;
-  width: 25%;
-}
-.pedalboard .addressings .footswitch.addressed {
-  background: #2b2b2b url(../img/footswitch-addressed.png) no-repeat center top;
-}
-#bank-pedalboards-search {
-  bottom: 46px;
-  left: 65%;
-  overflow: auto;
-  position: fixed;
-  top: 68px;
-  width: 35%;
-}
-#bank-pedalboards-search label {
-  color: #fff;
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-#bank-pedalboards-search .control-group {
-  margin-bottom: 10px;
-  padding: 0 2%;
-  position: relative;
-  width: 29.3%;
-}
-#bank-pedalboards-search input[type="search"] {
-  margin: auto 0;
-  padding-left: 0;
-  padding-right: 0;
-  width: 100%;
-}
-#bank-pedalboards-search select {
-  width: 100%;
-}
-#bank-pedalboards-search .input-clean {
-  background: #333;
-  border-radius: 12px;
-  color: #fff;
-  cursor: pointer;
-  font-size: 8px;
-  height: 18px;
-  left: auto !important;
-  position: absolute;
-  right: 8px !important;
-  text-align: center;
-  text-transform: uppercase;
-  top: 31px !important;
-  width: 18px;
-}
-#bank-pedalboards-result .pedalboard {
-  border-top: 1px dotted #444;
-  color: #fff;
-  cursor: -webkit-grabbing !important;
-  float: left;
-  margin: 10px 2.5% 0;
-  padding: 10px 0;
-  width: 95%;
-}
-#bank-pedalboards-result .pedalboard .img {
-  background: #2b2b2b;
-  display: block;
-  height: auto;
-  margin: 0 auto;
-  text-align: center;
-  width: 100%;
-}
-#bank-pedalboards-result .pedalboard .title {
-  display: block;
-  height: 18px;
-  font-size: 12px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  overflow: hidden;
-  position: relative;
-}
-#bank-pedalboards-result .pedalboard .description {
-  display: block;
-  font-size: 11px;
-  height: 27px;
-  line-height: 1.5;
-  overflow: hidden;
 }
 .clearfix:after,
 .container:after,

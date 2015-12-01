@@ -55,19 +55,31 @@ function PedalboardSearcher(opt) {
     }
 
     this.searchbox.keydown(function (e) {
-        if (e.keyCode == 13) {
+        if (e.keyCode == 13) { //detect enter
             self.search()
             return false
         }
+        else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+            setTimeout(function () {
+                self.search()
+            }, 400);
+        }
     })
-    this.searchbox.keyup(function (e) {
-        if (e.keyCode == 13)
+    var lastKeyUp = null
+    this.searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+        if (e.which == 13)
             return
-        clearTimeout(self.lastKeyUp)
+        if (lastKeyUp != null) {
+            clearTimeout(lastKeyUp)
+            lastKeyUp = null
+        }
+        if (e.which == 13)
+            return
         lastKeyUp = setTimeout(function () {
             self.search()
         }, 400);
     })
+
     if (this.searchbutton)
         this.searchbutton.click(function () {
             self.search()
@@ -522,6 +534,7 @@ JqueryClass('bankBox', {
         titleBox.html('')
         var editBox = $('<input>')
         editBox.val(title)
+        editBox.addClass('edit-bank')
         titleBox.append(editBox)
         var finish = function () {
             var title = editBox.val() || 'Untitled'

@@ -650,8 +650,7 @@ $('document').ready(function() {
     <div id="bank-library" class="mod-hidden">
         <!-- END BOX -->
         <div class="box">
-
-           <header>
+         <header>
             <h1 class="bottom top">
                 Banks
                 <!-- <span class="help"></span> -->
@@ -661,7 +660,7 @@ $('document').ready(function() {
 
         <!-- BANK-LIST -->
         <div id="bank-list">
-            <div class="add-bank" id="js-add-bank">Add Bank</div>
+            <div class="add-bank" id="js-add-bank"><span class="icon-add"><i></i><b></b></span> Add Bank <small>(click on a bank twice to rename it)</small></div>
             <span class="js-canvas"></span>
         </div>
         <!-- END BANK-LIST -->
@@ -709,11 +708,11 @@ $('document').ready(function() {
             <!-- BOX -->
             <div class="box">
                 <!-- FORM HORIZONTAL -->
-                <div class="form-horizontal filter clearfix">
+                <div class="filter clearfix">
                     <div class="clearfix">
-                        <div class="control-group alignleft">
-                            <label>Keywords</label>
-                            <input type="search"/>
+                        <div class="form-group ">                          
+                            <label for="searchBank" >Select pedalboards</label>
+                            <input id="searchBank" class="form-control" length="20" placeholder="Filter by keyword(s)" type="search"/>
                         </div>
 			<!-- TODO make this work (branch pedalboard_filter) -->
 			<!--
