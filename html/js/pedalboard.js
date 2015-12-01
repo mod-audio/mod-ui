@@ -1236,6 +1236,7 @@ JqueryClass('pedalboard', {
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
         var gui, plugin
+        var retry = 0
 
         // keep trying until instance is available
         var trySetEnabled = function () {
@@ -1254,6 +1255,10 @@ JqueryClass('pedalboard', {
                 }
             }
 
+            retry += 1
+            if (retry == 50)
+                return
+
             setTimeout(trySetEnabled, 100)
         }
 
@@ -1263,6 +1268,7 @@ JqueryClass('pedalboard', {
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
         var gui, plugin
+        var retry = 0
         //var symbolport = '[mod-port="' + subject.replace("/", "\\/") + '"]'
 
         // keep trying until instance is available
@@ -1277,6 +1283,10 @@ JqueryClass('pedalboard', {
                     return
                 }
             }
+
+            retry += 1
+            if (retry == 50)
+                return
 
             setTimeout(trySetPortValue, 100)
         }
