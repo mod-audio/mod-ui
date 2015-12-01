@@ -125,7 +125,9 @@ function GUI(effect, options) {
     var self = this
 
     options = $.extend({
-        change: new Function(),
+        change: function(symbol, value) {
+            console.log("PARAM CHANGE =>", symbol, value)
+        },
         click: new Function(),
         dragStart: new Function(),
         drag: new Function(),
@@ -429,11 +431,6 @@ function GUI(effect, options) {
 
             self.triggerJS({ 'type': 'start' })
 
-            var preset_select = self.settings.find('[mod-role=presets]')
-            preset_select.change(function () {
-                var value = $(this).val()
-                options.presetLoad(value)
-            })
             callback(self.icon, self.settings)
         }
 
@@ -1043,11 +1040,17 @@ JqueryClass('film', baseWidget, {
     },
 
     getSize: function (callback) {
-        var self = $(this)
-        setTimeout(function () {
+        var self  = $(this)
+        var retry = 0
+        function tryGetAndSetSize() {
             var url = self.css('background-image')
             if (! url) {
-                console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
+                retry += 1
+                if (retry == 5) {
+                    console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
+                } else {
+                    setTimeout(tryGetAndSetSize, 20)
+                }
                 return
             }
             url = url.replace('url(', '').replace(')', '').replace("'", '').replace('"', '');
@@ -1072,7 +1075,8 @@ JqueryClass('film', baseWidget, {
             });
             $('body').append(bgImg);
             bgImg.attr('src', url);
-        }, 5)
+        }
+        tryGetAndSetSize()
     },
 
     mouseDown: function (e) {
