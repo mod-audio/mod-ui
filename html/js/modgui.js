@@ -1074,7 +1074,7 @@ JqueryClass('film', baseWidget, {
                 }
                 return
             }
-            url = url.replace('url(', '').replace(')', '').replace("'", '').replace('"', '');
+            url = url.replace('url(', '').replace(')', '').replace(/'/g, '').replace(/"/g, '')
             var height = self.css('background-size').split(/ /)[1]
             if (height)
                 height = parseInt(height.replace(/\D+$/, ''))

@@ -3056,6 +3056,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
     LILV_FOREACH(plugins, itpls, plugins) {
         p = lilv_plugins_get(plugins, itpls);
+        break;
     }
 
     if (p == nullptr)
@@ -3413,6 +3414,7 @@ int* get_pedalboard_size(const char* const bundle)
 
     LILV_FOREACH(plugins, itpls, plugins) {
         p = lilv_plugins_get(plugins, itpls);
+        break;
     }
 
     if (p == nullptr)

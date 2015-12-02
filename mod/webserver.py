@@ -804,7 +804,7 @@ class BankLoad(web.RequestHandler):
     def get(self):
         banks = list_banks()
 
-        # Banks have only URI and title of each pedalboard, which are the necessary information for the HMI.
+        # Banks have only bundle and title of each pedalboard, which is the necessary information for the HMI.
         # But the GUI needs some extra pedalboard data
         pedalboards_dict = get_all_pedalboards(True)
         pedalboards_keys = pedalboards_dict.keys()
@@ -812,9 +812,9 @@ class BankLoad(web.RequestHandler):
         for bank in banks:
             pedalboards = []
 
-            for pedalboard in bank['pedalboards']:
-                if pedalboard['uri'] in pedalboards_keys:
-                    pedalboards.append(pedalboards_dict[pedalboard['uri']])
+            for oldpedalboard in bank['pedalboards']:
+                if oldpedalboard['bundle'] in pedalboards_keys:
+                    pedalboards.append(pedalboards_dict[oldpedalboard['bundle']])
 
             bank['pedalboards'] = pedalboards
 

@@ -42,7 +42,7 @@ def save_banks(banks):
     with open(BANKS_JSON_FILE, 'w') as fh:
         fh.write(banks)
 
-# save last bank id and pedalboard uri to disk
+# save last bank id and pedalboard path to disk
 def save_last_bank_and_pedalboard(bank, pedalboard):
     if bank is None:
         return
@@ -55,7 +55,7 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
     with open(LAST_STATE_JSON_FILE, 'w') as fh:
         fh.write(state)
 
-# get last bank id and pedalboard uri
+# get last bank id and pedalboard path
 def get_last_bank_and_pedalboard():
     if not os.path.exists(LAST_STATE_JSON_FILE):
         print("last state file does not exist")
@@ -73,7 +73,7 @@ def get_last_bank_and_pedalboard():
     return (state['bank'], state['pedalboard'])
 
 # Remove a pedalboard from banks, and banks that are or will become empty
-def remove_pedalboard_from_banks(uri):
+def remove_pedalboard_from_banks(pedalboard):
     newbanks = []
 
     with open(BANKS_JSON_FILE, 'r') as fh:
@@ -88,9 +88,9 @@ def remove_pedalboard_from_banks(uri):
     for bank in banks:
         newpedalboards = []
 
-        for pedalboard in bank['pedalboards']:
-            if pedalboard['uri'] != uri:
-                newpedalboards.append(pedalboard)
+        for oldpedalboard in bank['pedalboards']:
+            if oldpedalboard['bundle'] != pedalboard:
+                newpedalboards.append(oldpedalboard)
 
         # if there's no pedalboards left ignore this bank (ie, delete it)
         if len(newpedalboards) == 0:

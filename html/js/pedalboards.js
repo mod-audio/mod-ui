@@ -104,7 +104,7 @@ JqueryClass('pedalboardBox', {
             remove: function (pedalboard, callback) {
                 callback()
             },
-            load: function (pedalboardURI, callback) {
+            load: function (pedalboardBundle, callback) {
                 callback()
             },
             duplicate: function (pedalboard, callback) {
@@ -160,7 +160,7 @@ JqueryClass('pedalboardBox', {
         var results = self.data('results')
         var canvas = self.data('resultCanvas')
         self.pedalboardBox('render', pedalboard, canvas)
-        results[pedalboard.uri] = pedalboard
+        results[pedalboard.bundle] = pedalboard
     },
 
     render: function (pedalboard, canvas) {
@@ -296,10 +296,10 @@ JqueryClass('bankBox', {
         options.pedalboardCanvas.sortable({
             revert: true,
             update: function (e, ui) {
-                if (self.droppedURI && !ui.item.data('pedalboardURI')) {
-                    ui.item.data('pedalboardURI', self.droppedURI)
+                if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
+                    ui.item.data('pedalboardBundle', self.droppedBundle)
                 }
-                self.droppedURI = null
+                self.droppedBundle = null
 
                 // TODO the code below is repeated. The former click event is not triggered because
                 // the element is cloned
@@ -319,7 +319,7 @@ JqueryClass('bankBox', {
                 // Very weird. This should not be necessary, but for some reason the ID is lost between
                 // receive and update. The behaviour that can be seen at http://jsfiddle.net/wngchng87/h3WJH/11/
                 // does not happens here
-                self.droppedURI = ui.item.data('pedalboardURI')
+                self.droppedBundle = ui.item.data('pedalboardBundle')
             },
         })
 
@@ -338,6 +338,7 @@ JqueryClass('bankBox', {
             return false
         }
 
+        /*
         var addressFactory = function (i) {
             return function () {
                 var current = self.data('currentBank')
@@ -351,6 +352,7 @@ JqueryClass('bankBox', {
         for (i = 0; i < 4; i++) {
             self.find('select[name=foot-' + i + ']').change(addressFactory(i))
         }
+        */
 
         self.window(options)
     },
@@ -393,15 +395,15 @@ JqueryClass('bankBox', {
             var pedalboardData = []
             pedalboards.children().each(function () {
                 pedalboardData.push({
-                    uri: $(this).data('pedalboardURI'),
-                    title: $(this).find('.js-title').text()
+                    title : $(this).find('.js-title').text(),
+                    bundle: $(this).data('pedalboardBundle'),
                 })
             })
 
             serialized.push({
                 title: bank.find('.js-bank-title').text(),
-                addressing: bank.data('addressing') || [0, 0, 0, 0],
-                pedalboards: pedalboardData
+                pedalboards: pedalboardData,
+                //addressing: bank.data('addressing') || [0, 0, 0, 0],
             })
         });
         self.data('saving').html('Auto saving banks...').show()
@@ -436,11 +438,11 @@ JqueryClass('bankBox', {
     renderBank: function (bankData) {
         var self = $(this)
         var bank = $(Mustache.render(TEMPLATES.bank_item, bankData))
-        var addressing = bankData.addressing || [0, 0, 0, 0]
+        //var addressing = bankData.addressing || [0, 0, 0, 0]
         self.data('bankCanvas').append(bank)
         bank.data('selected', false)
         bank.data('pedalboards', $('<div>'))
-        bank.data('addressing', addressing)
+        //bank.data('addressing', addressing)
         /*bank.data('title', bankData.title)*/
 
         var i, pedalboardData, rendered
@@ -450,8 +452,10 @@ JqueryClass('bankBox', {
             rendered.appendTo(bank.data('pedalboards'))
         }
 
+        /*
         for (i = 0; i < 4; i++)
             self.find('select[name=foot-' + i + ']').val(addressing[i])
+        */
 
         bank.click(function () {
             if (bank.hasClass('selected'))
@@ -590,7 +594,7 @@ JqueryClass('bankBox', {
             self.bankBox('save')
         })
 
-        rendered.data('pedalboardURI', pedalboard.uri)
+        rendered.data('pedalboardBundle', pedalboard.bundle)
 
         $.ajax({
             url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),

@@ -1177,7 +1177,6 @@ _:b%i
     def hmi_list_bank_pedalboards(self, bank_id, callback):
         logging.info("hmi list bank pedalboards")
         if bank_id < len(self.banks):
-            #pedalboards = " ".join('"%s" %d' % (pb['title'], i) for i,pb in enumerate(self.banks[bank_id]['pedalboards']))
             pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['bundle']) for pb in self.banks[bank_id]['pedalboards'])
         else:
             pedalboards = ""
@@ -1185,19 +1184,8 @@ _:b%i
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
-
-        ##if bank_id >= len(self.banks):
-            ##print("ERROR in addressing.py: bank id out of bounds")
-            ##return
-
-        ##pedalboards = self.banks[bank_id]['pedalboards']
-        ##if pedalboard_id >= len(pedalboards):
-            ##print("ERROR in addressing.py: pedalboard id out of bounds")
-            ##return
-
-        ##uri = pedalboards[pedalboard_id]['uri']
-
         self.load(bundlepath)
+        callback(True)
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
         logging.info("hmi parameter get")
