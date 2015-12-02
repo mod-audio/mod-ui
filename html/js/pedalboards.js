@@ -275,8 +275,7 @@ JqueryClass('bankBox', {
             //searchbutton: self.find('button.search'),
             mode: 'installed',
             render: function (pedalboard, url) {
-                var pedalboardData = self.bankBox('extractPedalboardData', pedalboard)
-                var rendered = self.bankBox('renderPedalboard', pedalboardData)
+                var rendered = self.bankBox('renderPedalboard', pedalboard)
                 rendered.draggable({
                     revert: 'invalid',
                     connectToSortable: options.pedalboardCanvas,
@@ -354,33 +353,6 @@ JqueryClass('bankBox', {
         }
 
         self.window(options)
-    },
-
-    extractPedalboardData: function (pedalboard) {
-        var data = $.extend({
-            uri  : pedalboard.uri,
-            image: "/pedalboard/image/screenshot.png"
-                 + "?bundlepath=" + escape(pedalboard.bundle)
-                 + "&tstamp=" + pedalboard.metadata.tstamp
-        }, pedalboard.metadata)
-        data.footswitches = [0, 0, 0, 0]
-        if (!pedalboard.instances)
-            return data
-        var instance, actuator, i, symbol
-        for (i in pedalboard.instances) {
-            instance = pedalboard.instances[i]
-            if (!instance.addressing)
-                continue
-            for (symbol in instance.addressing) {
-                actuator = instance.addressing[symbol].actuator
-                if (actuator[2] == 1) {
-                    // This means actuator is a footswitch
-                    // Attention: the above hardcoded value 1 comes from mod/hardware.py
-                    data.footswitches[actuator[3]] = true
-                }
-            }
-        }
-        return data
     },
 
     load: function () {
@@ -473,8 +445,7 @@ JqueryClass('bankBox', {
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
-            pedalboardData = self.bankBox('extractPedalboardData', bankData.pedalboards[i])
-            rendered = self.bankBox('renderPedalboard', pedalboardData)
+            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i])
             rendered.find('.js-remove').show()
             rendered.appendTo(bank.data('pedalboards'))
         }
@@ -512,9 +483,11 @@ JqueryClass('bankBox', {
 
         canvas.append(bank.data('pedalboards').children())
 
+        /*
         var addressing = bank.data('addressing')
         for (i = 0; i < 4; i++)
             self.find('select[name=foot-' + i + ']').val(addressing[i])
+        */
 
         // Show everything
         canvas.show()
@@ -530,7 +503,8 @@ JqueryClass('bankBox', {
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
 
-        // Show addressing bar
+        // Show addressing bar (changed to title on 2015-12-02)
+        self.data('bankAddressing').html('<h1>'+bank.text()+'</h1>')
         self.data('bankAddressing').show()
     },
 
@@ -588,9 +562,18 @@ JqueryClass('bankBox', {
         })
     },
 
-    renderPedalboard: function (pedalboardData) {
+    renderPedalboard: function (pedalboard) {
         var self = $(this)
-        var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, pedalboardData))
+
+        var metadata = {
+            title: pedalboard.title,
+            // FIXME: proper gif image
+            image: "/img/loading-pedalboard.gif",
+            // TODO: replace this with something else
+            footswitches: [0, 0, 0, 0],
+        }
+
+        var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, metadata))
 
         // TODO is this necessary?
         rendered.addClass('js-pedalboard-item')
@@ -607,7 +590,28 @@ JqueryClass('bankBox', {
             self.bankBox('save')
         })
 
-        rendered.data('pedalboardURI', pedalboardData.uri)
+        rendered.data('pedalboardURI', pedalboard.uri)
+
+        $.ajax({
+            url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),
+            success: function (resp) {
+                if (!resp.ok) return
+
+                rendered.find('.img img').each(function () {
+                    var img = $(this)
+
+                    // set the actual image
+                    img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime)
+
+                    // center
+                    img.css({ top: (img.parent().height() - img.height()) / 2 })
+                })
+            },
+            error: function () {
+                console.log("Pedalboard image wait error")
+            },
+            dataType: 'json'
+        })
 
         return rendered
     }

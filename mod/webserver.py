@@ -61,11 +61,6 @@ from mod.utils import (init as lv2_init,
                        get_all_pedalboards,
                        get_pedalboard_info)
 
-# Global fake timestamp used for pedalboard thumbnails
-# FIXME - use real timestamp
-global fake_tstamp
-fake_tstamp = 0
-
 def install_bundles_in_tmp_dir():
     removed   = []
     installed = []
