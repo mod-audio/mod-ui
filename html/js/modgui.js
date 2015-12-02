@@ -524,7 +524,7 @@ function GUI(effect, options) {
                 control.controlWidget({
                     port: port,
                     change: function (e, value) {
-                        setValue(value)
+                        setValue(value, false)
                     },
                     midiLearn: function (e) {
                         var port_path = $(this).attr('mod-port')
@@ -598,23 +598,22 @@ function GUI(effect, options) {
 
                     self.setPortValue(':bypass', value ? 1 : 0, control)
 
+                    /*
                     if (value)
                         control.addClass('on').removeClass('off')
                     else
                         control.addClass('off').removeClass('on')
+                    */
                 },
                 changeLights: function (value) {
-                    console.log("CHANGE LIGHTS!!", value)
-
                     element.find('[mod-role=bypass-light]').each(function () {
                         // NOTE
                         // the element itself will get inverse class ("on" when light is "off"),
                         // because of the switch widget.
-//                         if (value)
-//                             $(this).addClass('off').removeClass('on')
-//                         else
-//                             $(this).addClass('on').removeClass('off')
-                      self.setPortWidgetsValue(':bypass', value, $(this), true)
+                        if (value)
+                            $(this).addClass('off').removeClass('on')
+                        else
+                            $(this).addClass('on').removeClass('off')
                     });
                 },
             })
