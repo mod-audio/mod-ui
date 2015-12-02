@@ -571,7 +571,7 @@ function GUI(effect, options) {
             {
                 control.text('No such symbol: ' + symbol)
             }
-        });
+        })
 
         element.find('[mod-role=bypass]').each(function () {
             var control = $(this)
@@ -618,7 +618,7 @@ function GUI(effect, options) {
                 },
             })
 
-            self.setPortWidgetsValue(port.symbol, port.value, control, true)
+            self.setPortWidgetsValue(port.symbol, onlySetValues ? 0 : port.value, control, true)
 
             control.attr("mod-port", instance ? instance + "/:bypass" : ":bypass")
             control.attr('mod-widget', 'bypass')
@@ -626,7 +626,7 @@ function GUI(effect, options) {
         })
 
         element.find('[mod-role=bypass-light]').each(function () {
-            self.setPortWidgetsValue(':bypass', self.bypassed ? 1 : 0, $(this), true)
+            self.setPortWidgetsValue(':bypass', onlySetValues ? 0 : (self.bypassed ? 1 : 0), $(this), true)
         })
 
         if (onlySetValues)
