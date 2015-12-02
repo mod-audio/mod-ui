@@ -238,6 +238,15 @@ function GUI(effect, options) {
         var mod_port = source ? source.attr("mod-port") : symbol
         if (!port.enabled || port.value == value)
             return
+
+        if (value < port.ranges.minimum) {
+            value = port.ranges.minimum
+            console.log("setPortValue called with < min value, symbol:", symbol)
+        } else if (value > port.ranges.maximum) {
+            value = port.ranges.maximum
+            console.log("setPortValue called with > max value, symbol:", symbol)
+        }
+
         /*
           FIXME - shouldn't this be done in the host?
 
@@ -261,15 +270,25 @@ function GUI(effect, options) {
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
+        var element, label, valueField
         var port = self.controls[symbol]
 
         port.value = value
         self.currentValues[symbol] = value
 
         for (var i in port.widgets) {
-            if (port.widgets[i] == source)
-                continue
-            port.widgets[i].controlWidget('setValue', value, only_gui)
+            if (source == null || port.widgets[i] != source) {
+                port.widgets[i].controlWidget('setValue', value, only_gui)
+            }
+
+            valueField = port.valueField
+            if (valueField) {
+                label = sprintf(port.format, value)
+                if (port.scalePointsIndex && port.scalePointsIndex[label])
+                    label = port.scalePointsIndex[label].label
+                valueField.data('value', value)
+                valueField.text(label)
+            }
         }
 
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
@@ -478,54 +497,29 @@ function GUI(effect, options) {
             var symbol = $(this).attr('mod-port-symbol')
             var port = self.controls[symbol]
 
-            control.attr("mod-port", (instance ? instance + "/" : "") + symbol)
-            control.addClass("mod-port")
-
-            if (port)
-            {
-                // Get the display formatting of this control
-                var format
+            if (port) {
+                // Set the display formatting of this control
                 if (port.units.render)
-                    format = port.units.render.replace('%f', '%.2f')
+                    port.format = port.units.render.replace('%f', '%.2f')
                 else
-                    format = '%.2f'
+                    port.format = '%.2f'
+
                 if (port.properties.indexOf("integer") >= 0)
-                    format = format.replace(/%\.\d+f/, '%d')
+                    port.format = port.format.replace(/%\.\d+f/, '%d')
 
                 // Index the scalePoints
                 if (port.scalePoints) {
-                    var scalePointsIndex = {}
+                    port.scalePointsIndex = {}
                     for (var i in port.scalePoints) {
-                        scalePointsIndex[sprintf(format, port.scalePoints[i].value)] = port.scalePoints[i]
+                        port.scalePointsIndex[sprintf(port.format, port.scalePoints[i].value)] = port.scalePoints[i]
                     }
                 }
-
-                var valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
-
-                var setValue = function (value, only_gui) {
-                    // When value is changed, let's use format and scalePoints to properly display its value
-                    if (isNaN(value))
-                        throw "Invalid NaN value"
-                    var label = sprintf(format, value)
-                    if (port.scalePoints && scalePointsIndex[label])
-                        label = scalePointsIndex[label].label
-                    valueField.data('value', value)
-                    valueField.text(label)
-
-                    if (only_gui) {
-                        self.setPortWidgetsValue(symbol, value, control, true)
-                    } else {
-                        self.setPortValue(symbol, value, control)
-                    }
-                }
-
-                setValue(port.value, true)
 
                 control.controlWidget({
                     dummy: onlySetValues,
                     port: port,
                     change: function (e, value) {
-                        setValue(value, false)
+                        self.setPortValue(symbol, value, control)
                     },
                     midiLearn: function (e) {
                         var port_path = $(this).attr('mod-port')
@@ -536,23 +530,23 @@ function GUI(effect, options) {
                 if (port.properties.indexOf("enumeration") < 0) {
                     // For ports that are not enumerated, we allow
                     // editing the value directly
-                    valueField.attr('contenteditable', true)
-                    valueField.focus(function () {
-                        valueField.text(valueField.data('value'))
+                    port.valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
+                    port.valueField.attr('contenteditable', true)
+                    port.valueField.focus(function () {
+                        port.valueField.text(port.valueField.data('value'))
                     })
-                    valueField.keydown(function (e) {
+                    port.valueField.keydown(function (e) {
                         if (e.keyCode == 13) {
-                            valueField.blur()
+                            port.valueField.blur()
                             return false
                         }
                         return true
                     })
-                    valueField.blur(function () {
-                        var value = parseFloat(valueField.text())
-                        setValue(value)
-                        //control.controlWidget('setValue', value)
+                    port.valueField.blur(function () {
+                        var value = parseFloat(port.valueField.text())
+                        self.setPortValue(symbol, value, null) // set source as null so we force an update of this control
                     })
-                    valueField.keydown(function (e) {
+                    port.valueField.keydown(function (e) {
                         return true
                         if (e.keyCode >= 48 && e.keyCode <= 57) {
                             // It's a number
@@ -567,6 +561,11 @@ function GUI(effect, options) {
                 }
 
                 port.widgets.push(control)
+
+                control.attr("mod-port", (instance ? instance + "/" : "") + symbol)
+                control.addClass("mod-port")
+
+                self.setPortWidgetsValue(symbol, port.value, control, true)
             }
             else
             {
@@ -620,11 +619,11 @@ function GUI(effect, options) {
                 },
             })
 
-            self.setPortWidgetsValue(port.symbol, onlySetValues ? 0 : port.value, control, true)
-
             control.attr("mod-port", instance ? instance + "/:bypass" : ":bypass")
-            control.attr('mod-widget', 'bypass')
+            control.attr("mod-widget", "bypass")
             control.addClass("mod-port")
+
+            self.setPortWidgetsValue(':bypass', onlySetValues ? 0 : port.value, control, true)
         })
 
         element.find('[mod-role=bypass-light]').each(function () {
@@ -641,7 +640,7 @@ function GUI(effect, options) {
                 return
             }
             var port = self.controls[symbol]
-            if (port === undefined)
+            if (! port)
                 return
 
             var format, value
@@ -671,7 +670,7 @@ function GUI(effect, options) {
                 return
             }
             var port = self.controls[symbol]
-            if (port === undefined)
+            if (! port)
                 return
 
             var format, value
@@ -691,7 +690,7 @@ function GUI(effect, options) {
                 }
             }
             $(this).html(value)
-        });
+        })
 
         // Gestures for tablet. When event starts, we check if it's centered in any widget and stores the widget if so.
         // Following events will be forwarded to proper widget
@@ -1063,8 +1062,7 @@ JqueryClass('film', baseWidget, {
     },
 
     getSize: function (dummy, callback) {
-        var self  = $(this)
-        var retry = 0
+        var self = $(this)
         setTimeout(function() {
             if (dummy && ! self.is(":visible"))
                 return

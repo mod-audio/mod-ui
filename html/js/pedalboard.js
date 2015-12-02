@@ -1279,7 +1279,7 @@ JqueryClass('pedalboard', {
                 gui = plugin.data('gui')
 
                 if (gui.controls[symbol] != null) {
-                    gui.setPortWidgetsValue(symbol, value, undefined, true);
+                    gui.setPortWidgetsValue(symbol, value, null, true);
                     return
                 }
             }
