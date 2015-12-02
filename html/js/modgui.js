@@ -522,6 +522,7 @@ function GUI(effect, options) {
                 setValue(port.value, true)
 
                 control.controlWidget({
+                    dummy: onlySetValues,
                     port: port,
                     change: function (e, value) {
                         setValue(value, false)
@@ -579,6 +580,7 @@ function GUI(effect, options) {
             port.widgets.push(control)
 
             control.bypassWidget({
+                dummy: onlySetValues,
                 port: port,
                 change: function (e, value) {
                     /*
@@ -1002,7 +1004,7 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         self.data('initialized', false)
         self.data('initvalue', options.port.ranges.default)
-        self.film('getSize', function () {
+        self.film('getSize', options.dummy, function () {
             self.film('config', options)
             self.data('initialized', true)
             self.film('setValue', self.data('initvalue'), true)
@@ -1060,18 +1062,15 @@ JqueryClass('film', baseWidget, {
             self.trigger('valuechange', value)
     },
 
-    getSize: function (callback) {
+    getSize: function (dummy, callback) {
         var self  = $(this)
         var retry = 0
-        function tryGetAndSetSize() {
+        setTimeout(function() {
+            if (dummy && ! self.is(":visible"))
+                return
             var url = self.css('background-image')
             if (! url) {
-                retry += 1
-                if (retry == 5) {
-                    console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
-                } else {
-                    setTimeout(tryGetAndSetSize, 20)
-                }
+                console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
                 return
             }
             url = url.replace('url(', '').replace(')', '').replace(/'/g, '').replace(/"/g, '')
@@ -1096,8 +1095,7 @@ JqueryClass('film', baseWidget, {
             });
             $('body').append(bgImg);
             bgImg.attr('src', url);
-        }
-        tryGetAndSetSize()
+        }, 5)
     },
 
     mouseDown: function (e) {
