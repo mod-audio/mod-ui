@@ -61,7 +61,8 @@ from mod.utils import (init as lv2_init,
                        get_all_pedalboards,
                        get_pedalboard_info)
 
-def install_bundles_in_tmp_dir():
+@gen.coroutine
+def install_bundles_in_tmp_dir(callback):
     removed   = []
     installed = []
 
@@ -91,9 +92,10 @@ def install_bundles_in_tmp_dir():
             'installed': installed,
         }
 
-    return resp
+    callback(resp)
 
-def uninstall_bundles(bundles):
+@gen.coroutine
+def uninstall_bundles(bundles, callback):
     removed = []
 
     for bundlepath in bundles:
@@ -113,7 +115,7 @@ def uninstall_bundles(bundles):
             'error': "No plugins found",
         }
 
-    return resp
+    callback(resp)
 
 def install_package(bundlename, callback):
     filename = os.path.join(DOWNLOAD_TMP_DIR, bundlename)
@@ -135,7 +137,7 @@ def install_package(bundlename, callback):
             return
         ioloop.remove_handler(fileno)
         os.remove(filename)
-        callback(install_bundles_in_tmp_dir())
+        install_bundles_in_tmp_dir(callback)
 
     ioloop = tornado.ioloop.IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
@@ -639,10 +641,11 @@ class PackageUninstall(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
+        print(self.request.body)
         bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         # FIXME: check if all bundles are inside LV2_PATH
         # we don't want users sending test messages and deleting randomly system files!
-        resp = uninstall_bundles(bundles)
+        resp = yield gen.Task(uninstall_bundles, bundles)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
         self.finish()

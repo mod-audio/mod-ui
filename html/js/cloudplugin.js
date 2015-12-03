@@ -37,7 +37,7 @@ JqueryClass('cloudPluginBox', {
         var searchbox = self.find('input[type=search]')
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
-        
+
         searchbox.keydown(function (e) {
             if (e.keyCode == 13) { //detect enter
                 self.cloudPluginBox('search')
@@ -119,12 +119,21 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
+    // search all or installed, depending on selected option
+    search: function () {
+        var self  = $(this)
+        var query = {
+            term: self.data('searchbox').val()
+        }
+
+        if (self.find('input:radio[name=installed]:checked').val() == "all")
+            return self.cloudPluginBox('searchAll', query)
+
+        return self.cloudPluginBox('searchInstalled', query)
+    },
+
     // search cloud and local plugins, show all but prefer cloud
     searchAll: function (query) {
-       /* Get an array of plugins from cloud, organize local plugins in a dictionary indexed by uri.
-          Then show all plugins as ordered in cloud, but with aggregated metadata from local plugin.
-          All plugins installed but not in cloud (may be installed via sdk) will be unordered at end of list.
-        */
         var self = $(this)
         var results = {}
         var cplugin, lplugin;
@@ -139,10 +148,12 @@ JqueryClass('cloudPluginBox', {
                 cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
 
                 if (lplugin) {
-                    //cplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0] is this correct? doesn't show updated plugins, as we can see by screenshots and info table
-                    if(!lplugin.latestVersion)
-                        lplugin.latestVersion = [0,0,0]
-                    cplugin.installedVersion = lplugin.latestVersion
+                    if (!lplugin.installedVersion) {
+                        console.log("local plugin is missing version info:", lplugin.uri)
+                        lplugin.installedVersion = [0, 0, 0]
+                    }
+
+                    cplugin.installedVersion = lplugin.installedVersion
                     delete results.local[cplugin.uri]
 
                     if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) == 0) {
@@ -154,7 +165,7 @@ JqueryClass('cloudPluginBox', {
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
 
                 } else {
-                    cplugin.installedVersion = null //  if set to [0, 0, 0], it appears as intalled on cloudplugininfo
+                    cplugin.installedVersion = null // if set to [0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
                 }
 
@@ -182,19 +193,24 @@ JqueryClass('cloudPluginBox', {
 
         // cloud search
         $.ajax({
-            'method': 'GET',
-            'url': SITEURLNEW + "/lv2/plugins/",
-            'data': {
-                'search': query.term
+            method: 'GET',
+            url: SITEURLNEW + "/lv2/plugins/",
+            data: {
+                search: query.term
             },
-            'success': function (plugins) {
-                console.log('cloud: '+plugins.length)
+            success: function (plugins) {
                 results.cloud = plugins
                 if (results.local != null) {
                     renderResults()
                 }
             },
-            'dataType': 'json'
+            error: function () {
+                results.cloud = []
+                if (results.local != null) {
+                    renderResults()
+                }
+            },
+            dataType: 'json',
         })
 
         // local search
@@ -220,10 +236,9 @@ JqueryClass('cloudPluginBox', {
         else
         {
             $.ajax({
-                'method': 'GET',
-                'url': '/effect/list',
-                'success': function (plugins) {
-                    console.log(' local: '+plugins.length)
+                method: 'GET',
+                url: '/effect/list',
+                success: function (plugins) {
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
@@ -241,24 +256,14 @@ JqueryClass('cloudPluginBox', {
                     if (results.cloud != null)
                         renderResults()
                 },
-                'dataType': 'json'
+                dataType: 'json',
             })
         }
     },
 
     // search cloud and local plugins, show installed only
-    search: function () {
+    searchInstalled: function (query) {
         var self = $(this)
-        var searchbox = self.data('searchbox')
-        var checked_filter = self.find('input:radio[name=installed]:checked').val()
-        var term = searchbox.val()
-        var query = {
-            'term': term
-        }
-
-        if (checked_filter == "all")
-            return self.cloudPluginBox('searchAll', query)
-
         var results = {}
         var cplugin, lplugin
 
@@ -299,12 +304,12 @@ JqueryClass('cloudPluginBox', {
 
         // cloud search
         $.ajax({
-            'method': 'GET',
-            'url': SITEURLNEW + "/lv2/plugins/",
-            'data': {
-                'search': query.term
+            method: 'GET',
+            url: SITEURLNEW + "/lv2/plugins/",
+            data: {
+                search: query.term
             },
-            'success': function (plugins) {
+            success: function (plugins) {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
                 for (var i in plugins)
@@ -313,16 +318,21 @@ JqueryClass('cloudPluginBox', {
                 if (results.local != null)
                     renderResults()
             },
-            'dataType': 'json'
+            error: function () {
+                results.cloud = {}
+                if (results.local != null)
+                    renderResults()
+            },
+            dataType: 'json',
         })
 
         // local search
-        if (term)
+        if (query.term)
         {
             var allplugins = desktop.pluginIndexerData
             var lplugins   = []
 
-            var ret = desktop.pluginIndexer.search(term)
+            var ret = desktop.pluginIndexer.search(query.term)
             for (var i in ret) {
                 var uri = ret[i].ref
                 if (! allplugins[uri]) {
@@ -339,9 +349,9 @@ JqueryClass('cloudPluginBox', {
         else
         {
             $.ajax({
-                'method': 'GET',
-                'url': '/effect/list',
-                'success': function (plugins) {
+                method: 'GET',
+                url: '/effect/list',
+                success: function (plugins) {
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
@@ -359,7 +369,7 @@ JqueryClass('cloudPluginBox', {
                     if (results.cloud != null)
                         renderResults()
                 },
-                'dataType': 'json'
+                dataType: 'json',
             })
         }
     },
@@ -367,21 +377,32 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-        /*plugins.sort(function (a, b) { // not sure if this is working
-            if (a.status > b.label)
+        // sort by name
+        plugins.sort(function (a, b) {
+            if (a.label > b.label)
                 return 1
             if (a.label < b.label)
                 return -1
             return 0
-        })*/
-        plugins.sort(function(a,b) { // show not installed first, then outdated. is there a better way to sort?z
+        })
+//         plugins.reverse()
+        // sort by brand
+        plugins.sort(function (a, b) {
+            if (a.brand > b.brand)
+                return 1
+            if (a.brand < b.brand)
+                return -1
+            return 0
+        })
+//         plugins.reverse()
+        // now sort by status
+        plugins.sort(function(a,b) {
             if (a.status =='blocked')
                 return -1;
             if (a.status ==' installed')
                 return 1;
             return 0;
         })
-        //plugins.reverse()
 
         self.data('plugins', plugins)
 
