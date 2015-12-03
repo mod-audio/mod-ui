@@ -572,7 +572,7 @@ JqueryClass('cloudPluginBox', {
         }
 
         // get full plugin info if plugin has a local version
-        if (plugin.bundles || ! plugin.installedVersion) {
+        if ((plugin.bundles && plugin.bundles.length > 0) || ! plugin.installedVersion) {
             localChecked = true
         } else {
             $.ajax({
