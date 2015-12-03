@@ -347,7 +347,7 @@ JqueryClass('effectBox', {
                 category: plugin.category[0] || "",
                 installed_version: version(plugin.installedVersion),
                 latest_version: "DO NOT SHOW THIS!!", // not shown on local plugin bar
-                package_name: plugin.bundles[0],
+                package_name: plugin.bundles[0].replace(/\.lv2$/, ''),
                 comment: plugin.comment || "No description available",
                 brand : plugin.brand,
                 name  : plugin.name,

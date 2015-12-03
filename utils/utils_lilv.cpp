@@ -1241,6 +1241,79 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // bundles
+
+    {
+        std::vector<std::string> bundles;
+
+        if (const LilvNodes* const bundlenodes = lilv_plugin_get_data_uris(p))
+        {
+            char tmppath[PATH_MAX+2];
+
+            LILV_FOREACH(nodes, itbnds, bundlenodes)
+            {
+                const LilvNode* const bundlenode = lilv_nodes_get(bundlenodes, itbnds);
+
+                if (bundlenode == nullptr)
+                    continue;
+                if (! lilv_node_is_uri(bundlenode))
+                    continue;
+
+                char* bundleparsed;
+                char* tmp;
+
+                tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
+                if (tmp == nullptr)
+                    continue;
+
+                bundleparsed = dirname(tmp);
+                if (bundleparsed == nullptr)
+                {
+                    lilv_free(tmp);
+                    continue;
+                }
+
+                bundleparsed = realpath(bundleparsed, tmppath);
+                lilv_free(tmp);
+                if (bundleparsed == nullptr)
+                    continue;
+
+                const size_t size = strlen(bundleparsed);
+                if (size <= 1)
+                    continue;
+
+                if (bundleparsed[size] != OS_SEP)
+                {
+                    bundleparsed[size  ] = OS_SEP;
+                    bundleparsed[size+1] = '\0';
+                }
+
+                const std::string bundlestr = bundleparsed;
+
+                //if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                bundles.push_back(bundlestr);
+            }
+        }
+
+        {
+            const std::string bundlestr = bundle;
+
+            if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                bundles.push_back(bundlestr);
+        }
+
+        size_t count = bundles.size();
+        const char** const cbundles = new const char*[count+1];
+        memset(cbundles, 0, sizeof(const char*) * (count+1));
+
+        count = 0;
+        for (const std::string& b : bundles)
+            cbundles[count++] = strdup(b.c_str());
+
+        info.bundles = cbundles;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // get the proper modgui
 
     LilvNode* modguigui = nullptr;
@@ -2202,6 +2275,13 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.gui.color);
     if (info.gui.knob != nullptr && info.gui.knob != nc)
         free((void*)info.gui.knob);
+
+    if (info.bundles != nullptr)
+    {
+        for (int i=0; info.bundles[i]; ++i)
+            free((void*)info.bundles[i]);
+        delete[] info.bundles;
+    }
 
     if (info.gui.ports != nullptr)
     {

@@ -480,7 +480,7 @@ JqueryClass('cloudPluginBox', {
                 category: plugin.category[0] || "",
                 installed_version: version(plugin.installedVersion),
                 latest_version: version(plugin.latestVersion),
-                package_name: plugin.bundle_name,
+                package_name: (plugin.bundle_name || plugin.bundles[0]).replace(/\.lv2$/, ''),
                 comment: plugin.comment || "No description available",
                 brand : plugin.brand,
                 name  : plugin.name,
@@ -503,7 +503,8 @@ JqueryClass('cloudPluginBox', {
                             delete desktop.pluginIndexerData[plugin.uri].installedVersion
                             desktop.pluginIndexerData[plugin.uri].status = 'blocked'
 
-                            self.cloudPluginBox('showPlugins', plugins)
+                            // FIXME
+                            //self.cloudPluginBox('showPlugins', plugins)
                             desktop.rescanPlugins()
                         }
                     })
@@ -577,7 +578,6 @@ JqueryClass('cloudPluginBox', {
                     uri: plugin.uri
                 },
                 success: function (pluginData) {
-                    plugin.bundle_name = pluginData.bundles[0]
                     plugin = $.extend(plugin, pluginData)
                     localChecked = true
                     showInfo()
