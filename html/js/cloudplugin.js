@@ -503,9 +503,8 @@ JqueryClass('cloudPluginBox', {
                             delete desktop.pluginIndexerData[plugin.uri].installedVersion
                             desktop.pluginIndexerData[plugin.uri].status = 'blocked'
 
-                            // FIXME
-                            //self.cloudPluginBox('showPlugins', plugins)
                             desktop.rescanPlugins()
+                            self.cloudPluginBox('search')
                         }
                     })
                 })
@@ -524,9 +523,11 @@ JqueryClass('cloudPluginBox', {
 
                             if (info.is(':visible')) {
                                 info.remove()
+                                self.cloudPluginBox('checkLocalScreenshot', pluginData)
                                 self.cloudPluginBox('showPluginInfo', pluginData)
                             }
                             desktop.rescanPlugins()
+                            self.cloudPluginBox('search')
                         }
                     })
                 })
@@ -545,9 +546,11 @@ JqueryClass('cloudPluginBox', {
 
                             if (info.is(':visible')) {
                                 info.remove()
-                                self.effectBox('showPluginInfo', plugin)
+                                self.cloudPluginBox('checkLocalScreenshot', pluginData)
+                                self.cloudPluginBox('showPluginInfo', pluginData)
                             }
                             desktop.rescanPlugins()
+                            self.cloudPluginBox('search')
                         }
                     })
                 })

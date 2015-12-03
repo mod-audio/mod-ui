@@ -29,6 +29,7 @@ This will start the mainloop and will handle the callbacks and the async functio
 """
 
 from tornado import iostream, ioloop
+from shutil import rmtree
 import os, json, socket, logging
 
 from mod import get_hardware, symbolify
@@ -500,16 +501,6 @@ class Host(object):
         presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), labelsymbol)
         plugin_uri   = self.plugins[instance_id]['uri']
 
-        # if presetbundle already exists, generate a new random bundle path
-        if os.path.exists(presetbundle):
-            from random import randint
-
-            while True:
-                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), labelsymbol, randint(1,99999)))
-                if os.path.exists(presetbundle):
-                    continue
-                break
-
         def host_callback(ok):
             if not ok:
                 callback({
@@ -529,8 +520,25 @@ class Host(object):
             # rescan presets next time the plugin is loaded
             rescan_plugin_presets(plugin_uri)
 
-        print("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol))
-        self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol), host_callback, datatype='boolean')
+        def start(ok):
+            if os.path.exists(presetbundle):
+                rmtree(presetbundle)
+
+            print("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol))
+            self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol), host_callback, datatype='boolean')
+
+        if os.path.exists(presetbundle):
+            self.remove_bundle(presetbundle, start)
+
+            # if presetbundle already exists, generate a new random bundle path
+            #from random import randint
+            #while True:
+                #presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), labelsymbol, randint(1,99999)))
+                #if os.path.exists(presetbundle):
+                    #continue
+                #break
+        else:
+            start()
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)

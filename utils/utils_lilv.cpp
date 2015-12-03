@@ -1244,12 +1244,28 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // bundles
 
     {
+        char tmppath[PATH_MAX+2];
         std::vector<std::string> bundles;
+
+        if (char* const bundle2 = realpath(bundle, tmppath))
+        {
+            const size_t size = strlen(bundle2);
+
+            if (size > 1)
+            {
+                if (bundle2[size] != OS_SEP)
+                {
+                    bundle2[size  ] = OS_SEP;
+                    bundle2[size+1] = '\0';
+                }
+
+                const std::string bundlestr = bundle2;
+                bundles.push_back(bundlestr);
+            }
+        }
 
         if (const LilvNodes* const bundlenodes = lilv_plugin_get_data_uris(p))
         {
-            char tmppath[PATH_MAX+2];
-
             LILV_FOREACH(nodes, itbnds, bundlenodes)
             {
                 const LilvNode* const bundlenode = lilv_nodes_get(bundlenodes, itbnds);
@@ -1290,16 +1306,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
                 const std::string bundlestr = bundleparsed;
 
-                //if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
-                bundles.push_back(bundlestr);
+                if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                    bundles.push_back(bundlestr);
             }
-        }
-
-        {
-            const std::string bundlestr = bundle;
-
-            if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
-                bundles.push_back(bundlestr);
         }
 
         size_t count = bundles.size();
