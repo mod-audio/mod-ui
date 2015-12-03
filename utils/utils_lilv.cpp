@@ -2183,7 +2183,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p, 
 static const PluginInfo_Mini** _plug_ret = nullptr;
 static PedalboardInfo_Mini** _pedals_ret = nullptr;
 static PedalboardInfo* _pedal_ret;
-static unsigned int _plug_lastsize = 0;
+static int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
 static StatePortValue* _state_ret = nullptr;
 static char* _uri_parsed = nullptr;
@@ -2874,6 +2874,9 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 
         removedPlugins.clear();
 
+        // force get_all_plugins to reload info next time
+        _plug_lastsize = -1;
+
         return _bundles_ret;
     }
 
@@ -2882,7 +2885,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 
 const PluginInfo_Mini* const* get_all_plugins(void)
 {
-    unsigned int newsize = lilv_plugins_size(PLUGINS);
+    int newsize = (int)lilv_plugins_size(PLUGINS);
 
     if (newsize == 0 && _plug_lastsize != 0)
     {
@@ -2906,7 +2909,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
     }
 
     const NamespaceDefinitions_Mini ns;
-    unsigned int retIndex = 0;
+    int retIndex = 0;
 
     // Make a list of all installed bundles
     LILV_FOREACH(plugins, itpls, PLUGINS)
