@@ -178,9 +178,9 @@ JqueryClass('effectBox', {
         else
         {
             $.ajax({
-                'method': 'GET',
-                'url': '/effect/list',
-                'success': function (plugins) {
+                method: 'GET',
+                url: '/effect/list',
+                success: function (plugins) {
                     var allplugins = {}
                     for (var i in plugins) {
                         var plugin = plugins[i]
@@ -195,7 +195,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData = allplugins
                     self.effectBox('showPlugins', plugins)
                 },
-                'dataType': 'json'
+                dataType: 'json'
             })
         }
     },
@@ -210,7 +210,6 @@ JqueryClass('effectBox', {
                 return -1
             return 0
         })
-        self.data('plugins', plugins)
 
         // count plugins first
         var pluginCount = plugins.length
@@ -258,7 +257,7 @@ JqueryClass('effectBox', {
                 self.effectBox('calculateNavigation')
 
                 if (self.data('showPluginsRenderId') == currentRenderId) {
-                    // no other renders in queue, take the change and reset the id
+                    // no other renders in queue, take the chance and reset the id
                     self.data('showPluginsRenderId', 0)
                 }
                 return
@@ -325,99 +324,74 @@ JqueryClass('effectBox', {
 
     showPluginInfo: function (plugin) {
         var self = $(this)
+        var uri  = escape(plugin.uri)
 
-        var uri = escape(plugin.uri)
-        var comment = plugin.comment
-        var has_description = ""
-        if(!comment) {
-            comment = "No description available";
-            has_description = "no_description";
-        }
-        var plugin_data = {
-            thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                          ? "/effect/image/thumbnail.png?uri=" + uri
-                          : "/resources/pedals/default-thumbnail.png",
-            screenshot_href: (plugin.gui && plugin.gui.screenshot)
-                           ? "/effect/image/screenshot.png?uri=" + uri
-                           : "/resources/pedals/default-screenshot.png",
-            category: plugin.category[0] || "",
-            installed_version: plugin.installedVersion.join("."),
-            package_name: "", // TODO
-            comment: comment,
-            uri: uri,
-            status: plugin.status,
-            name  : plugin.name
-        }
-
-        var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
-
-        //hide install etc buttons
-        info.find('.js-remove').hide()
-        info.find('.js-install').hide()
-        info.find('.js-upgrade').hide()
-
-        //hide latest version on plugin bar
-        info.find('.js-latest-version').hide()
-
-        if (plugin.rating)
-            $(info.find('.rating')[0]).addClass(['', 'one', 'two', 'three', 'four', 'five'][Math.round(plugin.rating)])
-
-        if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0)
-            self.effectBox('getRating', plugin, info.find('.js-rate'))
-
-        self.effectBox('getReviews', plugin.uri, info, function () {
-
-            var title = info.find('input[name=title]')
-            var comment = info.find('textarea[name=comment]')
-
-            if (compareVersions(plugin.latestVersion, plugin.installedVersion) == 0) {
-                info.find('.js-comment').click(function () {
-                    var userSession = self.data('userSession')
-                    userSession.login(function () {
-                        $.ajax({
-                            url: SITEURL + '/effect/comment/' + userSession.sid,
-                            method: 'POST',
-                            data: JSON.stringify({
-                                'title': title.val(),
-                                'comment': comment.val(),
-                                'uri': plugin.uri,
-                                'version': version(plugin.latestVersion)
-                            }),
-                            success: function (res) {
-                                if (res.ok) {
-                                    title.val('')
-                                    comment.val('')
-                                    self.effectBox('getReviews', plugin.uri, info)
-                                } else {
-                                    alert(res.error)
-                                }
-                            },
-                            error: function () {
-                                new Notification('error', "Couldn't post comment")
-                            },
-                            dataType: 'json'
-                        })
-                    })
-                    return false
-                })
-            } else {
-                title.attr('placeholder', 'Please install and test latest version before commenting')
-                title.attr('disabled', true)
-                comment.attr('disabled', true)
-                info.find('.js-comment').attr('disabled', true)
+        var showInfo = function() {
+            var comment = plugin.comment
+            var has_description = ""
+            if(!comment) {
+                comment = "No description available";
+                has_description = "no_description";
             }
-        })
 
-        info.window({
-            windowManager: self.data('windowManager'),
-            close: function () {
-                info.remove()
-                self.data('info', null)
+            var metadata = {
+                uri: uri,
+                comment: comment,
+                has_description: has_description,
+                thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
+                              ? "/effect/image/thumbnail.png?uri=" + uri
+                              : "/resources/pedals/default-thumbnail.png",
+                screenshot_href: (plugin.gui && plugin.gui.screenshot)
+                              ? "/effect/image/screenshot.png?uri=" + uri
+                              : "/resources/pedals/default-screenshot.png",
+                category: plugin.category[0] || "",
+                installed_version: version(plugin.installedVersion),
+                latest_version: "DO NOT SHOW THIS!!", // not shown on local plugin bar
+                package_name: plugin.bundles[0],
+                comment: plugin.comment || "No description available",
+                brand : plugin.brand,
+                name  : plugin.name,
+                label : plugin.label,
+                ports : plugin.ports,
             }
-        })
-        info.appendTo($('body'))
-        info.window('open')
-        self.data('info', info)
+
+            var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
+
+            //hide install etc buttons
+            info.find('.js-remove').hide()
+            info.find('.js-install').hide()
+            info.find('.js-upgrade').hide()
+            info.find('.js-latest-version').hide()
+
+            info.window({
+                windowManager: self.data('windowManager'),
+                close: function () {
+                    info.remove()
+                    self.data('info', null)
+                }
+            })
+
+            info.appendTo($('body'))
+            info.window('open')
+            self.data('info', info)
+        }
+
+        if (plugin.bundles) {
+            showInfo()
+        } else {
+            $.ajax({
+                url: "/effect/get",
+                data: {
+                    uri: plugin.uri
+                },
+                success: function (pluginData) {
+                    plugin = $.extend(plugin, pluginData)
+                    desktop.pluginIndexerData[plugin.uri] = plugin
+                    showInfo()
+                },
+                dataType: 'json'
+            })
+        }
     },
 
     getReviews: function (uri, info, callback) {

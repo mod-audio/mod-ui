@@ -377,7 +377,8 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-        // sort by name
+        // FIXME: this sort stuff doesn't seem to work properly
+        // sort by label
         plugins.sort(function (a, b) {
             if (a.label > b.label)
                 return 1
@@ -385,26 +386,14 @@ JqueryClass('cloudPluginBox', {
                 return -1
             return 0
         })
-//         plugins.reverse()
-        // sort by brand
+        // now sort by status
         plugins.sort(function (a, b) {
-            if (a.brand > b.brand)
+            if (a.status == 'installed')
                 return 1
-            if (a.brand < b.brand)
+            if (a.status == 'blocked')
                 return -1
             return 0
         })
-//         plugins.reverse()
-        // now sort by status
-        plugins.sort(function(a,b) {
-            if (a.status =='blocked')
-                return -1;
-            if (a.status ==' installed')
-                return 1;
-            return 0;
-        })
-
-        self.data('plugins', plugins)
 
         // count plugins first
         var pluginCount = plugins.length
@@ -429,10 +418,10 @@ JqueryClass('cloudPluginBox', {
             plugin   = plugins[i]
             category = plugin.category[0]
 
-            self.cloudPluginBox('renderPlugin', plugin, i, self.find('#cloud-plugin-content-All'))
+            self.cloudPluginBox('renderPlugin', plugin, self.find('#cloud-plugin-content-All'))
 
             if (category && category != 'All') {
-                self.cloudPluginBox('renderPlugin', plugin, i, self.find('#cloud-plugin-content-' + category))
+                self.cloudPluginBox('renderPlugin', plugin, self.find('#cloud-plugin-content-' + category))
             }
         }
 
@@ -443,7 +432,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    renderPlugin: function (plugin, index, canvas) {
+    renderPlugin: function (plugin, canvas) {
         var self = $(this)
         var uri = escape(plugin.uri)
         var comment = plugin.comment
@@ -466,93 +455,96 @@ JqueryClass('cloudPluginBox', {
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
-            self.cloudPluginBox('showPluginInfo', plugin, index)
+            self.cloudPluginBox('showPluginInfo', plugin)
         })
 
         canvas.append(rendered)
         return rendered
     },
 
-    showPluginInfo: function (plugin, index) {
+    showPluginInfo: function (plugin) {
         var self = $(this)
         var uri  = escape(plugin.uri)
-        var bundle_name = plugin.bundle_name
-        if (! bundle_name) {
-            bundle_name = "TODO" // FIXME, ask full info
-            //bundle_name = plugin.bundles[0]
-        }
-        bundle_name = bundle_name.replace(/\.lv2$/, '')
 
-        var plugin_data = {
-            thumbnail_href: plugin.thumbnail_href,
-            screenshot_href: plugin.screenshot_href,
-            category: plugin.category[0] || "",
-            installed_version: version(plugin.installedVersion),
-            latest_version: version(plugin.latestVersion),
-            package_name: bundle_name,
-            comment: plugin.comment,
-            uri: uri,
-            status: plugin.status,
-            brand : plugin.brand,
-            name  : plugin.name,
-            label : plugin.label,
-            ports : plugin.ports
-        }
-        console.log(plugin_data)
+        var cloudChecked = false
+        var localChecked = false
 
-        var info = $(Mustache.render(TEMPLATES.cloudplugin_info, plugin_data))
+        var showInfo = function() {
+            if (!cloudChecked || !localChecked)
+                return
 
-        // The remove button will remove the plugin, close window and re-render the plugins
-        // without the removed one
-        if (plugin.installedVersion) {
-            info.find('.js-install').hide()
-            info.find('.js-remove').show().click(function () {
-                self.data('removePlugin')(plugin, function (ok) {
-                    if (ok) {
-                        info.window('close')
+            var metadata = {
+                uri: uri,
+                thumbnail_href: plugin.thumbnail_href,
+                screenshot_href: plugin.screenshot_href,
+                category: plugin.category[0] || "",
+                installed_version: version(plugin.installedVersion),
+                latest_version: version(plugin.latestVersion),
+                package_name: plugin.bundle_name,
+                comment: plugin.comment || "No description available",
+                brand : plugin.brand,
+                name  : plugin.name,
+                label : plugin.label,
+                ports : plugin.ports,
+            }
 
-                        var plugins = self.data('plugins')
-                        delete plugins[index].installedVersion
-                        plugins[index].status = 'blocked'
+            var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
-                        self.cloudPluginBox('showPlugins', plugins)
-                        desktop.rescanPlugins()
-                    }
-                })
-            })
-        } else {
-            info.find('.js-remove').hide()
-            info.find('.js-installed-version').hide()
-            info.find('.js-install').show().click(function () {
-                // Install plugin
-                self.data('installPlugin')(plugin, function (plugin) {
-                    if (plugin) {
-                        plugin.status = 'installed'
-                        plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
-                        plugin.installedVersion = plugin.latestVersion
-                        if (info.is(':visible')) {
-                            info.remove()
-                            self.cloudPluginBox('showPluginInfo', plugin, index)
+            // The remove button will remove the plugin, close window and re-render the plugins
+            // without the removed one
+            if (plugin.installedVersion) {
+                info.find('.js-install').hide()
+                info.find('.js-remove').show().click(function () {
+                    // Remove plugin
+                    self.data('removePlugin')(plugin, function (ok) {
+                        if (ok) {
+                            info.window('close')
+
+                            delete desktop.pluginIndexerData[plugin.uri].installedVersion
+                            desktop.pluginIndexerData[plugin.uri].status = 'blocked'
+
+                            self.cloudPluginBox('showPlugins', plugins)
+                            desktop.rescanPlugins()
                         }
-                        desktop.rescanPlugins()
-                    }
+                    })
                 })
-            })
-        }
+            } else {
+                info.find('.js-remove').hide()
+                info.find('.js-installed-version').hide()
+                info.find('.js-install').show().click(function () {
+                    // Install plugin
+                    self.data('installPlugin')(plugin, function (pluginData) {
+                        if (pluginData) {
+                            pluginData.status = 'installed'
+                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
+                            pluginData.installedVersion = pluginData.latestVersion
 
-        var checkVersion = function () {
-            if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
-                info.find('.js-upgrade').show().click(function () {
-                    // Do the upgrade
-                    self.data('upgradePlugin')(plugin, function (plugin) {
-                        if (plugin) {
-                            var plugins = self.data('plugins')
-                            plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
-                            plugin.installedVersion = plugin.latestVersion
-                            plugins[index] = plugin
+                            desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
+
                             if (info.is(':visible')) {
                                 info.remove()
-                                self.effectBox('showPluginInfo', plugin, index)
+                                self.cloudPluginBox('showPluginInfo', pluginData)
+                            }
+                            desktop.rescanPlugins()
+                        }
+                    })
+                })
+            }
+
+            if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
+                info.find('.js-upgrade').show().click(function () {
+                    // Upgrade plugin
+                    self.data('upgradePlugin')(plugin, function (pluginData) {
+                        if (pluginData) {
+                            pluginData.status = 'installed'
+                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
+                            pluginData.installedVersion = pluginData.latestVersion
+
+                            desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
+
+                            if (info.is(':visible')) {
+                                info.remove()
+                                self.effectBox('showPluginInfo', plugin)
                             }
                             desktop.rescanPlugins()
                         }
@@ -561,14 +553,44 @@ JqueryClass('cloudPluginBox', {
             } else {
                 info.find('.js-upgrade').hide()
             }
+
+            /*info.window({
+                windowManager: self.data('windowManager'),
+                close: function () {
+                    info.remove()
+                    self.data('info', null)
+                }
+            }) keep plugin info open in plugin store*/
+
+            info.appendTo($('body'))
+            info.window('open')
+            self.data('info', info)
+        }
+
+        // get full plugin info if plugin has a local version
+        if (plugin.bundles || ! plugin.installedVersion) {
+            localChecked = true
+        } else {
+            $.ajax({
+                url: "/effect/get",
+                data: {
+                    uri: plugin.uri
+                },
+                success: function (pluginData) {
+                    plugin.bundle_name = pluginData.bundles[0]
+                    plugin = $.extend(plugin, pluginData)
+                    localChecked = true
+                    showInfo()
+                },
+                dataType: 'json'
+            })
         }
 
         if (plugin.latestVersion) {
-            checkVersion()
+            cloudChecked = true
         } else {
-            // wait for cloud info
-            info.find('.js-upgrade').hide()
-
+            // no latestVersion means plugin is local and hasn't checked the cloud for its latest version
+            // so do that now
             $.ajax({
                 url: SITEURLNEW + "/lv2/plugins",
                 data: {
@@ -576,26 +598,22 @@ JqueryClass('cloudPluginBox', {
                 },
                 success: function (pluginData) {
                     plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
-                    info.find('.js-latest-version span').html(version(plugin.latestVersion))
-                    checkVersion()
+                    cloudChecked = true
+                    showInfo()
+                },
+                error: function () {
+                    cloudChecked = true
+                    showInfo()
                 },
                 dataType: 'json'
             })
         }
 
-        /*info.window({
-            windowManager: self.data('windowManager'),
-            close: function () {
-                info.remove()
-                self.data('info', null)
-            }
-        }) keep plugin info open in plugin store*/
-        info.appendTo($('body'))
-        info.window('open')
-        self.data('info', info)
+        // might be ready on start
+        showInfo()
     },
-
 })
+
 function compareVersions(a, b) {
     if (!a && !b)
         return 0

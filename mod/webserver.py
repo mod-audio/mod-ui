@@ -94,29 +94,6 @@ def install_bundles_in_tmp_dir(callback):
 
     callback(resp)
 
-@gen.coroutine
-def uninstall_bundles(bundles, callback):
-    removed = []
-
-    for bundlepath in bundles:
-        if os.path.exists(bundlepath):
-            plugins  = yield gen.Task(SESSION.host.remove_bundle, bundlepath)
-            removed += plugins
-            shutil.rmtree(bundlepath)
-
-    if len(removed) > 0:
-        resp = {
-            'ok'     : True,
-            'removed': removed,
-        }
-    else:
-        resp = {
-            'ok'   : False,
-            'error': "No plugins found",
-        }
-
-    callback(resp)
-
 def install_package(bundlename, callback):
     filename = os.path.join(DOWNLOAD_TMP_DIR, bundlename)
 
@@ -643,9 +620,27 @@ class PackageUninstall(web.RequestHandler):
     def post(self):
         print(self.request.body)
         bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        # FIXME: check if all bundles are inside LV2_PATH
-        # we don't want users sending test messages and deleting randomly system files!
-        resp = yield gen.Task(uninstall_bundles, bundles)
+        removed = []
+
+        for bundlepath in bundles:
+            # FIXME: check if all bundles are inside LV2_PATH
+            # we don't want users sending test messages and deleting randomly system files!
+            if os.path.exists(bundlepath) and os.path.isdir(bundlepath):
+                plugins  = yield gen.Task(SESSION.host.remove_bundle, bundlepath)
+                removed += plugins
+                shutil.rmtree(bundlepath)
+
+        if len(removed) > 0:
+            resp = {
+                'ok'     : True,
+                'removed': removed,
+            }
+        else:
+            resp = {
+                'ok'   : False,
+                'error': "No plugins found",
+            }
+
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
         self.finish()
