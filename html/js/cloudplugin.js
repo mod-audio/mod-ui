@@ -592,24 +592,33 @@ JqueryClass('cloudPluginBox', {
             })
         }
 
-        $.ajax({
-            url: SITEURLNEW + "/lv2/plugins",
-            data: {
-                uri: plugin.uri
-            },
-            success: function (pluginData) {
-                if (pluginData && Object.keys(pluginData).length > 0) {
-                    plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
-                }
-                cloudChecked = true
-                showInfo()
-            },
-            error: function () {
-                cloudChecked = true
-                showInfo()
-            },
-            dataType: 'json'
-        })
+        if (plugin.latestVersion) {
+            cloudChecked = true
+        } else {
+            $.ajax({
+                url: SITEURLNEW + "/lv2/plugins",
+                data: {
+                    uri: plugin.uri
+                },
+                success: function (pluginData) {
+                    if (pluginData && Object.keys(pluginData).length > 0) {
+                        plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
+                    } else {
+                        plugin.latestVersion = null
+                    }
+                    cloudChecked = true
+                    showInfo()
+                },
+                error: function () {
+                    plugin.latestVersion = null
+                    cloudChecked = true
+                    showInfo()
+                },
+                dataType: 'json'
+            })
+        }
+
+        showInfo()
     },
 })
 
