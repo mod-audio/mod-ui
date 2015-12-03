@@ -181,9 +181,8 @@ JqueryClass('cloudPluginBox', {
 
             for (var uri in results.local) {
                 lplugin = results.local[uri]
-                if(!lplugin.latestVersion)
-                    lplugin.latestVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release]
                 lplugin.status = 'installed'
+                lplugin.latestVersion = null
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
                 plugins.push(lplugin)
             }
@@ -283,7 +282,7 @@ JqueryClass('cloudPluginBox', {
                         lplugin.status = 'outdated'
                     }
                 } else {
-                    lplugin.latestVersion = [0, 0, 0]
+                    lplugin.latestVersion = null
                     lplugin.status = 'installed'
                 }
 
@@ -558,6 +557,10 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-upgrade').hide()
             }
 
+            if (! plugin.latestVersion) {
+                info.find('.js-latest-version').hide()
+            }
+
             /*info.window({
                 windowManager: self.data('windowManager'),
                 close: function () {
@@ -589,31 +592,24 @@ JqueryClass('cloudPluginBox', {
             })
         }
 
-        if (plugin.latestVersion) {
-            cloudChecked = true
-        } else {
-            // no latestVersion means plugin is local and hasn't checked the cloud for its latest version
-            // so do that now
-            $.ajax({
-                url: SITEURLNEW + "/lv2/plugins",
-                data: {
-                    uri: plugin.uri
-                },
-                success: function (pluginData) {
+        $.ajax({
+            url: SITEURLNEW + "/lv2/plugins",
+            data: {
+                uri: plugin.uri
+            },
+            success: function (pluginData) {
+                if (pluginData && Object.keys(pluginData).length > 0) {
                     plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
-                    cloudChecked = true
-                    showInfo()
-                },
-                error: function () {
-                    cloudChecked = true
-                    showInfo()
-                },
-                dataType: 'json'
-            })
-        }
-
-        // might be ready on start
-        showInfo()
+                }
+                cloudChecked = true
+                showInfo()
+            },
+            error: function () {
+                cloudChecked = true
+                showInfo()
+            },
+            dataType: 'json'
+        })
     },
 })
 
