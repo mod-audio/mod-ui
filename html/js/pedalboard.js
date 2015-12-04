@@ -1269,7 +1269,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var gui, plugin
         var retry = 0
-        //var symbolport = '[mod-port="' + subject.replace("/", "\\/") + '"]'
+        //var symbolport = '[mod-port="' + subject.replace(/\//g, "\\/") + '"]'
 
         // keep trying until instance is available
         var trySetPortValue = function () {

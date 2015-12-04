@@ -270,25 +270,24 @@ function GUI(effect, options) {
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
-        var element, label, valueField
         var port = self.controls[symbol]
 
         port.value = value
         self.currentValues[symbol] = value
 
         for (var i in port.widgets) {
-            if (source == null || port.widgets[i] != source) {
+            if (port.widgets[i] != source) {
                 port.widgets[i].controlWidget('setValue', value, only_gui)
             }
+        }
 
-            valueField = port.valueField
-            if (valueField) {
-                label = sprintf(port.format, value)
-                if (port.scalePointsIndex && port.scalePointsIndex[label])
-                    label = port.scalePointsIndex[label].label
-                valueField.data('value', value)
-                valueField.text(label)
-            }
+        if (port.valueField) {
+            var label = sprintf(port.format, value)
+            if (port.scalePointsIndex && port.scalePointsIndex[label])
+                label = port.scalePointsIndex[label].label
+
+            port.valueField.data('value', value)
+            port.valueField.text(label)
         }
 
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
@@ -497,7 +496,8 @@ function GUI(effect, options) {
             var symbol = $(this).attr('mod-port-symbol')
             var port = self.controls[symbol]
 
-            if (port) {
+            if (port)
+            {
                 // Set the display formatting of this control
                 if (port.units.render)
                     port.format = port.units.render.replace('%f', '%.2f')
@@ -507,8 +507,9 @@ function GUI(effect, options) {
                 if (port.properties.indexOf("integer") >= 0)
                     port.format = port.format.replace(/%\.\d+f/, '%d')
 
-                // Index the scalePoints
-                if (port.scalePoints) {
+                port.valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
+
+                if (port.scalePoints && port.scalePoints.length > 0) {
                     port.scalePointsIndex = {}
                     for (var i in port.scalePoints) {
                         port.scalePointsIndex[sprintf(port.format, port.scalePoints[i].value)] = port.scalePoints[i]
@@ -530,7 +531,6 @@ function GUI(effect, options) {
                 if (port.properties.indexOf("enumeration") < 0) {
                     // For ports that are not enumerated, we allow
                     // editing the value directly
-                    port.valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
                     port.valueField.attr('contenteditable', true)
                     port.valueField.focus(function () {
                         port.valueField.text(port.valueField.data('value'))
@@ -543,7 +543,7 @@ function GUI(effect, options) {
                         return true
                     })
                     port.valueField.blur(function () {
-                        var value = parseFloat(port.valueField.text())
+                        var value = parseFloat(valueField.text())
                         self.setPortValue(symbol, value, null) // set source as null so we force an update of this control
                     })
                     port.valueField.keydown(function (e) {
@@ -869,12 +869,10 @@ var baseWidget = {
 
         var portSteps
         if (port.properties.indexOf("toggled") >= 0) {
-            //port.ranges.minimum = port.ranges.minimum || 0
-            //port.ranges.maximum = port.ranges.maximum || 1
             portSteps = 2
-        } else if (port.properties.indexOf("enumeration") >= 0) {
+        } else if (port.properties.indexOf("enumeration") >= 0 && port.scalePoints.length >= 2) {
             portSteps = port.scalePoints.length
-            port.scalePoints.sort(function (a, b) { return a.value - b.value })
+            //port.scalePoints.sort(function (a, b) { return a.value - b.value })
         } else {
             portSteps = self.data('filmSteps')
         }
@@ -1046,6 +1044,13 @@ JqueryClass('film', baseWidget, {
         })
 
         return self
+    },
+
+    disable: function () {
+        $(this).addClass('disabled').data('enabled', false)
+    },
+    enable: function () {
+        $(this).removeClass('disabled').data('enabled', true)
     },
 
     setValue: function (value, only_gui) {
@@ -1236,14 +1241,8 @@ JqueryClass('switchWidget', baseWidget, {
         self.click(function (e) {
             if (!self.data('enabled'))
                 return self.switchWidget('prevent', e)
-            var value = self.data('value')
-            if (value == self.data('minimum')) {
-                self.switchWidget('setValue', self.data('maximum'))
-                self.addClass('on').removeClass('off')
-            } else {
-                self.switchWidget('setValue', self.data('minimum'))
-                self.addClass('off').removeClass('on')
-            }
+            var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
+            self.switchWidget('setValue', nextValue, true)
         })
         return self
     },
@@ -1272,14 +1271,8 @@ JqueryClass('bypassWidget', baseWidget, {
         self.click(function (e) {
             if (!self.data('enabled'))
                 return self.bypassWidget('prevent', e)
-            var value = self.data('value')
-            if (value == self.data('minimum')) {
-                self.bypassWidget('setValue', self.data('maximum'))
-//                 self.addClass('on').removeClass('off')
-            } else {
-                self.bypassWidget('setValue', self.data('minimum'))
-//                 self.addClass('off').removeClass('on')
-            }
+            var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
+            self.bypassWidget('setValue', nextValue, true)
         })
         return self
     },
@@ -1313,7 +1306,7 @@ JqueryClass('customSelect', baseWidget, {
                     self.customSelect('prevent', e)
                 }
             })
-        });
+        })
         self.click(function () {
             self.find('.mod-enumerated-list').toggle()
         })
@@ -1322,10 +1315,19 @@ JqueryClass('customSelect', baseWidget, {
     },
 
     setValue: function (value, only_gui) {
-        value = parseFloat(value)
         var self = $(this)
+        value = parseFloat(value)
         self.find('[mod-role=enumeration-option]').removeClass('selected')
-        self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]').addClass('selected')
+
+        var selected = self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]')
+        selected.addClass('selected')
+
+        var valueField = self.find('[mod-role=input-control-value]')
+        if (valueField) {
+            valueField.data('value', value)
+            valueField.text(selected.text())
+        }
+
         if (!only_gui)
             self.trigger('valuechange', value)
     }

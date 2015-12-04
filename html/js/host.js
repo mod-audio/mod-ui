@@ -49,8 +49,8 @@ $('document').ready(function() {
             var connMgr = desktop.pedalboard.data("connectionManager")
 
             if (! connMgr.connected(source, target)) {
-                var sourceport = '[mod-port="' + source.replace("/", "\\/") + '"]'
-                var targetport = '[mod-port="' + target.replace("/", "\\/") + '"]'
+                var sourceport = '[mod-port="' + source.replace(/\//g, "\\/") + '"]'
+                var targetport = '[mod-port="' + target.replace(/\//g, "\\/") + '"]'
 
                 var output = $(sourceport)
 
