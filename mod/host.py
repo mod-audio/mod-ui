@@ -538,7 +538,7 @@ class Host(object):
                     #continue
                 #break
         else:
-            start()
+            start(True)
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
