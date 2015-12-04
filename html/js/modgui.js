@@ -533,7 +533,7 @@ function GUI(effect, options) {
                     // editing the value directly
                     port.valueField.attr('contenteditable', true)
                     port.valueField.focus(function () {
-                        port.valueField.text(port.valueField.data('value'))
+                        port.valueField.text(sprintf(port.format, port.valueField.data('value')))
                     })
                     port.valueField.keydown(function (e) {
                         if (e.keyCode == 13) {
@@ -543,8 +543,10 @@ function GUI(effect, options) {
                         return true
                     })
                     port.valueField.blur(function () {
-                        var value = parseFloat(valueField.text())
-                        self.setPortValue(symbol, value, null) // set source as null so we force an update of this control
+                        var value = parseFloat(port.valueField.text())
+                        self.setPortValue(symbol, value, control)
+                        // setPortWidgetsValue() skips this control as it's the same as the 'source'
+                        control.controlWidget('setValue', value, true)
                     })
                     port.valueField.keydown(function (e) {
                         return true
