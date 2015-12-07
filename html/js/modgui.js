@@ -35,6 +35,7 @@ var loadedIcons = {}
 var loadedSettings = {}
 var loadedCSSs = {}
 var loadedJSs = {}
+var isSDK = false
 
 function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
@@ -247,20 +248,14 @@ function GUI(effect, options) {
             console.log("setPortValue called with > max value, symbol:", symbol)
         }
 
-        /*
-          FIXME - shouldn't this be done in the host?
-
-        if (port.properties.indexOf("trigger") >= 0) {
-            // Report the new value and return the widget to old value
-            options.change(mod_port, value)
-            if (source) {
-                setTimeout(function () {
-                    source.controlWidget('setValue', port.value)
-                }, 500)
-            }
-            return
+        /* NOTE: This should be done in the host, or at least server-side.
+                 But when running SDK there's no host, so simulate trigger here. */
+        if (isSDK && port.properties.indexOf("trigger") >= 0 && value != port.ranges.default) {
+            setTimeout(function () {
+                self.setPortWidgetsValue(symbol, port.ranges.default, null, false)
+                options.change(mod_port, port.ranges.default)
+            }, 200)
         }
-        */
 
         // update our own widgets
         self.setPortWidgetsValue(symbol, value, source, false)
@@ -276,7 +271,7 @@ function GUI(effect, options) {
         self.currentValues[symbol] = value
 
         for (var i in port.widgets) {
-            if (port.widgets[i] != source) {
+            if (source == null || port.widgets[i] != source) {
                 port.widgets[i].controlWidget('setValue', value, only_gui)
             }
         }
@@ -1048,13 +1043,6 @@ JqueryClass('film', baseWidget, {
         return self
     },
 
-    disable: function () {
-        $(this).addClass('disabled').data('enabled', false)
-    },
-    enable: function () {
-        $(this).removeClass('disabled').data('enabled', true)
-    },
-
     setValue: function (value, only_gui) {
         var self = $(this)
         if (self.data('initialized')) {
@@ -1210,6 +1198,7 @@ JqueryClass('selectWidget', baseWidget, {
         self.selectWidget('config', options)
         self.selectWidget('setValue', options.port.ranges.default, true)
         self.change(function () {
+            // nothing special here, no need to call 'setValue'
             self.trigger('valuechange', parseFloat(self.val()))
         })
         return self
@@ -1244,7 +1233,7 @@ JqueryClass('switchWidget', baseWidget, {
             if (!self.data('enabled'))
                 return self.switchWidget('prevent', e)
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
-            self.switchWidget('setValue', nextValue, true)
+            self.switchWidget('setValue', nextValue, false)
         })
         return self
     },
@@ -1274,7 +1263,7 @@ JqueryClass('bypassWidget', baseWidget, {
             if (!self.data('enabled'))
                 return self.bypassWidget('prevent', e)
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
-            self.bypassWidget('setValue', nextValue, true)
+            self.bypassWidget('setValue', nextValue, false)
         })
         return self
     },
@@ -1301,12 +1290,10 @@ JqueryClass('customSelect', baseWidget, {
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
             opt.click(function (e) {
-                if (self.data('enabled')) {
-                    var value = opt.attr('mod-port-value')
-                    self.customSelect('setValue', value)
-                } else {
-                    self.customSelect('prevent', e)
-                }
+                if (!self.data('enabled'))
+                    return self.customSelect('prevent', e)
+                var value = opt.attr('mod-port-value')
+                self.customSelect('setValue', value, false)
             })
         })
         self.click(function () {
