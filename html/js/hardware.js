@@ -191,19 +191,18 @@ function HardwareManager(options) {
         var pname = port.symbol == ":bypass" ? pluginLabel : port.name
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
         var maxv  = currentAddressing.maximum != null ? currentAddressing.maximum : port.ranges.maximum
-        var min   = form.find('input[name=min]').val(minv).attr("min", minv).attr("max", maxv)
-        var max   = form.find('input[name=max]').val(maxv).attr("min", minv).attr("max", maxv)
+        var min   = form.find('input[name=min]').val(minv).attr("min", port.ranges.minimum).attr("max", port.ranges.minimum)
+        var max   = form.find('input[name=max]').val(maxv).attr("min", port.ranges.minimum).attr("max", port.ranges.minimum)
         var label = form.find('input[name=label]').val(currentAddressing.label || pname)
 
-        var step
         if (port.properties.indexOf("toggled") >= 0) {
             // boolean, always min or max value
-            step = maxv-minv
+            var step = maxv-minv
             min.attr("step", step)
             max.attr("step", step)
         } else if (port.properties.indexOf("integer") < 0) {
             // float, allow non-integer stepping
-            step = (maxv-minv)/100
+            var step = (maxv-minv)/100
             min.attr("step", step)
             max.attr("step", step)
         }
@@ -214,9 +213,13 @@ function HardwareManager(options) {
         form.find('.js-save').click(function () {
             actuator = actuators[actuatorSelect.val()] || {}
 
-            // TODO properly check if values are valid
-            minv = min.val() || port.minimum
-            maxv = max.val() || port.maximum
+            minv = min.val()
+            if (minv == "")
+                minv = port.ranges.minimum
+
+            maxv = max.val()
+            if (maxv == "")
+                maxv = port.ranges.maximum
 
             // Here the addressing structure is created
             var addressing = {
