@@ -136,7 +136,7 @@ function HardwareManager(options) {
         if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0) {
             var value
             if (port.properties.indexOf("integer") >= 0) {
-                value = port.ranges.maximum-port.ranges.minimum-1
+                value = port.ranges.maximum-port.ranges.minimum
             } else {
                 value = 1
             }
