@@ -324,23 +324,32 @@ function HardwareManager(options) {
 
     // Removes an instance
     this.removeInstance = function (instance) {
-        // TODO
-        return
+        var i, j, index, actuator, instanceAndSymbol, instanceAndSymbols = []
+        var instanceSansGraph = instance.replace("/graph/","")
 
-        var actuator, symbol, actuatorKey, ports, i
-
-        for (symbol in self.addressingsByPortSymbol[instanceId]) {
-            actuator = self.addressingsByPortSymbol[instanceId][symbol].actuator
-            actuatorKey = actuator.join(',')
-            ports = self.addressingsByActuator[actuatorKey]
-            for (i = 0; i < ports.length; i++) {
-                if (parseInt(ports[i].split(/,/)[0]) == instanceId) {
-                    ports.splice(i, 1)
-                    i--
+        var keys = Object.keys(self.addressingsByPortSymbol)
+        for (i in keys) {
+            instanceAndSymbol = keys[i]
+            if (instanceAndSymbol.replace("/graph/","").split(/\//)[0] == instanceSansGraph) {
+                if (instanceAndSymbols.indexOf(instanceAndSymbol) < 0) {
+                    instanceAndSymbols.push(instanceAndSymbol)
                 }
             }
         }
-        delete self.addressingsByPortSymbol[instanceId]
+
+        for (i in instanceAndSymbols) {
+            instanceAndSymbol = instanceAndSymbols[i]
+            delete self.addressingsByPortSymbol[instanceAndSymbol]
+            delete self.addressingsData        [instanceAndSymbol]
+
+            for (j in HARDWARE_PROFILE.actuators) {
+                actuator = HARDWARE_PROFILE.actuators[j]
+                index    = self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol)
+                if (index >= 0) {
+                    self.addressingsByActuator[actuator.uri].splice(index, 1)
+                }
+            }
+        }
     }
 
     /*
