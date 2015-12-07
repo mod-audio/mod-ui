@@ -1009,7 +1009,8 @@ JqueryClass('film', baseWidget, {
         })
 
         var moveHandler = function (e) {
-            if (!self.data('enabled')) return
+            if (!self.data('enabled'))
+                return
             self.film('mouseMove', e)
         }
 
@@ -1021,7 +1022,8 @@ JqueryClass('film', baseWidget, {
         }
 
         self.mousedown(function (e) {
-            if (!self.data('enabled')) return self.film('prevent', e)
+            if (!self.data('enabled'))
+                return self.film('prevent', e)
             if (e.which == 1) { // left button
                 self.film('mouseDown', e)
                 $(document).bind('mouseup', upHandler)
@@ -1032,6 +1034,8 @@ JqueryClass('film', baseWidget, {
 
         self.data('wheelBuffer', 0)
         self.bind('mousewheel', function (e) {
+            if (!self.data('enabled'))
+                return self.film('prevent', e)
             self.film('mouseWheel', e)
         })
 
