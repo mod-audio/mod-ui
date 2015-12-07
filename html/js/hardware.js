@@ -133,10 +133,15 @@ function HardwareManager(options) {
     this.buildSensibilityOptions = function (select, port, curStep) {
         select.children().remove()
 
-        if (port.properties.indexOf("integer") >= 0 || port.symbol == ":bypass") {
-            // If port is integer or bypass, step is always 1
-            $('<option value=1>').appendTo(select)
-            select.val(1)
+        if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0) {
+            var value
+            if (port.properties.indexOf("integer") >= 0) {
+                value = port.ranges.maximum-port.ranges.minimum-1
+            } else {
+                value = 1
+            }
+            $('<option value='+value+'>').appendTo(select)
+            select.val(value)
             select.hide()
             if (port.symbol != ":bypass") {
                 select.parent().parent().hide()
@@ -191,8 +196,8 @@ function HardwareManager(options) {
         var pname = port.symbol == ":bypass" ? pluginLabel : port.name
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
         var maxv  = currentAddressing.maximum != null ? currentAddressing.maximum : port.ranges.maximum
-        var min   = form.find('input[name=min]').val(minv).attr("min", port.ranges.minimum).attr("max", port.ranges.minimum)
-        var max   = form.find('input[name=max]').val(maxv).attr("min", port.ranges.minimum).attr("max", port.ranges.minimum)
+        var min   = form.find('input[name=min]').val(minv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
+        var max   = form.find('input[name=max]').val(maxv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
         var label = form.find('input[name=label]').val(currentAddressing.label || pname)
 
         if (port.properties.indexOf("toggled") >= 0) {
@@ -230,6 +235,7 @@ function HardwareManager(options) {
                 value  : port.value,
                 steps  : sensibility.val(),
             }
+            console.log("STEPS:", addressing['steps'])
 
             options.address(instanceAndSymbol, addressing, function (ok) {
                 if (ok) {

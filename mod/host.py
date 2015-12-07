@@ -968,8 +968,9 @@ _:b%i
 
                 if "toggled" in pprops:
                     ctype = ADDRESSING_CTYPE_TOGGLED
-                elif "integer" in pprops:
-                    ctype = ADDRESSING_CTYPE_INTEGER
+                # FIXME: broken in fw
+                #elif "integer" in pprops:
+                #    ctype = ADDRESSING_CTYPE_INTEGER
                 else:
                     ctype = ADDRESSING_CTYPE_LINEAR
 
