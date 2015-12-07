@@ -219,11 +219,11 @@ function HardwareManager(options) {
             actuator = actuators[actuatorSelect.val()] || {}
 
             minv = min.val()
-            if (minv == "")
+            if (minv == undefined || minv == "")
                 minv = port.ranges.minimum
 
             maxv = max.val()
-            if (maxv == "")
+            if (maxv == undefined || maxv == "")
                 maxv = port.ranges.maximum
 
             // Here the addressing structure is created
