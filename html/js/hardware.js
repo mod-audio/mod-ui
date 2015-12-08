@@ -193,7 +193,7 @@ function HardwareManager(options) {
             }
         }
 
-        var pname = port.symbol == ":bypass" ? pluginLabel : port.name
+        var pname = port.symbol == ":bypass" ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
         var maxv  = currentAddressing.maximum != null ? currentAddressing.maximum : port.ranges.maximum
         var min   = form.find('input[name=min]').val(minv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
