@@ -401,7 +401,6 @@ class Host(object):
             if resp < 0:
                 callback(resp)
                 return
-            callback(resp)
             bypassed = False
             self.plugins[instance_id] = {
                 "instance"  : instance,
@@ -412,6 +411,7 @@ class Host(object):
                 "addressing": {}, # symbol: addressing
                 "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(uri)),
             }
+            callback(resp)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
