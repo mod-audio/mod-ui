@@ -636,6 +636,8 @@ class Host(object):
 
         self.msg_callback("wait_end")
 
+        return pb['title']
+
     def save(self, bundlepath, title, titlesym):
         # Write manifest.ttl
         with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
