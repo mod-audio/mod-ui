@@ -420,20 +420,21 @@ class Host(object):
         instance_id = self.mapper.get_id_without_creating(instance)
 
         try:
-            self.plugins.pop(instance_id)
+            data = self.plugins.pop(instance_id)
         except KeyError:
             callback(False)
             return
 
-        for actuator_uri, addressing in self.addressings.items():
-            i = 0
-            while i < len(addressing['addrs']):
-                if addressing['addrs'][i].get('instance_id') == instance_id:
-                    addressing['addrs'].pop(i)
-                    if addressing['idx'] >= i:
-                        addressing['idx'] -= 1
-                else:
-                    i += 1
+        used_actuators = []
+        for symbol in [symbol for symbol in data['addressing'].keys()]:
+            actuator_uri = self._unaddress(data, symbol)
+
+            if actuator_uri is not None and actuator_uri not in used_actuators:
+                used_actuators.append(actuator_uri)
+
+        for actuator_uri in used_actuators:
+            actuator_hw = self._uri2hw_map[actuator_uri]
+            self._address_next(actuator_hw, lambda r:None)
 
         def host_callback(ok):
             callback(ok)
