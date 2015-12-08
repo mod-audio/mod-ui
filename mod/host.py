@@ -984,11 +984,12 @@ _:b%i
                 if "tap_tempo" in pprops: # TODO
                     ctype |= ADDRESSING_CTYPE_TAP_TEMPO
 
-                if len(port_info["scalePoints"]) >= 2: # and "enumeration" in pprops:
+                # FIXME: make fw accept scalepoints without enumeration
+                if len(port_info["scalePoints"]) > 0 and "enumeration" in pprops:
                     ctype |= ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION
 
-                    if "enumeration" in pprops:
-                        ctype |= ADDRESSING_CTYPE_ENUMERATION
+                    #if len(port_info["scalePoints"]) > 1 and "enumeration" in pprops:
+                        #ctype |= ADDRESSING_CTYPE_ENUMERATION
 
                     for scalePoint in port_info["scalePoints"]:
                         options.append((scalePoint["value"], scalePoint["label"]))
