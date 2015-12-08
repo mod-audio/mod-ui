@@ -196,7 +196,7 @@ class Session(object):
 
         # Save new
         else:
-            lv2path = os.path.expanduser("~/.lv2/") # FIXME: cross-platform
+            lv2path = os.path.expanduser("~/.pedalboards/")
             trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
 
             # if trypath already exists, generate a random bundlepath based on title

@@ -3063,8 +3063,17 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
 {
     std::vector<PedalboardInfo_Mini*> allpedals;
 
+    // Custom path for pedalboards
+    const char* const oldlv2path = getenv("LV2_PATH");
+    setenv("LV2_PATH", "~/.pedalboards/", 1);
+
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
+
+    if (oldlv2path != nullptr)
+        setenv("LV2_PATH", oldlv2path, 1);
+    else
+        unsetenv("LV2_PATH");
 
     LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
     const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);

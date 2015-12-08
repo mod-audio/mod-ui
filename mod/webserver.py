@@ -708,7 +708,7 @@ class PedalboardLoadBundle(web.RequestHandler):
 
 class PedalboardLoadWeb(SimpleFileReceiver):
     remote_public_key = CLOUD_PUB # needed?
-    destination_dir = os.path.expanduser("~/.lv2/") # FIXME cross-platform, perhaps lookup in LV2_PATH
+    destination_dir = os.path.expanduser("~/.pedalboards/") # FIXME cross-platform, perhaps lookup in LV2_PATH
 
     def process_file(self, data, callback=lambda:None):
         filename = os.path.join(self.destination_dir, data['filename'])
