@@ -7030,6 +7030,7 @@ hr.dotted {
   background: #333;
   color: #fff;
   border-color: #333;
+  text-align: center;
 }
 .plugin-info .plugin-specs th:first-child {
   border-radius: 4px 0 0 0;
