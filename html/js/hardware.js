@@ -226,6 +226,11 @@ function HardwareManager(options) {
             if (maxv == undefined || maxv == "")
                 maxv = port.ranges.maximum
 
+            if (minv >= maxv) {
+                alert("The minimum value is equal or higher than the maximum. We cannot address a control like this!")
+                return
+            }
+
             // Here the addressing structure is created
             var addressing = {
                 uri    : actuator.uri || nullAddressURI,
