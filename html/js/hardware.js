@@ -112,15 +112,15 @@ function HardwareManager(options) {
             }
 
             if (
-                (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) == 0) ||
-                (types.indexOf("float"      ) >= 0 && modes.search(":float:"      ) == 0) ||
-                (types.indexOf("enumeration") >= 0 && modes.search(":enumeration:") == 0) ||
-                (types.indexOf("logarithmic") >= 0 && modes.search(":logarithmic:") == 0) ||
-                (types.indexOf("toggled"    ) >= 0 && modes.search(":toggled:"    ) == 0) ||
-                (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) == 0) ||
-                (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) == 0) ||
-                (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") == 0) ||
-                (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) == 0)
+                (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
+                (types.indexOf("float"      ) >= 0 && modes.search(":float:"      ) >= 0) ||
+                (types.indexOf("enumeration") >= 0 && modes.search(":enumeration:") >= 0) ||
+                (types.indexOf("logarithmic") >= 0 && modes.search(":logarithmic:") >= 0) ||
+                (types.indexOf("toggled"    ) >= 0 && modes.search(":toggled:"    ) >= 0) ||
+                (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
+                (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
+                (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
+                (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
                )
             {
                 available[actuator.uri] = actuator
