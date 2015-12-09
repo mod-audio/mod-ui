@@ -43,7 +43,11 @@ class SerialIOStream(BaseIOStream):
             return 0
 
     def read_from_fd(self):
-        r = self.sp.read(self.read_chunk_size)
+        try:
+            r = self.sp.read(self.read_chunk_size)
+        except:
+            print("SerialIOStream: failed to read from HMI serial")
+            return None
         if r == '':
             return None
         return r
