@@ -1185,11 +1185,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_brand))
     {
-        info.brand = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        char* const brand = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
 
-        if (strlen(info.brand) > 10)
-           ((char*)info.brand)[10] = '\0';
+        /* NOTE: this gives a false positive on valgrind.
+                 see https://bugzilla.redhat.com/show_bug.cgi?id=678518 */
+        if (strlen(brand) > 10)
+            brand[10] = '\0';
 
+        info.brand = brand;
         lilv_nodes_free(nodes);
     }
     else if (info.author.name == nc)
@@ -1215,11 +1218,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_label))
     {
-        info.label = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        char* const label = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
 
-        if (strlen(info.label) > 16)
-           ((char*)info.label)[16] = '\0';
+        /* NOTE: this gives a false positive on valgrind.
+                 see https://bugzilla.redhat.com/show_bug.cgi?id=678518 */
+        if (strlen(label) > 16)
+            label[16] = '\0';
 
+        info.label = label;
         lilv_nodes_free(nodes);
     }
     else if (info.name == nc)
@@ -3253,7 +3259,6 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     char* full_instance = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
                     char* instance;
 
-                    // FIXME: Invalid read reported by valgrind
                     if (strstr(full_instance, bundlepath) != nullptr)
                         instance = strdup(full_instance+(bundlepathsize+1));
                     else
