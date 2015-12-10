@@ -381,8 +381,10 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
-    def reset(self, callback):
-        self.banks = []
+    def reset(self, callback, resetBanks=True):
+        if resetBanks:
+            self.banks = []
+
         self.plugins = {}
         self.connections = []
         self.mapper.clear()
@@ -1204,8 +1206,14 @@ _:b%i
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
-        self.load(bundlepath)
-        callback(True)
+        def clear_callback(ok):
+            self.load(bundlepath)
+            callback(True)
+
+        def reset_callback(ok):
+            self.hmi.clear(clear_callback)
+
+        self.reset(reset_callback, False)
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
         logging.info("hmi parameter get")
