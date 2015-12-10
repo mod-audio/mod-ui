@@ -325,6 +325,7 @@ function Desktop(elements) {
         $('#bank-library').css('z-index', -1)
         $('#mod-social-network').css('z-index', -1)
         $('#main-menu').css('z-index', -1)
+        ws.close()
     }
 
     this.disconnect = function () {

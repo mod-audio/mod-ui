@@ -15,8 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var ws
+
 $('document').ready(function() {
-    var ws = new WebSocket("ws://" + window.location.host + "/websocket")
+    ws = new WebSocket("ws://" + window.location.host + "/websocket")
+
     var waiting = false
 
     ws.onmessage = function (evt) {
@@ -160,7 +163,7 @@ $('document').ready(function() {
             var instance = data[1]
             var type     = data[2]
             var isOutput = parseInt(data[3]) == 0 // reversed
-            var name     = data[4].replace("_"," ")
+            var name     = data[4].replace(/_/g," ")
             var index    = parseInt(data[5])
 
             if (isOutput) {
