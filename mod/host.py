@@ -28,7 +28,7 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
-from tornado import iostream, ioloop
+from tornado import gen, iostream, ioloop
 from shutil import rmtree
 import os, json, socket, logging
 
@@ -416,6 +416,7 @@ class Host(object):
 
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
+    @gen.coroutine
     def remove_plugin(self, instance, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
@@ -434,7 +435,7 @@ class Host(object):
 
         for actuator_uri in used_actuators:
             actuator_hw = self._uri2hw_map[actuator_uri]
-            self._address_next(actuator_hw, lambda r:None)
+            yield gen.Task(self._address_next, actuator_hw)
 
         def host_callback(ok):
             callback(ok)
@@ -448,8 +449,10 @@ class Host(object):
 
             self.msg_callback("remove %s" % (instance))
 
-        self.hmi.control_rm(instance_id, ":all")
-        self.send("remove %d" % instance_id, host_callback, datatype='boolean')
+        def hmi_callback(ok):
+            self.send("remove %d" % instance_id, host_callback, datatype='boolean')
+
+        self.hmi.control_rm(instance_id, ":all", hmi_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin values
@@ -470,6 +473,7 @@ class Host(object):
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
+        @gen.coroutine
         def preset_callback(state):
             if not state:
                 callback(False)
@@ -478,12 +482,18 @@ class Host(object):
             portValues = get_state_port_values(state)
             self.plugins[instance_id]['ports'].update(portValues)
 
+            used_actuators = []
+
             for symbol, value in self.plugins[instance_id]['ports'].items():
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = self.plugins[instance_id]['addressing'].get(symbol, None)
-                if addressing is not None:
-                    self._addressing_load(addressing['actuator_uri'], None, value)
+                if addressing is not None and addressing['actuator_uri'] not in used_actuators:
+                    used_actuators.append(addressing['actuator_uri'])
+
+            for actuator_uri in used_actuators:
+                actuator_hw = self._uri2hw_map[actuator_uri]
+                yield gen.Task(self._address_next, actuator_hw)
 
             callback(True)
 
@@ -1081,7 +1091,7 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def _addressing_load(self, actuator_uri, callback=None, value=None):
+    def _addressing_load(self, actuator_uri, callback, value=None):
         addressings       = self.addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         addressings_idx   = addressings['idx']
@@ -1117,11 +1127,9 @@ _:b%i
 
         if len(addressings_addrs) > 0:
             addressings['idx'] = (addressings['idx'] + 1) % len(addressings_addrs)
-            callback(True)
-            self._addressing_load(actuator_uri)
+            self._addressing_load(actuator_uri, callback)
         else:
-            callback(True)
-            self.hmi.control_clean(actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3])
+            self.hmi.control_clean(actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3], callback)
 
     def _unaddress(self, pluginData, port):
         addressing = pluginData['addressing'].pop(port, None)

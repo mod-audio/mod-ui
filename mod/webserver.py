@@ -932,6 +932,7 @@ class TemplateHandler(web.RequestHandler):
 class EditionLoader(TemplateHandler):
     def get(self, path):
         super(EditionLoader, self).get(path)
+        # FIXME: wait for HMI to respond
         SESSION.start_session()
 
 class TemplateLoader(web.RequestHandler):

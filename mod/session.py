@@ -119,7 +119,6 @@ class Session(object):
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
         self.hmi_initialized = True
-        self.hmi.clear()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
@@ -385,10 +384,11 @@ class Session(object):
     # hmi commands
     def start_session(self, callback=None):
         def verify(resp):
-            if callback:
+            if callback is not None:
                 callback(resp)
             else:
                 assert(resp)
+
         #self.bank_address(0, 0, 1, 0, 0, lambda r: None)
         #self.bank_address(0, 0, 1, 1, 0, lambda r: None)
         #self.bank_address(0, 0, 1, 2, 0, lambda r: None)
@@ -415,19 +415,12 @@ class Session(object):
     def clipmeter(self, pos, value):
         self._clipmeter.set(pos, value)
 
-    def peakmeter(self, pos, value, peak, callback=None):
-        cb = callback
-        if not cb:
-            cb = lambda r: r
-        self.hmi.peakmeter(pos, value, peak, cb)
+    def peakmeter(self, pos, value, peak, callback):
+        self.hmi.peakmeter(pos, value, peak, callback)
 
-    def tuner(self, value, callback=None):
-        cb = callback
-        if not cb:
-            cb = lambda r: r
-
+    def tuner(self, value, callback):
         freq, note, cents = find_freqnotecents(value)
-        self.hmi.tuner(freq, note, cents, cb)
+        self.hmi.tuner(freq, note, cents, callback)
 
     def start_recording(self):
         if self.player.playing:
@@ -488,10 +481,7 @@ class Session(object):
     #def serialize_pedalboard(self):
         #return self._pedalboard.serialize()
 
-    #def xrun(self, callback=None):
-        #cb = callback
-        #if not cb:
-            #cb = lambda r: r
-        #self.hmi.xrun(cb)
+    #def xrun(self, callback):
+        #self.hmi.xrun(callback)
 
 SESSION = Session()

@@ -74,10 +74,13 @@ class HMI(object):
 
         self.sp = SerialIOStream(sp)
 
+        def clear_callback(ok):
+            callback()
+
         # calls ping until ok is received
         def ping_callback(ok):
             if ok:
-                callback()
+                self.clear(clear_callback)
             else:
                 self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
 
@@ -153,17 +156,17 @@ class HMI(object):
         pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
         self.send("initial_state %d %d %s" % (bank_id, pedalboard_id, pedalboards), callback)
 
-    def ui_con(self, callback=lambda r:r):
+    def ui_con(self, callback):
         self.send("ui_con", callback, datatype='boolean')
 
-    def ui_dis(self, callback=lambda r:r):
+    def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-    def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback=lambda r:r):
+    def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback):
         self.send("control_clean %d %d %d %d" % (hw_type, hw_id, actuator_type, actuator_id), callback, datatype='boolean')
 
     def control_add(self, instance_id, port, label, var_type, unit, value, max, min, steps,
-                    hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback=lambda r:r):
+                    hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
         """
         addresses a new control
         var_type is one of the following:
@@ -204,7 +207,7 @@ class HMI(object):
                   ),
                   callback, datatype='boolean')
 
-    def control_rm(self, instance_id, port, callback=lambda r:r):
+    def control_rm(self, instance_id, port, callback):
         """
         removes an addressing
 
@@ -213,22 +216,22 @@ class HMI(object):
         """
         self.send('control_rm %d %s' % (instance_id, port), callback, datatype='boolean')
 
-    def ping(self, callback=lambda r:r):
+    def ping(self, callback):
         self.send('ping', callback, datatype='boolean')
 
-    def clipmeter(self, position, callback=lambda r:r):
+    def clipmeter(self, position, callback):
         self.send('clipmeter %d' % position, callback)
 
-    def peakmeter(self, position, value, peak, callback=lambda r:r):
+    def peakmeter(self, position, value, peak, callback):
         self.send('peakmeter %d %f %f' % (position, value, peak), callback)
 
-    def tuner(self, freq, note, cents, callback=lambda r:r):
+    def tuner(self, freq, note, cents, callback):
         self.send('tuner %f %s %f' % (freq, note, cents), callback)
 
-    def xrun(self, callback=lambda r:r):
+    def xrun(self, callback):
         self.send('xrun', callback)
 
-    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback=lambda r:r):
+    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback):
         """
         configures bank addressings
 
@@ -242,5 +245,5 @@ class HMI(object):
 
     # new messages
 
-    def clear(self, callback=None):
+    def clear(self, callback):
         self.send("control_rm -1 :all", callback)
