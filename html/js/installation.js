@@ -122,7 +122,7 @@ function InstallationQueue() {
         notification.type('warning')
         notification.bar(1)
 
-        var trans = new SimpleTransference(effect['bundle_file_href'],
+        var trans = new SimpleTransference(effect['bundle_file_href']+"duo/",
             '/effect/install')
 
         trans.reportStatus = function (status) {
