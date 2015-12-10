@@ -389,17 +389,17 @@ class Session(object):
                 callback(resp)
             else:
                 assert(resp)
-        self.bank_address(0, 0, 1, 0, 0, lambda r: None)
-        self.bank_address(0, 0, 1, 1, 0, lambda r: None)
-        self.bank_address(0, 0, 1, 2, 0, lambda r: None)
-        self.bank_address(0, 0, 1, 3, 0, lambda r: None)
+        #self.bank_address(0, 0, 1, 0, 0, lambda r: None)
+        #self.bank_address(0, 0, 1, 1, 0, lambda r: None)
+        #self.bank_address(0, 0, 1, 2, 0, lambda r: None)
+        #self.bank_address(0, 0, 1, 3, 0, lambda r: None)
 
         self.hmi.ui_con(verify)
 
     def end_session(self, callback):
         self.hmi.ui_dis(callback)
 
-    def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
+    #def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """
         Function is an integer, meaning:
          - 0: Nothing (unaddress)
@@ -407,7 +407,7 @@ class Session(object):
          - 2: Pedalboard up
          - 3: Pedalboard down
         """
-        self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
+        #self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)
