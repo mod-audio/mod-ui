@@ -451,11 +451,8 @@ def rescan_plugin_presets(uri):
 # ------------------------------------------------------------------------------------------------------------
 
 # get all available pedalboards (ie, plugins with pedalboard type)
-def get_all_pedalboards(asDictionary):
-    pbs = structPtrPtrToList(utils.get_all_pedalboards())
-    if not asDictionary:
-        return pbs
-    return dict((pb['uri'], pb) for pb in pbs)
+def get_all_pedalboards():
+    return structPtrPtrToList(utils.get_all_pedalboards())
 
 # Get a specific pedalboard
 # NOTE: may throw

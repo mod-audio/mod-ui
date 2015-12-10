@@ -648,7 +648,7 @@ class PackageUninstall(web.RequestHandler):
 class PedalboardList(web.RequestHandler):
     def get(self):
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(get_all_pedalboards(False)))
+        self.write(json.dumps(get_all_pedalboards()))
         self.finish()
 
 class PedalboardSave(web.RequestHandler):
@@ -737,10 +737,10 @@ class PedalboardRemove(web.RequestHandler):
     def get(self, bundlepath):
         # there's 5 steps to this:
         # 1 - remove the bundle from disk
-        # 2 - remove the bundle from our lv2 lilv world
+        # 2 - remove the bundle from our lv2 lilv world (no longer needed if using separate ~/.pedalboards)
         # 3 - remove references to the bundle in banks
-        # 4 - delete all presets of the pedaloard
-        # 5 - tell ingen the bundle (plugin) is gone
+        # 4 - delete all presets of the pedaloard (skip for now, pedalboard presets needs discussion)
+        # 5 - tell ingen the bundle (plugin) is gone (no longer needed if using separate ~/.pedalboards)
         pass
 
 class PedalboardSize(web.RequestHandler):
@@ -803,18 +803,21 @@ class BankLoad(web.RequestHandler):
         banks = list_banks()
 
         # Banks have only bundle and title of each pedalboard, which is the necessary information for the HMI.
-        # But the GUI needs some extra pedalboard data
-        pedalboards_dict = get_all_pedalboards(True)
-        pedalboards_keys = pedalboards_dict.keys()
+        # But the GUI we need to know information about the used pedalboards
 
-        for bank in banks:
-            pedalboards = []
+        # NOTE: this is not needed for now
+        if False:
+            pedalboards_dict = dict((pb['bundle'], pb) for pb in get_all_pedalboards())
+            pedalboards_keys = pedalboards_dict.keys()
 
-            for oldpedalboard in bank['pedalboards']:
-                if oldpedalboard['bundle'] in pedalboards_keys:
-                    pedalboards.append(pedalboards_dict[oldpedalboard['bundle']])
+            for bank in banks:
+                pedalboards = []
 
-            bank['pedalboards'] = pedalboards
+                for oldpedalboard in bank['pedalboards']:
+                    if oldpedalboard['bundle'] in pedalboards_keys:
+                        pedalboards.append(pedalboards_dict[oldpedalboard['bundle']])
+
+                bank['pedalboards'] = pedalboards
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(banks))
