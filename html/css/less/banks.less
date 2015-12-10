@@ -2,11 +2,48 @@
 background: url(@wallpaper) repeat fixed;
 bottom: 46px;
 left: 0;
-overflow: auto;
+overflow-x: hidden;
+overflow-y: auto;
 position: absolute;
 right: 0;
 top: 0;
 z-index: 2;
+.ui-draggable-dragging {
+  cursor: webkit-gragging !important
+}
+span {
+    &.move {
+      background-image: url(../img/move.png);
+      background-position: left center;
+      background-repeat: no-repeat;
+      display: block;
+      float: left;
+      height: 22px;
+      left: 0;
+      cursor: move !important;
+      margin: -1px 6px 0 0;
+      width: 24px;
+    }
+    &.remove {
+      background-image: url(../img/icn-remove-bank.png);
+      background-position: left center;
+      background-repeat: no-repeat;
+      display: block;
+      float: right;
+      height: 22px;
+      margin: -1px 6px 0 0;
+      width: 24px;
+      cursor: pointer !important;
+    }
+    &.title {
+      display: block;
+      float: left;
+      height: 22px;
+      overflow: hidden;
+      max-width: 70%;
+      white-space: nowrap
+    }
+}
 input::selection {
   background: @brand-primary !important;
   color: white
@@ -145,40 +182,7 @@ header {
     margin: 0 0 1px 0;
     padding: 5px 15px;
     line-height: 1.8em;
-    position: relative;      
-
-    span {
-        &.move {
-          background-image: url(../img/move.png);
-          background-position: left center;
-          background-repeat: no-repeat;
-          display: block;
-          float: left;
-          height: 22px;
-          left: 0;
-          cursor: move !important;
-          margin: -1px 6px 0 0;
-          width: 24px;
-        }
-        &.remove {
-          background-image: url(../img/icn-remove-bank.png);
-          background-position: left center;
-          background-repeat: no-repeat;
-          display: block;
-          float: right;
-          height: 22px;
-          margin: -1px 6px 0 0;
-          width: 24px;
-        }
-        &.title {
-          display: block;
-          float: left;
-          height: 22px;
-          overflow: hidden;
-          max-width: 70%;
-          white-space: nowrap
-        }
-    }
+    position: relative;          
   }
   .filter_ {
     border-color: #111;
@@ -279,7 +283,8 @@ header {
   left: 20%;
   list-style: none;
   margin: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0 0 200px 0;
   position: fixed;
   top: 144px;
@@ -291,9 +296,12 @@ header {
   .pedalboard {
     border-bottom: 1px dotted #333;
     color: #fff;
-    cursor: -webkit-grabbing !important;
+    cursor: -webkit-grab !important;
     padding-bottom: 30px;
     width: 100%;
+    &:active {
+      cursor: -webkit-grabbing !important;
+    }
     .info {
       margin-bottom: 3px;
     }
@@ -335,6 +343,9 @@ header {
   }
   .form-group {
     padding-left: 15px;
+  }
+  .remove {
+    display: none !important;
   }
   bottom: 45px;
     left: 65.01%;
@@ -434,11 +445,14 @@ header {
   .pedalboard {
     border-top: 1px dotted #444;
     color: #fff;
-    cursor: -webkit-grabbing !important;
+    cursor: -webkit-grab;
     float: left;
     margin: 10px 2.5% 0;
     padding: 10px 0;
     width: 95%;
+    &:active {
+      cursor: -webkit-grabbing !important;
+    }
     .img {
       background: #2b2b2b;
       display: block;

@@ -289,6 +289,7 @@ JqueryClass('bankBox', {
             render: function (pedalboard, url) {
                 var rendered = self.bankBox('renderPedalboard', pedalboard)
                 rendered.draggable({
+                    cursor: "webkit-grabbing !important",
                     revert: 'invalid',
                     connectToSortable: options.pedalboardCanvas,
                     helper: function () {
@@ -306,6 +307,7 @@ JqueryClass('bankBox', {
         }, options))
 
         options.pedalboardCanvas.sortable({
+            cursor: "webkit-grabbing !important",
             revert: true,
             update: function (e, ui) {
                 if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
@@ -555,7 +557,11 @@ JqueryClass('bankBox', {
         editBox.focus()
     },
 
-    removeBank: function (bank) {
+    removeBank: function (bank) {        
+        var msg = "Deleting bank \""+bank.find('.js-bank-title').html()+"\". Confirm?"
+        if (confirm(msg) != true) {
+            return;
+        }
         var self = $(this)
         var count = bank.data('pedalboards').children().length
         if (count > 1 && !confirm(sprintf('There are %d pedalboards in this bank, are you sure you want to delete it?', count)))

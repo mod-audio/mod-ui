@@ -6226,11 +6226,46 @@ button.close {
   background: url('../img/social/back.png') repeat fixed;
   bottom: 46px;
   left: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   position: absolute;
   right: 0;
   top: 0;
   z-index: 2;
+}
+#bank-library .ui-draggable-dragging {
+  cursor: webkit-gragging !important;
+}
+#bank-library span.move {
+  background-image: url(../img/move.png);
+  background-position: left center;
+  background-repeat: no-repeat;
+  display: block;
+  float: left;
+  height: 22px;
+  left: 0;
+  cursor: move !important;
+  margin: -1px 6px 0 0;
+  width: 24px;
+}
+#bank-library span.remove {
+  background-image: url(../img/icn-remove-bank.png);
+  background-position: left center;
+  background-repeat: no-repeat;
+  display: block;
+  float: right;
+  height: 22px;
+  margin: -1px 6px 0 0;
+  width: 24px;
+  cursor: pointer !important;
+}
+#bank-library span.title {
+  display: block;
+  float: left;
+  height: 22px;
+  overflow: hidden;
+  max-width: 70%;
+  white-space: nowrap;
 }
 #bank-library input::selection {
   background: #40c25d !important;
@@ -6368,36 +6403,6 @@ button.close {
   line-height: 1.8em;
   position: relative;
 }
-#bank-library #bank-list .bank-item span.move {
-  background-image: url(../img/move.png);
-  background-position: left center;
-  background-repeat: no-repeat;
-  display: block;
-  float: left;
-  height: 22px;
-  left: 0;
-  cursor: move !important;
-  margin: -1px 6px 0 0;
-  width: 24px;
-}
-#bank-library #bank-list .bank-item span.remove {
-  background-image: url(../img/icn-remove-bank.png);
-  background-position: left center;
-  background-repeat: no-repeat;
-  display: block;
-  float: right;
-  height: 22px;
-  margin: -1px 6px 0 0;
-  width: 24px;
-}
-#bank-library #bank-list .bank-item span.title {
-  display: block;
-  float: left;
-  height: 22px;
-  overflow: hidden;
-  max-width: 70%;
-  white-space: nowrap;
-}
 #bank-library #bank-list .filter_ {
   border-color: #111;
   border-style: dotted;
@@ -6495,7 +6500,8 @@ button.close {
   left: 20%;
   list-style: none;
   margin: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0 0 200px 0;
   position: fixed;
   top: 144px;
@@ -6508,9 +6514,12 @@ button.close {
 #bank-library #bank-pedalboards .pedalboard {
   border-bottom: 1px dotted #333;
   color: #fff;
-  cursor: -webkit-grabbing !important;
+  cursor: -webkit-grab !important;
   padding-bottom: 30px;
   width: 100%;
+}
+#bank-library #bank-pedalboards .pedalboard:active {
+  cursor: -webkit-grabbing !important;
 }
 #bank-library #bank-pedalboards .pedalboard .info {
   margin-bottom: 3px;
@@ -6559,6 +6568,9 @@ button.close {
 }
 #bank-library #bank-pedalboards-search .form-group {
   padding-left: 15px;
+}
+#bank-library #bank-pedalboards-search .remove {
+  display: none !important;
 }
 #bank-library #bank-pedalboards-search label {
   color: #fff;
@@ -6637,11 +6649,14 @@ button.close {
 #bank-pedalboards-result .pedalboard {
   border-top: 1px dotted #444;
   color: #fff;
-  cursor: -webkit-grabbing !important;
+  cursor: -webkit-grab;
   float: left;
   margin: 10px 2.5% 0;
   padding: 10px 0;
   width: 95%;
+}
+#bank-pedalboards-result .pedalboard:active {
+  cursor: -webkit-grabbing !important;
 }
 #bank-pedalboards-result .pedalboard .img {
   background: #2b2b2b;
