@@ -226,7 +226,7 @@ function HardwareManager(options) {
             if (maxv == undefined || maxv == "")
                 maxv = port.ranges.maximum
 
-            if (minv >= maxv) {
+            if (parseFloat(minv) >= parseFloat(maxv)) {
                 alert("The minimum value is equal or higher than the maximum. We cannot address a control like this!")
                 return
             }
