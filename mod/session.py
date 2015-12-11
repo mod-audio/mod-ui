@@ -108,13 +108,13 @@ class Session(object):
         if self.host.sock is not None:
             self.host.sock.close()
             self.host.sock = None
-        self.host.open_connection_if_needed(self.host_callback)
+        self.host.open_connection_if_needed(self.websockets[0], self.host_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
     def init_socket(self):
-        self.host.open_connection_if_needed(self.host_callback)
+        self.host.open_connection_if_needed(None, self.host_callback)
 
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
@@ -248,7 +248,7 @@ class Session(object):
     # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws):
         self.websockets.append(ws)
-        self.host.open_connection_if_needed(self.host_callback)
+        self.host.open_connection_if_needed(ws, self.host_callback)
 
     # Webbrowser page closed
     def websocket_closed(self, ws):
@@ -288,28 +288,23 @@ class Session(object):
     # TODO
     # Everything after this line is yet to be documented
 
-    @gen.engine
-    def host_callback(self):
-        def finish():
-            if len(self.websockets) > 0:
-                self.host.report_current_state()
+    def msg_callback(self, msg):
+        for ws in self.websockets:
+            ws.write_message(msg)
+
+    def host_callback(self, websocket):
+        def finish(ok):
+            self.host.report_current_state(websocket)
 
         if self.host_initialized:
-            finish()
+            finish(True)
             return
 
         self.engine_samplerate = self.host.get_sample_rate()
         self.host_initialized = True
 
-        def msg_callback(msg):
-            for ws in self.websockets:
-                ws.write_message(msg)
-
-        self.host.msg_callback = msg_callback
-
-        yield gen.Task(self.host.initial_setup)
-
-        finish()
+        self.host.msg_callback = self.msg_callback
+        self.host.initial_setup(finish)
 
     def load_pedalboard(self, bundlepath):
         title = self.host.load(bundlepath)

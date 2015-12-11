@@ -187,11 +187,11 @@ class Host(object):
         print("jacklib client deactivated")
 
     def init_connection(self):
-        self.open_connection_if_needed(lambda:None)
+        self.open_connection_if_needed(None, lambda ws:None)
 
-    def open_connection_if_needed(self, callback):
+    def open_connection_if_needed(self, websocket, callback):
         if self.sock is not None:
-            callback()
+            callback(websocket)
             return
 
         self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
@@ -199,7 +199,7 @@ class Host(object):
 
         def check_response():
             self.connected = True
-            callback()
+            callback(websocket)
             self.cputimerok = True
             self.cputimer.start()
             if len(self._queue):
@@ -207,13 +207,13 @@ class Host(object):
             else:
                 self._idle = True
 
-        def closed():
-            self.sock = None
-            self.crashed = True
-            self.msg_callback("disconnected")
-
-        self.sock.set_close_callback(closed)
+        self.sock.set_close_callback(self.connection_closed)
         self.sock.connect(self.addr, check_response)
+
+    def connection_closed(self):
+        self.sock = None
+        self.crashed = True
+        self.msg_callback("disconnected")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -263,8 +263,11 @@ class Host(object):
     def initial_setup(self, callback):
         self.send("remove -1", callback, datatype='boolean')
 
-    def report_current_state(self):
-        self.msg_callback("wait_start")
+    def report_current_state(self, websocket):
+        if websocket is None:
+            return
+
+        websocket.write_message("wait_start")
 
         crashed = self.crashed
         self.crashed = False
@@ -276,13 +279,13 @@ class Host(object):
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
+            websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
         # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
+            websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         if self.jack_client is not None:
             midiports = []
@@ -296,7 +299,7 @@ class Host(object):
 
             # MIDI In
             if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in") is not None:
-                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+                websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
             for i in range(len(ports)):
@@ -308,11 +311,11 @@ class Host(object):
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
+                websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
 
             # MIDI Out
             if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out") is not None:
-                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+                websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
             for i in range(len(ports)):
@@ -324,10 +327,10 @@ class Host(object):
                     title = alias1.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
-                self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (name.replace("system:","",1), title, i+1))
+                websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.replace("system:","",1), title, i+1))
 
         for instance_id, plugin in self.plugins.items():
-            self.msg_callback("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
+            websocket.write_message("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
 
             if crashed:
                 self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
@@ -335,21 +338,19 @@ class Host(object):
                     self.send("bypass %d 1" % (instance_id,), lambda r:None, datatype='boolean')
 
             for symbol, value in plugin['ports'].items():
-                self.msg_callback("param_set %s %s %f" % (plugin['instance'], symbol, value))
+                websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
                     self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
 
         for port_from, port_to in self.connections:
-            self.msg_callback("connect %s %s" % (port_from, port_to))
+            websocket.write_message("connect %s %s" % (port_from, port_to))
 
             if crashed:
                 self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
                                              self._fix_host_connection_port(port_to)), lambda r:None, datatype='boolean')
 
-        # TODO - set addressings?
-
-        self.msg_callback("wait_end")
+        websocket.write_message("wait_end")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
