@@ -250,7 +250,7 @@ class Host(object):
 
         encmsg = "%s\0" % str(msg)
         self.sock.write(encmsg.encode("utf-8"))
-        self.sock.read_until("\0".encode("utf-8"), check_response)
+        self.sock.read_until(b"\0", check_response)
 
     def send(self, msg, callback, datatype='int'):
         self._queue.append((msg, callback, datatype))
