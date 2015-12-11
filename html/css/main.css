@@ -5935,7 +5935,7 @@ button.close {
   bottom: 46px;
   left: 0;
   overflow: auto;
-  position: absolute;
+  position: fixed;
   right: 0;
   top: 0px;
   z-index: 2;
@@ -6046,6 +6046,7 @@ button.close {
   left: 242px;
   position: absolute;
   right: 0;
+  min-height: 100%;
   background: #111 !important;
 }
 .cloud-plugins .plugins-wrapper {
