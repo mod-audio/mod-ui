@@ -329,7 +329,7 @@ class Host(object):
                     midiports.append(port)
 
             # MIDI In
-            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in") is not None:
+            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in"):
                 websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
@@ -345,7 +345,7 @@ class Host(object):
                 websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
 
             # MIDI Out
-            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out") is not None:
+            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out"):
                 websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
