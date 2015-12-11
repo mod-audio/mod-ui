@@ -439,11 +439,19 @@ $('document').ready(function() {
         <div id="mod-cloud-plugins" class="icon"></div>
         <div id="mod-pedalboard" class="icon"></div>
         <div id="mod-bank" class="icon"></div>
-	<div id="banks-saving">Auto saving banks...</div>
+        <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-disconnect" class="icon">Disconnect</div>
         <div id="mod-settings" class="icon"></div>
         <div id="mod-bluetooth" class="icon"></div>
         <div id="mod-cloud" class="icon"></div>
+        <div id="mod-ram" class="icon">
+          <div class="progress" id="ram-bar" style="width: 100%;">
+            <div class="bar"></div> <!-- not sure if this is needed -->
+          </div>
+          <p class="progress-title" id="ram-bar-text">
+            ram
+          </p>
+        </div>
         <div id="mod-cpu" class="icon">
           <div class="progress" id="cpu-bar" style="width: 100%;">
             <div class="bar"></div> <!-- not sure if this is needed -->
@@ -710,7 +718,7 @@ $('document').ready(function() {
                 <!-- FORM HORIZONTAL -->
                 <div class="filter clearfix">
                     <div class="clearfix">
-                        <div class="form-group ">                          
+                        <div class="form-group ">
                             <label for="searchBank" >Select pedalboards</label>
                             <input id="searchBank" class="form-control" length="20" placeholder="Filter by keyword(s)" type="search"/>
                         </div>

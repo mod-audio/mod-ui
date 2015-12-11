@@ -122,6 +122,26 @@ class Host(object):
         self.cputimerok = True
         self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
 
+        if os.path.exists("/proc/meminfo"):
+            self.memfile  = open("/proc/meminfo", 'r')
+            self.memtotal = 0.0
+            self.memfseek = 0
+
+            for line in self.memfile.readlines():
+                if line.startswith("MemTotal:"):
+                    self.memtotal = float(int(line.replace("MemTotal:","",1).replace("kB","",1).strip()))
+                elif line.startswith("MemFree:"):
+                    break
+                self.memfseek += len(line)
+            else:
+                self.memfseek = 0
+
+            if self.memtotal != 0.0 and self.memfseek != 0:
+                self.memtimer = ioloop.PeriodicCallback(self.memtimer_callback, 5000)
+
+        else:
+            self.memtimer = None
+
         self.msg_callback = lambda msg:None
 
         # Register HMI protocol callbacks
@@ -201,7 +221,13 @@ class Host(object):
             self.connected = True
             callback(websocket)
             self.cputimerok = True
+            self.cputimer_callback()
             self.cputimer.start()
+
+            if self.memtimer is not None:
+                self.memtimer_callback()
+                self.memtimer.start()
+
             if len(self._queue):
                 self.process_queue()
             else:
@@ -213,6 +239,11 @@ class Host(object):
     def connection_closed(self):
         self.sock = None
         self.crashed = True
+        self.cputimer.stop()
+
+        if self.memtimer is not None:
+            self.memtimer.stop()
+
         self.msg_callback("disconnected")
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -942,12 +973,22 @@ _:b%i
 
         def cpu_callback(resp):
             if not resp['ok']:
+                self.cputimer.stop()
                 return
             self.msg_callback("cpu_load %0.1f" % resp['value'])
             self.cputimerok = True
 
         self.cputimerok = False
         self.send("cpu_load", cpu_callback, datatype='float_structure')
+
+    def memtimer_callback(self):
+        if not self.memfile:
+            return
+
+        self.memfile.seek(self.memfseek)
+        memfree = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
+
+        self.msg_callback("mem_load %0.1f" % ((self.memtotal-memfree)/self.memtotal*100.0))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (public stuff)

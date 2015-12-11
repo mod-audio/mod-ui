@@ -38,6 +38,13 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "mem_load") {
+            var value = data[1]
+            $("#ram-bar").css("width", (100.0-value).toFixed().toString()+"%")
+            $("#ram-bar-text").text("RAM "+value.toString()+"%")
+            return
+        }
+
         if (cmd == "param_set") {
             var instance = data[1]
             var symbol   = data[2]
