@@ -112,7 +112,9 @@ header {
   list-style: none;
   margin: 0;
   padding: 0;
-  position: absolute;
+  position: fixed;
+  bottom: 46px;
+  overflow-y: auto;
   top: 54px;
   width: 19.95%;
   border-color: #111;
@@ -235,7 +237,7 @@ header {
   height: 92px;
   margin: 0;
   padding: 0;
-  position: absolute;
+  position: fixed;
   text-align: left;
   top: 54px;
   width: 45%;
@@ -442,6 +444,11 @@ header {
 }
 
 #bank-pedalboards-result {
+  position: fixed;
+  bottom: 46px;
+  top: 133px;
+  overflow: auto;
+  width: 34.4%;
   .pedalboard {
     border-top: 1px dotted #444;
     color: #fff;

@@ -6333,7 +6333,9 @@ button.close {
   list-style: none;
   margin: 0;
   padding: 0;
-  position: absolute;
+  position: fixed;
+  bottom: 46px;
+  overflow-y: auto;
   top: 54px;
   width: 19.95%;
   border-color: #111;
@@ -6453,7 +6455,7 @@ button.close {
   height: 92px;
   margin: 0;
   padding: 0;
-  position: absolute;
+  position: fixed;
   text-align: left;
   top: 54px;
   width: 45%;
@@ -6645,6 +6647,13 @@ button.close {
 }
 .pedalboard .addressings .footswitch.addressed {
   background: #2b2b2b url(../img/footswitch-addressed.png) no-repeat center top;
+}
+#bank-pedalboards-result {
+  position: fixed;
+  bottom: 46px;
+  top: 133px;
+  overflow: auto;
+  width: 34.4%;
 }
 #bank-pedalboards-result .pedalboard {
   border-top: 1px dotted #444;
@@ -7010,7 +7019,8 @@ hr.dotted {
   background-color: #000;
   color: #fff;
 }
-#main-menu #mod-cpu, #main-menu #mod-ram {
+#main-menu #mod-cpu,
+#main-menu #mod-ram {
   border-color: #2b2b2b;
   border-style: solid;
   border-width: 0 0 0 1px;
