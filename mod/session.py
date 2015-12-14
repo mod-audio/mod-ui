@@ -392,7 +392,7 @@ class Session(object):
         def state_callback(ok):
             self.hmi.ui_con(verify)
 
-        self.hmi.initial_state(state_callback)
+        self.hmi.initial_state(-1, "", "", state_callback)
 
     def end_session(self, callback):
         self.hmi.ui_dis(callback)
