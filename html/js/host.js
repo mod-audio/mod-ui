@@ -128,22 +128,16 @@ $('document').ready(function() {
                 $.ajax({
                     url: '/effect/get?uri=' + escape(uri),
                     success: function (pluginData) {
-                        if (! waiting) {
-                            var instancekey = '[mod-instance="' + instance + '"]'
+                        var instancekey = '[mod-instance="' + instance + '"]'
 
-                            if (!$(instancekey).length) {
-                                var cb = function () {
-                                    desktop.pedalboard.pedalboard('adapt')
+                        if (!$(instancekey).length) {
+                            var cb = function () {
+                                desktop.pedalboard.pedalboard('adapt')
+                                desktop.pedalboard.data('wait').stopPlugin(instance, !waiting)
 
-                                    var waiter = desktop.pedalboard.data('wait')
-
-                                    if (waiter.plugins[instance])
-                                        waiter.stopPlugin(instance)
-
-                                    $(document).unbindArrive(instancekey, cb)
-                                }
-                                $(document).arrive(instancekey, cb)
+                                $(document).unbindArrive(instancekey, cb)
                             }
+                            $(document).arrive(instancekey, cb)
                         }
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {})
@@ -181,7 +175,9 @@ $('document').ready(function() {
                 desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)
             }
 
-            desktop.pedalboard.pedalboard('positionHardwarePorts')
+            if (! waiting) {
+                desktop.pedalboard.pedalboard('positionHardwarePorts')
+            }
             return
         }
 
@@ -198,18 +194,19 @@ $('document').ready(function() {
         }
 
         if (cmd == "wait_end") {
-            waiting = false
-
             // load new possible addressings
             $.ajax({
                 url: '/hardware',
                 success: function (data) {
+                    waiting = false
+
                     HARDWARE_PROFILE = data
                     if (desktop.hardwareManager)
                         desktop.hardwareManager.registerAllAddressings()
 
+                    desktop.pedalboard.pedalboard('positionHardwarePorts')
                     desktop.pedalboard.pedalboard('adapt')
-                    desktop.pedalboard.data('wait').stop()
+                    desktop.pedalboard.data('wait').stopIfNeeded()
                 },
                 cache: false,
                 dataType: 'json'

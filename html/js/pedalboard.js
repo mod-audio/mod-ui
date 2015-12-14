@@ -562,10 +562,10 @@ JqueryClass('pedalboard', {
                         self.pedalboard('adapt')
                     }, 1)
                     */
-                    waiter.stopPlugin(instance)
+                    waiter.stopPlugin(instance, false)
                 },
                 function () {
-                    waiter.stopPlugin(instance)
+                    waiter.stopPlugin(instance, false)
                 })
         })
 

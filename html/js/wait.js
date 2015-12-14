@@ -22,6 +22,12 @@ function WaitMessage(canvas) {
         $('#wrapper').css('z-index', 'auto')
     }
 
+    this.stopIfNeeded = function () {
+        if (Object.keys(self.plugins).length == 0) {
+            self.stop()
+        }
+    }
+
     this.startPlugin = function (instance, position) {
         var div = $('<div class="plugin-wait">')
         div.width(position.width).height(position.height)
@@ -34,8 +40,14 @@ function WaitMessage(canvas) {
         self.plugins[instance] = div
     }
 
-    this.stopPlugin = function (instance) {
-        self.plugins[instance].remove()
-        delete self.plugins[instance]
+    this.stopPlugin = function (instance, stopIfZero) {
+        if (self.plugins[instance]) {
+            self.plugins[instance].remove()
+            delete self.plugins[instance]
+        }
+
+        if (stopIfZero && Object.keys(self.plugins).length == 0) {
+            self.stop()
+        }
     }
 }

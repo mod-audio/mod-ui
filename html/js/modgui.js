@@ -1002,6 +1002,9 @@ JqueryClass('film', baseWidget, {
             self.film('config', options)
             self.data('initialized', true)
             self.film('setValue', self.data('initvalue'), true)
+            if (! isSDK) {
+                desktop.pedalboard.pedalboard('adapt')
+            }
         })
 
         self.on('dragstart', function (event) {
