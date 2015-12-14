@@ -5931,7 +5931,7 @@ button.close {
   }
 }
 #cloud-plugins-library {
-  background: url('../img/social/back.png') repeat fixed;
+  background-color: #333;
   bottom: 46px;
   left: 0;
   overflow: auto;
@@ -5974,6 +5974,7 @@ button.close {
   top: 16px;
 }
 #cloud-plugins-library .filter {
+  background: url('../img/social/back.png') repeat fixed;
   border-color: #111;
   border-style: dotted;
   border-width: 0 1px 0 0;
