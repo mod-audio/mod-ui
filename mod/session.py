@@ -389,7 +389,10 @@ class Session(object):
         #self.bank_address(0, 0, 1, 2, 0, lambda r: None)
         #self.bank_address(0, 0, 1, 3, 0, lambda r: None)
 
-        self.hmi.ui_con(verify)
+        def state_callback(ok):
+            self.hmi.ui_con(verify)
+
+        self.hmi.initial_state(state_callback)
 
     def end_session(self, callback):
         self.hmi.ui_dis(callback)

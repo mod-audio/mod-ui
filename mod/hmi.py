@@ -152,9 +152,9 @@ class HMI(object):
         # is resp, just send
         self.sp.write(msg.encode('utf-8') + b'\0')
 
-    def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        pedalboards = " ".join('"%s" %d' % (pedalboard['title'], i) for i, pedalboard in enumerate(pedalboards))
-        self.send("initial_state %d %d %s" % (bank_id, pedalboard_id, pedalboards), callback)
+    def initial_state(self, bank_id, pedalboard, pedalboards, callback):
+        pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['bundle']) for pb in pedalboards)
+        self.send("initial_state %d \"%s\" %s" % (bank_id, pedalboard, pedalboards), callback)
 
     def ui_con(self, callback):
         self.send("ui_con", callback, datatype='boolean')
