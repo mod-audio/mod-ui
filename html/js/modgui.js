@@ -1069,7 +1069,7 @@ JqueryClass('film', baseWidget, {
             if (dummy && ! self.is(":visible"))
                 return
             var url = self.css('background-image')
-            if (url == "none") {
+            if (!url || url == "none") {
                 retry += 1
                 if (retry == 50) {
                     console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
