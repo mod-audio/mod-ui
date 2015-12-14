@@ -1097,7 +1097,7 @@ JqueryClass('film', baseWidget, {
                 self.data('size', self.width())
                 bgImg.remove()
                 callback()
-                if (! isSDK) {
+                if (! isSDK && desktop != null) {
                     setTimeout(function() {
                         desktop.pedalboard.pedalboard('adapt')
                     }, 1)
