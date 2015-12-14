@@ -1040,7 +1040,8 @@ JqueryClass('film', baseWidget, {
         })
 
         self.click(function (e) {
-            if (!self.data('enabled')) return self.film('prevent', e)
+            if (!self.data('enabled'))
+                return self.film('prevent', e)
             self.film('mouseClick', e)
         })
 
@@ -1091,6 +1092,7 @@ JqueryClass('film', baseWidget, {
                 callback()
             });
             $('body').append(bgImg);
+            console.log(url)
             bgImg.attr('src', url);
         }, 5)
     },

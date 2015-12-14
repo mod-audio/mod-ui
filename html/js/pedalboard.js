@@ -194,9 +194,10 @@ JqueryClass('pedalboard', {
 
         // Dragging the pedalboard move the view area
         self.mousedown(function (e) {
-                self.pedalboard('drag', e)
-            })
-            // The mouse wheel is used to zoom in and out
+            self.pedalboard('drag', e)
+        })
+
+        // The mouse wheel is used to zoom in and out
         self.bind('mousewheel', function (e) {
             // Zoom by mousewheel has been desactivated.
             // Let's keep the code here so that maybe later this can be a user option
@@ -281,6 +282,7 @@ JqueryClass('pedalboard', {
         self[0].addEventListener('dblclick', function (ev) {
             if (ev.handled) return
             self.pedalboard('zoomOut')
+            ev.preventDefault()
         })
     },
 
@@ -1256,8 +1258,10 @@ JqueryClass('pedalboard', {
             }
 
             retry += 1
-            if (retry == 50)
+            if (retry == 50) {
+                console.log("setPortEnabled timed out, failed to disable port")
                 return
+            }
 
             setTimeout(trySetEnabled, 100)
         }
@@ -1285,8 +1289,10 @@ JqueryClass('pedalboard', {
             }
 
             retry += 1
-            if (retry == 50)
+            if (retry == 50) {
+                console.log("setPortWidgetsValue timed out, failed to set port value")
                 return
+            }
 
             setTimeout(trySetPortValue, 100)
         }
@@ -1499,11 +1505,11 @@ JqueryClass('pedalboard', {
                 var inputType = element.attr('mod-role').split(/-/)[1]
                 if (outputType != inputType)
                     return
-                self.data('background').droppable('disable');
+                self.data('background').droppable('disable')
                 element.addClass('input-connecting-highlight')
             },
             out: function (event, ui) {
-                self.data('background').droppable('enable');
+                self.data('background').droppable('enable')
                 element.removeClass('input-connecting-highlight')
             },
             greedy: true,
