@@ -1002,9 +1002,6 @@ JqueryClass('film', baseWidget, {
             self.film('config', options)
             self.data('initialized', true)
             self.film('setValue', self.data('initvalue'), true)
-            if (! isSDK) {
-                desktop.pedalboard.pedalboard('adapt')
-            }
         })
 
         self.on('dragstart', function (event) {
@@ -1100,6 +1097,11 @@ JqueryClass('film', baseWidget, {
                 self.data('size', self.width())
                 bgImg.remove()
                 callback()
+                if (! isSDK) {
+                    setTimeout(function() {
+                        desktop.pedalboard.pedalboard('adapt')
+                    }, 1)
+                }
             })
             $('body').append(bgImg)
             bgImg.attr('src', url)
