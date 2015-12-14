@@ -368,8 +368,11 @@ class Host(object):
                 if plugin['bypassed']:
                     self.send("bypass %d 1" % (instance_id,), lambda r:None, datatype='boolean')
 
+            badports = plugin['badports']
+
             for symbol, value in plugin['ports'].items():
-                websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
+                if symbol not in badports:
+                    websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
                     self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
@@ -436,6 +439,24 @@ class Host(object):
                 callback(resp)
                 return
             bypassed = False
+
+            allports = get_plugin_control_input_ports(uri)
+            badports = []
+            valports = {}
+
+            for port in allports:
+                valports[port['symbol']] = port['ranges']['default']
+
+                # skip notOnGUI controls
+                if "notOnGUI" in port['properties']:
+                    badports.append(port['symbol'])
+
+                # skip special designated controls
+                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#freeWheeling",
+                                             "http://lv2plug.in/ns/lv2core#latency",
+                                             "http://lv2plug.in/ns/ext/parameters#sampleRate"):
+                    badports.append(port['symbol'])
+
             self.plugins[instance_id] = {
                 "instance"  : instance,
                 "uri"       : uri,
@@ -443,8 +464,10 @@ class Host(object):
                 "x"         : x,
                 "y"         : y,
                 "addressing": {}, # symbol: addressing
-                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(uri)),
+                "ports"     : valports,
+                "badports"  : badports,
             }
+
             callback(resp)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
@@ -516,9 +539,13 @@ class Host(object):
             portValues = get_state_port_values(state)
             self.plugins[instance_id]['ports'].update(portValues)
 
+            badports = self.plugins[instance_id]['badports']
             used_actuators = []
 
             for symbol, value in self.plugins[instance_id]['ports'].items():
+                if symbol in badports:
+                    continue
+
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = self.plugins[instance_id]['addressing'].get(symbol, None)
@@ -649,6 +676,23 @@ class Host(object):
             if p['bypassed']:
                 self.send("bypass %d 1" % (instance_id,), lambda r:None)
 
+            allports = get_plugin_control_input_ports(p['uri'])
+            badports = []
+            valports = {}
+
+            for port in allports:
+                valports[port['symbol']] = port['ranges']['default']
+
+                # skip notOnGUI controls
+                if "notOnGUI" in port['properties']:
+                    badports.append(port['symbol'])
+
+                # skip special designated controls
+                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#freeWheeling",
+                                             "http://lv2plug.in/ns/lv2core#latency",
+                                             "http://lv2plug.in/ns/ext/parameters#sampleRate"):
+                    badports.append(port['symbol'])
+
             self.plugins[instance_id] = {
                 "instance"  : instance,
                 "uri"       : p['uri'],
@@ -656,7 +700,8 @@ class Host(object):
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
-                "ports"     : dict((port['symbol'], port['ranges']['default']) for port in get_plugin_control_input_ports(p['uri'])),
+                "ports"     : valports,
+                "badports"  : badports,
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
@@ -666,7 +711,9 @@ class Host(object):
                 self.plugins[instance_id]['ports'][symbol] = value
 
                 self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+
+                if symbol not in badports:
+                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
         for c in pb['connections']:
             port_from = "/graph/%s" % c['source']

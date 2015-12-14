@@ -1290,7 +1290,7 @@ JqueryClass('pedalboard', {
 
             retry += 1
             if (retry == 50) {
-                console.log("setPortWidgetsValue timed out, failed to set port value")
+                console.log("setPortWidgetsValue timed out for '"+instance+"/"+symbol+"', failed to set port value")
                 return
             }
 
