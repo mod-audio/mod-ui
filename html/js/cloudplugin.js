@@ -145,7 +145,7 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
-                cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
+                cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (lplugin) {
                     if (!lplugin.installedVersion) {
@@ -241,7 +241,7 @@ JqueryClass('cloudPluginBox', {
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
-                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release]
 
                         allplugins[lplugin.uri] = lplugin
                         desktop.pluginIndexer.add({
@@ -274,7 +274,7 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[lplugin.uri]
 
                 if (cplugin) {
-                    lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release || 0]
+                    lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) == 0) {
                         lplugin.status = 'installed'
@@ -354,7 +354,7 @@ JqueryClass('cloudPluginBox', {
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
-                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release || 0]
+                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release]
 
                         allplugins[lplugin.uri] = lplugin
                         desktop.pluginIndexer.add({
@@ -515,7 +515,7 @@ JqueryClass('cloudPluginBox', {
                     self.data('installPlugin')(plugin, function (pluginData) {
                         if (pluginData) {
                             pluginData.status = 'installed'
-                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
+                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release]
                             pluginData.installedVersion = pluginData.latestVersion
 
                             desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
@@ -538,7 +538,7 @@ JqueryClass('cloudPluginBox', {
                     self.data('upgradePlugin')(plugin, function (pluginData) {
                         if (pluginData) {
                             pluginData.status = 'installed'
-                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
+                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release]
                             pluginData.installedVersion = pluginData.latestVersion
 
                             desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
@@ -602,7 +602,7 @@ JqueryClass('cloudPluginBox', {
                 },
                 success: function (pluginData) {
                     if (pluginData && Object.keys(pluginData).length > 0) {
-                        plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release || 0]
+                        plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release_number]
                     } else {
                         plugin.latestVersion = null
                     }
