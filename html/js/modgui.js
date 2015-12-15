@@ -790,7 +790,7 @@ function GUI(effect, options) {
             data.effect.ports.control.input = inputs
         }
 
-        if (window.desktop != undefined) {
+        if (isSDK) {
             // this is expensive and only useful for mod-sdk
             DEBUG = JSON.stringify(data, undefined, 4)
         }
@@ -1099,7 +1099,7 @@ JqueryClass('film', baseWidget, {
                 callback()
                 if (! isSDK && desktop != null) {
                     setTimeout(function() {
-                        desktop.pedalboard.pedalboard('adapt')
+                        //desktop.pedalboard.pedalboard('adapt')
                     }, 1)
                 }
             })
