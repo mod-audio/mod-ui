@@ -1916,11 +1916,12 @@ JqueryClass('pedalboard', {
             console.log("ERROR: The origin for '" + jack.selector + "' is missing")
             return
         }
-       // If output is already connected to this input through another jack, abort connection
+
+        // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input))
             return self.pedalboard('disconnect', jack)
 
-        // Can only connect midi to midi and audio to audio
+        // Can only ports if they are the same type
         if (input.data('portType') != output.data('portType'))
             return self.pedalboard('disconnect', jack)
 
@@ -1947,6 +1948,7 @@ JqueryClass('pedalboard', {
         // Redraw jack arrangement in both new and previous input, if any
         self.pedalboard('packJacks', input)
         self.pedalboard('spawnJack', output)
+
         // Pedalboard has been modified
         self.trigger('modified')
 

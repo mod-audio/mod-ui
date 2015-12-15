@@ -66,14 +66,13 @@ $('document').ready(function() {
 
                 if (output.length) {
                     var input = $(targetport)
-                    var jack  = output.find('[mod-role=output-jack]')
 
                     if (input.length) {
-                        desktop.pedalboard.pedalboard('connect', jack, input)
+                        desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                     } else {
                         var cb = function () {
                             var input = $(targetport)
-                            desktop.pedalboard.pedalboard('connect', jack, input)
+                            desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                             $(document).unbindArrive(targetport, cb)
                         }
                         $(document).arrive(targetport, cb)
@@ -82,14 +81,13 @@ $('document').ready(function() {
                     var cb = function () {
                         var output = $(sourceport)
                         var input  = $(targetport)
-                        var jack   = output.find('[mod-role=output-jack]')
 
                         if (input.length) {
-                            desktop.pedalboard.pedalboard('connect', jack, input)
+                            desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                         } else {
                             var incb = function () {
                                 var input = $(targetport)
-                                desktop.pedalboard.pedalboard('connect', jack, input)
+                                desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
                                 $(document).unbindArrive(targetport, incb)
                             }
                             $(document).arrive(targetport, incb)
