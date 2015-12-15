@@ -366,7 +366,7 @@ JqueryClass('pedalboard', {
     },
     */
 
-    fakeLoadFromServerData: function (data, callback, loadPedalboardAtOnce, bypassApplication) {
+    fakeLoadFromServerData: function (data, callback, bypassApplication) {
         var self = $(this)
 
         /*
@@ -381,11 +381,8 @@ JqueryClass('pedalboard', {
         // Let's avoid modifying original data
         data = $.extend({}, data)
 
-        if (bypassApplication == null)
-            bypassApplication = !!loadPedalboardAtOnce
-
         // We might want to bypass application
-        self.data('bypassApplication', bypassApplication)
+        self.data('bypassApplication', false)
 
         self.data('wait').start('Loading pedalboard...')
         var ourCallback = function () {
@@ -403,11 +400,8 @@ JqueryClass('pedalboard', {
             self.data('bypassApplication', false)
             setTimeout(function () {
                 self.pedalboard('adapt')
-            }, 1)
-            if (loadPedalboardAtOnce)
-                ourCallback(true) // FIXME?
-            else
                 ourCallback()
+            }, 1)
         }
 
         var loadPlugin, createHardwarePorts, connect
