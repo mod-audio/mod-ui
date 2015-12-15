@@ -1098,9 +1098,7 @@ JqueryClass('film', baseWidget, {
                 bgImg.remove()
                 callback()
                 if (! isSDK && desktop != null) {
-                    setTimeout(function() {
-                        //desktop.pedalboard.pedalboard('adapt')
-                    }, 1)
+                    desktop.pedalboard.pedalboard('scheduleAdapt')
                 }
             })
             $('body').append(bgImg)

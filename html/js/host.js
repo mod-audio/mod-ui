@@ -132,7 +132,7 @@ $('document').ready(function() {
 
                         if (!$(instancekey).length) {
                             var cb = function () {
-                                desktop.pedalboard.pedalboard('adapt')
+                                desktop.pedalboard.pedalboard('scheduleAdapt')
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !waiting)
 
                                 $(document).unbindArrive(instancekey, cb)
@@ -205,7 +205,7 @@ $('document').ready(function() {
                         desktop.hardwareManager.registerAllAddressings()
 
                     desktop.pedalboard.pedalboard('positionHardwarePorts')
-                    desktop.pedalboard.pedalboard('adapt')
+                    desktop.pedalboard.pedalboard('scheduleAdapt')
                     desktop.pedalboard.data('wait').stopIfNeeded()
                 },
                 cache: false,

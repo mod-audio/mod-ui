@@ -124,6 +124,9 @@ JqueryClass('pedalboard', {
         // connectionManager keeps track of all connections
         self.data('connectionManager', new ConnectionManager())
 
+        // last adapt schedule time
+        self.data('adaptTime', 0)
+
         // Pedalboard itself will get big dimensions and will have it's scale and position changed dinamically
         // often. So, let's wrap it inside an element with same original dimensions and positioning, with overflow
         // hidden, so that the visible part of the pedalboard is always occupying the area that was initially determined
@@ -927,6 +930,37 @@ JqueryClass('pedalboard', {
 
     },
 
+    scheduleAdapt: function () {
+        var self = $(this)
+
+        var callAdaptLater = function () {
+            var curTime2 = self.data('adaptTime')
+
+            if (curTime2 <= 1) {
+                // proceed
+                self.data('adaptTime', 0)
+                self.pedalboard('adapt')
+
+            } else {
+                // decrease timer
+                self.data('adaptTime', curTime-10)
+                setTimeout(callAdaptLater, 200)
+            }
+        }
+
+        var curTime = self.data('adaptTime')
+
+        if (curTime == 0) {
+            // first time, setup everything
+            self.data('adaptTime', 201)
+
+            setTimeout(callAdaptLater, 1)
+
+        } else {
+            // not first time, increase timer
+            self.data('adaptTime', curTime+50)
+        }
+    },
 
     // Position the hardware ports as to be evenly distributed vertically in pedalboard.
     // Output ports are positioned at left and input ports at right.
