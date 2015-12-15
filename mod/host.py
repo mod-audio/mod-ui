@@ -1033,7 +1033,9 @@ _:b%i
             return
 
         self.memfile.seek(self.memfseek)
-        memfree = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
+        memfree  = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
+        memfree += float(int(self.memfile.readline().replace("Buffers:","",1).replace("kB","",1).strip()))
+        memfree += float(int(self.memfile.readline().replace("Cached:" ,"",1).replace("kB","",1).strip()))
 
         self.msg_callback("mem_load %0.1f" % ((self.memtotal-memfree)/self.memtotal*100.0))
 
