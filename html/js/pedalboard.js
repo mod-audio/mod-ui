@@ -630,8 +630,6 @@ JqueryClass('pedalboard', {
             height: self.parent().height() / scale,
         })
 
-        self.pedalboard('positionHardwarePorts')
-
         var zoom = self.data('currentZoom')
         if (!zoom)
             return
@@ -642,6 +640,8 @@ JqueryClass('pedalboard', {
         self.pedalboard('zoom', zoom.scale, zoom.canvasX, zoom.canvasY, zoom.screenX, zoom.screenY, 0)
 
         self.data('windowSize')(self.width(), self.height())
+
+        self.pedalboard('scheduleAdapt')
     },
 
     // Prevents dragging of whole dashboard when dragging of effect or jack starts
@@ -939,12 +939,16 @@ JqueryClass('pedalboard', {
             if (curTime2 <= 1) {
                 // proceed
                 self.data('adaptTime', 0)
+                self.pedalboard('positionHardwarePorts')
                 self.pedalboard('adapt')
+                self.data('wait').stopIfNeeded()
+                console.log("done!")
 
             } else {
                 // decrease timer
                 self.data('adaptTime', curTime-10)
                 setTimeout(callAdaptLater, 200)
+                console.log("pending...")
             }
         }
 
@@ -1004,7 +1008,8 @@ JqueryClass('pedalboard', {
         })
 
         // Redraw all cables that connect to or from hardware ports
-        self.data('connectionManager').iterateInstance(':system:', function (jack) {
+        //self.data('connectionManager').iterateInstance(':system:', function (jack) {
+        self.data('connectionManager').iterate(function (jack) {
             self.pedalboard('drawJack', jack)
         })
     },
@@ -1025,6 +1030,8 @@ JqueryClass('pedalboard', {
 
         self.pedalboard('zoomAt', scale, w / 2, h / 2, 0)
         self.data('windowSize')(self.width(), self.height())
+
+        self.pedalboard('positionHardwarePorts')
     },
 
     /*********

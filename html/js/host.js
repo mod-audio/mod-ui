@@ -204,9 +204,7 @@ $('document').ready(function() {
                     if (desktop.hardwareManager)
                         desktop.hardwareManager.registerAllAddressings()
 
-                    desktop.pedalboard.pedalboard('positionHardwarePorts')
                     desktop.pedalboard.pedalboard('scheduleAdapt')
-                    desktop.pedalboard.data('wait').stopIfNeeded()
                 },
                 cache: false,
                 dataType: 'json'
