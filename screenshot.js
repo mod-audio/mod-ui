@@ -37,6 +37,37 @@ var page = require('webpage').create(),
     system = require('system'),
     address, output, size;
 
+var resources = [];
+page.onResourceRequested = function(request) {
+    resources[request.id] = request.stage;
+};
+page.onResourceReceived = function(response) {
+    resources[response.id] = response.stage;
+};
+
+function waitTwice(step, callback) {
+    waitFor(function() {
+        // check if all resources are loaded
+        for (var i in resources) {
+            if (resources[i] != 'end') {
+                return false;
+            }
+        }
+        // also check if 'loading pedalboard' message is not visible
+        return page.evaluate(function() {
+            return !$(".screen-disconnected").is(":visible");
+        });
+    }, function() {
+        if (step == 1) {
+            setTimeout(function() {
+                waitTwice(2, callback)
+            }, 100)
+        } else {
+            callback()
+        }
+    }, 5000)
+}
+
 if (system.args.length != 5) {
     console.log('Usage: screenshot.js URL filename [paperwidth*paperheight|paperformat] [zoom]');
     console.log('  paper (pdf output) examples: "5in*7.5in", "10cm*20cm", "A4", "Letter"');
@@ -48,34 +79,15 @@ if (system.args.length != 5) {
     height = system.args[4];
     page.viewportSize = { width: width, height: height };
 
-    var resources = [];
-    page.onResourceRequested = function(request) {
-        resources[request.id] = request.stage;
-    };
-    page.onResourceReceived = function(response) {
-        resources[response.id] = response.stage;
-    };
-
     page.open(address, function (status) {
         if (status !== 'success') {
             console.log('Unable to load the address!');
             phantom.exit();
         } else {
-            waitFor(function() {
-                // check if all resources are loaded
-                for (var i in resources) {
-                    if (resources[i] != 'end') {
-                        return false;
-                    }
-                }
-                // also check if 'loading pedalboard' message is not visible
-                return page.evaluate(function() {
-                    return !$(".screen-disconnected").is(":visible");
-                });
-            }, function() {
+            waitTwice(1, function() {
                 page.render(output);
                 phantom.exit();
-            }, 10000);
+            })
         }
     })
 }
