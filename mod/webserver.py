@@ -805,19 +805,19 @@ class BankLoad(web.RequestHandler):
         # Banks have only bundle and title of each pedalboard, which is the necessary information for the HMI.
         # But the GUI we need to know information about the used pedalboards
 
-        # NOTE: this is not needed for now
-        if False:
-            pedalboards_dict = dict((pb['bundle'], pb) for pb in get_all_pedalboards())
-            pedalboards_keys = pedalboards_dict.keys()
+        pedalboards_dict = dict((pb['bundle'], pb) for pb in get_all_pedalboards())
+        pedalboards_keys = pedalboards_dict.keys()
 
-            for bank in banks:
-                pedalboards = []
+        for bank in banks:
+            pedalboards = []
 
-                for oldpedalboard in bank['pedalboards']:
-                    if oldpedalboard['bundle'] in pedalboards_keys:
-                        pedalboards.append(pedalboards_dict[oldpedalboard['bundle']])
+            for oldpedalboard in bank['pedalboards']:
+                if oldpedalboard['bundle'] in pedalboards_keys:
+                    pb = pedalboards_dict[oldpedalboard['bundle']]
+                    if not pb['broken']:
+                        pedalboards.append(pb)
 
-                bank['pedalboards'] = pedalboards
+            bank['pedalboards'] = pedalboards
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(banks))
