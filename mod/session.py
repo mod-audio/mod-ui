@@ -29,6 +29,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
 from mod import get_hardware, symbolify
+from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.clipmeter import Clipmeter
@@ -116,9 +117,20 @@ class Session(object):
     def init_socket(self):
         self.host.open_connection_if_needed(None, self.host_callback)
 
+    @gen.coroutine
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
         self.hmi_initialized = True
+
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
+
+        if pedalboard:
+            self.load_pedalboard(pedalboard, bank_id)
+        else:
+            bank_id = -1
+            pedalboard = ""
+
+        yield gen.Task(self.hmi.initial_state, bank_id, pedalboard, "")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
@@ -306,8 +318,8 @@ class Session(object):
         self.host.msg_callback = self.msg_callback
         self.host.initial_setup(finish)
 
-    def load_pedalboard(self, bundlepath):
-        title = self.host.load(bundlepath)
+    def load_pedalboard(self, bundlepath, bank_id=-1):
+        title = self.host.load(bundlepath, bank_id)
         self.bundlepath = bundlepath
         self.title      = title
         self.pedalboard_changed_callback(True, bundlepath, title)
@@ -395,7 +407,16 @@ class Session(object):
         self.hmi.initial_state(-1, "", "", state_callback)
 
     def end_session(self, callback):
-        self.hmi.ui_dis(callback)
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
+
+        def state_callback(ok):
+            self.hmi.ui_dis(callback)
+
+        if not pedalboard:
+            bank_id = -1
+            pedalboard = ""
+
+        self.hmi.initial_state(bank_id, pedalboard, "", state_callback)
 
     #def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
         """

@@ -33,7 +33,7 @@ from shutil import rmtree
 import os, json, socket, logging
 
 from mod import get_hardware, symbolify
-from mod.bank import list_banks
+from mod.bank import list_banks, save_last_bank_and_pedalboard
 from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
@@ -434,6 +434,7 @@ class Host(object):
             callback(ok)
             self.msg_callback("remove :all")
 
+        save_last_bank_and_pedalboard(-1, "")
         self.send("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
@@ -667,7 +668,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
 
-    def load(self, bundlepath):
+    def load(self, bundlepath, bank_id):
         self.msg_callback("wait_start")
 
         pb = get_pedalboard_info(bundlepath)
@@ -731,6 +732,8 @@ class Host(object):
         self._load_addressings(bundlepath)
 
         self.msg_callback("wait_end")
+
+        save_last_bank_and_pedalboard(bank_id, bundlepath)
 
         return pb['title']
 
@@ -1088,7 +1091,7 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (public stuff)
 
-    def address(self, instance, port, actuator_uri, label, maximum, minimum, value, steps, callback):
+    def address(self, instance, port, actuator_uri, label, maximum, minimum, value, steps, callback, skipLoad=False):
         instance_id = self.mapper.get_id(instance)
 
         data = self.plugins.get(instance_id, None)
@@ -1166,7 +1169,8 @@ _:b%i
                 #self._addressing_load(old_actuator_uri, nextStepAddressing)
 
             #else:
-            self._addressing_load(actuator_uri, callback, value)
+            if not skipLoad:
+                self._addressing_load(actuator_uri, callback, value)
 
         else:
             # we're unaddressing
@@ -1291,6 +1295,7 @@ _:b%i
 
         return actuator_uri
 
+    @gen.coroutine
     def _load_addressings(self, bundlepath):
         datafile = os.path.join(bundlepath, "addressings.json")
         if not os.path.exists(datafile):
@@ -1300,10 +1305,7 @@ _:b%i
             data = fh.read()
         data = json.loads(data)
 
-        stopNow = False
-        def callback(ok):
-            if not ok:
-                stopNow = True
+        used_actuators = []
 
         for actuator_uri in data:
             for addr in data[actuator_uri]:
@@ -1312,9 +1314,15 @@ _:b%i
                     curvalue = 1.0 if self.plugins[instance_id]['bypassed'] else 0.0
                 else:
                     curvalue = self.plugins[instance_id]['ports'][addr['port']]
-                self.address(addr["instance"], addr["port"], actuator_uri, addr["label"], addr["maximum"], addr["minimum"], curvalue, addr["steps"], callback)
-                if stopNow: break
-            if stopNow: break
+
+                self.address(addr["instance"], addr["port"], actuator_uri, addr["label"], addr["maximum"], addr["minimum"], curvalue, addr["steps"], lambda r:None, True)
+
+                if actuator_uri not in used_actuators:
+                    used_actuators.append(actuator_uri)
+
+        for actuator_uri in used_actuators:
+            actuator_hw = self._uri2hw_map[actuator_uri]
+            yield gen.Task(self._address_next, actuator_hw)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
@@ -1344,7 +1352,7 @@ _:b%i
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
         def clear_callback(ok):
-            self.load(bundlepath)
+            self.load(bundlepath, bank_id)
             callback(True)
 
         def reset_callback(ok):

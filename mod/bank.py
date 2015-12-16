@@ -33,7 +33,16 @@ def list_banks():
         print("ERROR in banks.py: failed to load banks file")
         return []
 
-    return banks
+    validbanks = []
+
+    for bank in banks:
+        for pb in bank['pedalboards']:
+            if not os.path.exists(pb['bundle']):
+                break
+        else:
+            validbanks.append(bank)
+
+    return validbanks
 
 # save banks to disk
 def save_banks(banks):
@@ -59,7 +68,7 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
 def get_last_bank_and_pedalboard():
     if not os.path.exists(LAST_STATE_JSON_FILE):
         print("last state file does not exist")
-        return (None, None)
+        return (-1, None)
 
     with open(LAST_STATE_JSON_FILE, 'r') as fh:
         state = fh.read()
@@ -68,7 +77,7 @@ def get_last_bank_and_pedalboard():
         state = json.loads(state)
     except:
         print("ERROR in banks.py: failed to load last state file")
-        return (None, None)
+        return (-1, None)
 
     return (state['bank'], state['pedalboard'])
 
