@@ -2419,16 +2419,31 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
         delete[] info.plugins;
     }
 
-#if 0
-    for (int i=0; info.hardware.audio_ins[i] != nullptr; ++i)
-        free((void*)info.hardware.audio_ins[i]);
-    for (int i=0; info.hardware.audio_outs[i] != nullptr; ++i)
-        free((void*)info.hardware.audio_outs[i]);
-    for (int i=0; info.hardware.midi_ins[i] != nullptr; ++i)
-        free((void*)info.hardware.midi_ins[i]);
-    for (int i=0; info.hardware.midi_outs[i] != nullptr; ++i)
-        free((void*)info.hardware.midi_outs[i]);
-#endif
+    if (info.hardware.midi_ins != nullptr)
+    {
+        for (int i=0; info.hardware.midi_ins[i].valid; ++i)
+        {
+            lilv_free((void*)info.hardware.midi_ins[i].symbol);
+
+            if (info.hardware.midi_ins[i].name != nc)
+                free((void*)info.hardware.midi_ins[i].name);
+        }
+
+        delete[] info.hardware.midi_ins;
+    }
+
+    if (info.hardware.midi_outs != nullptr)
+    {
+        for (int i=0; info.hardware.midi_outs[i].valid; ++i)
+        {
+            lilv_free((void*)info.hardware.midi_outs[i].symbol);
+
+            if (info.hardware.midi_outs[i].name != nc)
+                free((void*)info.hardware.midi_outs[i].name);
+        }
+
+        delete[] info.hardware.midi_outs;
+    }
 
     memset(&info, 0, sizeof(PedalboardInfo));
 }
@@ -3218,6 +3233,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const ingen_head    = lilv_new_uri(w, LILV_NS_INGEN "head");
     LilvNode* const ingen_tail    = lilv_new_uri(w, LILV_NS_INGEN "tail");
     LilvNode* const ingen_value   = lilv_new_uri(w, LILV_NS_INGEN "value");
+    LilvNode* const lv2_name      = lilv_new_uri(w, LILV_NS_LV2   "name");
     LilvNode* const lv2_port      = lilv_new_uri(w, LILV_NS_LV2   "port");
     LilvNode* const lv2_prototype = lilv_new_uri(w, LILV_NS_LV2   "prototype");
 
@@ -3389,6 +3405,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     if (LilvNodes* const hwports = lilv_plugin_get_value(p, lv2_port))
     {
         std::vector<std::string> handled_port_uris;
+        std::vector<PedalboardHardwareMidiPort> midi_ins;
+        std::vector<PedalboardHardwareMidiPort> midi_outs;
 
         LILV_FOREACH(nodes, ithwp, hwports)
         {
@@ -3440,22 +3458,98 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 else if (portType == 't')
                 {
                     if (portDir == 'i')
-                        info.hardware.midi_ins += 1;
+                    {
+                        if (ends_with(port_uri, "/serial_midi_in"))
+                        {
+                            info.hardware.serial_midi_in = true;
+                        }
+                        else
+                        {
+                            char* portsym = lilv_file_uri_parse(port_uri.c_str(), nullptr);
+
+                            if (strstr(portsym, bundlepath) != nullptr)
+                                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
+
+                            LilvNode* const hwportname = lilv_world_get(w, hwport, lv2_name, nullptr);
+
+                            PedalboardHardwareMidiPort mport = {
+                                true,
+                                portsym,
+                                nc,
+                            };
+
+                            if (hwportname != nullptr && lilv_node_is_string(hwportname))
+                                mport.name = strdup(lilv_node_as_string(hwportname));
+
+                            lilv_node_free(hwportname);
+
+                            midi_ins.push_back(mport);
+                        }
+                    }
                     else
-                        info.hardware.midi_outs += 1;
+                    {
+                        if (ends_with(port_uri, "/serial_midi_out"))
+                        {
+                            info.hardware.serial_midi_out = true;
+                        }
+                        else
+                        {
+                            char* portsym = lilv_file_uri_parse(port_uri.c_str(), nullptr);
+
+                            if (strstr(portsym, bundlepath) != nullptr)
+                                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
+
+                            LilvNode* const hwportname = lilv_world_get(w, hwport, lv2_name, nullptr);
+
+                            PedalboardHardwareMidiPort mport = {
+                                true,
+                                portsym,
+                                nc,
+                            };
+
+                            if (hwportname != nullptr && lilv_node_is_string(hwportname))
+                                mport.name = strdup(lilv_node_as_string(hwportname));
+
+                            lilv_node_free(hwportname);
+
+                            midi_outs.push_back(mport);
+                        }
+                    }
                 }
                 else if (portType == 'c')
                 {
-                    /*
                     if (portDir == 'i')
                         info.hardware.cv_ins += 1;
                     else
                         info.hardware.cv_outs += 1;
-                    */
                 }
 
                 lilv_nodes_free(port_types);
             }
+        }
+
+        if (size_t count = midi_ins.size())
+        {
+            PedalboardHardwareMidiPort* mins = new PedalboardHardwareMidiPort[count+1];
+            memset(mins, 0, sizeof(PedalboardHardwareMidiPort)*(count+1));
+
+            count = 0;
+            for (const PedalboardHardwareMidiPort& min : midi_ins)
+                mins[count++] = min;
+
+            info.hardware.midi_ins = mins;
+        }
+
+        if (size_t count = midi_outs.size())
+        {
+            PedalboardHardwareMidiPort* mouts = new PedalboardHardwareMidiPort[count+1];
+            memset(mouts, 0, sizeof(PedalboardHardwareMidiPort)*(count+1));
+
+            count = 0;
+            for (const PedalboardHardwareMidiPort& mout : midi_outs)
+                mouts[count++] = mout;
+
+            info.hardware.midi_outs = mouts;
         }
 
         lilv_nodes_free(hwports);
@@ -3471,6 +3565,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(ingen_head);
     lilv_node_free(ingen_tail);
     lilv_node_free(ingen_value);
+    lilv_node_free(lv2_name);
     lilv_node_free(lv2_port);
     lilv_node_free(lv2_prototype);
     lilv_node_free(rdftypenode);

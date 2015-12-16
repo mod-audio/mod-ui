@@ -442,28 +442,41 @@ JqueryClass('pedalboard', {
         createHardwarePorts = function () {
             if (data.hardware) {
                 for (var i=1, count=data.hardware.audio_ins; i<=count; i++) {
-                    var hw = $('<div class="hardware-output" mod-port-index=' + i + ' title="Hardware Capture ' + i + '">')
+                    var hw = $('<div class="hardware-output" mod-port-index="' + i + '" title="Hardware Capture ' + i + '">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/capture_' + i, 'audio')
                 }
                 for (var i=1, count=data.hardware.audio_outs; i<=count; i++) {
-                    var hw = $('<div class="hardware-input" mod-port-index=' + i + ' title="Hardware Playback ' + i + '">')
+                    var hw = $('<div class="hardware-input" mod-port-index="' + i + '" title="Hardware Playback ' + i + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/playback_' + i, 'audio')
                 }
                 for (var i=1, count=data.hardware.cv_ins; i<=count; i++) {
-                    var hw = $('<div class="hardware-output" mod-port-index=' + i + ' title="Hardware CV Capture ' + i + '">')
+                    var hw = $('<div class="hardware-output" mod-port-index="' + i + '" title="Hardware CV Capture ' + i + '">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/cv_capture_' + i + '_in', 'cv')
                 }
                 for (var i=1, count=data.hardware.cv_outs; i<=count; i++) {
-                    var hw = $('<div class="hardware-input" mod-port-index=' + i + ' title="Hardware CV Playback ' + i + '">')
+                    var hw = $('<div class="hardware-input" mod-port-index="' + i + '" title="Hardware CV Playback ' + i + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/cv_playback_' + i + '_out', 'cv')
                 }
-                for (var i=1, count=data.hardware.midi_ins; i<=count; i++) {
-                    var hw = $('<div class="hardware-output" mod-port-index=' + i + ' title="Hardware MIDI Capture ' + i + '">')
-                    self.pedalboard('addHardwareOutput', hw, '/graph/midi_playback_' + i, 'midi')
+                if (data.hardware.serial_midi_in) {
+                    var hw = $('<div class="hardware-output" mod-port-index="1" title="Hardware Serial MIDI In">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/serial_midi_in', 'midi')
                 }
-                for (var i=1, count=data.hardware.midi_outs; i<=count; i++) {
-                    var hw = $('<div class="hardware-input" mod-port-index=' + i + ' title="Hardware MIDI Playback ' + i + '">')
-                    self.pedalboard('addHardwareInput', hw, '/graph/midi_capture_' + i, 'midi')
+                if (data.hardware.serial_midi_out) {
+                    var hw = $('<div class="hardware-input" mod-port-index="1" title="Hardware Serial MIDI Out">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/serial_midi_out', 'midi')
+                }
+                var portdata, pindex
+                for (var i in data.hardware.midi_ins) {
+                    portdata = data.hardware.midi_ins[i]
+                    pindex   = parseInt(portdata.symbol.replace("midi_capture_",""))+1
+                    var hw = $('<div class="hardware-output" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/' + portdata.symbol, 'midi')
+                }
+                for (var i in data.hardware.midi_outs) {
+                    portdata = data.hardware.midi_outs[i]
+                    pindex   = parseInt(portdata.symbol.replace("midi_playback_",""))+1
+                    var hw = $('<div class="hardware-input" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/' + portdata.symbol, 'midi')
                 }
             }
             self.pedalboard('positionHardwarePorts')

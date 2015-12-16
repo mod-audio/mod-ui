@@ -293,16 +293,28 @@ class PedalboardConnection(Structure):
         ("target", c_char_p),
     ]
 
+class PedalboardHardwareMidiPort(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("symbol", c_char_p),
+        ("name", c_char_p),
+    ]
+
 class PedalboardHardware(Structure):
     _fields_ = [
         ("audio_ins", c_uint),
         ("audio_outs", c_uint),
-        ("midi_ins", c_uint),
-        ("midi_outs", c_uint),
+        ("cv_ins", c_uint),
+        ("cv_outs", c_uint),
+        ("midi_ins", POINTER(PedalboardHardwareMidiPort)),
+        ("midi_outs", POINTER(PedalboardHardwareMidiPort)),
+        ("serial_midi_in", c_bool),
+        ("serial_midi_out", c_bool),
     ]
 
 class PedalboardInfo(Structure):
     _fields_ = [
+        ("broken", c_bool),
         ("title", c_char_p),
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
@@ -340,6 +352,7 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PedalboardPlugin),
                    POINTER(PedalboardConnection),
                    POINTER(PedalboardPluginPort),
+                   POINTER(PedalboardHardwareMidiPort),
                    POINTER(StatePortValue))
 
 c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),

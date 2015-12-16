@@ -112,6 +112,8 @@ class Host(object):
         self.audioportsIn = []
         self.audioportsOut = []
         self.midiports = []
+        self.hasSerialMidiIn = False
+        self.hasSerialMidiOut = False
         self.pedalboard_name = ""
         self.pedalboard_size = [0,0]
 
@@ -328,8 +330,11 @@ class Host(object):
                 else:
                     midiports.append(port)
 
+            self.hasSerialMidiIn  = bool(jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in"))
+            self.hasSerialMidiOut = bool(jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out"))
+
             # MIDI In
-            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in"):
+            if self.hasSerialMidiIn:
                 websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
@@ -345,7 +350,7 @@ class Host(object):
                 websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
 
             # MIDI Out
-            if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out"):
+            if self.hasSerialMidiOut:
                 websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
             ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
@@ -877,7 +882,7 @@ _:b%i
 <control_in>
     atom:bufferType atom:Sequence ;
     lv2:index 0 ;
-    lv2:name "Control" ;
+    lv2:name "Control In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_in" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -887,7 +892,7 @@ _:b%i
 <control_out>
     atom:bufferType atom:Sequence ;
     lv2:index 1 ;
-    lv2:name "Control" ;
+    lv2:name "Control Out" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_out" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -907,7 +912,7 @@ _:b%i
     lv2:symbol "%s" ;
     a lv2:AudioPort ,
         lv2:InputPort .
-""" % (port, index, port, port)
+""" % (port, index, port.title().replace("_"," "), port)
 
         # Ports (Audio Out)
         for port in self.audioportsOut:
@@ -920,10 +925,11 @@ _:b%i
     lv2:symbol "%s" ;
     a lv2:AudioPort ,
         lv2:OutputPort .
-""" % (port, index, port, port)
+""" % (port, index, port.title().replace("_"," "), port)
 
         # Ports (MIDI In)
         for port in midiportsIn:
+            sname  = port.replace("system:","",1)
             index += 1
             ports += """
 <%s>
@@ -933,12 +939,14 @@ _:b%i
     lv2:name "%s" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "%s" ;
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
     a atom:AtomPort ,
-        lv2:OutputPort .
-""" % (port, index, port, port)
+        lv2:InputPort .
+""" % (sname, index, self.get_port_name_alias(port), sname)
 
         # Ports (MIDI Out)
         for port in midiportsOut:
+            sname  = port.replace("system:","",1)
             index += 1
             ports += """
 <%s>
@@ -948,9 +956,42 @@ _:b%i
     lv2:name "%s" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "%s" ;
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
     a atom:AtomPort ,
         lv2:OutputPort .
-""" % (port, index, port, port)
+""" % (sname, index, self.get_port_name_alias(port), sname)
+
+        # Serial MIDI In
+        if self.hasSerialMidiIn:
+            index += 1
+            ports += """
+<serial_midi_in>
+    atom:bufferType atom:Sequence ;
+    atom:supports midi:MidiEvent ;
+    lv2:index %i ;
+    lv2:name "Serial MIDI In" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "serial_midi_in" ;
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+    a atom:AtomPort ,
+        lv2:InputPort .
+""" % index
+
+        # Serial MIDI Out
+        if self.hasSerialMidiOut:
+            index += 1
+            ports += """
+<serial_midi_out>
+    atom:bufferType atom:Sequence ;
+    atom:supports midi:MidiEvent ;
+    lv2:index %i ;
+    lv2:name "Serial MIDI In" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "serial_midi_out" ;
+    <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+    a atom:AtomPort ,
+        lv2:OutputPort .
+""" % index
 
         # Write the main pedalboard file
         pbdata = """\
@@ -981,9 +1022,14 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for p in self.plugins.values())))
 
         # Ports
-        pbdata += "    lv2:port <%s> ;\n" % ("> ,\n             <".join(["control_in","control_out"]+
-                                                                         self.audioportsIn+
-                                                                         self.audioportsOut))
+        portsyms = ["control_in","control_out"]
+        if self.hasSerialMidiIn:
+            portsyms.append("serial_midi_in")
+        if self.hasSerialMidiOut:
+            portsyms.append("serial_midi_out")
+        portsyms += [p.replace("system:","",1) for p in midiportsIn ]
+        portsyms += [p.replace("system:","",1) for p in midiportsOut]
+        pbdata += "    lv2:port <%s> ;\n" % ("> ,\n             <".join(portsyms+self.audioportsIn+self.audioportsOut))
 
         # End
         pbdata += """\
@@ -1383,19 +1429,20 @@ _:b%i
         devList.sort()
         return (devsInUse, devList, names)
 
+    def get_port_name_alias(self, portname):
+        if self.jack_client is not None:
+            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, portname))
+            if ret == 1 and alias1:
+                return alias1.split("-",5)[-1].replace("-"," ")
+
+        return portname.replace("system:","",1).title()
+
     # Set the selected MIDI devices
     # Will remove or add new JACK ports (in mod-ui) as needed
     def set_midi_devices(self, newDevs):
-        if self.jack_client is None:
-            return
-
         def add_port(name, isOutput):
             index = int(name[-1])
-            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
-            if ret == 1 and alias1:
-                title = alias1.split("-",5)[-1].replace("-","_")
-            else:
-                title = name.replace("system:","",1).title().replace(" ","_")
+            title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
 
             self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.replace("system:","",1), int(isOutput), title, index))
 

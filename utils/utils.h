@@ -169,13 +169,24 @@ typedef struct {
 } PedalboardConnection;
 
 typedef struct {
+    bool valid;
+    const char* symbol;
+    const char* name;
+} PedalboardHardwareMidiPort;
+
+typedef struct {
     unsigned int audio_ins;
     unsigned int audio_outs;
-    unsigned int midi_ins;
-    unsigned int midi_outs;
+    unsigned int cv_ins;
+    unsigned int cv_outs;
+    const PedalboardHardwareMidiPort* midi_ins;
+    const PedalboardHardwareMidiPort* midi_outs;
+    bool serial_midi_in;
+    bool serial_midi_out;
 } PedalboardHardware;
 
 typedef struct {
+    bool broken;
     const char* title;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
