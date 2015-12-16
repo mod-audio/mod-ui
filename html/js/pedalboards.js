@@ -557,7 +557,7 @@ JqueryClass('bankBox', {
         editBox.focus()
     },
 
-    removeBank: function (bank) {        
+    removeBank: function (bank) {
         var msg = "Deleting bank \""+bank.find('.js-bank-title').html()+"\". Confirm?"
         if (confirm(msg) != true) {
             return;
