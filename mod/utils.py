@@ -314,7 +314,6 @@ class PedalboardHardware(Structure):
 
 class PedalboardInfo(Structure):
     _fields_ = [
-        ("broken", c_bool),
         ("title", c_char_p),
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
@@ -324,6 +323,7 @@ class PedalboardInfo(Structure):
 class PedalboardInfo_Mini(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("broken", c_bool),
         ("uri", c_char_p),
         ("bundle", c_char_p),
         ("title", c_char_p),

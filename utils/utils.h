@@ -186,7 +186,6 @@ typedef struct {
 } PedalboardHardware;
 
 typedef struct {
-    bool broken;
     const char* title;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
@@ -195,6 +194,7 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    bool broken;
     const char* uri;
     const char* bundle;
     const char* title;

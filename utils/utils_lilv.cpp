@@ -2114,7 +2114,11 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
 // --------------------------------------------------------------------------------------------------------
 
-const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p, const LilvNode* const rdftypenode)
+const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
+                                                     LilvWorld* const w,
+                                                     const LilvNode* const rdftypenode,
+                                                     const LilvNode* const ingenblocknode,
+                                                     const LilvNode* const lv2protonode)
 {
     static PedalboardInfo_Mini info;
     memset(&info, 0, sizeof(PedalboardInfo_Mini));
@@ -2178,6 +2182,29 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p, 
     else
     {
         info.title = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // check if all plugins in the pedalboard exist in our world
+
+    if (LilvNodes* const blocks = lilv_plugin_get_value(p, ingenblocknode))
+    {
+        LILV_FOREACH(nodes, itblocks, blocks)
+        {
+            const LilvNode* const block = lilv_nodes_get(blocks, itblocks);
+
+            if (LilvNode* const proto = lilv_world_get(w, block, lv2protonode, nullptr))
+            {
+                const std::string uri = lilv_node_as_uri(proto);
+
+                if (! info.broken && PLUGNFO.count(uri) == 0)
+                    info.broken = true;
+
+                lilv_node_free(proto);
+            }
+        }
+
+        lilv_nodes_free(blocks);
     }
 
     info.valid = true;
@@ -3097,6 +3124,8 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         unsetenv("LV2_PATH");
 
     LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
+    LilvNode* const ingenblocknode = lilv_new_uri(w, LILV_NS_INGEN "block");
+    LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
     const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
 
     // Make a list of all installed bundles
@@ -3105,7 +3134,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
         // get new info
-        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, rdftypenode);
+        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, w, rdftypenode, ingenblocknode, lv2protonode);
 
         if (! info.valid)
             continue;
@@ -3117,6 +3146,8 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     }
 
     lilv_free(rdftypenode);
+    lilv_free(ingenblocknode);
+    lilv_free(lv2protonode);
     lilv_world_free(w);
 
     if (size_t pbcount = allpedals.size())
