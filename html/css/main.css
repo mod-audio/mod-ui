@@ -7150,7 +7150,7 @@ hr.dotted {
   transition: all 0.25s;
 }
 #plugins-library.folded {
-  height: 26px;
+  height: 38px;
 }
 #plugins-library.folded #plugins-library-settings-window {
   bottom: 27px;
