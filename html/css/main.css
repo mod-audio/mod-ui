@@ -6550,6 +6550,15 @@ button.close {
   margin: 22px 0 18px 0;
   text-align: center;
 }
+#bank-library #bank-edit {
+  position: absolute;
+  display: block;
+  background-color: #111;
+  height: 100%;
+  width: 80%;
+  bottom: 0;
+  left: 19.95%;
+}
 #bank-library #bank-pedalboards-search {
   bottom: 45px;
   left: 65.01%;
