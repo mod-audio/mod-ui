@@ -70,11 +70,11 @@ class Host(object):
         return -1
 
     def init_connection(self):
-        self.open_connection_if_needed(lambda:None)
+        self.open_connection_if_needed(None, lambda ws:None)
 
-    def open_connection_if_needed(self, callback):
+    def open_connection_if_needed(self, websocket, callback):
         if self.sock is not None:
-            callback()
+            callback(websocket)
             return
 
         if self.carla.engine_init("JACK", "MOD"):

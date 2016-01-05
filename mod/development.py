@@ -41,14 +41,14 @@ class FakeHost(FakeCommunicator, Host):
         self.sock = None
 
     def init_connection(self):
-        self.open_connection_if_needed(lambda:None)
+        self.open_connection_if_needed(None, lambda ws:None)
 
-    def open_connection_if_needed(self, callback):
+    def open_connection_if_needed(self, websocket, callback):
         if self.sock is None:
             self.sock = True
             self._timer = ioloop.PeriodicCallback(self._timer_callback, 500)
 
-        callback()
+        callback(websocket)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
         callback(True)
