@@ -1,0 +1,134 @@
+#pedalboards-library {
+  background: url(@wallpaper) repeat fixed;
+  bottom: 46px;
+  left: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  h1 {
+    color: #fff;
+    display: inline-block;
+    font-size: 24px;
+    margin: 0 0 18px 0;
+    padding: 0;
+  }
+  header {
+    background-image: url(../img/header-pattern.png);
+    background-position: center top;
+    background-repeat: no-repeat;
+    display: block;
+    left: 0;
+    padding: 10px 10px 18px 10px;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 2;
+    h1 {
+      font-weight: 2em;
+      text-transform: uppercase;
+      font-weight: bold;
+      color: #fff;
+      display: inline-block;
+      font-size: 24px;
+      margin: 0 0 18px 0;
+      padding: 0;
+    }
+    border-bottom: 1px solid #111;
+    .help {
+      background-image: url(../img/icn-help-16x16.png);
+      background-position: center center;
+      background-repeat: no-repeat;
+      display: inline-block;
+      height: 21px;
+      width: 21px;
+    }
+    .close {
+      opacity: 1;
+      position: absolute;
+      right: 10px;
+      top: 16px;
+    }
+  }
+  .filter {
+    border-color: #111;
+    border-style: dotted;
+    border-width: 0 1px 0 0;
+    bottom: 46px;
+    left: 0;
+    padding-top: 18px;
+    position: fixed;
+    right: 0;
+    top: 68px;
+    width: 240px;
+    .control-group {
+      float: left;
+      margin-right: 9px;
+    }
+    .control-group label {
+      color: #fff;
+      display: inline-block;
+      font-size: 12px;
+      font-weight: bold;
+      width: 165px;
+    }
+    .control-group select {
+      width: 50px;
+    }
+  }
+  .pedalboards {
+    left: 252px;
+    position: absolute;
+    right: 10px;
+    .pedalboard {
+      color: #fff;
+      float: left;
+      margin: 0 0 20px 16px;
+      width: 31%;
+    }
+    .pedalboard .img {
+      background: #2b2b2b;
+      border-radius: 4px;
+      display: block;
+      height: 154px;
+      margin-bottom: 9px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .pedalboard .img img {
+      cursor: pointer;
+      height: auto;
+      width: 100%;
+    }
+    .pedalboard .title {
+      display: block;
+      height: 18px;
+      font-weight: bold;
+      overflow: hidden;
+      position: relative;
+    }
+    .pedalboard .description {
+      display: block;
+      font-size: 12px;
+      height: 36px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+    .pedalboard .actions {
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .pedalboard .actions > span {
+      cursor: pointer;
+    }
+    .pedalboard .actions > span:hover {
+      text-decoration: underline;
+    }
+    .pedalboard .actions span.duplicate {
+      margin: 0 6px;
+    }
+  }
+}
