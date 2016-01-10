@@ -3,9 +3,15 @@
         <h1 class="alignleft">{{effect.name}}</h1>
         <button class="js-close alignright btn btn-danger">Close</button>
     </header>
+    {{#newPresetStyle}}
+    <!-- NEW STYLE -->
+    <div class="preset-manager"></div>
+    <!-- /NEW STYLE -->
+    {{/newPresetStyle}}
+    {{^newPresetStyle}}
     <!-- OLD STYLE -->
     <div class="mod-presets clearfix">
-        <select  mod-role="presets">
+        <select mod-role="presets">
             <option value="">---</option>
             {{#effect.presets}}
             <option mod-role="preset-label" value="{{uri}}">{{label}}</option>
@@ -13,9 +19,7 @@
         </select>
     </div>
     <!-- /OLD STYLE -->
-    <!-- NEW STYLE -->
-    <!--<div class="preset-manager"></div>-->
-    <!-- /NEW STYLE -->
+    {{/newPresetStyle}}
     <div class="mod-controls clearfix">
         <div class="mod-control-group clearfix">
             <div class="mod-switch bypass">

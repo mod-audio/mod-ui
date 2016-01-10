@@ -218,6 +218,13 @@ body > .mod-settings {
     margin:0;
     padding: 0 18px;
 }
+.mod-presets select {
+    color: #000;
+    background-color: #FFFFFE; /* forces mod-remote to use custom combo-box bg */
+}
+.preset-manager {
+    color: #000;
+}
 
 /* = KNOB
 ================================================ */
