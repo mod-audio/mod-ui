@@ -181,7 +181,7 @@ JqueryClass('pedalboardBox', {
         var metadata = {
             title: pedalboard.title,
             // FIXME: proper gif image
-            image: "/img/loading-pedalboard.gif"
+            image: "/img/px.gif"
         }
 
         var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))

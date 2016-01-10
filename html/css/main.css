@@ -6804,8 +6804,10 @@ button.close {
   overflow: hidden;
 }
 #pedalboards-library .pedalboards .pedalboard .img img {
+  background: url(../img/loading-pedalboard.gif) center center no-repeat;
   cursor: pointer;
   height: auto;
+  height: 100%;
   width: 100%;
 }
 #pedalboards-library .pedalboards .pedalboard .title {
