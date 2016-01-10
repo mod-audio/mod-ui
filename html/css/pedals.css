@@ -25,28 +25,36 @@
 .mod-pedal .mod-actions {
     position:absolute;
     right:0;
-    top:0;
+    top:-50px;
 }
 .mod-pedal .mod-actions .mod-settings {
-    background:url(../img/icn-settings-16x16.png) no-repeat bottom center;
-    cursor:pointer;
-    height:16px;
-    position:absolute;
-    right:22px;
-    top:-20px;
-    width:16px;
+    font-family: fontello !important;
+    cursor: pointer;
+    height: 32px;
+    position: absolute;
+    right: 50px;
+    width: 32px;
+    color: #666;
 }
-.mod-pedal .mod-actions .mod-settings:hover { background-position:top center; }
+.mod-settings:after {
+    content: '\e800';
+    font-size: 2.4em;
+}
+.mod-pedal .mod-actions .mod-settings:hover { color: #eee;}
 .mod-pedal .mod-actions .mod-remove {
-    background:url(../img/icn-remove-16x16.png) no-repeat bottom center;
-    cursor:pointer;
-    height:16px;
-    position:absolute;
-    right:0;
-    top:-20px;
-    width:16px;
+    font-family: fontello !important;
+    cursor: pointer;
+    height: 32px;
+    position: absolute;
+    right: 0px;
+    width: 32px;
+    color: #666;
 }
-.mod-pedal .mod-actions .mod-remove:hover { background-position:top center; }
+.mod-remove:after {
+    content: '\e801';
+    font-size: 2.4em;
+}
+.mod-pedal .mod-actions .mod-remove:hover { color: #eee; }
 
 /* = DRAG HANDLE
 ================================================ */
