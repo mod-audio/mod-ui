@@ -133,6 +133,7 @@ function GUI(effect, options) {
         dragStart: new Function(),
         drag: new Function(),
         dragStop: new Function(),
+        presetLoad: new Function(),
         midiLearn: new Function(),
         bypassed: true,
         defaultIconTemplate: 'Template missing',
@@ -367,6 +368,12 @@ function GUI(effect, options) {
 
             if (instance)
             {
+                self.settings.find('[mod-role=presets]').change(function () {
+                    var value = $(this).val()
+                    options.presetLoad(value)
+                })
+
+                /*
                 var prmel = self.settings.find('.preset-manager')
                 self.presetManager = prmel.presetManager({})
 
@@ -420,9 +427,7 @@ function GUI(effect, options) {
                     console.log("bindlist", instance, options)
                 })
 
-                /*
-                 * bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
-                 */
+                // bind: MOD_BIND_NONE, MOD_BIND_MIDI, MOD_BIND_KNOB, MOD_BIND_FOOTSWITCH or false
                 var p, _presets = []
                 for (var i in effect.presets) {
                     p = effect.presets[i]
@@ -434,12 +439,14 @@ function GUI(effect, options) {
                     })
                 }
                 self.presetManager.presetManager("setPresets", instance, _presets)
+                */
             }
             else
             {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
                 self.settings.find(".preset-manager").hide()
+                self.settings.find('[mod-role=presets]').hide()
             }
 
             self.triggerJS({ 'type': 'start' })

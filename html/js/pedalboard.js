@@ -57,6 +57,11 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
+            // Loads a preset
+            pluginPresetLoad: function (instance, label, callback) {
+                callback(true)
+            },
+
             // Changes the parameter of a plugin's control port
             pluginParameterMidiLearn: function (port, callback) {
                 callback(true)
@@ -99,7 +104,7 @@ JqueryClass('pedalboard', {
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
-            'pluginLoad', 'pluginRemove', 'pluginParameterChange',
+            'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange',
             'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData', 'pluginParameterMidiLearn'
         ])
 
@@ -1151,6 +1156,12 @@ JqueryClass('pedalboard', {
                 setTimeout(function () {
                     self.pedalboard('focusPlugin', obj.icon)
                 }, 0)
+            },
+            presetLoad: function (uri) {
+                self.data('pluginPresetLoad')(instance, uri,
+                    function (ok) {
+                        // TODO Handle error
+                    })
             },
             midiLearn: function (port) {
                 self.data('pluginParameterMidiLearn')(port,

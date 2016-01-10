@@ -742,11 +742,39 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
+        pluginPresetLoad: function (instance, uri, callback) {
+            $.ajax({
+                url: '/effect/preset/load/' + instance,
+                data: {
+                    uri: uri
+                },
+                success: function (resp) {
+                    /*
+                    // TODO trigger??
+                    if (!resp || self.data('trigger')) {
+                        self.data('value', oldValue)
+                        self.widget('sync')
+                    }
+                    */
+                    callback(resp)
+                },
+                error: function () {
+                    /*
+                    self.data('value', oldValue)
+                    self.widget('sync')
+                    alert('erro no request (6)')
+                    */
+                },
+                cache: false,
+                'dataType': 'json'
+            })
+        },
+
         pluginParameterMidiLearn: function (port, callback) {
             $.ajax({
                 url: '/effect/parameter/midi/learn/' + port,
                 success: function (resp) {
-               // TODO trigger
+                    // TODO trigger??
                     callback(resp)
                 },
                 error: function () {
@@ -764,20 +792,20 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 },
                 success: function (resp) {
                     /*
-               // TODO trigger
-               if (!resp || self.data('trigger')) {
-               self.data('value', oldValue)
-               self.widget('sync')
-               }
-             */
+                    // TODO trigger??
+                    if (!resp || self.data('trigger')) {
+                        self.data('value', oldValue)
+                        self.widget('sync')
+                    }
+                    */
                     callback(resp)
                 },
                 error: function () {
                     /*
-               self.data('value', oldValue)
-               self.widget('sync')
-               alert('erro no request (6)')
-             */
+                    self.data('value', oldValue)
+                    self.widget('sync')
+                    alert('erro no request (6)')
+                    */
                 },
                 cache: false,
                 dataType: 'json'
