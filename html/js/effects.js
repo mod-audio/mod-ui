@@ -327,6 +327,13 @@ JqueryClass('effectBox', {
         var uri  = escape(plugin.uri)
 
         var showInfo = function() {
+
+            for(var i = 0; i< plugin.ports.control.input.length; i++) {  // flooring ranges to two decimal cases
+                plugin.ports.control.input[i].ranges.default = Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100;
+                plugin.ports.control.input[i].ranges.maximum = Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100;
+                plugin.ports.control.input[i].ranges.minimum = Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100;
+            }
+
             var comment = plugin.comment
             var has_description = ""
             if(!comment) {
