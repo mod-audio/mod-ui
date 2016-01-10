@@ -650,6 +650,7 @@ function Desktop(elements) {
         },
     })
 
+    /*
     elements.bluetoothIcon.statusTooltip()
     var blueStatus = false
     new Bluetooth({
@@ -665,11 +666,13 @@ function Desktop(elements) {
             elements.bluetoothIcon.statusTooltip('message', msg, blueStatus)
         }
     })
+    */
 
+    /*
     elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
         windowManager: self.windowManager,
-    })
+    })*/
 
     var prevent = function (ev) {
         ev.preventDefault()
@@ -1234,7 +1237,7 @@ JqueryClass('statusTooltip', {
     showTooltip: function (timeout) {
         var self = $(this)
         var msg = self.data('message')
-        if (!msg || (desktop.isApp && msg == "Local upgrade server is offline"))
+        if (!msg)
             return
         var tooltip = self.data('tooltip')
         tooltip.find('.text').html(self.data('message'))
