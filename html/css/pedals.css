@@ -25,34 +25,30 @@
 .mod-pedal .mod-actions {
     position:absolute;
     right:0;
-    top:-50px;
+    top: -1.5em;
+    font-size: 3em;
 }
 .mod-pedal .mod-actions .mod-settings {
     font-family: fontello !important;
     cursor: pointer;
-    height: 32px;
     position: absolute;
-    right: 50px;
     width: 32px;
+    right: 1.5em;
     color: #666;
 }
 .mod-settings:after {
     content: '\e800';
-    font-size: 2.4em;
 }
 .mod-pedal .mod-actions .mod-settings:hover { color: #eee;}
 .mod-pedal .mod-actions .mod-remove {
     font-family: fontello !important;
     cursor: pointer;
-    height: 32px;
     position: absolute;
     right: 0px;
-    width: 32px;
     color: #666;
 }
 .mod-remove:after {
     content: '\e801';
-    font-size: 2.4em;
 }
 .mod-pedal .mod-actions .mod-remove:hover { color: #eee; }
 
