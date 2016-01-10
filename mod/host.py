@@ -1111,9 +1111,8 @@ _:b%i
 
             else:
                 for port_info in get_plugin_control_input_ports(data["uri"]):
-                    if port_info["symbol"] != port:
-                        continue
-                    break
+                    if port_info["symbol"] == port:
+                        break
                 else:
                     callback(False)
                     return
@@ -1163,13 +1162,16 @@ _:b%i
             self.addressings[actuator_uri]['addrs'].append(addressing)
             self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
 
-            #if old_actuator_uri is not None:
-                #def nextStepAddressing(ok):
-                    #self._addressing_load(actuator_uri, callback)
-                #self._addressing_load(old_actuator_uri, nextStepAddressing)
+            if old_actuator_uri is not None:
+                if skipLoad:
+                    print("FIXME: possible race condition here!")
 
-            #else:
-            if not skipLoad:
+                def nextStepAddressing(ok):
+                    self._addressing_load(actuator_uri, callback)
+
+                self._addressing_load(old_actuator_uri, nextStepAddressing)
+
+            elif not skipLoad:
                 self._addressing_load(actuator_uri, callback, value)
 
         else:
