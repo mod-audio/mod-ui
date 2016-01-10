@@ -346,32 +346,39 @@ function Desktop(elements) {
         })
     }
 
+    // hide bottom-bar social icon
+    $('#mod-social').hide()
+
+    // hide bottom-bar cloud plugins (store)
+    //$('#mod-cloud-plugins').hide()
+
+    // hide bottom-bar bluetooth status icon
+    $('#mod-bluetooth').hide()
+
+    // hide bottom-bar cloud status icon (logged in, etc)
+    $('#mod-cloud').hide()
+
+    // hide bottom-bar upgrade-server status icon
+    $('#mod-settings').hide()
+
+    // hide top-bar shared-pedalboard button, and push zoom buttons up
+    $('#pedalboard-sharing').hide()
+    $('#zoom-controllers').css({
+        'top': '4px',
+        'right': '3px'
+    })
+
     this.setupApp = function (usingDesktop) {
         self.isApp = true
+        $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
-        $('#mod-bluetooth').hide()
-        $('#mod-settings').hide()
         $('#mod-disconnect').hide()
         $('#pedalboard-dashboard').parent().css('top', '0px')
         $('#pedalboard-info .js-add-midi').hide()
         $('#js-add-midi-separator').hide()
-        $('#zoom-controllers').css({
-            'top': '3px',
-            'right': '3px'
-        })
 
-        // TODO
-        $('#mod-cloud-plugins').hide()
-
-        if (usingDesktop)
-        {
+        if (usingDesktop) {
             $('#pedalboard-actions').hide()
-        }
-        else // using Live-ISO
-        {
-            $('#mod-social').hide()
-            $('#mod-cloud').hide()
-            $('#pedalboard-sharing').hide()
         }
 
         self.netStatus.statusTooltip('updatePosition')
