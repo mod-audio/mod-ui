@@ -6844,7 +6844,7 @@ button.close {
   z-index: 103100;
 }
 #nprogress .bar {
-  background: #40c25d;
+  background: #F29446;
   position: fixed;
   z-index: 103100;
   top: 0;
@@ -6870,16 +6870,21 @@ button.close {
   display: block;
   position: fixed;
   z-index: 1031;
-  top: 10px;
-  left: 15px;
+  top: 50%;
+  left: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 12px;
+  box-sizing: border-box;
+  transform: translate(-50% -50%);
 }
 #nprogress .spinner-icon {
-  width: 30px;
-  height: 30px;
+  width: 64px;
+  height: 64px;
   box-sizing: border-box;
-  border: solid 6px transparent;
-  border-top-color: #40c25d;
-  border-left-color: #40c25d;
+  border: solid 3px transparent;
+  border-top-color: rgba(242, 148, 70, 1);
+  border-left-color: rgba(242, 148, 70, .66);
+  border-bottom-color: rgba(242, 148, 70, .33);
   border-radius: 50%;
   -webkit-animation: nprogress-spinner 400ms linear infinite;
   animation: nprogress-spinner 400ms linear infinite;
