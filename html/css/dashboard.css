@@ -10,6 +10,7 @@
 
 #pedalboard-dashboard {
     background:#393939 url(../img/background.jpg) repeat;
+    background-size: auto 128em;
     position: absolute;
     top: 35px;
     left: 0;
