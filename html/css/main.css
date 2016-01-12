@@ -5944,6 +5944,7 @@ button.close {
   color: #fff;
   display: inline-block;
   font-size: 24px;
+  line-height: 35px;
   margin: 0 0 18px 0;
   padding: 0;
 }
@@ -5953,7 +5954,8 @@ button.close {
   background-repeat: no-repeat;
   display: block;
   left: 0;
-  padding: 10px 10px 18px 10px;
+  height: 35px;
+  line-height: 35px;
   position: fixed;
   right: 0;
   top: 0;
@@ -6279,7 +6281,8 @@ button.close {
   background-repeat: no-repeat;
   display: block;
   left: 0;
-  padding: 10px 10px 18px 10px;
+  height: 35px;
+  line-height: 35px;
   position: fixed;
   right: 0;
   top: 0;
@@ -6293,6 +6296,7 @@ button.close {
   color: #fff;
   display: inline-block;
   font-size: 24px;
+  line-height: 35px;
   margin: 0 0 18px 0;
   padding: 0;
 }
@@ -6726,7 +6730,8 @@ button.close {
   background-repeat: no-repeat;
   display: block;
   left: 0;
-  padding: 10px 10px 18px 10px;
+  height: 35px;
+  line-height: 35px;
   position: fixed;
   right: 0;
   top: 0;
@@ -6740,6 +6745,7 @@ button.close {
   color: #fff;
   display: inline-block;
   font-size: 24px;
+  line-height: 35px;
   margin: 0 0 18px 0;
   padding: 0;
 }
@@ -6847,39 +6853,30 @@ button.close {
   background: #F29446;
   position: fixed;
   z-index: 103100;
-  top: 0;
+  top: 35px;
   left: 0;
   width: 100%;
   height: 3px;
 }
 /* Fancy blur effect */
 #nprogress .peg {
-  display: block;
-  position: absolute;
-  right: 0px;
-  width: 100px;
-  height: 100%;
-  box-shadow: 0 0 10px #40c25d, 0 0 5px #40c25d;
-  opacity: 1.0;
-  -webkit-transform: rotate(3deg) translate(0px, -4px);
-  -ms-transform: rotate(3deg) translate(0px, -4px);
-  transform: rotate(3deg) translate(0px, -4px);
+  display: none;
 }
 /* Remove these to get rid of the spinner */
 #nprogress .spinner {
   display: block;
   position: fixed;
   z-index: 1031;
-  top: 50%;
-  left: 50%;
+  top: 38px;
+  right: 0;
   background: rgba(0, 0, 0, 0.5);
-  padding: 12px;
+  padding: 6px;
   box-sizing: border-box;
   transform: translate(-50% -50%);
 }
 #nprogress .spinner-icon {
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
   box-sizing: border-box;
   border: solid 3px transparent;
   border-top-color: rgba(242, 148, 70, 1);
