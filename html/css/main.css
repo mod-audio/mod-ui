@@ -7151,22 +7151,29 @@ hr.dotted {
   border-color: #2b2b2b;
   border-style: solid;
   border-width: 0 0 0 1px;
-  color: #2f2f2f;
+  color: #fff;
   float: right;
   font-size: 11px;
   font-weight: bold;
   line-height: 4.5;
   text-align: center;
   text-transform: uppercase;
-  width: 100px;
+  width: 125px;
+  opacity: 0.2;
 }
 #main-menu #mod-disconnect:hover {
   background-color: #000;
-  color: #fff;
+  opacity: 1;
 }
 #main-menu #mod-disconnect.selected {
   background-color: #000;
-  color: #fff;
+  opacity: 1;
+}
+#mod-disconnect {
+  background-image: url(../img/icons/white/disconnect.png);
+  background-position: 12px 50%;
+  background-repeat: no-repeat;
+  padding-left: 35px;
 }
 #main-menu #mod-cpu,
 #main-menu #mod-ram {
@@ -7208,6 +7215,18 @@ hr.dotted {
   margin: 0;
   margin-left: 1em;
   color: white;
+}
+#mod-cpu .progress-title {
+  background-image: url(../img/icons/white/cpu.png);
+  background-position: 0px 50%;
+  background-repeat: no-repeat;
+  padding-left: 30px;
+}
+#mod-ram .progress-title {
+  background-image: url(../img/icons/white/ram.png);
+  background-position: 0px 50%;
+  background-repeat: no-repeat;
+  padding-left: 30px;
 }
 #main-menu #mod-bluetooth {
   background-image: url(../img/menu-icons-sprite.png);
