@@ -323,15 +323,27 @@ JqueryClass('effectBox', {
     },
 
     showPluginInfo: function (plugin) {
+        
+        function formatNum(x) {
+            console.log(x)
+            var parts = x.toString().split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            return parts.join(".");
+        }
+
         var self = $(this)
         var uri  = escape(plugin.uri)
-
+        
         var showInfo = function() {
 
-            for(var i = 0; i< plugin.ports.control.input.length; i++) {  // flooring ranges to two decimal cases
-                plugin.ports.control.input[i].ranges.default = Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100;
-                plugin.ports.control.input[i].ranges.maximum = Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100;
-                plugin.ports.control.input[i].ranges.minimum = Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100;
+            for(var i = 0; i< plugin.ports.control.input.length; i++) {  // formating numbers and adding point flooring ranges to two decimal cases
+
+                plugin.ports.control.input[i].formatted = {}
+
+                plugin.ports.control.input[i].formatted.default = formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100);
+                plugin.ports.control.input[i].formatted.maximum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100);
+                plugin.ports.control.input[i].formatted.minimum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100);
+                
             }
 
             var comment = plugin.comment

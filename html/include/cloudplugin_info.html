@@ -34,14 +34,14 @@
                     {{#ports.control.input}}
                     <tr>
                         <td>{{shortName}}</td>
-                        <td>{{ranges.default}}</td>
-                        <td>{{ranges.minimum}}</td>
-                        <td>{{ranges.maximum}}</td>
+                        <td>{{formatted.default}}</td>
+                        <td>{{formatted.minimum}}</td>
+                        <td>{{formatted.maximum}}</td>
                     </tr>
                     {{/ports.control.input}}
                     </table>
                     <footer>
-                        <p><a href="http://wiki.moddevices.com/wiki/Plugins/{{package_name}}" target="_blank">More info at <b>{{package_name}}</b>'s wiki page</a></p>
+                        <p><a href="{{author.homepage}}" target="_blank">More info at <b>{{author.homepage}}</b></a></p>
                     </footer>
             </div>
         </div>
