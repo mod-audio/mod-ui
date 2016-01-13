@@ -325,7 +325,6 @@ JqueryClass('effectBox', {
     showPluginInfo: function (plugin) {
         
         function formatNum(x) {
-            console.log(x)
             var parts = x.toString().split(".");
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             return parts.join(".");
@@ -336,7 +335,7 @@ JqueryClass('effectBox', {
         
         var showInfo = function() {
 
-            for(var i = 0; i< plugin.ports.control.input.length; i++) {  // formating numbers and adding point flooring ranges to two decimal cases
+            for(var i = 0; i< plugin.ports.control.input.length; i++) {  // formating numbers and flooring ranges up to two decimal cases
 
                 plugin.ports.control.input[i].formatted = {}
 
@@ -354,7 +353,7 @@ JqueryClass('effectBox', {
             }
 
             var metadata = {
-                uri: uri,
+                author: plugin.author,
                 comment: comment,
                 has_description: has_description,
                 thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
