@@ -183,6 +183,8 @@ class Host(object):
         self.audioportsIn  = []
         self.audioportsOut = []
 
+        if self.jack_client == 0:
+            self.jack_client = None
         if self.jack_client is None:
             return
 
@@ -1398,6 +1400,8 @@ _:b%i
     # JACK stuff
 
     def get_sample_rate(self):
+        if self.jack_client is None:
+            return 48000.0
         return float(jacklib.get_sample_rate(self.jack_client))
 
     # Get list of Hardware MIDI devices
