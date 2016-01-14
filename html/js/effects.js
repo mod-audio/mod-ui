@@ -246,7 +246,7 @@ JqueryClass('effectBox', {
 
         // render plugins
         var plugin
-        function renderNextPlugin() {
+        function renderNextPlugin(c) {
             if (self.data('showPluginsRenderId') != currentRenderId) {
                 // another render is in place, stop this one
                 return
@@ -273,7 +273,10 @@ JqueryClass('effectBox', {
             }
 
             renderedIndex += 1
-            setTimeout(renderNextPlugin, 1);
+            
+            c = c || 0;
+            if (c < 20) renderNextPlugin(c+1);
+            else setTimeout(renderNextPlugin, 1);
         }
 
         renderNextPlugin(0)
@@ -294,8 +297,10 @@ JqueryClass('effectBox', {
                           :  "/resources/pedals/default-thumbnail.png",
         }
 
-        var rendered = $(Mustache.render(TEMPLATES.plugin, plugin_data))
-
+        var div = document.createElement("div");
+        div.innerHTML = Mustache.render(TEMPLATES.plugin, plugin_data);
+        var rendered = $(Array.prototype.slice.call(div.childNodes, 0));
+        
         self.data('pedalboard').pedalboard('registerAvailablePlugin', rendered, plugin, {
             distance: 5,
             delay: 100,
@@ -315,11 +320,6 @@ JqueryClass('effectBox', {
         })
 
         container.append(rendered)
-
-        // this 200px extra is a good margin to make sure the container's parent will
-        // always be big enough. it's impossible at this moment to know the necessary width,
-        // as this will be given by images not yet loaded.
-        container.parent().width(container.parent().width() + rendered.width() + 200)
     },
 
     showPluginInfo: function (plugin) {

@@ -337,24 +337,29 @@ hr.dotted {
     }
   }
   #mod-disconnect {
+    background-image: url(../img/icons/white/disconnect.png);
+    background-position: 12px 50%;
+    background-repeat: no-repeat;
+    padding-left: 35px;
     border-color: #2b2b2b;
     border-style: solid;
     border-width: 0 0 0 1px;
-    color: rgb(47,47,47);
+    color: #ffffff;
     float: right;
     font-size: 11px;
     font-weight: bold;
     line-height: 4.5;
     text-align: center;
     text-transform: uppercase;
-    width: 100px;
+    width: 125px;
+    opacity: 0.2;
     &:hover {
       background-color: #000;
-      color: #fff;
+      opacity: 1;
     }
     &.selected {
       background-color: #000;
-      color: #fff;
+      opacity: 1;
     }
   }
   #mod-cpu, #mod-ram {
@@ -373,6 +378,19 @@ hr.dotted {
     background: linear-gradient(to right, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%);
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#c40000',GradientType=1 );
   }
+  #mod-cpu .progress-title {
+    background-image: url(../img/icons/white/cpu.png);
+    background-position: 0px 50%;
+    background-repeat: no-repeat;
+    padding-left: 30px;
+  }
+  #mod-ram .progress-title {
+    background-image: url(../img/icons/white/ram.png);
+    background-position: 0px 50%;
+    background-repeat: no-repeat;
+    padding-left: 30px;
+  }
+
     .progress {
       height: 45px;
       margin-bottom: 0;
@@ -503,7 +521,7 @@ hr.dotted {
     right: 0;
     width: 36px;
     background-color: #000;
-    background-image: url(../img/icons/pinned.png);
+    background-image: url(../img/icons/white/pinned.png);
     background-position: center center;
     background-repeat: no-repeat;
   }
@@ -519,7 +537,7 @@ hr.dotted {
   }
   &.auto {
     .fold {
-      background-image: url(../img/icons/autohide.png);
+      background-image: url(../img/icons/white/autohide.png);
     }
   }
   .settings {
@@ -537,23 +555,17 @@ hr.dotted {
   }
   #plugins-library-settings-window {
     background: #000;
-    bottom: 166px;
+    bottom: 130px;
     color: #fff;
     position: absolute;
-    right: 37px;
-    padding: 5px 0;
-    border-radius: 5px;
-    border-bottom-right-radius: 0;
+    right: 74px;
     h1 {
-      font-size: 14px;
-      font-weight: bold;
-      line-height: 1;
-      margin: 0 0 10px;
       padding: 0;
-      text-transform: uppercase;
     }
     form {
-      margin-bottom: 0;
+      padding: 4px;
+      border: 0;
+      margin: 0;
     }
     label {
       margin-right: 10px;
@@ -564,6 +576,24 @@ hr.dotted {
     .control-group {
       position: relative;
     }
+    input {
+      width: 120px;
+      height: 28px;
+      line-height: 28px;
+      padding: 0 6px;
+      outline: 0;
+      border: 0;
+    }
+    .input-clean {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      bottom: auto;
+      left: auto;
+      transform: translateY(-50%);
+      margin: 0 !important;
+    }
+
   }
   ul {
     list-style: none;
@@ -573,8 +603,8 @@ hr.dotted {
     position: relative;
     width: 100%;
     li {
-      background: #1b1b1b;
-      color: #fff;
+      background: rgba(0, 0, 0, 0.66);;
+      color: #bbb;
       cursor: pointer !important;
       display: inline-block;
       float: left;
@@ -585,6 +615,7 @@ hr.dotted {
       text-transform: uppercase;
     }
     li.selected {
+      color: @brand-warning;
       background: #000;
       border-radius: 4px 4px 0 0;
       font-weight: bold;
@@ -627,16 +658,18 @@ hr.dotted {
       }
       .plugins-wrapper {
         position: relative;
+        display: inline-block;
+        white-space: nowrap;
       }
       .plugins-wrapper .plugin {
         color: #fff;
-        float: left;
         font-size: 11px;
         font-weight: bold;
         height: 108px;
         padding: 14px 12px 10px;
         position: relative;
         text-align: center;
+        display: inline-block;
       }
       .plugins-wrapper .plugin .thumb {
         height: 67px;
