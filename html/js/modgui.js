@@ -1082,43 +1082,32 @@ JqueryClass('film', baseWidget, {
             if (dummy && ! self.is(":visible"))
                 return
             var url = self.css('background-image')
-            if (!url || url == "none") {
-                retry += 1
-                if (retry == 50) {
-                    console.log("ERROR: The background-image for '" + self[0].className + "' is missing, typo in css?")
-                } else {
-                    setTimeout(tryGetAndSetSize, 100)
-                }
-                return
-            }
-            url = url.replace('url(', '').replace(')', '').replace(/'/g, '').replace(/"/g, '')
-            var height = self.css('background-size').split(/ /)[1]
-            if (height)
-                height = parseInt(height.replace(/\D+$/, ''))
-            var bgImg = $('<img />');
-            bgImg.css('max-width', '999999999px')
-            bgImg.hide()
-            bgImg.bind('load', function () {
-                var h = bgImg[0].height || bgImg.height()
-                var w = bgImg[0].width || bgImg.width()
+            if (!url || url == "none")
+                throw "ERROR: The background-image definition for '" + self[0].className + "' is missing, typo in css?";
+            url = url.match(/^url\(['"]?([^\)]*)['"]?\)/i);
+            if (url.length < 2)
+                throw "ERROR: Seems the CSS background-image definition is missing in " + self[0].className;
+            url = url[1];
+            var height = parseInt(self.css('background-size'));
+            var bgImg = new Image;
+            bgImg.onload = function () {
+                var w = this.naturalWidth;
+                var h = this.naturalHeight;
+                var sw = self[0].offsetWidth;
                 if (w == 0) {
                     new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
                 }
-                if (!height)
-                    height = h
-                self.data('filmSteps', height * w / (self.width() * h))
-                self.data('size', self.width())
-                bgImg.remove()
+                height = height || h;
+                self.data('filmSteps', height * w / (sw * h));
+                self.data('size', sw)
                 callback()
                 if (! isSDK && desktop != null) {
                     desktop.pedalboard.pedalboard('scheduleAdapt')
                 }
-            })
-            $('body').append(bgImg)
-            bgImg.attr('src', url)
+            }
+            bgImg.setAttribute('src', url);
         }
-
-        setTimeout(tryGetAndSetSize, 5)
+        setTimeout(tryGetAndSetSize, 0)
     },
 
     mouseDown: function (e) {
