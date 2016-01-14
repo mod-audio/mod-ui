@@ -263,6 +263,9 @@ JqueryClass('bankBox', {
             // addressing is already saved, every time select is changed
         }
 
+        if(pedalboards.children().length == 0)
+            new Notification('warning', 'This bank is empty - drag pedalboards from the right panel')
+
         canvas.append(bank.data('pedalboards').children())
 
         /*
@@ -290,7 +293,7 @@ JqueryClass('bankBox', {
         self.data('bankAddressing').show()
     },
 
-    editBank: function (bank) {
+    editBank: function (bank) {        
         var self = $(this)
         var titleBox = bank.find('.js-bank-title')
         if (titleBox.data('editing'))
