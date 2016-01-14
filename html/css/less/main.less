@@ -254,67 +254,72 @@ hr.dotted {
   }
   #mod-social {
     background-image: url(../img/menu-icons-sprite.png);
-    background-position: 0 bottom;
+    background-position: 0 top;
     background-repeat: no-repeat;
+    transition: all 0.5s;
     &:hover {
       background-color: #000;
-      background-position: 0 top;
+      background-position: 0 bottom;
     }
     &.selected {
       background-color: #000;
-      background-position: 0 top;
+      background-position: 0 bottom;
     }
   }
   #mod-plugins {
     background-image: url(../img/menu-icons-sprite.png);
-    background-position: -45px bottom;
+    background-position: -45px top;
     background-repeat: no-repeat;
+    transition: all 0.5s;
     &:hover {
       background-color: #000;
-      background-position: -45px top;
+      background-position: -45px bottom;
     }
     &.selected {
       background-color: #000;
-      background-position: -45px top;
+      background-position: -45px bottom;
     }
   }
   #mod-cloud-plugins {
     background-image: url(../img/menu-icons-sprite.png);
-    background-position: -315px bottom;
+    background-position: -315px top;
     background-repeat: no-repeat;
+    transition: all 0.5s;
     &:hover {
       background-color: #000;
-      background-position: -315px top;
+      background-position: -315px bottom;
     }
     &.selected {
       background-color: #000;
-      background-position: -315px top;
+      background-position: -315px bottom;
     }
   }
   #mod-pedalboard {
     background-image: url(../img/menu-icons-sprite.png);
-    background-position: -90px bottom;
+    background-position: -90px top;
     background-repeat: no-repeat;
+    transition: all 0.5s;
     &:hover {
       background-color: #000;
-      background-position: -90px top;
+      background-position: -90px bottom;
     }
     &.selected {
       background-color: #000;
-      background-position: -90px top;
+      background-position: -90px bottom;
     }
   }
   #mod-bank {
     background-image: url(../img/menu-icons-sprite.png);
-    background-position: -135px bottom;
+    background-position: -135px top;
     background-repeat: no-repeat;
+    transition: all 0.5s;
     &:hover {
       background-color: #000;
-      background-position: -135px top;
+      background-position: -135px bottom;
     }
     &.selected {
       background-color: #000;
-      background-position: -135px top;
+      background-position: -135px bottom;
     }
   }
   #banks-saving {
@@ -325,7 +330,7 @@ hr.dotted {
   }
   #mod-settings {
     background-image: url(../img/menu-icons-sprite.png);
-    background-position: -180px bottom;
+    background-position: -180px top;
     background-repeat: no-repeat;
     border-color: #2b2b2b;
     border-style: solid;
@@ -333,7 +338,7 @@ hr.dotted {
     float: right;
     &.uptodate {
       background-color: #000;
-      background-position: -180px top;
+      background-position: -180px bottom;
     }
   }
   #mod-disconnect {
@@ -565,7 +570,7 @@ header#pedalboard-actions,
     top: 0;
     right: 0;
     width: 36px;
-    background-color: #000;
+    background-color: rgba(17, 17, 17, 0.66);
     background-image: url(../img/icons/white/pinned.png);
     background-position: center center;
     background-repeat: no-repeat;
@@ -586,7 +591,7 @@ header#pedalboard-actions,
     }
   }
   .settings {
-    background-color: black;
+    background-color: rgba(17, 17, 17, 0.66);
     background-image: url(../img/icn-search-white.png);
     background-position: center center;
     background-repeat: no-repeat;
@@ -599,7 +604,7 @@ header#pedalboard-actions,
     width: 36px;
   }
   #plugins-library-settings-window {
-    background: #000;
+    background-color: rgba(17, 17, 17, 0.66);
     bottom: 130px;
     color: #fff;
     position: absolute;
@@ -648,7 +653,7 @@ header#pedalboard-actions,
     position: relative;
     width: 100%;
     li {
-      background: rgba(0, 0, 0, 0.66);;
+      background: rgba(17, 17, 17, 0.66);
       color: #bbb;
       cursor: pointer !important;
       display: inline-block;
@@ -658,24 +663,25 @@ header#pedalboard-actions,
       padding: 3px 11px;
       text-shadow: 1px 1px 0 #000;
       text-transform: uppercase;
+      border-top: solid 3px transparent;
     }
     li.selected {
-      color: @brand-warning;
-      background: #000;
+      color: white;
       border-radius: 4px 4px 0 0;
       font-weight: bold;
       margin-top: -6px;
       padding: 6px 11px;
+      border-top: solid 3px @brand-primary;
     }
   }
     #plugins-list {
-      background: rgba(0, 0, 0, 0.66);
+      background: rgba(17, 17, 17, 0.66);
       height: 140px;
       overflow: hidden;
       position: relative;
       width: 100%;
       .nav {
-        background: rgba(0, 0, 0, 1) url(../img/nav-left.png) 50% 50% no-repeat;
+        background: rgba(17, 17, 17, 1) url(../img/nav-left.png) 50% 50% no-repeat;
         cursor: pointer;
         position: absolute;
         top: 0;
@@ -690,7 +696,7 @@ header#pedalboard-actions,
         left: 0;
       }
       .nav-right {
-        background: rgba(0, 0, 0, 1) url(../img/nav-right.png) 50% 50% no-repeat;
+        background: rgba(17, 17, 17, 1) url(../img/nav-right.png) 50% 50% no-repeat;
         right: 0;
       }
       #plugins-results {

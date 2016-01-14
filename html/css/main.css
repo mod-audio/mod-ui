@@ -6976,68 +6976,73 @@ hr.dotted {
 }
 #main-menu #mod-social {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: 0 bottom;
+  background-position: 0 top;
   background-repeat: no-repeat;
+  transition: all 0.5s;
 }
 #main-menu #mod-social:hover {
   background-color: #000;
-  background-position: 0 top;
+  background-position: 0 bottom;
 }
 #main-menu #mod-social.selected {
   background-color: #000;
-  background-position: 0 top;
+  background-position: 0 bottom;
 }
 #main-menu #mod-plugins {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: -45px bottom;
+  background-position: -45px top;
   background-repeat: no-repeat;
+  transition: all 0.5s;
 }
 #main-menu #mod-plugins:hover {
   background-color: #000;
-  background-position: -45px top;
+  background-position: -45px bottom;
 }
 #main-menu #mod-plugins.selected {
   background-color: #000;
-  background-position: -45px top;
+  background-position: -45px bottom;
 }
 #main-menu #mod-cloud-plugins {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: -315px bottom;
+  background-position: -315px top;
   background-repeat: no-repeat;
+  transition: all 0.5s;
 }
 #main-menu #mod-cloud-plugins:hover {
   background-color: #000;
-  background-position: -315px top;
+  background-position: -315px bottom;
 }
 #main-menu #mod-cloud-plugins.selected {
   background-color: #000;
-  background-position: -315px top;
+  background-position: -315px bottom;
 }
 #main-menu #mod-pedalboard {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: -90px bottom;
+  background-position: -90px top;
   background-repeat: no-repeat;
+  transition: all 0.5s;
 }
 #main-menu #mod-pedalboard:hover {
   background-color: #000;
-  background-position: -90px top;
+  background-position: -90px bottom;
 }
 #main-menu #mod-pedalboard.selected {
   background-color: #000;
-  background-position: -90px top;
+  background-position: -90px bottom;
 }
 #main-menu #mod-bank {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: -135px bottom;
+  background-position: -135px top;
   background-repeat: no-repeat;
+  transition: all 0.5s;
 }
 #main-menu #mod-bank:hover {
   background-color: #000;
-  background-position: -135px top;
+  background-position: -135px bottom;
 }
 #main-menu #mod-bank.selected {
   background-color: #000;
-  background-position: -135px top;
+  background-position: -135px bottom;
 }
 #main-menu #banks-saving {
   margin: 21px 0 0 6px;
@@ -7047,7 +7052,7 @@ hr.dotted {
 }
 #main-menu #mod-settings {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: -180px bottom;
+  background-position: -180px top;
   background-repeat: no-repeat;
   border-color: #2b2b2b;
   border-style: solid;
@@ -7056,7 +7061,7 @@ hr.dotted {
 }
 #main-menu #mod-settings.uptodate {
   background-color: #000;
-  background-position: -180px top;
+  background-position: -180px bottom;
 }
 #main-menu #mod-disconnect {
   background-image: url(../img/icons/white/disconnect.png);
@@ -7289,7 +7294,7 @@ header#pedalboard-actions .close,
   top: 0;
   right: 0;
   width: 36px;
-  background-color: #000;
+  background-color: rgba(17, 17, 17, 0.66);
   background-image: url(../img/icons/white/pinned.png);
   background-position: center center;
   background-repeat: no-repeat;
@@ -7308,7 +7313,7 @@ header#pedalboard-actions .close,
   background-image: url(../img/icons/white/autohide.png);
 }
 #plugins-library .settings {
-  background-color: black;
+  background-color: rgba(17, 17, 17, 0.66);
   background-image: url(../img/icn-search-white.png);
   background-position: center center;
   background-repeat: no-repeat;
@@ -7321,7 +7326,7 @@ header#pedalboard-actions .close,
   width: 36px;
 }
 #plugins-library #plugins-library-settings-window {
-  background: #000;
+  background-color: rgba(17, 17, 17, 0.66);
   bottom: 130px;
   color: #fff;
   position: absolute;
@@ -7370,7 +7375,7 @@ header#pedalboard-actions .close,
   width: 100%;
 }
 #plugins-library ul li {
-  background: rgba(0, 0, 0, 0.66);
+  background: rgba(17, 17, 17, 0.66);
   color: #bbb;
   cursor: pointer !important;
   display: inline-block;
@@ -7380,24 +7385,25 @@ header#pedalboard-actions .close,
   padding: 3px 11px;
   text-shadow: 1px 1px 0 #000;
   text-transform: uppercase;
+  border-top: solid 3px transparent;
 }
 #plugins-library ul li.selected {
-  color: #f29446;
-  background: #000;
+  color: white;
   border-radius: 4px 4px 0 0;
   font-weight: bold;
   margin-top: -6px;
   padding: 6px 11px;
+  border-top: solid 3px #883996;
 }
 #plugins-library #plugins-list {
-  background: rgba(0, 0, 0, 0.66);
+  background: rgba(17, 17, 17, 0.66);
   height: 140px;
   overflow: hidden;
   position: relative;
   width: 100%;
 }
 #plugins-library #plugins-list .nav {
-  background: #000000 url(../img/nav-left.png) 50% 50% no-repeat;
+  background: #111111 url(../img/nav-left.png) 50% 50% no-repeat;
   cursor: pointer;
   position: absolute;
   top: 0;
@@ -7412,7 +7418,7 @@ header#pedalboard-actions .close,
   left: 0;
 }
 #plugins-library #plugins-list .nav-right {
-  background: #000000 url(../img/nav-right.png) 50% 50% no-repeat;
+  background: #111111 url(../img/nav-right.png) 50% 50% no-repeat;
   right: 0;
 }
 #plugins-library #plugins-list #plugins-results {

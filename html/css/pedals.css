@@ -35,6 +35,7 @@
     width: 32px;
     right: 1.5em;
     color: #666;
+    transition: color 0.5s;
 }
 .mod-settings:after {
     content: '\e800';
@@ -46,6 +47,7 @@
     position: absolute;
     right: 0px;
     color: #666;
+    transition: color 0.5s;
 }
 .mod-remove:after {
     content: '\e801';
