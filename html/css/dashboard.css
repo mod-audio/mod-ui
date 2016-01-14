@@ -12,25 +12,10 @@
     background:#393939 url(../img/background.jpg) repeat;
     background-size: auto 128em;
     position: absolute;
-    top: 35px;
+    top: 45px;
     left: 0;
-    bottom: 35px;
+    bottom: 45px;
     right: 0;
-}
-
-#pedalboard-actions {
-    background-color:#1b1b1b;
-    background-image:-moz-linear-gradient(top, #222222, #111111);
-    background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#222222), to(#111111));
-    background-image:-webkit-linear-gradient(top, #222222, #111111);
-    background-image:-o-linear-gradient(top, #222222, #111111);
-    background-image:linear-gradient(to bottom, #222222, #111111);
-    background-repeat:repeat-x;
-    border-bottom:1px solid #252525;
-    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff222222', endColorstr='#ff111111', GradientType=0);
-    box-shadow:0 1px 10px rgba(0,0,0,0.1);
-    height:36px; left:0; position:absolute; right:0; top:0;
-    z-index:5;
 }
 
 #zoom-controllers {
@@ -77,10 +62,10 @@
 
 /* Pedalboard Info - Header */
 #pedalboard-info {
-    height:35px;
-    left:0;
+    height:100%;
+    left:10px;
     margin:0;
-    padding:0 10px;
+    padding:0;
     position:absolute;
     right:71px;
     z-index:2;
@@ -147,7 +132,7 @@
 #pedalboard-info .actions .separator {
     border-left:1px dotted #444;
     display:inline-block;
-    height:35px;
+    height:100%;
     margin:0 6px;
 }
 

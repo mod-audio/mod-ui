@@ -1,6 +1,6 @@
 #bank-library {
 background: url(@wallpaper) repeat fixed;
-bottom: 46px;
+bottom: 45px;
 left: 0;
 overflow-x: hidden;
 overflow-y: auto;
@@ -48,46 +48,6 @@ input::selection {
   background: @brand-primary !important;
   color: white
 }
-header {
-  background-image: url(../img/header-pattern.png);
-  background-position: center top;
-  background-repeat: no-repeat;
-  display: block;
-  left: 0;
-  height: 35px;
-  line-height: 35px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 2;
-  border-bottom: 1px solid #111;
-
-  h1 {
-    font-weight: 2em;
-    text-transform: uppercase;
-    font-weight: bold;
-    color: #fff;
-    display: inline-block;
-    font-size: 24px;
-    line-height: 35px;
-    margin: 0 0 18px 0;
-    padding: 0;
-  }
-  .help {
-    background-image: url(../img/icn-help-16x16.png);
-    background-position: center center;
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 21px;
-    width: 21px;
-  }
-  .close {
-    opacity: 1;
-    position: absolute;
-    right: 10px;
-    top: 16px;
-  }
-}
 
 .icon-add {
   width: 1em;
@@ -109,15 +69,14 @@ header {
   }
 }
 #bank-list {
-  bottom: 0;
   left: 0;
   list-style: none;
   margin: 0;
   padding: 0;
   position: fixed;
-  bottom: 46px;
+  bottom: 45px;
   overflow-y: auto;
-  top: 54px;
+  top: 45px;
   width: 19.95%;
   border-color: #111;
   border-style: dotted;
@@ -334,12 +293,12 @@ header {
   }
 }
 #bank-edit {
-  position: absolute;
+  position: fixed;
   display: block;
   background-color: #111;
-  height: 100%;
   width: 80%;
-  bottom: 0;
+  bottom: 45px;
+  top: 45px;
   left: 19.95%
 }
 #bank-pedalboards-search {

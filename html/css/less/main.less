@@ -447,6 +447,51 @@ hr.dotted {
   }
 }
 
+
+/* TOP MENUS */
+
+header#pedalboard-actions,
+#bank-library header,
+#cloud-plugins-library header,
+#pedalboards-library header {
+  background: #111;
+  display: block;
+  left: 0;
+  height: 45px;
+  line-height: 45px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  padding-left: 10px;
+  z-index: 5;
+  box-shadow:0 1px 10px rgba(0,0,0,0.1);
+  z-index:5;
+  h1 {
+    font-weight: 2em;
+    text-transform: uppercase;
+    font-weight: normal;
+    color: #999;
+    display: inline-block;
+    font-size: 24px;
+    line-height: 45px;
+    padding: 0;
+  }
+  .help {
+    background-image: url(../img/icn-help-16x16.png);
+    background-position: center center;
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 21px;
+    width: 21px;
+  }
+  .close {
+    opacity: 1;
+    position: absolute;
+    right: 10px;
+    top: 16px;
+  }
+}
+
 .tooltip {
   background: white;
   border-radius: 3px;

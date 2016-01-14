@@ -1,6 +1,6 @@
 #cloud-plugins-library {
   background-color: #333;
-  bottom: 46px;
+  bottom: 45px;
   left: 0;
   overflow: auto;
   position: fixed;
@@ -16,17 +16,6 @@
     padding: 0;
   }
   header {
-    background-image: url(../img/header-pattern.png);
-    background-position: bottom center;
-    background-repeat: no-repeat;
-    display: block;
-    left: 0;
-    height: 35px;
-    line-height: 35px;
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 2;
     .help {
       background-image: url(../img/icn-help-16x16.png);
       background-position: center center;
@@ -47,11 +36,10 @@
     border-color: #111;
     border-style: dotted;
     border-width: 0 1px 0 0;
-    bottom: 46px;
+    bottom: 45px;
     left: 0;
-    padding-top: 18px;
     position: fixed;
-    top: 0;
+    top: 45px;
     right: 0;
     width: 240px;
     overflow: auto;
@@ -119,10 +107,12 @@
     @gradient3: fade(@gradient4, 0%);
     @gradient4: #212121;
     left: 242px;    
-    position: absolute;
+    position: fixed;
     right: 0;
-    min-height: 100%;
+    top: 45px;
+    bottom: 45px;
     background: #111 !important;
+    overflow-y: auto;
     .plugins-wrapper {
     	width: 100%;
     }

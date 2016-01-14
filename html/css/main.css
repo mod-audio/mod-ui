@@ -5932,7 +5932,7 @@ button.close {
 }
 #cloud-plugins-library {
   background-color: #333;
-  bottom: 46px;
+  bottom: 45px;
   left: 0;
   overflow: auto;
   position: fixed;
@@ -5947,19 +5947,6 @@ button.close {
   line-height: 35px;
   margin: 0 0 18px 0;
   padding: 0;
-}
-#cloud-plugins-library header {
-  background-image: url(../img/header-pattern.png);
-  background-position: bottom center;
-  background-repeat: no-repeat;
-  display: block;
-  left: 0;
-  height: 35px;
-  line-height: 35px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 2;
 }
 #cloud-plugins-library header .help {
   background-image: url(../img/icn-help-16x16.png);
@@ -5980,11 +5967,10 @@ button.close {
   border-color: #111;
   border-style: dotted;
   border-width: 0 1px 0 0;
-  bottom: 46px;
+  bottom: 45px;
   left: 0;
-  padding-top: 18px;
   position: fixed;
-  top: 0;
+  top: 45px;
   right: 0;
   width: 240px;
   overflow: auto;
@@ -6047,10 +6033,12 @@ button.close {
 }
 .cloud-plugins {
   left: 242px;
-  position: absolute;
+  position: fixed;
   right: 0;
-  min-height: 100%;
+  top: 45px;
+  bottom: 45px;
   background: #111 !important;
+  overflow-y: auto;
 }
 .cloud-plugins .plugins-wrapper {
   width: 100%;
@@ -6228,7 +6216,7 @@ button.close {
 }
 #bank-library {
   background: url('../img/social/back.png') repeat fixed;
-  bottom: 46px;
+  bottom: 45px;
   left: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -6275,45 +6263,6 @@ button.close {
   background: #883996 !important;
   color: white;
 }
-#bank-library header {
-  background-image: url(../img/header-pattern.png);
-  background-position: center top;
-  background-repeat: no-repeat;
-  display: block;
-  left: 0;
-  height: 35px;
-  line-height: 35px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 2;
-  border-bottom: 1px solid #111;
-}
-#bank-library header h1 {
-  font-weight: 2em;
-  text-transform: uppercase;
-  font-weight: bold;
-  color: #fff;
-  display: inline-block;
-  font-size: 24px;
-  line-height: 35px;
-  margin: 0 0 18px 0;
-  padding: 0;
-}
-#bank-library header .help {
-  background-image: url(../img/icn-help-16x16.png);
-  background-position: center center;
-  background-repeat: no-repeat;
-  display: inline-block;
-  height: 21px;
-  width: 21px;
-}
-#bank-library header .close {
-  opacity: 1;
-  position: absolute;
-  right: 10px;
-  top: 16px;
-}
 #bank-library .icon-add {
   width: 1em;
   height: 1em;
@@ -6334,15 +6283,14 @@ button.close {
   border-left: 0.4em solid #888;
 }
 #bank-library #bank-list {
-  bottom: 0;
   left: 0;
   list-style: none;
   margin: 0;
   padding: 0;
   position: fixed;
-  bottom: 46px;
+  bottom: 45px;
   overflow-y: auto;
-  top: 54px;
+  top: 45px;
   width: 19.95%;
   border-color: #111;
   border-style: dotted;
@@ -6555,12 +6503,12 @@ button.close {
   text-align: center;
 }
 #bank-library #bank-edit {
-  position: absolute;
+  position: fixed;
   display: block;
   background-color: #111;
-  height: 100%;
   width: 80%;
-  bottom: 0;
+  bottom: 45px;
+  top: 45px;
   left: 19.95%;
 }
 #bank-library #bank-pedalboards-search {
@@ -6725,45 +6673,6 @@ button.close {
   margin: 0 0 18px 0;
   padding: 0;
 }
-#pedalboards-library header {
-  background-image: url(../img/header-pattern.png);
-  background-position: center top;
-  background-repeat: no-repeat;
-  display: block;
-  left: 0;
-  height: 35px;
-  line-height: 35px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 2;
-  border-bottom: 1px solid #111;
-}
-#pedalboards-library header h1 {
-  font-weight: 2em;
-  text-transform: uppercase;
-  font-weight: bold;
-  color: #fff;
-  display: inline-block;
-  font-size: 24px;
-  line-height: 35px;
-  margin: 0 0 18px 0;
-  padding: 0;
-}
-#pedalboards-library header .help {
-  background-image: url(../img/icn-help-16x16.png);
-  background-position: center center;
-  background-repeat: no-repeat;
-  display: inline-block;
-  height: 21px;
-  width: 21px;
-}
-#pedalboards-library header .close {
-  opacity: 1;
-  position: absolute;
-  right: 10px;
-  top: 16px;
-}
 #pedalboards-library .filter {
   border-color: #111;
   border-style: dotted;
@@ -6851,13 +6760,14 @@ button.close {
   z-index: 103100;
 }
 #nprogress .bar {
-  background: #f29446;
+  background: #883996;
   position: fixed;
   z-index: 103100;
-  top: 35px;
+  top: 45px;
   left: 0;
+  opacity: 0.5;
   width: 100%;
-  height: 3px;
+  height: 2px;
 }
 /* Fancy blur effect */
 #nprogress .peg {
@@ -6865,10 +6775,10 @@ button.close {
 }
 /* Remove these to get rid of the spinner */
 #nprogress .spinner {
-  display: block;
+  display: none;
   position: fixed;
   z-index: 1031;
-  top: 38px;
+  top: 45px;
   right: 0;
   background: rgba(0, 0, 0, 0.5);
   padding: 6px;
@@ -7256,6 +7166,56 @@ hr.dotted {
 #main-menu #mod-cloud.online {
   background-color: #000;
   background-position: -270px top;
+}
+/* TOP MENUS */
+header#pedalboard-actions,
+#bank-library header,
+#cloud-plugins-library header,
+#pedalboards-library header {
+  background: #111;
+  display: block;
+  left: 0;
+  height: 45px;
+  line-height: 45px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  padding-left: 10px;
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+}
+header#pedalboard-actions h1,
+#bank-library header h1,
+#cloud-plugins-library header h1,
+#pedalboards-library header h1 {
+  font-weight: 2em;
+  text-transform: uppercase;
+  font-weight: normal;
+  color: #999;
+  display: inline-block;
+  font-size: 24px;
+  line-height: 45px;
+  padding: 0;
+}
+header#pedalboard-actions .help,
+#bank-library header .help,
+#cloud-plugins-library header .help,
+#pedalboards-library header .help {
+  background-image: url(../img/icn-help-16x16.png);
+  background-position: center center;
+  background-repeat: no-repeat;
+  display: inline-block;
+  height: 21px;
+  width: 21px;
+}
+header#pedalboard-actions .close,
+#bank-library header .close,
+#cloud-plugins-library header .close,
+#pedalboards-library header .close {
+  opacity: 1;
+  position: absolute;
+  right: 10px;
+  top: 16px;
 }
 .tooltip {
   background: white;
