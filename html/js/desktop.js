@@ -918,10 +918,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
     })
 
     el.bind('pluginDragStart', function () {
-        self.effectBox.window('fade')
+        self.effectBox.addClass('fade')
     })
     el.bind('pluginDragStop', function () {
-        self.effectBox.window('unfade')
+        self.effectBox.removeClass('fade')
     })
 
     return el

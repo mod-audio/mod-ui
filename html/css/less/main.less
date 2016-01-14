@@ -555,11 +555,15 @@ header#pedalboard-actions,
   position: absolute;
   right: 0;
   transition: all 0.25s;
+  transition: opacity 0.5s;
   &.folded {
     height: 38px;
     #plugins-library-settings-window {
       bottom: 27px;
     }
+  }
+  &.fade {
+    opacity: 0.2;
   }
   .fold {
     cursor: pointer;

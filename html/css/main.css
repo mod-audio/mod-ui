@@ -7278,12 +7278,16 @@ header#pedalboard-actions .close,
   position: absolute;
   right: 0;
   transition: all 0.25s;
+  transition: opacity 0.5s;
 }
 #plugins-library.folded {
   height: 38px;
 }
 #plugins-library.folded #plugins-library-settings-window {
   bottom: 27px;
+}
+#plugins-library.fade {
+  opacity: 0.2;
 }
 #plugins-library .fold {
   cursor: pointer;
