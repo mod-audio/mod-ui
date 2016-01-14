@@ -48,7 +48,7 @@ from mod.settings import (APP, DESKTOP, LOG,
 from mod import jsoncall, json_handler, symbolify
 from mod.communication import fileserver, crypto
 from mod.session import SESSION
-from mod.bank import list_banks, save_banks
+from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
                         pacman_upgrade, set_bluetooth_pin)
 from mod import register
@@ -734,14 +734,22 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         callback()
 
 class PedalboardRemove(web.RequestHandler):
-    def get(self, bundlepath):
-        # there's 5 steps to this:
-        # 1 - remove the bundle from disk
-        # 2 - remove the bundle from our lv2 lilv world (no longer needed if using separate ~/.pedalboards)
-        # 3 - remove references to the bundle in banks
-        # 4 - delete all presets of the pedaloard (skip for now, pedalboard presets needs discussion)
-        # 5 - tell ingen the bundle (plugin) is gone (no longer needed if using separate ~/.pedalboards)
-        pass
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        if not os.path.exists(bundlepath):
+            self.write(json.dumps(False))
+            self.finish()
+            return
+
+        def removed_callback(plugins):
+            shutil.rmtree(bundlepath)
+            remove_pedalboard_from_banks(bundlepath)
+            self.write(json.dumps(True))
+            self.finish()
+
+        SESSION.host.remove_bundle(bundlepath, removed_callback)
 
 class PedalboardSize(web.RequestHandler):
     def get(self):
@@ -1231,7 +1239,7 @@ application = web.Application(
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
-            (r"/pedalboard/remove/?", PedalboardRemove),
+            (r"/pedalboard/remove/", PedalboardRemove),
             (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/wait", PedalboardImageWait),

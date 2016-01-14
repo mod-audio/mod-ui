@@ -938,7 +938,10 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             if (!confirm(sprintf('The pedalboard "%s" will be permanently removed! Confirm?', pedalboard.title)))
                 return
             $.ajax({
-                url: '/pedalboard/remove/' + pedalboard.pedalboardBundle,
+                url: '/pedalboard/remove/',
+                data: {
+                    bundlepath: pedalboard.bundle
+                },
                 success: function () {
                     new Notification("info", sprintf('Pedalboard "%s" removed', pedalboard.title), 1000)
                     callback()
