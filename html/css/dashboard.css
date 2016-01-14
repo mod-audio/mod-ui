@@ -534,10 +534,10 @@ svg .light {
     stroke: rgba(0,0,0,0.66);
 }
 .mod-cv svg .cable {
-    stroke: #F0546C; /*FIXME*/
+    stroke: #B86743;
 }
 .mod-cv svg .light {
-    stroke: #F0A3C4; /*FIXME*/
+    stroke: #E48E67;
 }
 
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
