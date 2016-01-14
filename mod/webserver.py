@@ -1299,7 +1299,7 @@ def prepare():
             sys.exit(1)
 
         elif not SESSION.host.connected:
-            ioinstance.add_callback(checkhost)
+            ioinstance.call_later(0.1, checkhost)
 
     def check():
         check_environment()
