@@ -125,7 +125,9 @@ $('document').ready(function() {
       upgradeIcon: $('#mod-settings'),
       feedButton: $('#cloud-feed-timeline'),
       login: $('#login'),
-      logout: $('#logout')
+      logout: $('#logout'),
+      bypassLButton: $("#bypassL"),
+      bypassRButton: $("#bypassR")
   })
 
   if ({{bundlepath}} && {{title}}) {
@@ -383,7 +385,7 @@ $('document').ready(function() {
         <!-- END PEDALBOARD SHARE WINDOW -->
 
         <!-- PEDALBOARD-ACTIONS -->
-        <div id="pedalboard-actions">
+        <header id="pedalboard-actions">
 
             <!-- PEDALBOARD-SETTINGS -->
             <div id="pedalboard-info">
@@ -399,14 +401,19 @@ $('document').ready(function() {
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
-
+            
+            <!-- BYPASS -->
+            <button id="bypassL"></button>
+            <button id="bypassR"></button>
+            <!-- END BYPASS -->
+            
             <!-- PEDALBOARD-SHARING -->
             <div id="pedalboard-sharing">
                 <div class="button"></div>
             </div>
             <!-- END PEDALBOARD-SHARING -->
 
-        </div>
+        </header>
         <!-- END PEDALBOARD-ACTIONS -->
 
         <!-- PEDALBOARD-DASHBOARD -->
