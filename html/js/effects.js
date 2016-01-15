@@ -602,6 +602,8 @@ JqueryClass('effectBox', {
         plug = Math.min(children.length-1, Math.max(0, plug + dir));
         var pos = Math.max(-(wrapper.width() - parent.width()),
                            -$(children[plug]).position().left);
+        while (-$(children[plug]).position().left < pos)
+            plug--;
         wrapper[0].style.left = pos + "px";
         wrapper.data("pos", pos);
         wrapper.data("plug", plug);
