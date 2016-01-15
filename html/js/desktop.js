@@ -854,7 +854,8 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardModified = false
                     self.pedalboardSavable = false
                     self.titleBox.text('Untitled')
-
+                    self.titleBox.addClass("blend");
+                    
                     callback(true)
                 },
                 error: function () {
@@ -1088,7 +1089,9 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardBundle = resp.bundlepath
                 self.pedalboardModified = false
                 self.pedalboardSavable = true
-                self.titleBox.text(resp.name)
+                self.titleBox.text(resp.name);
+                self.titleBox.removeClass("blend");
+                
                 callback(true)
             },
             error: function () {
@@ -1120,7 +1123,8 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.pedalboardModified = false
             self.pedalboardSavable = true
             self.titleBox.text(title)
-
+            self.titleBox.removeClass("blend");
+            
             new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
 
             if (callback)

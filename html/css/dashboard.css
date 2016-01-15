@@ -9,7 +9,7 @@
 }
 
 #pedalboard-dashboard {
-    background:#393939 url(../img/background.jpg) repeat;
+    background:#111 url(../img/background.jpg) repeat;
     background-size: auto 1200px;
     position: absolute;
     top: 45px;
@@ -57,12 +57,10 @@
 /* Pedalboard Info - Header */
 #pedalboard-info {
     height:100%;
-    left:0px;
+    left:45px;
     margin:0;
     padding:0;
-    position:absolute;
-    right:92px;
-    z-index:2;
+    display: inline-block;
 }
 
 #pedalboard-info .title {

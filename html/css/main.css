@@ -6905,7 +6905,7 @@ body {
   overflow: hidden;
 }
 body {
-  background: #393939;
+  background: #111;
   min-width: 1024px;
 }
 * {
@@ -7232,7 +7232,6 @@ header#pedalboard-actions,
 #bank-library header,
 #cloud-plugins-library header,
 #pedalboards-library header {
-  background: #111;
   display: block;
   left: 0;
   height: 45px;
@@ -7242,6 +7241,12 @@ header#pedalboard-actions,
   top: 0;
   box-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
   z-index: 5;
+  background-color: #111;
+  background-position: 3px 50%;
+  background-size: 36px;
+  background-repeat: no-repeat;
+  background-image: url(../img/icons/36/mod.png);
+  padding-left: 45px;
 }
 header#pedalboard-actions .help,
 #bank-library header .help,
@@ -7332,11 +7337,6 @@ header#pedalboard-actions h1,
   line-height: 49px;
   height: 45px;
   padding: 0;
-  padding-left: 42px;
-  background-position: 3px 50%;
-  background-size: 36px;
-  background-repeat: no-repeat;
-  background-image: url(../img/icons/36/mod.png);
 }
 header#pedalboard-actions {
   box-shadow: 0 2px 12px black;
@@ -7958,6 +7958,9 @@ header#pedalboard-actions {
 }
 .clear {
   clear: both;
+}
+.blend {
+  opacity: 0.25;
 }
 .box {
   padding: 10px;

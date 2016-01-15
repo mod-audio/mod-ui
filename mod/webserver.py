@@ -915,6 +915,7 @@ class TemplateHandler(web.RequestHandler):
             'bundlepath': json.dumps(SESSION.bundlepath),
             'title': json.dumps(SESSION.title),
             'fulltitle': SESSION.title or "Untitled",
+            'titleblend': '' if SESSION.title else 'blend',
             'using_app': json.dumps(APP),
             'using_desktop': json.dumps(DESKTOP),
         }
