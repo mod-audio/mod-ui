@@ -495,8 +495,56 @@ header#pedalboard-actions,
     right: 10px;
     top: 16px;
   }
+  button {
+    background-position: 3px 50%;
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
+    padding: 0 8px 0 40px;
+    background-color: transparent;
+    border: none;
+    border-right: 1px solid #2c2c2c;
+    height: 45px;
+    line-height: 45px;
+    opacity: 0.66;
+    color: white;
+    transition: all 0.5s;
+    &:hover, &.selected {
+        opacity: 1;
+        background-color: black;
+    }
+    &.js-save {
+        background-image: url(../img/icons/white/save.png);
+    }
+    &.js-save-as {
+        background-image: url(../img/icons/white/save.png);
+    }
+    &.js-reset {
+        background-image: url(../img/icons/white/remove.png);
+        &:hover, &.selected {
+            background-color: @brand-primary;
+        }
+    }
+    &.js-add-midi {
+        background-image: url(../img/icons/white/midi.png);
+    }
+    &.js-bypass-l {
+        background-image: url(../img/icons/white/bypass_L.png);
+        &.selected {
+            background-color: #333;
+        }
+    }
+    &.js-bypass-r {
+        background-image: url(../img/icons/white/bypass_R.png);
+        &.selected {
+            background-color: #333;
+        }
+    }
+  }
 }
 
+header#pedalboard-actions {
+    box-shadow: 0 2px 12px black;
+}
 .tooltip {
   background: white;
   border-radius: 3px;

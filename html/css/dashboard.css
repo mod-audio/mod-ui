@@ -19,44 +19,38 @@
 }
 
 #zoom-controllers {
-    color:white;
-    font-size:11px;
-    line-height:1;
     position:absolute;
-    right:12px;
-    text-transform:uppercase;
-    top:49px;
+    right:0px;
+    top:0px;
     z-index:10;
 }
 #zoom-controllers > span {
-    background:#1b1b1b;
+    display: inline-block;
+    background: transparent;
     cursor:pointer;
     display:block;
     float:left;
-    height:27px;
-    width:27px;
+    height:45px;
+    width:45px;
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:24px;
+    transition: all 0.5s;
+    opacity: 0.66;
+    margin: 0;
+    padding: 0;
 }
-#zoom-controllers > span:hover {
-    background:#333;
-}
+#zoom-controllers > span:hover,
 #zoom-controllers > span:active {
-    background:#222;
+    background-color:#000;
+    opacity: 1;
 }
 #zoom-controllers > span:first-child {
     background-image:url(../img/icn-zoom-out.png);
-    background-position:center center;
-    background-repeat:no-repeat;
-    background-size:18px;
-    border-radius:4px 0 0 4px;
     border-right:1px solid #292929;
 }
 #zoom-controllers > span:last-child {
     background-image:url(../img/icn-zoom-in.png);
-    background-position:center center;
-    background-repeat:no-repeat;
-    background-size:18px;
-    border-left:1px solid #292929;
-    border-radius:0 4px 4px 0;
 }
 
 
@@ -67,7 +61,7 @@
     margin:0;
     padding:0;
     position:absolute;
-    right:71px;
+    right:92px;
     z-index:2;
 }
 

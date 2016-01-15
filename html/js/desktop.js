@@ -363,10 +363,6 @@ function Desktop(elements) {
 
     // hide top-bar shared-pedalboard button, and push zoom buttons up
     $('#pedalboard-sharing').hide()
-    $('#zoom-controllers').css({
-        'top': '4px',
-        'right': '3px'
-    })
 
     this.setupApp = function (usingDesktop) {
         self.isApp = true

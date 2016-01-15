@@ -392,20 +392,15 @@ $('document').ready(function() {
                 <h1 class="top bottom">{{fulltitle}}</h1>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
-                    <button class="js-add-midi btn btn-xs btn-warning">Add MIDI Device</button>
-                    <span class="separator" id="js-add-midi-separator"></span>
-                    <button class="js-save btn btn-xs btn-warning">Save</button>
-                    <button class="js-save-as btn btn-xs btn-warning">Save as</button>
-                    <span class="separator"></span>
-                    <button class="js-reset btn btn-xs btn-success">New Pedalboard</button>
+                    <button class="js-add-midi">Add MIDI Device</button><button
+                    class="js-save">Save</button><button
+                    class="js-save-as">Save as</button><button
+                    class="js-reset">New Pedalboard</button><button
+                    id="bypassL" class="js-bypass-l">Bypass L</button><button
+                    id="bypassR" class="js-bypass-r">Bypass R</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
-            
-            <!-- BYPASS -->
-            <button id="bypassL"></button>
-            <button id="bypassR"></button>
-            <!-- END BYPASS -->
             
             <!-- PEDALBOARD-SHARING -->
             <div id="pedalboard-sharing">
