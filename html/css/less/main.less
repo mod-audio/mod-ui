@@ -735,7 +735,7 @@ header#pedalboard-actions {
   }
   &.scrolling {
     .plugins-wrapper {
-      transition: left 0.1s !important;
+      transition: all 0.1s !important;
     }
   }
     #plugins-list {
@@ -772,10 +772,17 @@ header#pedalboard-actions {
         top: 0;
       }
       .plugins-wrapper {
-        position: relative;
+        position: absolute;
         display: inline-block;
         white-space: nowrap;
-        transition: left 0.5s;
+        transition: all 0.5s;
+        top: 120px;
+        left: 0;
+        opacity: 0;
+        &.selected {
+            top: 0;
+            opacity: 1;
+        }
       }
       .plugins-wrapper .plugin {
         color: #fff;

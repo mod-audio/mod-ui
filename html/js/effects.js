@@ -166,9 +166,9 @@ JqueryClass('effectBox', {
     setCategory: function (category) {
         var self = $(this)
         self.find('ul.js-category-tabs li').removeClass('selected')
-        self.find('.plugins-wrapper').hide()
+        self.find('.plugins-wrapper').removeClass("selected");
         self.find('#effect-tab-' + category).addClass('selected')
-        self.find('#effect-content-' + category).show().css('display', 'inline-block')
+        self.find('#effect-content-' + category).addClass("selected");
         self.data('category', category)
         self.effectBox('unfold')
         self.effectBox('calculateNavigation')

@@ -7488,7 +7488,7 @@ header#pedalboard-actions {
   border-top: solid 3px #883996;
 }
 #plugins-library.scrolling .plugins-wrapper {
-  transition: left 0.1s !important;
+  transition: all 0.1s !important;
 }
 #plugins-library #plugins-list {
   background: rgba(17, 17, 17, 0.66);
@@ -7525,10 +7525,17 @@ header#pedalboard-actions {
   top: 0;
 }
 #plugins-library #plugins-list .plugins-wrapper {
-  position: relative;
+  position: absolute;
   display: inline-block;
   white-space: nowrap;
-  transition: left 0.5s;
+  transition: all 0.5s;
+  top: 120px;
+  left: 0;
+  opacity: 0;
+}
+#plugins-library #plugins-list .plugins-wrapper.selected {
+  top: 0;
+  opacity: 1;
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin {
   color: #fff;
