@@ -615,12 +615,9 @@ JqueryClass('effectBox', {
             self.addClass("scrolling");
         }
         self.data("scrollTO", setTimeout(function () {
-            self.effectBox("scrollEnded");
+            self.data("scrollTO", false);
             self.removeClass("scrolling");
         }, 200));
-    },
-    scrollEnded: function () {
-        $(this).data("scrollTO", false);
     }
 })
 
