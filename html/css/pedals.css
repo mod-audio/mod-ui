@@ -583,9 +583,34 @@ body > .mod-settings {
 }
 
 .mod-pedal-settings-address .mod-range input[type="number"] {
-    width:81px;
+    width: 41% !important;
+    float: left;
+}
+.mod-pedal-settings-address .mod-range span {
+    width: 18%;
+    text-align: center;
+    float: left;
+    line-height: 2em;
 }
 
 .mod-pedal-settings-address select {
     width:202px;
+}
+.label-toggle {
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    cursor: pointer;
+    text-decoration: underline;
+    width: 100%
+}
+.checkbox-toggle {
+    position: absolute;
+    z-index: -999999
+}
+.checkbox-toggle ~ div {
+    display: none;
+}
+input[type=checkbox]:checked ~ div {
+   display: block
 }

@@ -1,32 +1,39 @@
 <div class="mod-pedal-settings-address">
     <div class="mod-box">
-        <h1>{{plugin.label}} - {{symbol}}</h1>
-        <form class="bottom">
-            <div class="control-group clearfix">
-                <label>Label</label>
+        <h1>{{plugin.label}} - <strong>{{symbol}}</strong></h1>
+        <hr />
+        <form class="bottom form">
+            <div class="mod form-group clearfix">
+                <label>Actuator</label>
                 <div class="mod-controls">
-                    <input name="label" type="text"/>
+                    <select class="form-control" name="actuator"></select>
                 </div>
             </div>
-            <div class="range control-group clearfix">
-                <label>Range</label>
-                <div class="mod-controls mod-range">
-                    <input name="min" type="number"/> - <input name="max" type="number"/>
+            <label class="label-toggle" for="toggle-address"><a>Advanced</a></label>
+            <div>                
+                <br /><br />
+                <input class="checkbox-toggle" type="checkbox" id="toggle-address" />                
+                <div class="form-group clearfix">
+                    <label>Label</label>
+                    <div class="mod-controls">
+                        <input class="form-control" name="label" type="text"/>
+                    </div>
                 </div>
-            </div>
-            <div class="sensibility control-group clearfix">
-                <label>Sensibility</label>
-                <div class="mod-controls mod-range">
-                    <select name="steps"></select>
+                <div class="range form-group clearfix">
+                    <label>Range</label>
+                    <div class="mod-controls mod-range">
+                        <input class="form-control" name="min" type="number"/><span>&ndash;</span><input class="form-control" name="max" type="number"/>
+                    </div>
                 </div>
-            </div>
-            <div class="mod control-group clearfix">
-                <label>MOD</label>
-                <div class="mod-controls">
-                    <select name="actuator"></select>
-                </div>
-            </div>
-            <div class="textright clearfix">
+                <div class="sensibility form-group clearfix">
+                    <label>Sensitivity</label>
+                    <div class="mod-controls mod-range">
+                        <select class="form-control" name="steps"></select>
+                    </div>
+                </div>                            
+            </div>            
+            <hr class="col-xs-12" style="padding:0" />
+            <div class="textright clearfix">                
                 <span class="btn btn-danger js-close">Cancel</span>
                 <span class="btn btn-success js-save">Save</span>
             </div>
