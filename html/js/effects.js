@@ -559,6 +559,12 @@ JqueryClass('effectBox', {
         $(this).effectBox('shiftDir', 1);
     },
     
+    
+    // This whole scrolling and shifting thing is very expensive due
+    // to lots of relayouts and redraws. This is because we want to
+    // snap to plugins on the left border of the container. We should
+    // switch to a less greedy concept. Maybe next century.
+    
     shiftDir: function (dir) {
         var self = $(this);
         var wrapper = self.find('.plugins-wrapper:visible');
