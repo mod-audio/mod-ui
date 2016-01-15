@@ -471,16 +471,6 @@ header#pedalboard-actions,
   z-index: 5;
   box-shadow:0 1px 10px rgba(0,0,0,0.1);
   z-index:5;
-  h1 {
-    font-weight: 2em;
-    text-transform: uppercase;
-    font-weight: normal;
-    color: #999;
-    display: inline-block;
-    font-size: 24px;
-    line-height: 45px;
-    padding: 0;
-  }
   .help {
     background-image: url(../img/icn-help-16x16.png);
     background-position: center center;
@@ -540,11 +530,39 @@ header#pedalboard-actions,
         }
     }
   }
+  h1 {
+    font-weight: 2em;
+    text-transform: uppercase;
+    font-weight: normal;
+    color: #999;
+    display: inline-block;
+    font-size: 24px;
+    line-height: 49px;
+    height: 45px;
+    padding: 0;
+    padding-left: 38px;
+    background-position: 0 50%;
+    background-size: 32px;
+    background-repeat: no-repeat;
+  }
 }
-
 header#pedalboard-actions {
     box-shadow: 0 2px 12px black;
 }
+header#pedalboard-actions h1 {
+    background-image: url(../img/icons/white/assembler.png);
+}
+#bank-library header h1 {
+    background-image: url(../img/icons/white/banks.png);
+}
+#cloud-plugins-library header h1 {
+    background-image: url(../img/icons/white/pluginlibrary.png);
+}
+#pedalboards-library header h1 {
+    background-image: url(../img/icons/white/pedalboardlibrary.png);
+}
+
+
 .tooltip {
   background: white;
   border-radius: 3px;
