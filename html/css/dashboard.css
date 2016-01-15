@@ -57,7 +57,9 @@
 /* Pedalboard Info - Header */
 #pedalboard-info {
     height:100%;
+    position: absolute;
     left:45px;
+    right: 90px;
     margin:0;
     padding:0;
     display: inline-block;
