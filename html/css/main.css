@@ -7061,11 +7061,16 @@ hr.dotted {
   background-color: #000;
   background-position: -180px bottom;
 }
-#main-menu #mod-disconnect {
-  background-image: url(../img/icons/white/disconnect.png);
-  background-position: 12px 50%;
+#main-menu #mod-disconnect,
+#main-menu .mod-add-midi,
+#main-menu .mod-bypass-l,
+#main-menu .mod-bypass-r,
+#main-menu #mod-cpu,
+#main-menu #mod-ram {
+  background-position: 8px 50%;
   background-repeat: no-repeat;
-  padding-left: 35px;
+  padding-left: 40px;
+  padding-right: 12px;
   border-color: #2b2b2b;
   border-style: solid;
   border-width: 0 0 0 1px;
@@ -7074,44 +7079,56 @@ hr.dotted {
   font-size: 11px;
   font-weight: bold;
   line-height: 4.5;
-  text-align: center;
   text-transform: uppercase;
-  width: 125px;
-  opacity: 0.2;
+  width: auto !important;
+  transition: all 0.5s;
 }
-#main-menu #mod-disconnect:hover {
+#main-menu #mod-disconnect:hover,
+#main-menu .mod-add-midi:hover,
+#main-menu .mod-bypass-l:hover,
+#main-menu .mod-bypass-r:hover,
+#main-menu #mod-cpu:hover,
+#main-menu #mod-ram:hover {
   background-color: #000;
   opacity: 1;
 }
-#main-menu #mod-disconnect.selected {
-  background-color: #000;
+#main-menu #mod-disconnect.selected,
+#main-menu .mod-add-midi.selected,
+#main-menu .mod-bypass-l.selected,
+#main-menu .mod-bypass-r.selected,
+#main-menu #mod-cpu.selected,
+#main-menu #mod-ram.selected {
+  background-color: #333;
   opacity: 1;
+}
+#main-menu #mod-disconnect {
+  background-image: url(../img/icons/25/disconnect.png);
+}
+#main-menu .mod-add-midi {
+  background-image: url(../img/icons/25/midi.png);
+}
+#main-menu .mod-bypass-l {
+  background-image: url(../img/icons/25/bypass_L.png);
+}
+#main-menu .mod-bypass-r {
+  background-image: url(../img/icons/25/bypass_R.png);
 }
 #main-menu #mod-cpu,
 #main-menu #mod-ram {
-  border-color: #2b2b2b;
-  border-style: solid;
-  border-width: 0 0 0 1px;
-  color: #2f2f2f;
-  float: right;
-  font-size: 11px;
-  font-weight: bold;
-  line-height: 4.5;
   cursor: default;
-  text-align: center;
-  text-transform: uppercase;
-  width: 100px;
+  width: 100px !important;
+  padding: 0 !important;
   background: linear-gradient(to right, #1e5799 0%, #2989d8 69%, #ff6430 78%, #ff6430 93%, #c40000 100%);
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#1e5799', endColorstr='#c40000', GradientType=1);
 }
 #main-menu #mod-cpu .progress-title {
-  background-image: url(../img/icons/white/cpu.png);
+  background-image: url(../img/icons/25/cpu.png);
   background-position: 0px 50%;
   background-repeat: no-repeat;
   padding-left: 30px;
 }
 #main-menu #mod-ram .progress-title {
-  background-image: url(../img/icons/white/ram.png);
+  background-image: url(../img/icons/25/ram.png);
   background-position: 0px 50%;
   background-repeat: no-repeat;
   padding-left: 30px;
@@ -7183,7 +7200,6 @@ header#pedalboard-actions,
   position: fixed;
   right: 0;
   top: 0;
-  padding-left: 10px;
   box-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
   z-index: 5;
 }
@@ -7212,9 +7228,9 @@ header#pedalboard-actions button,
 #cloud-plugins-library header button,
 #pedalboards-library header button {
   background-position: 3px 50%;
-  background-size: 32px 32px;
+  background-size: 25px;
   background-repeat: no-repeat;
-  padding: 0 8px 0 40px;
+  padding: 0 8px 0 32px;
   background-color: transparent;
   border: none;
   border-right: 1px solid #2c2c2c;
@@ -7239,19 +7255,19 @@ header#pedalboard-actions button.js-save,
 #bank-library header button.js-save,
 #cloud-plugins-library header button.js-save,
 #pedalboards-library header button.js-save {
-  background-image: url(../img/icons/white/save.png);
+  background-image: url(../img/icons/25/save.png);
 }
 header#pedalboard-actions button.js-save-as,
 #bank-library header button.js-save-as,
 #cloud-plugins-library header button.js-save-as,
 #pedalboards-library header button.js-save-as {
-  background-image: url(../img/icons/white/save.png);
+  background-image: url(../img/icons/25/save.png);
 }
 header#pedalboard-actions button.js-reset,
 #bank-library header button.js-reset,
 #cloud-plugins-library header button.js-reset,
 #pedalboards-library header button.js-reset {
-  background-image: url(../img/icons/white/remove.png);
+  background-image: url(../img/icons/25/remove.png);
 }
 header#pedalboard-actions button.js-reset:hover,
 #bank-library header button.js-reset:hover,
@@ -7262,36 +7278,6 @@ header#pedalboard-actions button.js-reset.selected,
 #cloud-plugins-library header button.js-reset.selected,
 #pedalboards-library header button.js-reset.selected {
   background-color: #883996;
-}
-header#pedalboard-actions button.js-add-midi,
-#bank-library header button.js-add-midi,
-#cloud-plugins-library header button.js-add-midi,
-#pedalboards-library header button.js-add-midi {
-  background-image: url(../img/icons/white/midi.png);
-}
-header#pedalboard-actions button.js-bypass-l,
-#bank-library header button.js-bypass-l,
-#cloud-plugins-library header button.js-bypass-l,
-#pedalboards-library header button.js-bypass-l {
-  background-image: url(../img/icons/white/bypass_L.png);
-}
-header#pedalboard-actions button.js-bypass-l.selected,
-#bank-library header button.js-bypass-l.selected,
-#cloud-plugins-library header button.js-bypass-l.selected,
-#pedalboards-library header button.js-bypass-l.selected {
-  background-color: #333;
-}
-header#pedalboard-actions button.js-bypass-r,
-#bank-library header button.js-bypass-r,
-#cloud-plugins-library header button.js-bypass-r,
-#pedalboards-library header button.js-bypass-r {
-  background-image: url(../img/icons/white/bypass_R.png);
-}
-header#pedalboard-actions button.js-bypass-r.selected,
-#bank-library header button.js-bypass-r.selected,
-#cloud-plugins-library header button.js-bypass-r.selected,
-#pedalboards-library header button.js-bypass-r.selected {
-  background-color: #333;
 }
 header#pedalboard-actions h1,
 #bank-library header h1,
@@ -7306,25 +7292,14 @@ header#pedalboard-actions h1,
   line-height: 49px;
   height: 45px;
   padding: 0;
-  padding-left: 38px;
-  background-position: 0 50%;
-  background-size: 32px;
+  padding-left: 42px;
+  background-position: 3px 50%;
+  background-size: 36px;
   background-repeat: no-repeat;
+  background-image: url(../img/icons/36/mod.png);
 }
 header#pedalboard-actions {
   box-shadow: 0 2px 12px black;
-}
-header#pedalboard-actions h1 {
-  background-image: url(../img/icons/white/assembler.png);
-}
-#bank-library header h1 {
-  background-image: url(../img/icons/white/banks.png);
-}
-#cloud-plugins-library header h1 {
-  background-image: url(../img/icons/white/pluginlibrary.png);
-}
-#pedalboards-library header h1 {
-  background-image: url(../img/icons/white/pedalboardlibrary.png);
 }
 .tooltip {
   background: white;
@@ -7389,7 +7364,7 @@ header#pedalboard-actions h1 {
   height: 38px;
 }
 #plugins-library.folded #plugins-library-settings-window {
-  bottom: 27px;
+  bottom: 0px;
 }
 #plugins-library.fade {
   opacity: 0.2;
@@ -7404,7 +7379,7 @@ header#pedalboard-actions h1 {
   right: 0;
   width: 36px;
   background-color: rgba(17, 17, 17, 0.66);
-  background-image: url(../img/icons/white/pinned.png);
+  background-image: url(../img/icons/25/pinned.png);
   background-position: center center;
   background-repeat: no-repeat;
 }
@@ -7419,7 +7394,7 @@ header#pedalboard-actions h1 {
   width: 36px;
 }
 #plugins-library.auto .fold {
-  background-image: url(../img/icons/white/autohide.png);
+  background-image: url(../img/icons/25/autohide.png);
 }
 #plugins-library .settings {
   background-color: rgba(17, 17, 17, 0.66);
@@ -7440,6 +7415,7 @@ header#pedalboard-actions h1 {
   color: #fff;
   position: absolute;
   right: 74px;
+  transition: bottom 0.5s;
 }
 #plugins-library #plugins-library-settings-window h1 {
   padding: 0;
@@ -7497,6 +7473,11 @@ header#pedalboard-actions h1 {
   border-top: solid 3px transparent;
   transition-property: border-radius, color, margin-top, padding, border-top;
   transition-duration: 0.33s;
+}
+#plugins-library ul li:hover {
+  margin-top: -6px;
+  padding: 6px 11px;
+  color: white;
 }
 #plugins-library ul li.selected {
   color: white;

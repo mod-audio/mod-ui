@@ -392,12 +392,9 @@ $('document').ready(function() {
                 <h1 class="top bottom">{{fulltitle}}</h1>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
-                    <button class="js-add-midi">Add MIDI Device</button><button
+                    <button class="js-reset">New Pedalboard</button><button
                     class="js-save">Save</button><button
-                    class="js-save-as">Save as</button><button
-                    class="js-reset">New Pedalboard</button><button
-                    id="bypassL" class="js-bypass-l">Bypass L</button><button
-                    id="bypassR" class="js-bypass-r">Bypass R</button>
+                    class="js-save-as">Save as</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
@@ -444,10 +441,7 @@ $('document').ready(function() {
         <div id="mod-bank" class="icon"></div>
         <div id="mod-cloud-plugins" class="icon"></div>
         <div id="banks-saving">Auto saving banks...</div>
-        <div id="mod-disconnect" class="icon">Disconnect</div>
-        <div id="mod-settings" class="icon hide"></div>
-        <div id="mod-bluetooth" class="icon hide"></div>
-        <div id="mod-cloud" class="icon"></div>
+        
         <div id="mod-ram" class="icon">
           <div class="progress" id="ram-bar" style="width: 100%;">
             <div class="bar"></div> <!-- not sure if this is needed -->
@@ -464,6 +458,14 @@ $('document').ready(function() {
             cpu
           </p>
         </div>
+        <div id="mod-disconnect" class="icon">Disconnect</div>
+        <div id="bypassR" class="icon mod-bypass-r">Bypass R</div>
+        <div id="bypassL" class="icon mod-bypass-l">Bypass L</div>
+        <div class="icon mod-add-midi">Add MIDI Device</div>
+        <div id="mod-settings" class="icon hide"></div>
+        <div id="mod-bluetooth" class="icon hide"></div>
+        <div id="mod-cloud" class="icon"></div>
+        
     </div>
     <!-- END MAIN MENU-->
 

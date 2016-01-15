@@ -341,11 +341,16 @@ hr.dotted {
       background-position: -180px bottom;
     }
   }
-  #mod-disconnect {
-    background-image: url(../img/icons/white/disconnect.png);
-    background-position: 12px 50%;
+  
+  #mod-disconnect,
+  .mod-add-midi,
+  .mod-bypass-l,
+  .mod-bypass-r,
+  #mod-cpu, #mod-ram {
+    background-position: 8px 50%;
     background-repeat: no-repeat;
-    padding-left: 35px;
+    padding-left: 40px;
+    padding-right: 12px;
     border-color: #2b2b2b;
     border-style: solid;
     border-width: 0 0 0 1px;
@@ -354,43 +359,46 @@ hr.dotted {
     font-size: 11px;
     font-weight: bold;
     line-height: 4.5;
-    text-align: center;
     text-transform: uppercase;
-    width: 125px;
-    opacity: 0.2;
+    width: auto !important;
+    transition: all 0.5s;
     &:hover {
       background-color: #000;
       opacity: 1;
     }
     &.selected {
-      background-color: #000;
+      background-color: #333;
       opacity: 1;
     }
   }
+  #mod-disconnect {
+    background-image: url(../img/icons/25/disconnect.png);
+  }
+  .mod-add-midi {
+    background-image: url(../img/icons/25/midi.png);
+  }
+  .mod-bypass-l {
+    background-image: url(../img/icons/25/bypass_L.png);
+  }
+  .mod-bypass-r {
+    background-image: url(../img/icons/25/bypass_R.png);
+  }
+  
   #mod-cpu, #mod-ram {
-    border-color: #2b2b2b;
-    border-style: solid;
-    border-width: 0 0 0 1px;
-    color: rgb(47,47,47);
-    float: right;
-    font-size: 11px;
-    font-weight: bold;
-    line-height: 4.5;
     cursor: default;
-    text-align: center;
-    text-transform: uppercase;
-    width: 100px;
+    width: 100px !important;
+    padding: 0 !important;
     background: linear-gradient(to right, #1e5799 0%,#2989d8 69%,#ff6430 78%,#ff6430 93%,#c40000 100%);
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#c40000',GradientType=1 );
   }
   #mod-cpu .progress-title {
-    background-image: url(../img/icons/white/cpu.png);
+    background-image: url(../img/icons/25/cpu.png);
     background-position: 0px 50%;
     background-repeat: no-repeat;
     padding-left: 30px;
   }
   #mod-ram .progress-title {
-    background-image: url(../img/icons/white/ram.png);
+    background-image: url(../img/icons/25/ram.png);
     background-position: 0px 50%;
     background-repeat: no-repeat;
     padding-left: 30px;
@@ -467,7 +475,6 @@ header#pedalboard-actions,
   position: fixed;
   right: 0;
   top: 0;
-  padding-left: 10px;
   z-index: 5;
   box-shadow:0 1px 10px rgba(0,0,0,0.1);
   z-index:5;
@@ -487,9 +494,9 @@ header#pedalboard-actions,
   }
   button {
     background-position: 3px 50%;
-    background-size: 32px 32px;
+    background-size: 25px;
     background-repeat: no-repeat;
-    padding: 0 8px 0 40px;
+    padding: 0 8px 0 32px;
     background-color: transparent;
     border: none;
     border-right: 1px solid #2c2c2c;
@@ -503,30 +510,15 @@ header#pedalboard-actions,
         background-color: black;
     }
     &.js-save {
-        background-image: url(../img/icons/white/save.png);
+        background-image: url(../img/icons/25/save.png);
     }
     &.js-save-as {
-        background-image: url(../img/icons/white/save.png);
+        background-image: url(../img/icons/25/save.png);
     }
     &.js-reset {
-        background-image: url(../img/icons/white/remove.png);
+        background-image: url(../img/icons/25/remove.png);
         &:hover, &.selected {
             background-color: @brand-primary;
-        }
-    }
-    &.js-add-midi {
-        background-image: url(../img/icons/white/midi.png);
-    }
-    &.js-bypass-l {
-        background-image: url(../img/icons/white/bypass_L.png);
-        &.selected {
-            background-color: #333;
-        }
-    }
-    &.js-bypass-r {
-        background-image: url(../img/icons/white/bypass_R.png);
-        &.selected {
-            background-color: #333;
         }
     }
   }
@@ -540,28 +532,16 @@ header#pedalboard-actions,
     line-height: 49px;
     height: 45px;
     padding: 0;
-    padding-left: 38px;
-    background-position: 0 50%;
-    background-size: 32px;
+    padding-left: 42px;
+    background-position: 3px 50%;
+    background-size: 36px;
     background-repeat: no-repeat;
+    background-image: url(../img/icons/36/mod.png);
   }
 }
 header#pedalboard-actions {
     box-shadow: 0 2px 12px black;
 }
-header#pedalboard-actions h1 {
-    background-image: url(../img/icons/white/assembler.png);
-}
-#bank-library header h1 {
-    background-image: url(../img/icons/white/banks.png);
-}
-#cloud-plugins-library header h1 {
-    background-image: url(../img/icons/white/pluginlibrary.png);
-}
-#pedalboards-library header h1 {
-    background-image: url(../img/icons/white/pedalboardlibrary.png);
-}
-
 
 .tooltip {
   background: white;
@@ -626,7 +606,7 @@ header#pedalboard-actions h1 {
   &.folded {
     height: 38px;
     #plugins-library-settings-window {
-      bottom: 27px;
+      bottom: 0px;
     }
   }
   &.fade {
@@ -642,7 +622,7 @@ header#pedalboard-actions h1 {
     right: 0;
     width: 36px;
     background-color: rgba(17, 17, 17, 0.66);
-    background-image: url(../img/icons/white/pinned.png);
+    background-image: url(../img/icons/25/pinned.png);
     background-position: center center;
     background-repeat: no-repeat;
   }
@@ -658,7 +638,7 @@ header#pedalboard-actions h1 {
   }
   &.auto {
     .fold {
-      background-image: url(../img/icons/white/autohide.png);
+      background-image: url(../img/icons/25/autohide.png);
     }
   }
   .settings {
@@ -680,6 +660,7 @@ header#pedalboard-actions h1 {
     color: #fff;
     position: absolute;
     right: 74px;
+    transition: bottom 0.5s;
     h1 {
       padding: 0;
     }
@@ -737,6 +718,11 @@ header#pedalboard-actions h1 {
       border-top: solid 3px transparent;
       transition-property: border-radius, color, margin-top, padding, border-top;
       transition-duration: 0.33s;
+      &:hover {
+        margin-top: -6px;
+        padding: 6px 11px;
+        color: white;
+      }
     }
     li.selected {
       color: white;

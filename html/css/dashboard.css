@@ -57,7 +57,7 @@
 /* Pedalboard Info - Header */
 #pedalboard-info {
     height:100%;
-    left:10px;
+    left:0px;
     margin:0;
     padding:0;
     position:absolute;
@@ -1106,7 +1106,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 
 .mod-confirm .mod-icon {
-    background-image: url(../img/icons/white/confirm.png) !important;
+    background-image: url(../img/icons/36/confirm.png) !important;
 }
 
 

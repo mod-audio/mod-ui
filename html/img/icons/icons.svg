@@ -23,9 +23,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="22.627417"
-     inkscape:cx="390.16438"
-     inkscape:cy="802.08403"
+     inkscape:zoom="11.313708"
+     inkscape:cx="-230.84254"
+     inkscape:cy="996.09784"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
@@ -39,7 +39,7 @@
      inkscape:window-maximized="1"
      inkscape:object-nodes="true"
      inkscape:snap-nodes="true"
-     inkscape:snap-global="true"
+     inkscape:snap-global="false"
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:snap-smooth-nodes="true"
@@ -292,7 +292,8 @@
        height="35.999985"
        width="36"
        id="rect4267"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/mod.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -303,7 +304,8 @@
        x="100"
        y="161.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/pedal.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -314,7 +316,8 @@
        height="36.000004"
        width="36"
        id="rect4271"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/pedals.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -325,7 +328,8 @@
        x="172"
        y="161.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/folder.png" />
     <rect
        ry="0.80000812"
        rx="0.80000001"
@@ -345,7 +349,8 @@
        x="244"
        y="161.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/bluetooth.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -356,7 +361,8 @@
        height="36.000004"
        width="36"
        id="rect4279"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/cloud.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -367,7 +373,8 @@
        x="352"
        y="197.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/footswitch.png" />
     <rect
        y="214.3622"
        x="366"
@@ -385,7 +392,8 @@
        x="316"
        y="161.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/pedals2.png" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4285"
@@ -405,7 +413,8 @@
        height="36.000004"
        width="36"
        id="rect4283"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/load.png" />
     <rect
        ry="1.00001"
        rx="1"
@@ -434,7 +443,8 @@
        rx="0.80000001"
        ry="0.80000818"
        inkscape:export-xdpi="90"
-       inkscape:export-ydpi="90" />
+       inkscape:export-ydpi="90"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/assembler.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -445,7 +455,8 @@
        x="64"
        y="197.3622"
        rx="0.80000001"
-       ry="0.80000818" />
+       ry="0.80000818"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/pin.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -456,7 +467,8 @@
        height="36.000004"
        width="36"
        id="rect4342"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/remove.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -467,7 +479,8 @@
        x="136"
        y="197.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/faders.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -478,7 +491,8 @@
        height="36.000008"
        width="36"
        id="rect4346"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/edit.png" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect8266"
@@ -509,7 +523,8 @@
        x="208"
        y="197.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/settings.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -520,7 +535,8 @@
        height="36.000004"
        width="36"
        id="rect4350"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/help.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -531,7 +547,8 @@
        x="280"
        y="197.3622"
        rx="0.80000001"
-       ry="0.80000812" />
+       ry="0.80000812"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/midi.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -542,7 +559,8 @@
        height="36.000004"
        width="36"
        id="rect4354"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/disconnect.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -584,7 +602,8 @@
        height="35.999996"
        width="36"
        id="rect4220"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/save.png" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"
@@ -688,7 +707,8 @@
        x="-200"
        y="27.362226"
        rx="0.99999994"
-       ry="1.00001" />
+       ry="1.00001"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/autohide.png" />
     <rect
        ry="1.00001"
        rx="0.99999994"
@@ -698,7 +718,7 @@
        width="25.000002"
        id="rect4349"
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
-       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/white/cpu.png"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/cpu.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
     <rect
@@ -710,7 +730,7 @@
        y="27.362206"
        rx="0.99999994"
        ry="1.00001"
-       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/white/ram.png"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/ram.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
     <rect
@@ -722,7 +742,7 @@
        y="27.362206"
        rx="0.99999994"
        ry="1.00001"
-       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/white/disconnect.png"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/disconnect.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
     <rect
@@ -733,7 +753,10 @@
        height="25"
        width="25.000002"
        id="rect4355"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/save.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4357"
@@ -742,7 +765,10 @@
        x="-75"
        y="27.362226"
        rx="0.99999994"
-       ry="1.00001" />
+       ry="1.00001"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/midi.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        ry="1.00001"
        rx="0.99999994"
@@ -751,7 +777,10 @@
        height="25"
        width="25.000002"
        id="rect4361"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/bypass_L.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4363"
@@ -832,7 +861,10 @@
        height="25"
        width="25.000002"
        id="rect4379"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/remove.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4381"
@@ -904,7 +936,10 @@
        x="-25"
        y="27.362226"
        rx="0.99999994"
-       ry="1.00001" />
+       ry="1.00001"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/bypass_R.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        ry="1.00001"
        rx="0.99999994"
@@ -993,7 +1028,8 @@
        id="rect5205"
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        inkscape:export-xdpi="90"
-       inkscape:export-ydpi="90" />
+       inkscape:export-ydpi="90"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/36/knob.png" />
     <path
        inkscape:connector-curvature="0"
        id="rect5209"
@@ -1403,6 +1439,39 @@
        d="m 416,246.36133 0,3 -26,0 0,5 26,0 0,3 6,-5.55664 -6,-5.44336 z"
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#f29446;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        inkscape:connector-curvature="0" />
+    <path
+       style="fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m -90,31.362205 0,3 -3,0 6,5 6,-5 -3,0 0,-3 z m -1.948578,5.257686 -3.15487,0.97357 L -98,40.274252 l 9.461883,5.215195 2.124324,-4.434512 -7.355938,-3.062595 2.444874,-0.851878 z m 5.534785,4.435044 2.172414,4.153769 L -77,40.36264 l -2.896552,-2.769179 -2.582246,-0.680548 -0.623722,0.521928 2.122593,0.629165 z m -8.689655,1.937016 0,2.076885 8.689655,4.846666 6.517241,-4.154371 0,-2.209468 -4.607892,3.070779 -1.909349,-3.40952 -1.779229,3.775952 z"
+       id="path8442"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccccccccccccccccccccccccccc" />
+    <path
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       d="m -62.500615,30.362205 c -0.05009,0 -0.09854,0.006 -0.148443,0.007 -0.13902,0.0043 -0.277938,0.01166 -0.416639,0.02209 -0.183774,0.01096 -0.367385,0.02113 -0.548206,0.04244 -0.113871,0.01487 -0.227465,0.03192 -0.340733,0.05097 -0.211281,0.03279 -0.421051,0.06897 -0.627497,0.115516 -0.07842,0.01878 -0.156561,0.03861 -0.234462,0.05948 -0.227335,0.05749 -0.452539,0.120033 -0.673036,0.193654 -0.08533,0.02992 -0.17025,0.06105 -0.254706,0.09343 -0.209459,0.0768 -0.416768,0.157133 -0.619058,0.248011 -0.08205,0.03844 -0.163626,0.0781 -0.244584,0.118908 -0.202447,0.09806 -0.402959,0.199081 -0.597132,0.310858 -0.0817,0.04801 -0.162667,0.09731 -0.242899,0.147783 -0.178256,0.109882 -0.352651,0.223703 -0.522902,0.344837 -0.100383,0.07228 -0.199362,0.146419 -0.296877,0.222528 -0.142829,0.110238 -0.283758,0.221677 -0.420015,0.339733 -0.105534,0.09282 -0.209018,0.187965 -0.310376,0.285383 -0.126679,0.119908 -0.251122,0.241931 -0.37109,0.368606 -0.0891,0.09446 -0.176269,0.19074 -0.261459,0.288784 -0.123009,0.140887 -0.24119,0.285113 -0.355916,0.433158 -0.07608,0.09762 -0.150361,0.196741 -0.222656,0.297273 -0.111799,0.156428 -0.218018,0.315719 -0.320498,0.479027 -0.06313,0.100192 -0.124451,0.201567 -0.183861,0.304065 -0.09833,0.170491 -0.190355,0.344532 -0.278317,0.521494 -0.06115,0.122162 -0.119589,0.245628 -0.175432,0.370313 -0.04638,0.104311 -0.09388,0.208003 -0.136628,0.314258 -0.01537,0.03618 -0.03057,0.07236 -0.04552,0.108715 l 0,0.0017 c -0.02263,0.06489 -0.04457,0.129997 -0.06581,0.195349 -0.07393,0.20362 -0.143753,0.408493 -0.204096,0.618322 -0.02997,0.107646 -0.05812,0.215805 -0.08438,0.324451 -0.04845,0.193687 -0.09507,0.387862 -0.131568,0.586038 -0.02245,0.132067 -0.04215,0.264596 -0.05907,0.39749 -0.02513,0.178077 -0.05052,0.355701 -0.06581,0.536786 -0.01166,0.156064 -0.01943,0.312388 -0.02367,0.468834 -0.0043,0.117057 -0.01684,0.231843 -0.01684,0.349934 -8e-6,0.04906 0.006,0.09715 0.0069,0.146088 0.0026,0.113882 0.0069,0.227703 0.01347,0.341437 0.0095,0.188747 0.0235,0.376069 0.04387,0.56226 0.01071,0.10211 0.02315,0.204047 0.03713,0.305761 0.031,0.218726 0.07082,0.434628 0.116385,0.648901 0.01485,0.07437 0.03057,0.148531 0.04725,0.222529 0.06875,0.289235 0.146846,0.575157 0.241216,0.854434 0.09573,0.283289 0.206307,0.559191 0.327235,0.830659 0.03126,0.06662 0.0633,0.132866 0.09615,0.19874 0.09597,0.20275 0.197403,0.402978 0.306999,0.597936 0.04283,0.07531 0.0867,0.150088 0.131567,0.224224 0.115323,0.192722 0.237701,0.380078 0.366038,0.563965 0.04033,0.05993 0.08145,0.119378 0.123138,0.178364 0.174076,0.237773 0.356348,0.468946 0.551583,0.689665 0.198715,0.224649 0.409799,0.438481 0.629181,0.643796 0.04957,0.04471 0.09962,0.08887 0.150127,0.132503 0.1674,0.150202 0.339654,0.294802 0.517849,0.433157 0.06952,0.05418 0.139832,0.107438 0.21085,0.159682 0.186849,0.136913 0.379484,0.265563 0.576878,0.388994 0.05087,0.03279 0.10203,0.06506 0.153504,0.09683 0.254188,0.15221 0.514421,0.295932 0.784361,0.424669 0.111306,0.05305 0.226888,0.09888 0.340732,0.147783 0.09157,0.04166 0.183801,0.08192 0.276643,0.120614 0.02021,0.007 0.0405,0.01365 0.06072,0.02035 0.274112,0.105396 0.55299,0.20142 0.840031,0.281983 0.0043,8.69e-4 0.0088,0.0035 0.01347,0.0052 l 0,-0.0017 c 0.320489,0.08842 0.645356,0.159864 0.973281,0.214031 -0.107264,-0.230182 -0.163115,-0.481253 -0.163616,-0.735527 4.32e-4,-0.05279 0.0035,-0.105469 0.0087,-0.157977 0.0811,-0.895244 0.826178,-1.580794 1.718848,-1.581474 0.872685,0.0017 1.610651,0.712392 1.71548,1.584866 l 0.0017,0 c 0.006,0.05132 0.0091,0.102929 0.01013,0.154585 -4.23e-4,0.251724 -0.0551,0.500362 -0.160249,0.728734 2.413278,-0.401709 4.579794,-1.724395 6.048876,-3.692941 l -0.01857,-0.0035 c 0.198293,-0.266154 0.378225,-0.544823 0.548207,-0.830659 l 0.02193,-0.0017 c 0.07341,-0.131371 0.143702,-0.264475 0.21085,-0.399194 0.179965,-0.329365 0.340491,-0.669133 0.480737,-1.01751 0.03869,-0.112551 0.07522,-0.225805 0.109649,-0.339732 0.01831,-0.05279 0.03489,-0.106462 0.05225,-0.15968 0.06823,-0.205091 0.129573,-0.412442 0.183861,-0.621716 l 0.0035,-0.01356 c 0.0026,-0.0096 0.0043,-0.01931 0.0069,-0.02887 0.0304,-0.118917 0.05855,-0.238418 0.08438,-0.358422 l -0.0087,-0.0087 c 0.06737,-0.323851 0.12135,-0.651678 0.155188,-0.985242 l 0.0052,0.0035 c 8.63e-4,-0.02714 0.0026,-0.05445 0.0035,-0.08149 0.02522,-0.270527 0.0399,-0.543222 0.04215,-0.818767 1.56e-4,-0.01888 0.0035,-0.03722 0.0035,-0.056 -0.0026,-0.08671 -0.0069,-0.173327 -0.01183,-0.2599 -0.0035,-0.237608 -0.01485,-0.475026 -0.03541,-0.711748 -0.02177,-0.219693 -0.05993,-0.433836 -0.09615,-0.648894 -0.01563,-0.09297 -0.02383,-0.188242 -0.04215,-0.280286 l -0.0017,-0.0087 c -0.125902,-0.629987 -0.314401,-1.237324 -0.556644,-1.815892 -0.121246,-0.289592 -0.255241,-0.573418 -0.40314,-0.847642 -0.0026,-0.0052 -0.006,-0.0102 -0.0087,-0.0153 -0.03368,-0.05645 -0.06805,-0.112473 -0.102896,-0.16817 -0.120858,-0.212474 -0.243349,-0.423278 -0.379528,-0.625115 -0.08291,-0.116865 -0.168376,-0.231834 -0.256397,-0.344828 -0.09771,-0.131669 -0.191021,-0.266094 -0.295194,-0.392403 -0.122334,-0.144175 -0.248902,-0.284662 -0.379528,-0.421269 -0.08153,-0.08777 -0.159834,-0.178668 -0.244583,-0.263302 -0.118535,-0.115272 -0.240024,-0.227415 -0.364354,-0.33633 -0.112999,-0.101717 -0.222967,-0.206125 -0.340733,-0.30237 -0.122524,-0.0965 -0.247382,-0.189956 -0.374466,-0.280285 -0.123485,-0.09122 -0.244869,-0.184835 -0.372783,-0.270084 -0.126887,-0.08175 -0.255682,-0.160509 -0.386282,-0.236123 -0.142682,-0.08558 -0.284432,-0.171588 -0.431821,-0.249706 -0.128986,-0.06645 -0.259465,-0.129842 -0.391334,-0.190253 -0.148875,-0.07036 -0.297413,-0.141192 -0.450382,-0.203837 -0.03757,-0.01722 -0.07522,-0.03427 -0.113016,-0.05097 -0.09062,-0.03192 -0.181719,-0.06254 -0.273257,-0.09172 -0.173963,-0.06254 -0.347814,-0.124258 -0.526287,-0.176668 -0.114146,-0.03157 -0.228873,-0.06105 -0.344108,-0.08834 -0.191316,-0.04844 -0.382837,-0.09598 -0.578572,-0.132502 -0.125548,-0.02184 -0.251527,-0.04105 -0.377845,-0.05775 -0.179594,-0.026 -0.358765,-0.05218 -0.54146,-0.06792 -0.151613,-0.01105 -0.303484,-0.01835 -0.455433,-0.02209 -0.121843,-0.0043 -0.24138,-0.0187 -0.364355,-0.0187 z m 0,1.732657 c 0.948842,0 1.727286,0.783927 1.727286,1.73945 0,0.955515 -0.778444,1.739451 -1.727286,1.739451 -0.948842,0 -1.727286,-0.783936 -1.727286,-1.739451 0,-0.955523 0.778444,-1.73945 1.727286,-1.73945 z m -4.318214,2.067293 c 0.948841,0 1.727286,0.783927 1.727286,1.739451 0,0.955523 -0.778445,1.73945 -1.727286,1.73945 -0.948841,0 -1.727285,-0.783927 -1.727285,-1.73945 0,-0.955524 0.778444,-1.739451 1.727285,-1.739451 z m 8.636428,0 c 0.948841,0 1.727285,0.783927 1.727285,1.739451 0,0.955523 -0.778444,1.73945 -1.727285,1.73945 -0.948841,0 -1.727285,-0.783927 -1.727285,-1.73945 0,-0.955524 0.778444,-1.739451 1.727285,-1.739451 z m -10.363713,4.348627 c 0.94884,0 1.727285,0.783927 1.727285,1.739449 0,0.955524 -0.778445,1.739451 -1.727285,1.739451 -0.948842,0 -1.727286,-0.783927 -1.727286,-1.739451 0,-0.955522 0.778444,-1.739449 1.727286,-1.739449 z m 12.090998,0 c 0.948842,0 1.727286,0.783927 1.727286,1.739449 0,0.955524 -0.778444,1.739451 -1.727286,1.739451 -0.94884,0 -1.727285,-0.783927 -1.727285,-1.739451 0,-0.955522 0.778445,-1.739449 1.727285,-1.739449 z"
+       id="path8444"
+       inkscape:connector-curvature="0" />
+    <path
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       d="m -45,30.361328 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m -13,2 0,4 1,0 0,-3 13,0 a 1.0001,1.0001 0 0 1 0.03711,0 1.0001,1.0001 0 0 1 0.634766,0.259766 L -31,33.917969 l 0,-1.556641 -15,0 z m -2,1 0,1 1,0 0,-1 -1,0 z m 18,0 0,1 1,0 0,-1 -1,0 z m -14,1 0,2 10.998047,0 L -35,34.363281 l -9,-0.002 z m -4,1 0,1 1,0 0,-1 -1,0 z m 18.589844,0 0.410156,0.371094 0,-0.371094 -0.410156,0 z m -18.589844,8 0,1 1,0 0,-1 -1,0 z m 2,0 0,4 15,0 0,-1.5625 -0.320312,0.296875 A 1.0001,1.0001 0 0 1 -32,46.361328 l -13,0 0,-3 -1,0 z m 2,0 0,2 11,0 0,-2 -11,0 z m 15,0.585938 -0.447266,0.414062 0.447266,0 0,-0.414062 z m -19,1.414062 0,1 1,0 0,-1 -1,0 z m 18,0 0,1 1,0 0,-1 -1,0 z m -15,3 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z"
+       id="path8450"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#f29446;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       d="m -32,34.36133 0,3 -17,0 0,5 17,0 0,3 6,-5.55664 z"
+       id="path8452"
+       sodipodi:nodetypes="cccccccc" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path8461"
+       d="m -20,30.361328 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m -13,2 0,4 1,0 0,-3 13,0 a 1.0001,1.0001 0 0 1 0.03711,0 1.0001,1.0001 0 0 1 0.634766,0.259766 L -6,33.917969 l 0,-1.556641 -15,0 z m -2,1 0,1 1,0 0,-1 -1,0 z m 18,0 0,1 1,0 0,-1 -1,0 z m -14,1 0,2 10.998047,0 L -10,34.363281 l -9,-0.002 z m -4,1 0,1 1,0 0,-1 -1,0 z m 18.589844,0 L -4,35.732422 l 0,-0.371094 -0.410156,0 z m -18.589844,8 0,1 1,0 0,-1 -1,0 z m 2,0 0,4 15,0 0,-1.5625 -0.320312,0.296875 A 1.0001,1.0001 0 0 1 -7,46.361328 l -13,0 0,-3 -1,0 z m 2,0 0,2 11,0 0,-2 -11,0 z m 15,0.585938 -0.447266,0.414062 0.447266,0 0,-0.414062 z m -19,1.414062 0,1 1,0 0,-1 -1,0 z m 18,0 0,1 1,0 0,-1 -1,0 z m -15,3 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z m 2,0 0,1 1,0 0,-1 -1,0 z"
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+    <path
+       sodipodi:nodetypes="cccccccc"
+       id="path8464"
+       d="m -7,34.36133 0,3 -17,0 0,5 17,0 0,3 6,-5.55664 z"
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#883996;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:connector-curvature="0" />
   </g>
   <g
      style="display:inline"
@@ -1715,7 +1784,10 @@
     </g>
     <g
        transform="matrix(0.80801152,0.80801152,-0.80801152,0.80801152,-7.9882859,183.60346)"
-       id="g4415">
+       id="g4415"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/pin.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          transform="scale(1,-1)"
          d="m -210,-40.391209 a 5.5000005,3.6811705 0 0 1 -2.75,3.187988 5.5000005,3.6811705 0 0 1 -5.5,-10e-7 5.5000005,3.6811705 0 0 1 -2.75,-3.187987 l 5.5,0 z"
@@ -2572,6 +2644,16 @@
            style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none"
            d="m 1750.09,726.141 c 0,-56.18 -38.03,-84.262 -114.08,-84.262 l -602.94,0 c -76.074,0 -114.101,28.082 -114.101,84.262 l 0,474.569 c 0,56.19 38.027,84.29 114.101,84.29 l 602.94,0 c 76.05,0 114.08,-28.1 114.08,-84.29 l 0,-474.569 z m -717.02,693.699 c -51.863,0 -95.937,-5.4 -132.25,-16.21 -36.308,-10.8 -65.918,-25.95 -88.804,-45.39 -22.934,-19.47 -39.559,-42.59 -49.93,-69.36 -10.375,-26.8 -15.555,-56.65 -15.555,-89.47 l 0,-471.961 c 0,-31.98 5.18,-61.597 15.555,-88.84 10.371,-27.211 26.996,-50.55 49.93,-70.007 22.886,-19.442 52.496,-34.59 88.804,-45.391 36.313,-10.789 80.387,-16.191 132.25,-16.191 l 602.94,0 c 51.87,0 95.94,5.402 132.25,16.191 36.29,10.801 65.91,25.949 88.82,45.391 22.9,19.457 39.54,42.796 49.92,70.007 10.38,27.243 15.55,56.86 15.55,88.84 l 0,471.961 c 0,32.82 -5.17,62.67 -15.55,89.47 -10.38,26.77 -27.02,49.89 -49.92,69.36 -22.91,19.44 -52.53,34.59 -88.82,45.39 -36.31,10.81 -80.38,16.21 -132.25,16.21 l -602.94,0 z m 246.67,787.88 0,-214.14 c 46.54,-0.32 84.53,-38.49 84.53,-85.07 l 0,-173.12 c 0,-46.82 -38.3,-85.11 -85.08,-85.11 l -111.25,0 c -46.76,0 -85.06,38.29 -85.06,85.11 l 0,173.12 c 0,46.58 37.97,84.75 84.49,85.07 l 0,214.14 -68.67,0 c -40.56,0 -75.06,-4.21 -103.458,-12.67 -28.402,-8.43 -51.558,-20.28 -69.476,-35.5 -17.93,-15.2 -30.946,-33.47 -39.063,-54.77 -8.113,-21.31 -12.156,-44.46 -12.156,-69.48 l 0,-369.23 c 0,-25.68 4.043,-49.02 12.156,-69.99 8.117,-20.97 21.133,-39.02 39.063,-54.24 17.918,-15.23 41.074,-27.07 69.476,-35.51 28.398,-8.47 62.898,-12.69 103.458,-12.69 l 471.68,0 c 40.56,0 75.06,4.22 103.46,12.69 28.4,8.44 51.56,20.28 69.47,35.51 17.92,15.22 30.94,33.27 39.06,54.24 8.11,20.97 12.17,44.31 12.17,69.99 l 0,369.23 c 0,25.02 -4.06,48.17 -12.17,69.48 -8.12,21.3 -21.14,39.57 -39.06,54.77 -17.91,15.22 -41.07,27.07 -69.47,35.5 -28.4,8.46 -62.9,12.67 -103.46,12.67 l -290.64,0 z m 382.86,-340.48 c 24.55,0 44.49,-19.95 44.49,-44.49 0,-24.56 -19.94,-44.48 -44.49,-44.48 -24.58,0 -44.48,19.92 -44.48,44.48 0,24.54 19.9,44.49 44.48,44.49 m -327.45,803.06 c 737.26,0 1335.15,-597.9 1335.15,-1335.14 C 2670.3,597.879 2072.41,0 1335.15,0 597.883,0 0,597.879 0,1335.16 0,2072.4 597.883,2670.3 1335.15,2670.3 m 0,-199.1 c 627.31,0 1136.06,-508.74 1136.06,-1136.04 0,-627.34 -508.75,-1136.078 -1136.06,-1136.078 -627.338,0 -1136.064,508.738 -1136.064,1136.078 0,627.3 508.726,1136.04 1136.064,1136.04 m -148.46,-1267.13 75.08,0 c 31.58,0 57.4,-25.83 57.4,-57.41 l 0,-376.558 c 0,-31.543 -25.84,-57.403 -57.4,-57.403 l -75.08,0 c -31.59,0 -57.41,25.821 -57.41,57.403 l 0,376.558 c 0,31.58 25.8,57.41 57.41,57.41" />
       </g>
+    </g>
+    <g
+       id="g8466"
+       transform="matrix(0.68965517,0,0,0.7037037,-547.13793,-92.670454)">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8468"
+         d="m 475.075,209.30957 c -0.40153,0 -0.72116,0.44594 -0.725,1 l 0,10 1.45,0 0,-10 c 0,-0.55401 -0.32347,-1 -0.725,-1 z m 12.325,-0.36842 c -1.108,0 -1.45,1.7341 -1.45,2.8421 l -4.35,0 c -1.108,3.3e-4 -1.45,1.73411 -1.45,2.84211 l 20.3,0 c 0,-1.108 -0.342,-2.84178 -1.45,-2.84211 l -4.45,0 c 0,-1.108 -0.242,-2.8421 -1.35,-2.8421 z m 1,1 3.8,0 c 0.554,0 0.35,1.28809 0.35,1.8421 l -4.6,0 c 0,-0.55401 -0.104,-1.8421 0.45,-1.8421 z m -6.8,6.10526 0,21.31579 17.4,0 0,-21.31579 z m 2.15,1.84211 c 0.4155,0 0.75,0.44599 0.75,1 l 0,15.63158 c 0,0.55436 -0.3345,1 -0.75,1 -0.4155,0 -0.75,-0.446 -0.75,-1 l 0,-15.63158 c 0,-0.55401 0.3345,-1 0.75,-1 z m 2.925,0 c 0.40165,0 0.725,0.44599 0.725,1 l 0,15.63158 c 0,0.554 -0.32335,1 -0.725,1 -0.40165,0 -0.725,-0.446 -0.725,-1 l 0,-15.63158 c 0,-0.5539 0.32335,-1 0.725,-1 z m 3.14167,0 0.96666,0 c 0.53554,0 0.96667,0.44599 0.96667,1 l 0,15.63158 c 0,0.554 -0.43113,1 -0.96667,1 l -0.96666,0 c -0.53554,0 -0.96667,-0.446 -0.96667,-1 l 0,-15.63158 c 0,-0.55401 0.43113,-1 0.96667,-1 z m 4.10833,0 c 0.40165,0 0.725,0.4461 0.725,1 l 0,15.63158 c 0,0.554 -0.32335,1 -0.725,1 -0.40165,0 -0.725,-0.446 -0.725,-1 l 0,-15.63158 c 0,-0.55401 0.32335,-1 0.725,-1 z m 2.9,0 c 0.40165,0 0.725,0.44599 0.725,1 l 0,15.63158 c 0,0.554 -0.32335,1 -0.725,1 -0.40165,0 -0.725,-0.446 -0.725,-1 l 0,-15.63158 c 0,-0.55424 0.32335,-1 0.725,-1 z m -24.825,3.87285 1,2.81284 4,0 1,-2.81284 z m 1,4.25256 0,1.39532 1,0 2,0 1,0 0,-1.39532 -1,0 -2,0 z m 0,2.79064 -3,8.55763 10,0 -3,-8.55763 z"
+         style="fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         sodipodi:nodetypes="ssccsssccccccssssccscccccsssssssssssssssssssssssssssssssssssssccccccccccccccccccc" />
     </g>
   </g>
 </svg>
