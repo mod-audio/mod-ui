@@ -532,7 +532,7 @@ JqueryClass('effectBox', {
 
     calculateNavigation: function () {
         var self = $(this)
-        var wrapper = self.find('.plugins-wrapper:visible')
+        var wrapper = self.find('.plugins-wrapper.selected')
         if (wrapper.length == 0)
             return
         var shift = wrapper.position().left
@@ -567,7 +567,7 @@ JqueryClass('effectBox', {
     
     shiftDir: function (dir) {
         var self = $(this);
-        var wrapper = self.find('.plugins-wrapper:visible');
+        var wrapper = self.find('.plugins-wrapper.selected');
         var parent = wrapper.parent().parent();
         var plugins = wrapper.children();
         var pos = wrapper.data("pos");
@@ -601,12 +601,15 @@ JqueryClass('effectBox', {
     
     shiftAlter: function (dir) {
         var self = $(this);
-        var wrapper = self.find('.plugins-wrapper:visible');
+        var wrapper = self.find('.plugins-wrapper.selected');
         var parent = wrapper.parent().parent();
         var children = wrapper.children();
         var plug = wrapper.data("plug");
+        var pw = parent.width();
+        var ww = wrapper.width();
+        if (ww < pw) return;
         plug = Math.min(children.length-1, Math.max(0, plug + dir));
-        var pos = Math.max(-(wrapper.width() - parent.width()),
+        var pos = Math.max(-(ww - pw),
                            -$(children[plug]).position().left);
         while (-$(children[plug]).position().left < pos)
             plug--;

@@ -7090,7 +7090,6 @@ hr.dotted {
 #main-menu #mod-cpu:hover,
 #main-menu #mod-ram:hover {
   background-color: #000;
-  opacity: 1;
 }
 #main-menu #mod-disconnect.selected,
 #main-menu .mod-add-midi.selected,
@@ -7099,10 +7098,12 @@ hr.dotted {
 #main-menu #mod-cpu.selected,
 #main-menu #mod-ram.selected {
   background-color: #333;
-  opacity: 1;
 }
 #main-menu #mod-disconnect {
   background-image: url(../img/icons/25/disconnect.png);
+}
+#main-menu #mod-disconnect:hover {
+  background-color: #883996;
 }
 #main-menu .mod-add-midi {
   background-image: url(../img/icons/25/midi.png);

@@ -364,15 +364,16 @@ hr.dotted {
     transition: all 0.5s;
     &:hover {
       background-color: #000;
-      opacity: 1;
     }
     &.selected {
       background-color: #333;
-      opacity: 1;
     }
   }
   #mod-disconnect {
     background-image: url(../img/icons/25/disconnect.png);
+    &:hover {
+      background-color: @brand-primary;
+    }
   }
   .mod-add-midi {
     background-image: url(../img/icons/25/midi.png);
