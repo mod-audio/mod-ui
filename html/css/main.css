@@ -6677,12 +6677,11 @@ button.close {
   border-color: #111;
   border-style: dotted;
   border-width: 0 1px 0 0;
-  bottom: 46px;
+  bottom: 45px;
   left: 0;
-  padding-top: 18px;
   position: fixed;
   right: 0;
-  top: 68px;
+  top: 45px;
   width: 240px;
 }
 #pedalboards-library .filter .control-group {
@@ -6700,9 +6699,12 @@ button.close {
   width: 50px;
 }
 #pedalboards-library .pedalboards {
-  left: 252px;
-  position: absolute;
-  right: 10px;
+  left: 240px;
+  position: fixed;
+  right: 0px;
+  top: 45px;
+  bottom: 45px;
+  background: #111;
 }
 #pedalboards-library .pedalboards .pedalboard {
   color: #fff;
@@ -7399,6 +7401,9 @@ header#pedalboard-actions .close,
   padding: 6px 11px;
   border-top: solid 3px #883996;
 }
+#plugins-library.scrolling .plugins-wrapper {
+  transition: left 0.1s !important;
+}
 #plugins-library #plugins-list {
   background: rgba(17, 17, 17, 0.66);
   height: 140px;
@@ -7407,7 +7412,7 @@ header#pedalboard-actions .close,
   width: 100%;
 }
 #plugins-library #plugins-list .nav {
-  background: #111111 url(../img/nav-left.png) 50% 50% no-repeat;
+  background: url(../img/nav-left.png) 50% 50% no-repeat;
   cursor: pointer;
   position: absolute;
   top: 0;
@@ -7422,7 +7427,7 @@ header#pedalboard-actions .close,
   left: 0;
 }
 #plugins-library #plugins-list .nav-right {
-  background: #111111 url(../img/nav-right.png) 50% 50% no-repeat;
+  background: url(../img/nav-right.png) 50% 50% no-repeat;
   right: 0;
 }
 #plugins-library #plugins-list #plugins-results {
@@ -7437,6 +7442,7 @@ header#pedalboard-actions .close,
   position: relative;
   display: inline-block;
   white-space: nowrap;
+  transition: left 0.5s;
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin {
   color: #fff;

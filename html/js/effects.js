@@ -104,7 +104,24 @@ JqueryClass('effectBox', {
         self.find('.nav-right').click(function () {
             self.effectBox('shiftRight')
         })
-
+        
+        // CATEGORY WRAPPERS
+        self.find(".plugins-wrapper").each(function () {
+            $(this).data("pos", 0);
+            $(this).data("plug", 0);
+        })
+        
+        // CATEGORY SCROLL
+        self.on('DOMMouseScroll mousewheel', function ( event ) {
+            if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 )
+                self.effectBox('shiftNext');
+            else
+                self.effectBox('shiftPrev');
+            self.effectBox('scrolling');
+            return false;
+        });
+        self.data("scrollTO", false);
+        
         //self.effectBox('fold')
         self.effectBox('setCategory', 'All')
         self.effectBox('search')
@@ -535,42 +552,75 @@ JqueryClass('effectBox', {
     },
 
     shiftLeft: function () {
-        var self = $(this)
-        var wrapper = self.find('.plugins-wrapper:visible')
-        var parent = wrapper.parent().parent()
-        var shift = -wrapper.position().left
-        var newShift = Math.max(0, shift - parent.width())
-        self.effectBox('shiftTo', newShift)
+        $(this).effectBox('shiftDir', -1);
     },
 
     shiftRight: function () {
-        var self = $(this)
-        var wrapper = self.find('.plugins-wrapper:visible')
-        var parent = wrapper.parent().parent()
-        var shift = -wrapper.position().left
-        var maxShift = Math.max(0, wrapper.width())
-        var newShift = Math.min(maxShift, shift + parent.width())
-        if (newShift < maxShift)
-            self.effectBox('shiftTo', newShift)
+        $(this).effectBox('shiftDir', 1);
     },
-
-    shiftTo: function (newShift) {
-        var self = $(this)
-        var wrapper = self.find('.plugins-wrapper:visible')
-        var plugins = wrapper.children()
-        var shift = 0
-        var step
-        for (var i = 0; i < plugins.length; i++) {
-            step = $(plugins[i]).outerWidth()
-            if (shift + step > newShift)
-                return wrapper.animate({
-                    left: -shift
-                }, 500)
-            shift += step
+    
+    shiftDir: function (dir) {
+        var self = $(this);
+        var wrapper = self.find('.plugins-wrapper:visible');
+        var parent = wrapper.parent().parent();
+        var plugins = wrapper.children();
+        var pos = wrapper.data("pos");
+        var pw = parent.width();
+        var ww = wrapper.width();
+        var pos = Math.min(0,
+                  Math.max(-(ww - pw), pos - pw * dir + 64));
+        var shift = 0;
+        if (pos != -(ww - pw)) {
+            for (var i = 0; i < plugins.length; i++) {
+                var plugw = $(plugins[i]).outerWidth();
+                if (shift + plugw >= -pos) {
+                    pos = -shift;
+                    wrapper.data("plug", i);
+                    break;
+                }
+                shift += plugw;
+            }
         }
-        wrapper.animate({
-            left: -newShift
-        }, 500)
+        wrapper.data("pos", pos);
+        wrapper[0].style.left = pos + "px";
+    },
+    
+    shiftPrev: function () {
+        $(this).effectBox('shiftAlter', -1);
+    },
+    
+    shiftNext: function () {
+        $(this).effectBox('shiftAlter', 1);
+    },
+    
+    shiftAlter: function (dir) {
+        var self = $(this);
+        var wrapper = self.find('.plugins-wrapper:visible');
+        var parent = wrapper.parent().parent();
+        var children = wrapper.children();
+        var plug = wrapper.data("plug");
+        plug = Math.min(children.length-1, Math.max(0, plug + dir));
+        var pos = Math.max(-(wrapper.width() - parent.width()),
+                           -$(children[plug]).position().left);
+        wrapper[0].style.left = pos + "px";
+        wrapper.data("pos", pos);
+        wrapper.data("plug", plug);
+    },
+    scrolling: function () {
+        var self = $(this);
+        var scrollTO = self.data("scrollTO");
+        if (scrollTO) {
+            clearTimeout(scrollTO);
+        } else {
+            self.addClass("scrolling");
+        }
+        self.data("scrollTO", setTimeout(function () {
+            self.effectBox("scrollEnded");
+            self.removeClass("scrolling");
+        }, 200));
+    },
+    scrollEnded: function () {
+        $(this).data("scrollTO", false);
     }
 })
 

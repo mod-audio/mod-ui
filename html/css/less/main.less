@@ -678,6 +678,11 @@ header#pedalboard-actions,
       border-top: solid 3px @brand-primary;
     }
   }
+  &.scrolling {
+    .plugins-wrapper {
+      transition: left 0.1s !important;
+    }
+  }
     #plugins-list {
       background: rgba(17, 17, 17, 0.66);
       height: 140px;
@@ -685,7 +690,7 @@ header#pedalboard-actions,
       position: relative;
       width: 100%;
       .nav {
-        background: rgba(17, 17, 17, 1) url(../img/nav-left.png) 50% 50% no-repeat;
+        background: url(../img/nav-left.png) 50% 50% no-repeat;
         cursor: pointer;
         position: absolute;
         top: 0;
@@ -700,7 +705,7 @@ header#pedalboard-actions,
         left: 0;
       }
       .nav-right {
-        background: rgba(17, 17, 17, 1) url(../img/nav-right.png) 50% 50% no-repeat;
+        background: url(../img/nav-right.png) 50% 50% no-repeat;
         right: 0;
       }
       #plugins-results {
@@ -715,6 +720,7 @@ header#pedalboard-actions,
         position: relative;
         display: inline-block;
         white-space: nowrap;
+        transition: left 0.5s;
       }
       .plugins-wrapper .plugin {
         color: #fff;
