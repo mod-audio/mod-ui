@@ -7117,7 +7117,7 @@ hr.dotted {
 #main-menu #mod-cpu,
 #main-menu #mod-ram {
   cursor: default;
-  width: 100px !important;
+  width: 115px !important;
   padding: 0 !important;
   background: linear-gradient(to right, #1e5799 0%, #2989d8 69%, #ff6430 78%, #ff6430 93%, #c40000 100%);
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#1e5799', endColorstr='#c40000', GradientType=1);
