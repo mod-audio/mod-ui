@@ -7281,6 +7281,7 @@ header#pedalboard-actions .close,
   right: 0;
   transition: all 0.25s;
   transition: opacity 0.5s;
+  transition: height 0.5s;
 }
 #plugins-library.folded {
   height: 38px;
@@ -7392,6 +7393,8 @@ header#pedalboard-actions .close,
   text-shadow: 1px 1px 0 #000;
   text-transform: uppercase;
   border-top: solid 3px transparent;
+  transition-property: border-radius, color, margin-top, padding, border-top;
+  transition-duration: 0.33s;
 }
 #plugins-library ul li.selected {
   color: white;

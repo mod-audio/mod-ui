@@ -556,6 +556,7 @@ header#pedalboard-actions,
   right: 0;
   transition: all 0.25s;
   transition: opacity 0.5s;
+  transition: height 0.5s;
   &.folded {
     height: 38px;
     #plugins-library-settings-window {
@@ -668,6 +669,8 @@ header#pedalboard-actions,
       text-shadow: 1px 1px 0 #000;
       text-transform: uppercase;
       border-top: solid 3px transparent;
+      transition-property: border-radius, color, margin-top, padding, border-top;
+      transition-duration: 0.33s;
     }
     li.selected {
       color: white;
