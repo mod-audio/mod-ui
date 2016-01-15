@@ -7228,10 +7228,10 @@ header#pedalboard-actions button,
 #bank-library header button,
 #cloud-plugins-library header button,
 #pedalboards-library header button {
-  background-position: 3px 50%;
+  background-position: 8px 50%;
   background-size: 25px;
   background-repeat: no-repeat;
-  padding: 0 8px 0 32px;
+  padding: 0 12px 0 40px;
   background-color: transparent;
   border: none;
   border-right: 1px solid #2c2c2c;
