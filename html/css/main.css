@@ -5389,7 +5389,7 @@ button.close {
  * definitions in our imported stylesheets.
  */
 #mod-social-network {
-  background: url('../img/social/back.png') repeat fixed;
+  background: #2c2c2c;
   bottom: 45px;
   top: 0;
   font-size: 15px !important;
@@ -5931,7 +5931,7 @@ button.close {
   }
 }
 #cloud-plugins-library {
-  background-color: #333;
+  background: #2c2c2c;
   bottom: 45px;
   left: 0;
   overflow: auto;
@@ -5963,10 +5963,6 @@ button.close {
   top: 16px;
 }
 #cloud-plugins-library .filter {
-  background: url('../img/social/back.png') repeat fixed;
-  border-color: #111;
-  border-style: dotted;
-  border-width: 0 1px 0 0;
   bottom: 45px;
   left: 0;
   position: fixed;
@@ -6215,7 +6211,7 @@ button.close {
   margin: 0 6px;
 }
 #bank-library {
-  background: url('../img/social/back.png') repeat fixed;
+  background: #2c2c2c;
   bottom: 45px;
   left: 0;
   overflow-x: hidden;
@@ -6655,7 +6651,7 @@ button.close {
   overflow: hidden;
 }
 #pedalboards-library {
-  background: url('../img/social/back.png') repeat fixed;
+  background: #2c2c2c;
   bottom: 46px;
   left: 0;
   overflow-x: hidden;
