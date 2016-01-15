@@ -6721,9 +6721,11 @@ button.close {
   position: relative;
   background: #212121 url(../img/loading-pedalboard.gif) center center no-repeat;
   border: 1px solid #000;
+  transition: all 0.5s;
 }
 #pedalboards-library .pedalboards .pedalboard:hover {
   border-color: #883996;
+  box-shadow: 0 4px 10px black;
 }
 #pedalboards-library .pedalboards .pedalboard:hover .info {
   background: #883996;
@@ -6751,6 +6753,7 @@ button.close {
   background: rgba(0, 0, 0, 0.5);
   height: 25px;
   padding-left: 5px;
+  transition: all 0.5s;
 }
 #pedalboards-library .pedalboards .pedalboard .title {
   display: block;

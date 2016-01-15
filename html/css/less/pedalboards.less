@@ -69,8 +69,10 @@
       position: relative;
       background: #212121 url(../img/loading-pedalboard.gif) center center no-repeat;
       border: 1px solid #000;
+      transition: all 0.5s;
       &:hover {
         border-color: @brand-primary;
+        box-shadow: 0 4px 10px black;
         .info {
           background: @brand-primary;
         }
@@ -98,6 +100,7 @@
         background: rgba(0, 0, 0, 0.5);
         height: 25px;
         padding-left: 5px;
+        transition: all 0.5s;
       }
       .title {
         display: block;
