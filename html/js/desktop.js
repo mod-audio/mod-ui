@@ -348,6 +348,7 @@ function Desktop(elements) {
     
     this.init = function () {
         $(".mod-init-hidden").removeClass("mod-init-hidden");
+        $("body").addClass("initialized");
     }
 
     // hide bottom-bar social icon
