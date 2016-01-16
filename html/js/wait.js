@@ -13,7 +13,6 @@ function WaitMessage(canvas) {
     $('body').append(self.block).css('overflow', 'hidden')
 
     this.start = function (message) {
-        console.log(message)
         this.msg.text(message);
         $('#wrapper').css('z-index', -1)
         self.block.show(250)
