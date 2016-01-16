@@ -6051,7 +6051,7 @@ button.close {
   right: 0;
   top: 45px;
   bottom: 45px;
-  background: #111 !important;
+  background: #111111 url(../img/watermark.png) 100% 100% no-repeat;
   overflow-y: auto;
 }
 .cloud-plugins .plugins-wrapper {
@@ -6059,7 +6059,6 @@ button.close {
 }
 .cloud-plugins .cloud-plugin {
   color: #fff;
-  background-color: #111;
   float: left;
   width: 100%;
   position: relative;
@@ -6067,6 +6066,7 @@ button.close {
   padding-left: 15px;
   padding-right: 15px;
   padding: 15px;
+  transition: all 0.33s;
 }
 @media (min-width: 768px) {
   .cloud-plugins .cloud-plugin {
@@ -6227,7 +6227,6 @@ button.close {
   margin: 0 6px;
 }
 #bank-library {
-  background: #2c2c2c;
   bottom: 45px;
   left: 0;
   overflow-x: hidden;
@@ -6307,6 +6306,7 @@ button.close {
   overflow-y: auto;
   top: 45px;
   width: 20%;
+  background: #2c2c2c;
 }
 #bank-library #bank-list > div.add-bank {
   color: #fff;
@@ -6530,7 +6530,7 @@ button.close {
 #bank-library #bank-edit {
   position: fixed;
   display: block;
-  background-color: #111;
+  background: #111111 url(../img/watermark.png) 100% 100% no-repeat;
   width: 80%;
   bottom: 45px;
   top: 45px;
@@ -6750,7 +6750,7 @@ button.close {
   right: 0px;
   top: 45px;
   bottom: 45px;
-  background: #111;
+  background: #111111 url(../img/watermark.png) 100% 100% no-repeat;
   padding-top: 1.5%;
 }
 #pedalboards-library .pedalboards .pedalboard {
