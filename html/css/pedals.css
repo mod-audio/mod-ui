@@ -35,7 +35,7 @@
     width: 32px;
     right: 1.5em;
     color: #666;
-    transition: color 0.5s;
+    transition: color 0.33s;
 }
 .mod-settings:after {
     content: '\e800';
@@ -47,7 +47,7 @@
     position: absolute;
     right: 0px;
     color: #666;
-    transition: color 0.5s;
+    transition: color 0.33s;
 }
 .mod-remove:after {
     content: '\e801';
@@ -183,7 +183,6 @@ body > .mod-settings {
 
 .mod-pedal-settings {
     background:#000;
-    border-radius:9px;
     bottom:38px;
     color:#fff;
     left:30px;
@@ -546,7 +545,6 @@ body > .mod-settings {
 
 .mod-pedal-settings-address .mod-box {
     background:white;
-    border-radius:9px;
     left:50%;
     margin:-150px -168px;
     padding:18px;

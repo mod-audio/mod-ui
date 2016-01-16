@@ -314,14 +314,14 @@ img {
   height: auto;
 }
 .img-rounded {
-  border-radius: 6px;
+  border-radius: 0px;
 }
 .img-thumbnail {
   padding: 4px;
   line-height: 1.42857143;
   background-color: #ffffff;
   border: 1px solid #dddddd;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-transition: all 0.2s ease-in-out;
   -o-transition: all 0.2s ease-in-out;
   transition: all 0.2s ease-in-out;
@@ -727,14 +727,14 @@ code {
   font-size: 90%;
   color: #c7254e;
   background-color: #f9f2f4;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 kbd {
   padding: 2px 4px;
   font-size: 90%;
   color: #ffffff;
   background-color: #333333;
-  border-radius: 3px;
+  border-radius: 0px;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 kbd kbd {
@@ -754,7 +754,7 @@ pre {
   color: #333333;
   background-color: #f5f5f5;
   border: 1px solid #cccccc;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 pre code {
   padding: 0;
@@ -1745,7 +1745,7 @@ output {
   background-color: #ffffff;
   background-image: none;
   border: 1px solid #cccccc;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
   -webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
@@ -1893,7 +1893,7 @@ fieldset[disabled] .checkbox label {
   padding: 5px 10px;
   font-size: 12px;
   line-height: 1.5;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 select.input-sm {
   height: 30px;
@@ -1908,7 +1908,7 @@ select[multiple].input-sm {
   padding: 5px 10px;
   font-size: 12px;
   line-height: 1.5;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 .form-group-sm select.form-control {
   height: 30px;
@@ -1930,7 +1930,7 @@ select[multiple].input-sm {
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
-  border-radius: 6px;
+  border-radius: 0px;
 }
 select.input-lg {
   height: 46px;
@@ -1945,7 +1945,7 @@ select[multiple].input-lg {
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
-  border-radius: 6px;
+  border-radius: 0px;
 }
 .form-group-lg select.form-control {
   height: 46px;
@@ -2198,7 +2198,7 @@ select[multiple].input-lg {
   padding: 6px 12px;
   font-size: 14px;
   line-height: 1.42857143;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -2674,21 +2674,21 @@ fieldset[disabled] .btn-link:focus {
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
-  border-radius: 6px;
+  border-radius: 0px;
 }
 .btn-sm,
 .btn-group-sm > .btn {
   padding: 5px 10px;
   font-size: 12px;
   line-height: 1.5;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 .btn-xs,
 .btn-group-xs > .btn {
   padding: 1px 5px;
   font-size: 12px;
   line-height: 1.5;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 .btn-block {
   display: block;
@@ -2768,7 +2768,7 @@ tbody.collapse.in {
   background-color: #ffffff;
   border: 1px solid #cccccc;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
   background-clip: padding-box;
@@ -2998,12 +2998,12 @@ tbody.collapse.in {
   border-radius: 0;
 }
 .btn-group-vertical > .btn:first-child:not(:last-child) {
-  border-top-right-radius: 4px;
+  border-top-right-radius: 0px;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 }
 .btn-group-vertical > .btn:last-child:not(:first-child) {
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 0px;
   border-top-right-radius: 0;
   border-top-left-radius: 0;
 }
@@ -3069,7 +3069,7 @@ tbody.collapse.in {
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
-  border-radius: 6px;
+  border-radius: 0px;
 }
 select.input-group-lg > .form-control,
 select.input-group-lg > .input-group-addon,
@@ -3092,7 +3092,7 @@ select[multiple].input-group-lg > .input-group-btn > .btn {
   padding: 5px 10px;
   font-size: 12px;
   line-height: 1.5;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 select.input-group-sm > .form-control,
 select.input-group-sm > .input-group-addon,
@@ -3133,17 +3133,17 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   text-align: center;
   background-color: #eeeeee;
   border: 1px solid #cccccc;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .input-group-addon.input-sm {
   padding: 5px 10px;
   font-size: 12px;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 .input-group-addon.input-lg {
   padding: 10px 16px;
   font-size: 18px;
-  border-radius: 6px;
+  border-radius: 0px;
 }
 .input-group-addon input[type="radio"],
 .input-group-addon input[type="checkbox"] {
@@ -3255,7 +3255,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   margin-right: 2px;
   line-height: 1.42857143;
   border: 1px solid transparent;
-  border-radius: 4px 4px 0 0;
+  border-radius: 0px 0px 0 0;
 }
 .nav-tabs > li > a:hover {
   border-color: #eeeeee #eeeeee #dddddd;
@@ -3295,7 +3295,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
 }
 .nav-tabs.nav-justified > li > a {
   margin-right: 0;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .nav-tabs.nav-justified > .active > a,
 .nav-tabs.nav-justified > .active > a:hover,
@@ -3305,7 +3305,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
 @media (min-width: 768px) {
   .nav-tabs.nav-justified > li > a {
     border-bottom: 1px solid #dddddd;
-    border-radius: 4px 4px 0 0;
+    border-radius: 0px 0px 0 0;
   }
   .nav-tabs.nav-justified > .active > a,
   .nav-tabs.nav-justified > .active > a:hover,
@@ -3317,7 +3317,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   float: left;
 }
 .nav-pills > li > a {
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .nav-pills > li + li {
   margin-left: 2px;
@@ -3363,7 +3363,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
 }
 .nav-tabs-justified > li > a {
   margin-right: 0;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .nav-tabs-justified > .active > a,
 .nav-tabs-justified > .active > a:hover,
@@ -3373,7 +3373,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
 @media (min-width: 768px) {
   .nav-tabs-justified > li > a {
     border-bottom: 1px solid #dddddd;
-    border-radius: 4px 4px 0 0;
+    border-radius: 0px 0px 0 0;
   }
   .nav-tabs-justified > .active > a,
   .nav-tabs-justified > .active > a:hover,
@@ -3400,7 +3400,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
 }
 @media (min-width: 768px) {
   .navbar {
-    border-radius: 4px;
+    border-radius: 0px;
   }
 }
 @media (min-width: 768px) {
@@ -3528,7 +3528,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   background-color: transparent;
   background-image: none;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .navbar-toggle:focus {
   outline: 0;
@@ -3678,8 +3678,8 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
 }
 .navbar-fixed-bottom .navbar-nav > li > .dropdown-menu {
   margin-bottom: 0;
-  border-top-right-radius: 4px;
-  border-top-left-radius: 4px;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 }
@@ -3921,7 +3921,7 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
   margin-bottom: 20px;
   list-style: none;
   background-color: #f5f5f5;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .breadcrumb > li {
   display: inline-block;
@@ -3938,7 +3938,7 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
   display: inline-block;
   padding-left: 0;
   margin: 20px 0;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .pagination > li {
   display: inline;
@@ -3958,13 +3958,13 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
 .pagination > li:first-child > a,
 .pagination > li:first-child > span {
   margin-left: 0;
-  border-bottom-left-radius: 4px;
-  border-top-left-radius: 4px;
+  border-bottom-left-radius: 0px;
+  border-top-left-radius: 0px;
 }
 .pagination > li:last-child > a,
 .pagination > li:last-child > span {
-  border-bottom-right-radius: 4px;
-  border-top-right-radius: 4px;
+  border-bottom-right-radius: 0px;
+  border-top-right-radius: 0px;
 }
 .pagination > li > a:hover,
 .pagination > li > span:hover,
@@ -4006,13 +4006,13 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
 }
 .pagination-lg > li:first-child > a,
 .pagination-lg > li:first-child > span {
-  border-bottom-left-radius: 6px;
-  border-top-left-radius: 6px;
+  border-bottom-left-radius: 0px;
+  border-top-left-radius: 0px;
 }
 .pagination-lg > li:last-child > a,
 .pagination-lg > li:last-child > span {
-  border-bottom-right-radius: 6px;
-  border-top-right-radius: 6px;
+  border-bottom-right-radius: 0px;
+  border-top-right-radius: 0px;
 }
 .pagination-sm > li > a,
 .pagination-sm > li > span {
@@ -4022,13 +4022,13 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
 }
 .pagination-sm > li:first-child > a,
 .pagination-sm > li:first-child > span {
-  border-bottom-left-radius: 3px;
-  border-top-left-radius: 3px;
+  border-bottom-left-radius: 0px;
+  border-top-left-radius: 0px;
 }
 .pagination-sm > li:last-child > a,
 .pagination-sm > li:last-child > span {
-  border-bottom-right-radius: 3px;
-  border-top-right-radius: 3px;
+  border-bottom-right-radius: 0px;
+  border-top-right-radius: 0px;
 }
 .pager {
   padding-left: 0;
@@ -4202,7 +4202,7 @@ a.badge:focus {
 }
 .container .jumbotron,
 .container-fluid .jumbotron {
-  border-radius: 6px;
+  border-radius: 0px;
 }
 .jumbotron .container {
   max-width: 100%;
@@ -4229,7 +4229,7 @@ a.badge:focus {
   line-height: 1.42857143;
   background-color: #ffffff;
   border: 1px solid #dddddd;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-transition: border 0.2s ease-in-out;
   -o-transition: border 0.2s ease-in-out;
   transition: border 0.2s ease-in-out;
@@ -4252,7 +4252,7 @@ a.thumbnail.active {
   padding: 15px;
   margin-bottom: 20px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .alert h4 {
   margin-top: 0;
@@ -4344,7 +4344,7 @@ a.thumbnail.active {
   height: 20px;
   margin-bottom: 20px;
   background-color: #f5f5f5;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -4469,13 +4469,13 @@ a.thumbnail.active {
   border: 1px solid #dddddd;
 }
 .list-group-item:first-child {
-  border-top-right-radius: 4px;
-  border-top-left-radius: 4px;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
 }
 .list-group-item:last-child {
   margin-bottom: 0;
-  border-bottom-right-radius: 4px;
-  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
 }
 a.list-group-item,
 button.list-group-item {
@@ -4666,7 +4666,7 @@ button.list-group-item-danger.active:focus {
   margin-bottom: 20px;
   background-color: #ffffff;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
@@ -4676,8 +4676,8 @@ button.list-group-item-danger.active:focus {
 .panel-heading {
   padding: 10px 15px;
   border-bottom: 1px solid transparent;
-  border-top-right-radius: 3px;
-  border-top-left-radius: 3px;
+  border-top-right-radius: -1px;
+  border-top-left-radius: -1px;
 }
 .panel-heading > .dropdown .dropdown-toggle {
   color: inherit;
@@ -4699,8 +4699,8 @@ button.list-group-item-danger.active:focus {
   padding: 10px 15px;
   background-color: #f5f5f5;
   border-top: 1px solid #dddddd;
-  border-bottom-right-radius: 3px;
-  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: -1px;
+  border-bottom-left-radius: -1px;
 }
 .panel > .list-group,
 .panel > .panel-collapse > .list-group {
@@ -4714,14 +4714,14 @@ button.list-group-item-danger.active:focus {
 .panel > .list-group:first-child .list-group-item:first-child,
 .panel > .panel-collapse > .list-group:first-child .list-group-item:first-child {
   border-top: 0;
-  border-top-right-radius: 3px;
-  border-top-left-radius: 3px;
+  border-top-right-radius: -1px;
+  border-top-left-radius: -1px;
 }
 .panel > .list-group:last-child .list-group-item:last-child,
 .panel > .panel-collapse > .list-group:last-child .list-group-item:last-child {
   border-bottom: 0;
-  border-bottom-right-radius: 3px;
-  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: -1px;
+  border-bottom-left-radius: -1px;
 }
 .panel > .panel-heading + .panel-collapse > .list-group .list-group-item:first-child {
   border-top-right-radius: 0;
@@ -4746,15 +4746,15 @@ button.list-group-item-danger.active:focus {
 }
 .panel > .table:first-child,
 .panel > .table-responsive:first-child > .table:first-child {
-  border-top-right-radius: 3px;
-  border-top-left-radius: 3px;
+  border-top-right-radius: -1px;
+  border-top-left-radius: -1px;
 }
 .panel > .table:first-child > thead:first-child > tr:first-child,
 .panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child,
 .panel > .table:first-child > tbody:first-child > tr:first-child,
 .panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child {
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
+  border-top-left-radius: -1px;
+  border-top-right-radius: -1px;
 }
 .panel > .table:first-child > thead:first-child > tr:first-child td:first-child,
 .panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:first-child,
@@ -4764,7 +4764,7 @@ button.list-group-item-danger.active:focus {
 .panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:first-child,
 .panel > .table:first-child > tbody:first-child > tr:first-child th:first-child,
 .panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:first-child {
-  border-top-left-radius: 3px;
+  border-top-left-radius: -1px;
 }
 .panel > .table:first-child > thead:first-child > tr:first-child td:last-child,
 .panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:last-child,
@@ -4774,19 +4774,19 @@ button.list-group-item-danger.active:focus {
 .panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:last-child,
 .panel > .table:first-child > tbody:first-child > tr:first-child th:last-child,
 .panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:last-child {
-  border-top-right-radius: 3px;
+  border-top-right-radius: -1px;
 }
 .panel > .table:last-child,
 .panel > .table-responsive:last-child > .table:last-child {
-  border-bottom-right-radius: 3px;
-  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: -1px;
+  border-bottom-left-radius: -1px;
 }
 .panel > .table:last-child > tbody:last-child > tr:last-child,
 .panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child,
 .panel > .table:last-child > tfoot:last-child > tr:last-child,
 .panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child {
-  border-bottom-left-radius: 3px;
-  border-bottom-right-radius: 3px;
+  border-bottom-left-radius: -1px;
+  border-bottom-right-radius: -1px;
 }
 .panel > .table:last-child > tbody:last-child > tr:last-child td:first-child,
 .panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:first-child,
@@ -4796,7 +4796,7 @@ button.list-group-item-danger.active:focus {
 .panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:first-child,
 .panel > .table:last-child > tfoot:last-child > tr:last-child th:first-child,
 .panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:first-child {
-  border-bottom-left-radius: 3px;
+  border-bottom-left-radius: -1px;
 }
 .panel > .table:last-child > tbody:last-child > tr:last-child td:last-child,
 .panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:last-child,
@@ -4806,7 +4806,7 @@ button.list-group-item-danger.active:focus {
 .panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:last-child,
 .panel > .table:last-child > tfoot:last-child > tr:last-child th:last-child,
 .panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:last-child {
-  border-bottom-right-radius: 3px;
+  border-bottom-right-radius: -1px;
 }
 .panel > .panel-body + .table,
 .panel > .panel-body + .table-responsive,
@@ -4879,7 +4879,7 @@ button.list-group-item-danger.active:focus {
 }
 .panel-group .panel {
   margin-bottom: 0;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 .panel-group .panel + .panel {
   margin-top: 5px;
@@ -5037,7 +5037,7 @@ button.list-group-item-danger.active:focus {
   margin-bottom: 20px;
   background-color: #f5f5f5;
   border: 1px solid #e3e3e3;
-  border-radius: 4px;
+  border-radius: 0px;
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
 }
@@ -5047,11 +5047,11 @@ button.list-group-item-danger.active:focus {
 }
 .well-lg {
   padding: 24px;
-  border-radius: 6px;
+  border-radius: 0px;
 }
 .well-sm {
   padding: 9px;
-  border-radius: 3px;
+  border-radius: 0px;
 }
 .close {
   float: right;
@@ -6071,7 +6071,6 @@ button.close {
 .cloud-plugins .cloud-plugin:hover {
   background-color: #212121;
   cursor: pointer;
-  border-radius: 5px;
 }
 .cloud-plugins .cloud-plugin:hover .description .see_more {
   background: -moz-linear-gradient(top, rgba(33, 33, 33, 0) 0%, #212121 100%);
@@ -6172,7 +6171,6 @@ button.close {
   padding: 1px 4px;
   margin-top: 10px;
   text-align: center;
-  border-radius: 2px;
   text-transform: uppercase;
   font-weight: bold;
   font-size: 9px;
@@ -6230,27 +6228,30 @@ button.close {
   background-repeat: no-repeat;
   display: block;
   float: left;
-  height: 22px;
+  height: 32px;
   left: 0;
   cursor: move !important;
   margin: -1px 6px 0 0;
   width: 24px;
 }
 #bank-library span.remove {
-  background-image: url(../img/icn-remove-bank.png);
-  background-position: left center;
-  background-repeat: no-repeat;
-  display: block;
+  cursor: pointer;
   float: right;
-  height: 22px;
-  margin: -1px 6px 0 0;
-  width: 24px;
-  cursor: pointer !important;
+  width: 32px;
+  height: 32px;
+  display: block;
+  background-image: url(../img/icons/25/delete.png);
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  transition: background-color 0.33s;
+}
+#bank-library span.remove:hover {
+  background-color: #f29446;
 }
 #bank-library span.title {
   display: block;
   float: left;
-  height: 22px;
+  height: 32px;
   overflow: hidden;
   max-width: 70%;
   white-space: nowrap;
@@ -6287,21 +6288,22 @@ button.close {
   bottom: 45px;
   overflow-y: auto;
   top: 45px;
-  width: 19.95%;
-  border-color: #111;
-  border-style: dotted;
-  border-width: 0 1px 0 0;
+  width: 20%;
 }
 #bank-library #bank-list > div.add-bank {
   color: #fff;
   cursor: pointer;
-  padding-left: 45px;
+  padding-left: 5px;
+  line-height: 32px;
   text-transform: uppercase;
+  transition: all 0.33s;
 }
-#bank-library #bank-list > div.add-bank small {
-  text-transform: lowercase;
-  color: #666;
-  margin-left: 1em;
+#bank-library #bank-list > div.add-bank:hover {
+  background: #f29446;
+}
+#bank-library #bank-list > div.add-bank .icon-add {
+  display: inline.block;
+  width: 32px;
 }
 #bank-library #bank-list > div.selected span.move {
   background-position: right center;
@@ -6312,12 +6314,13 @@ button.close {
 #bank-library #bank-list .edit-bank {
   color: #555;
   width: 100% !important;
-  height: 1.8em;
-  padding-left: 1em;
+  height: 30px;
+  margin: 1px;
+  padding-left: 0.5em;
   background-color: #fff;
   background-image: none;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 0px solid #ccc;
+  border-radius: 0px;
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
   -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
@@ -6328,32 +6331,33 @@ button.close {
   background: #222;
   color: #888;
   cursor: pointer;
-  font-size: 12px;
   font-weight: bold;
   margin: 0 0 1px 0;
-  padding: 10px 5px;
   content: \002B;
   position: relative;
+  transition: all 0.33s;
 }
 #bank-library #bank-list div.selected {
-  background: #111;
+  background: #883996;
   color: #fff;
 }
 #bank-library #bank-list div:hover {
-  background: #333;
+  background: #000;
 }
 #bank-library #bank-list .bank-item {
   display: block;
   background: #222;
   color: #888;
-  height: 35px;
+  line-height: 32px;
+  height: 32px;
   cursor: pointer;
-  font-size: 12px;
   font-weight: bold;
   margin: 0 0 1px 0;
-  padding: 5px 15px;
-  line-height: 1.8em;
+  padding-left: 5px;
   position: relative;
+}
+#bank-library #bank-list .bank-item .remove {
+  border-radius: 0;
 }
 #bank-library #bank-list .filter_ {
   border-color: #111;
@@ -6407,15 +6411,14 @@ button.close {
   padding: 0;
   position: fixed;
   text-align: left;
-  top: 54px;
-  width: 45%;
+  top: 45px;
+  width: 50%;
 }
 #bank-library #bank-addressings h1 {
   font-size: 2em;
   padding: 0em;
   max-height: 2em;
   display: block;
-  border-bottom: 2px dotted #333;
   margin: 1em;
   padding-bottom: 1em;
   color: white;
@@ -6457,41 +6460,46 @@ button.close {
   padding: 0 0 200px 0;
   position: fixed;
   top: 144px;
-  width: 45%;
+  width: 50%;
 }
 #bank-library #bank-pedalboards > div {
-  margin: 10px 10px 0 10px;
-  padding: 10px 10px 0 10px;
+  margin: 20px 20px 0 20px;
 }
 #bank-library #bank-pedalboards .pedalboard {
-  border-bottom: 1px dotted #333;
   color: #fff;
   cursor: -webkit-grab !important;
-  padding-bottom: 30px;
   width: 100%;
+  transition: all 0.33s;
 }
 #bank-library #bank-pedalboards .pedalboard:active {
   cursor: -webkit-grabbing !important;
 }
+#bank-library #bank-pedalboards .pedalboard:hover {
+  background-color: #883996;
+}
 #bank-library #bank-pedalboards .pedalboard .info {
-  margin-bottom: 3px;
+  height: 32px;
+  padding-left: 5px;
 }
 #bank-library #bank-pedalboards .pedalboard .title {
   display: block;
+  line-height: 32px;
   font-weight: bold;
-  margin-bottom: 3px;
   overflow: hidden;
   position: relative;
 }
 #bank-library #bank-pedalboards .pedalboard .img {
-  background: #2b2b2b;
-  border-radius: 4px;
   display: inline-block;
   float: left;
   height: auto;
   margin: 0 9px 0 0;
   text-align: center;
   width: 100%;
+  background: url(../img/background.jpg);
+  background-size: auto 100%;
+  background-position: center center;
+  box-shadow: inset 0 3px 6px black;
+  border: 1px solid #000;
 }
 #bank-library #bank-pedalboards .mode {
   border: none;
@@ -6505,23 +6513,29 @@ button.close {
   width: 80%;
   bottom: 45px;
   top: 45px;
-  left: 19.95%;
+  left: 20%;
 }
 #bank-library #bank-pedalboards-search {
   bottom: 45px;
-  left: 65.01%;
+  right: 0%;
   overflow: auto;
   position: fixed;
-  top: 55px;
-  background-color: #222;
-  border-left: 1px dotted #333;
-  width: 34.98%;
+  top: 0px;
+  width: 30%;
+  z-index: 6;
 }
 #bank-library #bank-pedalboards-search h2 {
   text-transform: uppercase;
   color: white;
   font-size: 1.5em;
   font-weight: bold;
+  float: left;
+}
+#bank-library #bank-pedalboards-search .box {
+  background: #111;
+  padding: 0;
+  padding-top: 5px;
+  box-sizing: border-box;
 }
 #bank-library #bank-pedalboards-search input {
   width: 50%;
@@ -6535,9 +6549,10 @@ button.close {
 }
 #bank-library #bank-pedalboards-search label {
   color: #fff;
-  font-size: 11px;
   font-weight: bold;
   text-transform: uppercase;
+  float: left;
+  line-height: 45px;
 }
 #bank-library #bank-pedalboards-search .control-group {
   margin-bottom: 10px;
@@ -6547,13 +6562,13 @@ button.close {
 }
 #bank-library #bank-pedalboards-search input[type="search"] {
   width: 50% !important;
+  float: right;
 }
 #bank-library #bank-pedalboards-search select {
   width: 100%;
 }
 #bank-library #bank-pedalboards-search .input-clean {
   background: #333;
-  border-radius: 12px;
   color: #fff;
   cursor: pointer;
   font-size: 8px;
@@ -6609,39 +6624,43 @@ button.close {
 }
 #bank-pedalboards-result {
   position: fixed;
-  bottom: 46px;
-  top: 133px;
+  bottom: 45px;
+  top: 45px;
   overflow: auto;
-  width: 34.4%;
+  width: 30%;
+  background: #2c2c2c;
 }
 #bank-pedalboards-result .pedalboard {
-  border-top: 1px dotted #444;
   color: #fff;
   cursor: -webkit-grab;
-  float: left;
-  margin: 10px 2.5% 0;
-  padding: 10px 0;
-  width: 95%;
+  margin: 20px 20px 0 20px;
+  transition: all 0.33s;
 }
 #bank-pedalboards-result .pedalboard:active {
   cursor: -webkit-grabbing !important;
 }
+#bank-pedalboards-result .pedalboard:hover {
+  background-color: #883996;
+}
 #bank-pedalboards-result .pedalboard .img {
-  background: #2b2b2b;
   display: block;
   height: auto;
   margin: 0 auto;
   text-align: center;
   width: 100%;
+  background: url(../img/background.jpg);
+  background-size: auto 100%;
+  background-position: center center;
+  box-shadow: inset 0 3px 6px black;
+  border: 1px solid #000;
 }
 #bank-pedalboards-result .pedalboard .title {
   display: block;
-  height: 18px;
-  font-size: 12px;
+  line-height: 32px;
   font-weight: bold;
-  margin-bottom: 10px;
   overflow: hidden;
   position: relative;
+  padding-left: 5px;
 }
 #bank-pedalboards-result .pedalboard .description {
   display: block;
@@ -6673,7 +6692,7 @@ button.close {
   display: inline-block;
   float: right;
   margin-top: 5px;
-  margin-right: 8px;
+  margin-right: 5px;
 }
 #pedalboards-library header .form-group .form-control {
   width: 200px !important;
@@ -6717,27 +6736,22 @@ button.close {
   float: left;
   margin: 0 0 1.5% 1.5%;
   width: 31.3%;
-  height: 15vw;
   position: relative;
-  background: #212121 url(../img/loading-pedalboard.gif) center center no-repeat;
-  border: 1px solid #000;
-  border-radius: 6px 6px 0 0 !important;
-  transition: all 0.5s;
+  background: transparent url(../img/loading-pedalboard.gif) center center no-repeat;
+  transition: all 0.33s;
 }
 #pedalboards-library .pedalboards .pedalboard:hover {
-  border-color: #883996;
-  box-shadow: 0 4px 10px black;
-}
-#pedalboards-library .pedalboards .pedalboard:hover .info {
-  background: #883996;
+  background-color: #883996;
 }
 #pedalboards-library .pedalboards .pedalboard .img {
   background: url(../img/background.jpg);
-  border-radius: 5px 5px 0 0 !important;
-  background-size: cover;
+  background-size: auto 100%;
+  background-position: center center;
+  box-shadow: inset 0 3px 6px black;
+  border: 1px solid #000;
   display: block;
   width: 100%;
-  height: 100%;
+  height: 15vw;
   overflow: hidden;
   text-align: center;
 }
@@ -6748,19 +6762,12 @@ button.close {
   margin: auto;
 }
 #pedalboards-library .pedalboards .pedalboard .info {
-  position: absolute;
-  border-radius: 5px 5px 0 0 !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.5);
-  height: 25px;
+  height: 32px;
   padding-left: 5px;
-  transition: all 0.5s;
 }
 #pedalboards-library .pedalboards .pedalboard .title {
   display: block;
-  line-height: 25px;
+  line-height: 32px;
   font-weight: bold;
   overflow: hidden;
   position: relative;
@@ -6773,7 +6780,6 @@ button.close {
   overflow: hidden;
 }
 #pedalboards-library .pedalboards .pedalboard .actions {
-  font-size: 11px;
   font-weight: bold;
   text-transform: uppercase;
   position: absolute;
@@ -6781,9 +6787,15 @@ button.close {
   right: 0;
 }
 #pedalboards-library .pedalboards .pedalboard .actions .js-remove {
-  width: 25px;
-  height: 25px;
+  width: 32px;
+  height: 32px;
   background-image: url(../img/icons/25/delete.png);
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  transition: background-color 0.33s;
+}
+#pedalboards-library .pedalboards .pedalboard .actions .js-remove:hover {
+  background-color: #f29446;
 }
 #pedalboards-library .pedalboards .pedalboard .actions > span {
   cursor: pointer;
@@ -6935,7 +6947,6 @@ hr.dotted {
 }
 .input-clean {
   background: #333;
-  border-radius: 12px;
   color: #fff;
   cursor: pointer;
   height: 18px;
@@ -7000,7 +7011,6 @@ hr.dotted {
   float: left;
 }
 #main-menu > div.icon {
-  border-right: 1px solid #2b2b2b;
   height: 45px;
   width: 45px;
 }
@@ -7019,7 +7029,7 @@ hr.dotted {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: 0 top;
   background-repeat: no-repeat;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 #main-menu #mod-social:hover {
   background-color: #000;
@@ -7033,7 +7043,7 @@ hr.dotted {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -45px top;
   background-repeat: no-repeat;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 #main-menu #mod-plugins:hover {
   background-color: #000;
@@ -7047,7 +7057,7 @@ hr.dotted {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -315px top;
   background-repeat: no-repeat;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 #main-menu #mod-cloud-plugins:hover {
   background-color: #000;
@@ -7061,7 +7071,7 @@ hr.dotted {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -90px top;
   background-repeat: no-repeat;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 #main-menu #mod-pedalboard:hover {
   background-color: #000;
@@ -7075,7 +7085,7 @@ hr.dotted {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -135px top;
   background-repeat: no-repeat;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 #main-menu #mod-bank:hover {
   background-color: #000;
@@ -7114,9 +7124,6 @@ hr.dotted {
   background-repeat: no-repeat;
   padding-left: 40px;
   padding-right: 12px;
-  border-color: #2b2b2b;
-  border-style: solid;
-  border-width: 0 0 0 1px;
   color: #ffffff;
   float: right;
   font-size: 11px;
@@ -7124,7 +7131,7 @@ hr.dotted {
   line-height: 4.5;
   text-transform: uppercase;
   width: auto !important;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 #main-menu #mod-disconnect:hover,
 #main-menu .mod-add-midi:hover,
@@ -7183,8 +7190,6 @@ hr.dotted {
   overflow: hidden;
   float: right;
   background-color: #111;
-  -moz-border-radius: 4px;
-  border-radius: 0 !important;
   -webkit-transition: width 1s;
   /* Safari */
   transition: width 1s;
@@ -7282,12 +7287,11 @@ header#pedalboard-actions button,
   padding: 0 12px 0 40px;
   background-color: transparent;
   border: none;
-  border-right: 1px solid #2c2c2c;
   height: 45px;
   line-height: 45px;
   opacity: 0.66;
   color: white;
-  transition: all 0.5s;
+  transition: all 0.33s;
 }
 header#pedalboard-actions button:hover,
 #bank-library header button:hover,
@@ -7347,7 +7351,6 @@ header#pedalboard-actions {
 }
 .tooltip {
   background: white;
-  border-radius: 3px;
   bottom: 50px;
   height: auto;
   padding: 7px;
@@ -7372,7 +7375,6 @@ header#pedalboard-actions {
 }
 #mod-upgrade {
   background: white;
-  border-radius: 9px;
   color: black;
   font-size: 12px;
   max-height: 350px;
@@ -7386,7 +7388,6 @@ header#pedalboard-actions {
 }
 #mod-upgrade .progressbar-wrapper {
   border: 1px solid #444444;
-  border-radius: 3px;
   height: 20px;
   width: 330px;
 }
@@ -7400,7 +7401,7 @@ header#pedalboard-actions {
   left: 0;
   position: absolute;
   right: 0;
-  transition: all 0.25s;
+  transition: all 0.33s;
   transition: opacity 0.5s;
   transition: height 0.5s;
 }
@@ -7525,7 +7526,6 @@ header#pedalboard-actions {
 }
 #plugins-library ul li.selected {
   color: white;
-  border-radius: 4px 4px 0 0;
   font-weight: bold;
   margin-top: -6px;
   padding: 6px 11px;
@@ -7675,7 +7675,6 @@ header#pedalboard-actions {
   background-color: #111;
   padding: 15px;
   border: 2px solid #333;
-  border-radius: 15px;
 }
 .plugin-info .close {
   color: #fff;
@@ -7816,12 +7815,6 @@ header#pedalboard-actions {
   color: #fff;
   border-color: #333;
   text-align: center;
-}
-.plugin-info .plugin-specs th:first-child {
-  border-radius: 4px 0 0 0;
-}
-.plugin-info .plugin-specs th:last-child {
-  border-radius: 0 4px 0 0;
 }
 .plugin-info .plugin-specs td {
   border-color: #333;
@@ -8011,7 +8004,6 @@ header#pedalboard-actions {
 }
 .mod-box {
   background: white;
-  border-radius: 9px;
   left: 50%;
   margin: -150px -168px;
   padding: 18px;
@@ -8054,7 +8046,6 @@ header#pedalboard-actions {
 .plugin-wait {
   background: url(../img/loading-effect.gif) no-repeat center center;
   border: 1px solid #CCCCCC;
-  border-radius: 3px;
 }
 .drag-handle {
   bottom: 0;
@@ -8082,7 +8073,6 @@ header#pedalboard-actions {
 .alert {
   background: rgba(17, 17, 17, 0.9);
   border-width: 0 0 0 6px;
-  border-radius: 6px 0 0 6px !important;
   border-color: #883996;
   color: white;
   box-shadow: 0 3px 10px black;

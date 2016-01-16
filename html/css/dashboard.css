@@ -35,7 +35,7 @@
     background-position:center center;
     background-repeat:no-repeat;
     background-size:24px;
-    transition: all 0.5s;
+    transition: all 0.33s;
     opacity: 0.66;
     margin: 0;
     padding: 0;
@@ -47,7 +47,6 @@
 }
 #zoom-controllers > span:first-child {
     background-image:url(../img/icn-zoom-out.png);
-    border-right:1px solid #292929;
 }
 #zoom-controllers > span:last-child {
     background-image:url(../img/icn-zoom-in.png);
@@ -217,7 +216,6 @@
 
 #pedalboard-sharing-popup .item-list .item {
     background:#2b2b2b;
-    border-radius:6px;
     display:block;
     float:left;
     height:18px;
@@ -691,7 +689,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 .save-popup .box {
     background:white;
-    border-radius:9px;
     left:50%;
     margin:-150px -168px;
     padding:18px;
@@ -756,7 +753,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 #registration-form .error {
     background:#f2dede;
     border:1px solid #eed3d7;
-    border-radius:4px;
     color:#b94a48;
     margin-bottom:18px;
     padding:9px;
@@ -864,7 +860,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 #share-window img.screenshot {
     background-color: #292929;
-    border-radius: 5px;
 }
 
 
@@ -902,9 +897,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 .mod-button {
     transition: all 0.3s;
-    -webkit-border-radius: 4px;
-    -moz-border-radius: 4px;
-    border-radius: 4px;
     padding: 0.2em 0.5em;
     display: inline-block;
     color: white;
@@ -932,12 +924,6 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#555555), color-stop(100%,#444444));
     background: -webkit-linear-gradient(top, #555555 0%,#444444 100%);
     background: linear-gradient(to bottom, #555555 0%,#444444 100%);
-}
-
-.mod-button-bar .mod-button {
-    -webkit-border-radius: 0px;
-    -moz-border-radius: 0px;
-    border-radius: 0px;
 }
 
 .mod-light .mod-button {
