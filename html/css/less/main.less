@@ -200,7 +200,7 @@ hr.dotted {
 #notifications {
   position: absolute;
   top: 55px;
-  right: 10px;
+  right: 0px;
   width: 320px;
   z-index: 100000;
   > section {
@@ -1266,12 +1266,10 @@ header#pedalboard-actions {
 }
 
 
-/* it SUCKS to deal with all those "super easy" frameworks! *phew* */
-
 .alert {
     background: rgba(17, 17, 17, 0.9);
     border-width: 0 0 0 6px;
-    border-radius: 0 0 6px 6px;
+    border-radius: 6px 0 0 6px !important;
     border-color: @brand-primary;
     color: white;
     box-shadow: 0 3px 10px black;
