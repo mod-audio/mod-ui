@@ -345,6 +345,10 @@ function Desktop(elements) {
             cache: false
         })
     }
+    
+    this.init = function () {
+        $(".mod-init-hidden").removeClass("mod-init-hidden");
+    }
 
     // hide bottom-bar social icon
     $('#mod-social').hide()
@@ -677,7 +681,6 @@ function Desktop(elements) {
     $('body')[0].addEventListener('gesturechange', prevent)
     $('body')[0].addEventListener('touchmove', prevent)
     $('body')[0].addEventListener('dblclick', prevent)
-
     /*
      * when putting this function, we must remember to remove it from /ping call
     $(document).bind('ajaxSend', function() {

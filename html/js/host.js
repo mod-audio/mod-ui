@@ -197,12 +197,11 @@ $('document').ready(function() {
                 url: '/hardware',
                 success: function (data) {
                     waiting = false
-
                     HARDWARE_PROFILE = data
                     if (desktop.hardwareManager)
                         desktop.hardwareManager.registerAllAddressings()
-
-                    desktop.pedalboard.pedalboard('scheduleAdapt')
+                    desktop.pedalboard.pedalboard('scheduleAdapt');
+                    desktop.init();
                 },
                 cache: false,
                 dataType: 'json'

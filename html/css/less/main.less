@@ -1187,7 +1187,9 @@ header#pedalboard-actions {
 .mod-hidden {
   display: none;
 }
-
+.mod-init-hidden {
+    opacity: 0;
+}
 ::selection {
   background: transparent;
 }
@@ -1219,17 +1221,20 @@ header#pedalboard-actions {
 }
 
 .screen-disconnected {
-  background: rgba(0,0,0,.9);
+  background: rgba(17,17,17,.9);
   color: white;
-  display: table;
-  font-size: 72px;
+  display: block;
+  position: fixed;
+  width: 100% !important;
   height: 100% !important;
   text-align: center;
   z-index: 10;
   p {
-    display: table-cell;
-    vertical-align: middle;
-    line-height: 90px;
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      margin-top: 56px;
+      font-size: 24px;
   }
 }
 

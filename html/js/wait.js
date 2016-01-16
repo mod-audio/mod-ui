@@ -5,20 +5,22 @@ function WaitMessage(canvas) {
 
     self.block = $('<div class="screen-disconnected">')
     self.block.hide()
+    var anim = $("#loading").clone();
+    anim.attr("id", null);
+    self.block.append(anim);
+    self.msg = $('<p class="block-message">');
+    self.block.append(self.msg);
     $('body').append(self.block).css('overflow', 'hidden')
 
     this.start = function (message) {
-        self.block.html('')
-        $('<p>').text(message).appendTo(self.block)
-        self.block.width($(window).width() * 5)
-        self.block.height($(window).height() * 5)
-        self.block.css('margin-left', -$(window).width() * 2)
+        console.log(message)
+        this.msg.text(message);
         $('#wrapper').css('z-index', -1)
-        self.block.show()
+        self.block.show(250)
     }
 
     this.stop = function () {
-        self.block.hide()
+        self.block.hide(250)
         $('#wrapper').css('z-index', 'auto')
     }
 
