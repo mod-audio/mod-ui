@@ -5999,8 +5999,9 @@ button.close {
   height: 32px;
   line-height: 32px;
   width: 100%;
-  margin-bottom: 1px;
+  margin-bottom: 15px;
   padding-left: 15px;
+  border: 0px solid #f29446;
 }
 #cloud-plugins-library .filter .control-group input[type='checkbox'] + label:hover {
   background: #000;
@@ -6016,7 +6017,7 @@ button.close {
 }
 #cloud-plugins-library .filter .categories {
   width: 100%;
-  margin: 0px 0 1px 0;
+  margin: 0px 0 15px 0;
 }
 #cloud-plugins-library .filter .categories li {
   display: block;
