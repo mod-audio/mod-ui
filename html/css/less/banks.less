@@ -136,6 +136,9 @@ input::selection {
     &:hover {
       background: #000;
     }
+    &.selected:hover {
+      background: shade(@brand-primary, 20%);
+    }
   }
   .bank-item {
     display: block;
@@ -374,6 +377,7 @@ input::selection {
     text-transform: uppercase;
     top: 31px !important;
     width: 18px;
+    border-radius: 100%;
   }
 }
 }

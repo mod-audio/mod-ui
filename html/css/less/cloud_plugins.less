@@ -54,26 +54,44 @@
         margin-left: 10px;
       }
       .control-group {
-        float: left;
-        margin-right: 9px;
-        margin-left: 10px
-      }
-      .control-group label {
-        color: #fff;
-        display: inline-block;
-        font-size: 12px;
-        font-weight: bold;
+        
       }
       .control-group select {
         width: 50px;
       }
+      .control-group input[type='checkbox'] {
+        display: none;
+        +label {
+          cursor: pointer;
+          background: #222;
+          color: #fff;
+          display: block;
+          height: 32px;
+          line-height: 32px;
+          width: 100%;
+          margin-bottom: 1px;
+          font-weight: normal;
+          padding-left: 15px;
+          &:hover {
+            background: #000;
+          }
+        }
+        &:checked + label {
+          background: @brand-warning;
+          font-weight: bold;
+          &:hover {
+            background: shade(@brand-warning, 20%);
+          }
+        }
+      }
       >.form-group {
-        padding: 15px;
+        .input-clean {
+          margin-right: 8px !important;
+        }
       }
       .categories {
         width: 100%;
-        margin-left: 0px;
-        margin-right: 0px;
+        margin: 0px 0 1px 0;
         li {
           display: block;
           background: #222;
@@ -82,17 +100,24 @@
           font-size: 12px;
           font-weight: bold;
           margin: 0 0 1px 0;
-          padding: 5px 15px;
+          padding: 0 15px;
           position: relative;
+          transition: all 0.33s;
+          line-height: 32px;
+          height: 32px;
           span {
             float: right
           }
-        }
-        li.selected {
-          background: #fff !important;
-        }
-        li:hover {
-          background: #333;
+          &.selected {
+            background: @brand-primary;
+            color: #fff;
+          }
+          &:hover {
+            background: #000;
+          }
+          &.selected:hover {
+            background: shade(@brand-primary, 20%);
+          }
         }
       }
     }
@@ -102,7 +127,7 @@
     @gradient2: rgba(17,17,17,1);        
     @gradient3: fade(@gradient4, 0%);
     @gradient4: #212121;
-    left: 242px;    
+    left: 240px;    
     position: fixed;
     right: 0;
     top: 45px;

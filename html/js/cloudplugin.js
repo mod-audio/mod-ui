@@ -64,7 +64,7 @@ JqueryClass('cloudPluginBox', {
             }, 400);
         })
 
-        var filters = self.find('input:radio[name=installed]')
+        var filters = self.find('input:checkbox[name=installed]')
         self.data('filters', filters)
 
         filters.click(function (e) {
@@ -125,11 +125,9 @@ JqueryClass('cloudPluginBox', {
         var query = {
             term: self.data('searchbox').val()
         }
-
-        if (self.find('input:radio[name=installed]:checked').val() == "all")
-            return self.cloudPluginBox('searchAll', query)
-
-        return self.cloudPluginBox('searchInstalled', query)
+        if (self.find('input:checkbox[name=installed]:checked').length)
+            return self.cloudPluginBox('searchInstalled', query)
+        return self.cloudPluginBox('searchAll', query)
     },
 
     // search cloud and local plugins, show all but prefer cloud

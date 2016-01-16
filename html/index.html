@@ -572,16 +572,14 @@ $('document').ready(function() {
                 <!-- <span class="close btn btn-danger js-close">Close</span> -->
             </header>
             <div class="filter clearfix">
-                <h2>Browse</h2>
+                <h2>Filter</h2>
                 <div class="control-group">
-                    <input type="radio" name="installed" value="all" id="cloud-plugins-all" checked />
-                    <label for="cloud-plugins-all">All</label>
-                    <input type="radio" name="installed" value="installed" id="cloud-plugins-installed" />
-                    <label for="cloud-plugins-installed">Installed</label>
+                    <input type="checkbox" name="installed" id="cloud-plugins-installed" />
+                    <label for="cloud-plugins-installed">Installed only</label>
                     <!-- <input type="radio" name="installed" value="not-installed" id="cloud-plugins-uninstalled" />
                     <label for="cloud-plugins-uninstalled">Not Installed</label> -->
                 </div>
-                <ul class="categories pull-left list list-unstyled">
+                <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
                     <li id="cloud-plugin-tab-Delay">Delay</li>
                     <li id="cloud-plugin-tab-Distortion">Distortion</li>

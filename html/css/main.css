@@ -5985,27 +5985,40 @@ button.close {
   margin-top: 1em;
   margin-left: 10px;
 }
-#cloud-plugins-library .filter .control-group {
-  float: left;
-  margin-right: 9px;
-  margin-left: 10px;
-}
-#cloud-plugins-library .filter .control-group label {
-  color: #fff;
-  display: inline-block;
-  font-size: 12px;
-  font-weight: bold;
-}
 #cloud-plugins-library .filter .control-group select {
   width: 50px;
 }
-#cloud-plugins-library .filter > .form-group {
-  padding: 15px;
+#cloud-plugins-library .filter .control-group input[type='checkbox'] {
+  display: none;
+}
+#cloud-plugins-library .filter .control-group input[type='checkbox'] + label {
+  cursor: pointer;
+  background: #222;
+  color: #fff;
+  display: block;
+  height: 32px;
+  line-height: 32px;
+  width: 100%;
+  margin-bottom: 1px;
+  font-weight: normal;
+  padding-left: 15px;
+}
+#cloud-plugins-library .filter .control-group input[type='checkbox'] + label:hover {
+  background: #000;
+}
+#cloud-plugins-library .filter .control-group input[type='checkbox']:checked + label {
+  background: #f29446;
+  font-weight: bold;
+}
+#cloud-plugins-library .filter .control-group input[type='checkbox']:checked + label:hover {
+  background: #c27638;
+}
+#cloud-plugins-library .filter > .form-group .input-clean {
+  margin-right: 8px !important;
 }
 #cloud-plugins-library .filter .categories {
   width: 100%;
-  margin-left: 0px;
-  margin-right: 0px;
+  margin: 0px 0 1px 0;
 }
 #cloud-plugins-library .filter .categories li {
   display: block;
@@ -6015,20 +6028,27 @@ button.close {
   font-size: 12px;
   font-weight: bold;
   margin: 0 0 1px 0;
-  padding: 5px 15px;
+  padding: 0 15px;
   position: relative;
+  transition: all 0.33s;
+  line-height: 32px;
+  height: 32px;
 }
 #cloud-plugins-library .filter .categories li span {
   float: right;
 }
 #cloud-plugins-library .filter .categories li.selected {
-  background: #fff !important;
+  background: #883996;
+  color: #fff;
 }
 #cloud-plugins-library .filter .categories li:hover {
-  background: #333;
+  background: #000;
+}
+#cloud-plugins-library .filter .categories li.selected:hover {
+  background: #6d2e78;
 }
 .cloud-plugins {
-  left: 242px;
+  left: 240px;
   position: fixed;
   right: 0;
   top: 45px;
@@ -6344,6 +6364,9 @@ button.close {
 #bank-library #bank-list div:hover {
   background: #000;
 }
+#bank-library #bank-list div.selected:hover {
+  background: #6d2e78;
+}
 #bank-library #bank-list .bank-item {
   display: block;
   background: #222;
@@ -6580,6 +6603,7 @@ button.close {
   text-transform: uppercase;
   top: 31px !important;
   width: 18px;
+  border-radius: 100%;
 }
 #bank-pedalboards-mode {
   background: #333;
@@ -6958,6 +6982,7 @@ hr.dotted {
   text-transform: uppercase;
   margin-top: -26px !important;
   width: 18px;
+  border-radius: 100%;
 }
 .input-clean:after {
   content: "&times;";
@@ -7495,6 +7520,7 @@ header#pedalboard-actions {
   left: auto;
   transform: translateY(-50%);
   margin: 0 !important;
+  border-radius: 100%;
 }
 #plugins-library ul {
   list-style: none;
