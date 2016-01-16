@@ -6957,8 +6957,9 @@ hr.dotted {
 }
 #notifications {
   position: absolute;
-  top: 0;
-  width: 100%;
+  top: 55px;
+  right: 10px;
+  width: 320px;
   z-index: 100000;
 }
 #notifications > section {
@@ -8074,4 +8075,23 @@ header#pedalboard-actions {
   100% {
     box-shadow: 0 0 0 transparent;
   }
+}
+/* it SUCKS to deal with all those "super easy" frameworks! *phew* */
+.alert {
+  background: rgba(17, 17, 17, 0.9);
+  border-width: 0 0 0 6px;
+  border-radius: 0 0 6px 6px;
+  border-color: #883996;
+  color: white;
+  box-shadow: 0 3px 10px black;
+  margin-top: 5px !important;
+}
+.alert .js-close {
+  color: white;
+}
+.alert-warning {
+  border-color: #f29446;
+}
+.alert-danger {
+  border-color: #c00;
 }
