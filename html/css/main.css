@@ -6320,8 +6320,11 @@ button.close {
   background: #f29446;
 }
 #bank-library #bank-list > div.add-bank .icon-add {
-  display: inline.block;
-  width: 32px;
+  display: inline-block;
+  width: 24px;
+  margin-right: 6px;
+  padding-left: 5px;
+  box-sizing: border-box;
 }
 #bank-library #bank-list > div.selected span.move {
   background-position: right center;
