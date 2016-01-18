@@ -70,7 +70,7 @@ function WindowManager() {
                 self.data('preopen', options.preopen)
 
             self.hide()
-            
+
             self.data('initialized', true)
             options.windowManager.register(self)
 
@@ -113,11 +113,13 @@ function WindowManager() {
                 return
             }
 
+            self.window('unfade')
+
+            if (self.is(':visible'))
+                return
+
             self.css('z-index', 1000)
-            
-            self.show();
-            self.addClass("mod-window-visible");
-            
+            self.show()
             self.trigger('windowopen')
 
             var trigger = self.data('trigger')
@@ -132,9 +134,11 @@ function WindowManager() {
                 self.bind('windowclose', closure)
                 return
             }
-            
-            self.removeClass("mod-window-visible");
-            
+            if (!self.is(':visible'))
+                return
+
+            self.hide()
+
             var trigger = self.data('trigger')
             if (trigger)
                 trigger.removeClass('selected')

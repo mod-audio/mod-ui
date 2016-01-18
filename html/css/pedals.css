@@ -179,15 +179,19 @@ body > .mod-settings {
     position:absolute;
     right:0;
     top:0;
+/*
     transition-property: display, transform;
     transition-duration: 0.5s, 0.33s;
     transition-delay: 0.5s, 0s;
     transform: translateY(-100%);
+*/
 }
 
 body > .mod-settings.mod-window-visible {
+/*
     transition-delay: 0s, 0s;
     transform: translateY(0%);
+*/
 }
 
 .mod-pedal-settings {
