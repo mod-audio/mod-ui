@@ -3,7 +3,7 @@ function WaitMessage(canvas) {
 
     this.plugins = {}
 
-    self.block = $('<div class="screen-disconnected">')
+    self.block = $('<div class="screen-loading blocker">')
     self.block.hide()
     var anim = $("#loading").clone();
     anim.attr("id", null);

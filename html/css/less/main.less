@@ -1207,15 +1207,17 @@ header#pedalboard-actions {
   }
 }
 
-.screen-disconnected {
+.blocker {
   background: rgba(17,17,17,.9);
   color: white;
   display: block;
   position: fixed;
   width: 100% !important;
   height: 100% !important;
+  top: 0;
+  left: 0;
   text-align: center;
-  z-index: 10;
+  z-index: 10000000;
   p {
       position: absolute;
       top: 50%;
@@ -1223,6 +1225,15 @@ header#pedalboard-actions {
       margin-top: 56px;
       font-size: 24px;
   }
+}
+.blocker.screen-disconnected {
+  background: rgba(17,17,17,.9) url(../img/icons/block.png) 50% 50% no-repeat;
+}
+.blocker.screen-updating {
+  
+}
+.blocker.screen-loading {
+  
 }
 
 .plugin-wait {

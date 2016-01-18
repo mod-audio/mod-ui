@@ -176,7 +176,10 @@ JqueryClass('upgradeWindow', {
     block: function () {
         var self = $(this)
         self.data('windowManager').closeWindows()
-        var block = $('<div class="screen-disconnected">')
+        var block = $('<div class="screen-updating blocker">');
+        var anim = $("#loading").clone();
+        anim.attr("id", null);
+        self.block.append(anim);
         var warn = $('<p>').html('Do not turn off<br/>(might brick your MOD)').appendTo(block)
         $('body').append(block).css('overflow', 'hidden')
         block.width($(window).width() * 5)

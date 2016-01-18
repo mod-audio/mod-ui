@@ -312,12 +312,9 @@ function Desktop(elements) {
     }
 
     this.blockUI = function () {
-        var block = $('<div class="screen-disconnected">')
+        var block = $('<div class="screen-disconnected blocker">')
         block.html('<p>Disconnected</p>')
         $('body').append(block).css('overflow', 'hidden')
-        block.width($(window).width() * 5)
-        block.height($(window).height() * 5)
-        block.css('margin-left', -$(window).width() * 2)
         $('#wrapper').css('z-index', -1)
         $('#plugins-library').css('z-index', -1)
         $('#cloud-plugins-library').css('z-index', -1)
