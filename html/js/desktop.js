@@ -328,24 +328,23 @@ function Desktop(elements) {
         ws.close()
     }
 
-    // TODO: cleanup
     //this.disconnect = function () {
-        //var self = this
-        //$.ajax({
-            //url: '/disconnect',
-            //success: function (resp) {
-                //if (!resp) {
-                    //return new Notification('error',
-                        //"Couldn't disconnect")
-                //}
-                //self.blockUI()
-            //},
-            //error: function () {
-                //new Bug("Couldn't disconnect")
-            //},
-            //cache: false
-        //})
-    //}
+        var self = this
+        $.ajax({
+            url: '/disconnect',
+            success: function (resp) {
+                if (!resp) {
+                    return new Notification('error',
+                        "Couldn't disconnect")
+                }
+                self.blockUI()
+            },
+            error: function () {
+                new Bug("Couldn't disconnect")
+            },
+            cache: false
+        })
+    }
     
     this.init = function () {
         $(".mod-init-hidden").removeClass("mod-init-hidden");
@@ -374,8 +373,7 @@ function Desktop(elements) {
         self.isApp = true
         $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
-        // TODO: cleanup
-        // $('#mod-disconnect').hide()
+        $('#mod-disconnect').hide()
         $('#pedalboard-dashboard').parent().css('top', '0px')
         $('#pedalboard-info .js-add-midi').hide()
         $('#js-add-midi-separator').hide()

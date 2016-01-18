@@ -7044,15 +7044,6 @@ hr.dotted {
   position: absolute;
   right: 0;
   z-index: 10;
-  /* TODO: cleanup
-   #mod-disconnect,*/
-  /* TODO: cleanup
-    #mod-disconnect {
-    background-image: url(../img/icons/25/disconnect.png);
-    &:hover {
-      background-color: @brand-primary;
-    }
-  }*/
 }
 #main-menu > div {
   cursor: pointer;
@@ -7162,6 +7153,7 @@ hr.dotted {
   background-color: #000;
   background-position: -180px bottom;
 }
+#main-menu #mod-disconnect,
 #main-menu .mod-add-midi,
 #main-menu .mod-bypass-l,
 #main-menu .mod-bypass-r,
@@ -7180,6 +7172,7 @@ hr.dotted {
   width: auto !important;
   transition: all 0.33s;
 }
+#main-menu #mod-disconnect:hover,
 #main-menu .mod-add-midi:hover,
 #main-menu .mod-bypass-l:hover,
 #main-menu .mod-bypass-r:hover,
@@ -7187,12 +7180,19 @@ hr.dotted {
 #main-menu #mod-ram:hover {
   background-color: #000;
 }
+#main-menu #mod-disconnect.selected,
 #main-menu .mod-add-midi.selected,
 #main-menu .mod-bypass-l.selected,
 #main-menu .mod-bypass-r.selected,
 #main-menu #mod-cpu.selected,
 #main-menu #mod-ram.selected {
   background-color: #333;
+}
+#main-menu #mod-disconnect {
+  background-image: url(../img/icons/25/disconnect.png);
+}
+#main-menu #mod-disconnect:hover {
+  background-color: #883996;
 }
 #main-menu .mod-add-midi {
   background-image: url(../img/icons/25/midi.png);
