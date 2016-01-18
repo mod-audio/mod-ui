@@ -328,7 +328,7 @@ function Desktop(elements) {
         ws.close()
     }
 
-    //this.disconnect = function () {
+    this.disconnect = function () {
         var self = this
         $.ajax({
             url: '/disconnect',
@@ -345,7 +345,7 @@ function Desktop(elements) {
             cache: false
         })
     }
-    
+
     this.init = function () {
         $(".mod-init-hidden").removeClass("mod-init-hidden");
         $("body").addClass("initialized");
@@ -859,7 +859,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardSavable = false
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend");
-                    
+
                     callback(true)
                 },
                 error: function () {
@@ -1095,7 +1095,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardSavable = true
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
-                
+
                 callback(true)
             },
             error: function () {
@@ -1128,7 +1128,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.pedalboardSavable = true
             self.titleBox.text(title)
             self.titleBox.removeClass("blend");
-            
+
             new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
 
             if (callback)
