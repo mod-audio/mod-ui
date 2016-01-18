@@ -526,10 +526,10 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings .mod-enumerated .mod-address,
 .mod-pedal-settings .mod-switch .mod-address,
 .mod-pedal-settings .mod-slider .mod-address {
-    background-image:url(../img/icons/36/settings.png);
+    background-image:url(../img/icons/36/faders.png);
     background-position:center center;
     background-repeat:no-repeat;
-    background-size: 28px;
+    background-size: 36px;
     bottom:0;
     cursor:pointer;
     height:36px;
