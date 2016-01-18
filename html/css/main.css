@@ -6128,7 +6128,7 @@ button.close {
   top: 0px;
   right: 0px;
   bottom: 0px;
-  left: 140px;
+  left: 120px;
   background: rgba(33, 33, 33, 0.66);
 }
 .cloud-plugins .cloud-plugin .description .no_description {
@@ -6162,7 +6162,7 @@ button.close {
   top: 75%;
   transform: translateY(-50%);
   height: 2.4em;
-  line-height: 1.2em;
+  line-height: 1.25em;
   overflow: hidden;
 }
 .cloud-plugins .cloud-plugin .status {
