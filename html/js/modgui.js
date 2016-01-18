@@ -904,8 +904,8 @@ var baseWidget = {
         self.data('scalePoints',  port.scalePoints)
 
         if (port.properties.indexOf("logarithmic") >= 0) {
-            self.data('scaleMinimum', Math.log(port.ranges.minimum) / Math.log(2))
-            self.data('scaleMaximum', Math.log(port.ranges.maximum) / Math.log(2))
+            self.data('scaleMinimum', (port.ranges.minimum != 0) ? Math.log(port.ranges.minimum) / Math.log(2) : 0)
+            self.data('scaleMaximum', (port.ranges.maximum != 0) ? Math.log(port.ranges.maximum) / Math.log(2) : 0)
         } else {
             self.data('scaleMinimum', port.ranges.minimum)
             self.data('scaleMaximum', port.ranges.maximum)
