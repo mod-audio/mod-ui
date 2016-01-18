@@ -6223,7 +6223,33 @@ button.close {
   z-index: 2;
 }
 #bank-library .ui-draggable-dragging {
-  cursor: webkit-gragging !important;
+  cursor: webkit-dragging !important;
+}
+#bank-library .mod-banks-drag-item {
+  background: #f29446;
+  color: white;
+  font-weight: bold;
+  z-index: 10000;
+}
+#bank-library .mod-banks-drag-item .img {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+  background: url(../img/background.jpg);
+  background-size: auto 100%;
+  background-position: center center;
+  box-shadow: inset 0 3px 6px black;
+  border: 1px solid #000;
+}
+#bank-library .mod-banks-drag-item .title {
+  display: block;
+  line-height: 32px;
+  font-weight: bold;
+  overflow: hidden;
+  position: relative;
+  padding-left: 5px;
 }
 #bank-library span.move {
   background-image: url(../img/move.png);
@@ -6473,7 +6499,7 @@ button.close {
   width: 50%;
 }
 #bank-library #bank-pedalboards > div {
-  margin: 20px 20px 0 20px;
+  margin: 0px 10px 20px 20px;
 }
 #bank-library #bank-pedalboards .pedalboard {
   color: #fff;
@@ -6560,6 +6586,7 @@ button.close {
   text-transform: uppercase;
   float: left;
   line-height: 45px;
+  padding-left: 10px;
 }
 #bank-library #bank-pedalboards-search .control-group {
   margin-bottom: 10px;
@@ -6643,7 +6670,7 @@ button.close {
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
   cursor: -webkit-grab;
-  margin: 0px 20px 20px 0px;
+  margin: 0px 20px 20px 10px;
   transition: all 0.33s;
 }
 #bank-pedalboards-result .pedalboard:active {

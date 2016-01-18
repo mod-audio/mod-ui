@@ -8,7 +8,33 @@ right: 0;
 top: 0;
 z-index: 2;
 .ui-draggable-dragging {
-  cursor: webkit-gragging !important
+  cursor: webkit-dragging !important
+}
+.mod-banks-drag-item {
+    .img {
+      display: block;
+      height: auto;
+      margin: 0 auto;
+      text-align: center;
+      width: 100%;
+      background: url(../img/background.jpg);
+      background-size: auto 100%;
+      background-position: center center;
+      box-shadow: inset 0 3px 6px black;
+      border: 1px solid #000;
+    }
+    .title {
+      display: block;
+      line-height: 32px;
+      font-weight: bold;
+      overflow: hidden;
+      position: relative;
+      padding-left: 5px;
+    }
+    background: @brand-warning;
+    color: white;
+    font-weight: bold;
+    z-index: 10000;
 }
 span {
     &.move {
@@ -263,7 +289,7 @@ input::selection {
   top: 144px;
   width: 50%;
   > div {
-    margin: 20px 20px 0 20px;
+    margin: 0px 10px 20px 20px;
   }
   .pedalboard {
     color: #fff;
@@ -353,6 +379,7 @@ input::selection {
     text-transform: uppercase;
     float: left;
     line-height: 45px;
+    padding-left: 10px;
   }
   .control-group {
     margin-bottom: 10px;
@@ -447,7 +474,7 @@ input::selection {
     color: #fff;
     background: rgba(255,255,255,0.07);
     cursor: -webkit-grab;
-    margin: 0px 20px 20px 0px;
+    margin: 0px 20px 20px 10px;
     transition: all 0.33s;
     &:active {
       cursor: -webkit-grabbing !important;

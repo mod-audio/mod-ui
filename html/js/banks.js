@@ -53,7 +53,7 @@ JqueryClass('bankBox', {
                     connectToSortable: options.pedalboardCanvas,
                     helper: function () {
                         var helper = rendered.clone().appendTo(self)
-                            //helper.addClass('pedalboards-list-item')
+                        helper.addClass('mod-banks-drag-item')
                         helper.width(rendered.width())
                         return helper
                     }
