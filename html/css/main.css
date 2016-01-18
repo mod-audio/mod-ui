@@ -6010,7 +6010,7 @@ button.close {
   background: #f29446;
 }
 #cloud-plugins-library .filter .control-group input[type='checkbox']:checked + label:hover {
-  background: #c27638;
+  background: #600E6F;
 }
 #cloud-plugins-library .filter > .form-group .input-clean {
   margin-right: 8px !important;
@@ -6043,7 +6043,7 @@ button.close {
   background: #000;
 }
 #cloud-plugins-library .filter .categories li.selected:hover {
-  background: #6d2e78;
+  background: #600E6F;
 }
 .cloud-plugins {
   left: 240px;
@@ -6352,7 +6352,7 @@ button.close {
   background: #000;
 }
 #bank-library #bank-list div.selected:hover {
-  background: #6d2e78;
+  background: #600E6F;
 }
 #bank-library #bank-list .bank-item {
   display: block;

@@ -173,16 +173,24 @@
 /* = PEDAL SETTINGS - Pop Up Window
 ================================================ */
 body > .mod-settings {
-    background:rgba(20,20,20,.85);
+    background:rgba(17, 17, 17, 0.9);
     bottom:0;
     left:0;
     position:absolute;
     right:0;
     top:0;
+    transition-property: display, transform;
+    transition-duration: 0.5s, 0.33s;
+    transition-delay: 0.5s, 0s;
+    transform: translateY(-100%);
+}
+
+body > .mod-settings.mod-window-visible {
+    transition-delay: 0s, 0s;
+    transform: translateY(0%);
 }
 
 .mod-pedal-settings {
-    background:#000;
     bottom:38px;
     color:#fff;
     left:30px;
@@ -200,8 +208,8 @@ body > .mod-settings {
 }
 
 .mod-pedal-settings h1 {
-    font-size:18px;
-    font-weight:bold;
+    font-size:24px;
+    font-weight:normal;
     margin:0;
 }
 
@@ -234,7 +242,7 @@ body > .mod-settings {
 /* = KNOB
 ================================================ */
 .mod-pedal-settings .mod-knob {
-    background:rgba(255,255,255,.15);
+    background:#212121;
     float:left;
     height:160px;
     margin-bottom:2px;
@@ -286,13 +294,13 @@ body > .mod-settings {
     background-image:url(../img/knob.png);
     background-position:left center;
     background-repeat:no-repeat;
-    background-size:auto 63px;
-    height:63px;
-    left:47px;
+    background-size:auto 80px;
+    height:80px;
+    left:40px;
     position:absolute;
     overflow:hidden;
-    top:45px;
-    width:63px;
+    top:40px;
+    width:80px;
 }
 
 .mod-pedal-settings .mod-knob .mod-knob-image.disabled {
@@ -302,7 +310,7 @@ body > .mod-settings {
 /* = ENUMERATED
 ================================================ */
 .mod-pedal-settings .mod-enumerated {
-    background:rgba(255,255,255,.15);
+    background:#212121;
     float:left;
     height:160px;
     margin:0 2px 2px 0;
@@ -312,26 +320,28 @@ body > .mod-settings {
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list {
     color:#fff;
-    height:111px;
+    height:103px;
     overflow:auto;
     position:relative;
 }
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list > div {
-    font-size:11px;
     font-weight:bold;
     padding:1px 9px;
+    cursor:pointer;
+    margin: 0 0 1px 0;
+    background: #2c2c2c;
 }
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list > div.selected {
-    background:rgba(255, 255, 255, .4)
+    background:#883996;
 }
 
-.mod-pedal-settings .mod-enumerated .mod-enumerated-list > div:hover,
+.mod-pedal-settings .mod-enumerated .mod-enumerated-list > div:hover {
+    background:#000;
+}
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list > div.selected:hover {
-    background:rgba(255,255,255,.2);
-    box-shadow:inset 0 0 4px rgba(0,0,0,.5);
-    cursor:pointer;
+    background:#600E6F;
 }
 
 .mod-pedal-settings .mod-enumerated > span.mod-enumerated-title {
@@ -352,7 +362,7 @@ body > .mod-settings {
 /* = SLIDER
 ================================================ */
 .mod-pedal-settings .mod-slider {
-    background:rgba(255,255,255,.15);
+    background:#212121;
     float:left;
     font-size:11px;
     height:160px;
@@ -422,7 +432,7 @@ body > .mod-settings {
 /* = SWITCH
 ================================================ */
 .mod-pedal-settings .mod-switch {
-    background:rgba(255,255,255,.15);
+    background:#212121;
     cursor:pointer;
     float:left;
     height:160px;
@@ -450,13 +460,13 @@ body > .mod-settings {
     background-image:url(../img/switch.png);
     background-position:left center;
     background-repeat:no-repeat;
-    background-size:auto 63px;
-    height:63px;
-    left:17px;
+    background-size:auto 50px;
+    height:50px;
+    left:30px;
     position:absolute;
     overflow:hidden;
-    top:55px;
-    width:126px;
+    top:64px;
+    width:100px;
 }
 
 .mod-pedal-settings .mod-switch .mod-footswitch-image {
@@ -499,10 +509,10 @@ body > .mod-settings {
     width:24px;
 }
 .mod-pedal-settings .bypass .mod-light.off {
-    background-image:url(../img/red-light-off.png);
+    background-image:url(../img/purple-light-off.png);
 }
 .mod-pedal-settings .bypass .mod-light.on  {
-    background-image:url(../img/red-light-on.png);
+    background-image:url(../img/purple-light-on.png);
 }
 
 
@@ -512,23 +522,24 @@ body > .mod-settings {
 .mod-pedal-settings .mod-enumerated .mod-address,
 .mod-pedal-settings .mod-switch .mod-address,
 .mod-pedal-settings .mod-slider .mod-address {
-    background-color:rgba(255,255,255,.1);
-    background-image:url(../img/icn-addressing.png);
+    background-image:url(../img/icons/36/settings.png);
     background-position:center center;
     background-repeat:no-repeat;
+    background-size: 28px;
     bottom:0;
     cursor:pointer;
-    height:24px;
+    height:36px;
     position:absolute;
     right:0;
-    width:24px;
+    width:36px;
+    transition: all 0.33s;
 }
 
 .mod-pedal-settings .mod-knob .mod-address:hover,
 .mod-pedal-settings .mod-enumerated .mod-address:hover,
 .mod-pedal-settings .mod-switch .mod-address:hover,
 .mod-pedal-settings .mod-slider .mod-address:hover {
-    background-color:#0088cc;
+    background-color:#883996;
 }
 
 
