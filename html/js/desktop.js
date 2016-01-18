@@ -351,32 +351,19 @@ function Desktop(elements) {
         $("body").addClass("initialized");
     }
 
-    // hide bottom-bar social icon
-    $('#mod-social').hide()
-
-    // hide bottom-bar cloud plugins (store)
-    //$('#mod-cloud-plugins').hide()
-
-    // hide bottom-bar bluetooth status icon
-    $('#mod-bluetooth').hide()
-
-    // hide bottom-bar cloud status icon (logged in, etc)
-    $('#mod-cloud').hide()
-
-    // hide bottom-bar upgrade-server status icon
-    $('#mod-settings').hide()
-
-    // hide top-bar shared-pedalboard button, and push zoom buttons up
+    // hide top-bar shared-pedalboard button
     $('#pedalboard-sharing').hide()
 
     this.setupApp = function (usingDesktop) {
         self.isApp = true
+        $('#mod-add-midi').hide()
+        $('#mod-bluetooth').hide()
+        $('#mod-cloud').hide()
+        $('#mod-settings').hide()
         $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
         $('#mod-disconnect').hide()
         $('#pedalboard-dashboard').parent().css('top', '0px')
-        $('#pedalboard-info .js-add-midi').hide()
-        $('#js-add-midi-separator').hide()
 
         if (usingDesktop) {
             $('#pedalboard-actions').hide()
@@ -564,9 +551,9 @@ function Desktop(elements) {
     elements.resetButton.click(function () {
         self.reset()
     })
-    //elements.disconnectButton.click(function () {
-        //self.disconnect()
-    //})
+    elements.disconnectButton.click(function () {
+        self.disconnect()
+    })
 
     elements.shareButton.click(function () {
         var share = function () {

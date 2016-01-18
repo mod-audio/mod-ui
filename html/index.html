@@ -94,14 +94,14 @@ $('document').ready(function() {
       zoomIn: $('.zoom-in'),
       zoomOut: $('.zoom-out'),
       rec: $('#rec'),
-      addMidiButton: $('#pedalboard-info .mod-add-midi'),
+      addMidiButton: $('#mod-add-midi'),
       midiDevicesWindow: $('#midi-device-window'),
       midiDevicesList: $("#midi-device-list"),
       saveBox: $('#save-pedalboard'),
       saveButton: $('#pedalboard-info .js-save'),
       saveAsButton: $('#pedalboard-info .js-save-as'),
       resetButton:  $('#pedalboard-info .js-reset'),
-      disconnectButton:  $('#mod-disconnect'),
+      disconnectButton: $('#mod-disconnect'),
       effectBox: $('#plugins-library'),
       pedalboardTrigger: $('#main-menu #mod-plugins'),
       cloudPluginBox: $('#cloud-plugins-library'),
@@ -433,7 +433,7 @@ $('document').ready(function() {
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
-            
+
             <!-- PEDALBOARD-SHARING -->
             <div id="pedalboard-sharing">
                 <div class="button"></div>
@@ -470,13 +470,13 @@ $('document').ready(function() {
 
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
-        <div id="mod-social" class="icon"></div>
+        <div id="mod-social" class="icon hide"></div>
         <div id="mod-plugins" class="icon selected"></div>
         <div id="mod-pedalboard" class="icon"></div>
         <div id="mod-bank" class="icon"></div>
         <div id="mod-cloud-plugins" class="icon"></div>
         <div id="banks-saving">Auto saving banks...</div>
-        
+
         <div id="mod-ram" class="icon">
           <div class="progress" id="ram-bar" style="width: 100%;">
             <div class="bar"></div> <!-- not sure if this is needed -->
@@ -496,11 +496,11 @@ $('document').ready(function() {
         <div id="mod-disconnect" class="icon">Disconnect</div>
         <div id="bypassR" class="icon mod-bypass-r">Bypass R</div>
         <div id="bypassL" class="icon mod-bypass-l">Bypass L</div>
-        <div class="icon mod-add-midi">Add MIDI Device</div>
+        <div id="mod-add-midi" class="icon">Add MIDI Device</div>
         <div id="mod-settings" class="icon hide"></div>
         <div id="mod-bluetooth" class="icon hide"></div>
-        <div id="mod-cloud" class="icon"></div>
-        
+        <div id="mod-cloud" class="icon hide"></div>
+
     </div>
     <!-- END MAIN MENU-->
 
@@ -634,7 +634,7 @@ $('document').ready(function() {
                 <!-- <span class="close btn btn-danger js-close">Close</span> -->
             </header>
             <!--<div class="form-horizontal filter clearfix">
-                
+
 		<!-- TODO make this work (branch pedalboard_filter) -->
 		<!--
                 <div class="control-group">
