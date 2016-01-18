@@ -1228,6 +1228,13 @@ header#pedalboard-actions {
 }
 .blocker.screen-disconnected {
   background: rgba(17,17,17,.9) url(../img/icons/block.png) 50% 50% no-repeat;
+  .button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin-top: 120px;
+  }
 }
 .blocker.screen-updating {
   
@@ -1239,6 +1246,27 @@ header#pedalboard-actions {
 .plugin-wait {
   background: url(../img/loading-effect.gif) no-repeat center center;
   border: 1px solid #CCCCCC;
+}
+
+.button {
+    background: @brand-primary;
+    color: white;
+    display: inline-block;
+    cursor: pointer;
+    line-height: 25px;
+    padding: 5px 15px;
+    transition: all 0.33s;
+    border: none;
+    &:hover {
+      background-color: @brand-warning;
+      box-shadow: 0 1px 5px black;
+    }
+}
+.button.icon {
+    padding-left: 40px;
+    background-position: 10px 50%;
+    background-repeat: no-repeat;
+    background-size: 25px;
 }
 
 .drag-handle {

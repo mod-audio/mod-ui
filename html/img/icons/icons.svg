@@ -23,9 +23,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2"
-     inkscape:cx="-169.60225"
-     inkscape:cy="600.15991"
+     inkscape:zoom="11.313708"
+     inkscape:cx="-170.72701"
+     inkscape:cy="976.4377"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
@@ -885,14 +885,17 @@
        height="25"
        width="25.000002"
        id="rect4383"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/reload.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4385"
        width="25.000002"
        height="25"
        x="-150"
-       y="52.362225"
+       y="52.362206"
        rx="0.99999994"
        ry="1.00001" />
     <rect
@@ -1496,6 +1499,10 @@
        rx="2.3402722"
        ry="1.7736837"
        transform="matrix(0.70710678,-0.70710678,0.70710678,0.70710678,0,0)" />
+    <path
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       d="M -162.5 56.361328 A 8.5 8.5 0 0 0 -170.98242 64.361328 L -174 64.361328 L -169.5 70.019531 L -165 64.361328 L -167.97461 64.361328 A 5.500001 5.500001 0 0 1 -162.5 59.361328 A 5.500001 5.500001 0 0 1 -158.33984 61.273438 L -156.45117 58.900391 A 8.5 8.5 0 0 0 -162.5 56.361328 z M -155.5 59.705078 L -160 65.361328 L -157.02539 65.361328 A 5.500001 5.500001 0 0 1 -162.5 70.361328 A 5.500001 5.500001 0 0 1 -166.66016 68.449219 L -168.54883 70.824219 A 8.5 8.5 0 0 0 -162.5 73.361328 A 8.5 8.5 0 0 0 -154.01758 65.361328 L -151 65.361328 L -155.5 59.705078 z "
+       id="rect8461" />
   </g>
   <g
      style="display:inline"

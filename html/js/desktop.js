@@ -314,6 +314,9 @@ function Desktop(elements) {
     this.blockUI = function () {
         var block = $('<div class="screen-disconnected blocker">')
         block.html('<p>Disconnected</p>')
+        var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+        re.css("background-image", "url(img/icons/25/reload.png)");
+        re.click(function () { location.reload(); });
         $('body').append(block).css('overflow', 'hidden')
         $('#wrapper').css('z-index', -1)
         $('#plugins-library').css('z-index', -1)
