@@ -1,18 +1,12 @@
 <div class="cloud-plugin available-plugin js-available-effect" mod-role="cloud-plugin" mod-plugin-id="{{id}}">
-    <figure class="thumb">
-        <img src="{{screenshot_href}}" />
-        <div></div>
-    </figure>
-    <div class="col-sm-8">
-        <div class="description">
-            <span class="title">{{label}}</span>
-            <span class="author">{{brand}}</span>
-            <hr class="dotted" />
-            <p class="{{has_comment}}">{{comment}}<span class="limiter"></span></p>
-            <span class="see_more"></span>
-        </div>
-        <span class="status {{status}}"></span>
+    <figure class="thumb" style="background-image: url('{{screenshot_href}}');"></figure>
+    <div class="description">
+        <span class="title">{{label}}</span>
+        <span class="author">{{brand}}</span>
+        <hr class="dotted" />
+        <p class="{{has_comment}}">{{comment}}<span class="limiter"></span></p>
     </div>
+    <span class="status {{status}}"></span>
 
     <!--
     <span class="rating four"></span>
