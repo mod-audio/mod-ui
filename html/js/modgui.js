@@ -1080,9 +1080,10 @@ JqueryClass('film', baseWidget, {
             if (dummy && ! self.is(":visible"))
                 return
             var url = self.css('background-image') || "none";
-            url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i)[1];
+            url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i);
             if (!url)
                 throw "ERROR: The background-image definition for '" + self[0].className + "' is missing, typo in css?";
+            url = url[1];
             var height = parseInt(self.css('background-size').split(" ")[1] || 0);
             var bgImg = new Image;
             bgImg.onload = function () {
