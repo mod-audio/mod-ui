@@ -6174,7 +6174,7 @@ button.close {
   font-size: 9px;
   position: absolute;
   top: 3px;
-  right: 3px;
+  right: 8px;
 }
 .cloud-plugins .cloud-plugin .status.installed {
   border: 1px solid #883996;
@@ -6490,6 +6490,7 @@ button.close {
 #bank-library #bank-pedalboards .pedalboard .info {
   height: 32px;
   padding-left: 5px;
+  background: rgba(255, 255, 255, 0.07);
 }
 #bank-library #bank-pedalboards .pedalboard .title {
   display: block;
@@ -6636,12 +6637,13 @@ button.close {
   top: 45px;
   overflow: auto;
   width: 30%;
-  background: #2c2c2c;
+  background: #111;
 }
 #bank-pedalboards-result .pedalboard {
   color: #fff;
+  background: rgba(255, 255, 255, 0.07);
   cursor: -webkit-grab;
-  margin: 20px 20px 0 20px;
+  margin: 0px 20px 20px 0px;
   transition: all 0.33s;
 }
 #bank-pedalboards-result .pedalboard:active {
@@ -6772,6 +6774,7 @@ button.close {
 #pedalboards-library .pedalboards .pedalboard .info {
   height: 32px;
   padding-left: 5px;
+  background: rgba(255, 255, 255, 0.07);
 }
 #pedalboards-library .pedalboards .pedalboard .title {
   display: block;
