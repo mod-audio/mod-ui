@@ -289,7 +289,7 @@ JqueryClass('bankBox', {
         bank.addClass('selected')
 
         // Show addressing bar (changed to title on 2015-12-02)
-        self.data('bankAddressing').html('<h1>'+bank.text()+'</h1>')
+        self.data('bankAddressing').html('<h1>'+bank.text()+'</h1>\n<form class="form"><div class="checkbox"><label><input type="checkbox" class="checkbox" /> Navigate pedalboards using footswitches</label></div></form>')
         self.data('bankAddressing').show()
     },
 
