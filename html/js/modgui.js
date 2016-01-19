@@ -1129,8 +1129,10 @@ JqueryClass('film', baseWidget, {
             self.data('lastX', e.pageX)
 
         var position = self.data('position')
-
+        
         position += vdiff + hdiff
+        position = Math.min(self.data("filmSteps"), Math.max(0, position));
+        
         self.data('position', position)
 
         self.film('setRotation', position)
@@ -1159,6 +1161,7 @@ JqueryClass('film', baseWidget, {
         var diff = parseInt(delta / wheelStep)
         var position = self.data('position')
         position += diff
+        position = Math.min(self.data("filmSteps"), Math.max(0, position));
         self.data('position', position)
         if (Math.abs(diff) > 0)
             self.data('lastY', e.pageY)
