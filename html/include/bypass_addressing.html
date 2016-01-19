@@ -1,19 +1,21 @@
 <div class="mod-pedal-settings-address">
     <div class="mod-box">
-        <h1>{{plugin.label}} - Bypass</h1>
-        <form class="bottom">
-            <div class="control-group clearfix">
+        <h1>{{plugin.label}} - <strong>Bypass</strong></h1>
+        <hr />
+        <form class="bottom form">
+            <div class="mod form-group clearfix">
+                <label>Actuator</label>
+                <div class="mod-controls">
+                    <select class="form-control" name="actuator"></select>
+                </div>
+            </div>
+            <div class="form-group clearfix">
                 <label>Label</label>
                 <div class="mod-controls">
-                    <input name="label" type="text"/>
+                    <input class="form-control" name="label" type="text"/>
                 </div>
-            </div>
-            <div class="mod control-group clearfix">
-                <label>MOD</label>
-                <div class="mod-controls">
-                    <select name="actuator"></select>
-                </div>
-            </div>
+            </div>            
+            <hr class="col-xs-12" style="padding:0" />
             <div class="textright clearfix">
               <span class="btn btn-danger js-close">Cancel</span>
               <span class="btn btn-success js-save">Save</span>
