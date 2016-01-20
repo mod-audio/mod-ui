@@ -196,7 +196,12 @@ JqueryClass('cloudPluginBox', {
                 search: query.term
             },
             success: function (plugins) {
-                results.cloud = plugins
+                var cplugins = []
+                for (var i in plugins) {
+                    if (plugins[i].stable)
+                        cplugins.push(plugins[i])
+                }
+                results.cloud = cplugins
                 if (results.local != null) {
                     renderResults()
                 }
@@ -309,8 +314,10 @@ JqueryClass('cloudPluginBox', {
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
-                for (var i in plugins)
-                    cplugins[plugins[i].uri] = plugins[i]
+                for (var i in plugins) {
+                    if (plugins[i].stable)
+                        cplugins[plugins[i].uri] = plugins[i]
+                }
                 results.cloud = cplugins
                 if (results.local != null)
                     renderResults()
