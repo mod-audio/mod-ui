@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var onlyShowStablePlugins = false
+
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -196,12 +198,16 @@ JqueryClass('cloudPluginBox', {
                 search: query.term
             },
             success: function (plugins) {
-                var cplugins = []
-                for (var i in plugins) {
-                    if (plugins[i].stable)
-                        cplugins.push(plugins[i])
+                if (onlyShowStablePlugins) {
+                    var cplugins = []
+                    for (var i in plugins) {
+                        if (plugins[i].stable)
+                            cplugins.push(plugins[i])
+                    }
+                    results.cloud = cplugins
+                } else {
+                    results.cloud = plugins
                 }
-                results.cloud = cplugins
                 if (results.local != null) {
                     renderResults()
                 }
@@ -314,9 +320,15 @@ JqueryClass('cloudPluginBox', {
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
-                for (var i in plugins) {
-                    if (plugins[i].stable)
+                if (onlyShowStablePlugins) {
+                    for (var i in plugins) {
+                        if (plugins[i].stable)
+                            cplugins[plugins[i].uri] = plugins[i]
+                    }
+                } else {
+                    for (var i in plugins) {
                         cplugins[plugins[i].uri] = plugins[i]
+                    }
                 }
                 results.cloud = cplugins
                 if (results.local != null)
