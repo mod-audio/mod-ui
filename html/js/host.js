@@ -106,8 +106,14 @@ $('document').ready(function() {
             var connMgr = desktop.pedalboard.data("connectionManager")
 
             if (connMgr.connected(source, target)) {
-                var jack = connMgr.origIndex[source][target]
+                var jack   = connMgr.origIndex[source][target]
+                var output = jack.data('origin')
                 desktop.pedalboard.pedalboard('destroyJack', jack)
+
+                if (Object.keys(connMgr.origIndex[source]).length == 0) {
+                    output.addClass('output-disconnected')
+                    output.removeClass('output-connected')
+                }
             }
             return
         }
