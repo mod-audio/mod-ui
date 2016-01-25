@@ -143,7 +143,7 @@ class Session(object):
 
     # Remove a plugin
     def web_remove(self, instance, callback):
-        self.host.remove_plugin(instance, callback)
+        self.host.remove_plugin(instance, self.hmi_initialized, callback)
 
     # Set a plugin parameter
     # We use ":bypass" symbol for on/off state

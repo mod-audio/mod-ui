@@ -492,7 +492,7 @@ class Host(object):
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
     @gen.coroutine
-    def remove_plugin(self, instance, callback):
+    def remove_plugin(self, instance, hmi_initialized, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
         try:
@@ -527,7 +527,10 @@ class Host(object):
         def hmi_callback(ok):
             self.send("remove %d" % instance_id, host_callback, datatype='boolean')
 
-        self.hmi.control_rm(instance_id, ":all", hmi_callback)
+        if hmi_initialized:
+            self.hmi.control_rm(instance_id, ":all", hmi_callback)
+        else:
+            hmi_callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin values
