@@ -328,52 +328,6 @@ JqueryClass('pedalboard', {
             options[functions[i]] = factory(functions[i], options[functions[i]])
     },
 
-    /*
-    serialize: function (callback) {
-        var self = $(this)
-        var scale = self.data('scale')
-        var hw = self.data('hardwareManager')
-
-        var data = {}
-        data.width = self.width()
-        data.height = self.height()
-
-        data.instances = []
-        var instance, plugin, pluginData, gui
-        var plugins = self.data('plugins')
-        for (instance in plugins) {
-            plugin = plugins[instance]
-            gui = plugin.data('gui')
-            preset = gui.serializePreset()
-                // TODO: hack tosco para tirar a porta virtual :bypass, rever arquitetura
-            delete preset[':bypass']
-            pluginData = {
-                instance: instance,
-                uri: plugin.data('uri'),
-                x: (plugin.offset().left - self.offset().left) / scale,
-                y: (plugin.offset().top - self.offset().top) / scale,
-                preset: preset,
-                addressing: hw ? hw.serializeInstance(instance) : null,
-                bypassed: gui.bypassed
-            }
-            data.instances.push(pluginData)
-        }
-
-        data.connections = []
-        self.data('connectionManager').iterate(function (jack) {
-            var from = jack.data('origin')
-            var to = jack.data('destination')
-            data.connections.push([from.data('instance'),
-                from.data('symbol'),
-                to.data('instance'),
-                to.data('symbol')
-            ])
-        })
-
-        callback(data)
-    },
-    */
-
     fakeLoadFromServerData: function (data, callback, bypassApplication) {
         var self = $(this)
 
@@ -1363,13 +1317,14 @@ JqueryClass('pedalboard', {
     drawPluginJacks: function (plugin) {
         var self = $(this)
         var myjacks = []
-        self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
+        var connMgr = self.data('connectionManager')
+        connMgr.iterateInstance(plugin.data('instance'), function (jack) {
             myjacks.push($(jack.data('svg')._container))
         })
 
         $('.hasSVG.cable-connected').filter(function(e) {!(e in myjacks)}).css({'z-index': 0})
 
-        self.data('connectionManager').iterateInstance(plugin.data('instance'), function (jack) {
+        connMgr.iterateInstance(plugin.data('instance'), function (jack) {
             self.pedalboard('drawJack', jack)
             $(jack.data('svg')._container).css({ 'z-index': self.data("z_index")-1, 'pointer-events': 'none'})
         })
@@ -1386,16 +1341,16 @@ JqueryClass('pedalboard', {
     removeItemFromCanvas: function (instance) {
         var self = $(this)
         var plugins = self.data('plugins')
+        var connMgr = self.data('connectionManager')
 
         if (instance in plugins) {
-            var connections = self.data('connectionManager')
-            connections.iterateInstance(instance, function (jack) {
+            connMgr.iterateInstance(instance, function (jack) {
                 var input = jack.data('destination')
                 jack.data('canvas').remove()
                 jack.remove()
                 self.pedalboard('packJacks', input)
             })
-            connections.removeInstance(instance)
+            connMgr.removeInstance(instance)
 
             var hw = self.data('hardwareManager')
             if (hw)
@@ -1409,8 +1364,7 @@ JqueryClass('pedalboard', {
 
             delete plugins[instance]
         } else {
-            var connections = self.data('connectionManager')
-            connections.iterate(function (jack) {
+            connMgr.iterate(function (jack) {
                 var input   = jack.data('destination')
                 var inport  = input.attr('mod-port')
                 var output  = jack.data('origin')
@@ -1419,12 +1373,12 @@ JqueryClass('pedalboard', {
                 if (inport != instance && outport != instance)
                     return
 
-                connections.disconnect(outport, inport)
+                connMgr.disconnect(outport, inport)
                 jack.data('canvas').remove()
                 jack.remove()
                 self.pedalboard('packJacks', input)
 
-                if (!connections.origIndex[outport] || Object.keys(connections.origIndex[outport]).length == 0) {
+                if (!connMgr.origIndex[outport] || Object.keys(connMgr.origIndex[outport]).length == 0) {
                     output.addClass('output-disconnected')
                     output.removeClass('output-connected')
                 }
@@ -1456,7 +1410,7 @@ JqueryClass('pedalboard', {
     // on or off. If highlight parameter is false, no jack is needed.
     highlightInputs: function (highlight, jack) {
         var self = $(this)
-        var connections = self.data('connectionManager')
+        var connMgr = self.data('connectionManager')
         if (!highlight) {
             self.find('[mod-role=input-audio-port]').removeClass('input-connecting')
             self.find('[mod-role=input-midi-port]').removeClass('input-connecting')
@@ -1476,7 +1430,7 @@ JqueryClass('pedalboard', {
             var toPort = input.attr('mod-port')
             var ok
             // Do not highlight if this output and input are already connected
-            ok = !connections.connected(fromPort, toPort)
+            ok = !connMgr.connected(fromPort, toPort)
             if (ok) {
                 input.addClass('input-connecting')
             }
@@ -2021,8 +1975,9 @@ JqueryClass('pedalboard', {
                 left: 0
             })
         }
-        if (self.data('connectionManager').origIndex[output.attr('mod-port')] &&
-             Object.keys(self.data('connectionManager').origIndex[output.attr('mod-port')]).length == 1) {
+        var connMgr = self.data('connectionManager')
+        var outport = output.attr('mod-port')
+        if (connMgr.origIndex[outport] && Object.keys(connMgr.origIndex[outport]).length == 1) {
             output.addClass('output-disconnected')
             output.removeClass('output-connected')
         }
@@ -2037,8 +1992,7 @@ JqueryClass('pedalboard', {
 
     connected: function (output, input) {
         var self = $(this)
-        var manager = self.data('connectionManager')
-        return manager.connected(output.attr("mod-port"), input.attr("mod-port"))
+        return self.data('connectionManager').connected(output.attr("mod-port"), input.attr("mod-port"))
     },
 
     // Adjust layout of all jacks connected to this input to fit inside it
