@@ -82,8 +82,13 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('setCategory', category)
         })
 
-        self.cloudPluginBox('search')
         self.cloudPluginBox('setCategory', "All")
+
+        options.open = function () {
+            self.cloudPluginBox('search')
+            return false
+        }
+
         self.window(options)
     },
 
