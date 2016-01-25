@@ -1897,8 +1897,13 @@ JqueryClass('pedalboard', {
         var previousInput = jack.data('destination')
 
         // If output is already connected to this input through another jack, abort connection
-        if (self.pedalboard('connected', output, input))
-            return self.pedalboard('disconnect', jack)
+        if (self.pedalboard('connected', output, input)) {
+            self.pedalboard('disconnect', jack)
+            output.addClass('output-connected')
+            output.removeClass('output-disconnected')
+            output.removeClass('output-connecting')
+            return
+        }
 
         // If this jack is already connected to this output, keep connection
         // This means user just took a connected jack, dragged around and dropped
@@ -1942,8 +1947,13 @@ JqueryClass('pedalboard', {
         }
 
         // If output is already connected to this input through another jack, abort connection
-        if (self.pedalboard('connected', output, input))
-            return self.pedalboard('disconnect', jack)
+        if (self.pedalboard('connected', output, input)) {
+            self.pedalboard('disconnect', jack)
+            output.addClass('output-connected')
+            output.removeClass('output-disconnected')
+            output.removeClass('output-connecting')
+            return
+        }
 
         // Can only ports if they are the same type
         if (input.data('portType') != output.data('portType'))
