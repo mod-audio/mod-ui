@@ -128,12 +128,22 @@ class Host(object):
             self.memfile  = open("/proc/meminfo", 'r')
             self.memtotal = 0.0
             self.memfseek = 0
+            self.memfskip = False
+            wasFreeBefore = False
 
             for line in self.memfile.readlines():
                 if line.startswith("MemTotal:"):
                     self.memtotal = float(int(line.replace("MemTotal:","",1).replace("kB","",1).strip()))
                 elif line.startswith("MemFree:"):
-                    break
+                    wasFreeBefore = True
+                    continue
+                elif wasFreeBefore:
+                    if line.startswith("MemAvailable:"):
+                        self.memfskip = True
+                        break
+                    elif line.startswith("Buffers:"):
+                        break
+                wasFreeBefore = False
                 self.memfseek += len(line)
             else:
                 self.memfseek = 0
@@ -1085,6 +1095,10 @@ _:b%i
 
         self.memfile.seek(self.memfseek)
         memfree  = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
+
+        # skip 'MemAvailable'
+        if self.memfskip: self.memfile.readline()
+
         memfree += float(int(self.memfile.readline().replace("Buffers:","",1).replace("kB","",1).strip()))
         memfree += float(int(self.memfile.readline().replace("Cached:" ,"",1).replace("kB","",1).strip()))
 
