@@ -3686,20 +3686,25 @@ int* get_pedalboard_size(const char* const bundle)
 
 static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
 {
-    static std::vector<std::string> mapping = {
-        LV2_ATOM__Float
+    if (uri_ == nullptr || uri_[0] == '\0')
+        return 0;
+
+    static std::vector<std::string> kMapping = {
+        LV2_ATOM__Float,
+        LV2_ATOM__Int,
     };
 
     const std::string uri(uri_);
 
     LV2_URID urid = 1;
-    for (const std::string& uri2 : mapping)
+    for (const std::string& uri2 : kMapping)
     {
         if (uri2 == uri)
             return urid;
         ++urid;
     }
-    mapping.push_back(uri);
+
+    kMapping.push_back(uri);
     return urid;
 }
 
@@ -3707,13 +3712,28 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
 {
     std::vector<StatePortValue>* const values = (std::vector<StatePortValue>*)userData;
 
-    if (type != 1) // LV2_ATOM__Float
-        return;
-    if (size != sizeof(float))
-        return;
+    switch (type)
+    {
+    case 1:
+        if (size == sizeof(float))
+        {
+            float fvalue = *(const float*)value;
+            values->push_back({ true, strdup(portSymbol), fvalue });
+        }
+        break;
 
-    float fvalue = *(const float*)value;
-    values->push_back({ true, strdup(portSymbol), fvalue });
+    case 2:
+        if (size == sizeof(int32_t))
+        {
+            int32_t ivalue = *(const int32_t*)value;
+            values->push_back({ true, strdup(portSymbol), (float)ivalue });
+        }
+        break;
+
+    default:
+        printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
+        break;
+    }
 }
 
 StatePortValue* get_state_port_values(const char* const state)
