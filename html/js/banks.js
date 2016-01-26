@@ -202,9 +202,9 @@ JqueryClass('bankBox', {
         var self = $(this)
         if(self.data('resultCanvas').children().length === 0){
             new Notification('error', 'Before creating banks you must save a pedalboard first.')
-            return;    
+            return;
         }
-        
+
         bank = self.bankBox('renderBank', {
             'title': '',
             'pedalboards': []
@@ -293,7 +293,7 @@ JqueryClass('bankBox', {
         self.data('bankAddressing').show()
     },
 
-    editBank: function (bank) {        
+    editBank: function (bank) {
         var self = $(this)
         var titleBox = bank.find('.js-bank-title')
         if (titleBox.data('editing'))

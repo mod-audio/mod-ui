@@ -1129,10 +1129,10 @@ JqueryClass('film', baseWidget, {
             self.data('lastX', e.pageX)
 
         var position = self.data('position')
-        
+
         position += vdiff + hdiff
         position = Math.min(self.data("filmSteps"), Math.max(0, position));
-        
+
         self.data('position', position)
 
         self.film('setRotation', position)

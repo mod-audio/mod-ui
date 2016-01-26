@@ -434,7 +434,7 @@ JqueryClass("presetManager", {
             self.presetManager("addPreset", presets[p]);
         return self;
     },
-    
+
     addPreset: function (preset) {
         var self = $(this);
         var li = $("<li>");
@@ -455,7 +455,7 @@ JqueryClass("presetManager", {
         });
         return self;
     },
-    
+
     setPresets: function (instance, presets) {
         var self = $(this);
         self.data("presetManagerOptions").instance = instance
@@ -630,7 +630,7 @@ JqueryClass("presetEntry", {
         e.bind   = self.find(".mod-button-bind");
         e.edit   = self.find(".mod-button-edit");
         e.remove = self.find(".mod-button-remove");
-        
+
         if (options.bind) {
             e.bind.modButton({
                 icon: "bind",
@@ -644,7 +644,7 @@ JqueryClass("presetEntry", {
                 icon: "edit",
                 tooltip: "Edit the presets name",
             }).on("action", function (e) { self.presetEntry("editName", e); });
-    
+
             e.remove.modButton({
                 confirm: true,
                 question: "",
@@ -658,7 +658,7 @@ JqueryClass("presetEntry", {
             e.edit.css("display", "none");
             e.remove.css("display", "none");
         }
-        
+
         e.entry.on("keyup", function (e) { self.presetEntry("typing", e); });
 
         e.name.on("click", function () { self.trigger("clicked"); });

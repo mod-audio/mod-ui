@@ -104,13 +104,13 @@ JqueryClass('effectBox', {
         self.find('.nav-right').click(function () {
             self.effectBox('shiftRight')
         })
-        
+
         // CATEGORY WRAPPERS
         self.find(".plugins-wrapper").each(function () {
             $(this).data("pos", 0);
             $(this).data("plug", 0);
         })
-        
+
         // CATEGORY SCROLL
         self.on('DOMMouseScroll mousewheel', function ( event ) {
             if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 )
@@ -121,7 +121,7 @@ JqueryClass('effectBox', {
             return false;
         });
         self.data("scrollTO", false);
-        
+
         //self.effectBox('fold')
         self.effectBox('setCategory', 'All')
         self.effectBox('search')
@@ -290,7 +290,7 @@ JqueryClass('effectBox', {
             }
 
             renderedIndex += 1
-            
+
             c = c || 0;
             if (c < 20) renderNextPlugin(c+1);
             else setTimeout(renderNextPlugin, 1);
@@ -317,7 +317,7 @@ JqueryClass('effectBox', {
         var div = document.createElement("div");
         div.innerHTML = Mustache.render(TEMPLATES.plugin, plugin_data);
         var rendered = $(Array.prototype.slice.call(div.childNodes, 0));
-        
+
         self.data('pedalboard').pedalboard('registerAvailablePlugin', rendered, plugin, {
             distance: 5,
             delay: 100,
@@ -340,7 +340,7 @@ JqueryClass('effectBox', {
     },
 
     showPluginInfo: function (plugin) {
-        
+
         function formatNum(x) {
             var parts = x.toString().split(".");
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -349,7 +349,7 @@ JqueryClass('effectBox', {
 
         var self = $(this)
         var uri  = escape(plugin.uri)
-        
+
         var showInfo = function() {
 
             for(var i = 0; i< plugin.ports.control.input.length; i++) {  // formating numbers and flooring ranges up to two decimal cases
@@ -359,7 +359,7 @@ JqueryClass('effectBox', {
                 plugin.ports.control.input[i].formatted.default = formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100);
                 plugin.ports.control.input[i].formatted.maximum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100);
                 plugin.ports.control.input[i].formatted.minimum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100);
-                
+
             }
 
             var comment = plugin.comment
@@ -558,13 +558,13 @@ JqueryClass('effectBox', {
     shiftRight: function () {
         $(this).effectBox('shiftDir', 1);
     },
-    
-    
+
+
     // This whole scrolling and shifting thing is very expensive due
     // to lots of relayouts and redraws. This is because we want to
     // snap to plugins on the left border of the container. We should
     // switch to a less greedy concept. Maybe next century.
-    
+
     shiftDir: function (dir) {
         var self = $(this);
         var wrapper = self.find('.plugins-wrapper.selected');
@@ -590,15 +590,15 @@ JqueryClass('effectBox', {
         wrapper.data("pos", pos);
         wrapper[0].style.left = pos + "px";
     },
-    
+
     shiftPrev: function () {
         $(this).effectBox('shiftAlter', -1);
     },
-    
+
     shiftNext: function () {
         $(this).effectBox('shiftAlter', 1);
     },
-    
+
     shiftAlter: function (dir) {
         var self = $(this);
         var wrapper = self.find('.plugins-wrapper.selected');
