@@ -15,8 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var onlyShowStablePlugins = false
-
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -66,10 +64,11 @@ JqueryClass('cloudPluginBox', {
             }, 400);
         })
 
-        var filters = self.find('input:checkbox[name=installed]')
-        self.data('filters', filters)
+        self.find('input:checkbox[name=installed]').click(function (e) {
+            self.cloudPluginBox('search')
+        })
 
-        filters.click(function (e) {
+        self.find('input:checkbox[name=stable]').click(function (e) {
             self.cloudPluginBox('search')
         })
 
@@ -132,13 +131,14 @@ JqueryClass('cloudPluginBox', {
         var query = {
             term: self.data('searchbox').val()
         }
+        var stableOnly = (self.find('input:checkbox[name=stable]:checked').length > 0)
         if (self.find('input:checkbox[name=installed]:checked').length)
-            return self.cloudPluginBox('searchInstalled', query)
-        return self.cloudPluginBox('searchAll', query)
+            return self.cloudPluginBox('searchInstalled', query, stableOnly)
+        return self.cloudPluginBox('searchAll', query, stableOnly)
     },
 
     // search cloud and local plugins, show all but prefer cloud
-    searchAll: function (query) {
+    searchAll: function (query, stableOnly) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin;
@@ -203,7 +203,7 @@ JqueryClass('cloudPluginBox', {
                 search: query.term
             },
             success: function (plugins) {
-                if (onlyShowStablePlugins) {
+                if (stableOnly) {
                     var cplugins = []
                     for (var i in plugins) {
                         if (plugins[i].stable)
@@ -275,7 +275,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search cloud and local plugins, show installed only
-    searchInstalled: function (query) {
+    searchInstalled: function (query, stableOnly) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin
@@ -325,7 +325,7 @@ JqueryClass('cloudPluginBox', {
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
-                if (onlyShowStablePlugins) {
+                if (stableOnly) {
                     for (var i in plugins) {
                         if (plugins[i].stable)
                             cplugins[plugins[i].uri] = plugins[i]
