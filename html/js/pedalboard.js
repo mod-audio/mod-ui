@@ -118,6 +118,7 @@ JqueryClass('pedalboard', {
         self.data('minScale', options.baseScale)
 
         self.data('instanceCounter', -1)
+        self.data('overCount', 0)
 
         // Holds all plugins loaded, indexed by instance
         self.data('plugins', {})
@@ -1426,14 +1427,7 @@ JqueryClass('pedalboard', {
         var portType = output.data('portType')
 
         self.find('[mod-role=input-' + portType + '-port]').each(function () {
-            var input = $(this)
-            var toPort = input.attr('mod-port')
-            var ok
-            // Do not highlight if this output and input are already connected
-            ok = !connMgr.connected(fromPort, toPort)
-            if (ok) {
-                input.addClass('input-connecting')
-            }
+            $(this).addClass('input-connecting')
         });
     },
 
@@ -1508,9 +1502,16 @@ JqueryClass('pedalboard', {
         element.droppable({
             accept: '[mod-role=output-jack]',
             drop: function (event, ui) {
-                var jack = ui.draggable
+                var overCount = self.data('overCount');
+                self.data('overCount', 0);
 
-                self.pedalboard('do_connect', jack, element)
+                var jack = ui.draggable
+                var outputType = jack.parent().attr('mod-role').split(/-/)[1]
+                var inputType = element.attr('mod-role').split(/-/)[1]
+                if (outputType != inputType)
+                    return
+
+                self.pedalboard('do_connect', jack, element, overCount)
                 element.removeClass('input-connecting-highlight')
             },
             over: function (event, ui) {
@@ -1518,12 +1519,26 @@ JqueryClass('pedalboard', {
                 var inputType = element.attr('mod-role').split(/-/)[1]
                 if (outputType != inputType)
                     return
-                self.data('background').droppable('disable')
+
                 element.addClass('input-connecting-highlight')
+
+                var overCount = self.data('overCount')+1;
+                self.data('overCount', overCount);
+                if (overCount == 1) {
+                    self.data('background').droppable('disable')
+                }
             },
             out: function (event, ui) {
-                self.data('background').droppable('enable')
                 element.removeClass('input-connecting-highlight')
+
+                var overCount = self.data('overCount')-1;
+                if (overCount < 0) {
+                    overCount = 0
+                }
+                self.data('overCount', overCount);
+                if (overCount == 0) {
+                    self.data('background').droppable('enable')
+                }
             },
             greedy: true,
         })
@@ -1844,41 +1859,39 @@ JqueryClass('pedalboard', {
         self.pedalboard('highlightInputs', false)
     },
 
-    do_connect: function (jack, input) {
+    do_connect: function (jack, input, overCount) {
         var self = $(this)
         var output = jack.data('origin')
-
         var previousInput = jack.data('destination')
 
-        // If output is already connected to this input through another jack, abort connection
         if (self.pedalboard('connected', output, input)) {
-            self.pedalboard('disconnect', jack)
-            output.addClass('output-connected')
-            output.removeClass('output-disconnected')
-            output.removeClass('output-connecting')
+            // If this jack is already connected to this output, keep connection
+            // This means user just took a connected jack, dragged around and dropped in the same input
+            if (previousInput && input && previousInput[0] == input[0]) {
+                jack.addClass('jack-connected')
+                output.addClass('output-connected')
+                output.removeClass('output-disconnected')
+                output.removeClass('output-connecting')
+                jack.data('canvas').addClass('cable-connected')
+                jack.data('connected', true)
+                input.addClass('input-connected')
+                jack.css({
+                    top: 'auto',
+                    left: 'auto',
+                    marginTop: 'auto',
+                })
+            // If output is already connected to this input through another jack, abort connection
+            } else {
+                self.pedalboard('disconnect', jack)
+                output.addClass('output-connected')
+                output.removeClass('output-disconnected')
+                output.removeClass('output-connecting')
+            }
             return
         }
 
-        // If this jack is already connected to this output, keep connection
-        // This means user just took a connected jack, dragged around and dropped
-        // in the same input
-        if (previousInput && input && previousInput[0] == input[0]) {
-            jack.addClass('jack-connected')
-            output.addClass('output-connected')
-            output.removeClass('output-disconnected')
-            output.removeClass('output-connecting')
-            jack.data('canvas').addClass('cable-connected')
-            jack.data('connected', true)
-            input.addClass('input-connected')
-            jack.css({
-                top: 'auto',
-                left: 'auto',
-                marginTop: 'auto',
-            })
-            return
-        }
         // This jack was connected to some other input, let's disconnect it
-        if (previousInput) {
+        if (previousInput && overCount < 2) {
             self.pedalboard('disconnect', jack)
             self.pedalboard('packJacks', previousInput)
         }
@@ -1975,6 +1988,7 @@ JqueryClass('pedalboard', {
                 left: 0
             })
         }
+
         var connMgr = self.data('connectionManager')
         var outport = output.attr('mod-port')
         if (connMgr.origIndex[outport] && Object.keys(connMgr.origIndex[outport]).length == 1) {
