@@ -57,17 +57,23 @@ function WindowManager() {
         init: function (options) {
             var self = $(this)
 
-            if (!options)
+            if (!options) {
                 options = {
                     windowManager: WINDOWMANAGER
                 }
+            }
             var trigger = options.trigger
             self.data('trigger', trigger)
 
-            if (options.open) self.bind('windowopen', options.open)
-            if (options.close) self.bind('windowclose', options.close)
-            if (options.preopen)
+            if (options.open) {
+                self.bind('windowopen', options.open)
+            }
+            if (options.close) {
+                self.bind('windowclose', options.close)
+            }
+            if (options.preopen) {
                 self.data('preopen', options.preopen)
+            }
 
             self.hide()
 
@@ -123,9 +129,10 @@ function WindowManager() {
             self.trigger('windowopen')
 
             var trigger = self.data('trigger')
-            if (trigger)
+            if (trigger) {
                 trigger.addClass('selected')
-            self.data('defaultIcon').removeClass('selected')
+                self.data('defaultIcon').removeClass('selected')
+            }
         },
 
         close: function (closure) {
@@ -140,17 +147,20 @@ function WindowManager() {
             self.hide()
 
             var trigger = self.data('trigger')
-            if (trigger)
+            if (trigger) {
                 trigger.removeClass('selected')
-            self.data('defaultIcon').addClass('selected')
+                self.data('defaultIcon').addClass('selected')
+            }
 
             self.trigger('windowclose')
         },
 
         toggle: function () {
             var self = $(this)
-            if (self.is(':visible'))
-                self.window('close')
+            if (self.is(':visible')) {
+                if (self == self.data('defaultIcon'))
+                    self.window('close')
+            }
             else
                 self.window('open')
         },
