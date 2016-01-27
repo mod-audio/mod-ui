@@ -2895,7 +2895,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
     // free bundlenode, no longer needed
     lilv_node_free(bundlenode);
 
-#if 0
+#if 1
     // lilv world is now messed up because of removing stuff, need to rebuild it
     lilv_world_free(W);
     W = lilv_world_new();
