@@ -94,6 +94,11 @@ int main()
     assert(remove_bundle_from_lilv_world("/usr/lib/lv2/calf.lv2") != nullptr);
     assert(remove_bundle_from_lilv_world("/usr/lib/lv2/calf.lv2") == nullptr);
     assert(get_all_plugins() == nullptr);
+    assert(add_bundle_to_lilv_world("/NOT") == nullptr);
+    assert(remove_bundle_from_lilv_world("/NOT") == nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/calf.lv2/") != nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/calf.lv2") == nullptr);
+    assert(get_all_plugins() != nullptr);
     scanPlugins();
     cleanup();
 #endif
