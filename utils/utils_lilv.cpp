@@ -1557,6 +1557,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         for (uint32_t i=0; i<count; ++i)
         {
             const LilvPort* const port = lilv_plugin_get_port_by_index(p, i);
+            assert(port != nullptr);
 
             int direction = 0; // using -1 = input, +1 = output
             int type      = 0; // using by order1-4: audio, control, cv, midi
@@ -3004,25 +3005,22 @@ const PluginInfo* get_plugin_info(const char* const uri_)
     if (PLUGNFO[uri].valid)
         return _fill_plugin_info_with_presets(PLUGNFO[uri], uri);
 
-    const NamespaceDefinitions ns;
+    LilvNode* const urinode = lilv_new_uri(W, uri_);
 
-    // look for it
-    LILV_FOREACH(plugins, itpls, PLUGINS)
+    if (urinode == nullptr)
+        return nullptr;
+
+    const LilvPlugin* const p = lilv_plugins_get_by_uri(PLUGINS, urinode);
+    lilv_node_free(urinode);
+
+    if (p != nullptr)
     {
-        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
-
-        std::string uri2 = lilv_node_as_uri(lilv_plugin_get_uri(p));
-
-        if (uri2 != uri)
-            continue;
-
-        // found it
-        printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
+        printf("NOTICE: Plugin '%s' was not (fully2) cached, scanning it now...\n", uri_);
+        const NamespaceDefinitions ns;
         PLUGNFO[uri] = _get_plugin_info(p, ns);
         return &PLUGNFO[uri];
     }
 
-    // not found
     return nullptr;
 }
 
@@ -3051,7 +3049,7 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* const uri_)
             continue;
 
         // found it
-        printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
+        printf("NOTICE: Plugin '%s' was not (small) cached, scanning it now...\n", uri_);
         PLUGNFO_Mini[uri] = _get_plugin_info_mini(p, ns);
         return &PLUGNFO_Mini[uri];
     }
@@ -3087,7 +3085,7 @@ const PluginPort* get_plugin_control_input_ports(const char* const uri_)
             continue;
 
         // found the plugin
-        printf("NOTICE: Plugin '%s' was not cached, scanning it now...\n", uri_);
+        printf("NOTICE: Plugin '%s' was not (fully) cached, scanning it now...\n", uri_);
         PLUGNFO[uri] = _get_plugin_info(p, ns);
         return PLUGNFO[uri].ports.control.input;
     }
