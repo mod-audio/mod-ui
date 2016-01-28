@@ -2436,6 +2436,9 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
             free((void*)p.instance);
             free((void*)p.uri);
 
+            if (p.preset != nullptr && p.preset != nc)
+                free((void*)p.preset);
+
             if (p.ports != nullptr)
             {
                 for (int j=0; p.ports[j].valid; ++j)
@@ -3253,17 +3256,18 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     memset(&info, 0, sizeof(PedalboardInfo));
 
     // define the needed stuff
-    LilvNode* const ingen_arc     = lilv_new_uri(w, LILV_NS_INGEN "arc");
-    LilvNode* const ingen_block   = lilv_new_uri(w, LILV_NS_INGEN "block");
-    LilvNode* const ingen_canvasX = lilv_new_uri(w, LILV_NS_INGEN "canvasX");
-    LilvNode* const ingen_canvasY = lilv_new_uri(w, LILV_NS_INGEN "canvasY");
-    LilvNode* const ingen_enabled = lilv_new_uri(w, LILV_NS_INGEN "enabled");
-    LilvNode* const ingen_head    = lilv_new_uri(w, LILV_NS_INGEN "head");
-    LilvNode* const ingen_tail    = lilv_new_uri(w, LILV_NS_INGEN "tail");
-    LilvNode* const ingen_value   = lilv_new_uri(w, LILV_NS_INGEN "value");
-    LilvNode* const lv2_name      = lilv_new_uri(w, LILV_NS_LV2   "name");
-    LilvNode* const lv2_port      = lilv_new_uri(w, LILV_NS_LV2   "port");
-    LilvNode* const lv2_prototype = lilv_new_uri(w, LILV_NS_LV2   "prototype");
+    LilvNode* const ingen_arc       = lilv_new_uri(w, LILV_NS_INGEN    "arc");
+    LilvNode* const ingen_block     = lilv_new_uri(w, LILV_NS_INGEN    "block");
+    LilvNode* const ingen_canvasX   = lilv_new_uri(w, LILV_NS_INGEN    "canvasX");
+    LilvNode* const ingen_canvasY   = lilv_new_uri(w, LILV_NS_INGEN    "canvasY");
+    LilvNode* const ingen_enabled   = lilv_new_uri(w, LILV_NS_INGEN    "enabled");
+    LilvNode* const ingen_head      = lilv_new_uri(w, LILV_NS_INGEN    "head");
+    LilvNode* const ingen_tail      = lilv_new_uri(w, LILV_NS_INGEN    "tail");
+    LilvNode* const ingen_value     = lilv_new_uri(w, LILV_NS_INGEN    "value");
+    LilvNode* const lv2_name        = lilv_new_uri(w, LILV_NS_LV2      "name");
+    LilvNode* const lv2_port        = lilv_new_uri(w, LILV_NS_LV2      "port");
+    LilvNode* const lv2_prototype   = lilv_new_uri(w, LILV_NS_LV2      "prototype");
+    LilvNode* const modpedal_preset = lilv_new_uri(w, LILV_NS_MODPEDAL "preset");
 
     // --------------------------------------------------------------------------------------------------------
     // title
@@ -3311,6 +3315,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     LilvNode* const enabled = lilv_world_get(w, block, ingen_enabled, nullptr);
                     LilvNode* const x       = lilv_world_get(w, block, ingen_canvasX, nullptr);
                     LilvNode* const y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
+                    LilvNode* const preset  = lilv_world_get(w, block, modpedal_preset, nullptr);
 
                     PedalboardPluginPort* ports = nullptr;
 
@@ -3357,7 +3362,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
                         x != nullptr ? lilv_node_as_float(x) : 0.0f,
                         y != nullptr ? lilv_node_as_float(y) : 0.0f,
-                        ports
+                        ports,
+                        preset != nullptr ? strdup(lilv_node_as_uri(preset)) : nc
                     };
 
                     lilv_free(full_instance);

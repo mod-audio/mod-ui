@@ -484,6 +484,7 @@ class Host(object):
                 "addressing": {}, # symbol: addressing
                 "ports"     : valports,
                 "badports"  : badports,
+                "preset"    : "",
             }
 
             callback(resp)
@@ -556,6 +557,8 @@ class Host(object):
             if not state:
                 callback(False)
                 return
+
+            self.plugins[instance_id]['preset'] = uri
 
             portValues = get_state_port_values(state)
             self.plugins[instance_id]['ports'].update(portValues)
@@ -729,8 +732,12 @@ class Host(object):
                 "addressing": {}, # filled in later in _load_addressings()
                 "ports"     : valports,
                 "badports"  : badports,
+                "preset"    : p['preset'],
             }
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
+
+            if p['preset']:
+                self.send("preset_load %d %s" % (instance_id, p['preset']), lambda r:None)
 
             for port in p['ports']:
                 symbol = port['symbol']
@@ -819,6 +826,7 @@ _:b%i
     lv2:minorVersion %i ;
     lv2:port <%s> ;
     lv2:prototype <%s> ;
+    pedal:preset <%s> ;
     a ingen:Block .
 """ % (instance, plugin['x'], plugin['y'], "false" if plugin['bypassed'] else "true",
        info['microVersion'], info['microVersion'],
@@ -830,7 +838,8 @@ _:b%i
                                                                                           info['ports']['cv']['output']+
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']))),
-       plugin['uri'],)
+       plugin['uri'],
+       plugin['preset'])
 
             # audio input
             for port in info['ports']['audio']['input']:
