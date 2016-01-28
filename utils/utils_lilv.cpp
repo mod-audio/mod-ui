@@ -1557,7 +1557,6 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         for (uint32_t i=0; i<count; ++i)
         {
             const LilvPort* const port = lilv_plugin_get_port_by_index(p, i);
-            assert(port != nullptr);
 
             int direction = 0; // using -1 = input, +1 = output
             int type      = 0; // using by order1-4: audio, control, cv, midi
