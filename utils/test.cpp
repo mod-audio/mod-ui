@@ -67,7 +67,7 @@ void scanPlugins()
 
 int main()
 {
-#if 1
+#if 0
     init();
     scanPlugins();
 # if 1
@@ -81,7 +81,7 @@ int main()
     cleanup();
 #endif
 
-#if 1
+#if 0
     setenv("LV2_PATH", "/NOT", 1);
     init();
     get_state_port_values("@prefix just_a_test: <urn:ignore:me>.");
@@ -104,7 +104,7 @@ int main()
     cleanup();
 #endif
 
-#if 0
+#if 1
     const PluginInfo* info;
     setenv("LV2_PATH", "/NOT", 1);
     init();
