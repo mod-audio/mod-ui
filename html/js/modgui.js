@@ -358,6 +358,11 @@ function GUI(effect, options) {
                 self.icon.height(self.icon.children().height())
             }, 1)
 
+            self.icon.find('[mod-role=presets]').change(function () {
+                var value = $(this).val()
+                options.presetLoad(value)
+            })
+
             if (instance)
                 self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
             else
