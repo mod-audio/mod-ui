@@ -677,8 +677,15 @@ class Host(object):
                     pass
                 self.msg_callback("disconnect %s %s" % (port_from, port_to))
 
-        self.send("disconnect %s %s" % (self._fix_host_connection_port(port_from),
-                                        self._fix_host_connection_port(port_to)), host_callback, datatype='boolean')
+        try:
+            port_from = self._fix_host_connection_port(port_from)
+            port_to   = self._fix_host_connection_port(port_to)
+        except:
+            # If port or plugin doesn't exist, assume disconnected
+            callback(True)
+            return
+
+        self.send("disconnect %s %s" % (port_from, port_to), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
