@@ -384,6 +384,8 @@ class Host(object):
                 self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
                 if plugin['bypassed']:
                     self.send("bypass %d 1" % (instance_id,), lambda r:None, datatype='boolean')
+                if plugin['preset']:
+                    self.send("preset_load %d %s" % (instance_id, plugin['preset']), lambda r:None, datatype='boolean')
 
             badports = plugin['badports']
 
