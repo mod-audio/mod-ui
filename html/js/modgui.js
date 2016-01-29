@@ -178,8 +178,11 @@ function GUI(effect, options) {
                 continue
 
             port = {
+                enabled: true,
                 widgets: [],
-                enabled: true
+                format: null,
+                scalePointsIndex: null,
+                valueFields: [],
             }
             $.extend(port, porti)
 
@@ -221,8 +224,11 @@ function GUI(effect, options) {
         widgets: [],
         enabled: true,
         value: self.bypassed ? 1 : 0,
+        format: null,
+        scalePointsIndex: null,
+        valueFields: [],
 
-        // FIXME
+        // FIXME: limits of mustache
         default: 1,
         maximum: 1,
         minimum: 0,
@@ -269,24 +275,27 @@ function GUI(effect, options) {
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
-        var port = self.controls[symbol]
+        var label, valueField, widget,
+            port = self.controls[symbol]
 
         port.value = value
         self.currentValues[symbol] = value
 
         for (var i in port.widgets) {
-            if (source == null || port.widgets[i] != source) {
-                port.widgets[i].controlWidget('setValue', value, only_gui)
+            widget = port.widgets[i]
+            if (source == null || widget != source) {
+                widget.controlWidget('setValue', value, only_gui)
             }
         }
 
-        if (port.valueField) {
-            var label = sprintf(port.format, value)
+        for (var i in port.valueFields) {
+            label = sprintf(port.format, value)
             if (port.scalePointsIndex && port.scalePointsIndex[label])
                 label = port.scalePointsIndex[label].label
 
-            port.valueField.data('value', value)
-            port.valueField.text(label)
+            valueField = port.valueFields[i]
+            valueField.data('value', value)
+            valueField.text(label)
         }
 
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
@@ -518,7 +527,8 @@ function GUI(effect, options) {
                 if (port.properties.indexOf("integer") >= 0)
                     port.format = port.format.replace(/%\.\d+f/, '%d')
 
-                port.valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
+                var valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
+                port.valueFields.push(valueField)
 
                 if (port.scalePoints && port.scalePoints.length > 0) {
                     port.scalePointsIndex = {}
@@ -539,27 +549,30 @@ function GUI(effect, options) {
                     }
                 })
 
-                if (port.properties.indexOf("enumeration") < 0) {
+                if (port.properties.indexOf("enumeration") < 0 &&
+                    port.properties.indexOf("toggled") < 0 &&
+                    port.properties.indexOf("trigger") < 0)
+                {
                     // For ports that are not enumerated, we allow
                     // editing the value directly
-                    port.valueField.attr('contenteditable', true)
-                    port.valueField.focus(function () {
-                        port.valueField.text(sprintf(port.format, port.valueField.data('value')))
+                    valueField.attr('contenteditable', true)
+                    valueField.focus(function () {
+                        valueField.text(sprintf(port.format, valueField.data('value')))
                     })
-                    port.valueField.keydown(function (e) {
+                    valueField.keydown(function (e) {
                         if (e.keyCode == 13) {
-                            port.valueField.blur()
+                            valueField.blur()
                             return false
                         }
                         return true
                     })
-                    port.valueField.blur(function () {
-                        var value = parseFloat(port.valueField.text())
+                    valueField.blur(function () {
+                        var value = parseFloat(valueField.text())
                         self.setPortValue(symbol, value, control)
                         // setPortWidgetsValue() skips this control as it's the same as the 'source'
                         control.controlWidget('setValue', value, true)
                     })
-                    port.valueField.keydown(function (e) {
+                    valueField.keydown(function (e) {
                         return true
                         if (e.keyCode >= 48 && e.keyCode <= 57) {
                             // It's a number
