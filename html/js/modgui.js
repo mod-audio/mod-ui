@@ -446,16 +446,14 @@ function GUI(effect, options) {
                 self.settings.find(".preset-manager").hide()
                 self.settings.find('[mod-role=presets]').hide()
 
-                if (! instance) {
-                    setTimeout(function () {
-                        $('[mod-role="input-audio-port"]').addClass("mod-audio-input")
-                        $('[mod-role="output-audio-port"]').addClass("mod-audio-output")
-                        $('[mod-role="input-midi-port"]').addClass("mod-midi-input")
-                        $('[mod-role="output-midi-port"]').addClass("mod-midi-output")
-                        $('[mod-role="input-cv-port"]').addClass("mod-cv-input")
-                        $('[mod-role="output-cv-port"]').addClass("mod-cv-output")
-                    }, 1)
-                }
+                setTimeout(function () {
+                    $('[mod-role="input-audio-port"]').addClass("mod-audio-input")
+                    $('[mod-role="output-audio-port"]').addClass("mod-audio-output")
+                    $('[mod-role="input-midi-port"]').addClass("mod-midi-input")
+                    $('[mod-role="output-midi-port"]').addClass("mod-midi-output")
+                    $('[mod-role="input-cv-port"]').addClass("mod-cv-input")
+                    $('[mod-role="output-cv-port"]').addClass("mod-cv-output")
+                }, 1)
             }
 
             self.triggerJS({ 'type': 'start' })
