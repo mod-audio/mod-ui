@@ -1014,7 +1014,7 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         self.data('initialized', false)
         self.data('initvalue', options.port.ranges.default)
-        self.film('getSize', options.dummy, function () {
+        self.film('getAndSetSize', options.dummy, function () {
             self.film('config', options)
             self.data('initialized', true)
             self.film('setValue', self.data('initvalue'), true)
@@ -1077,10 +1077,12 @@ JqueryClass('film', baseWidget, {
             self.trigger('valuechange', value)
     },
 
-    getSize: function (dummy, callback) {
-        var self  = $(this)
-        var tryGetAndSetSize = function () {
+    getAndSetSize: function (dummy, callback) {
+        var self = $(this)
+        self.resize(function () {
             if (dummy && ! self.is(":visible"))
+                return
+            if (self.data('initialized'))
                 return
             var url = self.css('background-image') || "none";
             url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i);
@@ -1105,8 +1107,7 @@ JqueryClass('film', baseWidget, {
                 }
             }
             bgImg.setAttribute('src', url);
-        }
-        setTimeout(tryGetAndSetSize, 0)
+        })
     },
 
     mouseDown: function (e) {
