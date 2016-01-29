@@ -244,18 +244,20 @@ function GUI(effect, options) {
 
         if (value < port.ranges.minimum) {
             value = port.ranges.minimum
-            console.log("setPortValue called with < min value, symbol:", symbol)
+            console.log("WARNING: setPortValue called with < min value, symbol:", symbol)
         } else if (value > port.ranges.maximum) {
             value = port.ranges.maximum
-            console.log("setPortValue called with > max value, symbol:", symbol)
+            console.log("WARNING: setPortValue called with > max value, symbol:", symbol)
         }
 
-        /* NOTE: This should be done in the host, or at least server-side.
-                 But when running SDK there's no host, so simulate trigger here. */
-        if (isSDK && port.properties.indexOf("trigger") >= 0 && value != port.ranges.default) {
+        // If trigger, switch back to default value after a few miliseconds
+        // Careful not to actually send the change to the host, it's not needed
+        if (port.properties.indexOf("trigger") >= 0 && value != port.ranges.default) {
             setTimeout(function () {
                 self.setPortWidgetsValue(symbol, port.ranges.default, null, false)
-                options.change(mod_port, port.ranges.default)
+
+                // When running SDK there's no host, so simulate trigger here.
+                if (isSDK) options.change(mod_port, port.ranges.default);
             }, 200)
         }
 
