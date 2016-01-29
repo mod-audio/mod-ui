@@ -471,6 +471,10 @@ class Host(object):
                 if "notOnGUI" in port['properties']:
                     badports.append(port['symbol'])
 
+                # skip triggers
+                elif "trigger" in port['properties']:
+                    badports.append(port['symbol'])
+
                 # skip special designated controls
                 elif port['designation'] in ("http://lv2plug.in/ns/lv2core#freeWheeling",
                                              "http://lv2plug.in/ns/lv2core#latency",
@@ -548,7 +552,9 @@ class Host(object):
         instance, symbol = port.rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        self.plugins[instance_id]['ports'][symbol] = value
+        if symbol not in self.plugins[instance_id]['badports']:
+            self.plugins[instance_id]['ports'][symbol] = value
+
         self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
     def preset_load(self, instance, uri, callback):
@@ -569,10 +575,8 @@ class Host(object):
             used_actuators = []
 
             for symbol, value in self.plugins[instance_id]['ports'].items():
-                if symbol in badports:
-                    continue
-
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                if symbol not in badports:
+                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = self.plugins[instance_id]['addressing'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
@@ -717,6 +721,10 @@ class Host(object):
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
+                    badports.append(port['symbol'])
+
+                # skip triggers
+                elif "trigger" in port['properties']:
                     badports.append(port['symbol'])
 
                 # skip special designated controls
@@ -1405,10 +1413,11 @@ _:b%i
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
         instance = self.mapper.get_instance(instance_id)
+        plugin = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
-            self.plugins[instance_id]['bypassed'] = bypassed
+            plugin['bypassed'] = bypassed
 
             def host_callback(ok):
                 callback(ok)
@@ -1416,8 +1425,12 @@ _:b%i
 
             self.send("bypass %d %d" % (instance_id, int(bypassed)), host_callback, datatype='boolean')
 
+        # For "bad" ports only report value to mod-host, don't store it
+        elif portsymbol in plugin['badports']:
+            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+
         else:
-            self.plugins[instance_id]['ports'][portsymbol] = value
+            plugin['ports'][portsymbol] = value
 
             def host_callback(ok):
                 callback(ok)
