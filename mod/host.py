@@ -594,7 +594,6 @@ class Host(object):
                 return
             self.send("preset_show %s" % uri, preset_callback, datatype='string')
 
-        print("preset_load %d %s" % (instance_id, uri))
         self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
     def preset_save(self, instance, label, callback):
