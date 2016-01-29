@@ -342,13 +342,10 @@ function GUI(effect, options) {
             self.assignIconFunctionality(self.icon)
             self.assignControlFunctionality(self.icon, false)
 
-            // Take the width of the plugin. This is necessary because plugin may have position absolute.
-            // setTimeout is here because plugin has not yet been appended to anywhere, let's wait for
-            // all instructions to be executed.
-            setTimeout(function () {
+            self.icon.children().resize(function () {
                 self.icon.width(self.icon.children().width())
                 self.icon.height(self.icon.children().height())
-            }, 1)
+            })
 
             self.icon.find('[mod-role=presets]').change(function () {
                 var value = $(this).val()
