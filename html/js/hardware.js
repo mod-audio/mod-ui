@@ -133,7 +133,7 @@ function HardwareManager(options) {
     this.buildSensibilityOptions = function (select, port, curStep) {
         select.children().remove()
 
-        if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0) {
+        if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
             var value
             if (port.properties.indexOf("integer") >= 0) {
                 value = port.ranges.maximum-port.ranges.minimum
@@ -200,11 +200,13 @@ function HardwareManager(options) {
         var max   = form.find('input[name=max]').val(maxv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
         var label = form.find('input[name=label]').val(currentAddressing.label || pname)
 
-        if (port.properties.indexOf("toggled") >= 0) {
+        if (port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
             // boolean, always min or max value
             var step = maxv-minv
             min.attr("step", step)
             max.attr("step", step)
+            // hide ranges
+            form.find('.range').hide()
         } else if (port.properties.indexOf("integer") < 0) {
             // float, allow non-integer stepping
             var step = (maxv-minv)/100
