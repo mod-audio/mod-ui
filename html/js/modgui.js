@@ -972,6 +972,11 @@ var baseWidget = {
         if (self.data('enumeration'))
             value = self.data('scalePoints')[steps].value
 
+        if (value < self.data('minimum'))
+            value = self.data('minimum')
+        else if (value > self.data('maximum'))
+            value = self.data('maximum')
+
         return value
     },
 
