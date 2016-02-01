@@ -1084,28 +1084,10 @@ JqueryClass('pedalboard', {
                 self.pedalboard('drawPluginJacks', obj.icon)
                 self.data('z_index', self.data('z_index')+1)
 
-                // check if mouse is not over a control button
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-control-port]')))
-                    return
-                // check if mouse is not over the footswitch
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=bypass]')))
-                    return
-                // clicking in input means expand
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-audio-port]')))
-                    return
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-midi-port]')))
-                    return
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=input-cv-port]')))
-                    return
-                // clicking in output or output jack means connecting
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-audio-port]')))
-                    return
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-midi-port]')))
-                    return
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-cv-port]')))
-                    return
-                if (self.pedalboard('mouseIsOver', event, obj.icon.find('[mod-role=output-jack]')))
-                    return
+                // only zoom-in if event was triggered by a click on the drag-handle
+                // this prevents zoom-in when dragging a control and releasing the mouse over an empty area of the plugin
+                if (! $(event.target).hasClass("mod-drag-handle"))
+                    return;
 
                 // setTimeout avoids cable drawing bug
                 setTimeout(function () {
