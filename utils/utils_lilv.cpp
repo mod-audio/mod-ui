@@ -465,6 +465,38 @@ bool _isalnum(const char* const string)
     }
 }
 
+void _swap_preset_data(PluginPreset* preset1, PluginPreset* preset2)
+{
+    std::swap(preset1->uri,   preset2->uri);
+    std::swap(preset1->label, preset2->label);
+}
+
+// adjusted from https://stackoverflow.com/questions/19612152/quicksort-string-array-in-c
+void _sort_presets_data(PluginPreset presets[], unsigned int count)
+{
+    if (count <= 1)
+        return;
+
+    unsigned int pvt = 0;
+
+    // swap a randomly selected value to the last node
+    _swap_preset_data(presets+(rand() % count), presets+count-1);
+
+    // reset the pivot index to zero, then scan
+    for (unsigned int i=0; i<count-1; ++i)
+    {
+        if (strcmp(presets[i].uri, presets[count-1].uri) < 0)
+            _swap_preset_data(presets+i, presets+(pvt++));
+    }
+
+    // move the pivot value into its place
+    _swap_preset_data(presets+pvt, presets+count-1);
+
+    // and invoke on the subsequences. does NOT include the pivot-slot
+    _sort_presets_data(presets, pvt++);
+    _sort_presets_data(presets+pvt, count - pvt);
+}
+
 // refresh everything
 // plugins are not truly scanned here, only later per request
 void _refresh()
@@ -2095,6 +2127,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             }
         }
 
+        if (prindex > 1)
+            _sort_presets_data(presets, prindex);
+
         for (const LilvNode* presetnode : loadedPresetResourceNodes)
             lilv_world_unload_resource(W, presetnode);
 
@@ -2603,6 +2638,9 @@ static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const 
                 lilv_node_free(xlabel);
             }
         }
+
+        if (prindex > 1)
+            _sort_presets_data(presets, prindex);
 
         for (const LilvNode* presetnode : loadedPresetResourceNodes)
             lilv_world_unload_resource(W, presetnode);
@@ -3602,6 +3640,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(lv2_name);
     lilv_node_free(lv2_port);
     lilv_node_free(lv2_prototype);
+    lilv_node_free(modpedal_preset);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 
