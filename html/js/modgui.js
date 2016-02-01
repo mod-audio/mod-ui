@@ -1171,8 +1171,9 @@ JqueryClass('film', baseWidget, {
         // Useful for fine tunning and toggle
         var self = $(this)
         var filmSteps = self.data('filmSteps')
-        var position = self.data('position')
-        position = (position + 1) % filmSteps
+        var position = self.data('position')+1
+        if (position >= filmSteps)
+            position = filmSteps-1
         self.data('position', position)
         self.film('setRotation', position)
         var value = self.film('valueFromSteps', position)
