@@ -743,17 +743,17 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // brand
 
-    char brand[10+1] = { '\0' };
+    char brand[11+1] = { '\0' };
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_brand))
     {
-        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 10);
+        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 11);
         info.brand = strdup(brand);
         lilv_nodes_free(nodes);
     }
     else if (LilvNode* const node = lilv_plugin_get_author_name(p))
     {
-        strncpy(brand, lilv_node_as_string(node), 10);
+        strncpy(brand, lilv_node_as_string(node), 11);
         info.brand = strdup(brand);
         lilv_node_free(node);
     }
