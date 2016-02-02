@@ -32,6 +32,8 @@ function Desktop(elements) {
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
         disconnectButton: $('<div>'),
+        bypassLeftButton: $('<div>'),
+        bypassRightButton: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -554,6 +556,12 @@ function Desktop(elements) {
     elements.disconnectButton.click(function () {
         self.disconnect()
     })
+    elements.bypassLeftButton.click(function () {
+        self.triggerTrueBypass("Left")
+    })
+    elements.bypassRightButton.click(function () {
+        self.triggerTrueBypass("Right")
+    })
 
     elements.shareButton.click(function () {
         var share = function () {
@@ -1059,6 +1067,14 @@ Desktop.prototype.rescanPlugins = function () {
 
 Desktop.prototype.showMidiDeviceList = function () {
     this.midiDevices.start()
+}
+
+Desktop.prototype.triggerTrueBypass = function (channelName) {
+    $.ajax({
+        url: '/truebypass/' + channelName,
+        cache: false,
+        dataType: 'json',
+    })
 }
 
 Desktop.prototype.loadPedalboard = function (bundlepath, callback) {

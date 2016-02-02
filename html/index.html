@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>MOD</title>
-    
+
     <link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
     <link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
     <link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
@@ -21,8 +21,8 @@
     <meta name="msapplication-TileColor" content="#111111">
     <meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
     <meta name="theme-color" content="#111111">
-        
-        
+
+
     <link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
     <!--<link rel="stylesheet" type="text/css" href="css/social.css?v={{version}}"/>-->
     <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
@@ -122,6 +122,8 @@ $('document').ready(function() {
       saveAsButton: $('#pedalboard-info .js-save-as'),
       resetButton:  $('#pedalboard-info .js-reset'),
       disconnectButton: $('#mod-disconnect'),
+      bypassLeftButton: $('#mod-bypassL'),
+      bypassRightButton: $('#mod-bypassR'),
       effectBox: $('#plugins-library'),
       pedalboardTrigger: $('#main-menu #mod-plugins'),
       cloudPluginBox: $('#cloud-plugins-library'),
@@ -514,8 +516,8 @@ $('document').ready(function() {
           </p>
         </div>
         <div id="mod-disconnect" class="icon">Disconnect</div>
-        <div id="bypassR" class="icon mod-bypass-r">Bypass R</div>
-        <div id="bypassL" class="icon mod-bypass-l">Bypass L</div>
+        <div id="mod-bypassR" class="icon mod-bypass-r">Bypass R</div>
+        <div id="mod-bypassL" class="icon mod-bypass-l">Bypass L</div>
         <div id="mod-add-midi" class="icon">Add MIDI Device</div>
         <div id="mod-settings" class="icon hide"></div>
         <div id="mod-bluetooth" class="icon hide"></div>

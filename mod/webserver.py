@@ -978,6 +978,22 @@ class Ping(web.RequestHandler):
         self.write(json.dumps(res))
         self.finish()
 
+class TrueBypass(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, channelName):
+        proc = subprocess.Popen(['amixer', 'sset', '-D', 'hw:MODDUO', '%s True-Bypass' % channelName, 'toggle'],
+                                stdout=subprocess.PIPE)
+
+        def proc_callback(fileno, event):
+            if proc.poll() is not None:
+                ioloop.remove_handler(fileno)
+            self.write(json.dumps(True))
+            self.finish()
+
+        ioloop = tornado.ioloop.IOLoop.instance()
+        ioloop.add_handler(proc.stdout.fileno(), proc_callback, 16)
+
 class SysMonProcessList(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1281,6 +1297,8 @@ application = web.Application(
             (r"/jack/xruns", JackXRuns),
 
             (r"/ping/?", Ping),
+
+            (r"/truebypass/(Left|Right)", TrueBypass),
 
             (r"/(index.html)?$", EditionLoader),
             (r"/([a-z]+\.html)$", TemplateHandler),
