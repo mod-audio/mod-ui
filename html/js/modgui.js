@@ -1207,8 +1207,12 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         var filmSteps = self.data('filmSteps')
         var position = self.data('position')+1
-        if (position >= filmSteps)
-            position = filmSteps-1
+        if (position >= filmSteps) {
+            if (self.data('enumeration'))
+                position = 0
+            else
+                position = filmSteps-1
+        }
         self.data('position', position)
         self.film('setRotation', position)
         var value = self.film('valueFromSteps', position)
