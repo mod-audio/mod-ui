@@ -315,15 +315,37 @@ function GUI(effect, options) {
     this.disable = function (symbol) {
         var port = self.controls[symbol]
         port.enabled = false
+
+        // disable all related widgets
         for (var i in port.widgets)
             port.widgets[i].controlWidget('disable')
+
+        // disable value fields if needed
+        if (port.properties.indexOf("enumeration") < 0 &&
+            port.properties.indexOf("toggled") < 0 &&
+            port.properties.indexOf("trigger") < 0)
+        {
+            for (var i in port.valueFields)
+                port.valueFields[i].attr('contenteditable', false)
+        }
     }
 
     this.enable = function (symbol) {
         var port = self.controls[symbol]
         port.enabled = true
+
+        // enable all related widgets
         for (var i in port.widgets)
             port.widgets[i].controlWidget('enable')
+
+        // enable value fields if needed
+        if (port.properties.indexOf("enumeration") < 0 &&
+            port.properties.indexOf("toggled") < 0 &&
+            port.properties.indexOf("trigger") < 0)
+        {
+            for (var i in port.valueFields)
+                port.valueFields[i].attr('contenteditable', true)
+        }
     }
 
     this.render = function (instance, callback, skipNamespace) {
@@ -549,9 +571,9 @@ function GUI(effect, options) {
                     }
                 })
 
-                if (port.properties.indexOf("enumeration") < 0 &&
-                    port.properties.indexOf("toggled") < 0 &&
-                    port.properties.indexOf("trigger") < 0)
+                if (valueField.length > 0 && port.properties.indexOf("enumeration") < 0 &&
+                                             port.properties.indexOf("toggled") < 0 &&
+                                             port.properties.indexOf("trigger") < 0)
                 {
                     // For ports that are not enumerated, we allow
                     // editing the value directly
@@ -560,29 +582,42 @@ function GUI(effect, options) {
                         valueField.text(sprintf(port.format, valueField.data('value')))
                     })
                     valueField.keydown(function (e) {
+                        // enter
                         if (e.keyCode == 13) {
                             valueField.blur()
                             return false
                         }
-                        return true
+                        // numbers
+                        if (e.keyCode >= 48 && e.keyCode <= 57)
+                            return true;
+                        if (e.keyCode >= 96 && e.keyCode <= 105)
+                            return true;
+                        // backspace and delete
+                        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110)
+                            return true;
+                        // left, right, dot
+                        if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190)
+                            return true;
+                        // minus
+                        if (e.keyCode == 109 || e.keyCode == 189)
+                            return true;
+                        // prevent key
+                        e.preventDefault();
+                        return false
                     })
                     valueField.blur(function () {
                         var value = parseFloat(valueField.text())
+                        if (isNaN(value)) {
+                            value = valueField.data('value')
+                            valueField.text(sprintf(port.format, value))
+                        }
+                        else if (value < port.ranges.minimum)
+                            value = port.ranges.minimum;
+                        else if (value > port.ranges.maximum)
+                            value = port.ranges.maximum;
                         self.setPortValue(symbol, value, control)
                         // setPortWidgetsValue() skips this control as it's the same as the 'source'
                         control.controlWidget('setValue', value, true)
-                    })
-                    valueField.keydown(function (e) {
-                        return true
-                        if (e.keyCode >= 48 && e.keyCode <= 57) {
-                            // It's a number
-                            return true
-                        }
-                        if (e.keyCode == 13) {
-                            // ???
-                            //return true
-                        }
-                        return (e.keyCode == 46 || e.keyCode == 9)
                     })
                 }
 
