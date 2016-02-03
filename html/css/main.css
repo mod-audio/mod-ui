@@ -6771,8 +6771,8 @@ button.close {
   right: 0px;
   top: 45px;
   bottom: 45px;
-  background: #111111 url(../img/watermark.png) 100% 100% no-repeat;
   overflow: auto;
+  background: #111111 url(../img/watermark.png) 100% 100% no-repeat;
   padding-top: 1.5%;
 }
 #pedalboards-library .pedalboards .pedalboard {
@@ -7704,48 +7704,115 @@ header#pedalboard-actions {
   display: block;
 }
 .plugin-info {
-  background: rgba(17, 17, 17, 0.9);
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
+  background-color: rgba(20, 20, 20, 0.9);
+  bottom: 0;
+  color: #ccc;
+  left: 0;
+  overflow-y: scroll;
   position: fixed;
+  right: 0;
+  top: 0px;
   z-index: 40;
 }
-.plugin-info .plugin-menu {
+.plugin-info .box {
+  margin-top: 3em;
+  background-color: #111;
+  padding: 15px;
+  border: 2px solid #333;
+}
+.plugin-info .close {
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  opacity: 1;
   position: absolute;
-  top: 30px;
-  right: 30px;
+  right: 10px;
+  text-shadow: none;
+  text-transform: uppercase;
+  top: 10px;
 }
-.plugin-info .plugin-menu button {
-  float: left;
-  padding-left: 33px;
-  background-size: 25px;
-  background-position: 5px 50%;
-  background-repeat: no-repeat;
-  margin-left: 4px;
+.plugin-info .screenshot {
+  padding: 18px;
+  min-width: 3em;
+  min-height: 9em;
+  display: inline-block;
+  z-index: 0;
 }
-.plugin-info .plugin-menu button.js-close {
-  background-image: url(../img/icons/25/close.png);
+.plugin-info figure {
+  position: relative;
+  min-height: 1px;
+  padding-left: 15px;
+  padding-right: 15px;
 }
-.plugin-info .plugin-menu button.js-remove {
-  background-image: url(../img/icons/25/remove.png);
+@media (min-width: 992px) {
+  .plugin-info figure {
+    float: left;
+    width: 33.33333333%;
+  }
 }
-.plugin-info .plugin-menu button.js-install {
-  background-image: url(../img/icons/25/install.png);
+.plugin-info figure:hover {
+  z-index: 10 !important;
 }
-.plugin-info .plugin-menu button.js-update {
-  background-image: url(../img/icons/25/update.png);
+.plugin-info .plugin-description {
+  position: relative;
+  min-height: 1px;
+  padding-left: 15px;
+  padding-right: 15px;
+  height: 100%;
+  display: block;
+  position: a;
+  padding-bottom: 20%;
+  padding-left: 45px;
+  background: -moz-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: -webkit-gradient(linear, left top, right top, color-stop(1em, rgba(17, 17, 17, 0.1)), color-stop(2em, #111111));
+  background: -webkit-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: -o-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: -ms-linear-gradient(left, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  background: linear-gradient(to right, rgba(17, 17, 17, 0.1) 1em, #111111 2em);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00ffffff', endColorstr='#ffffff', GradientType=1);
 }
-.plugin-info .plugin-table {
-  display: table;
-  max-height: 90%;
-  width: 90%;
-  max-width: 960px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+@media (min-width: 992px) {
+  .plugin-info .plugin-description {
+    float: left;
+    width: 58.33333333%;
+  }
+}
+.plugin-info .plugin-description > p {
+  font-size: 16px;
+  margin-bottom: 27px;
+  white-space: pre-wrap;
+}
+.plugin-info header {
+  padding: 18px 0 0;
+}
+.plugin-info header h1 {
+  color: #fff;
+  font-size: 27px;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+.plugin-info header h1 span {
+  font-size: 16px;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+.plugin-info .version {
+  color: #ccc;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.plugin-info .version span.bold {
+  color: #fff;
+  font-size: 14px;
+}
+.plugin-info .version button {
+  font-weight: bold;
+  margin-top: 6px;
+  text-transform: uppercase;
 }
 .plugin-info .rating {
   background: url(../img/icn-rating.png) no-repeat -12px top;

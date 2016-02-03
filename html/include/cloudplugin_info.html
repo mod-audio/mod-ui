@@ -1,51 +1,48 @@
 <div class="js-close plugin-info">
-    <div class="plugin-menu">
-        <button class="js-install btn btn-info btn-mini">Install</button>
-        <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
-        <button class="js-remove btn btn-info btn-mini">Remove</button>
-        <button class="js-close btn btn-mini btn-info">Close</button>
-    </div>
-    <div class="plugin-table">
-        <img class="plugin-preview" src="{{screenshot_href}}"/>
-        <div class="plugin-row">
-            <div class="plugin-cell">
-                <h1>{{name}}</h1>
-                <div class="plugin-category">
-                    Category: <em>{{category}}</em>
-                </div>
-                <div class="plugin-version">
-                    <div class="js-latest-version">Latest Version: <b>{{latest_version}}</b></div>
-                    <div class="js-installed-version">Installed Version: <b>{{installed_version}}</b></div>
-                </div>
+    <div class="container box">
+        <span class="js-close alignright btn btn-mini btn-danger">Close</span>
+        <div class="row-fluid clearfix">
+            <div class="span10 offset1 clearfix">
+                <figure class="screenshot">
+                    <img src="{{screenshot_href}}">
+                </figure>
+
                 <div class="plugin-description">
-                    {{comment}}
-                </div>
-                <div class="plugin-author">
-                    <a href="{{author.homepage}}" target="_blank">More info at <b>{{author.homepage}}</b></a>
-                </div>
-            </div>
-        </div>
-        <div class="plugin-row">
-            <div class="plugin-cell plugin-controls">
-                <strong>Control Ports:</strong>
-                <div class="plugin-control-container">
-                    <table class="plugin-control-table">
-                        <tr>
-                            <th>Control</th>
-                            <th>Default</th>
-                            <th>Min</th>
-                            <th>Max</th>
-                        </tr>
-                        {{#ports.control.input}}
-                        <tr>
-                            <td>{{shortName}}</td>
-                            <td>{{formatted.default}}</td>
-                            <td>{{formatted.minimum}}</td>
-                            <td>{{formatted.maximum}}</td>
-                        </tr>
-                        {{/ports.control.input}}
+                    <header>
+                        <h1>{{name}}</h1>
+                        <p><br />Category: <em>{{category}}</em></p>
+                        <p class="version">
+                            <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span></span>
+                            <br/>
+                            <span class="js-installed-version">Installed Version: <span class="bold">{{installed_version}}</span></span>
+                            <br/>
+                            <button class="js-install btn btn-info btn-mini">Install</button>
+                            <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
+                            <button class="js-remove btn btn-danger btn-mini">Remove</button>
+                        </p>
+                    </header>
+                    <p>{{comment}}</p>
+
+                    <p><strong>CONTROL PORTS:</strong></p>
+                    <table class="plugin-specs table table-bordered">
+                    <tr>
+                        <th>Control</th>
+                        <th>Default</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                    </tr>
+                    {{#ports.control.input}}
+                    <tr>
+                        <td>{{shortName}}</td>
+                        <td>{{formatted.default}}</td>
+                        <td>{{formatted.minimum}}</td>
+                        <td>{{formatted.maximum}}</td>
+                    </tr>
+                    {{/ports.control.input}}
                     </table>
-                </div>
+                    <footer>
+                        <p><a href="{{author.homepage}}" target="_blank">More info at <b>{{author.homepage}}</b></a></p>
+                    </footer>
             </div>
         </div>
     </div>
