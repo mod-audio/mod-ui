@@ -122,8 +122,6 @@ $('document').ready(function() {
       saveAsButton: $('#pedalboard-info .js-save-as'),
       resetButton:  $('#pedalboard-info .js-reset'),
       disconnectButton: $('#mod-disconnect'),
-      bypassLeftButton: $('#mod-bypassL'),
-      bypassRightButton: $('#mod-bypassR'),
       effectBox: $('#plugins-library'),
       pedalboardTrigger: $('#main-menu #mod-plugins'),
       cloudPluginBox: $('#cloud-plugins-library'),
@@ -148,8 +146,8 @@ $('document').ready(function() {
       feedButton: $('#cloud-feed-timeline'),
       login: $('#login'),
       logout: $('#logout'),
-      bypassLButton: $("#bypassL"),
-      bypassRButton: $("#bypassR")
+      bypassLeftButton: $("#mod-bypassLeft"),
+      bypassRightButton: $("#mod-bypassRight")
   })
 
   if ({{bundlepath}} && {{title}}) {
@@ -516,8 +514,8 @@ $('document').ready(function() {
           </p>
         </div>
         <div id="mod-disconnect" class="icon">Disconnect</div>
-        <div id="mod-bypassR" class="icon mod-bypass-r">Bypass R</div>
-        <div id="mod-bypassL" class="icon mod-bypass-l">Bypass L</div>
+        <div id="mod-bypassRight" class="icon mod-bypass">Bypass R</div>
+        <div id="mod-bypassLeft" class="icon mod-bypass">Bypass L</div>
         <div id="mod-add-midi" class="icon">Add MIDI Device</div>
         <div id="mod-settings" class="icon hide"></div>
         <div id="mod-bluetooth" class="icon hide"></div>

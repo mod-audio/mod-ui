@@ -1070,11 +1070,21 @@ Desktop.prototype.showMidiDeviceList = function () {
 }
 
 Desktop.prototype.triggerTrueBypass = function (channelName) {
+    var self = this;
     $.ajax({
         url: '/truebypass/' + channelName,
         cache: false,
         dataType: 'json',
+        success: function (json) {
+            self.setTrueBypassButton(channelName, json);
+        }
     })
+}
+
+Desktop.prototype.setTrueBypassButton = function (channelName, state) {
+    if (typeof state === "string") state = eval(state);
+    var b = $("#mod-bypass" + channelName);
+    b[(state ? "add" : "remove") + "Class"]("bypassed");
 }
 
 Desktop.prototype.loadPedalboard = function (bundlepath, callback) {

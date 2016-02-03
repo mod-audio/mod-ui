@@ -23,9 +23,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="11.313708"
-     inkscape:cx="-170.72701"
-     inkscape:cy="976.4377"
+     inkscape:zoom="5.6568542"
+     inkscape:cx="-93.174305"
+     inkscape:cy="943.34847"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
@@ -897,7 +897,10 @@
        x="-150"
        y="52.362206"
        rx="0.99999994"
-       ry="1.00001" />
+       ry="1.00001"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/close.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4387"
@@ -906,7 +909,10 @@
        x="-125"
        y="52.362225"
        rx="0.99999994"
-       ry="1.00001" />
+       ry="1.00001"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/upgrade.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        ry="1.00001"
        rx="0.99999994"
@@ -915,7 +921,10 @@
        height="25"
        width="25.000002"
        id="rect4389"
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       inkscape:export-filename="/home/markus/MOD/mod-ui/html/img/icons/25/install.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.00100002;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect4391"
@@ -1503,6 +1512,24 @@
        style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        d="M -162.5 56.361328 A 8.5 8.5 0 0 0 -170.98242 64.361328 L -174 64.361328 L -169.5 70.019531 L -165 64.361328 L -167.97461 64.361328 A 5.500001 5.500001 0 0 1 -162.5 59.361328 A 5.500001 5.500001 0 0 1 -158.33984 61.273438 L -156.45117 58.900391 A 8.5 8.5 0 0 0 -162.5 56.361328 z M -155.5 59.705078 L -160 65.361328 L -157.02539 65.361328 A 5.500001 5.500001 0 0 1 -162.5 70.361328 A 5.500001 5.500001 0 0 1 -166.66016 68.449219 L -168.54883 70.824219 A 8.5 8.5 0 0 0 -162.5 73.361328 A 8.5 8.5 0 0 0 -154.01758 65.361328 L -151 65.361328 L -155.5 59.705078 z "
        id="rect8461" />
+    <path
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       d="m -137.5,56.361328 c -4.69442,0 -8.5,3.80558 -8.5,8.5 0,4.69442 3.80558,8.5 8.5,8.5 4.69442,0 8.5,-3.80558 8.5,-8.5 0,-4.69442 -3.80558,-8.5 -8.5,-8.5 z m -3.284,3.497586 c 0.43954,-2e-6 0.8791,0.169199 1.21568,0.505777 l 2.06848,2.068476 2.06847,-2.068476 c 0.67316,-0.673154 1.75821,-0.67316 2.43137,0 l 0.0317,0.03175 c 0.67315,0.673162 0.70225,1.788626 0,2.431367 l -2.06848,2.068475 2.06848,2.068476 c 0.67316,0.673157 0.67315,1.75821 0,2.431366 l -0.034,0.03402 c -0.67317,0.673136 -1.75595,0.670889 -2.42911,-0.0023 l -2.06847,-2.068476 -2.07074,2.070743 c -0.67315,0.673145 -1.7582,0.670893 -2.43137,-0.0023 l -0.0318,-0.03175 c -0.67271,-0.673161 -0.67316,-1.755944 0,-2.429098 l 2.07075,-2.070744 -2.06847,-2.068475 c -0.67271,-0.673161 -0.67543,-1.755942 -0.002,-2.429099 l 0.034,-0.03402 c 0.33658,-0.336578 0.77614,-0.505777 1.21568,-0.505777 z"
+       id="path8456"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ssssssscsccscsccscsccsccccs" />
+    <path
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+       d="m -112,55.361328 -8,7 3,0 0,2 9,0 0,-2 3,0 z m -5,10 0,4 9,0 0,-4 z m 0,5 0,2 9,0 0,-2 z m 0,3 0,1 9,0 0,-1 z"
+       id="rect8467"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccccccccccccccccc" />
+    <path
+       sodipodi:nodetypes="ccccccccccccccccccccccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path8482"
+       d="m -90,56.362205 0,3 -3,0 6,5 6,-5 -3,0 0,-3 z m -1.948578,5.257686 -3.15487,0.97357 L -98,65.274252 l 9.461883,5.215195 2.124324,-4.434512 -7.355938,-3.062595 2.444874,-0.851878 z m 5.534785,4.435044 2.172414,4.153769 L -77,65.36264 l -2.896552,-2.769179 -2.582246,-0.680548 -0.623722,0.521928 2.122593,0.629165 z m -8.689655,1.937016 0,2.076885 8.689655,4.846666 6.517241,-4.154371 0,-2.209468 -4.607892,3.070779 -1.909349,-3.40952 -1.779229,3.775952 z"
+       style="fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
   </g>
   <g
      style="display:inline"
