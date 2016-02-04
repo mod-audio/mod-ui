@@ -106,9 +106,12 @@ class Session(object):
         self.pedalboard_changed_callback = pedalboardChangedCallback
 
     def reconnectApp(self):
-        if self.host.sock is not None:
-            self.host.sock.close()
-            self.host.sock = None
+        if self.host.readsock is not None:
+            self.host.readsock.close()
+            self.host.readsock = None
+        if self.host.writesock is not None:
+            self.host.writesock.close()
+            self.host.writesock = None
         self.host.open_connection_if_needed(self.websockets[0], self.host_callback)
 
     # -----------------------------------------------------------------------------------------------------------------

@@ -108,7 +108,8 @@ class Host(object):
     def __init__(self, hmi):
         self.hmi = hmi
         self.addr = ("localhost", 5555)
-        self.sock = None
+        self.readsock = None
+        self.writesock = None
         self.crashed = False
         self.connected = False
         self._queue = []
@@ -232,14 +233,14 @@ class Host(object):
         self.open_connection_if_needed(None, lambda ws:None)
 
     def open_connection_if_needed(self, websocket, callback):
-        if self.sock is not None:
+        if self.readsock is not None and self.writesock is not None:
             callback(websocket)
             return
 
-        self.sock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
-        self._idle = False
+        def reader_check_response():
+            self.process_read_queue()
 
-        def check_response():
+        def writer_check_response():
             self.connected = True
             callback(websocket)
             self.cputimerok = True
@@ -251,15 +252,27 @@ class Host(object):
                 self.memtimer.start()
 
             if len(self._queue):
-                self.process_queue()
+                self.process_write_queue()
             else:
                 self._idle = True
 
-        self.sock.set_close_callback(self.connection_closed)
-        self.sock.connect(self.addr, check_response)
+        self._idle = False
 
-    def connection_closed(self):
-        self.sock = None
+        # Main socket, used for sending messages
+        self.writesock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self.writesock.set_close_callback(self.writer_connection_closed)
+        self.writesock.connect(self.addr, writer_check_response)
+
+        # Extra socket, used for receiving messages
+        self.readsock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self.readsock.set_close_callback(self.reader_connection_closed)
+        self.readsock.connect((self.addr[0], self.addr[1]+1), reader_check_response)
+
+    def reader_connection_closed(self):
+        self.readsock = None
+
+    def writer_connection_closed(self):
+        self.writesock = None
         self.crashed = True
         self.cputimer.stop()
 
@@ -271,7 +284,47 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
 
-    def process_queue(self):
+    def process_read_queue(self):
+        def check_message(msg):
+            msg = msg[:-1].decode("utf-8", errors="ignore")
+            logging.info("[host] received <- %s" % repr(msg))
+
+            msg = msg.split()
+            cmd = msg[0]
+
+            if cmd == "param_set":
+                instance_id = int(msg[1])
+                portsymbol  = msg[2]
+                value       = float(msg[3])
+
+                instance = self.mapper.get_instance(instance_id)
+                self.plugins[instance_id]['ports'][portsymbol] = value
+                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+            elif cmd == "midi_mapped":
+                instance_id = int(msg[1])
+                portsymbol  = msg[2]
+                channel     = int(msg[3])
+                controller  = int(msg[4])
+                value       = float(msg[5])
+
+                instance = self.mapper.get_instance(instance_id)
+                self.plugins[instance_id]['midiCCs'][portsymbol] = (channel, controller)
+                self.plugins[instance_id]['ports'][portsymbol] = value
+                self.msg_callback("midi_map %s %s %i %i" % (instance, portsymbol, channel, controller))
+                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+            else:
+                logging.error("[host] unrecognized command: %s" % cmd)
+
+            self.process_read_queue()
+
+        if self.readsock is None:
+            return
+
+        self.readsock.read_until(b"\0", check_message)
+
+    def process_write_queue(self):
         try:
             msg, callback, datatype = self._queue.pop(0)
             logging.info("[host] popped from queue: %s" % msg)
@@ -281,7 +334,6 @@ class Host(object):
 
         def check_response(resp):
             resp = resp.decode("utf-8", errors="ignore")
-
             logging.info("[host] received <- %s" % repr(resp))
 
             if datatype == 'string':
@@ -293,22 +345,22 @@ class Host(object):
                 r = resp.replace("resp ", "").replace("\0", "").strip()
 
             callback(process_resp(r, datatype))
-            self.process_queue()
+            self.process_write_queue()
 
         self._idle = False
         logging.info("[host] sending -> %s" % msg)
 
-        if self.sock is None:
+        if self.writesock is None:
             return
 
         encmsg = "%s\0" % str(msg)
-        self.sock.write(encmsg.encode("utf-8"))
-        self.sock.read_until(b"\0", check_response)
+        self.writesock.write(encmsg.encode("utf-8"))
+        self.writesock.read_until(b"\0", check_response)
 
     def send(self, msg, callback, datatype='int'):
         self._queue.append((msg, callback, datatype))
         if self._idle:
-            self.process_queue()
+            self.process_write_queue()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff
@@ -1146,7 +1198,7 @@ _:b%i
             return
 
         self.memfile.seek(self.memfseek)
-        memfree  = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
+        memfree = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
 
         # skip 'MemAvailable'
         if self.memfskip: self.memfile.readline()
@@ -1160,7 +1212,6 @@ _:b%i
     # Addressing (public stuff)
 
     def address(self, instance, port, actuator_uri, label, maximum, minimum, value, steps, callback, skipLoad=False):
-        print("address", instance, port, actuator_uri, label, maximum, minimum, value, steps)
         instance_id = self.mapper.get_id(instance)
 
         pluginData = self.plugins.get(instance_id, None)

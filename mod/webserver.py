@@ -1320,7 +1320,7 @@ def prepare():
             tornado.log.enable_pretty_logging()
 
     def checkhost():
-        if SESSION.host.sock is None:
+        if SESSION.host.readsock is None or SESSION.host.writesock is None:
             print("Host failed to initialize, is the backend running?")
             SESSION.host.close_jack()
             sys.exit(1)
