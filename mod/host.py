@@ -983,10 +983,16 @@ _:b%i
             for symbol, value in plugin['ports'].items():
                 blocks += """
 <%s/%s>
-    ingen:value %f ;
+    ingen:value %f ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
-""" % (instance, symbol, value)
+""" % (instance, symbol, value,
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        a midi:Controller ;
+    ] ;""" % plugin['midiCCs'][symbol]) if -1 not in plugin['midiCCs'][symbol] else "")
 
             # control output
             for port in info['ports']['control']['output']:
