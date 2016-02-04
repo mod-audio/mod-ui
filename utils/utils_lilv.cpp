@@ -3294,17 +3294,20 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     memset(&info, 0, sizeof(PedalboardInfo));
 
     // define the needed stuff
-    LilvNode* const ingen_arc       = lilv_new_uri(w, LILV_NS_INGEN    "arc");
-    LilvNode* const ingen_block     = lilv_new_uri(w, LILV_NS_INGEN    "block");
-    LilvNode* const ingen_canvasX   = lilv_new_uri(w, LILV_NS_INGEN    "canvasX");
-    LilvNode* const ingen_canvasY   = lilv_new_uri(w, LILV_NS_INGEN    "canvasY");
-    LilvNode* const ingen_enabled   = lilv_new_uri(w, LILV_NS_INGEN    "enabled");
-    LilvNode* const ingen_head      = lilv_new_uri(w, LILV_NS_INGEN    "head");
-    LilvNode* const ingen_tail      = lilv_new_uri(w, LILV_NS_INGEN    "tail");
-    LilvNode* const ingen_value     = lilv_new_uri(w, LILV_NS_INGEN    "value");
-    LilvNode* const lv2_name        = lilv_new_uri(w, LILV_NS_LV2      "name");
-    LilvNode* const lv2_port        = lilv_new_uri(w, LILV_NS_LV2      "port");
-    LilvNode* const lv2_prototype   = lilv_new_uri(w, LILV_NS_LV2      "prototype");
+    LilvNode* const ingen_arc       = lilv_new_uri(w, LILV_NS_INGEN "arc");
+    LilvNode* const ingen_block     = lilv_new_uri(w, LILV_NS_INGEN "block");
+    LilvNode* const ingen_canvasX   = lilv_new_uri(w, LILV_NS_INGEN "canvasX");
+    LilvNode* const ingen_canvasY   = lilv_new_uri(w, LILV_NS_INGEN "canvasY");
+    LilvNode* const ingen_enabled   = lilv_new_uri(w, LILV_NS_INGEN "enabled");
+    LilvNode* const ingen_head      = lilv_new_uri(w, LILV_NS_INGEN "head");
+    LilvNode* const ingen_tail      = lilv_new_uri(w, LILV_NS_INGEN "tail");
+    LilvNode* const ingen_value     = lilv_new_uri(w, LILV_NS_INGEN "value");
+    LilvNode* const lv2_name        = lilv_new_uri(w, LV2_CORE__name);
+    LilvNode* const lv2_port        = lilv_new_uri(w, LV2_CORE__port);
+    LilvNode* const lv2_prototype   = lilv_new_uri(w, LV2_CORE__prototype);
+    LilvNode* const midi_binding    = lilv_new_uri(w, LV2_MIDI__binding);
+    LilvNode* const midi_channel    = lilv_new_uri(w, LV2_MIDI__channel);
+    LilvNode* const midi_controlNum = lilv_new_uri(w, LV2_MIDI__controllerNumber);
     LilvNode* const modpedal_preset = lilv_new_uri(w, LILV_NS_MODPEDAL "preset");
 
     // --------------------------------------------------------------------------------------------------------
@@ -3376,6 +3379,30 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               if (portvalue == nullptr)
                                   continue;
 
+                              int8_t mchan = -1, mctrl = -1;
+
+                              if (LilvNode* const portbinding = lilv_world_get(w, portnode, midi_binding, nullptr))
+                              {
+                                  if (LilvNode* const bindChan = lilv_world_get(w, portbinding, midi_channel, nullptr))
+                                  {
+                                      if (LilvNode* const bindCtrl = lilv_world_get(w, portbinding, midi_controlNum, nullptr))
+                                      {
+                                          const int mchantest = lilv_node_as_int(bindChan);
+                                          const int mctrltest = lilv_node_as_int(bindCtrl);
+
+                                          if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 128)
+                                          {
+                                              mchan = (int8_t)mchantest;
+                                              mctrl = (int8_t)mctrltest;
+                                          }
+
+                                          lilv_node_free(bindCtrl);
+                                      }
+                                      lilv_node_free(bindChan);
+                                  }
+                                  lilv_node_free(portbinding);
+                              }
+
                               char* portsymbol = lilv_file_uri_parse(lilv_node_as_string(portnode), nullptr);
 
                               if (strstr(portsymbol, full_instance) != nullptr)
@@ -3385,7 +3412,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                   true,
                                   portsymbol,
                                   lilv_node_as_float(portvalue),
-                                  { -1, -1 }
+                                  { mchan, mctrl }
                               };
 
                               lilv_node_free(portvalue);
@@ -3410,6 +3437,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     lilv_node_free(x);
                     lilv_node_free(y);
                     lilv_node_free(proto);
+                    lilv_node_free(preset);
                 }
             }
 
@@ -3641,6 +3669,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(lv2_name);
     lilv_node_free(lv2_port);
     lilv_node_free(lv2_prototype);
+    lilv_node_free(midi_binding);
+    lilv_node_free(midi_channel);
+    lilv_node_free(midi_controlNum);
     lilv_node_free(modpedal_preset);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
