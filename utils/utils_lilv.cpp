@@ -3384,7 +3384,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               ports[portcount++] = {
                                   true,
                                   portsymbol,
-                                  lilv_node_as_float(portvalue)
+                                  lilv_node_as_float(portvalue),
+                                  { -1, -1 }
                               };
 
                               lilv_node_free(portvalue);

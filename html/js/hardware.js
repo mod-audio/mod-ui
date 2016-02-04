@@ -16,7 +16,12 @@
  */
 
 // Special URI for non-addressed controls
-var nullAddressURI = "null"
+var kNullAddressURI = "null"
+
+// Special URIs for midi-learn
+var kMidiLearnURI = "/midi-learn"
+var kMidiUnmapURI = "/midi-unmap"
+var kMidiCustomPrefixURI = "/midi-custom_" // to show current one, ignored on save
 
 function HardwareManager(options) {
     var self = this
@@ -59,6 +64,7 @@ function HardwareManager(options) {
                 self.addressingsByActuator[uri] = []
             }
         }
+        self.addressingsByActuator[kMidiLearnURI] = []
     }
 
     this.reset()
@@ -127,6 +133,21 @@ function HardwareManager(options) {
             }
         }
 
+        // midi-learn is always available for some port types
+        if (
+            types.indexOf("float" ) >= 0 ||
+            types.indexOf("bypass") >= 0
+           )
+        {
+            available[kMidiLearnURI] = {
+                uri  : kMidiLearnURI,
+                name : "MIDI Learn...",
+                modes: ":float:bypass:",
+                steps: [],
+                max_assigns: 99
+            }
+        }
+
         return available
     }
 
@@ -182,7 +203,7 @@ function HardwareManager(options) {
 
         var actuators = self.availableActuators(instance, port)
         var actuatorSelect = form.find('select[name=actuator]')
-        $('<option value="'+nullAddressURI+'">').text('None').appendTo(actuatorSelect)
+        $('<option value="'+kNullAddressURI+'">').text('None').appendTo(actuatorSelect)
 
         var actuator
         for (var i in actuators) {
@@ -190,6 +211,19 @@ function HardwareManager(options) {
             $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(actuatorSelect)
             if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
                 actuatorSelect.val(currentAddressing.uri)
+            }
+        }
+
+        if (currentAddressing.uri && currentAddressing.uri.startsWith(kMidiCustomPrefixURI)) {
+            var label = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
+            $('<option value="'+currentAddressing.uri+'">').text(label).appendTo(actuatorSelect)
+            actuatorSelect.val(currentAddressing.uri)
+            actuators[currentAddressing.uri] = {
+                uri  : currentAddressing.uri,
+                name : label,
+                modes: ":float:bypass:",
+                steps: [],
+                max_assigns: 99
             }
         }
 
@@ -217,9 +251,75 @@ function HardwareManager(options) {
         var sensibility = form.find('select[name=steps]')
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
+        var addressNow = function (actuator) {
+            var addressing = {
+                uri    : actuator.uri || kNullAddressURI,
+                label  : label.val() || pname,
+                minimum: minv,
+                maximum: maxv,
+                value  : port.value,
+                steps  : sensibility.val(),
+            }
+
+            options.address(instanceAndSymbol, addressing, function (ok) {
+                if (!ok) {
+                    console.log("Addressing failed for port " + port.symbol);
+                    return;
+                }
+
+                // We're addressing
+                if (actuator.uri && actuator.uri != kNullAddressURI)
+                {
+                    // add new only if needed, addressing might have been updated
+                    if (self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol) < 0) {
+                        self.addressingsByActuator[actuator.uri].push(instanceAndSymbol)
+                    } else {
+                        console.log("ERROR HERE, please fix!")
+                    }
+
+                    // remove data needed by the server, useless for us
+                    delete addressing.value
+
+                    // now save
+                    self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
+                    self.addressingsData        [instanceAndSymbol] = addressing
+
+                    // disable this control
+                    options.setEnabled(instance, port.symbol, false)
+                }
+                // We're unaddressing
+                else if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI)
+                {
+                    if (currentAddressing.uri.startsWith(kMidiCustomPrefixURI))
+                        currentAddressing.uri = kMidiLearnURI
+
+                    // remove old one
+                    remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
+
+                    delete self.addressingsByPortSymbol[instanceAndSymbol]
+                    delete self.addressingsData        [instanceAndSymbol]
+
+                    // enable this control
+                    options.setEnabled(instance, port.symbol, true)
+                }
+
+                form.remove()
+            })
+        }
+
         form.find('.js-save').click(function () {
             actuator = actuators[actuatorSelect.val()] || {}
 
+            // if selected actuactor is unchanged, do nothing
+            if (actuator.uri == currentAddressing.uri)
+            {
+                // do nothing
+                console.log("Doing nothing")
+                form.remove()
+                return;
+            }
+
+            // Check values
             minv = min.val()
             if (minv == undefined || minv == "")
                 minv = port.ranges.minimum
@@ -233,57 +333,44 @@ function HardwareManager(options) {
                 return
             }
 
-            // Here the addressing structure is created
-            var addressing = {
-                uri    : actuator.uri || nullAddressURI,
-                label  : label.val() || pname,
-                minimum: minv,
-                maximum: maxv,
-                value  : port.value,
-                steps  : sensibility.val(),
-            }
-            console.log("STEPS:", addressing['steps'])
-
-            options.address(instanceAndSymbol, addressing, function (ok) {
-                if (ok) {
-                    // We're addressing
-                    if (actuator.uri && actuator.uri != nullAddressURI)
-                    {
-                        // add new only if needed, addressing might have been updated
-                        if (self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol) < 0) {
-                            self.addressingsByActuator[actuator.uri].push(instanceAndSymbol)
-                        }
-
-                        // remove data needed by the server, useless for us
-                        delete addressing.value
-
-                        // now save
-                        self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
-                        self.addressingsData        [instanceAndSymbol] = addressing
-
-                        // disable this control
-                        options.setEnabled(instance, port.symbol, false)
-                    }
-                    // We're unaddressing
-                    else if (currentAddressing.uri && currentAddressing.uri != nullAddressURI)
-                    {
-                        // remove old one
-                        remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
-                        //var index = self.addressingsByActuator[currentAddressing.uri].indexOf(instanceAndSymbol)
-                        //self.addressingsByActuator[actuator.uri].splice(index, 1)
-
-                        delete self.addressingsByPortSymbol[instanceAndSymbol]
-                        delete self.addressingsData        [instanceAndSymbol]
-
-                        // enable this control
-                        options.setEnabled(instance, port.symbol, true)
-                    }
-                } else {
-                    console.log("Addressing failed for port " + port.symbol)
+            // if changing from midi-learn, unmap first
+            if (currentAddressing.uri && (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.startsWith(kMidiCustomPrefixURI))) {
+                var addressing = {
+                    uri    : kMidiUnmapURI,
+                    label  : label.val() || pname,
+                    minimum: minv,
+                    maximum: maxv,
+                    value  : port.value,
+                    steps  : sensibility.val(),
                 }
+                options.address(instanceAndSymbol, addressing, function (ok) {
+                    if (!ok) {
+                        console.log("Failed to unmap for port " + port.symbol);
+                        return;
+                    }
 
-                form.remove()
-            })
+                    // remove old one
+                    remove_from_array(self.addressingsByActuator[kMidiLearnURI], instanceAndSymbol)
+
+                    delete self.addressingsByPortSymbol[instanceAndSymbol]
+                    delete self.addressingsData        [instanceAndSymbol]
+
+                    // enable this control
+                    options.setEnabled(instance, port.symbol, true)
+
+                    // now we can address if needed
+                    if (actuator.uri) {
+                        addressNow(actuator)
+                    // if not, just close the form
+                    } else {
+                        form.remove()
+                    }
+                })
+            }
+            // otherwise just address it now
+            else {
+                addressNow(actuator)
+            }
         })
 
         form.find('.js-close').click(function () {
@@ -324,9 +411,51 @@ function HardwareManager(options) {
         }
     }
 
+    this.addMidiMapping = function (instance, portSymbol, channel, control) {
+        var instanceAndSymbol = instance+"/"+portSymbol
+        var mappingURI = kMidiCustomPrefixURI + "Ch." + (channel+1).toString() + "_CC#" + control.toString()
+
+        self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
+        self.addressingsByPortSymbol[instanceAndSymbol] = mappingURI
+        self.addressingsData        [instanceAndSymbol] = {
+            uri    : mappingURI,
+            label  : null,
+            minimum: null,
+            maximum: null,
+            steps  : null,
+        }
+
+        // disable this control
+        options.setEnabled(instance, portSymbol, false)
+    }
+
     this.registerAllAddressings = function () {
+        // save current midi maps
+        var instanceAndSymbol, mappingURI, midiBackup = {}
+        self.addressingsByActuator[kMidiLearnURI]
+        for (var i in self.addressingsByActuator[kMidiLearnURI]) {
+            instanceAndSymbol = self.addressingsByActuator[kMidiLearnURI][i]
+            mappingURI        = self.addressingsByPortSymbol[instanceAndSymbol]
+            midiBackup[mappingURI] = instanceAndSymbol
+        }
+
+        // reset and register all HW
         self.reset()
         self.instanceAdded(":all")
+
+        // restore midi maps
+        for (mappingURI in midiBackup) {
+            instanceAndSymbol = midiBackup[mappingURI]
+            self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
+            self.addressingsByPortSymbol[instanceAndSymbol] = mappingURI
+            self.addressingsData        [instanceAndSymbol] = {
+                uri    : mappingURI,
+                label  : null,
+                minimum: null,
+                maximum: null,
+                steps  : null,
+            }
+        }
     }
 
     // Removes an instance
@@ -358,116 +487,4 @@ function HardwareManager(options) {
             }
         }
     }
-
-    /*
-    // Does the addressing
-    this.setAddressing = function (instance, symbol, addressing, callback) {
-        //self.setIHMParameters(instanceId, port, addressing)
-
-    }
-    */
-
-    /* Based on port data and addressingType chosen, creates the addressing data
-     * structure that is expected by the server
-     * TODO
-     * This is very confusing. This method calculates firmware protocol parameters based on
-     * user chosen values. These parameters shouldn't be part of the serialized data. The proper
-     * place for this is the webserver, that should calculate this on demand.
-     */
-    //this.setIHMParameters = function (instanceId, port, addressing) {
-        /*
-        addressing.options = []
-        if (!addressing.actuator) {
-            console.log("setIHMParameters: no actuator set")
-            return
-        }
-        */
-
-        /*
-        addressing.unit = port.units ? port.units.symbol : null
-
-        if (port.symbol == ":bypass") {
-            addressing.type = ADDRESSING_CTYPE_BYPASS
-        } else if (port.toggled) {
-            addressing.type = ADDRESSING_CTYPE_TOGGLED
-        } else if (port.integer) {
-            addressing.type = ADDRESSING_CTYPE_INTEGER
-        } else {
-            addressing.type = ADDRESSING_CTYPE_LINEAR
-        }
-
-        if (port.enumeration) {
-            addressing.type |= ADDRESSING_CTYPE_ENUMERATION|ADDRESSING_CTYPE_SCALE_POINTS
-            if (!addressing.options || addressing.options.length == 0) {
-                addressing.options = port.scalePoints.map(function (point) {
-                    return [point.value, point.label]
-                })
-            }
-        }
-        if (port.logarithmic) {
-            addressing.type |= ADDRESSING_CTYPE_LOGARITHMIC
-        }
-        if (port.trigger) {
-            addressing.type |= ADDRESSING_CTYPE_TRIGGER
-        }
-        if (addressing.addressing_type == ADDRESSING_TYPE_TAP_TEMPO) {
-            addressing.type |= ADDRESSING_CTYPE_TAP_TEMPO
-        }
-
-            console.log("setIHMParameters: type = " + addressing.type)
-    }*/
-
-    /*
-    this.hardwareExists = function (addressing) {
-        var actuator = addressing.actuator || [-1, -1, -1, -1]
-        var actuatorKey = actuator.join(',')
-        if (self.addressingsByActuator[actuatorKey])
-            return true
-        else
-            return false
-    }
-    */
-
-    /*
-    this.serializeInstance = function (instanceId) {
-        return self.addressingsByPortSymbol[instanceId]
-    }*/
-
-    /*
-    this.unserializeInstance = function (instanceId, addressings, bypassApplication, addressingErrors) {
-        // Store the original options.change callback, to bypass application
-        var callback = options.address
-
-        // addressingErrors is an array where we should append controls addressed to unknown hardware
-        if (!addressingErrors)
-            addressingErrors = []
-
-        if (bypassApplication) {
-            options.address = function () {
-                arguments[arguments.length - 1](true)
-            }
-        }
-        var restore = function () {
-            options.address = callback
-        }
-
-        // Make a queue of symbols to be addressed and process the queue with
-        // a recursive asynchronous function
-        var queue = Object.keys(addressings)
-        var symbol
-
-        var processNext = function () {
-            if (queue.length == 0)
-                return restore()
-            symbol = queue.pop()
-            if (self.hardwareExists(addressings[symbol]))
-                self.setAddressing(instanceId, symbol, addressings[symbol], processNext)
-            else {
-                addressingErrors.push([instanceId, symbol])
-                processNext()
-            }
-        }
-
-        processNext()
-    }*/
 }

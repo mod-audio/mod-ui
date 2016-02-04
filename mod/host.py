@@ -59,6 +59,14 @@ HARDWARE_TYPE_TOUCH  = 2
 HARDWARE_TYPE_ACCEL  = 3
 HARDWARE_TYPE_CUSTOM = 4
 
+# Special URI for non-addressed controls
+kNullAddressURI = "null"
+
+# Special URIs for midi-learn
+kMidiLearnURI = "/midi-learn"
+kMidiUnmapURI = "/midi-unmap"
+kMidiCustomPrefixURI = "/midi-custom_" # to show current one
+
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
     def __init__(self):
@@ -396,6 +404,13 @@ class Host(object):
                 if crashed:
                     self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
 
+            for symbol, data in plugin['midiCCs'].items():
+                mchnnl, mctrl = data
+                if mchnnl >= 0 and mctrl >= 0 and symbol not in badports:
+                    websocket.write_message("midi_map %s %s %i %i" % (plugin['instance'], symbol, mchnnl, mctrl))
+
+                    self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
+
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
 
@@ -488,6 +503,7 @@ class Host(object):
                 "x"         : x,
                 "y"         : y,
                 "addressing": {}, # symbol: addressing
+                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports),
                 "ports"     : valports,
                 "badports"  : badports,
                 "preset"    : "",
@@ -739,6 +755,7 @@ class Host(object):
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
+                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports),
                 "ports"     : valports,
                 "badports"  : badports,
                 "preset"    : p['preset'],
@@ -751,12 +768,20 @@ class Host(object):
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
+                mchnnl = port['midiCC']['channel']
+                mctrl  = port['midiCC']['control']
+
                 self.plugins[instance_id]['ports'][symbol] = value
+                self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl)
 
                 self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
 
                 if symbol not in badports:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+
+                    if mchnnl >= 0 and mctrl >= 0:
+                        self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
+                        self.msg_callback("midi_map %s %s %i %i" % (instance, symbol, mchnnl, mctrl))
 
         for c in pb['connections']:
             port_from = "/graph/%s" % c['source']
@@ -1135,17 +1160,29 @@ _:b%i
     # Addressing (public stuff)
 
     def address(self, instance, port, actuator_uri, label, maximum, minimum, value, steps, callback, skipLoad=False):
+        print("address", instance, port, actuator_uri, label, maximum, minimum, value, steps)
         instance_id = self.mapper.get_id(instance)
 
-        data = self.plugins.get(instance_id, None)
-        if data is None:
+        pluginData = self.plugins.get(instance_id, None)
+        if pluginData is None:
             callback(False)
             return
 
-        old_actuator_uri = self._unaddress(data, port)
+        old_actuator_uri = self._unaddress(pluginData, port)
 
-        if actuator_uri and actuator_uri != "null":
-            # we're addressing
+        if actuator_uri and actuator_uri != kNullAddressURI:
+            # we're trying to midi-learn
+            if actuator_uri == kMidiLearnURI:
+                self.send("midi_learn %i %s" % (instance_id, port), callback, datatype='boolean')
+                return
+
+            # we're unmapping a midi control
+            elif actuator_uri == kMidiUnmapURI:
+                pluginData['midiCCs'][port] = (-1, -1)
+                self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
+                return
+
+            # we're addressing to HMI or control chain
             options = []
 
             if port == ":bypass":
@@ -1153,7 +1190,7 @@ _:b%i
                 unit  = "none"
 
             else:
-                for port_info in get_plugin_control_input_ports(data["uri"]):
+                for port_info in get_plugin_control_input_ports(pluginData["uri"]):
                     if port_info["symbol"] == port:
                         break
                 else:
@@ -1201,7 +1238,7 @@ _:b%i
                 'steps': steps,
                 'options': options,
             }
-            self.plugins[instance_id]['addressing'][port] = addressing
+            pluginData['addressing'][port] = addressing
             self.addressings[actuator_uri]['addrs'].append(addressing)
             self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
 

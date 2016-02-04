@@ -268,11 +268,18 @@ class PluginInfo_Mini(Structure):
         ("gui", PluginGUI_Mini),
     ]
 
+class PedalboardMidiControl(Structure):
+    _fields_ = [
+        ("channel", c_int8),
+        ("control", c_int8),
+    ]
+
 class PedalboardPluginPort(Structure):
     _fields_ = [
         ("valid", c_bool),
         ("symbol", c_char_p),
         ("value", c_float),
+        ("midiCC", PedalboardMidiControl),
     ]
 
 class PedalboardPlugin(Structure):
@@ -344,6 +351,7 @@ c_struct_types = (PluginAuthor,
                   PluginPortUnits,
                   PluginPortsI,
                   PluginPorts,
+                  PedalboardMidiControl,
                   PedalboardHardware)
 
 c_structp_types = (POINTER(PluginGUIPort),

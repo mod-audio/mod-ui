@@ -19,7 +19,10 @@
 #define MOD_UTILS_H_INCLUDED
 
 #ifdef __cplusplus
+#include <cstdint>
 extern "C" {
+#else
+#include <stdint.h>
 #endif
 
 #define MOD_API __attribute__ ((visibility("default")))
@@ -147,9 +150,15 @@ typedef struct {
 } PluginInfo_Mini;
 
 typedef struct {
+    int8_t channel;
+    int8_t control;
+} PedalboardMidiControl;
+
+typedef struct {
     bool valid;
     const char* symbol;
     float value;
+    PedalboardMidiControl midiCC;
 } PedalboardPluginPort;
 
 typedef struct {

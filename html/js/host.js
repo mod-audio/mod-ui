@@ -32,14 +32,14 @@ $('document').ready(function() {
         var cmd = data[0]
 
         if (cmd == "cpu_load") {
-            var value = data[1]
+            var value = parseFloat(data[1])
             $("#cpu-bar").css("width", (100.0-value).toFixed().toString()+"%")
             $("#cpu-bar-text").text("CPU "+value.toString()+"%")
             return
         }
 
         if (cmd == "mem_load") {
-            var value = data[1]
+            var value = parseFloat(data[1])
             $("#ram-bar").css("width", (100.0-value).toFixed().toString()+"%")
             $("#ram-bar-text").text("RAM "+value.toString()+"%")
             return
@@ -50,6 +50,23 @@ $('document').ready(function() {
             var symbol   = data[2]
             var value    = parseFloat(data[3])
             desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
+            return
+        }
+
+        if (cmd == "midi_map") {
+            if (desktop.hardwareManager) {
+                var instance = data[1]
+                var symbol   = data[2]
+                var channel  = parseInt(data[3])
+                var control  = parseInt(data[4])
+
+                if (channel < 0 || control < 0) {
+                    console.log("WARNING: Received MIDI mapping with invalid values, ignored")
+                    return
+                }
+
+                desktop.hardwareManager.addMidiMapping(instance, symbol, channel, control)
+            }
             return
         }
 

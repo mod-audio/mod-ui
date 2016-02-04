@@ -160,7 +160,7 @@ class Session(object):
 
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
-        if not self.hmi_initialized:
+        if not (self.hmi_initialized or actuator_uri.startswith("/midi-")):
             callback(False)
             return
 
