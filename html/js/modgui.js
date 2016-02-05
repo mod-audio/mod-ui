@@ -375,10 +375,17 @@ function GUI(effect, options) {
             self.assignIconFunctionality(self.icon)
             self.assignControlFunctionality(self.icon, false)
 
-            self.icon.children().resize(function () {
+            // adjust icon size after adding all basic elements
+            setTimeout(function () {
                 self.icon.width(self.icon.children().width())
                 self.icon.height(self.icon.children().height())
-            })
+
+                // listen for future resizes
+                self.icon.children().resize(function () {
+                    self.icon.width(self.icon.children().width())
+                    self.icon.height(self.icon.children().height())
+                })
+            }, 1)
 
             self.icon.find('[mod-role=presets]').change(function () {
                 var value = $(this).val()

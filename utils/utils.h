@@ -216,6 +216,11 @@ typedef struct {
     float value;
 } StatePortValue;
 
+typedef struct {
+    float cpuLoad;
+    unsigned xruns;
+} JackData;
+
 // initialize
 MOD_API void init(void);
 
@@ -268,6 +273,17 @@ MOD_API StatePortValue* get_state_port_values(const char* state);
 
 // Convert a file URI to a local path string.
 MOD_API const char* file_uri_parse(const char* fileuri);
+
+// jack stuff
+MOD_API bool init_jack(void);
+MOD_API void close_jack(void);
+MOD_API JackData* get_jack_data(void);
+MOD_API float get_jack_sample_rate(void);
+MOD_API const char* get_jack_port_alias(const char* portname);
+MOD_API bool* has_serial_midi_ports(void);
+MOD_API const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput);
+MOD_API void connect_jack_ports(const char* port1, const char* port2);
+MOD_API void disconnect_jack_ports(const char* port1, const char* port2);
 
 #ifdef __cplusplus
 } // extern "C"

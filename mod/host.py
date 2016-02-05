@@ -220,6 +220,9 @@ class Host(object):
         for port in charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput)):
             self.audioportsOut.append(port.replace("system:","",1))
 
+        if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in"):
+            jacklib.connect(self.jack_client, "ttymidi:MIDI_in", "mod-host:midi_in")
+
     def close_jack(self):
         if self.jack_client is None:
             print("jacklib client deactivated NOT")
@@ -1594,11 +1597,17 @@ _:b%i
     # Set the selected MIDI devices
     # Will remove or add new JACK ports (in mod-ui) as needed
     def set_midi_devices(self, newDevs):
+        if self.jack_client is None:
+            return
+
         def add_port(name, isOutput):
             index = int(name[-1])
             title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
 
             self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.replace("system:","",1), int(isOutput), title, index))
+
+            if not isOutput:
+                jacklib.connect(self.jack_client, name, "mod-host:midi_in")
 
         def remove_port(name):
             removed_ports = []
@@ -1615,6 +1624,7 @@ _:b%i
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
             self.msg_callback("remove_hw_port /graph/%s" % (name.replace("system:","",1)))
+            jacklib.disconnect(self.jack_client, name, "mod-host:midi_in")
 
         # remove
         for port in self.midiports:

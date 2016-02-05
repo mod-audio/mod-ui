@@ -344,6 +344,12 @@ class StatePortValue(Structure):
         ("value", c_float),
     ]
 
+class JackData(Structure):
+    _fields_ = [
+        ("cpuLoad", c_floats),
+        ("xruns", c_uint),
+    ]
+
 c_struct_types = (PluginAuthor,
                   PluginGUI,
                   PluginGUI_Mini,
@@ -352,7 +358,8 @@ c_struct_types = (PluginAuthor,
                   PluginPortsI,
                   PluginPorts,
                   PedalboardMidiControl,
-                  PedalboardHardware)
+                  PedalboardHardware,
+                  JackData)
 
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
@@ -411,6 +418,33 @@ utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
 utils.file_uri_parse.argtypes = [c_char_p]
 utils.file_uri_parse.restype  = c_char_p
+
+utils.init_jack.argtypes = None
+utils.init_jack.restype  = c_bool
+
+utils.close_jack.argtypes = None
+utils.close_jack.restype  = None
+
+utils.get_jack_data.argtypes = None
+utils.get_jack_data.restype  = POINTER(JackData)
+
+utils.get_jack_sample_rate.argtypes = None
+utils.get_jack_sample_rate.restype  = c_float
+
+utils.get_jack_port_alias.argtypes = [c_char_p]
+utils.get_jack_port_alias.restype  = c_char_p
+
+utils.has_serial_midi_ports.argtypes = None
+utils.has_serial_midi_ports.restype  = ARRAY(c_bool, 2)
+
+utils.get_jack_hardware_ports.argtypes = [c_bool, c_bool]
+utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
+
+utils.connect_jack_ports.argtypes = [c_char_p, c_char_p]
+utils.connect_jack_ports.restype  = None
+
+utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
+utils.disconnect_jack_ports.restype  = None
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -506,7 +540,7 @@ def get_state_port_values(state):
 
 # Get the absolute directory of a file or bundle uri.
 def get_bundle_dirname(bundleuri):
-    bundle = utils.file_uri_parse(bundleuri)
+    bundle = charPtrToString(utils.file_uri_parse(bundleuri))
 
     if not bundle:
         raise IOError(bundleuri)
@@ -516,5 +550,44 @@ def get_bundle_dirname(bundleuri):
         bundle = os.path.dirname(bundle)
 
     return bundle
+
+# ------------------------------------------------------------------------------------------------------------
+# jack stuff
+
+def init_jack():
+    return bool(utils.init_jack())
+
+def close_jack():
+    utils.close_jack()
+
+def get_jack_data():
+    data = utils.get_jack_data()
+    if not data:
+        raise Exception
+    return {
+        'cpuLoad': data.cpuLoad,
+        'xruns'  : data.xruns,
+    }
+
+def get_jack_sample_rate():
+    return float(utils.get_jack_sample_rate())
+
+def get_jack_port_alias(portname):
+    return charPtrToString(utils.get_jack_port_alias(portname.encode("utf-8")))
+
+def has_serial_midi_ports():
+    ret = utils.has_serial_midi_ports()
+    if not ret:
+        raise Exception
+    return (bool(ret[0]), bool(ret[1]))
+
+def get_jack_hardware_ports(isAudio, isOutput):
+    return charPtrPtrToStringList(utils.get_jack_hardware_ports(isAudio, isOutput))
+
+def connect_jack_ports(port1, port2):
+    utils.connect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8"))
+
+def disconnect_jack_ports(port1, port2):
+    utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8"))
 
 # ------------------------------------------------------------------------------------------------------------
