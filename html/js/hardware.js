@@ -216,7 +216,7 @@ function HardwareManager(options) {
             }
         }
 
-        if (currentAddressing.uri && currentAddressing.uri.startsWith(kMidiCustomPrefixURI)) {
+        if (currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
             var label = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
             $('<option value="'+currentAddressing.uri+'">').text(label).appendTo(actuatorSelect)
             actuatorSelect.val(currentAddressing.uri)
@@ -292,7 +292,7 @@ function HardwareManager(options) {
                 // We're unaddressing
                 else if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI)
                 {
-                    if (currentAddressing.uri.startsWith(kMidiCustomPrefixURI))
+                    if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) // startsWith
                         currentAddressing.uri = kMidiLearnURI
 
                     // remove old one
@@ -336,7 +336,7 @@ function HardwareManager(options) {
             }
 
             // if changing from midi-learn, unmap first
-            if (currentAddressing.uri && (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.startsWith(kMidiCustomPrefixURI))) {
+            if (currentAddressing.uri && (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0)) {
                 var addressing = {
                     uri    : kMidiUnmapURI,
                     label  : label.val() || pname,
