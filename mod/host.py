@@ -34,7 +34,6 @@ import os, json, socket, logging
 
 from mod import get_hardware, symbolify
 from mod.bank import list_banks, save_last_bank_and_pedalboard
-from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
