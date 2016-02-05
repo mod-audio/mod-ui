@@ -56,6 +56,12 @@ static void JackShutdown(void*)
 
 bool init_jack(void)
 {
+    if (gClient != nullptr)
+    {
+        printf("jack client activated before, nothing to do\n");
+        return true;
+    }
+
     const jack_options_t options = static_cast<jack_options_t>(JackNoStartServer|JackUseExactName);
     jack_client_t* const client = jack_client_open("mod-ui", options, nullptr);
 
