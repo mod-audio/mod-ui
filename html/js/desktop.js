@@ -358,10 +358,8 @@ function Desktop(elements) {
 
     this.setupApp = function (usingDesktop) {
         self.isApp = true
-        $('#mod-add-midi').hide()
-        $('#mod-bluetooth').hide()
-        $('#mod-cloud').hide()
-        $('#mod-settings').hide()
+        $('#mod-bypassLeft').hide()
+        $('#mod-bypassRight').hide()
         $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
         $('#mod-disconnect').hide()
@@ -372,12 +370,6 @@ function Desktop(elements) {
         }
 
         self.netStatus.statusTooltip('updatePosition')
-
-        // Fix mod-cpu starting in wrong position
-        $('#mod-cpu .progress-title').css('position', 'relative')
-        setTimeout(function () {
-            $('#mod-cpu .progress-title').css('position', 'absolute')
-        }, 100)
     }
 
     this.effectBox = self.makeEffectBox(elements.effectBox,
