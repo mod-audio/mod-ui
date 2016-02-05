@@ -1215,7 +1215,7 @@ JqueryClass('film', baseWidget, {
         var filmSteps = self.data('filmSteps')
         var position = self.data('position')+1
         if (position >= filmSteps) {
-            if (self.data('enumeration'))
+            if (self.data('enumeration') || self.data('toggled'))
                 position = 0
             else
                 position = filmSteps-1
