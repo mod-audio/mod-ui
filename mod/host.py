@@ -38,6 +38,9 @@ from mod.jacklib_helpers import jacklib, charPtrToString, charPtrPtrToStringList
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
+from mod.utils import init_jack, close_jack, get_jack_data, get_jack_sample_rate
+from mod.utils import get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port
+from mod.utils import connect_jack_ports, disconnect_jack_ports
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1
@@ -126,10 +129,6 @@ class Host(object):
         self.pedalboard_name = ""
         self.pedalboard_size = [0,0]
 
-        self.jack_client = None
-        self.xrun_count = 0
-        self.xrun_count2 = 0
-
         self.cputimerok = True
         self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
 
@@ -193,44 +192,20 @@ class Host(object):
     # Initialization
 
     def init_jack(self):
-        if self.jack_client is not None:
-            return
-
-        self.jack_client = jacklib.client_open("mod-ui", jacklib.JackNoStartServer, None)
-        self.xrun_count  = 0
-        self.xrun_count2 = 0
         self.audioportsIn  = []
         self.audioportsOut = []
 
-        if self.jack_client == 0:
-            self.jack_client = None
-        if self.jack_client is None:
+        if not init_jack():
             return
 
-        #jacklib.jack_set_port_registration_callback(self.jack_client, self.JackPortRegistrationCallback, None)
-        #jacklib.set_property_change_callback(self.jack_client, self.JackPropertyChangeCallback, None)
-        #jacklib.set_xrun_callback(self.jack_client, self.JackXRunCallback, None)
-        jacklib.on_shutdown(self.jack_client, self.JackShutdownCallback, None)
-        jacklib.activate(self.jack_client)
-        print("jacklib client activated")
-
-        for port in charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput)):
+        for port in get_jack_hardware_ports(True, False):
             self.audioportsIn.append(port.replace("system:","",1))
 
-        for port in charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_AUDIO_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput)):
+        for port in get_jack_hardware_ports(True, True):
             self.audioportsOut.append(port.replace("system:","",1))
 
-        if jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in"):
-            jacklib.connect(self.jack_client, "ttymidi:MIDI_in", "mod-host:midi_in")
-
     def close_jack(self):
-        if self.jack_client is None:
-            print("jacklib client deactivated NOT")
-            return
-        jacklib.deactivate(self.jack_client)
-        jacklib.client_close(self.jack_client)
-        self.jack_client = None
-        print("jacklib client deactivated")
+        close_jack()
 
     def init_connection(self):
         self.open_connection_if_needed(None, lambda ws:None)
@@ -395,7 +370,7 @@ class Host(object):
             title = name.title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
-        if self.jack_client is not None:
+        if True: # FIXME
             midiports = []
             for port in self.midiports:
                 if ";" in port:
@@ -405,21 +380,21 @@ class Host(object):
                 else:
                     midiports.append(port)
 
-            self.hasSerialMidiIn  = bool(jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_in"))
-            self.hasSerialMidiOut = bool(jacklib.port_by_name(self.jack_client, "ttymidi:MIDI_out"))
+            self.hasSerialMidiIn  = has_serial_midi_input_port()
+            self.hasSerialMidiOut = has_serial_midi_output_port()
 
             # MIDI In
             if self.hasSerialMidiIn:
                 websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
-            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+            ports = get_jack_hardware_ports(False, False)
             for i in range(len(ports)):
                 name = ports[i]
                 if name not in midiports:
                     continue
-                ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
-                if ret == 1 and alias1:
-                    title = alias1.split("-",5)[-1].replace("-","_")
+                alias = get_jack_port_alias(name)
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
                 websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
@@ -428,14 +403,14 @@ class Host(object):
             if self.hasSerialMidiOut:
                 websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
-            ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+            ports = get_jack_hardware_ports(False, True)
             for i in range(len(ports)):
                 name = ports[i]
                 if name not in midiports:
                     continue
-                ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, name))
-                if ret == 1 and alias1:
-                    title = alias1.split("-",5)[-1].replace("-","_")
+                alias = get_jack_port_alias(name)
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_")
                 else:
                     title = name.replace("system:","",1).title().replace(" ","_")
                 websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.replace("system:","",1), title, i+1))
@@ -1543,33 +1518,28 @@ _:b%i
     # JACK stuff
 
     def get_sample_rate(self):
-        if self.jack_client is None:
-            return 48000.0
-        return float(jacklib.get_sample_rate(self.jack_client))
+        return get_jack_sample_rate()
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList, names)
     def get_midi_ports(self):
-        if self.jack_client is None:
-            return ([], [], {})
-
         out_ports = {}
         full_ports = {}
 
         # MIDI Out
-        ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsInput))
+        ports = get_jack_hardware_ports(False, True)
         for port in ports:
-            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, port))
-            if ret == 1 and alias1:
-                title = alias1.split("-",5)[-1].replace("-"," ")
+            alias = get_jack_port_alias(port)
+            if alias:
+                title = alias.split("-",5)[-1].replace("-"," ")
                 out_ports[title] = port
 
         # MIDI In
-        ports = charPtrPtrToStringList(jacklib.get_ports(self.jack_client, "system:", jacklib.JACK_DEFAULT_MIDI_TYPE, jacklib.JackPortIsPhysical|jacklib.JackPortIsOutput))
+        ports = get_jack_hardware_ports(False, False)
         for port in ports:
-            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, port))
-            if ret == 1 and alias1:
-                title = alias1.split("-",5)[-1].replace("-"," ")
+            alias = get_jack_port_alias(port)
+            if alias:
+                title = alias.split("-",5)[-1].replace("-"," ")
                 if title in out_ports.keys():
                     port = "%s;%s" % (port, out_ports[title])
                 full_ports[port] = title
@@ -1587,19 +1557,16 @@ _:b%i
         return (devsInUse, devList, names)
 
     def get_port_name_alias(self, portname):
-        if self.jack_client is not None:
-            ret, alias1, alias2 = jacklib.port_get_aliases(jacklib.port_by_name(self.jack_client, portname))
-            if ret == 1 and alias1:
-                return alias1.split("-",5)[-1].replace("-"," ")
+        if True: # FIXME
+            alias = get_jack_port_alias(portname)
+            if alias:
+                return alias.split("-",5)[-1].replace("-"," ")
 
         return portname.replace("system:","",1).title()
 
     # Set the selected MIDI devices
     # Will remove or add new JACK ports (in mod-ui) as needed
     def set_midi_devices(self, newDevs):
-        if self.jack_client is None:
-            return
-
         def add_port(name, isOutput):
             index = int(name[-1])
             title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
@@ -1607,7 +1574,7 @@ _:b%i
             self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.replace("system:","",1), int(isOutput), title, index))
 
             if not isOutput:
-                jacklib.connect(self.jack_client, name, "mod-host:midi_in")
+                connect_jack_ports(name, "mod-host:midi_in")
 
         def remove_port(name):
             removed_ports = []
@@ -1624,7 +1591,7 @@ _:b%i
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
             self.msg_callback("remove_hw_port /graph/%s" % (name.replace("system:","",1)))
-            jacklib.disconnect(self.jack_client, name, "mod-host:midi_in")
+            disconnect_jack_ports(name, "mod-host:midi_in")
 
         # remove
         for port in self.midiports:
@@ -1654,38 +1621,4 @@ _:b%i
 
             self.midiports.append(port)
 
-    # Callback for when a port appears or disappears
-    # We use this to trigger a auto-connect mode
-    #def JackPortRegistrationCallback(self, port, registered, arg):
-        #if self.jack_client is None:
-            #return
-        #if not registered:
-            #return
-
-    # Callback for when a client or port property changes.
-    # We use this to know the full length name of ingen created ports.
-    def JackPropertyChangeCallback(self, subject, key, change, arg):
-        if self.jack_client is None:
-            return
-        if change != jacklib.PropertyCreated:
-            return
-        if key != jacklib.bJACK_METADATA_PRETTY_NAME:
-            return
-
-        self.mididevuuids.append(subject)
-        self.ioloop.add_callback(self.jack_midi_devs_callback)
-
-    # Callback for when an xrun occurs
-    def JackXRunCallback(self, arg):
-        self.xrun_count += 1
-        return 0
-
-    # Callback for when JACK has shutdown or our client zombified
-    def JackShutdownCallback(self, arg):
-        self.jack_client = None
-
     # -----------------------------------------------------------------------------------------------------------------
-    # ...
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # ...

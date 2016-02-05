@@ -29,7 +29,7 @@
 
 void scanPlugins()
 {
-#if 1
+#if 0
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -47,7 +47,7 @@ void scanPlugins()
     }
 #endif
 
-#if 1
+#if 0
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
     {
         for (int i=0; pedalboards[i] != nullptr; ++i)
@@ -104,7 +104,7 @@ int main()
     cleanup();
 #endif
 
-#if 1
+#if 0
     const PluginInfo* info;
     setenv("LV2_PATH", "/NOT", 1);
     init();
@@ -151,6 +151,22 @@ int main()
     assert(info->ports.control.input != nullptr);
 
     cleanup();
+#endif
+
+#if 0
+    assert(init_jack());
+    assert(get_jack_data() != nullptr);
+    get_jack_sample_rate();
+    get_jack_port_alias("system:capture_1");
+    get_jack_hardware_ports(false, false);
+    get_jack_hardware_ports(false, true);
+    get_jack_hardware_ports(true, true);
+    get_jack_hardware_ports(true, false);
+    has_serial_midi_input_port();
+    has_serial_midi_output_port();
+    connect_jack_ports("not", "not2");
+    disconnect_jack_ports("not", "not2");
+    close_jack();
 #endif
 
     return 0;

@@ -127,36 +127,26 @@ float get_jack_sample_rate(void)
 
 const char* get_jack_port_alias(const char* portname)
 {
-    char* aliases[2];
+    static char aliases[0xff][2];
+    char* aliasesptr[2] = {
+        aliases[0],
+        aliases[1]
+    };
 
-    if (gClient != nullptr && jack_port_get_aliases(jack_port_by_name(gClient, portname), aliases) > 0)
+    if (gClient != nullptr && jack_port_get_aliases(jack_port_by_name(gClient, portname), aliasesptr) > 0)
         return aliases[0];
 
     return nullptr;
 }
 
-bool* has_serial_midi_ports(void)
-{
-    static bool ret[2];
-
-    if (gClient != nullptr)
-    {
-        ret[0] = (jack_port_by_name(gClient, "ttymidi:MIDI_in") != nullptr);
-        ret[1] = (jack_port_by_name(gClient, "ttymidi:MIDI_out") != nullptr);
-    }
-    else
-    {
-        ret[0] = false;
-        ret[1] = false;
-    }
-
-    return ret;
-}
-
-// --------------------------------------------------------------------------------------------------------
-
 const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
 {
+    if (gPortListRet != nullptr)
+    {
+        jack_free(gPortListRet);
+        gPortListRet = nullptr;
+    }
+
     if (gClient == nullptr)
         return nullptr;
 
@@ -167,12 +157,27 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
     if (ports == nullptr)
         return nullptr;
 
-    if (gPortListRet != nullptr)
-        jack_free(gPortListRet);
-
     gPortListRet = ports;
 
     return ports;
+}
+
+// --------------------------------------------------------------------------------------------------------
+
+bool has_serial_midi_input_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "ttymidi:MIDI_in") != nullptr);
+}
+
+bool has_serial_midi_output_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "ttymidi:MIDI_out") != nullptr);
 }
 
 // --------------------------------------------------------------------------------------------------------

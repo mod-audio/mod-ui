@@ -346,7 +346,7 @@ class StatePortValue(Structure):
 
 class JackData(Structure):
     _fields_ = [
-        ("cpuLoad", c_floats),
+        ("cpuLoad", c_float),
         ("xruns", c_uint),
     ]
 
@@ -358,8 +358,7 @@ c_struct_types = (PluginAuthor,
                   PluginPortsI,
                   PluginPorts,
                   PedalboardMidiControl,
-                  PedalboardHardware,
-                  JackData)
+                  PedalboardHardware)
 
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
@@ -434,8 +433,11 @@ utils.get_jack_sample_rate.restype  = c_float
 utils.get_jack_port_alias.argtypes = [c_char_p]
 utils.get_jack_port_alias.restype  = c_char_p
 
-utils.has_serial_midi_ports.argtypes = None
-utils.has_serial_midi_ports.restype  = ARRAY(c_bool, 2)
+utils.has_serial_midi_input_port.argtypes = None
+utils.has_serial_midi_input_port.restype  = c_bool
+
+utils.has_serial_midi_output_port.argtypes = None
+utils.has_serial_midi_output_port.restype  = c_bool
 
 utils.get_jack_hardware_ports.argtypes = [c_bool, c_bool]
 utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
@@ -575,11 +577,11 @@ def get_jack_sample_rate():
 def get_jack_port_alias(portname):
     return charPtrToString(utils.get_jack_port_alias(portname.encode("utf-8")))
 
-def has_serial_midi_ports():
-    ret = utils.has_serial_midi_ports()
-    if not ret:
-        raise Exception
-    return (bool(ret[0]), bool(ret[1]))
+def has_serial_midi_input_port():
+    return bool(utils.has_serial_midi_input_port())
+
+def has_serial_midi_output_port():
+    return bool(utils.has_serial_midi_output_port())
 
 def get_jack_hardware_ports(isAudio, isOutput):
     return charPtrPtrToStringList(utils.get_jack_hardware_ports(isAudio, isOutput))
