@@ -55,19 +55,17 @@ $('document').ready(function() {
         }
 
         if (cmd == "midi_map") {
-            if (desktop.hardwareManager) {
-                var instance = data[1]
-                var symbol   = data[2]
-                var channel  = parseInt(data[3])
-                var control  = parseInt(data[4])
+            var instance = data[1]
+            var symbol   = data[2]
+            var channel  = parseInt(data[3])
+            var control  = parseInt(data[4])
 
-                if (channel < 0 || control < 0) {
-                    console.log("WARNING: Received MIDI mapping with invalid values, ignored")
-                    return
-                }
-
-                desktop.hardwareManager.addMidiMapping(instance, symbol, channel, control)
+            if (channel < 0 || control < 0) {
+                console.log("WARNING: Received MIDI mapping with invalid values, ignored")
+                return
             }
+
+            desktop.hardwareManager.addMidiMapping(instance, symbol, channel, control)
             return
         }
 
@@ -222,8 +220,7 @@ $('document').ready(function() {
                 success: function (data) {
                     waiting = false
                     HARDWARE_PROFILE = data
-                    if (desktop.hardwareManager)
-                        desktop.hardwareManager.registerAllAddressings()
+                    desktop.hardwareManager.registerAllAddressings()
                     desktop.pedalboard.pedalboard('scheduleAdapt');
                     desktop.init();
                 },

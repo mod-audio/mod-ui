@@ -1142,31 +1142,25 @@ JqueryClass('pedalboard', {
 
             var address, symbol, port
             var hardware = self.data('hardwareManager')
+            hardware.instanceAdded(instance)
 
-            if (hardware) {
-                hardware.instanceAdded(instance)
-
-                var addressFactory = function (port) {
-                    return function () {
-                        hardware.open(instance, port, pluginData.label)
-                    }
+            var addressFactory = function (port) {
+                return function () {
+                    hardware.open(instance, port, pluginData.label)
                 }
+            }
 
-                for (symbol in pluginGui.controls) {
-                    port = pluginGui.controls[symbol]
-                    if (symbol == ':bypass') {
-                        address = settings.find('[mod-role=bypass-address]')
-                    } else {
-                        address = settings.find('[mod-role=input-control-address][mod-port-symbol=' + symbol + ']')
-                    }
-                    if (address.length == 0) {
-                        continue
-                    }
-                    address.click(addressFactory(port))
+            for (symbol in pluginGui.controls) {
+                port = pluginGui.controls[symbol]
+                if (symbol == ':bypass') {
+                    address = settings.find('[mod-role=bypass-address]')
+                } else {
+                    address = settings.find('[mod-role=input-control-address][mod-port-symbol=' + symbol + ']')
                 }
-            } else {
-                settings.find('[mod-role=bypass-address]').hide()
-                settings.find('[mod-role=input-control-address]').hide()
+                if (address.length == 0) {
+                    continue
+                }
+                address.click(addressFactory(port))
             }
 
             // Find elements with mod-role of audio/midi input/output ports and assign functionality to them
@@ -1335,9 +1329,7 @@ JqueryClass('pedalboard', {
             })
             connMgr.removeInstance(instance)
 
-            var hw = self.data('hardwareManager')
-            if (hw)
-                hw.removeInstance(instance)
+            self.data('hardwareManager').removeInstance(instance)
 
             var plugin = plugins[instance]
             if (plugin && plugin.length) {
@@ -1440,10 +1432,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
 
         HARDWARE_PROFILE.addressings = []
-        var hardware = self.data('hardwareManager')
-        if (hardware) {
-            hardware.reset()
-        }
+        self.data('hardwareManager').reset()
 
         var connMgr = self.data('connectionManager')
         connMgr.reset()

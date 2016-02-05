@@ -173,43 +173,39 @@ function Desktop(elements) {
     })
     this.userSession.tryConnectingToSocial()
 
-    if (HARDWARE_PROFILE.name != null) {
-        this.hardwareManager = new HardwareManager({
-            address: function (instanceAndSymbol, addressing, callback) {
-                $.ajax({
-                    url: '/effect/parameter/address/' + instanceAndSymbol,
-                    type: 'POST',
-                    data: JSON.stringify(addressing),
-                    success: function (resp) {
-                        callback(resp)
-                    },
-                    error: function () {
-                        new Bug("Couldn't address parameter")
-                        callback(false)
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            },
-            setEnabled: function (instance, portSymbol, enabled) {
-                self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
-            },
-            renderForm: function (instance, port) {
-                context = $.extend({
-                    plugin: self.pedalboard.pedalboard('getGui', instance).effect
-                }, port)
+    this.hardwareManager = new HardwareManager({
+        address: function (instanceAndSymbol, addressing, callback) {
+            $.ajax({
+                url: '/effect/parameter/address/' + instanceAndSymbol,
+                type: 'POST',
+                data: JSON.stringify(addressing),
+                success: function (resp) {
+                    callback(resp)
+                },
+                error: function () {
+                    new Bug("Couldn't address parameter")
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+        setEnabled: function (instance, portSymbol, enabled) {
+            self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
+        },
+        renderForm: function (instance, port) {
+            context = $.extend({
+                plugin: self.pedalboard.pedalboard('getGui', instance).effect
+            }, port)
 
-                // FIXME: remove this
-                if (port.symbol == ':bypass') {
-                    return Mustache.render(TEMPLATES.bypass_addressing, context)
-                }
-
-                return Mustache.render(TEMPLATES.addressing, context)
+            // FIXME: remove this
+            if (port.symbol == ':bypass') {
+                return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
-        })
-    } else {
-        this.hardwareManager = null
-    }
+
+            return Mustache.render(TEMPLATES.addressing, context)
+        }
+    })
 
     this.isApp = false
     this.title = ''

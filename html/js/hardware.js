@@ -107,29 +107,31 @@ function HardwareManager(options) {
 
         var available = {}
 
-        var actuator, modes, usedAddressings
-        for (var i in HARDWARE_PROFILE.actuators) {
-            actuator = HARDWARE_PROFILE.actuators[i]
-            modes    = actuator.modes
+        if (HARDWARE_PROFILE.actuators) {
+            var actuator, modes, usedAddressings
+            for (var i in HARDWARE_PROFILE.actuators) {
+                actuator = HARDWARE_PROFILE.actuators[i]
+                modes    = actuator.modes
 
-            usedAddressings = self.addressingsByActuator[actuator.uri]
-            if (usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
-                continue
-            }
+                usedAddressings = self.addressingsByActuator[actuator.uri]
+                if (usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
+                    continue
+                }
 
-            if (
-                (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
-                (types.indexOf("float"      ) >= 0 && modes.search(":float:"      ) >= 0) ||
-                (types.indexOf("enumeration") >= 0 && modes.search(":enumeration:") >= 0) ||
-                (types.indexOf("logarithmic") >= 0 && modes.search(":logarithmic:") >= 0) ||
-                (types.indexOf("toggled"    ) >= 0 && modes.search(":toggled:"    ) >= 0) ||
-                (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
-                (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
-                (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
-                (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
-               )
-            {
-                available[actuator.uri] = actuator
+                if (
+                    (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
+                    (types.indexOf("float"      ) >= 0 && modes.search(":float:"      ) >= 0) ||
+                    (types.indexOf("enumeration") >= 0 && modes.search(":enumeration:") >= 0) ||
+                    (types.indexOf("logarithmic") >= 0 && modes.search(":logarithmic:") >= 0) ||
+                    (types.indexOf("toggled"    ) >= 0 && modes.search(":toggled:"    ) >= 0) ||
+                    (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
+                    (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
+                    (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
+                    (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
+                  )
+                {
+                    available[actuator.uri] = actuator
+                }
             }
         }
 
