@@ -84,7 +84,7 @@ void close_jack(void)
 
     if (gClient == nullptr)
     {
-        printf("jacklib client deactivated NOT\n");
+        printf("jack client deactivated NOT\n");
         return;
     }
 
@@ -94,7 +94,7 @@ void close_jack(void)
     jack_deactivate(client);
     jack_client_close(client);
 
-    printf("jacklib client deactivated\n");
+    printf("jack client deactivated\n");
 }
 
 // --------------------------------------------------------------------------------------------------------

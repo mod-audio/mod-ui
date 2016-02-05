@@ -270,36 +270,6 @@ class Session(object):
         self.websockets.remove(ws)
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Timer callbacks
-    # These are functions called by the IO loop at regular intervals.
-
-    # Single-shot callback that automatically connects new backend JACK MIDI ports to their hardware counterparts.
-    def jack_midi_devs_callback(self):
-        return
-        while len(self.mididevuuids) != 0:
-            subject = self.mididevuuids.pop()
-
-            ret, value, type_ = jacklib.get_property(subject, jacklib.JACK_METADATA_PRETTY_NAME)
-            if ret != 0:
-                continue
-            if type_ != b"text/plain":
-                continue
-
-            value = charPtrToString(value)
-            if not (value.endswith(" in") or value.endswith(" out")):
-                continue
-
-            mod_name  = "%s:%s" % (self.backend_client_name, value.replace(" ", "_").replace("-","_").lower())
-            midi_name = "alsa_midi:%s" % value
-
-            # All good, make connection now
-            if value.endswith(" in"):
-                jacklib.connect(self.jack_client, midi_name, mod_name)
-                jacklib.connect(self.jack_client, midi_name, self.backend_client_name+":control_in")
-            else:
-                jacklib.connect(self.jack_client, mod_name, midi_name)
-
-    # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
 
