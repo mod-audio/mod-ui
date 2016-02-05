@@ -567,8 +567,8 @@ def get_jack_data():
     if not data:
         raise Exception
     return {
-        'cpuLoad': data.cpuLoad,
-        'xruns'  : data.xruns,
+        'cpuLoad': data.contents.cpuLoad,
+        'xruns'  : data.contents.xruns,
     }
 
 def get_jack_sample_rate():

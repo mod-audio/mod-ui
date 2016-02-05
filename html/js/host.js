@@ -31,10 +31,11 @@ $('document').ready(function() {
 
         var cmd = data[0]
 
-        if (cmd == "cpu_load") {
-            var value = parseFloat(data[1])
-            $("#cpu-bar").css("width", (100.0-value).toFixed().toString()+"%")
-            $("#cpu-bar-text").text("CPU "+value.toString()+"%")
+        if (cmd == "stats") {
+            var cpuLoad = parseFloat(data[1])
+            var xruns   = parseInt(data[2])
+            $("#cpu-bar").css("width", (100.0-cpuLoad).toFixed().toString()+"%")
+            $("#cpu-bar-text").text("CPU "+cpuLoad.toString()+"%")
             return
         }
 

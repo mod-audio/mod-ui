@@ -128,8 +128,7 @@ class Host(object):
         self.pedalboard_name = ""
         self.pedalboard_size = [0,0]
 
-        self.cputimerok = True
-        self.cputimer = ioloop.PeriodicCallback(self.cputimer_callback, 1000)
+        self.statstimer = ioloop.PeriodicCallback(self.statstimer_callback, 1000)
 
         if os.path.exists("/proc/meminfo"):
             self.memfile  = open("/proc/meminfo", 'r')
@@ -220,9 +219,8 @@ class Host(object):
         def writer_check_response():
             self.connected = True
             callback(websocket)
-            self.cputimerok = True
-            self.cputimer_callback()
-            self.cputimer.start()
+            self.statstimer_callback()
+            self.statstimer.start()
 
             if self.memtimer is not None:
                 self.memtimer_callback()
@@ -251,7 +249,7 @@ class Host(object):
     def writer_connection_closed(self):
         self.writesock = None
         self.crashed = True
-        self.cputimer.stop()
+        self.statstimer.stop()
 
         if self.memtimer is not None:
             self.memtimer.stop()
@@ -348,6 +346,9 @@ class Host(object):
     def report_current_state(self, websocket):
         if websocket is None:
             return
+
+        data = get_jack_data()
+        websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
         websocket.write_message("wait_start")
 
@@ -1162,19 +1163,9 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
 
-    def cputimer_callback(self):
-        if not self.cputimerok:
-            return
-
-        def cpu_callback(resp):
-            if not resp['ok']:
-                self.cputimer.stop()
-                return
-            self.msg_callback("cpu_load %0.1f" % resp['value'])
-            self.cputimerok = True
-
-        self.cputimerok = False
-        self.send("cpu_load", cpu_callback, datatype='float_structure')
+    def statstimer_callback(self):
+        data = get_jack_data()
+        self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
     def memtimer_callback(self):
         if not self.memfile:
