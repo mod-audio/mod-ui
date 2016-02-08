@@ -27,7 +27,7 @@
 #include <mutex>
 #include <vector>
 
-#define ALSA_SOUNDCARD_ID  "hw:MOD-Duo"
+#define ALSA_SOUNDCARD_ID  "hw:MODDUO"
 #define ALSA_CONTROL_LEFT  "Left True-Bypass"
 #define ALSA_CONTROL_RIGHT "Right True-Bypass"
 
