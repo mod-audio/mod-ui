@@ -230,6 +230,15 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "truebypass") {
+            var left  = parseInt(data[1]) != 0
+            var right = parseInt(data[2]) != 0
+
+            desktop.setTrueBypassButton("Left", left)
+            desktop.setTrueBypassButton("Right", right)
+            return
+        }
+
         if (cmd == "disconnected") {
             desktop.disconnect()
             return

@@ -545,10 +545,10 @@ function Desktop(elements) {
         self.disconnect()
     })
     elements.bypassLeftButton.click(function () {
-        self.triggerTrueBypass("Left")
+        self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
     })
     elements.bypassRightButton.click(function () {
-        self.triggerTrueBypass("Right")
+        self.triggerTrueBypass("Right", !$(this).hasClass("bypassed"))
     })
 
     elements.shareButton.click(function () {
@@ -1057,14 +1057,16 @@ Desktop.prototype.showMidiDeviceList = function () {
     this.midiDevices.start()
 }
 
-Desktop.prototype.triggerTrueBypass = function (channelName) {
+Desktop.prototype.triggerTrueBypass = function (channelName, bypassed) {
     var self = this;
     $.ajax({
-        url: '/truebypass/' + channelName,
+        url: '/truebypass/' + channelName + '/' + (bypassed ? "true" : "false"),
         cache: false,
         dataType: 'json',
-        success: function (json) {
-            self.setTrueBypassButton(channelName, json);
+        success: function (ok) {
+            if (ok) {
+                self.setTrueBypassButton(channelName, bypassed);
+            }
         }
     })
 }

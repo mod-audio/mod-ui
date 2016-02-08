@@ -39,7 +39,7 @@ from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 from mod.utils import init_jack, close_jack, get_jack_data, get_jack_sample_rate
 from mod.utils import get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port
-from mod.utils import connect_jack_ports, disconnect_jack_ports
+from mod.utils import connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1
@@ -162,6 +162,10 @@ class Host(object):
 
         self.msg_callback = lambda msg:None
 
+        #set_util_callbacks(lambda a,b: self.midi_port_deleted(self,a,b),
+                           #lambda a,b: self.true_bypass_changed(self,a,b))
+        set_util_callbacks(self.midi_port_deleted, self.true_bypass_changed)
+
         # Register HMI protocol callbacks
         self._init_addressings()
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
@@ -185,6 +189,12 @@ class Host(object):
     def __del__(self):
         self.msg_callback("stop")
         self.close_jack()
+
+    def midi_port_deleted(self, name, alias):
+        print("midi_port_deleted", name, alias)
+
+    def true_bypass_changed(self, left, right):
+        self.msg_callback("truebypass %i %i" % (left, right))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
@@ -349,6 +359,7 @@ class Host(object):
 
         data = get_jack_data()
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
+        websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
 
         websocket.write_message("wait_start")
 

@@ -221,6 +221,9 @@ typedef struct {
     unsigned xruns;
 } JackData;
 
+typedef void (*JackMidiPortDeleted)(const char* name, const char* alias);
+typedef void (*TrueBypassStateChanged)(bool left, bool right);
+
 // initialize
 MOD_API void init(void);
 
@@ -285,6 +288,13 @@ MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
 MOD_API void connect_jack_ports(const char* port1, const char* port2);
 MOD_API void disconnect_jack_ports(const char* port1, const char* port2);
+
+// alsa stuff
+MOD_API bool get_truebypass_value(bool right);
+MOD_API bool set_truebypass_value(bool right, bool bypassed);
+
+// callbacks
+MOD_API void set_util_callbacks(JackMidiPortDeleted midiPortDeleted, TrueBypassStateChanged trueBypassChanged);
 
 #ifdef __cplusplus
 } // extern "C"

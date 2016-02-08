@@ -12,10 +12,10 @@ clean:
 	rm -f *.so *.o
 
 libmod_utils.so: utils_jack.cpp.o utils_lilv.cpp.o
-	$(CXX) $^ $(LDFLAGS) -shared $(shell pkg-config --libs jack lilv-0) -o $@
+	$(CXX) $^ $(LDFLAGS) -shared $(shell pkg-config --libs alsa jack lilv-0) -o $@
 
 utils_jack.cpp.o: utils_jack.cpp utils.h
-	$(CXX) $< $(CXXFLAGS) $(shell pkg-config --cflags jack) -c -o $@
+	$(CXX) $< $(CXXFLAGS) $(shell pkg-config --cflags alsa jack) -c -o $@
 
 utils_lilv.cpp.o: utils_lilv.cpp utils.h
 	$(CXX) $< $(CXXFLAGS) $(shell pkg-config --cflags lilv-0) -c -o $@

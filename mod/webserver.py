@@ -59,7 +59,8 @@ from mod.utils import (init as lv2_init,
                        get_plugin_info,
                        get_plugin_info_mini,
                        get_all_pedalboards,
-                       get_pedalboard_info)
+                       get_pedalboard_info,
+                       set_truebypass_value)
 
 @gen.coroutine
 def install_bundles_in_tmp_dir(callback):
@@ -979,20 +980,11 @@ class Ping(web.RequestHandler):
         self.finish()
 
 class TrueBypass(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, channelName):
-        proc = subprocess.Popen(['amixer', 'sset', '-D', 'hw:MODDUO', '%s True-Bypass' % channelName, 'toggle'],
-                                stdout=subprocess.PIPE)
-
-        def proc_callback(fileno, event):
-            if proc.poll() is not None:
-                ioloop.remove_handler(fileno)
-            self.write(json.dumps(True))
-            self.finish()
-
-        ioloop = tornado.ioloop.IOLoop.instance()
-        ioloop.add_handler(proc.stdout.fileno(), proc_callback, 16)
+    def get(self, channelName, bypassed):
+        resp = set_truebypass_value(channelName == "Right", bypassed == "true")
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(resp))
+        self.finish()
 
 class SysMonProcessList(web.RequestHandler):
     @web.asynchronous
@@ -1298,7 +1290,7 @@ application = web.Application(
 
             (r"/ping/?", Ping),
 
-            (r"/truebypass/(Left|Right)", TrueBypass),
+            (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
 
             (r"/(index.html)?$", EditionLoader),
             (r"/([a-z]+\.html)$", TemplateHandler),

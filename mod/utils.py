@@ -350,6 +350,9 @@ class JackData(Structure):
         ("xruns", c_uint),
     ]
 
+JackMidiPortDeleted = CFUNCTYPE(None, c_char_p, c_char_p)
+TrueBypassStateChanged = CFUNCTYPE(None, c_bool, c_bool)
+
 c_struct_types = (PluginAuthor,
                   PluginGUI,
                   PluginGUI_Mini,
@@ -447,6 +450,15 @@ utils.connect_jack_ports.restype  = None
 
 utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.disconnect_jack_ports.restype  = None
+
+utils.get_truebypass_value.argtypes = [c_bool]
+utils.get_truebypass_value.restype  = c_bool
+
+utils.set_truebypass_value.argtypes = [c_bool, c_bool]
+utils.set_truebypass_value.restype  = c_bool
+
+utils.set_util_callbacks.argtypes = [JackMidiPortDeleted, TrueBypassStateChanged]
+utils.set_util_callbacks.restype  = None
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -591,5 +603,23 @@ def connect_jack_ports(port1, port2):
 
 def disconnect_jack_ports(port1, port2):
     utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8"))
+
+# ------------------------------------------------------------------------------------------------------------
+# alsa stuff
+
+def get_truebypass_value(right):
+    return bool(utils.get_truebypass_value(right))
+
+def set_truebypass_value(right, bypassed):
+    return bool(utils.set_truebypass_value(right, bypassed))
+
+# ------------------------------------------------------------------------------------------------------------
+# callbacks
+
+def set_util_callbacks(midiPortDeleted, trueBypassChanged):
+    global midiPortDeletedCb, trueBypassChangedCb
+    midiPortDeletedCb   = JackMidiPortDeleted(midiPortDeleted)
+    trueBypassChangedCb = TrueBypassStateChanged(trueBypassChanged)
+    utils.set_util_callbacks(midiPortDeletedCb, trueBypassChangedCb)
 
 # ------------------------------------------------------------------------------------------------------------
