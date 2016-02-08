@@ -41,8 +41,8 @@ static jack_client_t* gClient = nullptr;
 static volatile unsigned gXrunCount = 0;
 static const char** gPortListRet = nullptr;
 
-static std::mutex gPortRegisterMutex;
-static std::vector<jack_port_id_t> gRegisteredPorts;
+static std::mutex gPortUnregisterMutex;
+static std::vector<std::string> gUnregisteredPorts;
 
 static snd_mixer_t* gAlsaMixer = nullptr;
 static snd_mixer_elem_t* gAlsaControlLeft = nullptr;
@@ -64,13 +64,18 @@ static bool _get_alsa_switch_value(snd_mixer_elem_t* const elem)
 
 // --------------------------------------------------------------------------------------------------------
 
-static void JackPortRegistration(jack_port_id_t port, int reg, void*)
+static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 {
-    if (reg != 0 && jack_midi_port_deleted_cb != nullptr)
+    if (reg != 0 || jack_midi_port_deleted_cb == nullptr)
         return;
 
-    const std::lock_guard<std::mutex> clg(gPortRegisterMutex);
-    gRegisteredPorts.push_back(port);
+    if (const jack_port_t* const port = jack_port_by_id(gClient, port_id))
+    {
+        const std::string portName(jack_port_name(port));
+
+        const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
+        gUnregisteredPorts.push_back(portName);
+    }
 }
 
 static int JackXRun(void*)
@@ -181,51 +186,28 @@ void close_jack(void)
 JackData* get_jack_data(void)
 {
     static JackData data;
-    static std::vector<jack_port_id_t> localPorts;
-
-    static char  aliases[0xff][2];
-    static char* aliasesptr[2] = {
-        aliases[0],
-        aliases[1]
-    };
-    static const char* nc = "";
+    static std::vector<std::string> localPorts;
 
     if (gClient != nullptr)
     {
         data.cpuLoad = jack_cpu_load(gClient);
         data.xruns   = gXrunCount;
 
-        // See if any new ports have been registered
+        if (jack_midi_port_deleted_cb != nullptr)
         {
-            const std::lock_guard<std::mutex> clg(gPortRegisterMutex);
+            // See if any new ports have been unregistered
+            {
+                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
 
-            if (gRegisteredPorts.size() > 0)
-                gRegisteredPorts.swap(localPorts);
+                if (gUnregisteredPorts.size() > 0)
+                    gUnregisteredPorts.swap(localPorts);
+            }
+
+            for (const std::string& portName : localPorts)
+                jack_midi_port_deleted_cb(portName.c_str());
+
+            localPorts.clear();
         }
-
-        for (const jack_port_id_t& port_id : localPorts)
-        {
-            const jack_port_t* const port(jack_port_by_id(gClient, port_id));
-
-            if (port == nullptr)
-                continue;
-            if ((jack_port_flags(port) & JackPortIsPhysical) == 0)
-                continue;
-            if (std::strcmp(jack_port_type(port), JACK_DEFAULT_MIDI_TYPE))
-                continue;
-
-            const char* const portName = jack_port_name(port);
-            const char* portAlias;
-
-            if (jack_port_get_aliases(port, aliasesptr) > 0)
-                portAlias = aliases[0];
-            else
-                portAlias = nc;
-
-            jack_midi_port_deleted_cb(portName, portAlias);
-        }
-
-        localPorts.clear();
     }
     else
     {

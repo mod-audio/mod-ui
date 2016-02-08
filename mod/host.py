@@ -35,6 +35,7 @@ import os, json, socket, logging
 from mod import get_hardware, symbolify
 from mod.bank import list_banks, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
+from mod.utils import charPtrToString
 from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
 from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
 from mod.utils import init_jack, close_jack, get_jack_data, get_jack_sample_rate
@@ -162,8 +163,6 @@ class Host(object):
 
         self.msg_callback = lambda msg:None
 
-        #set_util_callbacks(lambda a,b: self.midi_port_deleted(self,a,b),
-                           #lambda a,b: self.true_bypass_changed(self,a,b))
         set_util_callbacks(self.midi_port_deleted, self.true_bypass_changed)
 
         # Register HMI protocol callbacks
@@ -190,8 +189,26 @@ class Host(object):
         self.msg_callback("stop")
         self.close_jack()
 
-    def midi_port_deleted(self, name, alias):
-        print("midi_port_deleted", name, alias)
+    def midi_port_deleted(self, name):
+        name = charPtrToString(name)
+        removed_ports = []
+
+        for ports in self.connections:
+            jackports = (self._fix_host_connection_port(ports[0]), self._fix_host_connection_port(ports[1]))
+            if name not in jackports:
+                continue
+            self.send("disconnect %s %s" % (jackports[0], jackports[1]), lambda r:None, datatype='boolean')
+            removed_ports.append(ports)
+
+        for ports in removed_ports:
+            self.connections.remove(ports)
+            self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+
+        self.msg_callback("remove_hw_port /graph/%s" % (name.replace("system:","",1)))
+
+        for port in self.midiports:
+            if name == port or (";" in port and name in port.split(";",1)):
+                self.midiports.remove(port)
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
@@ -358,7 +375,7 @@ class Host(object):
             return
 
         data = get_jack_data()
-        websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
+        websocket.write_message("stats %0.1f %i" % (max((data['cpuLoad']-3.8462)*1.04,0.0), data['xruns']))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
 
         websocket.write_message("wait_start")
@@ -1176,7 +1193,7 @@ _:b%i
 
     def statstimer_callback(self):
         data = get_jack_data()
-        self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
+        self.msg_callback("stats %0.1f %i" % (max((data['cpuLoad']-3.8462)*1.04,0.0), data['xruns']))
 
     def memtimer_callback(self):
         if not self.memfile:

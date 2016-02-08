@@ -1362,19 +1362,27 @@ JqueryClass('pedalboard', {
             var inputs  = self.data('hwInputs')
             var outputs = self.data('hwOutputs')
 
+            var hwsToRemove = []
             inputs.forEach(function (hw) {
                 if (hw.attr("mod-port-symbol") == instance) {
-                    hw.remove()
-                    inputs.pop(hw)
+                    hwsToRemove.push(hw)
                 }
             })
+            for (var i in hwsToRemove) {
+                hwsToRemove[i].remove()
+                remove_from_array(inputs, hwsToRemove[i])
+            }
 
+            hwsToRemove = []
             outputs.forEach(function (hw) {
                 if (hw.attr("mod-port-symbol") == instance) {
-                    hw.remove()
-                    outputs.pop(hw)
+                    hwsToRemove.push(hw)
                 }
             })
+            for (var i in hwsToRemove) {
+                hwsToRemove[i].remove()
+                remove_from_array(outputs, hwsToRemove[i])
+            }
 
             self.pedalboard('positionHardwarePorts')
         }

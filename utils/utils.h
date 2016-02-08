@@ -221,7 +221,7 @@ typedef struct {
     unsigned xruns;
 } JackData;
 
-typedef void (*JackMidiPortDeleted)(const char* name, const char* alias);
+typedef void (*JackMidiPortDeleted)(const char* name);
 typedef void (*TrueBypassStateChanged)(bool left, bool right);
 
 // initialize

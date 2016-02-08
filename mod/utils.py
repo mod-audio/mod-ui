@@ -350,7 +350,7 @@ class JackData(Structure):
         ("xruns", c_uint),
     ]
 
-JackMidiPortDeleted = CFUNCTYPE(None, c_char_p, c_char_p)
+JackMidiPortDeleted = CFUNCTYPE(None, c_char_p)
 TrueBypassStateChanged = CFUNCTYPE(None, c_bool, c_bool)
 
 c_struct_types = (PluginAuthor,
