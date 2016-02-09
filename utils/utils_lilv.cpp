@@ -480,7 +480,7 @@ void _sort_presets_data(PluginPreset presets[], unsigned int count)
     unsigned int pvt = 0;
 
     // swap a randomly selected value to the last node
-    _swap_preset_data(presets+(rand() % count), presets+count-1);
+    _swap_preset_data(presets+(rand() % count), presets+(count-1));
 
     // reset the pivot index to zero, then scan
     for (unsigned int i=0; i<count-1; ++i)
@@ -497,12 +497,37 @@ void _sort_presets_data(PluginPreset presets[], unsigned int count)
     _sort_presets_data(presets+pvt, count - pvt);
 }
 
+// adjust bundle safely to lilv, as it wants the last character as the separator
+// this also ensures paths are always written the same way
+const char* _get_safe_bundlepath(const char* const bundle, size_t& bundlepathsize)
+{
+    static char tmppath[PATH_MAX+2];
+    char* bundlepath = realpath(bundle, tmppath);
+
+    if (bundlepath == nullptr)
+    {
+        bundlepathsize = 0;
+        return nullptr;
+    }
+
+    bundlepathsize = strlen(bundlepath);
+
+    if (bundlepathsize <= 1)
+        return nullptr;
+
+    if (bundlepath[bundlepathsize] != OS_SEP)
+    {
+        bundlepath[bundlepathsize  ] = OS_SEP;
+        bundlepath[bundlepathsize+1] = '\0';
+    }
+
+    return bundlepath;
+}
+
 // refresh everything
 // plugins are not truly scanned here, only later per request
 void _refresh()
 {
-    char tmppath[PATH_MAX+2];
-
     BUNDLES.clear();
     PLUGNFO.clear();
     PLUGNFO_Mini.clear();
@@ -530,36 +555,28 @@ void _refresh()
             if (! lilv_node_is_uri(bundlenode))
                 continue;
 
-            char* bundleparsed;
-            char* tmp;
+            char* lilvparsed;
+            const char* bundlepath;
 
-            tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
-            if (tmp == nullptr)
+            lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
+            if (lilvparsed == nullptr)
                 continue;
 
-            bundleparsed = dirname(tmp);
-            if (bundleparsed == nullptr)
+            bundlepath = dirname(lilvparsed);
+            if (bundlepath == nullptr)
             {
-                lilv_free(tmp);
+                lilv_free(lilvparsed);
                 continue;
             }
 
-            bundleparsed = realpath(bundleparsed, tmppath);
-            lilv_free(tmp);
-            if (bundleparsed == nullptr)
+            size_t bundlepathsize;
+            bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
+            lilv_free(lilvparsed);
+
+            if (bundlepath == nullptr)
                 continue;
 
-            const size_t size = strlen(bundleparsed);
-            if (size <= 1)
-                continue;
-
-            if (bundleparsed[size] != OS_SEP)
-            {
-                bundleparsed[size  ] = OS_SEP;
-                bundleparsed[size+1] = '\0';
-            }
-
-            const std::string bundlestr = bundleparsed;
+            const std::string bundlestr = bundlepath;
 
             if (std::find(BUNDLES.begin(), BUNDLES.end(), bundlestr) == BUNDLES.end())
                 BUNDLES.push_back(bundlestr);
@@ -1282,24 +1299,15 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // bundles
 
     {
-        char tmppath[PATH_MAX+2];
         std::vector<std::string> bundles;
 
-        if (char* const bundle2 = realpath(bundle, tmppath))
+        size_t bundlepathsize;
+        const char* bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
+
+        if (bundlepath != nullptr)
         {
-            const size_t size = strlen(bundle2);
-
-            if (size > 1)
-            {
-                if (bundle2[size] != OS_SEP)
-                {
-                    bundle2[size  ] = OS_SEP;
-                    bundle2[size+1] = '\0';
-                }
-
-                const std::string bundlestr = bundle2;
-                bundles.push_back(bundlestr);
-            }
+            const std::string bundlestr = bundlepath;
+            bundles.push_back(bundlestr);
         }
 
         if (const LilvNodes* const bundlenodes = lilv_plugin_get_data_uris(p))
@@ -1313,36 +1321,25 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 if (! lilv_node_is_uri(bundlenode))
                     continue;
 
-                char* bundleparsed;
-                char* tmp;
-
-                tmp = (char*)lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
-                if (tmp == nullptr)
+                char* lilvparsed;
+                lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
+                if (lilvparsed == nullptr)
                     continue;
 
-                bundleparsed = dirname(tmp);
-                if (bundleparsed == nullptr)
+                bundlepath = dirname(lilvparsed);
+                if (bundlepath == nullptr)
                 {
-                    lilv_free(tmp);
+                    lilv_free(lilvparsed);
                     continue;
                 }
 
-                bundleparsed = realpath(bundleparsed, tmppath);
-                lilv_free(tmp);
-                if (bundleparsed == nullptr)
+                bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
+                lilv_free(lilvparsed);
+
+                if (bundlepath == nullptr)
                     continue;
 
-                const size_t size = strlen(bundleparsed);
-                if (size <= 1)
-                    continue;
-
-                if (bundleparsed[size] != OS_SEP)
-                {
-                    bundleparsed[size  ] = OS_SEP;
-                    bundleparsed[size+1] = '\0';
-                }
-
-                const std::string bundlestr = bundleparsed;
+                const std::string bundlestr = bundlepath;
 
                 if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
                     bundles.push_back(bundlestr);
@@ -3209,23 +3206,11 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 {
     static PedalboardInfo info;
 
-    // lilv wants the last character as the separator
-    char tmppath[PATH_MAX+2];
-    char* bundlepath = realpath(bundle, tmppath);
+    size_t bundlepathsize;
+    const char* const bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
 
     if (bundlepath == nullptr)
         return nullptr;
-
-    const size_t bundlepathsize = strlen(bundlepath);
-
-    if (bundlepathsize <= 1)
-        return nullptr;
-
-    if (bundlepath[bundlepathsize] != OS_SEP)
-    {
-        bundlepath[bundlepathsize  ] = OS_SEP;
-        bundlepath[bundlepathsize+1] = '\0';
-    }
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_specifications(w);
@@ -3684,24 +3669,11 @@ int* get_pedalboard_size(const char* const bundle)
 {
     static int size[2] = { 0, 0 };
 
-    // lilv wants the last character as the separator
-    char tmppath[PATH_MAX+2];
-    char* bundlepath = realpath(bundle, tmppath);
+    size_t bundlepathsize;
+    const char* const bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
 
     if (bundlepath == nullptr)
         return nullptr;
-
-    {
-        const size_t bsize = strlen(bundlepath);
-        if (bsize <= 1)
-            return nullptr;
-
-        if (bundlepath[bsize] != OS_SEP)
-        {
-            bundlepath[bsize  ] = OS_SEP;
-            bundlepath[bsize+1] = '\0';
-        }
-    }
 
     LilvWorld* const w = lilv_world_new();
     LilvNode*  const b = lilv_new_file_uri(w, nullptr, bundlepath);
@@ -3842,6 +3814,42 @@ StatePortValue* get_state_port_values(const char* const state)
 }
 
 // --------------------------------------------------------------------------------------------------------
+
+const char* const* list_plugins_in_bundle(const char* bundle)
+{
+    size_t bundlepathsize;
+    const char* const bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
+
+    if (bundlepath == nullptr)
+        return nullptr;
+
+    LilvWorld* const w = lilv_world_new();
+    LilvNode*  const b = lilv_new_file_uri(w, nullptr, bundlepath);
+    lilv_world_load_bundle(w, b);
+    lilv_node_free(b);
+
+    const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
+
+    if (lilv_plugins_size(plugins) == 0)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    const LilvPlugin* p;
+    std::vector<std::string> pluginURIs;
+
+    LILV_FOREACH(plugins, itpls, plugins)
+    {
+        p = lilv_plugins_get(plugins, itpls);
+
+        const std::string pluginURI(lilv_node_as_uri(lilv_plugin_get_uri(p)));
+        pluginURIs.push_back(pluginURI);
+    }
+
+    lilv_world_free(w);
+    return nullptr;
+}
 
 const char* file_uri_parse(const char* const fileuri)
 {

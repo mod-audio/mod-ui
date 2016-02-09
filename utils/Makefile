@@ -24,7 +24,7 @@ test.cpp.o: test.cpp utils.h
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 test: utils_jack.cpp.o utils_lilv.cpp.o test.cpp.o
-	$(CXX) $^ $(LDFLAGS) $(shell pkg-config --libs jack lilv-0) -o $@
+	$(CXX) $^ $(LDFLAGS) $(shell pkg-config --libs alsa jack lilv-0) -o $@
 
 test-run: test
 	valgrind --leak-check=full --show-leak-kinds=all --partial-loads-ok=yes ./test

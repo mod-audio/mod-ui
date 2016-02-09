@@ -29,7 +29,7 @@
 
 void scanPlugins()
 {
-#if 0
+#if 1
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
@@ -47,7 +47,7 @@ void scanPlugins()
     }
 #endif
 
-#if 0
+#if 1
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
     {
         for (int i=0; pedalboards[i] != nullptr; ++i)
@@ -67,7 +67,7 @@ void scanPlugins()
 
 int main()
 {
-#if 0
+#if 1
     init();
     scanPlugins();
 # if 1
