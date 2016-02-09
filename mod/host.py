@@ -37,7 +37,7 @@ from mod.bank import list_banks, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import charPtrToString
 from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
-from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values
+from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle
 from mod.utils import init_jack, close_jack, get_jack_data, get_jack_sample_rate
 from mod.utils import get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port
 from mod.utils import connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks
@@ -484,24 +484,35 @@ class Host(object):
     def add_bundle(self, bundlepath, callback):
         if is_bundle_loaded(bundlepath):
             print("SKIPPED add_bundle, already in world")
-            callback([])
+            callback((False, "Bundle already loaded"))
             return
 
         def host_callback(ok):
             plugins = add_bundle_to_lilv_world(bundlepath)
-            callback(plugins)
+            callback((True, plugins))
 
         self.send("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
-    def remove_bundle(self, bundlepath, callback):
+    def remove_bundle(self, bundlepath, isPluginBundle, callback):
+        print("remove_bundle", bundlepath, isPluginBundle)
+
         if not is_bundle_loaded(bundlepath):
             print("SKIPPED remove_bundle, not in world")
-            callback([])
+            callback((False, "Bundle not loaded"))
             return
+
+        if isPluginBundle and len(self.plugins) > 0:
+            plugins = list_plugins_in_bundle(bundlepath)
+            print(plugins)
+
+            for plugin in self.plugins.values():
+                if plugin['uri'] in plugins:
+                    callback((False, "Plugin is currently in use, cannot remove"))
+                    return
 
         def host_callback(ok):
             plugins = remove_bundle_from_lilv_world(bundlepath)
-            callback(plugins)
+            callback((True, plugins))
 
         self.send("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
@@ -703,7 +714,7 @@ class Host(object):
             self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol), host_callback, datatype='boolean')
 
         if os.path.exists(presetbundle):
-            self.remove_bundle(presetbundle, start)
+            self.remove_bundle(presetbundle, False, start)
 
             # if presetbundle already exists, generate a new random bundle path
             #from random import randint

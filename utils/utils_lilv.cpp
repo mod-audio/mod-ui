@@ -3848,6 +3848,28 @@ const char* const* list_plugins_in_bundle(const char* bundle)
     }
 
     lilv_world_free(w);
+
+    if (size_t count = pluginURIs.size())
+    {
+        if (_bundles_ret != nullptr)
+        {
+            for (int i=0; _bundles_ret[i] != nullptr; ++i)
+                free((void*)_bundles_ret[i]);
+            delete[] _bundles_ret;
+        }
+
+        _bundles_ret = new const char*[count+1];
+        memset(_bundles_ret, 0, sizeof(const char*) * (count+1));
+
+        count = 0;
+        for (const std::string& uri : pluginURIs)
+            _bundles_ret[count++] = strdup(uri.c_str());
+
+        pluginURIs.clear();
+
+        return _bundles_ret;
+    }
+
     return nullptr;
 }
 

@@ -64,6 +64,7 @@ from mod.utils import (init as lv2_init,
 
 @gen.coroutine
 def install_bundles_in_tmp_dir(callback):
+    error     = ""
     removed   = []
     installed = []
 
@@ -72,18 +73,34 @@ def install_bundles_in_tmp_dir(callback):
         bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
 
         if os.path.exists(bundlepath):
-            plugins  = yield gen.Task(SESSION.host.remove_bundle, bundlepath)
-            removed += plugins
-            shutil.rmtree(bundlepath)
+            resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
+
+            if resp:
+                removed += data
+                shutil.rmtree(bundlepath)
+            else:
+                error = data
+                break
 
         shutil.move(tmppath, bundlepath)
-        plugins    = yield gen.Task(SESSION.host.add_bundle, bundlepath)
-        installed += plugins
+        resp, data = yield gen.Task(SESSION.host.add_bundle, bundlepath)
 
-    if len(installed) == 0:
+        if resp:
+            installed += data
+        else:
+            error = data
+            # remove bundle that produces errors
+            shutil.rmtree(bundlepath)
+            break
+
+    if error or len(installed) == 0:
+        # Delete old temp files
+        for bundle in os.listdir(DOWNLOAD_TMP_DIR):
+            shutil.rmtree(os.path.join(DOWNLOAD_TMP_DIR, bundle))
+
         resp = {
             'ok'     : False,
-            'error'  : "No plugins found in bundle",
+            'error'  : error or "No plugins found in bundle",
             'removed': removed,
         }
     else:
@@ -614,34 +631,44 @@ class AtomWebSocket(websocket.WebSocketHandler):
         #self.set_header('Content-Type', 'application/json')
         #self.write(json.dumps(result))
 
-# TODO
 class PackageUninstall(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        print(self.request.body)
         bundles = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        error   = ""
         removed = []
 
         for bundlepath in bundles:
-            # FIXME: check if all bundles are inside LV2_PATH
-            # we don't want users sending test messages and deleting randomly system files!
             if os.path.exists(bundlepath) and os.path.isdir(bundlepath):
-                plugins  = yield gen.Task(SESSION.host.remove_bundle, bundlepath)
-                removed += plugins
-                shutil.rmtree(bundlepath)
+                resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
 
-        if len(removed) > 0:
+                if resp:
+                    removed += data
+                    shutil.rmtree(bundlepath)
+                else:
+                    error = data
+                    break
+
+        if error:
+            resp = {
+                'ok'     : False,
+                'error'  : error,
+                'removed': removed,
+            }
+        elif len(removed) == 0:
+            resp = {
+                'ok'     : False,
+                'error'  : "No plugins found",
+                'removed': [],
+            }
+        else:
             resp = {
                 'ok'     : True,
                 'removed': removed,
             }
-        else:
-            resp = {
-                'ok'   : False,
-                'error': "No plugins found",
-            }
 
+        print(resp)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
         self.finish()
@@ -735,22 +762,18 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         callback()
 
 class PedalboardRemove(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+
         if not os.path.exists(bundlepath):
             self.write(json.dumps(False))
             self.finish()
             return
 
-        def removed_callback(plugins):
-            shutil.rmtree(bundlepath)
-            remove_pedalboard_from_banks(bundlepath)
-            self.write(json.dumps(True))
-            self.finish()
-
-        SESSION.host.remove_bundle(bundlepath, removed_callback)
+        shutil.rmtree(bundlepath)
+        remove_pedalboard_from_banks(bundlepath)
+        self.write(json.dumps(True))
+        self.finish()
 
 class PedalboardSize(web.RequestHandler):
     def get(self):

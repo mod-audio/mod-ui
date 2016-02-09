@@ -979,12 +979,14 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 data: JSON.stringify(plugin.bundles),
                 method: 'POST',
                 success: function(resp) {
-                    desktop.rescanPlugins()
-                    if (callback)
-                        callback(resp)
+                    if (resp.ok) {
+                        callback()
+                    } else {
+                        new Notification('error', "Could not uninstall effect: " + resp.error)
+                    }
                 },
                 error: function () {
-                    new Notification('error', "Could not uninstall plugin")
+                    new Notification('error', "Could not uninstall effect")
                 },
                 cache: false,
                 dataType: 'json'

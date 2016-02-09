@@ -531,16 +531,14 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-install').hide()
                 info.find('.js-remove').show().click(function () {
                     // Remove plugin
-                    self.data('removePlugin')(plugin, function (ok) {
-                        if (ok) {
-                            info.window('close')
+                    self.data('removePlugin')(plugin, function () {
+                        info.window('close')
 
-                            delete desktop.pluginIndexerData[plugin.uri].installedVersion
-                            desktop.pluginIndexerData[plugin.uri].status = 'blocked'
+                        delete desktop.pluginIndexerData[plugin.uri].installedVersion
+                        desktop.pluginIndexerData[plugin.uri].status = 'blocked'
 
-                            desktop.rescanPlugins()
-                            self.cloudPluginBox('search')
-                        }
+                        desktop.rescanPlugins()
+                        self.cloudPluginBox('search')
                     })
                 })
             } else {

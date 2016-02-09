@@ -418,6 +418,9 @@ utils.get_pedalboard_size.restype  = POINTER(c_int)
 utils.get_state_port_values.argtypes = [c_char_p]
 utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
+utils.list_plugins_in_bundle.argtypes = [c_char_p]
+utils.list_plugins_in_bundle.restype  = POINTER(c_char_p)
+
 utils.file_uri_parse.argtypes = [c_char_p]
 utils.file_uri_parse.restype  = c_char_p
 
@@ -549,6 +552,10 @@ def get_pedalboard_size(bundle):
 def get_state_port_values(state):
     values = structPtrToList(utils.get_state_port_values(state.encode("utf-8")))
     return dict((v['symbol'], v['value']) for v in values)
+
+# list plugins present in a single bundle
+def list_plugins_in_bundle(bundle):
+    return charPtrPtrToStringList(utils.list_plugins_in_bundle(bundle.encode("utf-8")))
 
 # ------------------------------------------------------------------------------------------------------------
 

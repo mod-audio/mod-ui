@@ -34,33 +34,33 @@ function InstallationQueue() {
         notification.bar(0)
     }
 
-    // TODO rename to installUrl
-    this.install = function (effectUrl, callback) {
+    // TODO rename to installURI
+    this.install = function (effectURI, callback) {
         if (queue.length == 0) {
             self.openNotification()
         }
 
         $.ajax({
-            'url': SITEURLNEW + '/lv2/plugins?uri=' + escape(effectUrl),
-            'success': function (effects) {
+            url: SITEURLNEW + '/lv2/plugins?uri=' + escape(effectURI),
+            success: function (effects) {
                 if (effects.length == 0) {
-                    new Notification('error', sprintf("Can't find effect %s to install", effectUrl))
+                    new Notification('error', "Can't find effect to install: " + effectURI, 5000)
                     if (queue.length == 0)
-                        notification.close()
+                        notification.closeAfter(3000)
+                    return
                 }
                 var effect = effects[0]
                 queue.push(effect)
                 callbacks.push(callback)
                 if (queue.length == 1)
                     self.installNext()
-
             },
-            'error': function () {
-                new Notification('error', 'Installation failed')
+            error: function () {
+                new Notification('error', 'Download failed', 5000)
                 if (queue.length == 0)
-                    notification.closeAfter(5000)
+                    notification.closeAfter(3000)
             },
-            'dataType': 'json'
+            dataType: 'json',
         })
 
     }
@@ -87,8 +87,8 @@ function InstallationQueue() {
                 self.installNext()
             } else {
                 notification.closeAfter(3000)
+                desktop.rescanPlugins()
             }
-            desktop.rescanPlugins()
 
             $.ajax({
                 url: '/effect/get',
@@ -105,76 +105,39 @@ function InstallationQueue() {
             })
         }
 
-        var abort = function (reason) {
-            queue.shift()
-            callbacks.shift()
-            notification.close()
-            new Notification('error', "Could not install effect: " + reason)
-        }
-
-        if (results[effect._id]) {
-            finish()
-            return
-        }
-
-        var installationMsg = 'Installing package ' + effect['name'] + ' (contains ' + effect.name + ')'
+        var installationMsg = 'Installing package ' + effect.bundle_name + ' (contains ' + effect.name + ')'
         notification.html(installationMsg)
         notification.type('warning')
         notification.bar(1)
 
-        var trans = new SimpleTransference(effect['bundle_file_href']+"duo/",
-            '/effect/install')
+        var trans = new SimpleTransference(effect['bundle_file_href']+"duo/", '/effect/install')
 
         trans.reportStatus = function (status) {
             notification.bar(status.percent)
         }
 
-        trans.reportFinished = function (result) {
-            console.log(result)
-            notification.html(installationMsg + ' - OK!')
-            notification.bar(100)
-            notification.type('success')
-            for (var i = 0; i < result.length; i++) {
-                results[result[i]] = true
-                self.setRelease(result[i])
-            }
-            finish()
+        trans.reportError = function (reason) {
+            queue.shift()
+            callbacks.shift()
+            notification.close()
+            new Notification('error', "Could not install effect: " + reason, 5000)
         }
 
-        trans.reportError = abort
+        trans.reportFinished = function (resp) {
+            var result = resp.result
+            if (result.ok) {
+                notification.html(installationMsg + ' - OK!')
+                notification.bar(100)
+                notification.type('success')
+                finish()
+            } else {
+                queue.shift()
+                callbacks.shift()
+                notification.close()
+                new Notification('error', "Could not install effect: " + result.error, 5000)
+            }
+        }
 
         trans.start()
-    }
-
-    this.setRelease = function (effectId) {
-        var saveRelease = function (url, release) {
-            $.ajax({
-                url: '/effect/set/release/',
-                data: {
-                    url: url,
-                    release: release
-                },
-                method: 'POST'
-            })
-        }
-        var getRelease = function (url) {
-            $.ajax({
-                url: SITEURL + '/effect/get/',
-                data: {
-                    url: url
-                },
-                success: function (effect) {
-                    saveRelease(effect['url'], effect['release'])
-                },
-                dataType: 'json'
-            })
-        }
-        $.ajax({
-            url: '/effect/get/' + effectId,
-            success: function (effect) {
-                getRelease(effect['url'])
-            },
-            dataType: 'json'
-        })
     }
 }
