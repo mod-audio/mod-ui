@@ -15,6 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// add this to plugin data when cloud fails
+var kDummyPluginData = {
+    bundles: [""],
+    ports: {
+        control: {
+            input: []
+        },
+    },
+}
+
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -198,9 +208,10 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURLNEW + "/lv2/plugins/",
+            url: SITEURLNEW + "/lv2/plugins/search",
             data: {
-                search: query.term
+                q: query.term,
+                summary: "true",
             },
             success: function (plugins) {
                 if (stableOnly) {
@@ -265,7 +276,7 @@ JqueryClass('cloudPluginBox', {
                     }
                     desktop.pluginIndexerData = allplugins
 
-                    results.local = $.extend({}, allplugins)
+                    results.local = $.extend({}, allplugins) // deep copy instead of link/reference
                     if (results.cloud != null)
                         renderResults()
                 },
@@ -318,9 +329,10 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURLNEW + "/lv2/plugins/",
+            url: SITEURLNEW + "/lv2/plugins/search",
             data: {
-                search: query.term
+                q: query.term,
+                summary: "true",
             },
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
@@ -500,9 +512,8 @@ JqueryClass('cloudPluginBox', {
                 return parts.join(".");
             }
 
-            for(var i = 0; i< plugin.ports.control.input.length; i++) {  // formating numbers and flooring ranges up to two decimal cases
+            for (var i = 0; i < plugin.ports.control.input.length; i++) {  // formating numbers and flooring ranges up to two decimal cases
                 plugin.ports.control.input[i].formatted = {}
-
                 plugin.ports.control.input[i].formatted.default = formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100);
                 plugin.ports.control.input[i].formatted.maximum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100);
                 plugin.ports.control.input[i].formatted.minimum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100);
@@ -618,7 +629,7 @@ JqueryClass('cloudPluginBox', {
                     uri: plugin.uri
                 },
                 success: function (pluginData) {
-                    plugin = $.extend(plugin, pluginData)
+                    plugin = $.extend(pluginData, plugin)
                     localChecked = true
                     showInfo()
                 },
@@ -626,33 +637,31 @@ JqueryClass('cloudPluginBox', {
             })
         }
 
-        if (plugin.latestVersion) {
-            cloudChecked = true
-        } else {
-            $.ajax({
-                url: SITEURLNEW + "/lv2/plugins",
-                data: {
-                    uri: plugin.uri
-                },
-                success: function (pluginData) {
-                    if (pluginData && Object.keys(pluginData).length > 0) {
-                        plugin.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release_number]
-                    } else {
-                        plugin.latestVersion = null
-                    }
-                    cloudChecked = true
-                    showInfo()
-                },
-                error: function () {
+        // always get cloud plugin info
+        $.ajax({
+            url: SITEURLNEW + "/lv2/plugins",
+            data: {
+                uri: plugin.uri
+            },
+            success: function (pluginData) {
+                if (pluginData && pluginData.length > 0) {
+                    plugin = $.extend(pluginData[0], plugin)
+                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release_number]
+                } else {
+                    plugin = $.extend(kDummyPluginData, plugin)
                     plugin.latestVersion = null
-                    cloudChecked = true
-                    showInfo()
-                },
-                dataType: 'json'
-            })
-        }
-
-        showInfo()
+                }
+                cloudChecked = true
+                showInfo()
+            },
+            error: function () {
+                plugin = $.extend(kDummyPluginData, plugin)
+                plugin.latestVersion = null
+                cloudChecked = true
+                showInfo()
+            },
+            dataType: 'json'
+        })
     },
 })
 
