@@ -27,8 +27,8 @@ function FeedManager(options) {
 
     this.update = function () {
         $.ajax({
-            //url: SITEURLNEW + '/social/posts/',
-            url: SITEURLNEW + '/pedalboards/',
+            //url: SITEURL + '/social/posts/',
+            url: SITEURL + '/pedalboards/',
             headers : { 'Authorization' : 'MOD ' + self.token },
             success: function (events) {
                 for (var i = 0; i < events.length; i++) {

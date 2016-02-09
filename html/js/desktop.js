@@ -113,7 +113,7 @@ function Desktop(elements) {
         }
 
         $.ajax({
-            url: SITEURLNEW + '/users/' + user_id,
+            url: SITEURL + '/users/' + user_id,
             headers : { 'Authorization' : 'MOD ' + self.access_token },
             success: function (data) {
                 callback(data)
@@ -300,9 +300,9 @@ function Desktop(elements) {
         {
             $.ajax({
                 'method': 'GET',
-                'url': SITEURLNEW + '/pedalboard/search/?term=' + escape(query),
+                'url': SITEURL + '/pedalboard/search/?term=' + escape(query),
                 'success': function (pedals) {
-                    callback(pedalboards, SITEURLNEW)
+                    callback(pedalboards, SITEURL)
                 },
                 'dataType': 'json'
             })
@@ -442,7 +442,7 @@ function Desktop(elements) {
     this.socialWindow = elements.socialWindow.socialWindow({
         windowManager: self.windowManager,
         getFeed: function (lastId, callback) {
-            var url = SITEURLNEW + '/social/posts/?page_size=8'
+            var url = SITEURL + '/social/posts/?page_size=8'
 
             if (lastId != 0)
                 url += '&max_id=' + lastId
@@ -464,7 +464,7 @@ function Desktop(elements) {
                 console.log("Cannot show timeline when used is logged out")
                 return
             }
-            var url = SITEURLNEW + '/social/timeline/?page_size=8'
+            var url = SITEURL + '/social/timeline/?page_size=8'
 
             if (lastId != 0)
                 url += '&max_id=' + lastId
@@ -600,14 +600,14 @@ function Desktop(elements) {
 
         share: function (data, callback) {
             transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
-                                              SITEURLNEW + '/pedalboards/upload/',
+                                              SITEURL + '/pedalboards/upload/',
                                               { to_args: { headers:
                                               { 'Authorization' : 'MOD ' + self.userSession.access_token }
                                               }})
 
             transfer.reportFinished = function (resp) {
                 $.ajax({
-                    url: SITEURLNEW + '/social/posts/',
+                    url: SITEURL + '/social/posts/',
                     method: 'POST',
                     contentType: 'application/json',
                     headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },

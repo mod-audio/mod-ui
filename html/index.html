@@ -72,8 +72,7 @@
 
       {% autoescape None %}
       var TEMPLATES = {}
-      SITEURL    = '{{cloud_url}}'.replace(/\/?$/, '/api')
-      SITEURLNEW = "http://api.dev.moddevices.com"
+      SITEURL = '{{cloud_url}}'
       var SAMPLERATE = {{sampleRate}}
       var NOTIFICATIONS_ENABLED = true
       var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))

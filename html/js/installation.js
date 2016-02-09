@@ -41,7 +41,7 @@ function InstallationQueue() {
         }
 
         $.ajax({
-            url: SITEURLNEW + '/lv2/plugins?uri=' + escape(effectURI),
+            url: SITEURL + '/lv2/plugins?uri=' + escape(effectURI),
             success: function (effects) {
                 if (effects.length == 0) {
                     new Notification('error', "Can't find effect to install: " + effectURI, 5000)

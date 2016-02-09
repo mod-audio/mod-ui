@@ -62,7 +62,7 @@ function RegistrationWindow(options) {
             password: pass1
         }
         $.ajax({
-            url: SITEURLNEW + '/users',
+            url: SITEURL + '/users',
             method: 'POST',
             data: JSON.stringify(data),
             headers: { 'Content-Type' : 'application/json' },

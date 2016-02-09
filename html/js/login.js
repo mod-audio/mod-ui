@@ -111,7 +111,7 @@ function UserSession(options) {
 
                 // see if the cloud is working
                 $.ajax({
-                    url: SITEURLNEW + '/auth/tokens',
+                    url: SITEURL + '/auth/tokens',
                     method: 'PUT',
                     headers: { /*'Authorization': 'MOD ' + resp.access_token,*/
                                'Content-Type' : 'application/json'
@@ -155,7 +155,7 @@ function UserSession(options) {
         self.setStatus(CONNECTING)
 
         $.ajax({
-            url: SITEURLNEW + '/auth/tokens',
+            url: SITEURL + '/auth/tokens',
             method: 'POST',
             headers : { 'Content-Type' : 'application/json' },
             data: JSON.stringify({

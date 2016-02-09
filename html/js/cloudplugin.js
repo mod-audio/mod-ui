@@ -208,7 +208,7 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURLNEW + "/lv2/plugins/search",
+            url: SITEURL + "/lv2/plugins/search",
             data: {
                 q: query.term,
                 summary: "true",
@@ -329,7 +329,7 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURLNEW + "/lv2/plugins/search",
+            url: SITEURL + "/lv2/plugins/search",
             data: {
                 q: query.term,
                 summary: "true",
@@ -632,7 +632,7 @@ JqueryClass('cloudPluginBox', {
 
         // always get cloud plugin info
         $.ajax({
-            url: SITEURLNEW + "/lv2/plugins",
+            url: SITEURL + "/lv2/plugins",
             data: {
                 uri: plugin.uri
             },

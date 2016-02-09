@@ -82,15 +82,7 @@ DEFAULT_PACKAGE_SERVER_PORT = 8889
 # using current host and default port above
 PACKAGE_SERVER_ADDRESS = os.environ.get('MOD_PACKAGE_SERVER_ADDRESS')
 
-if os.path.exists("/root/cloud"):
-    fh = open("/root/cloud")
-    default_cloud = fh.read().strip()
-    fh.close()
-else:
-    default_cloud = 'http://cloud.moddevices.com/'
-CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', default_cloud)
-if not CLOUD_HTTP_ADDRESS.endswith('/'):
-    CLOUD_HTTP_ADDRESS += '/'
+CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com")
 
 if os.path.exists("/root/repository"):
     fh = open("/root/repository")
