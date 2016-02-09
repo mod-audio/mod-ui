@@ -55,6 +55,7 @@ from mod import register
 from mod import check_environment
 
 from mod.utils import (init as lv2_init,
+                       cleanup as lv2_cleanup,
                        get_all_plugins,
                        get_plugin_info,
                        get_plugin_info_mini,
@@ -92,6 +93,10 @@ def install_bundles_in_tmp_dir(callback):
             # remove bundle that produces errors
             shutil.rmtree(bundlepath)
             break
+
+    # FIXME, where are my ports!?
+    lv2_cleanup()
+    lv2_init()
 
     if error or len(installed) == 0:
         # Delete old temp files
@@ -649,6 +654,10 @@ class PackageUninstall(web.RequestHandler):
                 else:
                     error = data
                     break
+
+        # FIXME, where are my ports!?
+        lv2_cleanup()
+        lv2_init()
 
         if error:
             resp = {
