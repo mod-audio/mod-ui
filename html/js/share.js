@@ -91,9 +91,11 @@ JqueryClass('shareBox', {
             self.shareBox('share');
             return false
         })
+        /*
         self.find('#pedalboard-share-fb').click(function () {
             self.shareBox('checkFacebook')
         })
+        */
 
         $('body').keydown(function (e) {
             if (e.keyCode == 27)
@@ -101,6 +103,7 @@ JqueryClass('shareBox', {
         })
     },
 
+    /*
     checkFacebook: function () {
         var self = $(this)
         var fb = self.find('#pedalboard-share-fb')
@@ -115,6 +118,7 @@ JqueryClass('shareBox', {
         $('<iframe>').attr('src', SITEURL.replace(/api$/, 'facebook/' + session.sid)).appendTo($('#fb-authorization-container'))
         self.data('sid', session.sid)
     },
+    */
 
     showStep: function (step) {
         var self = $(this)

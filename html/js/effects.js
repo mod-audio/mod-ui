@@ -429,6 +429,7 @@ JqueryClass('effectBox', {
         }
     },
 
+    /*
     getReviews: function (uri, info, callback) {
         // not implemented on cloud yet
         if (callback) callback()
@@ -457,7 +458,9 @@ JqueryClass('effectBox', {
             dataType: 'json'
         })
     },
+    */
 
+    /*
     getRating: function (plugin, widget, callback) {
         var self = $(this)
         var userSession = self.data('userSession')
@@ -519,6 +522,7 @@ JqueryClass('effectBox', {
             dataType: 'json'
         })
     },
+    */
 
     cleanResults: function () {
         var self = $(this)

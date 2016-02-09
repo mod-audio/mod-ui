@@ -935,12 +935,14 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 },
                 cache: false
             })
+            /*
             if (!AUTO_CLOUD_BACKUP)
                 return
             $.ajax({
                 url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.user_id + '/' + pedalboard.pedalboardBundle,
                 method: 'POST'
             })
+            */
         },
         load: function (bundlepath, callback) {
             self.loadPedalboard(bundlepath, callback)
@@ -1029,6 +1031,7 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                     new Bug("Couldn't save banks")
                 },
             })
+            /*
             if (!AUTO_CLOUD_BACKUP)
                 return
             $.ajax({
@@ -1036,6 +1039,7 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 method: 'POST',
                 data: JSON.stringify(data)
             })
+            */
         }
     })
 }

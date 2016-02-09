@@ -545,6 +545,7 @@ JqueryClass('cloudPluginBox', {
                     self.data('removePlugin')(plugin, function () {
                         info.window('close')
 
+                        delete desktop.pluginIndexerData[plugin.uri].bundle_name
                         delete desktop.pluginIndexerData[plugin.uri].installedVersion
                         desktop.pluginIndexerData[plugin.uri].status = 'blocked'
 
@@ -559,17 +560,13 @@ JqueryClass('cloudPluginBox', {
                     // Install plugin
                     self.data('installPlugin')(plugin, function (pluginData) {
                         if (pluginData) {
+                            info.window('close')
+
                             pluginData.status = 'installed'
                             pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release]
                             pluginData.installedVersion = pluginData.latestVersion
-
                             desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
 
-                            if (info.is(':visible')) {
-                                info.remove()
-                                self.cloudPluginBox('checkLocalScreenshot', pluginData)
-                                self.cloudPluginBox('showPluginInfo', pluginData)
-                            }
                             desktop.rescanPlugins()
                             self.cloudPluginBox('search')
                         }
@@ -582,17 +579,13 @@ JqueryClass('cloudPluginBox', {
                     // Upgrade plugin
                     self.data('upgradePlugin')(plugin, function (pluginData) {
                         if (pluginData) {
+                            info.window('close')
+
                             pluginData.status = 'installed'
                             pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release]
                             pluginData.installedVersion = pluginData.latestVersion
-
                             desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
 
-                            if (info.is(':visible')) {
-                                info.remove()
-                                self.cloudPluginBox('checkLocalScreenshot', pluginData)
-                                self.cloudPluginBox('showPluginInfo', pluginData)
-                            }
                             desktop.rescanPlugins()
                             self.cloudPluginBox('search')
                         }

@@ -1103,28 +1103,6 @@ class RegistrationFinish(web.RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(ok))
 
-class DemoRestore(web.RequestHandler):
-    """
-    This is used for demo mode. It restores a state of installed plugins
-    and saved pedalboards
-    """
-    def get(self):
-        if not DEMO_DATA_DIR or not os.path.exists(DEMO_DATA_DIR):
-            self.write("Demo mode disabled")
-            return
-        btn = 'bluetooth.name'
-        if os.path.exists(os.path.join(DATA_DIR, btn)):
-            shutil.copy(os.path.join(DATA_DIR, btn),
-                        os.path.join(DEMO_DATA_DIR, btn))
-        shutil.rmtree(DATA_DIR)
-        shutil.copytree(DEMO_DATA_DIR, DATA_DIR, symlinks=True)
-
-        loader = tornado.template.Loader(HTML_DIR)
-        ctx = { 'cloud_url': CLOUD_HTTP_ADDRESS }
-        self.write(loader.load('demo_restore.html').generate(**ctx))
-
-        #tornado.ioloop.IOLoop.instance().add_callback(lambda: sys.exit(0))
-
 class RecordingStart(web.RequestHandler):
     def get(self):
         SESSION.start_recording()
@@ -1328,8 +1306,6 @@ application = web.Application(
             (r"/([a-z]+\.html)$", TemplateHandler),
             (r"/load_template/([a-z_]+\.html)$", TemplateLoader),
             (r"/js/templates.js$", BulkTemplateLoader),
-
-            (r"/demo/restore/?$", DemoRestore),
 
             (r"/websocket/?$", AtomWebSocket),
 
