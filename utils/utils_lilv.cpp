@@ -53,7 +53,7 @@ const LilvPlugins* PLUGINS = nullptr;
 std::map<std::string, PluginInfo> PLUGNFO;
 std::map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
 
-// list of loaded bundles
+// list of plugins that need reload (preset data only)
 std::list<std::string> PLUGINStoReload;
 
 // some other cached values
@@ -2932,13 +2932,6 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
     // free bundlenode, no longer needed
     lilv_node_free(bundlenode);
 
-#if 0
-    // lilv world is now messed up because of removing stuff, need to rebuild it
-    lilv_world_free(W);
-    W = lilv_world_new();
-    lilv_world_load_all(W);
-#endif
-
     // refresh PLUGINS
     PLUGINS = lilv_world_get_all_plugins(W);
 
@@ -2971,15 +2964,16 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 
 const PluginInfo_Mini* const* get_all_plugins(void)
 {
-    int newsize = (int)lilv_plugins_size(PLUGINS);
+    const int newsize = (int)lilv_plugins_size(PLUGINS);
 
-    if (newsize == 0 && _plug_lastsize != 0)
+    if (newsize == 0)
     {
         if (_plug_ret != nullptr)
         {
             delete[] _plug_ret;
             _plug_ret = nullptr;
         }
+        _plug_lastsize = 0;
         return nullptr;
     }
 
@@ -2993,15 +2987,19 @@ const PluginInfo_Mini* const* get_all_plugins(void)
         _plug_ret = new const PluginInfo_Mini*[newsize+1];
         memset(_plug_ret, 0, sizeof(void*) * (newsize+1));
     }
+    else if (newsize < _plug_lastsize)
+    {
+        memset(_plug_ret, 0, sizeof(void*) * (newsize+1));
+    }
 
     const NamespaceDefinitions_Mini ns;
-    int retIndex = 0;
+    int curIndex = 0;
 
     // Make a list of all installed bundles
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
-        if (retIndex >= newsize)
-            continue;
+        if (curIndex >= newsize)
+            break;
 
         const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
 
@@ -3013,7 +3011,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
         // check if it's already cached
         if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
         {
-            _plug_ret[retIndex++] = &PLUGNFO_Mini[uri];
+            _plug_ret[curIndex++] = &PLUGNFO_Mini[uri];
             continue;
         }
 
@@ -3024,7 +3022,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
             continue;
 
         PLUGNFO_Mini[uri] = info;
-        _plug_ret[retIndex++] = &PLUGNFO_Mini[uri];
+        _plug_ret[curIndex++] = &PLUGNFO_Mini[uri];
     }
 
     return _plug_ret;
