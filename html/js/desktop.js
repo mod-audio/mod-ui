@@ -399,7 +399,7 @@ function Desktop(elements) {
         for (var i in plugins)
         {
             var plugin = plugins[i]
-            versions[plugin.uri] = [plugin.minorVersion, plugin.microVersion, 0]
+            versions[plugin.uri] = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
             uris.push(plugin.uri)
         }
 
@@ -425,7 +425,7 @@ function Desktop(elements) {
                 }
                 else
                 {
-                    var version = [localplugin.minorVersion, localplugin.microVersion, 0]
+                    var version = [localplugin.minorVersion, localplugin.microVersion, localplugin.release || 0]
 
                     if (compareVersions(version, versions[uri]) < 0)
                         installPlugin(uri, data)
@@ -483,8 +483,8 @@ function Desktop(elements) {
             })
         },
         loadPedalboardFromSocial: function (pb) {
-            self.installMissingPlugins(pb.plugins, function () {
-                self.reset(function () {
+            self.reset(function () {
+                self.installMissingPlugins(pb.plugins, function () {
                     transfer = new SimpleTransference(pb.file_href, '/pedalboard/load_web/')
 
                     transfer.reportFinished = function () {
@@ -944,8 +944,29 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
             })
             */
         },
-        load: function (bundlepath, callback) {
-            self.loadPedalboard(bundlepath, callback)
+        load: function (bundlepath, broken, callback) {
+            if (!broken) {
+                self.loadPedalboard(bundlepath, callback)
+                return
+            }
+            $.ajax({
+                url: '/pedalboard/info/',
+                data: {
+                    bundlepath: bundlepath
+                },
+                success: function (pbinfo) {
+                    self.reset(function () {
+                        self.installMissingPlugins(pbinfo.plugins, function () {
+                            self.loadPedalboard(bundlepath, callback)
+                        })
+                    })
+                },
+                error: function () {
+                    new Bug("Couldn't load pedalboard")
+                },
+                cache: false
+            })
+
         },
         duplicate: function (pedalboard, callback) {
             // This does not work, because api has changed

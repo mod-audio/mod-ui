@@ -116,7 +116,7 @@ JqueryClass('pedalboardBox', {
             remove: function (pedalboard, callback) {
                 callback()
             },
-            load: function (pedalboardBundle, callback) {
+            load: function (bundlepath, broken, callback) {
                 callback()
             },
             duplicate: function (pedalboard, callback) {
@@ -187,7 +187,7 @@ JqueryClass('pedalboardBox', {
         var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
 
         var load = function () {
-            self.data('load')(pedalboard.bundle, function () {
+            self.data('load')(pedalboard.bundle, pedalboard.broken, function () {
                 self.window('close')
             })
             return false
