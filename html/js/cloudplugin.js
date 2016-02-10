@@ -410,21 +410,28 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-        // FIXME: this sort stuff doesn't seem to work properly
-        // sort by label
-        plugins.sort(function (a, b) {
-            if (a.label > b.label)
-                return 1
-            if (a.label < b.label)
-                return -1
-            return 0
-        })
+
         // now sort by status
+        var alower, blower
         plugins.sort(function (a, b) {
-            if (a.status == 'installed')
-                return 1
-            if (a.status == 'blocked')
+            // if status of both is the same, compare using label
+            if (a.status == b.status) {
+                alower = a.label.toLowerCase()
+                blower = b.label.toLowerCase()
+                if (alower > blower)
+                    return 1
+                if (alower < blower)
+                    return -1
+                return 0
+            }
+            // non-installed goes on top
+            if (a.status == 'blocked') {
                 return -1
+            }
+            // installed to bottom
+            if (a.status == 'installed' || a.status == 'outdated') {
+                return 1
+            }
             return 0
         })
 
