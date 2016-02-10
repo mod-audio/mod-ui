@@ -30,23 +30,19 @@ DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 # Enable for testing carla instead of mod-host
 HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
 
-# 0 means all; 1 means modguis only; 2 means cloud approved; 3 means whitelist
-MODGUI_SHOW_MODE = int(os.environ.get('MOD_GUI_SHOW_MODE', 0))
-
-DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
-DEMO_DATA_DIR = os.environ.get('MOD_DEMO_DATA_DIR', DATA_DIR + '.demo')
-
 KEYPATH = os.environ.get('MOD_KEY_PATH', '/root/keys')
-
 CLOUD_PUB = os.environ.get('MOD_CLOUD_PUB', join(KEYPATH, 'cloud_key.pub'))
 DEVICE_KEY = os.environ.get('MOD_DEVICE_KEY', join(KEYPATH, 'device_key.pem'))
 DEVICE_PUB = os.environ.get('MOD_DEVICE_PUB', join(KEYPATH, 'device_key.pub'))
 DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL =  os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
+DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'last.json'))
+
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', '/tmp/mod-ui')
+
 LV2_PLUGIN_DIR = os.path.expanduser("~/.lv2/")
 LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
 
@@ -65,7 +61,6 @@ DEFAULT_ICON_IMAGE = { 'thumbnail': join(HTML_DIR, 'resources/pedals/default-thu
                        'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
                        }
 
-LOCAL_REPOSITORY_DIR = os.environ.get('MOD_LOCAL_REPOSITORY_DIR', '/pkgs')
 BLUETOOTH_PIN = os.environ.get('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pin'))
 
 PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')

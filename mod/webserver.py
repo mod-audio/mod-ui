@@ -15,45 +15,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, re, shutil, sys
-import json, socket
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import sys
 import tornado.ioloop
 import tornado.options
 import tornado.escape
-import time, uuid
-from datetime import timedelta
-from io import StringIO
-try:
-    import Image
-except ImportError:
-    from PIL import Image
-from hashlib import sha1 as sha
-from hashlib import md5
+import time
+import uuid
 from base64 import b64decode, b64encode
-from tornado import gen, web, iostream, websocket
-import subprocess
-from glob import glob
+from hashlib import sha1
+from hashlib import md5
+from tornado import gen, iostream, web, websocket
 
 from mod.settings import (APP, DESKTOP, LOG,
                           HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
-                          DEVICE_SERIAL, DEVICE_KEY, LOCAL_REPOSITORY_DIR, LV2_PLUGIN_DIR,
+                          DEVICE_SERIAL, DEVICE_KEY, LV2_PLUGIN_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
-                          MAX_THUMB_WIDTH, MAX_THUMB_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, DEMO_DATA_DIR, DATA_DIR,
+                          PACKAGE_REPOSITORY, DATA_DIR,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
-from mod import jsoncall, json_handler, symbolify
-from mod.communication import fileserver, crypto
-from mod.session import SESSION
+from mod import check_environment, jsoncall, json_handler, register, symbolify
+from mod.communication import crypto
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
-from mod.system import (sync_pacman_db, get_pacman_upgrade_list,
-                        pacman_upgrade, set_bluetooth_pin)
-from mod import register
-from mod import check_environment
-
+from mod.session import SESSION
 from mod.utils import (init as lv2_init,
                        cleanup as lv2_cleanup,
                        get_all_plugins,
@@ -182,55 +174,21 @@ class SimpleFileReceiver(web.RequestHandler):
     def process_file(self, data, callback=lambda:None):
         """to be overriden"""
 
-class UpgradeSync(fileserver.FileReceiver):
-    download_tmp_dir = DOWNLOAD_TMP_DIR
-    remote_public_key = CLOUD_PUB
-    destination_dir = LOCAL_REPOSITORY_DIR
-
-    def process_file(self, data, callback):
-        def on_finish(result):
-            self.result = result
-            callback()
-        sync_pacman_db(on_finish)
-
-class UpgradePackage(fileserver.FileReceiver):
-    download_tmp_dir = DOWNLOAD_TMP_DIR
-    remote_public_key = CLOUD_PUB
-    destination_dir = LOCAL_REPOSITORY_DIR
-
-    def process_file(self, data, callback):
-        self.result = 1
-        callback()
-
-class UpgradePackages(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        packages = yield gen.Task(get_pacman_upgrade_list)
-
-        self.write(json.dumps(packages))
-        self.finish()
-
-class UpgradeDo(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        result = yield gen.Task(pacman_upgrade)
-
-        self.write(json.dumps(result))
-        self.finish()
-
 class BluetoothSetPin(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
     def post(self):
         pin = self.get_argument("pin", None)
 
+        self.set_header('Content-Type', 'application/json')
+
         if pin is None:
             self.write(json.dumps(False))
-        else:
-            result = yield gen.Task(lambda callback:set_bluetooth_pin(pin, callback))
-            self.write(json.dumps(True))
+            self.finish()
+            return
+
+        with open(BLUETOOTH_PIN, 'w') as fh:
+            fh.write(pin)
+
+        self.write(json.dumps(True))
         self.finish()
 
 class SystemInfo(web.RequestHandler):
@@ -272,35 +230,6 @@ class EffectInstaller(SimpleFileReceiver):
             self.result = resp
             callback()
         install_package(data['filename'], on_finish)
-
-class SDKSysUpdate(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def post(self):
-        upload = self.request.files['update_package'][0]
-        update_package = os.path.join(DOWNLOAD_TMP_DIR, upload['filename'])
-        open(update_package, 'w').write(upload['body'])
-        dirname = os.path.join(DOWNLOAD_TMP_DIR, 'install_update_%s' % os.getpid())
-        def install_update(pkg, callback):
-            os.mkdir(dirname)
-            proc = subprocess.Popen(['tar', 'zxf', pkg, '-C', dirname],
-                                        cwd=DOWNLOAD_TMP_DIR,
-                                        stdout=subprocess.PIPE)
-            def end_untar_pkgs(fileno, event):
-                if proc.poll() is None: return
-                callback()
-            tornado.ioloop.IOLoop.instance().add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
-
-        res = yield gen.Task(install_update, update_package)
-        proc = subprocess.Popen(['pacman', '-U'] + glob(os.path.join(dirname, '*')),
-                                        cwd=DOWNLOAD_TMP_DIR,
-                                        stdout=subprocess.PIPE)
-        def end_pacman(fileno, event):
-            if proc.poll() is None: return
-        tornado.ioloop.IOLoop.instance().add_handler(proc.stdout.fileno(), end_pacman, 16)
-
-        self.write(json.dumps(True))
-        self.finish()
 
 class EffectBulk(web.RequestHandler):
     def prepare(self):
@@ -758,8 +687,7 @@ class PedalboardLoadWeb(SimpleFileReceiver):
             os.mkdir(self.destination_dir)
 
         # FIXME - don't use external tools!
-        from subprocess import getoutput
-        tar_output = getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
+        tar_output = subprocess.getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
         bundlepath = os.path.join(self.destination_dir, tar_output.strip().split("\n", 1)[0])
 
         if not os.path.exists(bundlepath):
@@ -907,19 +835,6 @@ class TemplateHandler(web.RequestHandler):
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
-        if DEV_ENVIRONMENT:
-            return str(int(time.time()))
-        try:
-            proc = subprocess.Popen(['pacman', '-Q'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=open('/dev/null', 'w')
-                                    )
-            proc.wait()
-            if proc.poll() == 0:
-                return md5(proc.stdout.read()).hexdigest()
-        except OSError:
-            pass
-
         return str(int(time.time()))
 
     def index(self):
@@ -1080,7 +995,7 @@ class LoginAuthenticate(web.RequestHandler):
         checksum = receiver.unpack()
         self.set_header('Access-Control-Allow-Origin', CLOUD_HTTP_ADDRESS)
         self.set_header('Content-Type', 'application/json')
-        if not sha(serialized_user).hexdigest() == checksum:
+        if not sha1(serialized_user).hexdigest() == checksum:
             return self.write(json.dumps({ 'ok': False}))
         user = json.loads(b64decode(serialized_user).decode("utf-8", errors="ignore"))
         self.write(json.dumps({ 'ok': True,
@@ -1206,12 +1121,8 @@ class TokensSave(web.RequestHandler):
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
-        UpgradeSync.urls('system/upgrade/sync') +
-        UpgradePackage.urls('system/upgrade/package') +
         EffectInstaller.urls('effect/install') +
         [
-            (r"/system/upgrade/packages", UpgradePackages),
-            (r"/system/upgrade/do", UpgradeDo),
             #TODO merge these
             #(r"/system/install_pkg/([^/]+)/?", InstallPkg),
             #(r"/system/install_pkg/do/([^/]+)/?", InstallPkgDo),
@@ -1285,7 +1196,6 @@ application = web.Application(
             (r"/reset/?", DashboardClean),
             (r"/disconnect/?", DashboardDisconnect),
 
-            (r"/sdk/sysupdate/?", SDKSysUpdate),
             (r"/sdk/install/?", SDKEffectInstaller),
             #(r"/sdk/get_config_script/?", SDKEffectScript),
 
