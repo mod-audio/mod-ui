@@ -52,7 +52,8 @@
                      success: callback,
                      dataType: 'json'
                  })
-             }
+             },
+             hardwareManager: new HardwareManager({}),
           })
           //console.log(PEDALBOARD_DATA)
           el.pedalboard('fakeLoadFromServerData', PEDALBOARD_DATA)
