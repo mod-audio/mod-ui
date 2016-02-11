@@ -427,6 +427,9 @@ class Host(object):
                     title = name.replace("system:","",1).title().replace(" ","_")
                 websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
 
+                if crashed:
+                    connect_jack_ports(name, "mod-host:midi_in")
+
             # MIDI Out
             if self.hasSerialMidiOut:
                 websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
@@ -494,8 +497,6 @@ class Host(object):
         self.send("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     def remove_bundle(self, bundlepath, isPluginBundle, callback):
-        print("remove_bundle", bundlepath, isPluginBundle)
-
         if not is_bundle_loaded(bundlepath):
             print("SKIPPED remove_bundle, not in world")
             callback((False, "Bundle not loaded"))
@@ -503,7 +504,6 @@ class Host(object):
 
         if isPluginBundle and len(self.plugins) > 0:
             plugins = list_plugins_in_bundle(bundlepath)
-            print(plugins)
 
             for plugin in self.plugins.values():
                 if plugin['uri'] in plugins:
@@ -751,11 +751,18 @@ class Host(object):
         return "effect_%d:%s" % (instance_id, portsymbol)
 
     def connect(self, port_from, port_to, callback):
+        if (port_from, port_to) in self.connections:
+            print("NOTE: Requested connection already exists")
+            callback(True)
+            return
+
         def host_callback(ok):
             callback(ok)
             if ok:
                 self.connections.append((port_from, port_to))
                 self.msg_callback("connect %s %s" % (port_from, port_to))
+            else:
+                print("ERROR: backend failed to connect ports: '%s' => '%s'" % (port_from, port_to))
 
         self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
                                      self._fix_host_connection_port(port_to)), host_callback, datatype='boolean')
@@ -770,13 +777,20 @@ class Host(object):
                     pass
                 self.msg_callback("disconnect %s %s" % (port_from, port_to))
 
+        # If the plugin or port don't exist, assume disconnected
         try:
             port_from_2 = self._fix_host_connection_port(port_from)
-            port_to_2   = self._fix_host_connection_port(port_to)
         except:
-            # If the plugin or port don't exist, assume disconnected
+            print("Requested '%s' source port doesn't exist, assume disconnected")
             return host_callback(True)
 
+        try:
+            port_to_2 = self._fix_host_connection_port(port_to)
+        except:
+            print("Requested '%s' target port doesn't exist, assume disconnected")
+            return host_callback(True)
+
+        # all ok, let's begin
         self.send("disconnect %s %s" % (port_from_2, port_to_2), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -786,6 +800,12 @@ class Host(object):
         self.msg_callback("wait_start")
 
         pb = get_pedalboard_info(bundlepath)
+
+        for hw in pb['hardware']['midi_ins']:
+            pass
+
+        for hw in pb['hardware']['midi_outs']:
+            pass
 
         for p in pb['plugins']:
             instance    = "/graph/%s" % p['instance']

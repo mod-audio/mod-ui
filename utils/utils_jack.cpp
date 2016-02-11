@@ -71,10 +71,16 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 
     if (const jack_port_t* const port = jack_port_by_id(gClient, port_id))
     {
-        const std::string portName(jack_port_name(port));
+        if (const char* const port_name = jack_port_name(port))
+        {
+            if (strncmp(port_name, "system:", 7) != 0)
+                return;
 
-        const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
-        gUnregisteredPorts.push_back(portName);
+            const std::string portName(port_name);
+
+            const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
+            gUnregisteredPorts.push_back(portName);
+        }
     }
 }
 

@@ -34,7 +34,7 @@
 
           if (uri) {
               $.ajax({
-                  url: '/effect/get/',
+                  url: '/effect/get',
                   data: { uri: uri },
                   success: function(effect, options) {
                       icongui = new GUI(effect)
