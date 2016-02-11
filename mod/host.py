@@ -801,11 +801,33 @@ class Host(object):
 
         pb = get_pedalboard_info(bundlepath)
 
-        for hw in pb['hardware']['midi_ins']:
-            pass
+        # MIDI Devices might change port names at anytime
+        # To properly restore MIDI HW connections we need to map the "old" port names (from project)
+        mappedOldMidiIns  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
+        mappedOldMidiOuts = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
+        mappedNewMidiIns  = dict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, False))
+        mappedNewMidiOuts = dict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, True))
 
-        for hw in pb['hardware']['midi_outs']:
-            pass
+        index = 0
+        for name, symbol in mappedNewMidiIns.items():
+            if name not in mappedOldMidiIns.values():
+                continue
+            index += 1
+            self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (symbol, name.replace(" ","_"), index))
+            connect_jack_ports("system:" + symbol, "mod-host:midi_in")
+
+            if name in mappedNewMidiOuts.keys():
+                storedname = "system:%s;system:%s" % (symbol, mappedNewMidiOuts[name])
+            else:
+                storedname = "system:" + symbol
+            self.midiports.append(storedname)
+
+        index = 0
+        for name, symbol in mappedNewMidiOuts.items():
+            if name not in mappedOldMidiOuts.values():
+                continue
+            index += 1
+            self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
         for p in pb['plugins']:
             instance    = "/graph/%s" % p['instance']
@@ -873,6 +895,22 @@ class Host(object):
                         self.msg_callback("midi_map %s %s %i %i" % (instance, symbol, mchnnl, mctrl))
 
         for c in pb['connections']:
+            if c['source'] in mappedOldMidiIns.keys():
+                aliasname = mappedOldMidiIns[c['source']]
+                try:
+                    portname = mappedNewMidiIns[aliasname]
+                except:
+                    continue
+                c['source'] = portname
+
+            if c['target'] in mappedOldMidiOuts.keys():
+                aliasname = mappedOldMidiOuts[c['target']]
+                try:
+                    portname = mappedNewMidiOuts[aliasname]
+                except:
+                    continue
+                c['target'] = portname
+
             port_from = "/graph/%s" % c['source']
             port_to   = "/graph/%s" % c['target']
             self.send("connect %s %s" % (self._fix_host_connection_port(port_from), self._fix_host_connection_port(port_to)), lambda r:None)
