@@ -139,16 +139,19 @@ JqueryClass('cloudPluginBox', {
     search: function () {
         var self  = $(this)
         var query = {
-            term: self.data('searchbox').val()
+            text: self.data('searchbox').val(),
+            summary: "true",
         }
-        var stableOnly = (self.find('input:checkbox[name=stable]:checked').length > 0)
+        if (self.find('input:checkbox[name=stable]:checked').length > 0) {
+            query.stable = "true"
+        }
         if (self.find('input:checkbox[name=installed]:checked').length)
-            return self.cloudPluginBox('searchInstalled', query, stableOnly)
-        return self.cloudPluginBox('searchAll', query, stableOnly)
+            return self.cloudPluginBox('searchInstalled', query)
+        return self.cloudPluginBox('searchAll', query)
     },
 
     // search cloud and local plugins, show all but prefer cloud
-    searchAll: function (query, stableOnly) {
+    searchAll: function (query) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin;
@@ -208,22 +211,10 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURL + "/lv2/plugins/search",
-            data: {
-                q: query.term,
-                summary: "true",
-            },
+            url: SITEURL + "/lv2/plugins",
+            data: query,
             success: function (plugins) {
-                if (stableOnly) {
-                    var cplugins = []
-                    for (var i in plugins) {
-                        if (plugins[i].stable)
-                            cplugins.push(plugins[i])
-                    }
-                    results.cloud = cplugins
-                } else {
-                    results.cloud = plugins
-                }
+                results.cloud = plugins
                 if (results.local != null) {
                     renderResults()
                 }
@@ -238,12 +229,12 @@ JqueryClass('cloudPluginBox', {
         })
 
         // local search
-        if (query.term)
+        if (query.text)
         {
             var allplugins = desktop.pluginIndexerData
             var lplugins   = {}
 
-            var ret = desktop.pluginIndexer.search(query.term)
+            var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
                 var uri = ret[i].ref
                 if (! allplugins[uri]) {
@@ -286,7 +277,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search cloud and local plugins, show installed only
-    searchInstalled: function (query, stableOnly) {
+    searchInstalled: function (query) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin
@@ -329,23 +320,13 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURL + "/lv2/plugins/search",
-            data: {
-                q: query.term,
-                summary: "true",
-            },
+            url: SITEURL + "/lv2/plugins",
+            data: query,
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
-                if (stableOnly) {
-                    for (var i in plugins) {
-                        if (plugins[i].stable)
-                            cplugins[plugins[i].uri] = plugins[i]
-                    }
-                } else {
-                    for (var i in plugins) {
-                        cplugins[plugins[i].uri] = plugins[i]
-                    }
+                for (var i in plugins) {
+                    cplugins[plugins[i].uri] = plugins[i]
                 }
                 results.cloud = cplugins
                 if (results.local != null)
@@ -360,12 +341,12 @@ JqueryClass('cloudPluginBox', {
         })
 
         // local search
-        if (query.term)
+        if (query.text)
         {
             var allplugins = desktop.pluginIndexerData
             var lplugins   = []
 
-            var ret = desktop.pluginIndexer.search(query.term)
+            var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
                 var uri = ret[i].ref
                 if (! allplugins[uri]) {
