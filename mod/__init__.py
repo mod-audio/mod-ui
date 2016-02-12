@@ -53,7 +53,10 @@ def _json_or_remove(path):
 
 def check_environment():
     from mod.settings import (DEVICE_SERIAL, DEVICE_MODEL,
-                              DOWNLOAD_TMP_DIR, BANKS_JSON_FILE)
+                              DATA_DIR, DOWNLOAD_TMP_DIR, BANKS_JSON_FILE)
+
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
 
     if not os.path.exists(DOWNLOAD_TMP_DIR):
         os.makedirs(DOWNLOAD_TMP_DIR)
