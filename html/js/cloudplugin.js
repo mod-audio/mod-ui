@@ -174,7 +174,7 @@ JqueryClass('cloudPluginBox', {
                     cplugin.installedVersion = lplugin.installedVersion
                     delete results.local[cplugin.uri]
 
-                    if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) == 0) {
+                    if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) >= 0) {
                         cplugin.status = 'installed'
                     } else {
                         cplugin.status = 'outdated'
@@ -292,7 +292,7 @@ JqueryClass('cloudPluginBox', {
                 if (cplugin) {
                     lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
-                    if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) == 0) {
+                    if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
                         lplugin.status = 'installed'
                     } else {
                         lplugin.status = 'outdated'
