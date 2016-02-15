@@ -36,6 +36,7 @@ $('document').ready(function() {
             var xruns   = parseInt(data[2])
             $("#cpu-bar").css("width", (100.0-cpuLoad).toFixed().toString()+"%")
             $("#cpu-bar-text").text("CPU "+cpuLoad.toString()+"%")
+            $("#xruns-text").text(xruns == 1 ? (xruns.toString()+" Xrun") : (xruns.toString()+" Xruns"))
             return
         }
 

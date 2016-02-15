@@ -346,7 +346,7 @@ hr.dotted {
   #mod-disconnect,
   #mod-add-midi,
   .mod-bypass,
-  #mod-cpu, #mod-ram {
+  #mod-cpu, #mod-ram, #mod-xruns {
     background-position: 8px 50%;
     background-repeat: no-repeat;
     padding-left: 40px;
@@ -382,7 +382,7 @@ hr.dotted {
     }
   }
 
-  #mod-cpu, #mod-ram {
+  #mod-cpu, #mod-ram, #mod-xruns {
     cursor: default;
     width: 115px !important;
     padding: 0 !important;
@@ -397,6 +397,12 @@ hr.dotted {
   }
   #mod-ram .progress-title {
     background-image: url(../img/icons/25/ram.png);
+    background-position: 0px 50%;
+    background-repeat: no-repeat;
+    padding-left: 30px;
+  }
+  #mod-xruns .progress-title {
+    background-image: url(../img/icons/25/cpu.png);
     background-position: 0px 50%;
     background-repeat: no-repeat;
     padding-left: 30px;
@@ -1236,10 +1242,10 @@ header#pedalboard-actions {
   }
 }
 .blocker.screen-updating {
-  
+
 }
 .blocker.screen-loading {
-  
+
 }
 
 .plugin-wait {
