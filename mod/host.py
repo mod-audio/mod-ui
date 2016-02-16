@@ -1599,12 +1599,32 @@ _:b%i
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
-        def clear_callback(ok):
+        if bank_id >= len(self.banks):
+            callback(False)
+            return
+
+        navigateFootswitches = self.banks[bank_id]['navigateFootswitches']
+
+        def load_callback(ok):
             self.load(bundlepath, bank_id)
             callback(True)
 
+        def foot2_callback(ok):
+            acthw = self._uri2hw_map["/hmi/footswitch2"]
+            if navigateFootswitches:
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 2, load_callback)
+            else:
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 0, load_callback)
+
+        def foot1_callback(ok):
+            acthw = self._uri2hw_map["/hmi/footswitch1"]
+            if navigateFootswitches:
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 3, foot2_callback)
+            else:
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 0, foot2_callback)
+
         def reset_callback(ok):
-            self.hmi.clear(clear_callback)
+            self.hmi.clear(foot1_callback)
 
         self.reset(reset_callback, False)
 
