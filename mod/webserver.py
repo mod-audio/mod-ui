@@ -607,7 +607,13 @@ class PackageUninstall(web.RequestHandler):
                 'removed': removed,
             }
 
-        print(resp)
+        if len(removed) > 0:
+            # Re-save banks, as pedalboards might contain the removed plugin
+            broken = []
+            for pb in get_all_pedalboards():
+                if pb['broken']: broken.append(os.path.abspath(pb['bundle']))
+            list_banks(broken)
+
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
         self.finish()
@@ -778,25 +784,27 @@ class DashboardDisconnect(web.RequestHandler):
 
 class BankLoad(web.RequestHandler):
     def get(self):
-        banks = list_banks()
-
         # Banks have only bundle and title of each pedalboard, which is the necessary information for the HMI.
         # But for the GUI we need to know information about the used pedalboards
 
-        pedalboards_dict = dict((pb['bundle'], pb) for pb in get_all_pedalboards())
-        pedalboards_keys = pedalboards_dict.keys()
+        # First we get all pedalboard info
+        pedalboards_data = dict((os.path.abspath(pb['bundle']), pb) for pb in get_all_pedalboards())
 
+        # List the broken pedalboards, we do not want to show those
+        broken_pedalboards = []
+
+        for bundlepath, pedalboard in pedalboards_data.items():
+            if pedalboard['broken']:
+                broken_pedalboards.append(bundlepath)
+
+        # Get the banks using our broken pedalboards filter
+        banks = list_banks(broken_pedalboards)
+
+        # Put the full pedalboard info into banks
         for bank in banks:
-            pedalboards = []
+            bank['pedalboards'] = [pedalboards_data[os.path.abspath(pb['bundle'])] for pb in bank['pedalboards']]
 
-            for oldpedalboard in bank['pedalboards']:
-                if oldpedalboard['bundle'] in pedalboards_keys:
-                    pb = pedalboards_dict[oldpedalboard['bundle']]
-                    if not pb['broken']:
-                        pedalboards.append(pb)
-
-            bank['pedalboards'] = pedalboards
-
+        # All set
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(banks))
         self.finish()

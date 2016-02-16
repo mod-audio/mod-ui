@@ -19,7 +19,7 @@ import os, json
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
-def list_banks():
+def list_banks(brokenpedals = []):
     if not os.path.exists(BANKS_JSON_FILE):
         print("banks file does not exist")
         return []
@@ -33,19 +33,35 @@ def list_banks():
         print("ERROR in banks.py: failed to load banks file")
         return []
 
-    validbanks = []
+    changed     = False
+    checkbroken = len(brokenpedals) > 0
+    validbanks  = []
 
     for bank in banks:
-        if len(bank['pedalboards']) == 0:
-            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % bank['title'])
-            continue
+        validpedals = []
 
         for pb in bank['pedalboards']:
             if not os.path.exists(pb['bundle']):
                 print("ERROR in banks.py: referenced pedalboard does not exist:", pb['bundle'])
-                break
-        else:
-            validbanks.append(bank)
+                changed = True
+                continue
+            if checkbroken and os.path.abspath(pb['bundle']) in brokenpedals:
+                print("Auto-removing pedalboard '%s' from bank (it's broken)" % pb['title'])
+                changed = True
+                continue
+
+            validpedals.append(pb)
+
+        if len(validpedals) == 0:
+            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % bank['title'])
+            changed = True
+            continue
+
+        bank['pedalboards'] = validpedals
+        validbanks.append(bank)
+
+    if changed:
+        save_banks(validbanks)
 
     return validbanks
 
