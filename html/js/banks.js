@@ -12,6 +12,7 @@ JqueryClass('bankBox', {
             resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
             resultCanvasMode: self.find('#bank-pedalboards-result .js-mode'),
             bankAddressing: self.find('#bank-addressings'),
+            bankNavigateFootswitches: self.find("#js-navigate-bank"),
             saving: $('#banks-saving'),
             list: function (callback) {
                 callback([])
@@ -39,6 +40,14 @@ JqueryClass('bankBox', {
         options.resultCanvasMode.hide()
         options.addButton.click(function () {
             self.bankBox('create')
+        })
+
+        options.bankNavigateFootswitches.click(function () {
+            var current = self.data('currentBank')
+            if (current) {
+                current.data('navigateFootswitches', $(this).is(':checked'))
+                self.bankBox('save')
+            }
         })
 
         var searcher = new PedalboardSearcher($.extend({
@@ -185,7 +194,7 @@ JqueryClass('bankBox', {
             serialized.push({
                 title: bank.find('.js-bank-title').text(),
                 pedalboards: pedalboardData,
-                //addressing: bank.data('addressing') || [0, 0, 0, 0],
+                navigateFootswitches: bank.data('navigateFootswitches'),
             })
         });
         self.data('saving').html('Auto saving banks...').show()
@@ -214,10 +223,12 @@ JqueryClass('bankBox', {
             return;
         }
 
-        bank = self.bankBox('renderBank', {
+        var bankData = {
             'title': '',
-            'pedalboards': []
-        })
+            'pedalboards': [],
+            'navigateFootswitches': false,
+        }
+        var bank = self.bankBox('renderBank', bankData)
         self.bankBox('editBank', bank)
         self.bankBox('selectBank', bank)
     },
@@ -229,6 +240,7 @@ JqueryClass('bankBox', {
         self.data('bankCanvas').append(bank)
         bank.data('selected', false)
         bank.data('pedalboards', $('<div>'))
+        bank.data('navigateFootswitches', bankData.navigateFootswitches)
         //bank.data('addressing', addressing)
         /*bank.data('title', bankData.title)*/
 
@@ -297,8 +309,7 @@ JqueryClass('bankBox', {
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
 
-        // Show addressing bar (changed to title on 2015-12-02)
-        self.data('bankAddressing').html('<h1>'+bank.text()+'</h1>\n<form class="form"><div class="checkbox"><label><input type="checkbox" class="checkbox" /> Navigate pedalboards using footswitches</label></div></form>')
+        self.data('bankNavigateFootswitches').prop("checked", bank.data('navigateFootswitches'))
         self.data('bankAddressing').show()
     },
 
@@ -368,8 +379,6 @@ JqueryClass('bankBox', {
             title: pedalboard.title,
             // FIXME: proper gif image
             image: "/img/loading-pedalboard.gif",
-            // TODO: replace this with something else
-            footswitches: [0, 0, 0, 0],
         }
 
         var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, metadata))
