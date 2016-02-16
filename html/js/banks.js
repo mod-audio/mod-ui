@@ -133,9 +133,18 @@ JqueryClass('bankBox', {
     load: function () {
         var self = $(this)
 
-        if (self.data('loaded'))
-            return
-        self.data('loaded', true)
+        if (self.data('loaded')) {
+            self.data('currentBank', null)
+            /*self.data('currentBankTitle', null)*/
+            self.data('pedalboardCanvas').html('').hide()
+            self.data('pedalboardCanvasMode').hide()
+            self.data('searchForm').hide()
+            self.data('resultCanvas').hide()
+            self.data('resultCanvasMode').hide()
+            self.data('bankAddressing').hide()
+        } else {
+            self.data('loaded', true)
+        }
 
         self.data('load')(function (banks) {
             self.data('bankCanvas').html('')

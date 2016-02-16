@@ -36,6 +36,10 @@ def list_banks():
     validbanks = []
 
     for bank in banks:
+        if len(bank['pedalboards']) == 0:
+            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % bank['title'])
+            continue
+
         for pb in bank['pedalboards']:
             if not os.path.exists(pb['bundle']):
                 print("ERROR in banks.py: referenced pedalboard does not exist:", pb['bundle'])
@@ -100,7 +104,7 @@ def remove_pedalboard_from_banks(pedalboard):
 
         # if there's no pedalboards left ignore this bank (ie, delete it)
         if len(newpedalboards) == 0:
-            print("Auto-deleting bank with name '%s', as it does not contain any more pedalboards" % bank['title'])
+            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % bank['title'])
             continue
 
         bank['pedalboards'] = newpedalboards
