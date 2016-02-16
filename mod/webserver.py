@@ -607,8 +607,8 @@ class PackageUninstall(web.RequestHandler):
                 'removed': removed,
             }
 
-        # FIXME: alternatively we can do this when request
-        #        but I'll need a quick "get_broken_pedalboards" function first
+        # FIXME: alternatively we can do this when requested
+        #        but we'll need a quick "get_broken_pedalboards" function first
         if len(removed) > 0:
             # Re-save banks, as pedalboards might contain the removed plugin
             broken = []
