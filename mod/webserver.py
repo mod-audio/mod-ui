@@ -53,6 +53,7 @@ from mod.utils import (init as lv2_init,
                        get_plugin_info_mini,
                        get_all_pedalboards,
                        get_pedalboard_info,
+                       get_jack_sample_rate,
                        set_truebypass_value)
 
 @gen.coroutine
@@ -618,15 +619,16 @@ class PedalboardList(web.RequestHandler):
         self.finish()
 
 class PedalboardSave(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
     def post(self):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
-        saved = yield gen.Task(SESSION.web_save_pedalboard, title, asNew)
+
+        bundlepath = SESSION.web_save_pedalboard(title, asNew)
+
+        self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({
-            'ok': saved,
-            'bundlepath': SESSION.bundlepath
+            'ok': bundlepath is not None,
+            'bundlepath': bundlepath
         }))
         self.finish()
 
@@ -838,7 +840,7 @@ class TemplateHandler(web.RequestHandler):
         except AttributeError:
             context = {}
         context['cloud_url'] = CLOUD_HTTP_ADDRESS
-        context['sampleRate'] = SESSION.engine_samplerate
+        context['sampleRate'] = get_jack_sample_rate()
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
@@ -867,12 +869,13 @@ class TemplateHandler(web.RequestHandler):
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
-            'bundlepath': json.dumps(SESSION.bundlepath),
-            'title': json.dumps(SESSION.title),
-            'fulltitle': SESSION.title or "Untitled",
-            'titleblend': '' if SESSION.title else 'blend',
-            'using_app': json.dumps(APP),
-            'using_desktop': json.dumps(DESKTOP),
+            'bundlepath': SESSION.host.pedalboard_path or '""',
+            'title': SESSION.host.pedalboard_name or '""',
+            'size': json.dumps(SESSION.host.pedalboard_size),
+            'fulltitle': SESSION.host.pedalboard_name or "Untitled",
+            'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
+            'using_app': 'true' if APP else 'false',
+            'using_desktop': 'true' if DESKTOP else 'false',
         }
         return context
 

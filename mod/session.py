@@ -28,7 +28,7 @@ from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
                           CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
                           PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
-from mod import get_hardware, symbolify
+from mod import get_hardware
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
@@ -56,12 +56,6 @@ class Session(object):
 
         # Used in mod-app to know when the current pedalboard changed
         self.pedalboard_changed_callback = lambda ok,bundlepath,title:None
-
-        # For saving the current pedalboard bundlepath and title
-        self.bundlepath = None
-        self.title      = None
-
-        self.engine_samplerate = 48000 # default value
 
         self.ioloop = ioloop.IOLoop.instance()
 
@@ -195,55 +189,12 @@ class Session(object):
         self.host.disconnect(port_from, port_to, callback)
 
     # Save the current pedalboard
-    # The order of events is:
-    #  1. set the graph name to 'title'
-    #  2. ask backend to save
-    #  3. create manifest.ttl
-    #  4. create addressings.json file
-    # Step 2 is asynchronous, so it happens while 3 and 4 are taking place.
+    # returns saved bundle path
     def web_save_pedalboard(self, title, asNew, callback):
-        titlesym = symbolify(title)
-
-        # Save over existing bundlepath
-        if self.bundlepath and os.path.exists(self.bundlepath) and os.path.isdir(self.bundlepath) and not asNew:
-            bundlepath = self.bundlepath
-
-        # Save new
-        else:
-            lv2path = os.path.expanduser("~/.pedalboards/")
-            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
-
-            # if trypath already exists, generate a random bundlepath based on title
-            if os.path.exists(trypath):
-                from random import randint
-
-                while True:
-                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
-                    if os.path.exists(trypath):
-                        continue
-                    bundlepath = trypath
-                    break
-
-            # trypath doesn't exist yet, use it
-            else:
-                bundlepath = trypath
-
-                # just in case..
-                if not os.path.exists(lv2path):
-                    os.mkdir(lv2path)
-
-            os.mkdir(bundlepath)
-
-        # save
-        self.host.save(bundlepath, title, titlesym)
-
-        self.bundlepath = bundlepath
-        self.title      = title
+        bundlepath = self.host.save(title, asNew)
         self.pedalboard_changed_callback(True, bundlepath, title)
-
         self.screenshot_generator.schedule_screenshot(bundlepath)
-
-        callback(True)
+        return bundlepath
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList)
@@ -285,7 +236,6 @@ class Session(object):
             finish(True)
             return
 
-        self.engine_samplerate = self.host.get_sample_rate()
         self.host_initialized = True
 
         self.host.msg_callback = self.msg_callback
@@ -293,15 +243,10 @@ class Session(object):
 
     def load_pedalboard(self, bundlepath, bank_id=-1):
         title = self.host.load(bundlepath, bank_id)
-        self.bundlepath = bundlepath
-        self.title      = title
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
 
     def reset(self, callback):
-        self.bundlepath = None
-        self.title      = None
-
         # Callback from HMI, ignore ok status
         def reset_host(ok):
             self.host.reset(callback)

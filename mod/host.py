@@ -28,8 +28,9 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
-from tornado import gen, iostream, ioloop
+from random import randint
 from shutil import rmtree
+from tornado import gen, iostream, ioloop
 import os, json, socket, logging
 
 from mod import get_hardware, symbolify
@@ -127,6 +128,7 @@ class Host(object):
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
         self.pedalboard_name = ""
+        self.pedalboard_path = ""
         self.pedalboard_size = [0,0]
 
         self.statstimer = ioloop.PeriodicCallback(self.statstimer_callback, 1000)
@@ -520,6 +522,10 @@ class Host(object):
     # Host stuff - reset, add, remove
 
     def reset(self, callback, resetBanks=True):
+        def host_callback(ok):
+            callback(ok)
+            self.msg_callback("remove :all")
+
         if resetBanks:
             self.banks = []
 
@@ -528,9 +534,9 @@ class Host(object):
         self.mapper.clear()
         self._init_addressings()
 
-        def host_callback(ok):
-            callback(ok)
-            self.msg_callback("remove :all")
+        self.pedalboard_name = ""
+        self.pedalboard_path = ""
+        self.pedalboard_size = [0,0]
 
         save_last_bank_and_pedalboard(-1, "")
         self.send("remove -1", host_callback, datatype='boolean')
@@ -717,7 +723,6 @@ class Host(object):
             self.remove_bundle(presetbundle, False, start)
 
             # if presetbundle already exists, generate a new random bundle path
-            #from random import randint
             #while True:
                 #presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), labelsymbol, randint(1,99999)))
                 #if os.path.exists(presetbundle):
@@ -922,11 +927,51 @@ class Host(object):
 
         self.msg_callback("wait_end")
 
+        self.pedalboard_name = pb['title']
+        self.pedalboard_path = bundlepath
         save_last_bank_and_pedalboard(bank_id, bundlepath)
 
-        return pb['title']
+        return self.pedalboard_name
 
-    def save(self, bundlepath, title, titlesym):
+    def save(self, title, asNew):
+        titlesym = symbolify(title)
+
+        # Save over existing bundlepath
+        if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and not asNew:
+            bundlepath = self.pedalboard_path
+
+        # Save new
+        else:
+            lv2path = os.path.expanduser("~/.pedalboards/")
+            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
+
+            # if trypath already exists, generate a random bundlepath based on title
+            if os.path.exists(trypath):
+                while True:
+                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+                    if os.path.exists(trypath):
+                        continue
+                    bundlepath = trypath
+                    break
+
+            # trypath doesn't exist yet, use it
+            else:
+                bundlepath = trypath
+
+                # just in case..
+                if not os.path.exists(lv2path):
+                    os.mkdir(lv2path)
+
+            os.mkdir(bundlepath)
+            self.pedalboard_path = bundlepath
+
+        # save
+        self.pedalboard_name = title
+        self.save_state_to_ttl(bundlepath, title, titlesym)
+
+        return bundlepath
+
+    def save_state_to_ttl(self, bundlepath, title, titlesym):
         # Write manifest.ttl
         with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
             fh.write("""\
@@ -1603,9 +1648,6 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
-
-    def get_sample_rate(self):
-        return get_jack_sample_rate()
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList, names)
