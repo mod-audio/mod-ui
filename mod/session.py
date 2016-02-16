@@ -190,7 +190,7 @@ class Session(object):
 
     # Save the current pedalboard
     # returns saved bundle path
-    def web_save_pedalboard(self, title, asNew, callback):
+    def web_save_pedalboard(self, title, asNew):
         bundlepath = self.host.save(title, asNew)
         self.pedalboard_changed_callback(True, bundlepath, title)
         self.screenshot_generator.schedule_screenshot(bundlepath)

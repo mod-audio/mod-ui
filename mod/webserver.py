@@ -799,6 +799,7 @@ class BankLoad(web.RequestHandler):
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(banks))
+        self.finish()
 
 class BankSave(web.RequestHandler):
     @web.asynchronous
@@ -815,6 +816,7 @@ class HardwareLoad(web.RequestHandler):
         hardware = SESSION.get_hardware()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(hardware))
+        self.finish()
 
 class TemplateHandler(web.RequestHandler):
     def get(self, path):

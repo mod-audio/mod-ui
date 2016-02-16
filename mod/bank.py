@@ -38,6 +38,7 @@ def list_banks():
     for bank in banks:
         for pb in bank['pedalboards']:
             if not os.path.exists(pb['bundle']):
+                print("ERROR in banks.py: referenced pedalboard does not exist:", pb['bundle'])
                 break
         else:
             validbanks.append(bank)
@@ -46,23 +47,19 @@ def list_banks():
 
 # save banks to disk
 def save_banks(banks):
-    banks = json.dumps(banks)
-
     with open(BANKS_JSON_FILE, 'w') as fh:
-        fh.write(banks)
+        json.dump(banks, fh)
 
 # save last bank id and pedalboard path to disk
 def save_last_bank_and_pedalboard(bank, pedalboard):
     if bank is None:
         return
 
-    state = json.dumps({
-        'bank': bank,
-        'pedalboard': pedalboard
-    })
-
     with open(LAST_STATE_JSON_FILE, 'w') as fh:
-        fh.write(state)
+        json.dump({
+            'bank': bank,
+            'pedalboard': pedalboard
+        }, fh)
 
 # get last bank id and pedalboard path
 def get_last_bank_and_pedalboard():
@@ -98,11 +95,12 @@ def remove_pedalboard_from_banks(pedalboard):
         newpedalboards = []
 
         for oldpedalboard in bank['pedalboards']:
-            if oldpedalboard['bundle'] != pedalboard:
+            if os.path.abspath(oldpedalboard['bundle']) != os.path.abspath(pedalboard):
                 newpedalboards.append(oldpedalboard)
 
         # if there's no pedalboards left ignore this bank (ie, delete it)
         if len(newpedalboards) == 0:
+            print("Auto-deleting bank with name '%s', as it does not contain any more pedalboards" % bank['title'])
             continue
 
         bank['pedalboards'] = newpedalboards
