@@ -323,6 +323,8 @@ class PedalboardHardware(Structure):
 class PedalboardInfo(Structure):
     _fields_ = [
         ("title", c_char_p),
+        ("width", c_int),
+        ("height", c_int),
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
         ("hardware", PedalboardHardware),

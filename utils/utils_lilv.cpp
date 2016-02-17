@@ -3292,6 +3292,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const midi_channel    = lilv_new_uri(w, LV2_MIDI__channel);
     LilvNode* const midi_controlNum = lilv_new_uri(w, LV2_MIDI__controllerNumber);
     LilvNode* const modpedal_preset = lilv_new_uri(w, LILV_NS_MODPEDAL "preset");
+    LilvNode* const modpedal_width  = lilv_new_uri(w, LILV_NS_MODPEDAL "width");
+    LilvNode* const modpedal_height = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
 
     // --------------------------------------------------------------------------------------------------------
     // title
@@ -3308,6 +3310,22 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     else
     {
         info.title = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // size
+
+    if (LilvNodes* const widthnodes = lilv_plugin_get_value(p, modpedal_width))
+    {
+        if (LilvNodes* const heightnodes = lilv_plugin_get_value(p, modpedal_height))
+        {
+            info.width  = lilv_node_as_int(lilv_nodes_get_first(widthnodes));
+            info.height = lilv_node_as_int(lilv_nodes_get_first(heightnodes));
+
+            lilv_nodes_free(heightnodes);
+        }
+
+        lilv_nodes_free(widthnodes);
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -3656,6 +3674,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(midi_channel);
     lilv_node_free(midi_controlNum);
     lilv_node_free(modpedal_preset);
+    lilv_node_free(modpedal_width);
+    lilv_node_free(modpedal_height);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 

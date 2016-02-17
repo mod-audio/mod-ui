@@ -475,6 +475,10 @@ JqueryClass('pedalboard', {
         for (var i in data.plugins)
             uris.push(data.plugins[i].uri)
 
+        if (data.width > 0 && data.height > 0) {
+            // TODO: set initial window size
+        }
+
         self.data('getPluginsData')(uris, loadPlugin)
     },
 
