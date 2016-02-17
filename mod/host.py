@@ -377,7 +377,7 @@ class Host(object):
             return
 
         data = get_jack_data()
-        websocket.write_message("stats %0.1f %i" % (max((data['cpuLoad']-3.8462)*1.04,0.0), data['xruns']))
+        websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
 
         websocket.write_message("wait_start")
@@ -1306,7 +1306,7 @@ _:b%i
 
     def statstimer_callback(self):
         data = get_jack_data()
-        self.msg_callback("stats %0.1f %i" % (max((data['cpuLoad']-3.8462)*1.04,0.0), data['xruns']))
+        self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
     def memtimer_callback(self):
         if not self.memfile:
