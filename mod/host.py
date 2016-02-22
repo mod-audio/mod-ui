@@ -747,6 +747,10 @@ class Host(object):
                 return "ttymidi:MIDI_in"
             if data[2] == "serial_midi_out":
                 return "ttymidi:MIDI_out"
+            if data[2].startswith("playback_"):
+                num = data[2].replace("playback_","",1)
+                if num in ("1", "2"):
+                    return "mod-host:monitor-in_" + num
             return "system:%s" % data[2]
 
         instance    = "/graph/%s" % data[2]
