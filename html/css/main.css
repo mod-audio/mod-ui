@@ -6091,14 +6091,13 @@ button.close {
   }
 }
 .cloud-plugins .cloud-plugin:hover {
-  background-color: #883996;
+  background-color: black;
 }
 .cloud-plugins .cloud-plugin:hover .description {
-  background: rgba(136, 57, 150, 0.8);
+  background: rgba(0, 0, 0, 0.8);
 }
 .cloud-plugins .cloud-plugin:hover .description hr {
-  border: none;
-  border-bottom: 1px solid #212121;
+  border-color: #f29446;
 }
 .cloud-plugins .cloud-plugin:hover figure {
   width: calc(100% - 20px);
