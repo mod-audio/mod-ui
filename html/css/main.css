@@ -5999,7 +5999,7 @@ button.close {
   height: 32px;
   line-height: 32px;
   width: 100%;
-  margin-bottom: 15px;
+  margin-bottom: 1px;
   padding-left: 15px;
   border: 0px solid #f29446;
 }
