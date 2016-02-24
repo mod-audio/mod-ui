@@ -38,20 +38,24 @@ class FakeHMI(FakeCommunicator, HMI):
 
 class FakeHost(FakeCommunicator, Host):
     def __del__(self):
-        self.sock = None
+        self.readsock = None
+        self.writesock = None
 
     def init_connection(self):
         self.open_connection_if_needed(None, lambda ws:None)
 
     def open_connection_if_needed(self, websocket, callback):
-        if self.sock is None:
-            self.sock = True
-            self._timer = ioloop.PeriodicCallback(self._timer_callback, 500)
+        if self.readsock is None:
+            self.readsock = True
+        if self.writesock is None:
+            self.writesock = True
+            #self._timer = ioloop.PeriodicCallback(self._timer_callback, 500)
 
         callback(websocket)
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
         callback(True)
+        return
 
         msg = msg.replace("[]","",1).strip()
         msg = [line.strip() for line in msg.split("\n")]
