@@ -6782,6 +6782,7 @@ button.close {
   position: relative;
   background: transparent url(../img/loading-pedalboard.gif) center center no-repeat;
   transition: all 0.33s;
+  cursor: pointer;
 }
 #pedalboards-library .pedalboards .pedalboard:hover {
   background-color: #883996;

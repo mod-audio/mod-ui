@@ -192,8 +192,9 @@ JqueryClass('pedalboardBox', {
             })
             return false
         }
-        rendered.find('.js-load').click(load)
-        rendered.find('img').click(load)
+        rendered.click(load)
+        //rendered.find('.js-load').click(load)
+        //rendered.find('img').click(load)
         rendered.find('.js-duplicate').click(function () {
             self.data('duplicate')(pedalboard, function (duplicated) {
                 var dupRendered = self.pedalboardBox('render', duplicated, canvas)
@@ -205,10 +206,11 @@ JqueryClass('pedalboardBox', {
             })
             return false
         })
-        rendered.find('.js-remove').click(function () {
+        rendered.find('.js-remove').click(function (e) {
             self.data('remove')(pedalboard, function () {
                 rendered.remove()
             })
+            e.stopPropagation();
             return false
         })
 
