@@ -487,13 +487,13 @@ body > .mod-settings.mod-window-visible {
     background-image:url(../img/footswitch.png);
     background-position:left center;
     background-repeat:no-repeat;
-    background-size:auto 63px;
-    height:63px;
+    background-size:auto 64px;
+    height:64px;
     left:47px;
     position:absolute;
     overflow:hidden;
     top:55px;
-    width:63px;
+    width:64px;
 }
 
 /* This makes the switch works either with film of switch widget */
