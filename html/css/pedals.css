@@ -259,10 +259,23 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings .mod-knob > span.mod-knob-current-value {
     bottom:12px;
     font-weight:bold;
-    left:0;
+    left: 38px;
     position:absolute;
     text-align:center;
-    right:0;
+    right: 38px;
+    padding: 2px;
+    border: 1px solid #000;
+    background: black;
+}
+.mod-pedal-settings .mod-knob > span.mod-knob-current-value:focus {
+    border: 1px solid #883996;
+    background: black;
+}
+.mod-pedal-settings .mod-knob > span.mod-knob-current-value::selection {
+  background: #883996;
+}
+.mod-pedal-settings .mod-knob > span.mod-knob-current-value::-moz-selection {
+  background: #883996;
 }
 .mod-pedal-settings .mod-knob > span.mod-knob-max-value {
     font-size:10px;
