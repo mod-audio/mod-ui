@@ -41,17 +41,23 @@ class FakeHost(FakeCommunicator, Host):
         self.readsock = None
         self.writesock = None
 
-    def init_connection(self):
-        self.open_connection_if_needed(None, lambda ws:None)
+    def open_connection_if_needed(self, websocket):
+        if self.readsock is not None and self.writesock is not None:
+            self.report_current_state(websocket)
+            return
 
-    def open_connection_if_needed(self, websocket, callback):
         if self.readsock is None:
             self.readsock = True
         if self.writesock is None:
             self.writesock = True
-            #self._timer = ioloop.PeriodicCallback(self._timer_callback, 500)
 
-        callback(websocket)
+        self.connected = True
+        self.report_current_state(websocket)
+        self.statstimer.start()
+
+        if self.memtimer is not None:
+            self.memtimer_callback()
+            self.memtimer.start()
 
     def _send(self, msg, callback=lambda r:r, datatype='int'):
         callback(True)
@@ -85,9 +91,6 @@ class FakeHost(FakeCommunicator, Host):
         #ingen:canvasX 1589.718750 ;
         #ingen:canvasY 404.000000 ;
  #] .
-
-    def _timer_callback(self):
-        pass
 
     #def param_get(self, instance_id, symbol, callback=lambda result: None):
         #callback({'ok': True, 'value': 17})

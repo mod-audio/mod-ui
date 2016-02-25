@@ -59,6 +59,7 @@ class HMI(object):
         self.baud_rate = baud_rate
         self.queue = []
         self.queue_idle = True
+        self.initialized = False
         self.ioloop = ioloop.IOLoop.instance()
         self.init(callback)
 

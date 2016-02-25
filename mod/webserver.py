@@ -546,14 +546,17 @@ class EffectPosition(web.RequestHandler):
         self.write(json.dumps(resp))
         self.finish()
 
-class AtomWebSocket(websocket.WebSocketHandler):
+class ServerWebSocket(websocket.WebSocketHandler):
+    @gen.coroutine
     def open(self):
-        print("atom websocket open")
-        SESSION.websocket_opened(self)
+        print("websocket open")
+        self.set_nodelay(True)
+        yield gen.Task(SESSION.websocket_opened, self)
 
+    @gen.coroutine
     def on_close(self):
-        print("atom websocket close")
-        SESSION.websocket_closed(self)
+        print("websocket close")
+        yield gen.Task(SESSION.websocket_closed, self)
 
 # I think this is unused...
 #class PackageEffectList(web.RequestHandler):
@@ -909,11 +912,9 @@ class TemplateHandler(web.RequestHandler):
         context['pedalboard'] = b64encode(json.dumps(pedalboard).encode("utf-8"))
         return context
 
-class EditionLoader(TemplateHandler):
-    def get(self, path):
-        super(EditionLoader, self).get(path)
-        # FIXME: wait for HMI to respond
-        SESSION.start_session()
+#class EditionLoader(TemplateHandler):
+    #def get(self, path):
+        #super(EditionLoader, self).get(path)
 
 class TemplateLoader(web.RequestHandler):
     def get(self, path):
@@ -1236,12 +1237,12 @@ application = web.Application(
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
 
-            (r"/(index.html)?$", EditionLoader),
+            (r"/(index.html)?$", TemplateHandler),
             (r"/([a-z]+\.html)$", TemplateHandler),
             (r"/load_template/([a-z_]+\.html)$", TemplateLoader),
             (r"/js/templates.js$", BulkTemplateLoader),
 
-            (r"/websocket/?$", AtomWebSocket),
+            (r"/websocket/?$", ServerWebSocket),
 
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
             ],

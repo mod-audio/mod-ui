@@ -34,7 +34,7 @@ from tornado import gen, iostream, ioloop
 import os, json, socket, logging
 
 from mod import get_hardware, symbolify
-from mod.bank import list_banks, save_last_bank_and_pedalboard
+from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import charPtrToString
 from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
@@ -114,7 +114,11 @@ class InstanceIdMapper(object):
         return self.id_map[id]
 
 class Host(object):
-    def __init__(self, hmi):
+    def __init__(self, hmi, msg_callback):
+        if False:
+            from mod.hmi import HMI
+            self.hmi = HMI()
+
         self.hmi = hmi
         self.addr = ("localhost", 5555)
         self.readsock = None
@@ -168,7 +172,7 @@ class Host(object):
         else:
             self.memtimer = None
 
-        self.msg_callback = lambda msg:None
+        self.msg_callback = msg_callback
 
         set_util_callbacks(self.midi_port_deleted, self.true_bypass_changed)
 
@@ -189,8 +193,7 @@ class Host(object):
         #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
         #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
 
-        ioloop.IOLoop.instance().add_callback(self.init_jack)
-        ioloop.IOLoop.instance().add_callback(self.init_connection)
+        ioloop.IOLoop.instance().add_callback(self.init_host)
 
     def __del__(self):
         self.msg_callback("stop")
@@ -223,6 +226,17 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
+    def init_host(self):
+        self.init_jack()
+        self.open_connection_if_needed(None)
+
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
+
+        if pedalboard:
+            self.load(pedalboard, bank_id)
+        else:
+            self.send("remove -1", lambda r:None, datatype='boolean')
+
     def init_jack(self):
         self.audioportsIn  = []
         self.audioportsOut = []
@@ -239,12 +253,9 @@ class Host(object):
     def close_jack(self):
         close_jack()
 
-    def init_connection(self):
-        self.open_connection_if_needed(None, lambda ws:None)
-
-    def open_connection_if_needed(self, websocket, callback):
+    def open_connection_if_needed(self, websocket):
         if self.readsock is not None and self.writesock is not None:
-            callback(websocket)
+            self.report_current_state(websocket)
             return
 
         def reader_check_response():
@@ -252,8 +263,7 @@ class Host(object):
 
         def writer_check_response():
             self.connected = True
-            callback(websocket)
-            self.statstimer_callback()
+            self.report_current_state(websocket)
             self.statstimer.start()
 
             if self.memtimer is not None:
@@ -289,6 +299,42 @@ class Host(object):
             self.memtimer.stop()
 
         self.msg_callback("disconnected")
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def start_session(self, callback):
+        if not self.hmi.initialized:
+            callback(True)
+            return
+
+        def ui_con_callback(ok):
+            self.hmi.ui_con(callback)
+
+        def foot2_callback(ok):
+            acthw = self._uri2hw_map["/hmi/footswitch2"]
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, ui_con_callback)
+
+        def foot1_callback(ok):
+            acthw = self._uri2hw_map["/hmi/footswitch1"]
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, foot2_callback)
+
+        self.hmi.initial_state(-1, "", "", foot1_callback)
+
+    def end_session(self, callback):
+        if not self.hmi.initialized:
+            callback(True)
+            return
+
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
+
+        if not pedalboard:
+            bank_id = -1
+            pedalboard = ""
+
+        def initial_state_callback(ok):
+            self.hmi.initial_state(bank_id, pedalboard, "", callback)
+
+        self.hmi.ui_dis(initial_state_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -373,9 +419,6 @@ class Host(object):
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff
-
-    def initial_setup(self, callback):
-        self.send("remove -1", callback, datatype='boolean')
 
     def report_current_state(self, websocket):
         if websocket is None:
@@ -527,8 +570,8 @@ class Host(object):
 
     def reset(self, callback, resetBanks=True):
         def host_callback(ok):
-            callback(ok)
             self.msg_callback("remove :all")
+            callback(ok)
 
         if resetBanks:
             self.banks = []
@@ -594,7 +637,7 @@ class Host(object):
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
     @gen.coroutine
-    def remove_plugin(self, instance, hmi_initialized, callback):
+    def remove_plugin(self, instance, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
         try:
@@ -629,7 +672,7 @@ class Host(object):
         def hmi_callback(ok):
             self.send("remove %d" % instance_id, host_callback, datatype='boolean')
 
-        if hmi_initialized:
+        if self.hmi.initialized:
             self.hmi.control_rm(instance_id, ":all", hmi_callback)
         else:
             hmi_callback(True)
@@ -931,7 +974,8 @@ class Host(object):
             self.connections.append((port_from, port_to))
             self.msg_callback("connect %s %s" % (port_from, port_to))
 
-        self._load_addressings(bundlepath)
+        if self.hmi.initialized:
+            self._load_addressings(bundlepath)
 
         self.msg_callback("wait_end")
 

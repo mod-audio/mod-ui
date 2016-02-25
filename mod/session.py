@@ -44,20 +44,23 @@ else:
 
 class Session(object):
     def __init__(self):
-        self.host_initialized = False
-
         self._tuner = False
         self._tuner_port = 1
         self._peakmeter = False
 
         self.monitor_server = None
-        self.current_bank = None
-        self.hmi_initialized = False
+
+        self.ioloop = ioloop.IOLoop.instance()
+
+        self.recorder = Recorder()
+        self.player = Player()
+        self.mute_state = True
+        self.recording = None
+        self.screenshot_generator = ScreenshotGenerator()
+        self.websockets = []
 
         # Used in mod-app to know when the current pedalboard changed
         self.pedalboard_changed_callback = lambda ok,bundlepath,title:None
-
-        self.ioloop = ioloop.IOLoop.instance()
 
         # Try to open real HMI
         hmiOpened = False
@@ -72,27 +75,19 @@ class Session(object):
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
 
         if DEV_HOST:
-            self.host = FakeHost(self.hmi)
+            self.host = FakeHost(self.hmi, self.msg_callback)
         else:
-            self.host = Host(self.hmi)
-
-        self.recorder = Recorder()
-        self.player = Player()
-        self.mute_state = True
-        self.recording = None
-        self.screenshot_generator = ScreenshotGenerator()
+            self.host = Host(self.hmi, self.msg_callback)
 
         self._clipmeter = Clipmeter(self.hmi)
-        self.websockets = []
-
-        self.ioloop.add_callback(self.init_socket)
 
     def signal_disconnect(self):
         sockets = self.websockets
         self.websockets = []
         for ws in sockets:
             ws.write_message("stop")
-        self.hmi.ui_dis(lambda r:None)
+            ws.close()
+        self.host.end_session(lambda r:None)
 
     def get_hardware(self):
         hw = deepcopy(get_hardware())
@@ -112,23 +107,20 @@ class Session(object):
         if self.host.writesock is not None:
             self.host.writesock.close()
             self.host.writesock = None
-        self.host.open_connection_if_needed(self.websockets[0], self.host_callback)
+        self.host.open_connection_if_needed(self.websockets[0])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
-    def init_socket(self):
-        self.host.open_connection_if_needed(None, self.host_callback)
-
     @gen.coroutine
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
-        self.hmi_initialized = True
+        self.hmi.initialized = True
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         if pedalboard:
-            self.load_pedalboard(pedalboard, bank_id)
+            self.host._load_addressings(pedalboard)
         else:
             bank_id = -1
             pedalboard = ""
@@ -146,14 +138,14 @@ class Session(object):
 
     # Remove a plugin
     def web_remove(self, instance, callback):
-        self.host.remove_plugin(instance, self.hmi_initialized, callback)
+        self.host.remove_plugin(instance, callback)
 
     # Set a plugin parameter
     # We use ":bypass" symbol for on/off state
     def web_parameter_set(self, port, value, callback):
-        instance, port2 = port.rsplit("/",1)
+        instance, portsymbol = port.rsplit("/",1)
 
-        if port2 == ":bypass":
+        if portsymbol == ":bypass":
             value = value >= 0.5
             self.host.bypass(instance, value, callback)
         else:
@@ -163,7 +155,7 @@ class Session(object):
 
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
-        if not (self.hmi_initialized or actuator_uri.startswith("/midi-")):
+        if not (self.hmi.initialized or actuator_uri.startswith("/midi-")):
             callback(False)
             return
 
@@ -218,13 +210,27 @@ class Session(object):
 
     # A new webbrowser page has been open
     # We need to cache its socket address and send any msg callbacks to it
-    def websocket_opened(self, ws):
-        self.websockets.append(ws)
-        self.host.open_connection_if_needed(ws, self.host_callback)
+    def websocket_opened(self, ws, callback):
+        def ready(ok):
+            self.websockets.append(ws)
+            self.host.open_connection_if_needed(ws)
+            callback(True)
+
+        # if this is the 1st socket, start ui session
+        if len(self.websockets) == 0:
+            self.host.start_session(ready)
+        else:
+            ready(True)
 
     # Webbrowser page closed
-    def websocket_closed(self, ws):
+    def websocket_closed(self, ws, callback):
         self.websockets.remove(ws)
+
+        # if this is the last socket, end ui session
+        if len(self.websockets) == 0:
+            self.host.end_session(callback)
+        else:
+            callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # TODO
@@ -233,19 +239,6 @@ class Session(object):
     def msg_callback(self, msg):
         for ws in self.websockets:
             ws.write_message(msg)
-
-    def host_callback(self, websocket):
-        def finish(ok):
-            self.host.report_current_state(websocket)
-
-        if self.host_initialized:
-            finish(True)
-            return
-
-        self.host_initialized = True
-
-        self.host.msg_callback = self.msg_callback
-        self.host.initial_setup(finish)
 
     def load_pedalboard(self, bundlepath, bank_id=-1):
         title = self.host.load(bundlepath, bank_id)
@@ -258,7 +251,7 @@ class Session(object):
             self.host.reset(callback)
 
         # Wait for HMI if available
-        if self.hmi_initialized:
+        if self.hmi.initialized:
             self.hmi.clear(reset_host)
         else:
             reset_host(True)
@@ -311,46 +304,6 @@ class Session(object):
         #self.host.param_monitor(instance_id, port_id, op, value, callback)
 
     # END host commands
-
-    # hmi commands
-    def start_session(self, callback=None):
-        def verify(resp):
-            if callback is not None:
-                callback(resp)
-            else:
-                assert(resp)
-
-        #self.bank_address(0, 0, 1, 0, 0, lambda r: None)
-        #self.bank_address(0, 0, 1, 1, 0, lambda r: None)
-        #self.bank_address(0, 0, 1, 2, 0, lambda r: None)
-        #self.bank_address(0, 0, 1, 3, 0, lambda r: None)
-
-        def state_callback(ok):
-            self.hmi.ui_con(verify)
-
-        self.hmi.initial_state(-1, "", "", state_callback)
-
-    def end_session(self, callback):
-        bank_id, pedalboard = get_last_bank_and_pedalboard()
-
-        def state_callback(ok):
-            self.hmi.ui_dis(callback)
-
-        if not pedalboard:
-            bank_id = -1
-            pedalboard = ""
-
-        self.hmi.initial_state(bank_id, pedalboard, "", state_callback)
-
-    #def bank_address(self, hardware_type, hardware_id, actuator_type, actuator_id, function, callback):
-        """
-        Function is an integer, meaning:
-         - 0: Nothing (unaddress)
-         - 1: True bypass
-         - 2: Pedalboard up
-         - 3: Pedalboard down
-        """
-        #self.hmi.bank_config(hardware_type, hardware_id, actuator_type, actuator_id, function, callback)
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)
