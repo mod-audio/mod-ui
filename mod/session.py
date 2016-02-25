@@ -224,7 +224,10 @@ class Session(object):
 
     # Webbrowser page closed
     def websocket_closed(self, ws, callback):
-        self.websockets.remove(ws)
+        try:
+            self.websockets.remove(ws)
+        except ValueError as e:
+            pass
 
         # if this is the last socket, end ui session
         if len(self.websockets) == 0:
