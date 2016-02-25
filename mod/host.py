@@ -128,7 +128,7 @@ class Host(object):
         self._queue = []
         self._idle = True
         self.mapper = InstanceIdMapper()
-        self.banks = []
+        self.banks = list_banks()
         self.plugins = {}
         self.connections = []
         self.audioportsIn = []
@@ -302,6 +302,40 @@ class Host(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    def initialize_hmi(self, ui_connected, callback):
+        # If UI is already connected, do nothing
+        if ui_connected:
+            callback(True)
+            return
+
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
+
+        # load addressings if pedalboard is valid, regardless of bank
+        if pedalboard:
+            self._load_addressings(pedalboard)
+
+        # report pedalboard and banks
+        if bank_id >= 0 and pedalboard and bank_id < len(self.banks):
+            bank = self.banks[bank_id]
+            pedalboards = bank['pedalboards']
+            navigateFootswitches = bank['navigateFootswitches']
+        else:
+            bank_id = -1
+            pedalboard = ""
+            pedalboards = []
+
+        def foot2_callback(ok):
+            acthw  = self._uri2hw_map["/hmi/footswitch2"]
+            cfgact = BANK_CONFIG_PEDALBOARD_UP if navigateFootswitches else BANK_CONFIG_NOTHING
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, callback)
+
+        def foot1_callback(ok):
+            acthw  = self._uri2hw_map["/hmi/footswitch1"]
+            cfgact = BANK_CONFIG_PEDALBOARD_DOWN if navigateFootswitches else BANK_CONFIG_NOTHING
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
+
+        self.hmi.initial_state(bank_id, pedalboard, pedalboards, foot1_callback)
+
     def start_session(self, callback):
         if not self.hmi.initialized:
             callback(True)
@@ -310,31 +344,39 @@ class Host(object):
         def ui_con_callback(ok):
             self.hmi.ui_con(callback)
 
+        def initial_state_callback(ok):
+            self.hmi.initial_state(-1, "", [], ui_con_callback)
+
         def foot2_callback(ok):
             acthw = self._uri2hw_map["/hmi/footswitch2"]
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, ui_con_callback)
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, initial_state_callback)
 
         def foot1_callback(ok):
             acthw = self._uri2hw_map["/hmi/footswitch1"]
             self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, foot2_callback)
 
-        self.hmi.initial_state(-1, "", "", foot1_callback)
+        self.banks = []
+        foot1_callback(True)
 
     def end_session(self, callback):
         if not self.hmi.initialized:
             callback(True)
             return
 
+        def initial_state_callback(ok):
+            self.hmi.ui_dis(callback)
+
+        self.banks = list_banks()
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        if not pedalboard:
+        if bank_id >= 0 and pedalboard and bank_id < len(self.banks):
+            pedalboards = self.banks[bank_id]['pedalboards']
+        else:
             bank_id = -1
             pedalboard = ""
+            pedalboards = []
 
-        def initial_state_callback(ok):
-            self.hmi.initial_state(bank_id, pedalboard, "", callback)
-
-        self.hmi.ui_dis(initial_state_callback)
+        self.hmi.initial_state(bank_id, pedalboard, pedalboards, initial_state_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -572,9 +614,6 @@ class Host(object):
         def host_callback(ok):
             self.msg_callback("remove :all")
             callback(ok)
-
-        if resetBanks:
-            self.banks = []
 
         self.plugins = {}
         self.connections = []
@@ -837,13 +876,13 @@ class Host(object):
         try:
             port_from_2 = self._fix_host_connection_port(port_from)
         except:
-            print("Requested '%s' source port doesn't exist, assume disconnected")
+            print("Requested '%s' source port doesn't exist, assume disconnected" % port_from)
             return host_callback(True)
 
         try:
             port_to_2 = self._fix_host_connection_port(port_to)
         except:
-            print("Requested '%s' target port doesn't exist, assume disconnected")
+            print("Requested '%s' target port doesn't exist, assume disconnected" % port_to)
             return host_callback(True)
 
         # all ok, let's begin
@@ -1638,7 +1677,6 @@ _:b%i
 
     def hmi_list_banks(self, callback):
         logging.info("hmi list banks")
-        self.banks = list_banks()
         banks = " ".join('"%s" %d' % (bank['title'], i) for i, bank in enumerate(self.banks))
         callback(True, banks)
 
@@ -1664,17 +1702,13 @@ _:b%i
 
         def foot2_callback(ok):
             acthw = self._uri2hw_map["/hmi/footswitch2"]
-            if navigateFootswitches:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_PEDALBOARD_UP, load_callback)
-            else:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, load_callback)
+            cfgact = BANK_CONFIG_PEDALBOARD_UP if navigateFootswitches else BANK_CONFIG_NOTHING
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, load_callback)
 
         def foot1_callback(ok):
-            acthw = self._uri2hw_map["/hmi/footswitch1"]
-            if navigateFootswitches:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_PEDALBOARD_DOWN, foot2_callback)
-            else:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, foot2_callback)
+            acthw  = self._uri2hw_map["/hmi/footswitch1"]
+            cfgact = BANK_CONFIG_PEDALBOARD_DOWN if navigateFootswitches else BANK_CONFIG_NOTHING
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
 
         def reset_callback(ok):
             self.hmi.clear(foot1_callback)

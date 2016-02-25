@@ -116,16 +116,8 @@ class Session(object):
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
         self.hmi.initialized = True
-
-        bank_id, pedalboard = get_last_bank_and_pedalboard()
-
-        if pedalboard:
-            self.host._load_addressings(pedalboard)
-        else:
-            bank_id = -1
-            pedalboard = ""
-
-        yield gen.Task(self.hmi.initial_state, bank_id, pedalboard, "")
+        ui_connected = bool(len(self.websockets) > 0)
+        yield gen.Task(self.host.initialize_hmi, ui_connected)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
