@@ -107,6 +107,15 @@
 // $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
+    var preloadImages = [
+        "/img/icons/blocked.svg",
+    ];
+    for (var i = 0; i < preloadImages.length; i++) {
+        var img = new Image();
+        img.src = preloadImages[i];
+        preloadImages[i] = img;
+    }
+    
   desktop = new Desktop({
       titleBox: $('#pedalboard-info h1'),
       pedalboard: $('#pedalboard-dashboard'),
