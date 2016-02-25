@@ -8111,7 +8111,8 @@ header#pedalboard-actions {
   font-size: 24px;
 }
 .blocker.screen-disconnected {
-  background: rgba(17, 17, 17, 0.9) url(../img/icons/block.png) 50% 50% no-repeat;
+  background: rgba(17, 17, 17, 0.9) url(../img/icons/blocked.svg) 50% 50% no-repeat;
+  background-size: 100px 100px;
 }
 .blocker.screen-disconnected .button {
   position: absolute;
