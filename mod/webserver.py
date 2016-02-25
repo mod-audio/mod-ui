@@ -30,6 +30,7 @@ import uuid
 from base64 import b64decode, b64encode
 from hashlib import sha1
 from hashlib import md5
+from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
 
 from mod.settings import (APP, DESKTOP, LOG,
@@ -1246,8 +1247,13 @@ application = web.Application(
             ],
             debug=LOG and False, **settings)
 
+def signal_recv(sig, frame=0):
+    if sig == SIGUSR2:
+        tornado.ioloop.IOLoop.instance().add_callback_from_signal(SESSION.signal_disconnect)
+
 def prepare():
     def run_server():
+        signal(SIGUSR2, signal_recv)
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
         if LOG:
             tornado.log.enable_pretty_logging()

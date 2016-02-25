@@ -84,9 +84,15 @@ class Session(object):
 
         self._clipmeter = Clipmeter(self.hmi)
         self.websockets = []
-        self.mididevuuids = []
 
         self.ioloop.add_callback(self.init_socket)
+
+    def signal_disconnect(self):
+        sockets = self.websockets
+        self.websockets = []
+        for ws in sockets:
+            ws.write_message("stop")
+        self.hmi.ui_dis(lambda r:None)
 
     def get_hardware(self):
         hw = deepcopy(get_hardware())
