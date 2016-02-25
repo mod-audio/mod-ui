@@ -323,6 +323,7 @@ class Host(object):
             bank_id = -1
             pedalboard = ""
             pedalboards = []
+            navigateFootswitches = False
 
         def foot2_callback(ok):
             acthw  = self._uri2hw_map["/hmi/footswitch2"]
@@ -1701,7 +1702,7 @@ _:b%i
             callback(True)
 
         def foot2_callback(ok):
-            acthw = self._uri2hw_map["/hmi/footswitch2"]
+            acthw  = self._uri2hw_map["/hmi/footswitch2"]
             cfgact = BANK_CONFIG_PEDALBOARD_UP if navigateFootswitches else BANK_CONFIG_NOTHING
             self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, load_callback)
 
