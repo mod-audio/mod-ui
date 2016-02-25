@@ -91,12 +91,29 @@
         background-position: center center;
         background-repeat: no-repeat;
         background-size: auto;
+        position: relative;
         &.loaded {
             background-size: contain;
         }
         &.broken {
             background-image: url(../img/icons/broken_image.svg);
             background-size: auto 50%;
+        }
+      }
+      &.broken {
+        .img::after  {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 10;
+          background-color: rgba(17, 17, 17, 0.5);
+          background-image: url(../img/icons/broken_pedal.svg);
+          background-size: auto 50%;
+          background-repeat: no-repeat;
+          background-position: center;
         }
       }
       .info {

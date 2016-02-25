@@ -178,8 +178,11 @@ JqueryClass('pedalboardBox', {
     render: function (pedalboard, canvas) {
         var self = $(this)
 
-        var metadata = { title: pedalboard.title };
-
+        var metadata = {
+            title: pedalboard.title,
+            broken: pedalboard.broken ? "broken" : ""
+        };
+        
         var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
 
         var load = function () {
@@ -189,8 +192,6 @@ JqueryClass('pedalboardBox', {
             return false
         }
         rendered.click(load)
-        //rendered.find('.js-load').click(load)
-        //rendered.find('img').click(load)
         rendered.find('.js-duplicate').click(function () {
             self.data('duplicate')(pedalboard, function (duplicated) {
                 var dupRendered = self.pedalboardBox('render', duplicated, canvas)
