@@ -169,25 +169,6 @@ body {
     background-position:-180px top;
 }
 
-/* MOD - Disconnect */
-#main-menu #mod-disconnect {
-    border-color:#2b2b2b;
-    border-style:solid;
-    border-width:0 0 0 1px;
-    color:rgb(47,47,47);
-    float:right;
-    font-size:11px;
-    font-weight:bold;
-    line-height:4.5;
-    text-align:center;
-    text-transform:uppercase;
-    width:100px;
-}
-#main-menu #mod-disconnect:hover,
-#main-menu #mod-disconnect.selected {
-    background-color:#000;
-    color:#fff;
-}
 /* MOD - CPU */
 #main-menu #mod-cpu, #main-menu #mod-ram {
     border-color:#2b2b2b;

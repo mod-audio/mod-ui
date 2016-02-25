@@ -31,7 +31,6 @@ function Desktop(elements) {
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
-        disconnectButton: $('<div>'),
         bypassLeftButton: $('<div>'),
         bypassRightButton: $('<div>'),
         effectBox: $('<div>'),
@@ -326,24 +325,6 @@ function Desktop(elements) {
         ws.close()
     }
 
-    this.disconnect = function () {
-        var self = this
-        $.ajax({
-            url: '/disconnect',
-            success: function (resp) {
-                if (!resp) {
-                    return new Notification('error',
-                        "Couldn't disconnect")
-                }
-                self.blockUI()
-            },
-            error: function () {
-                new Bug("Couldn't disconnect")
-            },
-            cache: false
-        })
-    }
-
     this.init = function () {
         $(".mod-init-hidden").removeClass("mod-init-hidden");
         $("body").addClass("initialized");
@@ -358,7 +339,6 @@ function Desktop(elements) {
         $('#mod-bypassRight').hide()
         $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
-        $('#mod-disconnect').hide()
         $('#pedalboard-dashboard').parent().css('top', '0px')
 
         if (usingDesktop) {
@@ -540,9 +520,6 @@ function Desktop(elements) {
     })
     elements.resetButton.click(function () {
         self.reset()
-    })
-    elements.disconnectButton.click(function () {
-        self.disconnect()
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))

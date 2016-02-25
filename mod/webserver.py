@@ -779,15 +779,6 @@ class DashboardClean(web.RequestHandler):
         self.write(json.dumps(resp))
         self.finish()
 
-class DashboardDisconnect(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        resp = yield gen.Task(SESSION.end_session)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(resp))
-        self.finish()
-
 class BankLoad(web.RequestHandler):
     def get(self):
         # Banks have only bundle and title of each pedalboard, which is the necessary information for the HMI.
@@ -1219,7 +1210,6 @@ application = web.Application(
             (r"/tokens/save/?", TokensSave),
 
             (r"/reset/?", DashboardClean),
-            (r"/disconnect/?", DashboardDisconnect),
 
             (r"/sdk/install/?", SDKEffectInstaller),
             #(r"/sdk/get_config_script/?", SDKEffectScript),
