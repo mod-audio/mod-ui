@@ -57,6 +57,11 @@ ACTUATOR_TYPE_FOOTSWITCH = 1
 ACTUATOR_TYPE_KNOB       = 2
 ACTUATOR_TYPE_POT        = 3
 
+BANK_CONFIG_NOTHING         = 0
+BANK_CONFIG_TRUE_BYPASS     = 1
+BANK_CONFIG_PEDALBOARD_UP   = 2
+BANK_CONFIG_PEDALBOARD_DOWN = 3
+
 HARDWARE_TYPE_MOD    = 0
 HARDWARE_TYPE_PEDAL  = 1
 HARDWARE_TYPE_TOUCH  = 2
@@ -1616,16 +1621,16 @@ _:b%i
         def foot2_callback(ok):
             acthw = self._uri2hw_map["/hmi/footswitch2"]
             if navigateFootswitches:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 2, load_callback)
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_PEDALBOARD_UP, load_callback)
             else:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 0, load_callback)
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, load_callback)
 
         def foot1_callback(ok):
             acthw = self._uri2hw_map["/hmi/footswitch1"]
             if navigateFootswitches:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 3, foot2_callback)
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_PEDALBOARD_DOWN, foot2_callback)
             else:
-                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], 0, foot2_callback)
+                self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, foot2_callback)
 
         def reset_callback(ok):
             self.hmi.clear(foot1_callback)
