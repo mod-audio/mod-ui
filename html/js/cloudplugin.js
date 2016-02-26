@@ -25,6 +25,10 @@ var kDummyPluginData = {
     },
 }
 
+function getDummyPluginData() {
+    return $.extend(true, {}, kDummyPluginData)
+}
+
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -244,7 +248,7 @@ JqueryClass('cloudPluginBox', {
                 lplugins[uri] = allplugins[uri]
             }
 
-            results.local = lplugins
+            results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
             if (results.cloud != null)
                 renderResults()
         }
@@ -262,12 +266,12 @@ JqueryClass('cloudPluginBox', {
                         allplugins[lplugin.uri] = lplugin
                         desktop.pluginIndexer.add({
                             id: lplugin.uri,
-                            data: [lplugin.uri, lplugin.brand, lplugin.name, lplugin.category.join(" ")].join(" ")
+                            data: [lplugin.uri, lplugin.name, lplugin.brand, lplugin.comment, lplugin.category.join(" ")].join(" "),
                         })
                     }
                     desktop.pluginIndexerData = allplugins
 
-                    results.local = $.extend({}, allplugins) // deep copy instead of link/reference
+                    results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
                     if (results.cloud != null)
                         renderResults()
                 },
@@ -356,7 +360,7 @@ JqueryClass('cloudPluginBox', {
                 lplugins.push(allplugins[uri])
             }
 
-            results.local = lplugins
+            results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
             if (results.cloud != null)
                 renderResults()
         }
@@ -629,14 +633,14 @@ JqueryClass('cloudPluginBox', {
                     plugin = $.extend(pluginData[0], plugin)
                     plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release_number]
                 } else {
-                    plugin = $.extend(kDummyPluginData, plugin)
+                    plugin = $.extend(getDummyPluginData(), plugin)
                     plugin.latestVersion = null
                 }
                 cloudChecked = true
                 showInfo()
             },
             error: function () {
-                plugin = $.extend(kDummyPluginData, plugin)
+                plugin = $.extend(getDummyPluginData(), plugin)
                 plugin.latestVersion = null
                 cloudChecked = true
                 showInfo()
