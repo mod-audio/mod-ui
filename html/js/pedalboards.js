@@ -40,9 +40,6 @@ function PedalboardSearcher(opt) {
         var query = self.searchbox.val()
         var local = self.mode == 'installed'
 
-        if (query.length < 3 && local)
-            return self.list()
-
         self.cleanResults()
 
         opt.search(local, query,
@@ -50,8 +47,8 @@ function PedalboardSearcher(opt) {
                 self.cleanResults()
                 for (var i in pedalboards)
                     self.render(pedalboards[i], url)
-            })
-
+            }
+        )
     }
 
     this.searchbox.keydown(function (e) {
@@ -182,7 +179,7 @@ JqueryClass('pedalboardBox', {
             title: pedalboard.title,
             broken: pedalboard.broken ? "broken" : ""
         };
-        
+
         var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
 
         var load = function () {
