@@ -40,6 +40,9 @@ function PedalboardSearcher(opt) {
         var query = self.searchbox.val()
         var local = self.mode == 'installed'
 
+        if (query.length == 0)
+            return self.list()
+
         self.cleanResults()
 
         opt.search(local, query,
