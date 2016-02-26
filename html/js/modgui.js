@@ -553,8 +553,9 @@ function GUI(effect, options) {
                 else
                     port.format = '%.2f'
 
-                if (port.properties.indexOf("integer") >= 0)
+                if (port.properties.indexOf("integer") >= 0) {
                     port.format = port.format.replace(/%\.\d+f/, '%d')
+                }
 
                 var valueField = element.find('[mod-role=input-control-value][mod-port-symbol=' + symbol + ']')
                 port.valueFields.push(valueField)
@@ -564,6 +565,10 @@ function GUI(effect, options) {
                     for (var i in port.scalePoints) {
                         port.scalePointsIndex[sprintf(port.format, port.scalePoints[i].value)] = port.scalePoints[i]
                     }
+                }
+
+                if (port.properties.indexOf("expensive") >= 0) {
+                    element.find(".mod-address").hide()
                 }
 
                 control.controlWidget({
