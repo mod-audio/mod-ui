@@ -38,8 +38,7 @@ var lunr = function (config) {
 
   idx.pipeline.add(
     lunr.trimmer,
-    lunr.stopWordFilter,
-    lunr.stemmer
+    lunr.stopWordFilter
   )
 
   if (config) config.call(idx, idx)

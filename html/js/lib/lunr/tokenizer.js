@@ -20,10 +20,10 @@ lunr.tokenizer = function (obj) {
   function break_words(word, num) {
       var slices = []
       var length = word.length-num+1
-      for (i=1; i<length; i++) {
-          slices.push(word.substring(i, word.length))
+      for (var i=1; i<length; i++) {
+          slices[word.substring(i, word.length)] = true
       }
-      return slices
+      return Object.keys(slices)
   }
 
   var nwords = []
