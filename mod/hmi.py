@@ -154,7 +154,8 @@ class HMI(object):
         self.sp.write(msg.encode('utf-8') + b'\0')
 
     def initial_state(self, bank_id, pedalboard, pedalboards, callback):
-        pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['bundle']) for pb in pedalboards)
+        pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper(),
+                                              pb['bundle']) for pb in pedalboards)
         self.send("initial_state %d \"%s\" %s" % (bank_id, pedalboard, pedalboards), callback)
 
     def ui_con(self, callback):
@@ -168,17 +169,6 @@ class HMI(object):
 
     def control_add(self, instance_id, port, label, var_type, unit, value, max, min, steps,
                     hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
-        """
-        addresses a new control
-        var_type is one of the following:
-            0 linear
-            1 log
-            2 enumeration
-            3 toggled
-            4 trigger
-            5 tap tempo
-            6 bypass
-        """
         label = '"%s"' % label.upper().replace('"', "")
         unit = '"%s"' % unit.replace('"', '')
         length = len(options)

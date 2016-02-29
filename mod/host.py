@@ -1685,7 +1685,8 @@ _:b%i
     def hmi_list_bank_pedalboards(self, bank_id, callback):
         logging.info("hmi list bank pedalboards")
         if bank_id < len(self.banks):
-            pedalboards = " ".join('"%s" "%s"' % (pb['title'], pb['bundle']) for pb in self.banks[bank_id]['pedalboards'])
+            pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper(),
+                                                  pb['bundle']) for pb in self.banks[bank_id]['pedalboards'])
         else:
             pedalboards = ""
         callback(True, pedalboards)
