@@ -1425,6 +1425,7 @@ _:b%i
 
         pluginData = self.plugins.get(instance_id, None)
         if pluginData is None:
+            print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
             return
 
@@ -1454,6 +1455,7 @@ _:b%i
                     if port_info["symbol"] == port:
                         break
                 else:
+                    print("ERROR: Trying to address non-existing control port '%s'" % (port))
                     callback(False)
                     return
 
@@ -1693,7 +1695,8 @@ _:b%i
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
-        if bank_id >= len(self.banks):
+        if bank_id < 0 or bank_id >= len(self.banks):
+            print("ERROR: Trying to list pedalboards of out of bounds bank id %i" % (bank_id))
             callback(False)
             return
 
