@@ -272,7 +272,12 @@ function HardwareManager(options) {
                 // We're addressing
                 if (actuator.uri && actuator.uri != kNullAddressURI)
                 {
-                    // add new only if needed, addressing might have been updated
+                    // remove old one first
+                    if (currentAddressing.uri) {
+                        remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
+                    }
+
+                    // add new one, print and error if already there
                     if (self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol) < 0) {
                         self.addressingsByActuator[actuator.uri].push(instanceAndSymbol)
                     } else {
