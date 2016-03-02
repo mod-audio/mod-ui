@@ -377,13 +377,13 @@ function GUI(effect, options) {
 
             // adjust icon size after adding all basic elements
             setTimeout(function () {
-                self.icon.width(self.icon.children().width())
-                self.icon.height(self.icon.children().height())
+                self.icon.width(children.width())
+                self.icon.height(children.height())
 
                 // listen for future resizes
-                self.icon.children().resize(function () {
-                    self.icon.width(self.icon.children().width())
-                    self.icon.height(self.icon.children().height())
+                children.resize(function () {
+                    self.icon.width(children.width())
+                    self.icon.height(children.height())
                 })
             }, 1)
 

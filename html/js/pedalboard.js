@@ -562,15 +562,28 @@ JqueryClass('pedalboard', {
                             element.addClass('dragging')
 
                             var scale = self.data('scale')
-                            var w = icon.width()
-                            var h = icon.height()
-                            var dx = w / (4 * scale) - w / 4
-                            var dy = h / (2 * scale) - h / 2
-                            element.css({
-                                webkitTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
-                                MozTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
+                            var children = icon.children()
+
+                            children.resize(function () {
+                                icon.width(children.width())
+                                icon.height(children.height())
+
+                                var w = icon.width()
+                                var h = icon.height()
+                                var dx = w / (4 * scale) - w / 4
+                                var dy = h / (2 * scale) - h / 2
+                                console.log(w, h, dx, dy)
+                                element.css({
+                                    webkitTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
+                                    MozTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
+                                })
                             })
-                            element.append(icon.children())
+
+                            element.css({
+                                webkitTransform: 'scale(' + scale + ')',
+                                MozTransform: 'scale(' + scale + ')',
+                            })
+                            element.append(children)
                         })
                     },
                     dataType: 'json'
