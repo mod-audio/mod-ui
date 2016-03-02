@@ -116,8 +116,8 @@ class Session(object):
     def hmi_initialized_cb(self):
         logging.info("hmi initialized")
         self.hmi.initialized = True
-        ui_connected = bool(len(self.websockets) > 0)
-        yield gen.Task(self.host.initialize_hmi, ui_connected)
+        uiConnected = bool(len(self.websockets) > 0)
+        yield gen.Task(self.host.initialize_hmi, uiConnected, True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
@@ -241,13 +241,13 @@ class Session(object):
         return title
 
     def reset(self, callback):
-        # Callback from HMI, ignore ok status
         def reset_host(ok):
             self.host.reset(callback)
 
-        # Wait for HMI if available
         if self.hmi.initialized:
-            self.hmi.clear(reset_host)
+            def clear_hmi(ok):
+                self.hmi.clear(reset_host)
+            self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:
             reset_host(True)
 

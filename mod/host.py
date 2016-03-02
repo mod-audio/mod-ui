@@ -302,16 +302,26 @@ class Host(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def initialize_hmi(self, ui_connected, callback):
+    def setNavigateWithFootswitches(self, enabled, callback):
+        def foot2_callback(ok):
+            acthw  = self._uri2hw_map["/hmi/footswitch2"]
+            cfgact = BANK_CONFIG_PEDALBOARD_UP if enabled else BANK_CONFIG_NOTHING
+            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, callback)
+
+        acthw  = self._uri2hw_map["/hmi/footswitch1"]
+        cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
+        self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
+
+    def initialize_hmi(self, uiConnected, loadAddressings, callback):
         # If UI is already connected, do nothing
-        if ui_connected:
+        if uiConnected:
             callback(True)
             return
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        # load addressings if pedalboard is valid, regardless of bank
-        if pedalboard:
+        # load addressings if requested, regardless of bank
+        if pedalboard and loadAddressings:
             self._load_addressings(pedalboard)
 
         # report pedalboard and banks
@@ -326,59 +336,42 @@ class Host(object):
             pedalboards = []
             navigateFootswitches = False
 
-        def foot2_callback(ok):
-            acthw  = self._uri2hw_map["/hmi/footswitch2"]
-            cfgact = BANK_CONFIG_PEDALBOARD_UP if navigateFootswitches else BANK_CONFIG_NOTHING
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, callback)
+        def footswitch_callback(ok):
+            self.setNavigateWithFootswitches(True, callback)
 
-        def foot1_callback(ok):
-            acthw  = self._uri2hw_map["/hmi/footswitch1"]
-            cfgact = BANK_CONFIG_PEDALBOARD_DOWN if navigateFootswitches else BANK_CONFIG_NOTHING
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
+        def initial_state_callback(ok):
+            cb = footswitch_callback if navigateFootswitches else callback
+            self.hmi.initial_state(bank_id, pedalboard, pedalboards, cb)
 
-        self.hmi.initial_state(bank_id, pedalboard, pedalboards, foot1_callback)
+        self.setNavigateWithFootswitches(False, initial_state_callback)
 
     def start_session(self, callback):
         if not self.hmi.initialized:
             callback(True)
             return
 
-        def ui_con_callback(ok):
-            self.hmi.ui_con(callback)
-
         def initial_state_callback(ok):
-            self.hmi.initial_state(-1, "", [], ui_con_callback)
+            self.hmi.initial_state(-1, "", [], callback)
 
-        def foot2_callback(ok):
-            acthw = self._uri2hw_map["/hmi/footswitch2"]
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, initial_state_callback)
+        def footswitch_callback(ok):
+            self.setNavigateWithFootswitches(False, initial_state_callback)
 
-        def foot1_callback(ok):
-            acthw = self._uri2hw_map["/hmi/footswitch1"]
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], BANK_CONFIG_NOTHING, foot2_callback)
+        def ui_con_callback(ok):
+            self.hmi.ui_con(footswitch_callback)
 
         self.banks = []
-        foot1_callback(True)
+        ui_con_callback(True)
 
     def end_session(self, callback):
         if not self.hmi.initialized:
             callback(True)
             return
 
-        def initial_state_callback(ok):
-            self.hmi.ui_dis(callback)
+        def initialize_callback(ok):
+            self.initialize_hmi(False, False, callback)
 
         self.banks = list_banks()
-        bank_id, pedalboard = get_last_bank_and_pedalboard()
-
-        if bank_id >= 0 and pedalboard and bank_id < len(self.banks):
-            pedalboards = self.banks[bank_id]['pedalboards']
-        else:
-            bank_id = -1
-            pedalboard = ""
-            pedalboards = []
-
-        self.hmi.initial_state(bank_id, pedalboard, pedalboards, initial_state_callback)
+        self.hmi.ui_dis(initialize_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -612,7 +605,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
-    def reset(self, callback, resetBanks=True):
+    def reset(self, callback):
         def host_callback(ok):
             self.msg_callback("remove :all")
             callback(ok)
@@ -1707,20 +1700,17 @@ _:b%i
             self.load(bundlepath, bank_id)
             callback(True)
 
-        def foot2_callback(ok):
-            acthw  = self._uri2hw_map["/hmi/footswitch2"]
-            cfgact = BANK_CONFIG_PEDALBOARD_UP if navigateFootswitches else BANK_CONFIG_NOTHING
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, load_callback)
+        def footswitch_callback(ok):
+            self.setNavigateWithFootswitches(True, load_callback)
 
-        def foot1_callback(ok):
-            acthw  = self._uri2hw_map["/hmi/footswitch1"]
-            cfgact = BANK_CONFIG_PEDALBOARD_DOWN if navigateFootswitches else BANK_CONFIG_NOTHING
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
+        def hmi_clear_callback(ok):
+            cb = footswitch_callback if navigateFootswitches else load_callback
+            self.hmi.clear(cb)
 
         def reset_callback(ok):
-            self.hmi.clear(foot1_callback)
+            self.reset(hmi_clear_callback)
 
-        self.reset(reset_callback, False)
+        self.setNavigateWithFootswitches(False, reset_callback)
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
         logging.info("hmi parameter get")
