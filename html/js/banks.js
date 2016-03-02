@@ -57,6 +57,7 @@ JqueryClass('bankBox', {
             render: function (pedalboard, url) {
                 var rendered = self.bankBox('renderPedalboard', pedalboard)
                 rendered.draggable({
+                    cursor: "moz-grabbing !important",
                     cursor: "webkit-grabbing !important",
                     revert: 'invalid',
                     connectToSortable: options.pedalboardCanvas,
@@ -75,6 +76,7 @@ JqueryClass('bankBox', {
         }, options))
 
         options.pedalboardCanvas.sortable({
+            cursor: "moz-grabbing !important",
             cursor: "webkit-grabbing !important",
             revert: true,
             update: function (e, ui) {

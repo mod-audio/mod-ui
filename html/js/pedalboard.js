@@ -20,7 +20,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         options = $.extend({
             // baseScale is the initial scale (zoom level) of the pedalboard
-            // The scale is the webkit-transform scale() css property that the pedalboard has
+            // The scale is the transform scale() css property that the pedalboard has
             baseScale: 0.5,
             // maxScale is the maximum zoom.
             maxScale: 1,
@@ -568,6 +568,7 @@ JqueryClass('pedalboard', {
                             var dy = h / (2 * scale) - h / 2
                             element.css({
                                 webkitTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
+                                MozTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
                             })
                             element.append(icon.children())
                         })
@@ -707,8 +708,10 @@ JqueryClass('pedalboard', {
         }, {
             duration: duration,
             step: function (value, prop) {
-                if (prop.prop == 'scale')
+                if (prop.prop == 'scale') {
                     self.css('webkitTransform', 'scale(' + value + ')')
+                    self.css('MozTransform', 'scale(' + value + ')')
+                }
             },
         })
     },
@@ -895,6 +898,7 @@ JqueryClass('pedalboard', {
                 self.height(height)
                 self.css({
                     webkitTransform: 'scale(' + scale + ')',
+                    MozTransform: 'scale(' + scale + ')',
                     top: offsetY,
                     left: offsetX,
                 })
