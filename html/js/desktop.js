@@ -669,13 +669,15 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                             callback(pluginData)
                         } else {
                             new Notification('error', 'Error adding effect')
+                            if (errorCallback)
+                                errorCallback()
                         }
                     },
                     error: function (resp) {
-                        if (resp.status == 404 && firstTry) {
+                        /*if (resp.status == 404 && firstTry) {
                             firstTry = false
                             self.installationQueue.install(uri, add)
-                        } else {
+                        } else*/ {
                             new Notification('error', 'Error adding effect. Probably a connection problem.')
                             if (errorCallback)
                                 errorCallback()
