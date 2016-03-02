@@ -1146,7 +1146,7 @@ JqueryClass('film', baseWidget, {
 
     getAndSetSize: function (dummy, callback) {
         var self = $(this)
-        self.resize(function () {
+        var tryGetAndSetSizeNow = function () {
             if (dummy && ! self.is(":visible"))
                 return
             if (self.data('initialized'))
@@ -1155,6 +1155,7 @@ JqueryClass('film', baseWidget, {
             url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i);
             if (!url) {
                 console.log("WARNING: The background-image definition for '" + self[0].className + "' was not available, retrying later");
+                self.resize(tryGetAndSetSizeNow)
                 return
             }
             url = url[1];
@@ -1176,7 +1177,8 @@ JqueryClass('film', baseWidget, {
                 }
             }
             bgImg.setAttribute('src', url);
-        })
+        }
+        setTimeout(tryGetAndSetSizeNow, 5)
     },
 
     mouseDown: function (e) {
