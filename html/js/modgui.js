@@ -1105,6 +1105,7 @@ JqueryClass('film', baseWidget, {
         }
 
         self.mousedown(function (e) {
+            e.preventDefault();
             if (!self.data('enabled'))
                 return self.film('prevent', e)
             if (e.which == 1) { // left button
