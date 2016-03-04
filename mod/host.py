@@ -349,11 +349,8 @@ class Host(object):
             callback(True)
             return
 
-        def initial_state_callback(ok):
-            self.hmi.initial_state(-1, "", [], callback)
-
         def footswitch_callback(ok):
-            self.setNavigateWithFootswitches(False, initial_state_callback)
+            self.setNavigateWithFootswitches(False, callback)
 
         def ui_con_callback(ok):
             self.hmi.ui_con(footswitch_callback)
