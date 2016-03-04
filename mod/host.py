@@ -349,11 +349,19 @@ class Host(object):
             callback(True)
             return
 
-        def footswitch_callback(ok):
-            self.setNavigateWithFootswitches(False, callback)
+        def footswitch_addr2_callback(ok):
+            acthw = self._uri2hw_map["/hmi/footswitch2"]
+            self._address_next(acthw, callback)
+
+        def footswitch_addr1_callback(ok):
+            acthw = self._uri2hw_map["/hmi/footswitch1"]
+            self._address_next(acthw, footswitch_addr2_callback)
+
+        def footswitch_bank_callback(ok):
+            self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
         self.banks = []
-        self.hmi.ui_con(footswitch_callback)
+        self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
         if not self.hmi.initialized:
