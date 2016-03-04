@@ -328,8 +328,7 @@ class Host(object):
         if bank_id >= 0 and pedalboard and bank_id < len(self.banks):
             bank = self.banks[bank_id]
             pedalboards = bank['pedalboards']
-            # FIXME: this triggers an HMI crash!
-            navigateFootswitches = False # bank['navigateFootswitches']
+            navigateFootswitches = bank['navigateFootswitches']
         else:
             bank_id = -1
             pedalboard = ""
@@ -1693,8 +1692,7 @@ _:b%i
             callback(False)
             return
 
-        # FIXME: this triggers an HMI crash!
-        navigateFootswitches = False # self.banks[bank_id]['navigateFootswitches']
+        navigateFootswitches = self.banks[bank_id]['navigateFootswitches']
 
         def load_callback(ok):
             self.load(bundlepath, bank_id)
@@ -1707,10 +1705,7 @@ _:b%i
             cb = footswitch_callback if navigateFootswitches else load_callback
             self.hmi.clear(cb)
 
-        def reset_callback(ok):
-            self.reset(hmi_clear_callback)
-
-        self.setNavigateWithFootswitches(False, reset_callback)
+        self.reset(hmi_clear_callback)
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
         logging.info("hmi parameter get")
