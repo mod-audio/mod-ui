@@ -1699,11 +1699,10 @@ _:b%i
             callback(True)
 
         def footswitch_callback(ok):
-            self.setNavigateWithFootswitches(True, load_callback)
+            self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
 
         def hmi_clear_callback(ok):
-            cb = footswitch_callback if navigateFootswitches else load_callback
-            self.hmi.clear(cb)
+            self.hmi.clear(footswitch_callback)
 
         self.reset(hmi_clear_callback)
 
