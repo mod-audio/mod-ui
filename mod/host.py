@@ -352,11 +352,8 @@ class Host(object):
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(False, callback)
 
-        def ui_con_callback(ok):
-            self.hmi.ui_con(footswitch_callback)
-
         self.banks = []
-        ui_con_callback(True)
+        self.hmi.ui_con(footswitch_callback)
 
     def end_session(self, callback):
         if not self.hmi.initialized:
