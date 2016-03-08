@@ -546,11 +546,20 @@ JqueryClass('pedalboard', {
         var options = {
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE
         }
-
-        element.draggable($.extend({
-            helper: function () {
-                var element = $('<div class="mod-pedal dummy">')
-
+        var thumb = element.children(".thumb");
+        var img = thumb.children("img");
+        element.draggable($.extend(draggableOptions, {
+            helper: function (event) {
+                var dummy = $('<div class="mod-pedal dummy">');
+                var imgrect = img.position();
+                imgrect.width = img.width();
+                imgrect.height = img.height();
+                var clickpos  = { x: event.offsetX,
+                                  y: event.offsetY };
+                var clickperc = { x: Math.min(imgrect.width, Math.max(0, (event.offsetX - imgrect.left))) / imgrect.width, 
+                                  y: Math.min(imgrect.height, Math.max(0, (event.offsetY - imgrect.top))) / imgrect.height };
+                var pad = { left: parseInt(element.css("padding-left")),
+                            top: parseInt(element.css("padding-top")) };
                 $.ajax({
                     url: '/effect/get',
                     data: {
@@ -558,42 +567,41 @@ JqueryClass('pedalboard', {
                     },
                     success: function (plugin) {
                         new GUI(plugin, options).renderDummyIcon(function (icon) {
-                            element.attr('class', icon.attr('class'))
-                            element.addClass('dragging')
-
-                            var scale = self.data('scale')
-                            var children = icon.children()
-
-                            children.resize(function () {
-                                icon.width(children.width())
-                                icon.height(children.height())
-
-                                var w = icon.width()
-                                var h = icon.height()
-                                var dx = w / (4 * scale) - w / 4
-                                var dy = h / (2 * scale) - h / 2
-                                console.log(w, h, dx, dy)
-                                element.css({
-                                    webkitTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
-                                    MozTransform: 'scale(' + scale + ') translate(-' + dx + 'px, -' + dy + 'px)',
+                            dummy.attr('class', icon.attr('class'))
+                            dummy.addClass('dragging')
+                            dummy.css("transformOrigin", "0 0");
+                            dummy.css("visibility", "hidden");
+                            var children = icon.children();
+                            
+                            var settle = function () {
+                                var scale = self.data('scale');
+                                var trans = 'scale(' + scale + ') ';
+                                var w = icon.width();
+                                var h = icon.height();
+                                var tx = (pad.left + clickpos.x) / scale - clickperc.x * w;
+                                var ty = (pad.top + clickpos.y) / scale - clickperc.y * h;
+                                trans += 'translate(' + tx + 'px, ' + ty + 'px) ';
+                                dummy.css({
+                                    webkitTransform: trans,
+                                    MozTransform: trans,
                                 })
+                            }
+                            children.resize(function () {
+                                icon.width(children.width());
+                                icon.height(children.height());
+                                settle();
+                                dummy.css("visibility", "visible");
                             })
-
-                            element.css({
-                                webkitTransform: 'scale(' + scale + ')',
-                                MozTransform: 'scale(' + scale + ')',
-                            })
-                            element.append(children)
+                            dummy.append(children);
                         })
                     },
                     dataType: 'json'
                 })
-
-                $('body').append(element)
-
-                return element
-            }
-        }, draggableOptions))
+                $('body').append(dummy)
+                return dummy
+            },
+            handle: thumb
+        }))
     },
 
     // Resize pedalboard size to fit whole window

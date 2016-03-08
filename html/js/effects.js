@@ -319,7 +319,7 @@ JqueryClass('effectBox', {
         var rendered = $(Array.prototype.slice.call(div.childNodes, 0));
 
         self.data('pedalboard').pedalboard('registerAvailablePlugin', rendered, plugin, {
-            distance: 5,
+            distance: 2,
             delay: 100,
             start: function () {
                 if (self.data('info'))
