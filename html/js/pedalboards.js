@@ -23,14 +23,18 @@ function PedalboardSearcher(opt) {
     this.searchbutton = opt.searchbutton
     this.cleanResults = opt.cleanResults
     this.render = opt.render
+    this.skipBroken = opt.skipBroken
 
     this.searchbox.cleanableInput()
 
     this.list = function () {
         self.cleanResults()
         opt.list(function (pedalboards) {
-            for (var i in pedalboards)
+            for (var i in pedalboards) {
+                if (opt.skipBroken && pedalboards[i].broken)
+                    continue;
                 self.render(pedalboards[i], '')
+            }
         })
 
     }
@@ -48,8 +52,11 @@ function PedalboardSearcher(opt) {
         opt.search(local, query,
             function (pedalboards, url) {
                 self.cleanResults()
-                for (var i in pedalboards)
+                for (var i in pedalboards) {
+                    if (opt.skipBroken && pedalboards[i].broken)
+                        continue;
                     self.render(pedalboards[i], url)
+                }
             }
         )
     }
@@ -133,6 +140,7 @@ JqueryClass('pedalboardBox', {
             searchbox: self.find('input[type=search]'),
             searchbutton: self.find('button.search'),
             mode: 'installed',
+            skipBroken: false,
             render: function (pedalboard, url) {
                 self.pedalboardBox('showPedalboard', pedalboard)
             },
