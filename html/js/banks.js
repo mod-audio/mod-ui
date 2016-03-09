@@ -238,13 +238,11 @@ JqueryClass('bankBox', {
     renderBank: function (bankData) {
         var self = $(this)
         var bank = $(Mustache.render(TEMPLATES.bank_item, bankData))
-        //var addressing = bankData.addressing || [0, 0, 0, 0]
         self.data('bankCanvas').append(bank)
         bank.data('selected', false)
         bank.data('pedalboards', $('<div>'))
         bank.data('navigateFootswitches', bankData.navigateFootswitches)
-        //bank.data('addressing', addressing)
-        /*bank.data('title', bankData.title)*/
+        bank.data('title', bankData.title)
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
@@ -312,6 +310,7 @@ JqueryClass('bankBox', {
         bank.addClass('selected')
 
         self.data('bankNavigateFootswitches').prop("checked", bank.data('navigateFootswitches'))
+        self.data('bankAddressing').find('h1').text(bank.data('title') || "Untitled")
         self.data('bankAddressing').show()
     },
 
@@ -331,6 +330,8 @@ JqueryClass('bankBox', {
             var title = editBox.val() || 'Untitled'
             titleBox.data('editing', false)
             titleBox.html(title)
+            bank.data('title', title)
+            self.data('bankAddressing').find('h1').text(bank.data('title'))
             self.bankBox('save')
             /*
             self.data('currentBank').data('title', title)
