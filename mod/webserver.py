@@ -28,14 +28,12 @@ import tornado.escape
 import time
 import uuid
 from base64 import b64decode, b64encode
-from hashlib import sha1
-from hashlib import md5
 from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
 
 from mod.settings import (APP, DESKTOP, LOG,
                           HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
-                          DEVICE_SERIAL, DEVICE_KEY, LV2_PLUGIN_DIR,
+                          DEVICE_SERIAL, LV2_PLUGIN_DIR,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
@@ -43,8 +41,8 @@ from mod.settings import (APP, DESKTOP, LOG,
                           AVATAR_URL, DEV_ENVIRONMENT,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
-from mod import check_environment, jsoncall, json_handler, register, symbolify
-from mod.communication import crypto
+from mod import check_environment, jsoncall, json_handler, symbolify
+from mod.communication import token
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.utils import (init as lv2_init,
@@ -991,47 +989,19 @@ class JackXRuns(web.RequestHandler):
         self.write(json.dumps(SESSSION.xrun_count))
         self.finish()
 
-class LoginSign(web.RequestHandler):
-    def get(self, sid):
-        if not os.path.exists(DEVICE_KEY):
-            return
-        signature = crypto.Sender(DEVICE_KEY, sid).pack()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({
-                    'signature': signature,
-                    'serial': open(DEVICE_SERIAL).read().strip(),
-                    }))
-
-class LoginAuthenticate(web.RequestHandler):
+class AuthNonce(web.RequestHandler):
     def post(self):
-        serialized_user = self.get_argument('user').encode("utf-8")
-        signature = self.get_argument('signature')
-        receiver = crypto.Receiver(CLOUD_PUB, signature)
-        checksum = receiver.unpack()
-        self.set_header('Access-Control-Allow-Origin', CLOUD_HTTP_ADDRESS)
+        data = json.loads(self.request.body.decode())
+        message = token.create_token_message(data['nonce'])
         self.set_header('Content-Type', 'application/json')
-        if not sha1(serialized_user).hexdigest() == checksum:
-            return self.write(json.dumps({ 'ok': False}))
-        user = json.loads(b64decode(serialized_user).decode("utf-8", errors="ignore"))
-        self.write(json.dumps({ 'ok': True,
-                                'user': user }))
+        self.write(message)
 
-class RegistrationStart(web.RequestHandler):
-    def get(self, serial_number):
-        try:
-            package = register.DeviceRegisterer().generate_registration_package(serial_number)
-        except register.DeviceAlreadyRegistered:
-            raise web.HTTPError(403)
-
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(package))
-
-class RegistrationFinish(web.RequestHandler):
+class AuthToken(web.RequestHandler):
     def post(self):
-        response = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        ok = register.DeviceRegisterer().register(response)
+        access_token = token.decode_and_decrypt(self.request.body.decode())
+        # don't ever save this token locally
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(ok))
+        self.write(json.dumps({'access_token': access_token}))
 
 class RecordingStart(web.RequestHandler):
     def get(self):
@@ -1196,8 +1166,8 @@ application = web.Application(
 
             (r"/hardware", HardwareLoad),
 
-            (r"/login/sign_session/(.+)", LoginSign),
-            (r"/login/authenticate", LoginAuthenticate),
+            (r"/auth/nonce/?$", AuthNonce),
+            (r"/auth/token/?$", AuthToken),
 
             (r"/recording/start", RecordingStart),
             (r"/recording/stop", RecordingStop),
@@ -1213,9 +1183,6 @@ application = web.Application(
 
             (r"/sdk/install/?", SDKEffectInstaller),
             #(r"/sdk/get_config_script/?", SDKEffectScript),
-
-            #(r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
-            #(r"/register/finish/?", RegistrationFinish),
 
             #(r"/sysmon/ps", SysMonProcessList),
 

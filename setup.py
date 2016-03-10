@@ -99,7 +99,11 @@ setup(name = 'mod',
                     (('share/mod'), ['screenshot.js']),
                     (('share/mod/keys'), ['keys/cloud_key.pub']),
           ],
-      install_requires = ['tornado'],
+      install_requires = ['tornado', 'pycrypto==2.7a1'],
+      dependency_links = [
+        'http://github.com/dlitz/pycrypto/tarball/v2.7a1#egg=pycrypto-2.7a1',
+      ],
+
       classifiers = [
           'Intended Audience :: Developers',
           'Natural Language :: English',
