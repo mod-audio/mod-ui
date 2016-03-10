@@ -14,9 +14,8 @@ def get_tag():
 
 
 def get_device_key():
-    # replace with code that reads the path to device private key
-    # the first time it runs it should read it from MOD's i2c chip
-    # probably a good idea to cache that value in disk
+    # replace with code that return the path to device private key
+    # the first time it runs it should read it from MOD's i2c chip and save locally
     return os.environ.get('MOD_DEVICE_KEY')
 
 
