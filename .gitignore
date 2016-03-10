@@ -42,3 +42,4 @@ dist/
 utils/test
 *.orig
 *node_modules/
+.idea

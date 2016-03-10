@@ -1214,8 +1214,8 @@ application = web.Application(
             (r"/sdk/install/?", SDKEffectInstaller),
             #(r"/sdk/get_config_script/?", SDKEffectScript),
 
-            (r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
-            (r"/register/finish/?", RegistrationFinish),
+            #(r"/register/start/([A-Z0-9-]+)/?", RegistrationStart),
+            #(r"/register/finish/?", RegistrationFinish),
 
             #(r"/sysmon/ps", SysMonProcessList),
 
