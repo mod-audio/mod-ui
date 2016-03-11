@@ -988,7 +988,7 @@ class JackSetMidiDevices(web.RequestHandler):
 
 class JackXRuns(web.RequestHandler):
     def get(self):
-        self.write(json.dumps(SESSSION.xrun_count))
+        self.write(json.dumps(SESSION.xrun_count))
         self.finish()
 
 class LoginSign(web.RequestHandler):
