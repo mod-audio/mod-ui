@@ -973,12 +973,12 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
         trigger: trigger,
         windowManager: this.windowManager,
         list: self.cloudPluginListFunction,
-        removePlugin: function (plugin, callback) {
+        removePluginBundles: function (bundles, callback) {
             if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
                 return
             $.ajax({
                 url: '/package/uninstall',
-                data: JSON.stringify(plugin.bundles),
+                data: JSON.stringify(bundles),
                 method: 'POST',
                 success: function(resp) {
                     if (resp.ok) {
@@ -994,11 +994,11 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 dataType: 'json'
             })
         },
-        upgradePlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.uri, callback)
+        upgradePluginURI: function (uri, callback) {
+            self.installationQueue.installUsingURI(uri, callback)
         },
-        installPlugin: function (plugin, callback) {
-            self.installationQueue.install(plugin.uri, callback)
+        installPluginURI: function (uri, callback) {
+            self.installationQueue.installUsingURI(uri, callback)
         }
     })
 }

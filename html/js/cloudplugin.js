@@ -35,14 +35,14 @@ JqueryClass('cloudPluginBox', {
 
         options = $.extend({
             resultCanvas: self.find('.js-cloud-plugins'),
-            removePlugin: function (plugin, callback) {
-                callback(true)
+            removePluginBundles: function (bundles, callback) {
+                callback()
             },
-            installPlugin: function (plugin, callback) {
-                callback(plugin)
+            installPluginURI: function (uri, callback) {
+                callback(null)
             },
-            upgradePlugin: function (plugin, callback) {
-                callback(plugin)
+            upgradePluginURI: function (uri, callback) {
+                callback(null)
             }
         }, options)
 
@@ -534,7 +534,7 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-install').hide()
                 info.find('.js-remove').show().click(function () {
                     // Remove plugin
-                    self.data('removePlugin')(plugin, function () {
+                    self.data('removePluginBundles')(plugin.bundles, function () {
                         info.window('close')
 
                         delete desktop.pluginIndexerData[plugin.uri].bundle_name
@@ -550,18 +550,9 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-installed-version').hide()
                 info.find('.js-install').show().click(function () {
                     // Install plugin
-                    self.data('installPlugin')(plugin, function (pluginData) {
-                        if (pluginData) {
-                            info.window('close')
-
-                            pluginData.status = 'installed'
-                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release]
-                            pluginData.installedVersion = pluginData.latestVersion
-                            desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
-
-                            desktop.rescanPlugins()
-                            self.cloudPluginBox('search')
-                        }
+                    self.data('installPluginURI')(plugin.uri, function () {
+                        info.window('close')
+                        self.cloudPluginBox('search')
                     })
                 })
             }
@@ -569,18 +560,9 @@ JqueryClass('cloudPluginBox', {
             if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
-                    self.data('upgradePlugin')(plugin, function (pluginData) {
-                        if (pluginData) {
-                            info.window('close')
-
-                            pluginData.status = 'installed'
-                            pluginData.latestVersion = [pluginData.minorVersion, pluginData.microVersion, pluginData.release]
-                            pluginData.installedVersion = pluginData.latestVersion
-                            desktop.pluginIndexerData[plugin.uri] = $.extend(plugin, pluginData)
-
-                            desktop.rescanPlugins()
-                            self.cloudPluginBox('search')
-                        }
+                    self.data('upgradePluginURI')(plugin.uri, function () {
+                        info.window('close')
+                        self.cloudPluginBox('search')
                     })
                 })
             } else {
@@ -590,14 +572,6 @@ JqueryClass('cloudPluginBox', {
             if (! plugin.latestVersion) {
                 info.find('.js-latest-version').hide()
             }
-
-            /*info.window({
-                windowManager: self.data('windowManager'),
-                close: function () {
-                    info.remove()
-                    self.data('info', null)
-                }
-            }) keep plugin info open in plugin store*/
 
             info.appendTo($('body'))
             info.window('open')
