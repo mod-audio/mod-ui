@@ -97,7 +97,6 @@ setup(name = 'mod',
                     (('share/mod/html/resources/pedals'), glob('html/resources/pedals/*.css')),
                     (('share/mod/html/resources/templates'), glob('html/resources/templates/*.html')),
                     (('share/mod'), ['screenshot.js']),
-                    (('share/mod/keys'), ['keys/cloud_key.pub']),
           ],
       install_requires = ['tornado', 'pycrypto==2.7a1'],
       dependency_links = [

@@ -32,16 +32,14 @@ from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
 
 from mod.settings import (APP, DESKTOP, LOG,
-                          HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
-                          DEVICE_SERIAL, LV2_PLUGIN_DIR,
-                          DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
+                          HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
+                          LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, DATA_DIR,
-                          AVATAR_URL, DEV_ENVIRONMENT,
-                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
+                          PACKAGE_REPOSITORY, DATA_DIR, AVATAR_URL,
+                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP, BLUETOOTH_PIN)
 
-from mod import check_environment, jsoncall, json_handler, symbolify
+from mod import check_environment, jsoncall, json_handler
 from mod.communication import token
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
@@ -220,9 +218,6 @@ class SystemInfo(web.RequestHandler):
         self.finish()
 
 class EffectInstaller(SimpleFileReceiver):
-    remote_public_key = CLOUD_PUB
-    destination_dir = DOWNLOAD_TMP_DIR
-
     @web.asynchronous
     @gen.engine
     def process_file(self, data, callback=lambda:None):
@@ -685,7 +680,6 @@ class PedalboardLoadBundle(web.RequestHandler):
         self.finish()
 
 class PedalboardLoadWeb(SimpleFileReceiver):
-    remote_public_key = CLOUD_PUB # needed?
     destination_dir = os.path.expanduser("~/.pedalboards/") # FIXME cross-platform, perhaps lookup in LV2_PATH
 
     def process_file(self, data, callback=lambda:None):

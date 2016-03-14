@@ -1,4 +1,5 @@
 import os
+from mod import settings
 
 
 def get_uid():
@@ -20,7 +21,4 @@ def get_device_key():
 
 
 def get_server_key():
-    # replace with code that return the path to server public key
-    # that key is written by mod-build-system in the image
-    # the path should go to settings if makes sense
-    return os.environ.get('MOD_SERVER_KEY')
+    return settings.MOD_API_KEY
