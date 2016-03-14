@@ -15,9 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// FIXME: should be "duo", waiting for cloud API changes..
-var kTargetArchitecture = 0
-
 function InstallationQueue() {
     var self = this
 
@@ -32,56 +29,31 @@ function InstallationQueue() {
             notification = new Notification('warning')
         else
             notification.open()
-        notification.html('Downloading bundle...')
+        notification.html('Installing effect...')
         notification.type('warning')
         notification.bar(0)
     }
 
-    this.installBundleId = function (bundleId, callback) {
-        $.ajax({
-            url: SITEURL + '/lv2/bundles/' + bundleId,
-            success: function (data) {
-                if (data.files.length == 0 || ! data.files[kTargetArchitecture]) {
-                    new Notification('error', "Can't find bundle to install", 5000)
-                    if (queue.length == 0)
-                        notification.closeAfter(3000)
-                    return
-                }
-                var files = data.files[kTargetArchitecture]
-                queue.push({
-                    name:  data.name,
-                    count: data.plugins.length,
-                    file:  files.file_href,
-                    md5:   files.md5,
-                })
-                callbacks.push(callback)
-                if (queue.length == 1)
-                    self.installNext()
-            },
-            error: function () {
-                new Notification('error', "Download failed", 5000)
-                if (queue.length == 0)
-                    notification.closeAfter(3000)
-            },
-            dataType: 'json',
-        })
-    }
-
-    this.installUsingURI = function (uri, callback) {
+    // TODO rename to installURI
+    this.install = function (effectURI, callback) {
         if (queue.length == 0) {
             self.openNotification()
         }
 
         $.ajax({
-            url: SITEURL + '/lv2/plugins?uri=' + escape(uri),
+            url: SITEURL + '/lv2/plugins?uri=' + escape(effectURI),
             success: function (effects) {
                 if (effects.length == 0) {
-                    new Notification('error', "Can't find plugin to install", 5000)
+                    new Notification('error', "Can't find effect to install: " + effectURI, 5000)
                     if (queue.length == 0)
                         notification.closeAfter(3000)
                     return
                 }
-                self.installBundleId(effects[0].bundle_id, callback)
+                var effect = effects[0]
+                queue.push(effect)
+                callbacks.push(callback)
+                if (queue.length == 1)
+                    self.installNext()
             },
             error: function () {
                 new Notification('error', 'Download failed', 5000)
@@ -90,20 +62,25 @@ function InstallationQueue() {
             },
             dataType: 'json',
         })
+
     }
 
-    this.installUsingBundle = function (bundleId, callback) {
-        if (queue.length == 0) {
-            self.openNotification()
-        }
-
-        self.installBundleId(bundleId, callback)
+    this.installEffect = function (effect, callback) {
+        queue.push(effect)
+        callbacks.push(callback)
+        if (queue.length == 1)
+            self.installNext()
     }
 
     this.installNext = function () {
-        var bundle = queue[0]
+        var effect = queue[0]
         var callback = callbacks[0]
         var finish = function () {
+            var status = $('[mod-role=cloud-plugin][mod-plugin-id=' + effect.id + '] .status')
+            status.removeClass('installed')
+            status.removeClass('outdated')
+            status.removeClass('blocked')
+            status.addClass('installed')
             queue.shift()
             callbacks.shift()
             if (queue.length > 0) {
@@ -111,17 +88,29 @@ function InstallationQueue() {
             } else {
                 notification.closeAfter(3000)
                 desktop.rescanPlugins()
-                callback()
             }
+
+            $.ajax({
+                url: '/effect/get',
+                data: {
+                    uri: effect.uri
+                },
+                success: function (plugin) {
+                    callback(plugin)
+                },
+                error: function () {
+                    callback(null)
+                },
+                dataType: 'json'
+            })
         }
 
-        var installationMsg = 'Installing package ' + bundle.name
-                            + ' (contains ' + bundle.count + ' plugin' + (bundle.count > 1 ? 's)' : ')')
+        var installationMsg = 'Installing package ' + effect.bundle_name + ' (contains ' + effect.name + ')'
         notification.html(installationMsg)
         notification.type('warning')
         notification.bar(1)
 
-        var trans = new SimpleTransference(bundle.file, '/effect/install')
+        var trans = new SimpleTransference(effect['bundle_file_href']+"duo/", '/effect/install')
 
         trans.reportStatus = function (status) {
             notification.bar(status.percent)
@@ -131,7 +120,7 @@ function InstallationQueue() {
             queue.shift()
             callbacks.shift()
             notification.close()
-            new Notification('error', "Could not install plugin: " + reason, 5000)
+            new Notification('error', "Could not install effect: " + reason, 5000)
         }
 
         trans.reportFinished = function (resp) {
@@ -145,7 +134,7 @@ function InstallationQueue() {
                 queue.shift()
                 callbacks.shift()
                 notification.close()
-                new Notification('error', "Could not install plugin: " + result.error, 5000)
+                new Notification('error', "Could not install effect: " + result.error, 5000)
             }
         }
 
