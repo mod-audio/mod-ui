@@ -144,7 +144,7 @@ function HardwareManager(options) {
             available[kMidiLearnURI] = {
                 uri  : kMidiLearnURI,
                 name : "MIDI Learn...",
-                modes: ":float:bypass:",
+                modes: ":float:trigger:bypass:",
                 steps: [],
                 max_assigns: 99
             }
@@ -223,7 +223,7 @@ function HardwareManager(options) {
             actuators[currentAddressing.uri] = {
                 uri  : currentAddressing.uri,
                 name : label,
-                modes: ":float:bypass:",
+                modes: ":float:trigger:bypass:",
                 steps: [],
                 max_assigns: 99
             }
