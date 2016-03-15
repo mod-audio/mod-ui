@@ -3,22 +3,30 @@ from mod import settings
 
 
 def get_uid():
-    # replace with code that retrieves UID from MOD's i2c chip
-    # probably a good idea to cache that value in disk
-    return os.environ.get('MOD_UID')
+    return settings.DEVICE_UID
 
 
 def get_tag():
-    # replace with code that retrieves TAG (serial number) from MOD's i2c chip
-    # probably a good idea to cache that value in disk
-    return os.environ.get('MOD_TAG')
+    return settings.DEVICE_TAG
 
 
 def get_device_key():
-    # replace with code that return the path to device private key
-    # the first time it runs it should read it from MOD's i2c chip and save locally
-    return os.environ.get('MOD_DEVICE_KEY')
+    key = settings.DEVICE_KEY
+    if not key:
+        raise Exception('Missing device key')
+    if os.path.isfile(key):
+        with open(key, 'r') as fh:
+            return fh.read()
+    else:
+        return key
 
 
 def get_server_key():
-    return settings.MOD_API_KEY
+    key = settings.API_KEY
+    if not key:
+        raise Exception('Missing API key')
+    if os.path.isfile(key):
+        with open(key, 'r') as fh:
+            return fh.read()
+    else:
+        return key

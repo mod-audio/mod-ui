@@ -30,7 +30,10 @@ DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 # Enable for testing carla instead of mod-host
 HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
 
-MOD_API_KEY = os.environ.get('MOD_API_KEY', '/usr/share/mod/keys/mod_api_key.pub')
+API_KEY = os.environ.get('MOD_API_KEY', '/usr/share/mod/keys/mod_api_key.pub')
+DEVICE_KEY = os.environ.get('MOD_DEVICE_KEY')
+DEVICE_TAG = os.environ.get('MOD_DEVICE_TAG')
+DEVICE_UID = os.environ.get('MOD_DEVICE_UID')
 KEYPATH = os.environ.get('MOD_KEY_PATH', '/root/keys')
 DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL = os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
