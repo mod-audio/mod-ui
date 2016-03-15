@@ -39,12 +39,13 @@ def generate_screenshot(bundlepath, callback):
     except:
         return callback()
 
-    path = os.path.join(bundlepath, "screenshot.png")
-    proc = subprocess.Popen([ PHANTOM_BINARY, SCREENSHOT_JS,
-                              "http://localhost:%d/pedalboard.html?bundlepath=%s" % (DEVICE_WEBSERVER_PORT, bundlepath),
-                              path, str(width), str(height),
-                            ],
-                            stdout=subprocess.PIPE)
+    screenshot = os.path.join(bundlepath, "screenshot.png")
+    thumbnail  = os.path.join(bundlepath, "thumbnail.png")
+
+    cmd  = [PHANTOM_BINARY, SCREENSHOT_JS,
+            "http://localhost:%d/pedalboard.html?bundlepath=%s" % (DEVICE_WEBSERVER_PORT, bundlepath),
+             screenshot, str(width), str(height)]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
     loop = ioloop.IOLoop.instance()
 
@@ -52,9 +53,15 @@ def generate_screenshot(bundlepath, callback):
         if proc.poll() is None:
             return
         loop.remove_handler(fileno)
-        img = Image.open(path)
+
+        if not os.path.exists(screenshot):
+            return callback()
+
+        img = Image.open(screenshot)
         resize_image(img)
-        callback(img)
+        img.save(thumbnail)
+        img.close()
+        callback(thumbnail)
 
     loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
 
@@ -91,16 +98,14 @@ class ScreenshotGenerator(object):
 
         self.processing = self.queue.pop(0)
 
-        def img_callback(img=None):
-            if not img:
+        def img_callback(thumbnail=None):
+            if not thumbnail:
                 for callback in self.callbacks.pop(self.processing, []):
                     callback((False, 0.0))
                 self.process_next()
                 return
 
-            thumb = os.path.join(self.processing, "thumbnail.png")
-            img.save(thumb)
-            ctime = os.path.getctime(thumb)
+            ctime = os.path.getctime(thumbnail)
 
             for callback in self.callbacks.pop(self.processing, []):
                 callback((True, ctime))
