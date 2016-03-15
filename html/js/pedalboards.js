@@ -224,9 +224,15 @@ JqueryClass('pedalboardBox', {
         $.ajax({
             url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),
             success: function (resp) {
-                if (!resp.ok) return
-                img.css({backgroundImage: "url(/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime + ")"});
-                img.addClass("loaded");
+                if (resp.ok)
+                {
+                    img.css({backgroundImage: "url(/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime + ")"});
+                    img.addClass("loaded");
+                }
+                else
+                {
+                    img.addClass("broken");
+                }
             },
             error: function () {
                 img.addClass("broken");

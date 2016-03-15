@@ -78,7 +78,7 @@ DEFAULT_PACKAGE_SERVER_PORT = 8889
 # using current host and default port above
 PACKAGE_SERVER_ADDRESS = os.environ.get('MOD_PACKAGE_SERVER_ADDRESS')
 
-CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', "http://api.moddevices.com")
+CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com")
 
 if os.path.exists("/root/repository"):
     fh = open("/root/repository")
@@ -95,24 +95,6 @@ if os.path.exists("/root/avatar"):
 else:
     default_avatar_url = 'http://gravatar.com/avatar'
 AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
-
-CLIPMETER_URI = "http://moddevices.com/plugins/MOD/clipmeter"
-CLIPMETER_IN = 9990
-CLIPMETER_OUT = 9991
-CLIPMETER_L = "inl"
-CLIPMETER_R = "inr"
-CLIPMETER_MON_L = "clipl"
-CLIPMETER_MON_R = "clipr"
-
-PEAKMETER_URI = "http://moddevices.com/plugins/MOD/peakmeter"
-PEAKMETER_IN = 9992
-PEAKMETER_OUT = 9993
-PEAKMETER_L = "inl"
-PEAKMETER_R = "inr"
-PEAKMETER_MON_VALUE_L = "meteroutl"
-PEAKMETER_MON_VALUE_R = "meteroutr"
-PEAKMETER_MON_PEAK_L = "pkoutl"
-PEAKMETER_MON_PEAK_R = "pkoutr"
 
 TUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner"
 TUNER = 9994

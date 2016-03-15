@@ -34,17 +34,18 @@ def generate_screenshot(bundlepath, callback):
     if not os.path.exists(SCREENSHOT_JS):
         return callback()
 
-    #try:
-    width, height = get_pedalboard_size(bundlepath)
-    #except:
-        #return callback()
+    try:
+        width, height = get_pedalboard_size(bundlepath)
+    except:
+        return callback()
 
-    path = '%s/screenshot.png' % bundlepath
-    proc = subprocess.Popen([ PHANTOM_BINARY, SCREENSHOT_JS,
-                              'http://localhost:%d/pedalboard.html?bundlepath=%s' % (DEVICE_WEBSERVER_PORT, bundlepath),
-                              path, str(width), str(height),
-                            ],
-                            stdout=subprocess.PIPE)
+    screenshot = os.path.join(bundlepath, "screenshot.png")
+    thumbnail  = os.path.join(bundlepath, "thumbnail.png")
+
+    cmd  = [PHANTOM_BINARY, SCREENSHOT_JS,
+            "http://localhost:%d/pedalboard.html?bundlepath=%s" % (DEVICE_WEBSERVER_PORT, bundlepath),
+             screenshot, str(width), str(height)]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
     loop = ioloop.IOLoop.instance()
 
@@ -52,9 +53,15 @@ def generate_screenshot(bundlepath, callback):
         if proc.poll() is None:
             return
         loop.remove_handler(fileno)
-        img = Image.open(path)
+
+        if not os.path.exists(screenshot):
+            return callback()
+
+        img = Image.open(screenshot)
         resize_image(img)
-        callback(img)
+        img.save(thumbnail)
+        img.close()
+        callback(thumbnail)
 
     loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
 
@@ -72,39 +79,45 @@ def resize_image(img):
 class ScreenshotGenerator(object):
     def __init__(self):
         self.queue = []
-        self.callback = None
+        self.callbacks = {}
         self.processing = None
 
     def schedule_screenshot(self, bundlepath):
+        bundlepath = os.path.abspath(bundlepath)
+
         if bundlepath not in self.queue:
-            self.queue.append(os.path.abspath(bundlepath))
+            self.queue.append(bundlepath)
+
         if self.processing is None:
             self.process_next()
 
     def process_next(self):
         if len(self.queue) == 0:
-            bundlepath = self.processing
             self.processing = None
-            if self.callback is not None:
-                ctime = os.path.getctime(os.path.join(bundlepath, "thumbnail.png"))
-                self.callback((True, ctime))
-                self.callback = None
             return
 
         self.processing = self.queue.pop(0)
 
-        def img_callback(img=None):
-            if not img:
+        def img_callback(thumbnail=None):
+            if not thumbnail:
+                for callback in self.callbacks.pop(self.processing, []):
+                    callback((False, 0.0))
                 self.process_next()
                 return
 
-            img.save(os.path.join(self.processing, "thumbnail.png"))
+            ctime = os.path.getctime(thumbnail)
+
+            for callback in self.callbacks.pop(self.processing, []):
+                callback((True, ctime))
+
             self.process_next()
 
         generate_screenshot(self.processing, img_callback)
 
     def wait_for_pending_jobs(self, bundlepath, callback):
-        if bundlepath not in self.queue and self.processing != os.path.abspath(bundlepath):
+        bundlepath = os.path.abspath(bundlepath)
+
+        if bundlepath not in self.queue and self.processing != bundlepath:
             # all ok
             thumbnail = os.path.join(bundlepath, "thumbnail.png")
             if os.path.exists(thumbnail):
@@ -114,9 +127,8 @@ class ScreenshotGenerator(object):
                 callback((False, 0.0))
             return
 
-        # if previous callback is still there it means we're too slow
-        if self.callback is not None:
-            self.callback((False, 0.0))
-
         # report back later
-        self.callback = callback
+        if bundlepath not in self.callbacks.keys():
+            self.callbacks[bundlepath] = [callback]
+        else:
+            self.callbacks[bundlepath].append(callback)

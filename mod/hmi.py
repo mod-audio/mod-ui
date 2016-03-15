@@ -210,12 +210,6 @@ class HMI(object):
     def ping(self, callback):
         self.send('ping', callback, datatype='boolean')
 
-    def clipmeter(self, position, callback):
-        self.send('clipmeter %d' % position, callback)
-
-    def peakmeter(self, position, value, peak, callback):
-        self.send('peakmeter %d %f %f' % (position, value, peak), callback)
-
     def tuner(self, freq, note, cents, callback):
         self.send('tuner %f %s %f' % (freq, note, cents), callback)
 
