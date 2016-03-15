@@ -385,7 +385,7 @@ function Desktop(elements) {
 
         var installPlugin = function (uri, data) {
             missingCount++
-            self.installationQueue.install(uri, function (pluginData) {
+            self.installationQueue.installUsingURI(uri, function (pluginData) {
                 data[uri] = pluginData
                 missingCount--
 
@@ -676,7 +676,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     error: function (resp) {
                         /*if (resp.status == 404 && firstTry) {
                             firstTry = false
-                            self.installationQueue.install(uri, add)
+                            self.installationQueue.installUsingURI(uri, add)
                         } else*/ {
                             new Notification('error', 'Error adding effect. Probably a connection problem.')
                             if (errorCallback)
