@@ -26,12 +26,12 @@ import tornado.ioloop
 import tornado.options
 import tornado.escape
 import time
-import uuid
 from base64 import b64decode, b64encode
 from hashlib import sha1
 from hashlib import md5
 from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
+from uuid import uuid4
 
 from mod.settings import (APP, DESKTOP, LOG,
                           HTML_DIR, CLOUD_PUB, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
@@ -40,7 +40,7 @@ from mod.settings import (APP, DESKTOP, LOG,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, DATA_DIR,
-                          AVATAR_URL, DEV_ENVIRONMENT,
+                          AVATAR_URL, DEV_ENVIRONMENT, BLUETOOTH_PIN,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP)
 
 from mod import check_environment, jsoncall, json_handler, register, symbolify
@@ -161,7 +161,7 @@ class SimpleFileReceiver(web.RequestHandler):
         # self.result can be set by subclass in process_file,
         # so that answer will be returned to browser
         self.result = None
-        name = str(uuid.uuid4())
+        name = str(uuid4())
         if not os.path.exists(self.destination_dir):
             os.mkdir(self.destination_dir)
         fh = open(os.path.join(self.destination_dir, name), 'wb')

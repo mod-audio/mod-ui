@@ -36,12 +36,12 @@ import os, json, socket, logging
 from mod import get_hardware, symbolify
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import charPtrToString
-from mod.utils import is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets
-from mod.utils import get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle
-from mod.utils import init_jack, close_jack, get_jack_data, get_jack_sample_rate
-from mod.utils import get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port
-from mod.utils import connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks
+from mod.utils import (charPtrToString,
+                       is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
+                       get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
+                       init_jack, close_jack, get_jack_data, get_jack_sample_rate,
+                       get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
+                       connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1
@@ -96,11 +96,11 @@ class InstanceIdMapper(object):
             return self.instance_map[instance]
 
         # increment last id
-        id = self.last_id
+        idx = self.last_id
         self.last_id += 1
 
         # create mapping
-        self.instance_map[instance] = id
+        self.instance_map[instance] = idx
         self.id_map[id] = instance
 
         # ready
@@ -1606,7 +1606,7 @@ _:b%i
         addressings_idx   = addressings['idx']
 
         if len(addressings_addrs) > 0:
-            addressings['idx'] = (addressings['idx'] + 1) % len(addressings_addrs)
+            addressings['idx'] = (addressings_idx + 1) % len(addressings_addrs)
             self._addressing_load(actuator_uri, callback)
         else:
             self.hmi.control_clean(actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3], callback)
@@ -1733,11 +1733,11 @@ _:b%i
         else:
             plugin['ports'][portsymbol] = value
 
-            def host_callback(ok):
+            def host_callback2(ok):
                 callback(ok)
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), host_callback, datatype='boolean')
+            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), host_callback2, datatype='boolean')
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
