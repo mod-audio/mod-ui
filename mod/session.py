@@ -24,15 +24,12 @@ from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, CLIPMETER_URI, PEAKMETER_URI, HOST_CARLA,
-                          CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R, PEAKMETER_IN, PEAKMETER_OUT,
-                          CLIPMETER_MON_R, CLIPMETER_MON_L, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R, PEAKMETER_MON_PEAK_L,
-                          PEAKMETER_MON_PEAK_R, PEAKMETER_L, PEAKMETER_R, TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA,
+                          TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
 from mod import get_hardware
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
-from mod.clipmeter import Clipmeter
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.tuner import NOTES, FREQS, find_freqnotecents
@@ -46,7 +43,6 @@ class Session(object):
     def __init__(self):
         self._tuner = False
         self._tuner_port = 1
-        self._peakmeter = False
 
         self.monitor_server = None
 
@@ -78,8 +74,6 @@ class Session(object):
             self.host = FakeHost(self.hmi, self.msg_callback)
         else:
             self.host = Host(self.hmi, self.msg_callback)
-
-        self._clipmeter = Clipmeter(self.hmi)
 
     def signal_disconnect(self):
         sockets = self.websockets
@@ -261,23 +255,6 @@ class Session(object):
 
             #self.set_monitor("localhost", 12345, 1, self.add_tools)
 
-    #def add_tools(self, resp):
-        #if resp:
-            #self.add(CLIPMETER_URI, CLIPMETER_IN, self.setup_clipmeter_in, True)
-            #self.add(CLIPMETER_URI, CLIPMETER_OUT, self.setup_clipmeter_out, True)
-
-    #def setup_clipmeter_in(self, resp):
-        #if resp:
-            #self.connect("system:capture_1", "effect_%d:%s" % (CLIPMETER_IN, CLIPMETER_L), lambda r:None, True)
-            #self.connect("system:capture_2", "effect_%d:%s" % (CLIPMETER_IN, CLIPMETER_R), lambda r:None, True)
-            #self.parameter_monitor(CLIPMETER_IN, CLIPMETER_MON_L, ">=", 0, lambda r:None)
-            #self.parameter_monitor(CLIPMETER_IN, CLIPMETER_MON_R, ">=", 0, lambda r:None)
-
-    #def setup_clipmeter_out(self, resp):
-        #if resp:
-            #self.parameter_monitor(CLIPMETER_OUT, CLIPMETER_MON_L, ">=", 0, lambda r:None)
-            #self.parameter_monitor(CLIPMETER_OUT, CLIPMETER_MON_R, ">=", 0, lambda r:None)
-
     # host commands
 
     def bypass(self, instance, value, callback):
@@ -295,19 +272,10 @@ class Session(object):
     #def set_monitor(self, addr, port, status, callback):
         #self.host.monitor(addr, port, status, callback)
 
-    #def parameter_monitor(self, instance_id, port_id, op, value, callback):
-        #self.host.param_monitor(instance_id, port_id, op, value, callback)
-
     # END host commands
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)
-
-    def clipmeter(self, pos, value):
-        self._clipmeter.set(pos, value)
-
-    def peakmeter(self, pos, value, peak, callback):
-        self.hmi.peakmeter(pos, value, peak, callback)
 
     def tuner(self, value, callback):
         freq, note, cents = find_freqnotecents(value)

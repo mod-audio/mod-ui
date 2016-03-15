@@ -186,7 +186,6 @@ class Host(object):
         Protocol.register_cmd_callback("control_get", self.hmi_parameter_get)
         Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
         Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
-        #Protocol.register_cmd_callback("peakmeter", self.peakmeter_set)
         #Protocol.register_cmd_callback("tuner", self.tuner_set)
         #Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
         #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)

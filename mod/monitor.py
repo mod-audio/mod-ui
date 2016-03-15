@@ -24,22 +24,9 @@ except ImportError:
     # tornado 2.x
     from tornado.netutil import TCPServer
 
-
-from mod.settings import (CLIPMETER_IN, CLIPMETER_OUT, CLIPMETER_L, CLIPMETER_R,
-                          PEAKMETER_IN, PEAKMETER_OUT, PEAKMETER_L, PEAKMETER_R,
-                          CLIPMETER_MON_L, CLIPMETER_MON_R, PEAKMETER_MON_VALUE_L, PEAKMETER_MON_VALUE_R,
-                          PEAKMETER_MON_PEAK_L, PEAKMETER_MON_PEAK_R, TUNER)
+from mod.settings import TUNER
 
 class MonitorServer(TCPServer):
-
-    pkm_inl_value = -30.0
-    pkm_inl_peak = -30.0
-    pkm_inr_value = -30.0
-    pkm_inr_peak = -30.0
-    pkm_outl_value = -30.0
-    pkm_outl_peak = -30.0
-    pkm_outr_value = -30.0
-    pkm_outr_peak = -30.0
 
     def _process_msg(self, msg):
         from mod.session import SESSION
@@ -53,49 +40,7 @@ class MonitorServer(TCPServer):
             # TODO: tratar error
             pass
         else:
-            if instance == CLIPMETER_IN:
-                if port == CLIPMETER_MON_L:
-                    SESSION.clipmeter(0, value)
-                elif port == CLIPMETER_MON_R:
-                    SESSION.clipmeter(1, value)
-
-            elif instance == CLIPMETER_OUT:
-                if port == CLIPMETER_MON_L:
-                    SESSION.clipmeter(2, value)
-                elif port == CLIPMETER_MON_R:
-                    SESSION.clipmeter(3, value)
-
-            elif instance == PEAKMETER_IN:
-                if port == PEAKMETER_MON_VALUE_L:
-                    self.pkm_inl_value = value
-                    SESSION.peakmeter(0, self.pkm_inl_value, self.pkm_inl_peak)
-                elif port == PEAKMETER_MON_VALUE_R:
-                    self.pkm_inr_value = value
-                    SESSION.peakmeter(1, self.pkm_inr_value, self.pkm_inr_peak)
-
-                if port == PEAKMETER_MON_PEAK_L:
-                    self.pkm_inl_peak = value
-                    SESSION.peakmeter(0, self.pkm_inl_value, self.pkm_inl_peak)
-                elif port == PEAKMETER_MON_PEAK_R:
-                    self.pkm_inr_peak = value
-                    SESSION.peakmeter(1, self.pkm_inr_value, self.pkm_inr_peak)
-
-            elif instance == PEAKMETER_OUT:
-                if port == PEAKMETER_MON_VALUE_L:
-                    self.pkm_outl_value = value
-                    SESSION.peakmeter(2, self.pkm_outl_value, self.pkm_outl_peak)
-                elif port == PEAKMETER_MON_VALUE_R:
-                    self.pkm_outr_value = value
-                    SESSION.peakmeter(3, self.pkm_outr_value, self.pkm_outr_peak)
-
-                if port == PEAKMETER_MON_PEAK_L:
-                    self.pkm_outl_peak = value
-                    SESSION.peakmeter(2, self.pkm_outl_value, self.pkm_outl_peak)
-                elif port == PEAKMETER_MON_PEAK_R:
-                    self.pkm_outr_peak = value
-                    SESSION.peakmeter(3, self.pkm_outr_value, self.pkm_outr_peak)
-
-            elif instance == TUNER:
+            if instance == TUNER:
                 SESSION.tuner(value)
         self._handle_conn()
 
