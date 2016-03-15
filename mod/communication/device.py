@@ -3,11 +3,17 @@ from mod import settings
 
 
 def get_uid():
-    return settings.DEVICE_UID
+    uid = settings.DEVICE_UID
+    if not uid:
+        raise Exception('Missing device uid')
+    return uid
 
 
 def get_tag():
-    return settings.DEVICE_TAG
+    tag = settings.DEVICE_TAG
+    if not tag:
+        raise Exception('Missing device tag')
+    return tag
 
 
 def get_device_key():
