@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, subprocess, json
+import os, subprocess
 
 try:
     import Image

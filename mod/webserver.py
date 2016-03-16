@@ -26,10 +26,10 @@ import tornado.ioloop
 import tornado.options
 import tornado.escape
 import time
-import uuid
 from base64 import b64decode, b64encode
 from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
+from uuid import uuid4
 
 from mod.settings import (APP, DESKTOP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
@@ -157,7 +157,7 @@ class SimpleFileReceiver(web.RequestHandler):
         # self.result can be set by subclass in process_file,
         # so that answer will be returned to browser
         self.result = None
-        name = str(uuid.uuid4())
+        name = str(uuid4())
         if not os.path.exists(self.destination_dir):
             os.mkdir(self.destination_dir)
         fh = open(os.path.join(self.destination_dir, name), 'wb')

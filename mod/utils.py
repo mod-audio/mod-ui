@@ -625,6 +625,9 @@ def set_truebypass_value(right, bypassed):
 # ------------------------------------------------------------------------------------------------------------
 # callbacks
 
+global midiPortDeletedCb, trueBypassChangedCb
+midiPortDeletedCb = trueBypassChangedCb = None
+
 def set_util_callbacks(midiPortDeleted, trueBypassChanged):
     global midiPortDeletedCb, trueBypassChangedCb
     midiPortDeletedCb   = JackMidiPortDeleted(midiPortDeleted)
