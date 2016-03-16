@@ -15,8 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// FIXME: should be "duo", waiting for cloud API changes..
-var kTargetArchitecture = 0
+var kTargetArchitecture = "duo"
 
 function InstallationQueue() {
     var self = this
@@ -41,18 +40,24 @@ function InstallationQueue() {
         $.ajax({
             url: SITEURL + '/lv2/bundles/' + bundleId,
             success: function (data) {
-                if (data.files.length == 0 || ! data.files[kTargetArchitecture]) {
+                var targetfiles = null
+                for (var i in data.files) {
+                    if (data.files[i].arch == kTargetArchitecture) {
+                        targetfiles = data.files[i];
+                        break;
+                    }
+                }
+                if (targetfiles == null) {
                     new Notification('error', "Can't find bundle to install", 5000)
                     if (queue.length == 0)
                         notification.closeAfter(3000)
                     return
                 }
-                var files = data.files[kTargetArchitecture]
                 queue.push({
                     name:  data.name,
                     count: data.plugins.length,
-                    file:  files.file_href,
-                    md5:   files.md5,
+                    file:  targetfiles.file_href,
+                    md5:   targetfiles.md5,
                 })
                 callbacks.push(callback)
                 if (queue.length == 1)
