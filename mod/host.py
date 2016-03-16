@@ -101,7 +101,7 @@ class InstanceIdMapper(object):
 
         # create mapping
         self.instance_map[instance] = idx
-        self.id_map[id] = instance
+        self.id_map[idx] = instance
 
         # ready
         return self.instance_map[instance]
