@@ -32,7 +32,7 @@ from tornado import gen, iostream, web, websocket
 from uuid import uuid4
 
 from mod.settings import (APP, DESKTOP, LOG,
-                          HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
+                          HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
@@ -134,12 +134,6 @@ def install_package(bundlename, callback):
 
 class SimpleFileReceiver(web.RequestHandler):
     @property
-    def download_tmp_dir(self):
-        raise NotImplemented
-    @property
-    def remote_public_key(self):
-        raise NotImplemented
-    @property
     def destination_dir(self):
         raise NotImplemented
 
@@ -218,6 +212,8 @@ class SystemInfo(web.RequestHandler):
         self.finish()
 
 class EffectInstaller(SimpleFileReceiver):
+    destination_dir = DOWNLOAD_TMP_DIR
+
     @web.asynchronous
     @gen.engine
     def process_file(self, data, callback=lambda:None):
@@ -875,6 +871,7 @@ class TemplateHandler(web.RequestHandler):
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
             'using_desktop': 'true' if DESKTOP else 'false',
+            'using_mod': 'true' if DEVICE_KEY else 'false',
         }
         return context
 
@@ -1032,6 +1029,7 @@ class RecordingPlay(web.RequestHandler):
             self.write(json.dumps(True))
             return self.finish()
         raise web.HTTPError(404)
+
     @classmethod
     def stop_callback(kls):
         if kls.waiting_request is None:
@@ -1048,7 +1046,7 @@ class RecordingDownload(web.RequestHandler):
         data = {
             'audio': b64encode(SESSION.recording['handle'].read()),
             'events': recording['events'],
-            }
+        }
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(data, default=json_handler))
 

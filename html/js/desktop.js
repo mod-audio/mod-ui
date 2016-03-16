@@ -208,6 +208,7 @@ function Desktop(elements) {
 
     this.isApp = false
     this.title = ''
+    this.cloudAccessToken = null
     this.pedalboardBundle = null
     this.pedalboardModified = false
     this.pedalboardSavable = false
@@ -332,6 +333,53 @@ function Desktop(elements) {
 
     // hide top-bar shared-pedalboard button
     $('#pedalboard-sharing').hide()
+
+    this.registerDevice = function () {
+        $.ajax({
+            method: 'GET',
+            url: SITEURL + '/devices/nonce',
+            dataType: 'json',
+            success: function (resp) {
+                if (!resp || !resp.nonce)
+                    return;
+
+                $.ajax({
+                    url: '/auth/nonce',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    data: JSON.stringify(resp),
+                    success: function (resp) {
+                        if (!resp || !resp.message)
+                            return;
+
+                        $.ajax({
+                            url: SITEURL + '/devices/tokens',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            dataType: 'json',
+                            data: JSON.stringify(resp),
+                            success: function (resp) {
+                                if (!resp || !resp.message)
+                                    return;
+
+                                $.ajax({
+                                    url: '/auth/token',
+                                    type: 'POST',
+                                    contentType: 'application/json',
+                                    dataType: 'json',
+                                    data: JSON.stringify(resp),
+                                    success: function (resp) {
+                                        self.cloudAccessToken = resp.access_token
+                                    }
+                                })
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
 
     this.setupApp = function (usingDesktop) {
         self.isApp = true

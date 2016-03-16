@@ -168,6 +168,10 @@ $('document').ready(function() {
       desktop.setupApp({{using_desktop}})
   }
 
+  if ({{using_mod}}) {
+      desktop.registerDevice()
+  }
+
   // start code for ajax loading bar
 
   NProgress.configure({

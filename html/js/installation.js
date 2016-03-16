@@ -121,7 +121,10 @@ function InstallationQueue() {
         notification.type('warning')
         notification.bar(1)
 
-        var trans = new SimpleTransference(bundle.file, '/effect/install')
+        var trans = new SimpleTransference(bundle.file, '/effect/install',
+                                           { from_args: { headers:
+                                           { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
+                                           }})
 
         trans.reportStatus = function (status) {
             notification.bar(status.percent)
