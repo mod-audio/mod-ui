@@ -350,8 +350,11 @@ function Desktop(elements) {
                     dataType: 'json',
                     data: JSON.stringify(resp),
                     success: function (resp) {
-                        if (!resp || !resp.message)
+                        if (!resp || !resp.message) {
+                            //$('#mod-cloud-plugins').hide()
+                            console.log("Webserver does not support MOD tokens, downloads will not be possible")
                             return;
+                        }
 
                         $.ajax({
                             url: SITEURL + '/devices/tokens',
