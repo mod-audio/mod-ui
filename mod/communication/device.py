@@ -1,38 +1,28 @@
 import os
-from mod import settings
-
+from mod.settings import API_KEY, DEVICE_KEY, DEVICE_TAG, DEVICE_UID
 
 def get_uid():
-    uid = settings.DEVICE_UID
-    if not uid:
+    if DEVICE_UID is None:
         raise Exception('Missing device uid')
-    return uid
-
+    return DEVICE_UID
 
 def get_tag():
-    tag = settings.DEVICE_TAG
-    if not tag:
+    if DEVICE_TAG is None:
         raise Exception('Missing device tag')
-    return tag
-
+    return DEVICE_TAG
 
 def get_device_key():
-    key = settings.DEVICE_KEY
-    if not key:
+    if DEVICE_KEY is None:
         raise Exception('Missing device key')
-    if os.path.isfile(key):
-        with open(key, 'r') as fh:
+    if os.path.isfile(DEVICE_KEY):
+        with open(DEVICE_KEY, 'r') as fh:
             return fh.read()
-    else:
-        return key
-
+    return DEVICE_KEY
 
 def get_server_key():
-    key = settings.API_KEY
-    if not key:
+    if API_KEY is None:
         raise Exception('Missing API key')
-    if os.path.isfile(key):
-        with open(key, 'r') as fh:
+    if os.path.isfile(API_KEY):
+        with open(API_KEY, 'r') as fh:
             return fh.read()
-    else:
-        return key
+    return API_KEY
