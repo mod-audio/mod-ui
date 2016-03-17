@@ -297,7 +297,7 @@ class Host(object):
         if self.memtimer is not None:
             self.memtimer.stop()
 
-        self.msg_callback("disconnected")
+        self.msg_callback("stop")
 
     # -----------------------------------------------------------------------------------------------------------------
 
