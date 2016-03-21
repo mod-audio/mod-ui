@@ -387,18 +387,12 @@ function Desktop(elements) {
         })
     }
 
-    this.setupApp = function (usingDesktop) {
+    this.setupApp = function () {
         self.isApp = true
         $('#mod-bypassLeft').hide()
         $('#mod-bypassRight').hide()
         $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
-        $('#pedalboard-dashboard').parent().css('top', '0px')
-
-        if (usingDesktop) {
-            $('#pedalboard-actions').hide()
-        }
-
         self.netStatus.statusTooltip('updatePosition')
     }
 

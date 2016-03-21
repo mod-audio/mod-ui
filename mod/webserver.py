@@ -31,7 +31,7 @@ from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
 from uuid import uuid4
 
-from mod.settings import (APP, DESKTOP, LOG,
+from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
@@ -876,7 +876,6 @@ class TemplateHandler(web.RequestHandler):
             'fulltitle': SESSION.host.pedalboard_name or "Untitled",
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
-            'using_desktop': 'true' if DESKTOP else 'false',
             'using_mod': 'true' if DEVICE_KEY else 'false',
         }
         return context
@@ -1214,10 +1213,12 @@ def signal_recv(sig, frame=0):
     if sig == SIGUSR2:
         tornado.ioloop.IOLoop.instance().add_callback_from_signal(SESSION.signal_disconnect)
 
-def prepare():
+def prepare(isModApp = False):
     def run_server():
-        signal(SIGUSR2, signal_recv)
-        set_process_name("mod-ui")
+        if not isModApp:
+            signal(SIGUSR2, signal_recv)
+            set_process_name("mod-ui")
+
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
         if LOG:
             tornado.log.enable_pretty_logging()
