@@ -635,3 +635,16 @@ def set_util_callbacks(midiPortDeleted, trueBypassChanged):
     utils.set_util_callbacks(midiPortDeletedCb, trueBypassChangedCb)
 
 # ------------------------------------------------------------------------------------------------------------
+# set process name
+
+def set_process_name(newname):
+    PR_SET_NAME = 15
+    try:
+        libc = cdll.LoadLibrary("libc.so.6")
+    except:
+        return
+    libc.prctl.argtypes = [c_int, c_void_p, c_int, c_int, c_int]
+    libc.prctl.restype  = c_int
+    libc.prctl(PR_SET_NAME, newname.encode("utf-8"), 0, 0, 0)
+
+# ------------------------------------------------------------------------------------------------------------

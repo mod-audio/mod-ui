@@ -50,7 +50,8 @@ from mod.utils import (init as lv2_init,
                        get_all_pedalboards,
                        get_pedalboard_info,
                        get_jack_sample_rate,
-                       set_truebypass_value)
+                       set_truebypass_value,
+                       set_process_name)
 try:
     from mod.communication import token
 except:
@@ -1212,6 +1213,7 @@ def signal_recv(sig, frame=0):
 def prepare():
     def run_server():
         signal(SIGUSR2, signal_recv)
+        set_process_name("mod-ui")
         application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
         if LOG:
             tornado.log.enable_pretty_logging()
