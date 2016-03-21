@@ -21,6 +21,8 @@ $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
     var waiting = false
+    var cached_cpuLoad = null,
+        cached_xruns   = null
 
     ws.onmessage = function (evt) {
         var data = evt.data.split(" ")
@@ -34,9 +36,17 @@ $('document').ready(function() {
         if (cmd == "stats") {
             var cpuLoad = parseFloat(data[1])
             var xruns   = parseInt(data[2])
-            $("#cpu-bar").css("width", (100.0-cpuLoad).toFixed().toString()+"%")
-            $("#cpu-bar-text").text("CPU "+cpuLoad.toString()+"%")
-            $("#xruns-text").text(xruns == 1 ? (xruns.toString()+" Xrun") : (xruns.toString()+" Xruns"))
+
+            if (cpuLoad != cached_cpuLoad) {
+                cached_cpuLoad = cpuLoad
+                $("#cpu-bar").css("width", (100.0-cpuLoad).toFixed().toString()+"%")
+                $("#cpu-bar-text").text("CPU "+cpuLoad.toString()+"%")
+            }
+
+            if (xruns != cached_xruns) {
+                cached_xruns = xruns
+                $("#xruns-text").text(xruns == 1 ? (xruns.toString()+" Xrun") : (xruns.toString()+" Xruns"))
+            }
             return
         }
 
