@@ -60,7 +60,10 @@ function Desktop(elements) {
         upgradeWindow: $('<div>'),
         feedButton: $('<div>'),
         login: $('<div>'),
-        logout: $('<div>')
+        logout: $('<div>'),
+        bypassLeftButton: $('<div>'),
+        bypassRightButton: $('<div>'),
+        xrunsButton: $('<div>'),
     }, elements)
 
     this.installationQueue = new InstallationQueue()
@@ -577,6 +580,22 @@ function Desktop(elements) {
     })
     elements.bypassRightButton.click(function () {
         self.triggerTrueBypass("Right", !$(this).hasClass("bypassed"))
+    })
+    elements.xrunsButton.click(function () {
+        if (cached_xruns == 0) {
+            return
+        }
+        $.ajax({
+            url: '/reset_xruns/',
+            method: 'POST',
+            cache: false,
+            success: function (ok) {
+                if (ok) {
+                    cached_xruns = 0
+                    $("#xruns-text").text("0 Xruns")
+                }
+            }
+        })
     })
 
     elements.shareButton.click(function () {

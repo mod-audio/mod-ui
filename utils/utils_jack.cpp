@@ -332,6 +332,11 @@ void disconnect_jack_ports(const char* port1, const char* port2)
         jack_disconnect(gClient, port1, port2);
 }
 
+void reset_xruns(void)
+{
+    gXrunCount = 0;
+}
+
 // --------------------------------------------------------------------------------------------------------
 
 bool get_truebypass_value(bool right)

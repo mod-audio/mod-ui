@@ -292,6 +292,7 @@ MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
 MOD_API void connect_jack_ports(const char* port1, const char* port2);
 MOD_API void disconnect_jack_ports(const char* port1, const char* port2);
+MOD_API void reset_xruns(void);
 
 // alsa stuff
 MOD_API bool get_truebypass_value(bool right);

@@ -16,13 +16,13 @@
  */
 
 var ws
+var cached_cpuLoad = null,
+    cached_xruns   = null
 
 $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
     var waiting = false
-    var cached_cpuLoad = null,
-        cached_xruns   = null
 
     ws.onmessage = function (evt) {
         var data = evt.data.split(" ")

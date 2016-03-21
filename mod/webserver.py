@@ -51,7 +51,9 @@ from mod.utils import (init as lv2_init,
                        get_pedalboard_info,
                        get_jack_sample_rate,
                        set_truebypass_value,
-                       set_process_name)
+                       set_process_name,
+                       reset_xruns)
+
 try:
     from mod.communication import token
 except:
@@ -941,6 +943,13 @@ class TrueBypass(web.RequestHandler):
         self.write(json.dumps(resp))
         self.finish()
 
+class ResetXruns(web.RequestHandler):
+    def post(self):
+        reset_xruns()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+        self.finish()
+
 class SysMonProcessList(web.RequestHandler):
     @web.asynchronous
     @gen.engine
@@ -977,11 +986,6 @@ class JackSetMidiDevices(web.RequestHandler):
         SESSION.web_set_midi_devices(devs)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
-        self.finish()
-
-class JackXRuns(web.RequestHandler):
-    def get(self):
-        self.write(json.dumps(SESSION.xrun_count))
         self.finish()
 
 class AuthNonce(web.RequestHandler):
@@ -1189,11 +1193,11 @@ application = web.Application(
 
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),
-            (r"/jack/xruns", JackXRuns),
 
             (r"/ping/?", Ping),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
+            (r"/reset_xruns/", ResetXruns),
 
             (r"/(index.html)?$", TemplateHandler),
             (r"/([a-z]+\.html)$", TemplateHandler),

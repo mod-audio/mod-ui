@@ -456,6 +456,9 @@ utils.connect_jack_ports.restype  = None
 utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.disconnect_jack_ports.restype  = None
 
+utils.reset_xruns.argtypes = None
+utils.reset_xruns.restype  = None
+
 utils.get_truebypass_value.argtypes = [c_bool]
 utils.get_truebypass_value.restype  = c_bool
 
@@ -612,6 +615,9 @@ def connect_jack_ports(port1, port2):
 
 def disconnect_jack_ports(port1, port2):
     utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8"))
+
+def reset_xruns():
+    utils.reset_xruns()
 
 # ------------------------------------------------------------------------------------------------------------
 # alsa stuff
