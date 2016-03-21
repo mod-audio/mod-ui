@@ -30,13 +30,13 @@ DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 # Enable for testing carla instead of mod-host
 HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
 
-API_KEY = os.environ.get('MOD_API_KEY', '/usr/share/mod/keys/mod_api_key.pub')
-DEVICE_KEY = os.environ.get('MOD_DEVICE_KEY')
-DEVICE_TAG = os.environ.get('MOD_DEVICE_TAG')
-DEVICE_UID = os.environ.get('MOD_DEVICE_UID')
-KEYPATH = os.environ.get('MOD_KEY_PATH', '/root/keys')
-DEVICE_SERIAL = os.environ.get('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
-DEVICE_MODEL = os.environ.get('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
+API_KEY = os.environ.pop('MOD_API_KEY', '/usr/share/mod/keys/mod_api_key.pub')
+DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
+DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
+DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
+KEYPATH = os.environ.pop('MOD_KEY_PATH', '/root/keys')
+DEVICE_SERIAL = os.environ.pop('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
+DEVICE_MODEL = os.environ.pop('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
@@ -62,7 +62,7 @@ DEFAULT_ICON_IMAGE = { 'thumbnail': join(HTML_DIR, 'resources/pedals/default-thu
                        'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
                        }
 
-BLUETOOTH_PIN = os.environ.get('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pin'))
+BLUETOOTH_PIN = os.environ.pop('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pin'))
 
 PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
@@ -76,9 +76,9 @@ MAX_SCREENSHOT_WIDTH = 1024
 DEFAULT_PACKAGE_SERVER_PORT = 8889
 # If environment variable is not set, then the address will be built by javascript,
 # using current host and default port above
-PACKAGE_SERVER_ADDRESS = os.environ.get('MOD_PACKAGE_SERVER_ADDRESS')
+PACKAGE_SERVER_ADDRESS = os.environ.pop('MOD_PACKAGE_SERVER_ADDRESS', None)
 
-CLOUD_HTTP_ADDRESS = os.environ.get('MOD_CLOUD_HTTP_ADDRESS', "http://api.moddevices.com")
+CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.moddevices.com")
 
 if os.path.exists("/root/repository"):
     fh = open("/root/repository")
@@ -86,7 +86,7 @@ if os.path.exists("/root/repository"):
     fh.close()
 else:
     default_repo = 'http://packages.moddevices.com/api'
-PACKAGE_REPOSITORY = os.environ.get('MOD_PACKAGE_REPOSITORY', default_repo)
+PACKAGE_REPOSITORY = os.environ.pop('MOD_PACKAGE_REPOSITORY', default_repo)
 
 if os.path.exists("/root/avatar"):
     fh = open("/root/avatar")
@@ -94,15 +94,15 @@ if os.path.exists("/root/avatar"):
     fh.close()
 else:
     default_avatar_url = 'http://gravatar.com/avatar'
-AVATAR_URL = os.environ.get('MOD_AVATAR_URL', default_avatar_url)
+AVATAR_URL = os.environ.pop('MOD_AVATAR_URL', default_avatar_url)
 
 TUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner"
 TUNER = 9994
 TUNER_PORT = "in"
 TUNER_MON_PORT = "FREQ"
 
-JS_CUSTOM_CHANNEL = bool(int(os.environ.get('MOD_JS_CUSTOM_CHANNEL', False)))
-AUTO_CLOUD_BACKUP = bool(int(os.environ.get('MOD_AUTO_CLOUD_BACKUP', False)))
+JS_CUSTOM_CHANNEL = bool(int(os.environ.pop('MOD_JS_CUSTOM_CHANNEL', False)))
+AUTO_CLOUD_BACKUP = bool(int(os.environ.pop('MOD_AUTO_CLOUD_BACKUP', False)))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
