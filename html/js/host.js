@@ -45,7 +45,7 @@ $('document').ready(function() {
 
             if (xruns != cached_xruns) {
                 cached_xruns = xruns
-                $("#xruns-text").text(xruns == 1 ? (xruns.toString()+" Xrun") : (xruns.toString()+" Xruns"))
+                $("#mod-xruns").text(xruns == 1 ? (xruns.toString()+" Xrun") : (xruns.toString()+" Xruns"))
             }
             return
         }

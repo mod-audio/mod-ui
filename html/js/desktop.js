@@ -592,7 +592,7 @@ function Desktop(elements) {
             success: function (ok) {
                 if (ok) {
                     cached_xruns = 0
-                    $("#xruns-text").text("0 Xruns")
+                    $("#mod-xruns").text("0 Xruns")
                 }
             }
         })

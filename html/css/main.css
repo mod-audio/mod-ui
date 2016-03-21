@@ -7222,8 +7222,7 @@ hr.dotted {
   background-color: #883996;
 }
 #main-menu #mod-cpu,
-#main-menu #mod-ram,
-#main-menu #mod-xruns {
+#main-menu #mod-ram {
   cursor: default;
   width: 115px !important;
   padding: 0 !important;
@@ -7242,11 +7241,9 @@ hr.dotted {
   background-repeat: no-repeat;
   padding-left: 30px;
 }
-#main-menu #mod-xruns .progress-title {
+#main-menu #mod-xruns {
   background-image: url(../img/icons/25/cpu.png);
-  background-position: 0px 50%;
-  background-repeat: no-repeat;
-  padding-left: 30px;
+  width: 115px !important;
 }
 #main-menu .progress {
   height: 45px;
