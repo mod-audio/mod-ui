@@ -94,8 +94,8 @@ JqueryClass('bankBox', {
                         height: 0
                     }, function () {
                         ui.item.remove()
+                        self.bankBox('save')
                     })
-                    self.bankBox('save')
                 })
 
                 self.bankBox('save')
