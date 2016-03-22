@@ -41,6 +41,10 @@ def list_banks(brokenpedals = []):
         validpedals = []
 
         for pb in bank['pedalboards']:
+            if 'bundle' not in pb.keys() or not pb['bundle']:
+                print("Auto-removing pedalboard '%s' from bank (missing bundle)" % pb['title'])
+                changed = True
+                continue
             if not os.path.exists(pb['bundle']):
                 print("ERROR in banks.py: referenced pedalboard does not exist:", pb['bundle'])
                 changed = True

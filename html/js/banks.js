@@ -188,9 +188,13 @@ JqueryClass('bankBox', {
             var pedalboards = (bank.data('selected') ? self.data('pedalboardCanvas') : bank.data('pedalboards'))
             var pedalboardData = []
             pedalboards.children().each(function () {
+                var bundle = $(this).data('pedalboardBundle')
+                if (!bundle) {
+                    return
+                }
                 pedalboardData.push({
                     title : $(this).find('.js-title').text(),
-                    bundle: $(this).data('pedalboardBundle'),
+                    bundle: bundle,
                 })
             })
 
