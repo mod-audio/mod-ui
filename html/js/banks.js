@@ -397,8 +397,8 @@ JqueryClass('bankBox', {
                 height: 0
             }, function () {
                 rendered.remove()
+                self.bankBox('save')
             })
-            self.bankBox('save')
         })
 
         rendered.data('pedalboardBundle', pedalboard.bundle)
