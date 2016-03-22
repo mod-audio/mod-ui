@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 
+from distutils.command.build import build
 from setuptools import setup, find_packages
 from glob import glob
 
 import os
 import sys
+
+class mod_utils_builder(build):
+    def run(self):
+        build.run(self)
+        os.system("make -C utils")
 
 setup(name = 'mod',
       version = '0.99.8',
@@ -17,8 +23,8 @@ setup(name = 'mod',
       entry_points = {
           'console_scripts': [
               'mod-ui = mod.webserver:run',
-              ]
-          },
+          ]
+      },
       scripts = [
       ],
       data_files=[  (('share/mod/default.pedalboard'), glob('default.pedalboard/*')),
@@ -98,7 +104,7 @@ setup(name = 'mod',
                     (('share/mod/html/resources/pedals'), glob('html/resources/pedals/*.css')),
                     (('share/mod/html/resources/templates'), glob('html/resources/templates/*.html')),
                     (('share/mod'), ['screenshot.js']),
-          ],
+      ],
       install_requires = ['tornado'],
 
       classifiers = [
@@ -106,6 +112,7 @@ setup(name = 'mod',
           'Natural Language :: English',
           'Operating System :: OS Independent',
           'Programming Language :: Python',
-        ],
+      ],
       url = 'http://moddevices.com/',
+      cmdclass={'build': mod_utils_builder},
 )
