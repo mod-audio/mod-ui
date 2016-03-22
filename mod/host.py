@@ -390,7 +390,12 @@ class Host(object):
                 value       = float(msg[3])
 
                 instance = self.mapper.get_instance(instance_id)
-                self.plugins[instance_id]['ports'][portsymbol] = value
+
+                if portsymbol == ":bypass":
+                    self.plugins[instance_id]['bypassed'] = bool(value)
+                else:
+                    self.plugins[instance_id]['ports'][portsymbol] = value
+
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "midi_mapped":
@@ -401,8 +406,14 @@ class Host(object):
                 value       = float(msg[5])
 
                 instance = self.mapper.get_instance(instance_id)
-                self.plugins[instance_id]['midiCCs'][portsymbol] = (channel, controller)
-                self.plugins[instance_id]['ports'][portsymbol] = value
+
+                if portsymbol == ":bypass":
+                    self.plugins[instance_id]['bypassCC'] = (channel, controller)
+                    self.plugins[instance_id]['bypassed'] = bool(value)
+                else:
+                    self.plugins[instance_id]['midiCCs'][portsymbol] = (channel, controller)
+                    self.plugins[instance_id]['ports'][portsymbol] = value
+
                 self.msg_callback("midi_map %s %s %i %i" % (instance, portsymbol, channel, controller))
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
@@ -535,10 +546,17 @@ class Host(object):
         for instance_id, plugin in self.plugins.items():
             websocket.write_message("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
 
+            if -1 not in plugin['bypassCC']:
+                mchnnl, mctrl = plugin['bypassCC']
+                websocket.write_message("midi_map %s :bypass %i %i" % (plugin['instance'], mchnnl, mctrl))
+
             if crashed:
                 self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
                 if plugin['bypassed']:
                     self.send("bypass %d 1" % (instance_id,), lambda r:None, datatype='boolean')
+                if -1 not in plugin['bypassCC']:
+                    mchnnl, mctrl = plugin['bypassCC']
+                    self.send("midi_map %d :bypass %i %i" % (instance_id, mchnnl, mctrl), lambda r:None)
                 if plugin['preset']:
                     self.send("preset_load %d %s" % (instance_id, plugin['preset']), lambda r:None, datatype='boolean')
 
@@ -552,11 +570,12 @@ class Host(object):
                     self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
 
             for symbol, data in plugin['midiCCs'].items():
-                mchnnl, mctrl = data
-                if mchnnl >= 0 and mctrl >= 0 and symbol not in badports:
+                if -1 not in data and symbol not in badports:
+                    mchnnl, mctrl = data
                     websocket.write_message("midi_map %s %s %i %i" % (plugin['instance'], symbol, mchnnl, mctrl))
 
-                    self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
+                    if crashed:
+                        self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
@@ -656,6 +675,7 @@ class Host(object):
                 "instance"  : instance,
                 "uri"       : uri,
                 "bypassed"  : bypassed,
+                "bypassCC"  : (-1,-1),
                 "x"         : x,
                 "y"         : y,
                 "addressing": {}, # symbol: addressing
@@ -923,11 +943,6 @@ class Host(object):
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
 
-            self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
-
-            if p['bypassed']:
-                self.send("bypass %d 1" % (instance_id,), lambda r:None)
-
             allports = get_plugin_control_input_ports(p['uri'])
             badports = []
             valports = {}
@@ -953,6 +968,7 @@ class Host(object):
                 "instance"  : instance,
                 "uri"       : p['uri'],
                 "bypassed"  : p['bypassed'],
+                "bypassCC"  : (p['bypassCC']['channel'], p['bypassCC']['control']),
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
@@ -961,10 +977,23 @@ class Host(object):
                 "badports"  : badports,
                 "preset"    : p['preset'],
             }
+
+            self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
+
+            if p['bypassed']:
+                self.send("bypass %d 1" % (instance_id,), lambda r:None)
+
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
+
+            if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
+                self.send("midi_map %d :bypass %i %i" % (instance_id, p['bypassCC']['channel'],
+                                                                      p['bypassCC']['control']), lambda r:None)
+                self.msg_callback("midi_map %s :bypass %i %i" % (instance, p['bypassCC']['channel'],
+                                                                           p['bypassCC']['control']))
 
             if p['preset']:
                 self.send("preset_load %d %s" % (instance_id, p['preset']), lambda r:None)
+                #self.msg_callback("preset %s %s" % (instance, p['preset']))
 
             for port in p['ports']:
                 symbol = port['symbol']
@@ -1129,7 +1158,8 @@ _:b%i
                                                                                           info['ports']['cv']['input']+
                                                                                           info['ports']['cv']['output']+
                                                                                           info['ports']['midi']['input']+
-                                                                                          info['ports']['midi']['output']))),
+                                                                                          info['ports']['midi']['output']+
+                                                                                          [{'symbol': ":bypass"}]))),
        plugin['uri'],
        plugin['preset'])
 
@@ -1207,6 +1237,19 @@ _:b%i
     a lv2:ControlPort ,
         lv2:OutputPort .
 """ % (instance, port['symbol'])
+
+            blocks += """
+<%s/:bypass>
+    ingen:value %i ;%s
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (instance, 1 if plugin['bypassed'] else 0,
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        a midi:Controller ;
+    ] ;""" % plugin['bypassCC']) if -1 not in plugin['bypassCC'] else "")
 
         # Ports
         ports = """
@@ -1432,7 +1475,10 @@ _:b%i
 
             # we're unmapping a midi control
             elif actuator_uri == kMidiUnmapURI:
-                pluginData['midiCCs'][port] = (-1, -1)
+                if port == ":bypass":
+                    pluginData['bypassCC'] = (-1, -1)
+                else:
+                    pluginData['midiCCs'][port] = (-1, -1)
                 self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
                 return
 

@@ -166,6 +166,7 @@ typedef struct {
     const char* instance;
     const char* uri;
     bool bypassed;
+    PedalboardMidiControl bypassCC;
     float x;
     float y;
     const PedalboardPluginPort* ports;

@@ -288,6 +288,7 @@ class PedalboardPlugin(Structure):
         ("instance", c_char_p),
         ("uri", c_char_p),
         ("bypassed", c_bool),
+        ("bypassCC", PedalboardMidiControl),
         ("x", c_float),
         ("y", c_float),
         ("ports", POINTER(PedalboardPluginPort)),

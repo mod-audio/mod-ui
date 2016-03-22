@@ -3359,6 +3359,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     LilvNode* const y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
                     LilvNode* const preset  = lilv_world_get(w, block, modpedal_preset, nullptr);
 
+                    PedalboardMidiControl bypassCC = { -1, -1 };
                     PedalboardPluginPort* ports = nullptr;
 
                     if (LilvNodes* const portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
@@ -3409,12 +3410,20 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               if (strstr(portsymbol, full_instance) != nullptr)
                                   memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
 
-                              ports[portcount++] = {
-                                  true,
-                                  portsymbol,
-                                  lilv_node_as_float(portvalue),
-                                  { mchan, mctrl }
-                              };
+                              if (strcmp(portsymbol, ":bypass") == 0)
+                              {
+                                  bypassCC.channel = mchan;
+                                  bypassCC.control = mctrl;
+                              }
+                              else
+                              {
+                                  ports[portcount++] = {
+                                      true,
+                                      portsymbol,
+                                      lilv_node_as_float(portvalue),
+                                      { mchan, mctrl }
+                                  };
+                              }
 
                               lilv_node_free(portvalue);
                         }
@@ -3427,6 +3436,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         instance,
                         strdup(uri),
                         enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
+                        bypassCC,
                         x != nullptr ? lilv_node_as_float(x) : 0.0f,
                         y != nullptr ? lilv_node_as_float(y) : 0.0f,
                         ports,
