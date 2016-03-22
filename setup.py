@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 from distutils.command.build import build
+from distutils.command.install import install
 from setuptools import setup, find_packages
+from shutil import copyfile
 from glob import glob
 
 import os
@@ -11,6 +13,14 @@ class mod_utils_builder(build):
     def run(self):
         build.run(self)
         os.system("make -C utils")
+
+class mod_utils_installer(install):
+    def run(self):
+        install.run(self)
+        source = "utils/libmod_utils.so"
+        target = os.path.join(self.install_lib, "mod", "libmod_utils.so")
+        print("Copying %s to %s" % (source, target))
+        copyfile(source, target)
 
 setup(name = 'mod',
       version = '0.99.8',
@@ -114,5 +124,6 @@ setup(name = 'mod',
           'Programming Language :: Python',
       ],
       url = 'http://moddevices.com/',
-      cmdclass={'build': mod_utils_builder},
+      cmdclass={'build': mod_utils_builder,
+                'install': mod_utils_installer},
 )
