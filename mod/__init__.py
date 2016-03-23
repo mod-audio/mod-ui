@@ -67,7 +67,6 @@ def check_environment():
         os.makedirs(LV2_PEDALBOARDS_DIR)
 
     if os.path.exists(DEFAULT_PEDALBOARD_COPY) and not os.path.exists(DEFAULT_PEDALBOARD):
-        #os.makedirs(DEFAULT_PEDALBOARD)
         shutil.copytree(DEFAULT_PEDALBOARD_COPY, DEFAULT_PEDALBOARD)
 
     if not os.path.exists(BANKS_JSON_FILE):

@@ -1233,10 +1233,7 @@ def prepare(isModApp = False):
         elif not SESSION.host.connected:
             ioinstance.call_later(0.1, checkhost)
 
-    def check():
-        check_environment()
-        checkhost()
-
+    check_environment()
     lv2_init()
 
     if False:
@@ -1247,7 +1244,7 @@ def prepare(isModApp = False):
     run_server()
 
     ioinstance = tornado.ioloop.IOLoop.instance()
-    ioinstance.add_callback(check)
+    ioinstance.add_callback(checkhost)
 
 def start():
     tornado.ioloop.IOLoop.instance().start()
