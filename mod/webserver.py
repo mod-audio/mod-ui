@@ -1215,24 +1215,6 @@ def signal_recv(sig, frame=0):
         tornado.ioloop.IOLoop.instance().add_callback_from_signal(SESSION.signal_disconnect)
 
 def prepare(isModApp = False):
-    def run_server():
-        if not isModApp:
-            signal(SIGUSR2, signal_recv)
-            set_process_name("mod-ui")
-
-        application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-        if LOG:
-            tornado.log.enable_pretty_logging()
-
-    def checkhost():
-        if SESSION.host.readsock is None or SESSION.host.writesock is None:
-            print("Host failed to initialize, is the backend running?")
-            SESSION.host.close_jack()
-            sys.exit(1)
-
-        elif not SESSION.host.connected:
-            ioinstance.call_later(0.1, checkhost)
-
     check_environment()
     lv2_init()
 
@@ -1241,7 +1223,22 @@ def prepare(isModApp = False):
         get_all_plugins()
         print("Done!")
 
-    run_server()
+    if not isModApp:
+        signal(SIGUSR2, signal_recv)
+        set_process_name("mod-ui")
+
+    application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
+    if LOG:
+        tornado.log.enable_pretty_logging()
+
+    def checkhost():
+        if SESSION.host.readsock is None or SESSION.host.writesock is None:
+            print("Host failed to initialize, is the backend running?")
+            SESSION.host.close_jack()
+            sys.exit(1)
+
+        elif not SESSION.host.connected:
+            ioinstance.call_later(0.2, checkhost)
 
     ioinstance = tornado.ioloop.IOLoop.instance()
     ioinstance.add_callback(checkhost)
