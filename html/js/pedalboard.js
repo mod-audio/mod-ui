@@ -556,7 +556,7 @@ JqueryClass('pedalboard', {
                 imgrect.height = img.height();
                 var clickpos  = { x: event.offsetX,
                                   y: event.offsetY };
-                var clickperc = { x: Math.min(imgrect.width, Math.max(0, (event.offsetX - imgrect.left))) / imgrect.width, 
+                var clickperc = { x: Math.min(imgrect.width, Math.max(0, (event.offsetX - imgrect.left))) / imgrect.width,
                                   y: Math.min(imgrect.height, Math.max(0, (event.offsetY - imgrect.top))) / imgrect.height };
                 var pad = { left: parseInt(element.css("padding-left")),
                             top: parseInt(element.css("padding-top")) };
@@ -572,7 +572,7 @@ JqueryClass('pedalboard', {
                             dummy.css("transformOrigin", "0 0");
                             dummy.css("visibility", "hidden");
                             var children = icon.children();
-                            
+
                             var settle = function () {
                                 var scale = self.data('scale');
                                 var trans = 'scale(' + scale + ') ';

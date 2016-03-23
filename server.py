@@ -14,6 +14,7 @@ os.environ['MOD_LOG'] = os.environ.get("MOD_LOG", '1')
 os.environ['MOD_KEY_PATH'] = join(ROOT, 'keys')
 os.environ['MOD_DEVICE_WEBSERVER_PORT'] = '8888'
 os.environ['MOD_HTML_DIR'] = join(ROOT, 'html')
+os.environ['MOD_DEFAULT_PEDALBOARD'] = join(ROOT, 'default.pedalboard')
 
 path_phantom = join(ROOT, 'phantomjs-1.9.0-linux-x86_64/bin/phantomjs')
 if os.path.exists(path_phantom):

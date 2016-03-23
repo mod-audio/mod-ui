@@ -53,6 +53,8 @@ def _json_or_remove(path):
 
 def check_environment():
     from mod.settings import (DEVICE_SERIAL, DEVICE_MODEL,
+                              LV2_PEDALBOARDS_DIR,
+                              DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
                               DATA_DIR, DOWNLOAD_TMP_DIR, BANKS_JSON_FILE)
 
     if not os.path.exists(DATA_DIR):
@@ -60,6 +62,13 @@ def check_environment():
 
     if not os.path.exists(DOWNLOAD_TMP_DIR):
         os.makedirs(DOWNLOAD_TMP_DIR)
+
+    if not os.path.exists(LV2_PEDALBOARDS_DIR):
+        os.makedirs(LV2_PEDALBOARDS_DIR)
+
+    if os.path.exists(DEFAULT_PEDALBOARD_COPY) and not os.path.exists(DEFAULT_PEDALBOARD):
+        #os.makedirs(DEFAULT_PEDALBOARD)
+        shutil.copytree(DEFAULT_PEDALBOARD_COPY, DEFAULT_PEDALBOARD)
 
     if not os.path.exists(BANKS_JSON_FILE):
         with open(BANKS_JSON_FILE, 'w') as fh:
