@@ -1270,8 +1270,9 @@ JqueryClass('saveBox', {
 
     edit: function () {
         var self = $(this)
-        self.find('input').focus()
         self.show()
+        self.focus()
+        self.find('input').focus()
     },
 
     send: function () {
