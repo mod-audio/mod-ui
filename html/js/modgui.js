@@ -1221,13 +1221,28 @@ JqueryClass('film', baseWidget, {
         // Useful for fine tunning and toggle
         var self = $(this)
         var filmSteps = self.data('filmSteps')
-        var position = self.data('position')+1
-        if (position >= filmSteps) {
-            if (self.data('enumeration') || self.data('toggled'))
-                position = 0
-            else
-                position = filmSteps-1
+        var position = self.data('position')
+
+        if (e.shiftKey) {
+            // going down
+            position -= 1
+            if (position < 0) {
+                if (self.data('enumeration') || self.data('toggled'))
+                    position = filmSteps-1
+                else
+                    position = 0
+            }
+        } else {
+            // going up
+            position += 1
+            if (position >= filmSteps) {
+                if (self.data('enumeration') || self.data('toggled'))
+                    position = 0
+                else
+                    position = filmSteps-1
+            }
         }
+
         self.data('position', position)
         self.film('setRotation', position)
         var value = self.film('valueFromSteps', position)
