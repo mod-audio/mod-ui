@@ -34,7 +34,7 @@ from uuid import uuid4
 from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
+                          DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, DATA_DIR, AVATAR_URL,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP, BLUETOOTH_PIN)
@@ -859,6 +859,7 @@ class TemplateHandler(web.RequestHandler):
         context = {
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
+            'default_pedalboard': DEFAULT_PEDALBOARD,
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
@@ -870,8 +871,8 @@ class TemplateHandler(web.RequestHandler):
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
-            'bundlepath': json.dumps(SESSION.host.pedalboard_path),
-            'title': json.dumps(SESSION.host.pedalboard_name),
+            'bundlepath': SESSION.host.pedalboard_path,
+            'title': SESSION.host.pedalboard_name,
             'size': json.dumps(SESSION.host.pedalboard_size),
             'fulltitle': SESSION.host.pedalboard_name or "Untitled",
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',

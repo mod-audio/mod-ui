@@ -567,7 +567,17 @@ function Desktop(elements) {
         self.saveCurrentPedalboard(true)
     })
     elements.resetButton.click(function () {
-        self.reset()
+        self.reset(function () {
+            $.ajax({
+                url: '/pedalboard/load_bundle/',
+                type: 'POST',
+                data: {
+                    bundlepath: DEFAULT_PEDALBOARD
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        })
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))

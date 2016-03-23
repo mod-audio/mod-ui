@@ -77,6 +77,7 @@
       var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
+      var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
       var MAX_SCREENSHOT_WIDTH = 600
       var MAX_SCREENSHOT_HEIGHT = 600
       var PACKAGE_SERVER_ADDRESS = ('{{package_server_address}}' ||
@@ -158,9 +159,9 @@ $('document').ready(function() {
       xrunsButton: $('#mod-xruns'),
   })
 
-  if ({{bundlepath}} && {{title}}) {
-      desktop.title = {{title}}
-      desktop.pedalboardBundle   = {{bundlepath}}
+  if ('{{bundlepath}}' && '{{title}}') {
+      desktop.title = '{{title}}'
+      desktop.pedalboardBundle   = '{{bundlepath}}'
       desktop.pedalboardModified = true
       desktop.pedalboardSavable  = true
   }
