@@ -22,7 +22,7 @@ var cached_cpuLoad = null,
 $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
-    var waiting  = false,
+    var loading  = false,
         empty    = false,
         modified = false
 
@@ -92,7 +92,7 @@ $('document').ready(function() {
                 var targetport = '[mod-port="' + target.replace(/\//g, "\\/") + '"]'
 
                 var output       = $(sourceport)
-                var skipModified = waiting
+                var skipModified = loading
 
                 if (output.length) {
                     var input = $(targetport)
@@ -155,7 +155,7 @@ $('document').ready(function() {
             var y        = parseFloat(data[4])
             var bypassed = parseInt(data[5]) != 0
             var plugins  = desktop.pedalboard.data('plugins')
-            var skipModified = waiting
+            var skipModified = loading
 
             if (plugins[instance] == null) {
                 plugins[instance] = {} // register plugin
@@ -168,7 +168,7 @@ $('document').ready(function() {
                         if (!$(instancekey).length) {
                             var cb = function () {
                                 desktop.pedalboard.pedalboard('scheduleAdapt')
-                                desktop.pedalboard.data('wait').stopPlugin(instance, !waiting)
+                                desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
 
                                 $(document).unbindArrive(instancekey, cb)
                             }
@@ -210,7 +210,7 @@ $('document').ready(function() {
                 desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)
             }
 
-            if (! waiting) {
+            if (! loading) {
                 desktop.pedalboard.pedalboard('positionHardwarePorts')
             }
             return
@@ -222,20 +222,20 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "wait_start") {
-            waiting  = true
+        if (cmd == "loading_start") {
+            loading  = true
             empty    = parseInt(data[1]) != 0
             modified = parseInt(data[2]) != 0
             desktop.pedalboard.data('wait').start('Loading pedalboard...')
             return
         }
 
-        if (cmd == "wait_end") {
+        if (cmd == "loading_end") {
             // load new possible addressings
             $.ajax({
                 url: '/hardware',
                 success: function (data) {
-                    waiting = false
+                    loading = false
                     HARDWARE_PROFILE = data
                     desktop.hardwareManager.registerAllAddressings()
                     desktop.pedalboard.pedalboard('scheduleAdapt')
