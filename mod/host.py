@@ -1101,8 +1101,12 @@ class Host(object):
             self.pedalboard_path = bundlepath
 
         # save
-        self.pedalboard_name = title
+        self.pedalboard_name     = title
+        self.pedalboard_empty    = False
+        self.pedalboard_modified = False
         self.save_state_to_ttl(bundlepath, title, titlesym)
+
+        save_last_bank_and_pedalboard(-1, bundlepath)
 
         return bundlepath
 
