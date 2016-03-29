@@ -213,8 +213,8 @@ function Desktop(elements) {
     this.title = ''
     this.cloudAccessToken = null
     this.pedalboardBundle = null
+    this.pedalboardEmpty = true
     this.pedalboardModified = false
-    this.pedalboardSavable = false
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function () {
@@ -516,8 +516,8 @@ function Desktop(elements) {
                     transfer = new SimpleTransference(pb.file_href, '/pedalboard/load_web/')
 
                     transfer.reportFinished = function () {
+                        self.pedalboardEmpty = false
                         self.pedalboardModified = true
-                        self.pedalboardSavable = true
                         self.windowManager.closeWindows()
                     }
 
@@ -572,7 +572,8 @@ function Desktop(elements) {
                 url: '/pedalboard/load_bundle/',
                 type: 'POST',
                 data: {
-                    bundlepath: DEFAULT_PEDALBOARD
+                    bundlepath: DEFAULT_PEDALBOARD,
+                    isDefault: true,
                 },
                 cache: false,
                 dataType: 'json'
@@ -891,8 +892,8 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
                     self.title = ''
                     self.pedalboardBundle = null
+                    self.pedalboardEmpty = true
                     self.pedalboardModified = false
-                    self.pedalboardSavable = false
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend");
 
@@ -947,8 +948,8 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
     // Bind events
     el.bind('modified', function () {
+        self.pedalboardEmpty = false
         self.pedalboardModified = true
-        self.pedalboardSavable = true
     })
     el.bind('dragStart', function () {
         self.windowManager.closeWindows()
@@ -1124,8 +1125,8 @@ Desktop.prototype.reset = function (callback) {
             return
     this.title = ''
     this.pedalboardBundle = null
+    this.pedalboardEmpty = true
     this.pedalboardModified = false
-    this.pedalboardSavable = false
     this.pedalboard.pedalboard('reset', callback)
 }
 
@@ -1174,8 +1175,8 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 }
                 self.title = resp.name
                 self.pedalboardBundle = resp.bundlepath
+                self.pedalboardEmpty = false
                 self.pedalboardModified = false
-                self.pedalboardSavable = true
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
 
@@ -1193,7 +1194,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
 
-    if (!self.pedalboardSavable) {
+    if (self.pedalboardEmpty) {
         new Notification('warn', 'Nothing to save', 1500)
         return
     }
@@ -1207,8 +1208,8 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
 
             self.title = title
             self.pedalboardBundle = errorOrPath
+            self.pedalboardEmpty = false
             self.pedalboardModified = false
-            self.pedalboardSavable = true
             self.titleBox.text(title)
             self.titleBox.removeClass("blend");
 

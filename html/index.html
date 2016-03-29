@@ -162,8 +162,8 @@ $('document').ready(function() {
   if ('{{bundlepath}}' && '{{title}}') {
       desktop.title = '{{title}}'
       desktop.pedalboardBundle   = '{{bundlepath}}'
+      desktop.pedalboardEmpty    = false
       desktop.pedalboardModified = true
-      desktop.pedalboardSavable  = true
   }
 
   if ({{using_app}}) {

@@ -229,8 +229,11 @@ class Session(object):
         for ws in self.websockets:
             ws.write_message(msg)
 
-    def load_pedalboard(self, bundlepath, bank_id=-1):
-        title = self.host.load(bundlepath, bank_id)
+    def load_pedalboard(self, bundlepath, isDefault):
+        title = self.host.load(bundlepath, -1, isDefault)
+        if isDefault:
+            bundlepath = ""
+            title = ""
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
 

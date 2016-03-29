@@ -137,9 +137,11 @@ class Host(object):
         self.midiports = []
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
-        self.pedalboard_name = ""
-        self.pedalboard_path = ""
-        self.pedalboard_size = [0,0]
+        self.pedalboard_empty    = True
+        self.pedalboard_modified = False
+        self.pedalboard_name     = ""
+        self.pedalboard_path     = ""
+        self.pedalboard_size     = [0,0]
 
         self.statstimer = ioloop.PeriodicCallback(self.statstimer_callback, 1000)
 
@@ -234,11 +236,12 @@ class Host(object):
 
         if pedalboard:
             self.load(pedalboard, bank_id)
+
         else:
             self.send("remove -1", lambda r:None, datatype='boolean')
 
             if os.path.exists(DEFAULT_PEDALBOARD):
-                self.load(DEFAULT_PEDALBOARD, -1)
+                self.load(DEFAULT_PEDALBOARD, -1, True)
 
     def init_jack(self):
         self.audioportsIn  = []
@@ -465,6 +468,7 @@ class Host(object):
         self.writesock.read_until(b"\0", check_response)
 
     def send(self, msg, callback, datatype='int'):
+        self.pedalboard_modified = True
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()
@@ -588,7 +592,7 @@ class Host(object):
                 self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
                                              self._fix_host_connection_port(port_to)), lambda r:None, datatype='boolean')
 
-        websocket.write_message("wait_end")
+        websocket.write_message("wait_end %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
@@ -638,9 +642,11 @@ class Host(object):
         self.mapper.clear()
         self._init_addressings()
 
-        self.pedalboard_name = ""
-        self.pedalboard_path = ""
-        self.pedalboard_size = [0,0]
+        self.pedalboard_empty    = True
+        self.pedalboard_modified = False
+        self.pedalboard_name     = ""
+        self.pedalboard_path     = ""
+        self.pedalboard_size     = [0,0]
 
         save_last_bank_and_pedalboard(-1, "")
         self.send("remove -1", host_callback, datatype='boolean')
@@ -910,7 +916,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
 
-    def load(self, bundlepath, bank_id):
+    def load(self, bundlepath, bankId, isDefault=False):
         self.msg_callback("wait_start")
 
         pb = get_pedalboard_info(bundlepath)
@@ -1044,11 +1050,21 @@ class Host(object):
         if self.hmi.initialized:
             self._load_addressings(bundlepath)
 
-        self.msg_callback("wait_end")
+        self.msg_callback("wait_end 0 0")
 
-        self.pedalboard_name = pb['title']
-        self.pedalboard_path = bundlepath
-        save_last_bank_and_pedalboard(bank_id, bundlepath)
+        if isDefault:
+            self.pedalboard_empty    = True
+            self.pedalboard_modified = False
+            self.pedalboard_name     = ""
+            self.pedalboard_path     = ""
+            self.pedalboard_size     = [0,0]
+            #save_last_bank_and_pedalboard(-1, "")
+        else:
+            self.pedalboard_empty    = False
+            self.pedalboard_modified = False
+            self.pedalboard_name     = pb['title']
+            self.pedalboard_path     = bundlepath
+            save_last_bank_and_pedalboard(bankId, bundlepath)
 
         return self.pedalboard_name
 

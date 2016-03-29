@@ -225,6 +225,9 @@ $('document').ready(function() {
         }
 
         if (cmd == "wait_end") {
+            var empty    = parseInt(data[1]) != 0
+            var modified = parseInt(data[2]) != 0
+
             // load new possible addressings
             $.ajax({
                 url: '/hardware',
@@ -233,6 +236,8 @@ $('document').ready(function() {
                     HARDWARE_PROFILE = data
                     desktop.hardwareManager.registerAllAddressings()
                     desktop.pedalboard.pedalboard('scheduleAdapt');
+                    desktop.pedalboardEmpty    = empty && !modified
+                    desktop.pedalboardModified = modified
                     desktop.init();
                 },
                 cache: false,

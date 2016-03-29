@@ -672,7 +672,12 @@ class PedalboardLoadBundle(web.RequestHandler):
     def post(self):
         bundlepath = self.get_argument("bundlepath")
 
-        name = SESSION.load_pedalboard(bundlepath)
+        try:
+            isDefault = self.get_argument("isDefault")
+        except:
+            isDefault = False
+
+        name = SESSION.load_pedalboard(bundlepath, isDefault)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({
@@ -701,7 +706,7 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         if not os.path.exists(bundlepath):
             raise IOError(bundlepath)
 
-        SESSION.load_pedalboard(bundlepath)
+        SESSION.load_pedalboard(bundlepath, False)
 
         os.remove(filename)
         callback()
