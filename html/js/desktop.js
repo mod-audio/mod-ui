@@ -1025,9 +1025,11 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
         duplicate: function (pedalboard, callback) {
             // This does not work, because api has changed
             return
+            /*
             var duplicated = $.extend({}, pedalboard)
             delete duplicated._id
             self.saveBox.saveBox('save', duplicated, callback)
+            */
         }
     })
 }

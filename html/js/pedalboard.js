@@ -210,7 +210,7 @@ JqueryClass('pedalboard', {
         self.bind('mousewheel', function (e) {
             // Zoom by mousewheel has been desactivated.
             // Let's keep the code here so that maybe later this can be a user option
-            return
+            if (true) return;
 
             var ev = e.originalEvent
 
