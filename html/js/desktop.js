@@ -573,7 +573,7 @@ function Desktop(elements) {
                 type: 'POST',
                 data: {
                     bundlepath: DEFAULT_PEDALBOARD,
-                    isDefault: true,
+                    isDefault: '1',
                 },
                 cache: false,
                 dataType: 'json'

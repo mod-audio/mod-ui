@@ -1079,7 +1079,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instance, now we need to put it in screen.
-    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, renderCallback) {
+    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, renderCallback, skipModified) {
         var self = $(this)
         var scale = self.data('scale')
 
@@ -1162,7 +1162,9 @@ JqueryClass('pedalboard', {
 
             self.data('plugins')[instance] = icon
 
-            self.trigger('modified')
+            if (! skipModified) {
+                self.trigger('modified')
+            }
 
             icon.data('uri', pluginData.uri)
             icon.data('gui', pluginGui)
@@ -1913,7 +1915,7 @@ JqueryClass('pedalboard', {
 
     // Connects an output port to an input port.
     // The output is obtained from jack
-    connect: function (jack, input) {
+    connect: function (jack, input, skipModified) {
         var self = $(this)
         var output = jack.data('origin')
         if (output == null) {
@@ -1958,8 +1960,10 @@ JqueryClass('pedalboard', {
         self.pedalboard('packJacks', input)
         self.pedalboard('spawnJack', output)
 
-        // Pedalboard has been modified
-        self.trigger('modified')
+        if (! skipModified) {
+            // Pedalboard has been modified
+            self.trigger('modified')
+        }
 
         // Do the connection in host. If there's a problem, undo the connection
         // It might be better to check first and then connect instead

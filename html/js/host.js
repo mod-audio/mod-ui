@@ -22,7 +22,9 @@ var cached_cpuLoad = null,
 $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
-    var waiting = false
+    var waiting  = false,
+        empty    = false,
+        modified = false
 
     ws.onmessage = function (evt) {
         var data = evt.data.split(" ")
@@ -89,17 +91,18 @@ $('document').ready(function() {
                 var sourceport = '[mod-port="' + source.replace(/\//g, "\\/") + '"]'
                 var targetport = '[mod-port="' + target.replace(/\//g, "\\/") + '"]'
 
-                var output = $(sourceport)
+                var output       = $(sourceport)
+                var skipModified = waiting
 
                 if (output.length) {
                     var input = $(targetport)
 
                     if (input.length) {
-                        desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
+                        desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
                     } else {
                         var cb = function () {
                             var input = $(targetport)
-                            desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
+                            desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
                             $(document).unbindArrive(targetport, cb)
                         }
                         $(document).arrive(targetport, cb)
@@ -110,11 +113,11 @@ $('document').ready(function() {
                         var input  = $(targetport)
 
                         if (input.length) {
-                            desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
+                            desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
                         } else {
                             var incb = function () {
                                 var input = $(targetport)
-                                desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input)
+                                desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
                                 $(document).unbindArrive(targetport, incb)
                             }
                             $(document).arrive(targetport, incb)
@@ -152,6 +155,7 @@ $('document').ready(function() {
             var y        = parseFloat(data[4])
             var bypassed = parseInt(data[5]) != 0
             var plugins  = desktop.pedalboard.data('plugins')
+            var skipModified = waiting
 
             if (plugins[instance] == null) {
                 plugins[instance] = {} // register plugin
@@ -171,7 +175,7 @@ $('document').ready(function() {
                             $(document).arrive(instancekey, cb)
                         }
 
-                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {})
+                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
                     },
                     cache: false,
                     dataType: 'json'
@@ -219,15 +223,14 @@ $('document').ready(function() {
         }
 
         if (cmd == "wait_start") {
-            waiting = true
+            waiting  = true
+            empty    = parseInt(data[1]) != 0
+            modified = parseInt(data[2]) != 0
             desktop.pedalboard.data('wait').start('Loading pedalboard...')
             return
         }
 
         if (cmd == "wait_end") {
-            var empty    = parseInt(data[1]) != 0
-            var modified = parseInt(data[2]) != 0
-
             // load new possible addressings
             $.ajax({
                 url: '/hardware',
@@ -235,7 +238,7 @@ $('document').ready(function() {
                     waiting = false
                     HARDWARE_PROFILE = data
                     desktop.hardwareManager.registerAllAddressings()
-                    desktop.pedalboard.pedalboard('scheduleAdapt');
+                    desktop.pedalboard.pedalboard('scheduleAdapt')
                     desktop.pedalboardEmpty    = empty && !modified
                     desktop.pedalboardModified = modified
                     desktop.init();

@@ -673,7 +673,7 @@ class PedalboardLoadBundle(web.RequestHandler):
         bundlepath = self.get_argument("bundlepath")
 
         try:
-            isDefault = self.get_argument("isDefault")
+            isDefault = bool(int(self.get_argument("isDefault")))
         except:
             isDefault = False
 

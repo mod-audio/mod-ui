@@ -483,8 +483,7 @@ class Host(object):
         data = get_jack_data()
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
-
-        websocket.write_message("wait_start")
+        websocket.write_message("wait_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
 
         crashed = self.crashed
         self.crashed = False
@@ -592,7 +591,7 @@ class Host(object):
                 self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
                                              self._fix_host_connection_port(port_to)), lambda r:None, datatype='boolean')
 
-        websocket.write_message("wait_end %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
+        websocket.write_message("wait_end")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
@@ -917,7 +916,7 @@ class Host(object):
     # Host stuff - load & save
 
     def load(self, bundlepath, bankId, isDefault=False):
-        self.msg_callback("wait_start")
+        self.msg_callback("wait_start %i 0" % int(isDefault))
 
         pb = get_pedalboard_info(bundlepath)
 
@@ -1050,7 +1049,7 @@ class Host(object):
         if self.hmi.initialized:
             self._load_addressings(bundlepath)
 
-        self.msg_callback("wait_end 0 0")
+        self.msg_callback("wait_end")
 
         if isDefault:
             self.pedalboard_empty    = True
