@@ -197,7 +197,6 @@ class SystemInfo(web.RequestHandler):
             "env": dict((k, os.environ[k]) for k in [k for k in os.environ.keys() if k.startswith("MOD")]),
             "python": {
                 "argv"    : sys.argv,
-                "flags"   : sys.flags,
                 "path"    : sys.path,
                 "platform": sys.platform,
                 "prefix"  : sys.prefix,
