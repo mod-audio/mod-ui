@@ -337,14 +337,16 @@ function Desktop(elements) {
     // hide top-bar shared-pedalboard button
     $('#pedalboard-sharing').hide()
 
-    this.registerDevice = function () {
+    this.authenticateDevice = function (callback) {
         $.ajax({
             method: 'GET',
             url: SITEURL + '/devices/nonce',
             dataType: 'json',
             success: function (resp) {
-                if (!resp || !resp.nonce)
+                if (!resp || !resp.nonce) {
+                    callback(false);
                     return;
+                }
 
                 $.ajax({
                     url: '/auth/nonce',
@@ -356,6 +358,7 @@ function Desktop(elements) {
                         if (!resp || !resp.message) {
                             //$('#mod-cloud-plugins').hide()
                             console.log("Webserver does not support MOD tokens, downloads will not be possible")
+                            callback(false);
                             return;
                         }
 
@@ -366,8 +369,10 @@ function Desktop(elements) {
                             dataType: 'json',
                             data: JSON.stringify(resp),
                             success: function (resp) {
-                                if (!resp || !resp.message)
+                                if (!resp || !resp.message) {
+                                    callback(false);
                                     return;
+                                }
 
                                 $.ajax({
                                     url: '/auth/token',
@@ -376,14 +381,27 @@ function Desktop(elements) {
                                     dataType: 'json',
                                     data: JSON.stringify(resp),
                                     success: function (resp) {
-                                        self.cloudAccessToken = resp.access_token
-                                    }
+                                        self.cloudAccessToken = resp.access_token;
+                                        callback(true);
+                                    },
+                                    error: function () {
+                                        callback(false);
+                                    },
                                 })
-                            }
+                            },
+                            error: function () {
+                                callback(false);
+                            },
                         })
-                    }
+                    },
+                    error: function () {
+                        callback(false);
+                    },
                 })
-            }
+            },
+            error: function () {
+                callback(false);
+            },
         })
     }
 

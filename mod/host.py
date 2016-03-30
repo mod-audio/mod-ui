@@ -336,7 +336,7 @@ class Host(object):
             pedalboards = bank['pedalboards']
             navigateFootswitches = bank['navigateFootswitches']
         else:
-            bank_id = -1
+            bank_id = 0
             pedalboard = ""
             pedalboards = []
             navigateFootswitches = False

@@ -171,7 +171,13 @@ $('document').ready(function() {
   }
 
   if ({{using_mod}}) {
-      desktop.registerDevice()
+      desktop.authenticateDevice(function (ok) {
+          if (ok) {
+              console.log("MOD authentication succeeded")
+          } else {
+              console.log("MOD authentication failed")
+          }
+      })
   }
 
   // start code for ajax loading bar
@@ -319,6 +325,7 @@ $('document').ready(function() {
                     <small class="pull-right"><a onclick="goRegister()" href="#register"><strong>REGISTER</strong></a></small>
                     </div>
                     <!-- The div below will hold error message. It must have class "error" -->
+                    <!--
                     <div class="error mod-hidden"></div>
                     <form class="bottom">
                         <div class="form-group">
@@ -334,6 +341,7 @@ $('document').ready(function() {
                             <input type="submit" class="btn btn-primary" />
                         </div>
                     </form>
+                    -->
                 </div>
             </div>
             <!-- END LOGIN WINDOW -->
@@ -343,6 +351,7 @@ $('document').ready(function() {
                 <div id="registration-form" class="mod-box">
                     <h1>Register</h1>
                     <!-- The div below will hold error message. It must have class "error" -->
+                    <!--
                     <div class="error mod-hidden"></div>
                     <form class="bottom form-horizontal">
                         <div class="control-group">
@@ -370,24 +379,25 @@ $('document').ready(function() {
                                 {% include country_list.html %}
                             </select>
                         </div>
-                    </div>
-                    <div class="control-group">
-                        <label>Password</label>
-                        <div class="mod-controls">
-                            <input type="password" name="password"/>
+                        <div class="control-group">
+                            <label>Password</label>
+                            <div class="mod-controls">
+                                <input type="password" name="password"/>
+                            </div>
                         </div>
-                    </div>
-                    <div class="control-group">
-                        <label>Password (again)</label>
-                        <div class="mod-controls">
-                            <input type="password" name="password2"/>
+                        <div class="control-group">
+                            <label>Password (again)</label>
+                            <div class="mod-controls">
+                                <input type="password" name="password2"/>
+                            </div>
                         </div>
-                    </div>
-                    <div class="textright">
-                        <a class="js-close">Cancel</a>
-                        <input type="submit" class="btn btn-info"/>
-                    </div>
-                </form>
+                        <div class="textright">
+                            <a class="js-close">Cancel</a>
+                            <input type="submit" class="btn btn-info"/>
+                        </div>
+                    </form>
+                    -->
+                </div>
             </div>
             <div id="registration-result" class="mod-box mod-hidden">
                 <div class="js-close">x</div>
