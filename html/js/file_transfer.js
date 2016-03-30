@@ -65,6 +65,7 @@ function SimpleTransference(from, to, options) {
                             }, options)
 
     this.request = null;
+    this.reauthorize = null;
 
     var self = this
 
@@ -76,6 +77,20 @@ function SimpleTransference(from, to, options) {
             success: self.upload,
             dataType: 'binary',
             error: function (resp) {
+                if (resp.status == 401 && self.reauthorize != null) {
+                    console.log("[TRANSFERENCE] unauthorized, retrying authentication...")
+                    self.reauthorize(function (ok, options) {
+                        if (ok) {
+                            console.log("[TRANSFERENCE] authentication succeeded")
+                            self.options = $.extend(self.options, options)
+                            self.start()
+                        } else {
+                            console.log("[TRANSFERENCE] authentication failed")
+                            self.abort(resp.statusText)
+                        }
+                    })
+                    return;
+                }
                 self.abort(resp.statusText)
             }
         }, self.options.from_args))

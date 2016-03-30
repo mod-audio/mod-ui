@@ -382,7 +382,12 @@ function Desktop(elements) {
                                     data: JSON.stringify(resp),
                                     success: function (resp) {
                                         self.cloudAccessToken = resp.access_token;
-                                        callback(true);
+                                        var opts = {
+                                            from_args: {
+                                                headers: { 'Authorization' : 'MOD ' + resp.access_token }
+                                            }
+                                        }
+                                        callback(true, opts);
                                     },
                                     error: function () {
                                         callback(false);
