@@ -28,6 +28,7 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
+from collections import OrderedDict
 from random import randint
 from shutil import rmtree
 from tornado import gen, iostream, ioloop
@@ -924,14 +925,25 @@ class Host(object):
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
         mappedOldMidiIns  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
         mappedOldMidiOuts = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
-        mappedNewMidiIns  = dict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, False))
-        mappedNewMidiOuts = dict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, True))
+        mappedNewMidiIns  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, False))
+        mappedNewMidiOuts = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, True))
+
+        curmidisymbols = []
+        for port in self.midiports:
+            if ";" in port:
+                ports = port.split(";", 1)
+                curmidisymbols.append(ports[0].replace("system:","",1))
+                curmidisymbols.append(ports[1].replace("system:","",1))
+            else:
+                curmidisymbols.append(port.replace("system:","",1))
 
         index = 0
         for name, symbol in mappedNewMidiIns.items():
+            index += 1
             if name not in mappedOldMidiIns.values():
                 continue
-            index += 1
+            if symbol in curmidisymbols:
+                continue
             self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (symbol, name.replace(" ","_"), index))
             connect_jack_ports("system:" + symbol, "mod-host:midi_in")
 
@@ -943,9 +955,11 @@ class Host(object):
 
         index = 0
         for name, symbol in mappedNewMidiOuts.items():
+            index += 1
             if name not in mappedOldMidiOuts.values():
                 continue
-            index += 1
+            if symbol in curmidisymbols:
+                continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
         for p in pb['plugins']:
