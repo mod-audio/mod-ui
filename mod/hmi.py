@@ -66,7 +66,7 @@ class HMI(object):
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
         try:
-            sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
+            sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:
