@@ -1252,7 +1252,8 @@ JqueryClass('film', baseWidget, {
     mouseWheel: function (e) {
         var self = $(this)
         var wheelStep = 30
-        var delta = self.data('wheelBuffer') + e.originalEvent.wheelDelta
+        var delta = ('wheelDelta' in e.originalEvent) ? e.originalEvent.wheelDelta : -wheelStep * e.originalEvent.detail;
+        delta += self.data('wheelBuffer')
         self.data('wheelBuffer', delta % wheelStep)
         var diff = parseInt(delta / wheelStep)
         var position = self.data('position')
