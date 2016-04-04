@@ -85,6 +85,20 @@ JqueryClass('cloudPluginBox', {
         self.find('input:checkbox[name=stable]').click(function (e) {
             self.cloudPluginBox('search')
         })
+        $('#cloud_install_all').click(function (e) {
+            self.cloudPluginBox('search', function (plugins) {
+                for (var i in plugins) {
+                    self.cloudPluginBox('showPluginInfo', plugins[i], "install")
+                }
+            })
+        })
+        $('#cloud_update_all').click(function (e) {
+            self.cloudPluginBox('search', function (plugins) {
+                for (var i in plugins) {
+                    self.cloudPluginBox('showPluginInfo', plugins[i], "upgrade")
+                }
+            })
+        })
 
         var results = {}
         self.data('results', results)
@@ -140,7 +154,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search all or installed, depending on selected option
-    search: function () {
+    search: function (customRenderCallback) {
         var self  = $(this)
         var query = {
             text: self.data('searchbox').val(),
@@ -150,12 +164,12 @@ JqueryClass('cloudPluginBox', {
             query.stable = "true"
         }
         if (self.find('input:checkbox[name=installed]:checked').length)
-            return self.cloudPluginBox('searchInstalled', query)
-        return self.cloudPluginBox('searchAll', query)
+            return self.cloudPluginBox('searchInstalled', query, customRenderCallback)
+        return self.cloudPluginBox('searchAll', query, customRenderCallback)
     },
 
     // search cloud and local plugins, show all but prefer cloud
-    searchAll: function (query) {
+    searchAll: function (query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin;
@@ -209,7 +223,11 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(lplugin)
             }
 
-            self.cloudPluginBox('showPlugins', plugins)
+            if (customRenderCallback) {
+                customRenderCallback(plugins)
+            } else {
+                self.cloudPluginBox('showPlugins', plugins)
+            }
         }
 
         // cloud search
@@ -281,7 +299,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search cloud and local plugins, show installed only
-    searchInstalled: function (query) {
+    searchInstalled: function (query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin
@@ -318,7 +336,11 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(lplugin)
             }
 
-            self.cloudPluginBox('showPlugins', plugins)
+            if (customRenderCallback) {
+                customRenderCallback(plugins)
+            } else {
+                self.cloudPluginBox('showPlugins', plugins)
+            }
         }
 
         // cloud search
@@ -487,7 +509,7 @@ JqueryClass('cloudPluginBox', {
         return rendered
     },
 
-    showPluginInfo: function (plugin) {
+    showPluginInfo: function (plugin, autoAction) {
         var self = $(this)
         var uri  = escape(plugin.uri)
 
@@ -528,6 +550,9 @@ JqueryClass('cloudPluginBox', {
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
+            var canInstall = false,
+                canUpgrade = false
+
             // The remove button will remove the plugin, close window and re-render the plugins
             // without the removed one
             if (plugin.installedVersion) {
@@ -546,6 +571,7 @@ JqueryClass('cloudPluginBox', {
                     })
                 })
             } else {
+                canInstall = true
                 info.find('.js-remove').hide()
                 info.find('.js-installed-version').hide()
                 info.find('.js-install').show().click(function () {
@@ -558,6 +584,7 @@ JqueryClass('cloudPluginBox', {
             }
 
             if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
+                canUpgrade = true
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
                     self.data('upgradePluginURI')(plugin.uri, function () {
@@ -573,9 +600,22 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-latest-version').hide()
             }
 
-            info.appendTo($('body'))
-            info.window('open')
-            self.data('info', info)
+            if (autoAction) {
+                var elem
+                if (autoAction == "install" && canInstall) {
+                    elem = info.find('.js-install')
+                } else if (autoAction == "upgrade" && canUpgrade) {
+                    elem = info.find('.js-upgrade')
+                }
+                if (elem != null) {
+                    console.log("Processing", plugin.uri)
+                    elem.click()
+                }
+            } else {
+                info.appendTo($('body'))
+                info.window('open')
+                self.data('info', info)
+            }
         }
 
         // get full plugin info if plugin has a local version
