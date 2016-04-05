@@ -676,12 +676,15 @@ class PedalboardLoadBundle(web.RequestHandler):
         except:
             isDefault = False
 
-        name = SESSION.load_pedalboard(bundlepath, isDefault)
+        if os.path.exists(bundlepath):
+            name = SESSION.load_pedalboard(bundlepath, isDefault)
+        else:
+            name = None
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({
-            'ok':   True,
-            'name': name
+            'ok':   name is not None,
+            'name': name or ""
         }))
         self.finish()
 
