@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,6 +27,7 @@
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include "lv2/lv2plug.in/ns/ext/morph/morph.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
@@ -602,7 +603,14 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     static PluginInfo_Mini info;
     memset(&info, 0, sizeof(PluginInfo_Mini));
 
+    // --------------------------------------------------------------------------------------------------------
+    // uri
+
+    info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+    // --------------------------------------------------------------------------------------------------------
     // check if plugin if supported
+
     bool supported = true;
 
     for (unsigned int i=0, numports=lilv_plugin_get_num_ports(p); i<numports; ++i)
@@ -611,34 +619,60 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
         if (LilvNodes* const typenodes = lilv_port_get_value(p, port, ns.rdf_type))
         {
+            bool isGood = false;
+
             LILV_FOREACH(nodes, it, typenodes)
             {
                 const char* const typestr = lilv_node_as_string(lilv_nodes_get(typenodes, it));
 
                 if (typestr == nullptr)
                     continue;
+
+                // ignore normal ports
+                if (strcmp(typestr, LV2_CORE__Port) == 0)
+                    continue;
                 if (strcmp(typestr, LV2_CORE__InputPort) == 0)
                     continue;
                 if (strcmp(typestr, LV2_CORE__OutputPort) == 0)
                     continue;
-                if (strcmp(typestr, LV2_CORE__AudioPort) == 0)
+
+                // ignore morph ports if base type is supported
+                if (strcmp(typestr, LV2_MORPH__MorphPort) == 0)
                     continue;
-                if (strcmp(typestr, LV2_CORE__ControlPort) == 0)
+
+                // check base type, must be supported
+                if (strcmp(typestr, LV2_CORE__AudioPort) == 0) {
+                    isGood = true;
                     continue;
-                if (strcmp(typestr, LV2_CORE__CVPort) == 0)
+                }
+                if (strcmp(typestr, LV2_CORE__ControlPort) == 0) {
+                    isGood = true;
                     continue;
-                if (strcmp(typestr, LV2_ATOM__AtomPort) == 0)
+                }
+                if (strcmp(typestr, LV2_CORE__CVPort) == 0) {
+                    isGood = true;
                     continue;
+                }
+                if (strcmp(typestr, LV2_ATOM__AtomPort) == 0) {
+                    isGood = true;
+                    continue;
+                }
 
                 supported = false;
                 break;
             }
             lilv_nodes_free(typenodes);
+
+            if (! isGood)
+                supported = false;
         }
     }
 
     if (! supported)
+    {
+        printf("Plugin '%s' uses non-supported port types\n", info.uri);
         return info;
+    }
 
     // --------------------------------------------------------------------------------------------------------
     // categories
@@ -747,11 +781,6 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
     if (! supported)
         return info;
-
-    // --------------------------------------------------------------------------------------------------------
-    // uri
-
-    info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
     // --------------------------------------------------------------------------------------------------------
     // name
