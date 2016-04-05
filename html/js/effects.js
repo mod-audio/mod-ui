@@ -43,6 +43,10 @@ JqueryClass('effectBox', {
         self.data('showPluginsRenderId', 0)
 
         var searchbox = self.find('input[type=search]')
+
+        // make sure searchbox is empty on init
+        searchbox.val("")
+
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
         searchbox.keydown(function (e) {
