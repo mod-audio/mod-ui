@@ -193,13 +193,12 @@ JqueryClass('pedalboardBox', {
 
         var rendered = $(Mustache.render(TEMPLATES.pedalboard, metadata))
 
-        var load = function () {
+        rendered.click(function () {
             self.data('load')(pedalboard.bundle, pedalboard.broken, function () {
                 self.window('close')
             })
             return false
-        }
-        rendered.click(load)
+        })
         rendered.find('.js-duplicate').click(function () {
             self.data('duplicate')(pedalboard, function (duplicated) {
                 var dupRendered = self.pedalboardBox('render', duplicated, canvas)
@@ -211,13 +210,18 @@ JqueryClass('pedalboardBox', {
             })
             return false
         })
-        rendered.find('.js-remove').click(function (e) {
-            self.data('remove')(pedalboard, function () {
-                rendered.remove()
+
+        if (pedalboard.bundle == DEFAULT_PEDALBOARD) {
+            rendered.find('.js-remove').hide()
+        } else {
+            rendered.find('.js-remove').click(function (e) {
+                self.data('remove')(pedalboard, function () {
+                    rendered.remove()
+                })
+                e.stopPropagation();
+                return false
             })
-            e.stopPropagation();
-            return false
-        })
+        }
 
         canvas.append(rendered)
         var img = rendered.find('.img');
