@@ -202,6 +202,8 @@ JqueryClass('effectBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
+                    desktop.resetPluginIndexer()
+
                     var allplugins = {}
                     for (var i in plugins) {
                         var plugin = plugins[i]

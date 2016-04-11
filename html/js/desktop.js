@@ -97,6 +97,15 @@ function Desktop(elements) {
     this.pluginIndexerData = {}
     this.pedalboardIndexerData = {}
 
+    this.resetPluginIndexer = function () {
+        self.pluginIndexer = lunr(function () {
+            this.field('data')
+            this.ref('id')
+            this.requireAllTerms = true
+        })
+        self.pluginIndexerData = {}
+    }
+
     this.netStatus = elements.networkIcon.statusTooltip()
 
     this.midiDevices = new MidiDevicesWindow({

@@ -280,6 +280,8 @@ JqueryClass('cloudPluginBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
+                    desktop.resetPluginIndexer()
+
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
@@ -396,6 +398,8 @@ JqueryClass('cloudPluginBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
+                    desktop.resetPluginIndexer()
+
                     var allplugins = {}
                     for (var i in plugins) {
                         lplugin = plugins[i]
