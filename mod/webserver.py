@@ -572,6 +572,8 @@ class PackageUninstall(web.RequestHandler):
         error   = ""
         removed = []
 
+        print("asked to remove these:", bundles)
+
         for bundlepath in bundles:
             if os.path.exists(bundlepath) and os.path.isdir(bundlepath):
                 resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
@@ -582,6 +584,8 @@ class PackageUninstall(web.RequestHandler):
                 else:
                     error = data
                     break
+            else:
+                print("bundlepath is non-existent:", bundlepath)
 
         # FIXME, where are my ports!?
         lv2_cleanup()
@@ -878,6 +882,7 @@ class TemplateHandler(web.RequestHandler):
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
+            'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title': SESSION.host.pedalboard_name,
             'size': json.dumps(SESSION.host.pedalboard_size),

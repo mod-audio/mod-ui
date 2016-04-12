@@ -1091,7 +1091,7 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 method: 'POST',
                 success: function(resp) {
                     if (resp.ok) {
-                        callback()
+                        callback(resp)
                     } else {
                         new Notification('error', "Could not uninstall effect: " + resp.error)
                     }

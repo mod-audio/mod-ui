@@ -108,7 +108,7 @@ function InstallationQueue() {
     this.installNext = function () {
         var bundle = queue[0]
         var callback = callbacks[0]
-        var finish = function () {
+        var finish = function (resp) {
             queue.shift()
             callbacks.shift()
             if (queue.length > 0) {
@@ -116,12 +116,14 @@ function InstallationQueue() {
             } else {
                 notification.closeAfter(3000)
                 desktop.rescanPlugins()
-                callback()
+                callback(resp)
             }
         }
 
         var installationMsg = 'Installing package ' + bundle.name
-                            + ' (contains ' + bundle.count + ' plugin' + (bundle.count > 1 ? 's)' : ')')
+        if (bundle.count > 1) {
+            installationMsg += ' (contains ' + bundle.count + ' plugins)'
+        }
         notification.html(installationMsg)
         notification.type('warning')
         notification.bar(1)
@@ -150,7 +152,7 @@ function InstallationQueue() {
                 notification.html(installationMsg + ' - OK!')
                 notification.bar(100)
                 notification.type('success')
-                finish()
+                finish(result)
             } else {
                 queue.shift()
                 callbacks.shift()
