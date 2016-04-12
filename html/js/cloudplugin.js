@@ -16,17 +16,15 @@
  */
 
 // add this to plugin data when cloud fails
-var kDummyPluginData = {
-    bundles: [""],
-    ports: {
-        control: {
-            input: []
-        },
-    },
-}
-
 function getDummyPluginData() {
-    return $.extend(true, {}, kDummyPluginData)
+    return $.extend(true, {}, {
+        bundles: [""],
+        ports: {
+            control: {
+                input: []
+            },
+        },
+    })
 }
 
 JqueryClass('cloudPluginBox', {
