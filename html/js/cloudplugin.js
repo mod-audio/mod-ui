@@ -88,8 +88,6 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('search')
         })
         $('#cloud_install_all').click(function (e) {
-            var bundle_ids = []
-
             self.cloudPluginBox('search', function (plugins) {
                 var bundle_id, bundle_ids = []
 
@@ -122,8 +120,36 @@ JqueryClass('cloudPluginBox', {
         })
         $('#cloud_update_all').click(function (e) {
             self.cloudPluginBox('search', function (plugins) {
+                var plugin, bundle_id, bundle_ids = []
+
                 for (var i in plugins) {
-                    self.cloudPluginBox('showPluginInfo', plugins[i], "upgrade")
+                    plugin    = plugins[i]
+                    bundle_id = plugin.bundle_id
+                    if (! bundle_id) {
+                        continue
+                    }
+                    if (! plugin.installedVersion) {
+                        continue
+                    }
+                    if (compareVersions(plugin.latestVersion, plugin.installedVersion) <= 0) {
+                        continue
+                    }
+                    if (bundle_ids.indexOf(bundle_id) < 0) {
+                        bundle_ids.push(bundle_id)
+                    }
+                }
+
+                var cb
+                var dummycb = function () {
+                }
+                var lastcb = function () {
+                    console.log("finished")
+                    self.cloudPluginBox('search')
+                }
+
+                for (var i in bundle_ids) {
+                    cb = (i+1 == bundle_ids.length) ? lastcb : dummycb
+                    desktop.installationQueue.installUsingBundle(bundle_ids[i], cb)
                 }
             })
         })
@@ -140,7 +166,12 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategory', "All")
 
         options.open = function () {
-            self.find('input:checkbox[name=stable]').click()
+            var stablecb = self.find('input:checkbox[name=stable]')
+            if (stablecb.is(':checked')) {
+                self.cloudPluginBox('search')
+            } else {
+                stablecb.click()
+            }
             return false
         }
 
@@ -530,7 +561,6 @@ JqueryClass('cloudPluginBox', {
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
-            console.log("clicked:", plugin.bundles)
             self.cloudPluginBox('showPluginInfo', plugin)
         })
 
@@ -640,8 +670,6 @@ JqueryClass('cloudPluginBox', {
                         var oldElem, newElem, uri, category, cplugin,
                             bundles = [LV2_PLUGIN_DIR + plugin.bundle_name]
 
-                        console.log("installed:", bundles)
-
                         for (var i in resp.installed) {
                             uri     = resp.installed[i]
                             cplugin = self.data('pluginsDict')[uri]
@@ -708,7 +736,16 @@ JqueryClass('cloudPluginBox', {
                     uri: plugin.uri
                 },
                 success: function (pluginData) {
+                    // delete cloud specific fields just in case
+                    delete pluginData.bundle_name
+                    delete pluginData.latestVersion
+                    // ready to merge
                     plugin = $.extend(pluginData, plugin)
+                    localChecked = true
+                    showInfo()
+                },
+                error: function () {
+                    // assume not installed
                     localChecked = true
                     showInfo()
                 },
@@ -724,7 +761,12 @@ JqueryClass('cloudPluginBox', {
             },
             success: function (pluginData) {
                 if (pluginData && pluginData.length > 0) {
-                    plugin = $.extend(pluginData[0], plugin)
+                    pluginData = pluginData[0]
+                    // delete local specific fields just in case
+                    delete pluginData.bundles
+                    delete pluginData.installedVersion
+                    // ready to merge
+                    plugin = $.extend(pluginData, plugin)
                     plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release_number]
                 } else {
                     plugin = $.extend(getDummyPluginData(), plugin)
