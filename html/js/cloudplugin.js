@@ -424,27 +424,15 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
-        // now sort by status
+        // sort plugins by label
         var alower, blower
         plugins.sort(function (a, b) {
-            // if status of both is the same, compare using label
-            if (a.status == b.status) {
-                alower = a.label.toLowerCase()
-                blower = b.label.toLowerCase()
-                if (alower > blower)
-                    return 1
-                if (alower < blower)
-                    return -1
-                return 0
-            }
-            // non-installed goes on top
-            if (a.status == 'blocked') {
-                return -1
-            }
-            // installed to bottom
-            if (a.status == 'installed' || a.status == 'outdated') {
+            alower = a.label.toLowerCase()
+            blower = b.label.toLowerCase()
+            if (alower > blower)
                 return 1
-            }
+            if (alower < blower)
+                return -1
             return 0
         })
 
