@@ -495,12 +495,10 @@ JqueryClass('cloudPluginBox', {
             has_comment = "no_description";
         }
         var plugin_data = {
-            id: plugin.id || plugin._id, // FIXME: id or _id??
-            thumbnail_href: plugin.thumbnail_href,
+            uri: uri,
             screenshot_href: plugin.screenshot_href,
             has_comment: has_comment,
             comment: comment,
-            uri: uri,
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label
