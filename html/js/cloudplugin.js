@@ -624,8 +624,6 @@ JqueryClass('cloudPluginBox', {
                             bundle_name = plugin.bundles[0].split('/').filter(function(el){return el.length!=0}).pop(0),
                             categories = self.data('categoryCount')
 
-                        console.log(resp, bundle_name, plugin.bundles)
-
                         for (var i in resp.removed) {
                             uri     = plugin.uri
                             lplugin = self.data('pluginsDict')[uri]
@@ -656,7 +654,7 @@ JqueryClass('cloudPluginBox', {
                             }
                         }
 
-                        self.data('categoryCount', categories)
+                        self.cloudPluginBox('setCategoryCount', categories)
                         info.window('close')
                     })
                 })
@@ -677,7 +675,6 @@ JqueryClass('cloudPluginBox', {
                             cplugin.status = 'installed'
                             cplugin.bundles = bundles
                             cplugin.installedVersion = cplugin.latestVersion
-                            delete cplugin.bundle_name
 
                             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
                             newElem = self.cloudPluginBox('renderPlugin', cplugin)
@@ -696,8 +693,49 @@ JqueryClass('cloudPluginBox', {
                     self.data('upgradePluginURI')(plugin.uri, function (resp) {
                         console.log(resp)
 
+                        var oldElem, newElem, uri, category, lplugin,
+                            bundles = [LV2_PLUGIN_DIR + plugin.bundle_name],
+                            categories = self.data('categoryCount')
+
+                        // [re-]installed plugins
+                        for (var i in resp.installed) {
+                            uri     = resp.installed[i]
+                            cplugin = self.data('pluginsDict')[uri]
+
+                            cplugin.status = 'installed'
+                            cplugin.bundles = bundles
+                            cplugin.installedVersion = cplugin.latestVersion
+
+                            oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
+                            newElem = self.cloudPluginBox('renderPlugin', cplugin)
+                            oldElem.replaceWith(newElem)
+                        }
+
+                        // removed plugins (assume removed from store)
+                        for (var i in resp.removed) {
+                            uri = resp.removed[i]
+
+                            if (resp.installed.indexOf(uri) >= 0) {
+                                continue
+                            }
+
+                            lplugin = self.data('pluginsDict')[uri]
+                            oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
+
+                            // removing local plugin means the number of possible plugins goes down
+                            category = lplugin.category[0]
+                            if (category && category != 'All') {
+                                categories[category] -= 1
+                            }
+                            categories['All'] -= 1
+
+                            // remove it from store
+                            delete self.data('pluginsDict')[uri]
+                            oldElem.remove()
+                        }
+
+                        self.cloudPluginBox('setCategoryCount', categories)
                         info.window('close')
-                        self.cloudPluginBox('search')
                     })
                 })
             } else {
