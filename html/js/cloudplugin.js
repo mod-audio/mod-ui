@@ -116,7 +116,7 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategory', "All")
 
         options.open = function () {
-            self.cloudPluginBox('search')
+            self.find('input:checkbox[name=stable]').click()
             return false
         }
 
