@@ -101,7 +101,7 @@ class Session(object):
         if self.host.writesock is not None:
             self.host.writesock.close()
             self.host.writesock = None
-        self.host.open_connection_if_needed(self.websockets[0])
+        self.host.open_connection_if_needed(None)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
