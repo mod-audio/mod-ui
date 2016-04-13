@@ -109,7 +109,12 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
                 url: jsUrl,
                 success: function (code) {
                     var method;
-                    eval('method = ' + code)
+                    try {
+                        eval('method = ' + code)
+                    } catch (err) {
+                        method = null
+                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin")
+                    }
                     loadedJSs[effect.uri] = method
                     gui.jsCallback = method
                     jsLoaded = true
@@ -900,7 +905,13 @@ function GUI(effect, options) {
         event.icon     = self.icon
         event.settings = self.settings
 
-        self.jsCallback(event)
+
+        try {
+            self.jsCallback(event)
+        } catch (err) {
+            self.jsCallback = null
+            console.log("A plugin javascript code is broken and has been disabled")
+        }
     }
 }
 
