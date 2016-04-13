@@ -413,7 +413,7 @@ class EffectJavascript(web.RequestHandler):
             raise web.HTTPError(404)
 
         with open(path, 'rb') as fd:
-            self.set_header('Content-type', 'text/javascript')
+            self.set_header('Content-type', 'text/plain')
             self.write(fd.read())
 
 class EffectAdd(web.RequestHandler):

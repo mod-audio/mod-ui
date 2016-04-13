@@ -115,6 +115,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
                     jsLoaded = true
                     cb()
                 },
+                error: function () {
+                    jsLoaded = true
+                    cb()
+                },
                 cache: false,
             })
         }
