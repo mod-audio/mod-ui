@@ -500,7 +500,8 @@ function GUI(effect, options) {
                 }, 1)
             }
 
-            self.triggerJS({ 'type': 'start' })
+            self.jsStarted = true
+            self.triggerJS({ type: 'start' })
 
             callback(self.icon, self.settings)
         }
@@ -880,11 +881,12 @@ function GUI(effect, options) {
         return data
     }
 
-    this.jsData = {}
+    this.jsStarted = false
 
     this.triggerJS = function (event) {
-        if (!self.jsCallback)
+        if (!self.jsCallback || !self.jsStarted)
             return
+        /*
         var e = {
             event: event,
             values: self.currentValues,
@@ -894,7 +896,11 @@ function GUI(effect, options) {
         };
         if (event.symbol)
             e.port = self.controls[event.symbol]
-        self.jsCallback(e)
+        */
+        event.icon     = self.icon
+        event.settings = self.settings
+
+        self.jsCallback(event)
     }
 }
 
