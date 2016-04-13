@@ -469,7 +469,8 @@ class Host(object):
         self.writesock.read_until(b"\0", check_response)
 
     def send(self, msg, callback, datatype='int'):
-        self.pedalboard_modified = True
+        if msg.split(" ",1)[0] not in ("bundle_add", "bundle_remove"):
+            self.pedalboard_modified = True
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()

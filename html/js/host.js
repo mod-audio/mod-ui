@@ -263,6 +263,11 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "rescan") {
+            desktop.rescanPlugins()
+            return
+        }
+
         console.log(data)
     }
 })

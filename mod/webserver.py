@@ -265,6 +265,9 @@ class SDKEffectInstaller(EffectInstaller):
 
         resp = yield gen.Task(install_package, upload['filename'])
 
+        if resp['ok']:
+            SESSION.msg_callback("rescan")
+
         self.write(json.dumps(resp))
         self.finish()
 
