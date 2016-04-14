@@ -536,7 +536,7 @@ JqueryClass('cloudPluginBox', {
         var tab
         for (var category in categories) {
             tab = self.find('#cloud-plugin-tab-' + category)
-            tab.html(tab.html() + ' <span class="plugin_count">(' + categories[category] + ')</span>')
+            tab.html(tab.html().split(/\s/)[0] + ' <span class="plugin_count">(' + categories[category] + ')</span>')
         }
     },
 
