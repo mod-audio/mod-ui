@@ -503,7 +503,7 @@ JqueryClass('cloudPluginBox', {
                 } else {
                     categories[category] += 1
                 }
-                render.clone().appendTo(cachedContentCanvas[category])
+                render.clone(true).appendTo(cachedContentCanvas[category])
             }
 
             render.appendTo(cachedContentCanvas['All'])
