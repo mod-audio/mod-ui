@@ -264,11 +264,12 @@ class SDKEffectInstaller(EffectInstaller):
             fh.write(b64decode(upload['body']))
 
         resp = yield gen.Task(install_package, upload['filename'])
+        dump = json.dumps(resp)
 
         if resp['ok']:
-            SESSION.msg_callback("rescan")
+            SESSION.msg_callback("rescan " + dump)
 
-        self.write(json.dumps(resp))
+        self.write(dump)
         self.finish()
 
 # TODO this is an obsolete implementation that does not work in new lv2 specs.

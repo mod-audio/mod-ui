@@ -335,20 +335,13 @@ JqueryClass('cloudPluginBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
-                    desktop.resetPluginIndexer()
-
-                    var allplugins = {}
-                    for (var i in plugins) {
-                        lplugin = plugins[i]
-                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release]
-
-                        allplugins[lplugin.uri] = lplugin
-                        desktop.pluginIndexer.add({
-                            id: lplugin.uri,
-                            data: [lplugin.uri, lplugin.name, lplugin.brand, lplugin.comment, lplugin.category.join(" ")].join(" "),
-                        })
+                    var i, plugin, allplugins = {}
+                    for (i in plugins) {
+                        plugin = plugins[i]
+                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                        allplugins[plugin.uri] = plugin
                     }
-                    desktop.pluginIndexerData = allplugins
+                    desktop.resetPluginIndexer(allplugins)
 
                     results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
                     if (results.cloud != null)
@@ -453,20 +446,13 @@ JqueryClass('cloudPluginBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
-                    desktop.resetPluginIndexer()
-
-                    var allplugins = {}
-                    for (var i in plugins) {
-                        lplugin = plugins[i]
-                        lplugin.installedVersion = [lplugin.minorVersion, lplugin.microVersion, lplugin.release]
-
-                        allplugins[lplugin.uri] = lplugin
-                        desktop.pluginIndexer.add({
-                            id: lplugin.uri,
-                            data: [lplugin.uri, lplugin.name, lplugin.brand, lplugin.comment, lplugin.category.join(" ")].join(" "),
-                        })
+                    var i, plugin, allplugins = {}
+                    for (i in plugins) {
+                        plugin = plugins[i]
+                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                        allplugins[plugin.uri] = plugin
                     }
-                    desktop.pluginIndexerData = allplugins
+                    desktop.resetPluginIndexer(allplugins)
 
                     results.local = plugins
                     if (results.cloud != null)
@@ -618,7 +604,7 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-remove').show().click(function () {
                     // Remove plugin
                     self.data('removePluginBundles')(plugin.bundles, function (resp) {
-                        desktop.rescanPlugins()
+                        desktop.updatePluginList([], resp.removed)
 
                         var oldElem, newElem, uri, lplugin, category,
                             bundle_name = plugin.bundles[0].split('/').filter(function(el){return el.length!=0}).pop(0),
@@ -691,8 +677,6 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
                     self.data('upgradePluginURI')(plugin.uri, function (resp) {
-                        console.log(resp)
-
                         var oldElem, newElem, uri, category, lplugin,
                             bundles = [LV2_PLUGIN_DIR + plugin.bundle_name],
                             categories = self.data('categoryCount')

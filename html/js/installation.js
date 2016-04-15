@@ -115,7 +115,7 @@ function InstallationQueue() {
                 self.installNext()
             } else {
                 notification.closeAfter(3000)
-                desktop.rescanPlugins()
+                desktop.updatePluginList(resp.installed, resp.removed)
                 callback(resp)
             }
         }

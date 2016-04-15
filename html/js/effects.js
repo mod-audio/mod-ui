@@ -202,20 +202,13 @@ JqueryClass('effectBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
-                    desktop.resetPluginIndexer()
-
-                    var allplugins = {}
-                    for (var i in plugins) {
-                        var plugin = plugins[i]
-                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
-
+                    var i, plugin, allplugins = {}
+                    for (i in plugins) {
+                        plugin = plugins[i]
+                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
-                        desktop.pluginIndexer.add({
-                            id: plugin.uri,
-                            data: [plugin.uri, plugin.name, plugin.brand, plugin.comment, plugin.category.join(" ")].join(" "),
-                        })
                     }
-                    desktop.pluginIndexerData = allplugins
+                    desktop.resetPluginIndexer(allplugins)
                     self.effectBox('showPlugins', plugins)
                 },
                 dataType: 'json'
@@ -425,6 +418,7 @@ JqueryClass('effectBox', {
                 },
                 success: function (pluginData) {
                     plugin = $.extend(plugin, pluginData)
+                    // FIXME: needed?
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
