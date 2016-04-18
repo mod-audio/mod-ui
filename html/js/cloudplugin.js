@@ -104,17 +104,16 @@ JqueryClass('cloudPluginBox', {
                     }
                 }
 
-                var cb
-                var dummycb = function () {
-                }
-                var lastcb = function () {
-                    console.log("finished")
+                var count = 0
+                var finished = function () {
+                    count += 1
+                    if (count != bundle_ids.length)
+                        return;
                     self.cloudPluginBox('search')
                 }
 
                 for (var i in bundle_ids) {
-                    cb = (i+1 == bundle_ids.length) ? lastcb : dummycb
-                    desktop.installationQueue.installUsingBundle(bundle_ids[i], cb)
+                    desktop.installationQueue.installUsingBundle(bundle_ids[i], finished)
                 }
             })
         })
@@ -139,17 +138,16 @@ JqueryClass('cloudPluginBox', {
                     }
                 }
 
-                var cb
-                var dummycb = function () {
-                }
-                var lastcb = function () {
-                    console.log("finished")
+                var count = 0
+                var finished = function () {
+                    count += 1
+                    if (count != bundle_ids.length)
+                        return;
                     self.cloudPluginBox('search')
                 }
 
                 for (var i in bundle_ids) {
-                    cb = (i+1 == bundle_ids.length) ? lastcb : dummycb
-                    desktop.installationQueue.installUsingBundle(bundle_ids[i], cb)
+                    desktop.installationQueue.installUsingBundle(bundle_ids[i], finished)
                 }
             })
         })
