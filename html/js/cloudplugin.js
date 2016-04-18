@@ -609,7 +609,7 @@ JqueryClass('cloudPluginBox', {
                             categories = self.data('categoryCount')
 
                         for (var i in resp.removed) {
-                            uri     = plugin.uri
+                            uri     = resp.removed[i]
                             lplugin = self.data('pluginsDict')[uri]
                             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
 
