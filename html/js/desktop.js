@@ -1092,7 +1092,7 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
         windowManager: this.windowManager,
         list: self.cloudPluginListFunction,
         removePluginBundles: function (bundles, callback) {
-            if (!confirm('You are about to remove this effect and any other in the same bundle. This may break pedalboards in banks that depends on these effects'))
+            if (!confirm('You are about to remove this plugin and any other in the same bundle. This may break pedalboards that depend on them.'))
                 return
             $.ajax({
                 url: '/package/uninstall',
@@ -1102,11 +1102,11 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                     if (resp.ok) {
                         callback(resp)
                     } else {
-                        new Notification('error', "Could not uninstall effect: " + resp.error)
+                        new Notification('error', "Could not uninstall plugin: " + resp.error)
                     }
                 },
                 error: function () {
-                    new Notification('error', "Could not uninstall effect")
+                    new Notification('error', "Could not uninstall plugin")
                 },
                 cache: false,
                 dataType: 'json'
