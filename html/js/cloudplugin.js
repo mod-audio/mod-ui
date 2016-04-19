@@ -551,6 +551,104 @@ JqueryClass('cloudPluginBox', {
         return rendered
     },
 
+    postInstallAction: function (installed, removed) {
+        var category, categories = self.data('categoryCount')
+
+        // ---------------------------------------------------------------
+        // REMOVED
+
+        for (var i in removed) {
+            uri     = removed[i]
+            lplugin = self.data('pluginsDict')[uri]
+            oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
+
+            if (lplugin.latestVersion) {
+                // removing a plugin available on cloud, keep its store item
+                lplugin.status = 'blocked'
+                lplugin.bundle_name = bundle_name
+                delete lplugin.bundles
+                delete lplugin.installedVersion
+
+                newElem = self.cloudPluginBox('renderPlugin', lplugin)
+                oldElem.replaceWith(newElem)
+
+            } else {
+                // removing local plugin means the number of possible plugins goes down
+                category = lplugin.category[0]
+
+                if (category && category != 'All') {
+                    categories[category] -= 1
+                }
+                categories['All'] -= 1
+
+                // remove it from store
+                delete self.data('pluginsDict')[uri]
+                oldElem.remove()
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // INSTALLED
+
+        for (var i in installed) {
+            uri     = installed[i]
+            cplugin = self.data('pluginsDict')[uri]
+
+            cplugin.status = 'installed'
+            cplugin.bundles = bundles
+            cplugin.installedVersion = cplugin.latestVersion
+
+            oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
+            newElem = self.cloudPluginBox('renderPlugin', cplugin)
+            oldElem.replaceWith(newElem)
+        }
+
+        // ---------------------------------------------------------------
+        // UPDATED
+
+        // [re-]installed plugins
+        for (var i in installed) {
+            uri     = installed[i]
+            cplugin = self.data('pluginsDict')[uri]
+
+            cplugin.status = 'installed'
+            cplugin.bundles = bundles
+            cplugin.installedVersion = cplugin.latestVersion
+
+            oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
+            newElem = self.cloudPluginBox('renderPlugin', cplugin)
+            oldElem.replaceWith(newElem)
+        }
+
+        // removed plugins (assume removed from store)
+        for (var i in removed) {
+            uri = removed[i]
+
+            if (installed.indexOf(uri) >= 0) {
+                continue
+            }
+
+            lplugin = self.data('pluginsDict')[uri]
+            oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
+
+            // removing local plugin means the number of possible plugins goes down
+            category = lplugin.category[0]
+            if (category && category != 'All') {
+                categories[category] -= 1
+            }
+            categories['All'] -= 1
+
+            // remove it from store
+            delete self.data('pluginsDict')[uri]
+            oldElem.remove()
+        }
+
+        // ---------------------------------------------------------------
+
+        self.cloudPluginBox('setCategoryCount', categories)
+        info.window('close')
+    },
+
     showPluginInfo: function (plugin, autoAction) {
         var self = $(this)
         var uri  = escape(plugin.uri)
