@@ -620,7 +620,8 @@ class PackageUninstall(web.RequestHandler):
             broken = []
             for pb in get_all_pedalboards():
                 if pb['broken']: broken.append(os.path.abspath(pb['bundle']))
-            list_banks(broken)
+            if len(broken) > 0:
+                list_banks(broken)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(resp))
