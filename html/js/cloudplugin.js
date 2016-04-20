@@ -306,6 +306,11 @@ JqueryClass('cloudPluginBox', {
                 lplugin = results.local[i]
                 cplugin = results.cloud[lplugin.uri]
 
+                if (!lplugin.installedVersion) {
+                    console.log("local plugin is missing version info:", lplugin.uri)
+                    lplugin.installedVersion = [0, 0, 0]
+                }
+
                 if (cplugin) {
                     lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
@@ -519,13 +524,14 @@ JqueryClass('cloudPluginBox', {
                 if (! plugin.bundle_id || ! plugin.latestVersion) {
                     continue
                 }
-                if (updateOnly && ! plugin.installedVersion) {
+                if (plugin.installedVersion) {
+                    if (compareVersions(plugin.latestVersion, plugin.installedVersion) <= 0) {
+                        continue
+                    }
+                } else if (updateOnly) {
                     continue
                 }
-                if (compareVersions(plugin.latestVersion, plugin.installedVersion) <= 0) {
-                    continue
-                }
-                if ((currentCategory == "All" || currentCategory == plugin.category[0]) && bundle_ids.indexOf(plugin.bundle_id) < 0) {
+                if (bundle_ids.indexOf(plugin.bundle_id) < 0 && (currentCategory == "All" || currentCategory == plugin.category[0])) {
                     bundle_ids.push(plugin.bundle_id)
                 }
             }
@@ -679,7 +685,7 @@ JqueryClass('cloudPluginBox', {
                 })
             }
 
-            if (plugin.installedVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
+            if (plugin.installedVersion && plugin.latestVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
                 canUpgrade = true
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
