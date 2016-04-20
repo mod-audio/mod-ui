@@ -274,28 +274,6 @@ class SDKEffectInstaller(EffectInstaller):
         self.write(dump)
         self.finish()
 
-# TODO this is an obsolete implementation that does not work in new lv2 specs.
-# it's here for us to remember this should be reimplemented
-#class SDKEffectScript(EffectSearcher):
-    #def get(self, objid=None):
-        #if objid is None:
-            #objid = self.get_by_uri()
-
-        #try:
-            #options = self.get_object(objid)
-        #except:
-            #raise web.HTTPError(404)
-
-        #try:
-            #path = options['configurationFeedback']
-        #except KeyError:
-            #raise web.HTTPError(404)
-
-        #path = path.split(options['package']+'/')[-1]
-        #path = os.path.join(PLUGIN_LIBRARY__DIR, options['package'], path)
-
-        #self.write(open(path, 'rb').read())
-
 class EffectResource(web.StaticFileHandler):
 
     def initialize(self):
@@ -1206,7 +1184,6 @@ application = web.Application(
             (r"/reset/?", DashboardClean),
 
             (r"/sdk/install/?", SDKEffectInstaller),
-            #(r"/sdk/get_config_script/?", SDKEffectScript),
 
             #(r"/sysmon/ps", SysMonProcessList),
 
