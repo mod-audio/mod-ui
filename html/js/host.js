@@ -264,9 +264,8 @@ $('document').ready(function() {
         }
 
         if (cmd == "rescan") {
-            // TODO
-            console.log(data)
-            desktop.updatePluginList([], [])
+            var resp = JSON.parse(atob(data[1]))
+            desktop.updatePluginList(resp.installed, resp.removed)
             return
         }
 

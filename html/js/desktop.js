@@ -1184,6 +1184,7 @@ Desktop.prototype.updateAllPlugins = function () {
 }
 
 Desktop.prototype.updatePluginList = function (added, removed) {
+    // TODO
     console.log("ADDED:", added)
     console.log("REMOVED:", removed)
     for (var i in added) {
@@ -1192,7 +1193,6 @@ Desktop.prototype.updatePluginList = function (added, removed) {
     for (var i in removed) {
         var uri = removed[i]
     }
-    // TODO
     this.effectBox.effectBox('search')
 }
 

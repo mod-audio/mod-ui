@@ -269,7 +269,7 @@ class SDKEffectInstaller(EffectInstaller):
         dump = json.dumps(resp)
 
         if resp['ok']:
-            SESSION.msg_callback("rescan " + dump)
+            SESSION.msg_callback("rescan " + b64encode(dump.encode("utf-8")).decode("utf-8"))
 
         self.write(dump)
         self.finish()
