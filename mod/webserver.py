@@ -100,9 +100,10 @@ def install_bundles_in_tmp_dir(callback):
             shutil.rmtree(os.path.join(DOWNLOAD_TMP_DIR, bundle))
 
         resp = {
-            'ok'     : False,
-            'error'  : error or "No plugins found in bundle",
-            'removed': removed,
+            'ok'       : False,
+            'error'    : error or "No plugins found in bundle",
+            'removed'  : removed,
+            'installed': [],
         }
     else:
         resp = {
@@ -118,9 +119,10 @@ def install_package(bundlename, callback):
 
     if not os.path.exists(filename):
         callback({
-            'ok'     : False,
-            'error'  : "Failed to find archive",
-            'removed': [],
+            'ok'       : False,
+            'error'    : "Failed to find archive",
+            'installed': [],
+            'removed'  : [],
         })
         return
 

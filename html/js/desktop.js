@@ -474,8 +474,14 @@ function Desktop(elements) {
 
         var installPlugin = function (uri, data) {
             missingCount++
-            self.installationQueue.installUsingURI(uri, function (pluginData) {
-                data[uri] = pluginData
+            self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
+                // TODO: Fix this code for store updates (needed?)
+                //data[uri] = pluginData
+
+                if (! resp.ok) {
+                    return
+                }
+
                 missingCount--
 
                 if (missingCount == 0)
@@ -1102,11 +1108,11 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                     if (resp.ok) {
                         callback(resp)
                     } else {
-                        new Notification('error', "Could not uninstall plugin: " + resp.error)
+                        new Notification('error', "Could not uninstall bundle: " + resp.error)
                     }
                 },
                 error: function () {
-                    new Notification('error', "Could not uninstall plugin")
+                    new Notification('error', "Failed to uninstall plugin")
                 },
                 cache: false,
                 dataType: 'json'
@@ -1171,6 +1177,10 @@ Desktop.prototype.reset = function (callback) {
     this.pedalboardEmpty = true
     this.pedalboardModified = false
     this.pedalboard.pedalboard('reset', callback)
+}
+
+Desktop.prototype.updateAllPlugins = function () {
+    this.effectBox.effectBox('search')
 }
 
 Desktop.prototype.updatePluginList = function (added, removed) {

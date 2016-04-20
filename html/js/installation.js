@@ -108,22 +108,12 @@ function InstallationQueue() {
     this.installNext = function () {
         var bundle = queue[0]
         var callback = callbacks[0]
-        var finish = function (resp) {
-            queue.shift()
-            callbacks.shift()
-            if (queue.length > 0) {
-                self.installNext()
-            } else {
-                notification.closeAfter(3000)
-                desktop.updatePluginList(resp.installed, resp.removed)
-                callback(resp)
-            }
-        }
 
         var installationMsg = 'Installing package ' + bundle.name
         if (bundle.count > 1) {
             installationMsg += ' (contains ' + bundle.count + ' plugins)'
         }
+        notification.open()
         notification.html(installationMsg)
         notification.type('warning')
         notification.bar(1)
@@ -148,17 +138,40 @@ function InstallationQueue() {
 
         trans.reportFinished = function (resp) {
             var result = resp.result
-            if (result.ok) {
+            if (result.ok)
+            {
+                queue.shift()
+                callbacks.shift()
+
                 notification.html(installationMsg + ' - OK!')
                 notification.bar(100)
                 notification.type('success')
-                finish(result)
-            } else {
-                queue.shift()
-                callbacks.shift()
+
+                if (queue.length > 0) {
+                    self.installNext()
+                } else {
+                    notification.closeAfter(3000)
+                    desktop.updateAllPlugins()
+                }
+
+                // TODO
+                //desktop.updatePluginList(result.installed, result.removed)
+            }
+            else
+            {
+                queue = []
+                callbacks = []
+
                 notification.close()
                 new Notification('error', "Could not install plugin: " + result.error, 5000)
+
+                // TODO
+                //desktop.updatePluginList([], result.removed)
+
+                desktop.updateAllPlugins()
             }
+
+            callback(result, bundle.name)
         }
 
         trans.start()
