@@ -87,54 +87,12 @@ JqueryClass('cloudPluginBox', {
         self.find('input:checkbox[name=stable]').click(function (e) {
             self.cloudPluginBox('search')
         })
+
         $('#cloud_install_all').click(function (e) {
-            self.cloudPluginBox('search', function (plugins) {
-                // sort plugins by label
-                var alower, blower
-                plugins.sort(function (a, b) {
-                    alower = a.label.toLowerCase()
-                    blower = b.label.toLowerCase()
-                    if (alower > blower)
-                        return 1
-                    if (alower < blower)
-                        return -1
-                    return 0
-                })
-
-                var bundle_id, bundle_ids = []
-                var currentCategory = $("#cloud-plugins-library .categories .selected").attr('id').replace(/^cloud-plugin-tab-/, '') || "All"
-
-                for (var i in plugins) {
-                    plugin = plugins[i]
-                    if (! plugin.bundle_id || ! plugin.latestVersion) {
-                        continue
-                    }
-                    if (compareVersions(plugin.latestVersion, plugin.installedVersion) <= 0) {
-                        continue
-                    }
-                    if ((currentCategory == "All" || currentCategory == plugin.category[0]) && bundle_ids.indexOf(plugin.bundle_id) < 0) {
-                        bundle_ids.push(plugin.bundle_id)
-                    }
-                }
-
-                //var count = 0
-                var finished = function (resp, bundlename) {
-                    self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
-                    /*
-                    // force refresh after completion or failure
-                    if (resp.ok) {
-                        count += 1
-                        if (count != bundle_ids.length)
-                            return;
-                    }
-                    self.cloudPluginBox('search')
-                    */
-                }
-
-                for (var i in bundle_ids) {
-                    desktop.installationQueue.installUsingBundle(bundle_ids[i], finished)
-                }
-            })
+            self.cloudPluginBox('installAllPlugins', false)
+        })
+        $('#cloud_update_all').click(function (e) {
+            self.cloudPluginBox('installAllPlugins', true)
         })
 
         var results = {}
@@ -534,6 +492,62 @@ JqueryClass('cloudPluginBox', {
         })
 
         return rendered
+    },
+
+    installAllPlugins: function (updateOnly) {
+        var self = $(this)
+
+        self.cloudPluginBox('search', function (plugins) {
+            // sort plugins by label
+            var alower, blower
+            plugins.sort(function (a, b) {
+                alower = a.label.toLowerCase()
+                blower = b.label.toLowerCase()
+                if (alower > blower)
+                    return 1
+                if (alower < blower)
+                    return -1
+                return 0
+            })
+
+            var bundle_id, bundle_ids = []
+            var currentCategory = $("#cloud-plugins-library .categories .selected").attr('id').replace(/^cloud-plugin-tab-/, '') || "All"
+
+            var plugin
+            for (var i in plugins) {
+                plugin = plugins[i]
+                if (! plugin.bundle_id || ! plugin.latestVersion) {
+                    continue
+                }
+                if (updateOnly && ! plugin.installedVersion) {
+                    continue
+                }
+                if (compareVersions(plugin.latestVersion, plugin.installedVersion) <= 0) {
+                    continue
+                }
+                if ((currentCategory == "All" || currentCategory == plugin.category[0]) && bundle_ids.indexOf(plugin.bundle_id) < 0) {
+                    bundle_ids.push(plugin.bundle_id)
+                }
+            }
+
+            //var count = 0
+            var finished = function (resp, bundlename) {
+                self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
+                /*
+                // force refresh after completion or failure
+                if (resp.ok) {
+                    count += 1
+                    if (count != bundle_ids.length)
+                        return;
+                }
+                self.cloudPluginBox('search')
+                */
+            }
+
+            for (var i in bundle_ids) {
+                desktop.installationQueue.installUsingBundle(bundle_ids[i], finished)
+            }
+        })
     },
 
     postInstallAction: function (installed, removed, bundlename) {
