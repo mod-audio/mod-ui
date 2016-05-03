@@ -1,5 +1,5 @@
 import os
-from mod.settings import API_KEY, DEVICE_KEY, DEVICE_TAG, DEVICE_UID
+from mod.settings import API_KEY, DEVICE_KEY, DEVICE_TAG, DEVICE_UID, IMAGE_VERSION_PATH
 
 def get_uid():
     if DEVICE_UID is None:
@@ -26,3 +26,11 @@ def get_server_key():
         with open(API_KEY, 'r') as fh:
             return fh.read()
     return API_KEY
+
+def get_image_version():
+    if IMAGE_VERSION_PATH is None:
+        raise Exception('Missing image version path')
+    if os.path.isfile(IMAGE_VERSION_PATH):
+        with open(IMAGE_VERSION_PATH, 'r') as fh:
+            return fh.read()
+    return 'none'
