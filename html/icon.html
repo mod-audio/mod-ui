@@ -36,7 +36,7 @@
               $.ajax({
                   url: '/effect/get',
                   data: { uri: uri },
-                  success: function(effect, options) {
+                  success: function(effect) {
                       icongui = new GUI(effect)
                       icongui.render(null, function(icon, settings) {
                           icon.draggable('disable')

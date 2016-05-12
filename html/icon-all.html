@@ -23,16 +23,32 @@
     <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
 
     <script type="text/javascript">
+      var desktop    = null
       var SAMPLERATE = 48000
 
       $(document).ready(function() {
           $.ajax({
               method: 'get',
-              url: '/effect/list/',
-              success: function(effects) {
-                  for (var i = 0; i < effects.length; i++) {
-                      new GUI(effects[i]).render(null, function(icon, settings) {
-                         $('#pedalboard-dashboard').append(icon)
+              url: '/effect/list',
+              success: function(plugins) {
+                  for (var i in plugins) {
+                      $.ajax({
+                          method: 'get',
+                          url: '/effect/get',
+                          data: { uri: plugins[i].uri },
+                          success: function(plugin) {
+                              if (! plugin.gui.iconTemplate) {
+                                  return
+                              }
+                              console.log(plugin.uri)
+                              new GUI(plugin).render(null, function(icon) {
+                                $('#pedalboard-dashboard').append(icon)
+                              })
+                          },
+                          error: function() {
+                              // ignored
+                          },
+                          dataType: 'json'
                       })
                   }
               },
@@ -41,6 +57,9 @@
               },
               dataType: 'json'
           })
+          $("html").css({overflow: "visible"})
+          $("body").css({overflow: "visible"})
+          $("#wrapper").css({overflow: "visible"})
       })
     </script>
 
