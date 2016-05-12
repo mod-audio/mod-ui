@@ -8,6 +8,7 @@ def create_token_message(nonce: str):
         'nonce': nonce,
         'device_tag': device.get_tag(),
         'device_uid': device.get_uid(),
+        'image_version': device.get_image_version(),
     })
     encrypted = crypt.encrypt(device.get_server_key(), data)
     encoded = base64.encodebytes(encrypted)

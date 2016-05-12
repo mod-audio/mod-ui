@@ -35,6 +35,7 @@ DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
 KEYPATH = os.environ.pop('MOD_KEY_PATH', '/root/keys')
 DEVICE_SERIAL = os.environ.pop('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL = os.environ.pop('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
+IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
 
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
@@ -78,7 +79,7 @@ DEFAULT_PACKAGE_SERVER_PORT = 8889
 # using current host and default port above
 PACKAGE_SERVER_ADDRESS = os.environ.pop('MOD_PACKAGE_SERVER_ADDRESS', None)
 
-CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.moddevices.com")
+CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.moddevices.com/v1")
 
 if os.path.exists("/root/repository"):
     fh = open("/root/repository")
