@@ -25,6 +25,9 @@
     <script type="text/javascript">
       var desktop    = null
       var SAMPLERATE = 48000
+      var options    = {
+          bypassed: 0,
+      }
 
       $(document).ready(function() {
           $.ajax({
@@ -41,7 +44,7 @@
                                   return
                               }
                               console.log(plugin.uri)
-                              new GUI(plugin).render(null, function(icon) {
+                              new GUI(plugin, options).render(null, function(icon) {
                                 $('#pedalboard-dashboard').append(icon)
                               })
                           },
