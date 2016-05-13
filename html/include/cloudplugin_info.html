@@ -10,12 +10,18 @@
                 <div class="plugin-description">
                     <header>
                         <h1>{{name}}</h1>
-                        <p><br />Category: <em>{{category}}</em></p>
+                        <br/>
+                        <p>
+                            <b>URI:</b> {{uri}}<br/>
+                            <b>Category:</b> {{category}}<br/>
+                        </p>
+                        <p>
+                            <b>Author:</b> {{author.name}}<br/>
+                            <b>Homepage:</b> <a href="{{author.homepage}}" target="_blank">{{author.homepage}}</a><br/>
+                        </p>
                         <p class="version">
-                            <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span></span>
-                            <br/>
-                            <span class="js-installed-version">Installed Version: <span class="bold">{{installed_version}}</span></span>
-                            <br/>
+                            <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span><br/></span>
+                            <span class="js-installed-version">Installed Version: <span class="bold">{{installed_version}}</span><br/></span>
                             <button class="js-install btn btn-info btn-mini">Install</button>
                             <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
                             <button class="js-remove btn btn-danger btn-mini">Remove</button>
@@ -23,26 +29,26 @@
                     </header>
                     <p>{{comment}}</p>
 
-                    <p><strong>CONTROL PORTS:</strong></p>
-                    <table class="plugin-specs table table-bordered">
-                    <tr>
-                        <th>Control</th>
-                        <th>Default</th>
-                        <th>Min</th>
-                        <th>Max</th>
-                    </tr>
-                    {{#ports.control.input}}
-                    <tr>
-                        <td>{{shortName}}</td>
-                        <td>{{formatted.default}}</td>
-                        <td>{{formatted.minimum}}</td>
-                        <td>{{formatted.maximum}}</td>
-                    </tr>
-                    {{/ports.control.input}}
-                    </table>
-                    <footer>
-                        <p><a href="{{author.homepage}}" target="_blank">More info at <b>{{author.homepage}}</b></a></p>
-                    </footer>
+                    <div class="plugin-controlports">
+                        <p><strong>CONTROL PORTS:</strong></p>
+                        <table class="plugin-specs table table-bordered">
+                        <tr>
+                            <th>Control</th>
+                            <th>Default</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                        </tr>
+                        {{#ports.control.input}}
+                        <tr>
+                            <td>{{shortName}}</td>
+                            <td>{{formatted.default}}</td>
+                            <td>{{formatted.minimum}}</td>
+                            <td>{{formatted.maximum}}</td>
+                        </tr>
+                        {{/ports.control.input}}
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

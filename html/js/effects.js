@@ -351,36 +351,29 @@ JqueryClass('effectBox', {
 
         var showInfo = function() {
 
-            for (var i = 0; i< plugin.ports.control.input.length; i++) {  // formating numbers and flooring ranges up to two decimal cases
-                plugin.ports.control.input[i].formatted = {}
-                plugin.ports.control.input[i].formatted.default = formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100);
-                plugin.ports.control.input[i].formatted.maximum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100);
-                plugin.ports.control.input[i].formatted.minimum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100);
-
-            }
-
-            var comment = plugin.comment
-            var has_description = ""
-            if(!comment) {
-                comment = "No description available";
-                has_description = "no_description";
+            // formating numbers and flooring ranges up to two decimal cases
+            for (var i = 0; i < plugin.ports.control.input.length; i++) {
+                plugin.ports.control.input[i].formatted = {
+                    "default": formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100),
+                    "maximum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100),
+                    "minimum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100)
+                }
             }
 
             var metadata = {
                 author: plugin.author,
-                comment: comment,
-                has_description: has_description,
+                uri: plugin.uri,
                 thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                               ? "/effect/image/thumbnail.png?uri=" + uri
                               : "/resources/pedals/default-thumbnail.png",
                 screenshot_href: (plugin.gui && plugin.gui.screenshot)
                               ? "/effect/image/screenshot.png?uri=" + uri
                               : "/resources/pedals/default-screenshot.png",
-                category: plugin.category[0] || "",
+                category: plugin.category[0] || "None",
                 installed_version: version(plugin.installedVersion),
                 latest_version: "DO NOT SHOW THIS!!", // not shown on local plugin bar
                 package_name: plugin.bundles[0].replace(/\.lv2$/, ''),
-                comment: plugin.comment || "No description available",
+                comment: plugin.comment.trim() || "No description available",
                 brand : plugin.brand,
                 name  : plugin.name,
                 label : plugin.label,
@@ -389,11 +382,16 @@ JqueryClass('effectBox', {
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
-            //hide install etc buttons
+            // hide install etc buttons
             info.find('.js-remove').hide()
             info.find('.js-install').hide()
             info.find('.js-upgrade').hide()
             info.find('.js-latest-version').hide()
+
+            // hide control ports table if none available
+            if (plugin.ports.control.input.length == 0) {
+                info.find('.plugin-controlports').hide()
+            }
 
             info.window({
                 windowManager: self.data('windowManager'),
