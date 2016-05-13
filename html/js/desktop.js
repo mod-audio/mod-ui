@@ -652,17 +652,17 @@ function Desktop(elements) {
 
     elements.shareButton.click(function () {
         var share = function () {
-            self.userSession.login(function () {
-                if (!self.pedalboardBundle)
+            //self.userSession.login(function () {
+                if (self.pedalboardEmpty || !self.pedalboardBundle) {
                     return new Notification('warn', 'Nothing to share', 1500)
+                }
                 elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
-            })
+            //})
         }
         if (self.pedalboardModified) {
-            if (confirm('There are unsaved modifications, pedalboard must first be saved. Save it?'))
+            if (confirm('There are unsaved modifications, pedalboard must first be saved. Save it?')) {
                 self.saveCurrentPedalboard(false, share)
-            else
-                return
+            }
         } else {
             share()
         }
