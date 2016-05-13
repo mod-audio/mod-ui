@@ -317,10 +317,9 @@ function HardwareManager(options) {
         form.find('.js-save').click(function () {
             actuator = actuators[actuatorSelect.val()] || {}
 
-            // if selected actuactor is unchanged, do nothing
-            if (actuator.uri == currentAddressing.uri)
-            {
-                // do nothing
+            // if selected actuactor is the same and it's a MIDI CC, do nothing.
+            // otherwise we'd have to re-learn
+            if (actuator.uri == currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 console.log("Doing nothing")
                 form.remove()
                 return;
