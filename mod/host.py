@@ -726,7 +726,7 @@ class Host(object):
             callback(ok)
             removed_connections = []
             for ports in self.connections:
-                if ports[0].startswith(instance) or ports[1].startswith(instance):
+                if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
                     removed_connections.append(ports)
             for ports in removed_connections:
                 self.connections.remove(ports)
