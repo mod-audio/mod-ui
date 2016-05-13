@@ -1581,17 +1581,16 @@ _:b%i
             self.addressings[actuator_uri]['addrs'].append(addressing)
             self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
 
+            if skipLoad:
+                return
+
+            def nextStepAddressing(ok):
+                self._addressing_load(actuator_uri, callback)
+
             if old_actuator_uri is not None:
-                if skipLoad:
-                    print("FIXME: possible race condition here!")
-
-                def nextStepAddressing(ok):
-                    self._addressing_load(actuator_uri, callback)
-
-                self._addressing_load(old_actuator_uri, nextStepAddressing)
-
-            elif not skipLoad:
-                self._addressing_load(actuator_uri, callback, value)
+                self.hmi.control_rm(instance_id, port, nextStepAddressing)
+            else:
+                nextStepAddressing(True)
 
         else:
             # we're unaddressing
@@ -1663,6 +1662,7 @@ _:b%i
         try:
             addressing = addressings_addrs[addressings_idx]
         except IndexError:
+            print("Failed to get addressing for", actuator_uri)
             return
 
         actuator_hw = self._uri2hw_map[actuator_uri]
