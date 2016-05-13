@@ -478,6 +478,14 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff
 
+    def mute(self):
+        disconnect_jack_ports("mod-host:monitor-out_1", "system:playback_1")
+        disconnect_jack_ports("mod-host:monitor-out_2", "system:playback_2")
+
+    def unmute(self):
+        connect_jack_ports("mod-host:monitor-out_1", "system:playback_1")
+        connect_jack_ports("mod-host:monitor-out_2", "system:playback_2")
+
     def report_current_state(self, websocket):
         if websocket is None:
             return

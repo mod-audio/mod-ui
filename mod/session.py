@@ -48,10 +48,10 @@ class Session(object):
 
         self.ioloop = ioloop.IOLoop.instance()
 
-        self.recorder = Recorder()
         self.player = Player()
-        self.mute_state = True
-        self.recording = None
+        self.recorder = Recorder()
+        self.recordhandle = None
+
         self.screenshot_generator = ScreenshotGenerator()
         self.websockets = []
 
@@ -137,8 +137,6 @@ class Session(object):
         else:
             self.host.param_set(port, value, callback)
 
-        #self.recorder.parameter(port, value)
-
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
         if not (self.hmi.initialized or actuator_uri.startswith("/midi-")):
@@ -222,6 +220,52 @@ class Session(object):
             callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    # Start recording
+    def web_recording_start(self):
+        self.player.stop()
+        self.recorder.start()
+
+    # Stop recording
+    def web_recording_stop(self):
+        if self.recordhandle is not None:
+            self.recordhandle.close()
+        self.recordhandle = self.recorder.stop(True)
+
+    # Delete previous recording, if any
+    def web_recording_delete(self):
+        if self.recordhandle is not None:
+            self.recordhandle.close()
+            self.recordhandle = None
+
+    # Return recording data
+    def web_recording_download(self):
+        if self.recordhandle is None:
+            return ""
+
+        self.recordhandle.seek(0)
+        return self.recordhandle.read()
+
+    # Playback of previous recording started
+    def web_playing_start(self, callback):
+        if self.recordhandle is None:
+            self.recordhandle = self.recorder.stop(True)
+
+        def stop():
+            self.host.unmute()
+            callback()
+
+        def schedule_stop():
+            self.ioloop.add_timeout(timedelta(seconds=0.5), stop)
+
+        self.host.mute()
+        self.player.play(self.recordhandle, schedule_stop)
+
+    # Playback stopped
+    def web_playing_stop(self):
+        self.player.stop()
+
+    # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
 
@@ -262,9 +306,6 @@ class Session(object):
 
     def bypass(self, instance, value, callback):
         value = int(value) > 0
-        #if not loaded:
-        #    self._pedalboard.bypass(instance_id, value)
-        #self.recorder.bypass(instance, value)
         self.host.enable(instance, value, callback)
 
     def format_port(self, port):
@@ -283,67 +324,5 @@ class Session(object):
     def tuner(self, value, callback):
         freq, note, cents = find_freqnotecents(value)
         self.hmi.tuner(freq, note, cents, callback)
-
-    def start_recording(self):
-        if self.player.playing:
-            self.player.stop()
-        self.recorder.start()
-
-    def stop_recording(self):
-        if self.recorder.recording:
-            self.recording = self.recorder.stop()
-            return self.recording
-
-    def start_playing(self, stop_callback):
-        if self.recorder.recording:
-            self.recording = self.recorder.stop()
-        def stop():
-            self.unmute(stop_callback)
-        def schedule_stop():
-            self.ioloop.add_timeout(timedelta(seconds=0.5), stop)
-        def play():
-            self.player.play(self.recording['handle'], schedule_stop)
-        self.mute(play)
-
-    def stop_playing(self):
-        self.player.stop()
-
-    def reset_recording(self):
-        self.recording = None
-
-    def mute(self, callback):
-        return
-        #self.set_audio_state(False, callback)
-
-    def unmute(self, callback):
-        return
-        #self.set_audio_state(True, callback)
-
-    #def set_audio_state(self, state, callback):
-        #if self.mute_state == state:
-            #return callback()
-        #self.mute_state = state
-        #connections = self._pedalboard.data['connections']
-        #queue = []
-        #for connection in connections:
-            #if connection[2] == 'system' and connection[3].startswith('playback'):
-                #port_from = self.format_port(':'.join([str(x) for x in connection[:2]]))
-                #port_to = self.format_port(':'.join([str(x) for x in connection[2:]]))
-                #queue.append([port_from, port_to])
-        #def consume(result=None):
-            #if len(queue) == 0:
-                #return callback()
-            #nxt = queue.pop(0)
-            #if state:
-                #self.host.connect(nxt[0], nxt[1], consume)
-            #else:
-                #self.host.disconnect(nxt[0], nxt[1], consume)
-        #consume()
-
-    #def serialize_pedalboard(self):
-        #return self._pedalboard.serialize()
-
-    #def xrun(self, callback):
-        #self.hmi.xrun(callback)
 
 SESSION = Session()

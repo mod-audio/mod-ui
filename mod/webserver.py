@@ -1006,38 +1006,45 @@ class AuthToken(web.RequestHandler):
 
 class RecordingStart(web.RequestHandler):
     def get(self):
-        SESSION.start_recording()
+        SESSION.web_recording_start()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
 
 class RecordingStop(web.RequestHandler):
     def get(self):
-        result = SESSION.stop_recording()
-        #result['data'] = b64encode(result.pop('handle').read().encode("utf-8"))
-        #open('/tmp/record.json', 'w').write(json.dumps(result, default=json_handler))
+        SESSION.web_recording_stop()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+
+class RecordingReset(web.RequestHandler):
+    def get(self):
+        SESSION.web_recording_delete()
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
 
 class RecordingPlay(web.RequestHandler):
     waiting_request = None
+
     @web.asynchronous
     def get(self, action):
         if action == 'start':
-            self.playing = True
-            SESSION.start_playing(RecordingPlay.stop_callback)
+            SESSION.web_playing_start(RecordingPlay.stop_callback)
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps(True))
             return self.finish()
+
         if action == 'wait':
             if RecordingPlay.waiting_request is not None:
                 RecordingPlay.stop_callback()
             RecordingPlay.waiting_request = self
             return
+
         if action == 'stop':
-            SESSION.stop_playing()
+            SESSION.web_playing_stop()
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps(True))
             return self.finish()
+
         raise web.HTTPError(404)
 
     @classmethod
@@ -1051,20 +1058,13 @@ class RecordingPlay(web.RequestHandler):
 
 class RecordingDownload(web.RequestHandler):
     def get(self):
-        recording = SESSION.recording
-        recording['handle'].seek(0)
+        recd = SESSION.web_recording_download()
         data = {
-            'audio': b64encode(SESSION.recording['handle'].read()),
-            'events': recording['events'],
+            'ok'   : bool(recd),
+            'audio': b64encode(recd) if recd else ""
         }
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(data, default=json_handler))
-
-class RecordingReset(web.RequestHandler):
-    def get(self):
-        SESSION.reset_recording()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(json.dumps(data))
 
 class TokensDelete(web.RequestHandler):
     def get(self):
