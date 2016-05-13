@@ -269,14 +269,19 @@ function HardwareManager(options) {
                     return;
                 }
 
+                // remove old one first
+                var unaddressing = false
+                if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI) {
+                    unaddressing = true
+                    if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                        currentAddressing.uri = kMidiLearnURI
+                    }
+                    remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
+                }
+
                 // We're addressing
                 if (actuator.uri && actuator.uri != kNullAddressURI)
                 {
-                    // remove old one first
-                    if (currentAddressing.uri) {
-                        remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
-                    }
-
                     // add new one, print and error if already there
                     if (self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol) < 0) {
                         self.addressingsByActuator[actuator.uri].push(instanceAndSymbol)
@@ -295,14 +300,8 @@ function HardwareManager(options) {
                     options.setEnabled(instance, port.symbol, false)
                 }
                 // We're unaddressing
-                else if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI)
+                else if (unaddressing)
                 {
-                    if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) // startsWith
-                        currentAddressing.uri = kMidiLearnURI
-
-                    // remove old one
-                    remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
-
                     delete self.addressingsByPortSymbol[instanceAndSymbol]
                     delete self.addressingsData        [instanceAndSymbol]
 
@@ -317,7 +316,7 @@ function HardwareManager(options) {
         form.find('.js-save').click(function () {
             actuator = actuators[actuatorSelect.val()] || {}
 
-            // if selected actuactor is the same and it's a MIDI CC, do nothing.
+            // if selected actuator is the same and it's a MIDI CC, do nothing.
             // otherwise we'd have to re-learn
             if (actuator.uri == currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 console.log("Doing nothing")

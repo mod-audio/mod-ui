@@ -1505,22 +1505,8 @@ _:b%i
 
         old_actuator_uri = self._unaddress(pluginData, port)
 
-        if actuator_uri and actuator_uri != kNullAddressURI:
-            # we're trying to midi-learn
-            if actuator_uri == kMidiLearnURI:
-                self.send("midi_learn %i %s" % (instance_id, port), callback, datatype='boolean')
-                return
-
-            # we're unmapping a midi control
-            elif actuator_uri == kMidiUnmapURI:
-                if port == ":bypass":
-                    pluginData['bypassCC'] = (-1, -1)
-                else:
-                    pluginData['midiCCs'][port] = (-1, -1)
-                self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
-                return
-
-            # we're addressing to HMI or control chain
+        # we're addressing to HMI
+        if actuator_uri and actuator_uri not in (kNullAddressURI, kMidiLearnURI, kMidiUnmapURI):
             options = []
 
             if port == ":bypass":
@@ -1591,17 +1577,34 @@ _:b%i
                 self.hmi.control_rm(instance_id, port, nextStepAddressing)
             else:
                 nextStepAddressing(True)
+            return
 
+        def unaddressingStep2(ok):
+            # we're trying to midi-learn
+            if actuator_uri == kMidiLearnURI:
+                self.send("midi_learn %i %s" % (instance_id, port), callback, datatype='boolean')
+                return
+
+            # we're unmapping a midi control
+            if actuator_uri == kMidiUnmapURI:
+                if port == ":bypass":
+                    pluginData['bypassCC'] = (-1, -1)
+                else:
+                    pluginData['midiCCs'][port] = (-1, -1)
+                self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
+                return
+
+            # nothing
+            callback(True)
+
+        def unaddressingStep1(ok):
+            old_actuator_hw = self._uri2hw_map[old_actuator_uri]
+            self._address_next(old_actuator_hw, unaddressingStep2)
+
+        if old_actuator_uri is not None:
+            self.hmi.control_rm(instance_id, port, unaddressingStep1)
         else:
-            # we're unaddressing
-            if old_actuator_uri is not None:
-                def nextStepUnaddressing(ok):
-                    old_actuator_hw = self._uri2hw_map[old_actuator_uri]
-                    self._address_next(old_actuator_hw, callback)
-                self.hmi.control_rm(instance_id, port, nextStepUnaddressing)
-
-            else:
-                self.hmi.control_rm(instance_id, port, callback)
+            unaddressingStep2(True)
 
     def get_addressings(self):
         if len(self.addressings) == 0:
