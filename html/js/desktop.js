@@ -352,8 +352,8 @@ function Desktop(elements) {
         $("body").addClass("initialized");
     }
 
-    // hide top-bar shared-pedalboard button
-    $('#pedalboard-sharing').hide()
+    // TODO: apply these changes in the css
+    $('#zoom-controllers').css({top: "44px"})
 
     this.authenticateDevice = function (callback) {
         $.ajax({
