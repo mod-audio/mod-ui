@@ -47,7 +47,7 @@ JqueryClass('shareBox', {
                 callback()
             },
             share: function (data, callback) {
-                callback(true)
+                callback({ok:true})
             },
             waitForScreenshot: function (callback) {
                 callback(true)
@@ -149,10 +149,6 @@ JqueryClass('shareBox', {
             else
                 button.attr('disabled', true)
         }
-        if (step == 4)
-            $('#share-window-fb label').show() // TODO facebook integration
-        else
-            $('#share-window-fb label').hide()
     },
 
     recordStartCountdown: function () {
@@ -259,38 +255,54 @@ JqueryClass('shareBox', {
             title: self.find('input[type=text]').val()
         }
         $('#record-share').attr('disabled', true)
-        if (step == 4) {
-            // User has recorded some sound
-            data.facebook = self.find('#pedalboard-share-fb').is(':checked')
-            self.data('recordDownload')(function (audioData) {
-                data = $.extend(data, audioData)
-                self.data('share')(data, function (ok, error) {
-                    $('#record-share').attr('disabled', false)
-                    if (ok) {
+
+        var hasAudio = (step == 4)
+        var shareNow = function (data) {
+            self.data('share')(data, function (resp) {
+                console.log(resp)
+
+                if (resp.ok) {
+                    $('#record-step-' + step).hide()
+                    $('#record-share').attr('disabled', resp.ok).hide()
+
+                    var pb_url = "http://pedalboards.moddevices.com/" + resp.pedalboard_id
+                    $('#share-window-url').html('<a href="'+pb_url+'">'+pb_url+'</a>')
+
+                    if (hasAudio) {
                         self.data('recordReset')(function () {
-                            self.hide()
+                            //self.hide()
+                            $('#share-window-form').hide()
+                            $('#share-window-links').show()
                         })
                     } else {
-                        new Notification('error', "Couldn't share pedalboard: " + error)
-                        $('#record-share').attr('disabled', false)
+                        //self.hide()
+                        $('#share-window-form').hide()
+                        $('#share-window-links').show()
                     }
-                })
+                } else {
+                    new Notification('error', "Couldn't share pedalboard: " + resp.error)
+                    $('#record-share').attr('disabled', false)
+                }
+            })
+        }
+
+        if (hasAudio) {
+            // User has recorded some sound
+            self.data('recordDownload')(function (audioData) {
+                data.audio = audioData.audio
+                shareNow(data)
             })
         } else {
             // Just share without audio
-            self.data('share')(data, function (ok, error) {
-                $('#record-share').attr('disabled', false)
-                if (ok) {
-                    self.hide()
-                } else {
-                    new Notification('error', "Couldn't share pedalboard: " + error)
-                }
-            })
+            shareNow(data)
         }
     },
 
     open: function (bundlepath, title) {
         var self = $(this)
+        $('#record-share').show()
+        $('#share-window-form').show()
+        $('#share-window-links').hide()
         self.shareBox('showStep', 1)
         self.data('bundlepath', bundlepath)
         self.find('input[type=text]').val(title)

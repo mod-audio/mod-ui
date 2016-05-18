@@ -395,56 +395,58 @@ $('document').ready(function() {
 
         <!-- PEDALBOARD SHARE WINDOW -->
         <div id="share-window" class="save-popup mod-hidden">
-		 	<!-- PEDALBOARD SHARE WINDOW STAGE 1 -->
             <div class="box">
                 <h1>SHARE</h1>
-				<a class="close-window" id="record-cancel"><i class="icon-black icon-remove"></i></a>
-				<form >
-				<div class="form-group">
-           			<label for="pedalboard-share-title"><input type="text" class="form-control" id="pedalboard-share-title"  placeholder="How will you call this pedalboard?"/></label>
-                	<label for="pedalboard-share-comment"><textarea rows="4"id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea></label>
-				</div>
-				<div id="share-window-wrapper">
-					<div class="textcenter " id="record-step-1">
-						<h2>Record a sample </h2>
-						<span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
-						<p><small>(optional)</small><p>
-					</div>
-					<div class="controls actions mod-hidden" id="record-step-2">
-						<h2 class="textcenter">Recording starts in</h2>
-						<span class="btn btn-danger" id="record-countdown">3</span>
-					</div>
-					<div class="textcenter mod-hidden" id="record-step-3">
-						<h2>Recording</h2>
-						<span class="btn btn-primary" id="record-stop">15</span>
-						<p><small>(click the square to stop)</small><p>
-					</div>
-					<div class="textcenter mod-hidden" id="record-step-4">
-						<small>&nbsp;</small>
-						<button class="btn btn-info btn-large btn-block " id="record-play">
-						  <i class="icon-white icon-play"></i> Listen
-						</button>
-						<button class="btn btn-info btn-large btn-block active mod-hidden" id="record-play-stop" style="margin-top: 0">
-						  <i class="icon-white icon-stop"></i> Stop
-						</button>
-						<button class="btn btn-danger btn-large btn-block" id="record-again">
-						  <i class="icon-white icon-repeat"></i> Record again
-						</button>
-						<button class="btn btn-inverse btn-large btn-block" id="record-delete">
-						  <i class="icon-white icon-remove"></i> Delete sample
-						</button>
-					</div>
-				</div>
-				<div id="share-window-fb">
-					<!--<label for="pedalboard-share-fb"><input id="pedalboard-share-fb" type="checkbox" /> Share also on Facebook </label>-->
-					<!--<div id="fb-authorization-container"></div>-->
-					<div id="share-wait-screenshot">Waiting for screenshot...</div>
-					<div class="textright">
-						<button style="margin-top: 3px" class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
-					</div>
-				</div>
-				</form>
-			</div>
+                <a class="close-window" id="record-cancel"><i class="icon-black icon-remove"></i></a>
+                <form>
+                    <div class="form-group" id="share-window-form">
+                        <label for="pedalboard-share-title"><input type="text" class="form-control" id="pedalboard-share-title"  placeholder="How will you call this pedalboard?"/></label>
+                        <label for="pedalboard-share-comment"><textarea rows="4" id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea></label>
+                    </div>
+                    <div id="share-window-wrapper">
+                        <div class="textcenter" id="record-step-1">
+                            <h2>Record a sample</h2>
+                            <span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
+                            <p><small>(optional)</small><p>
+                        </div>
+                        <div class="controls actions mod-hidden" id="record-step-2">
+                            <h2 class="textcenter">Recording starts in</h2>
+                            <span class="btn btn-danger" id="record-countdown">3</span>
+                        </div>
+                        <div class="textcenter mod-hidden" id="record-step-3">
+                            <h2>Recording</h2>
+                            <span class="btn btn-primary" id="record-stop">15</span>
+                            <p><small>(click the square to stop)</small><p>
+                        </div>
+                        <div class="textcenter mod-hidden" id="record-step-4">
+                            <small>&nbsp;</small>
+                            <button class="btn btn-info btn-large btn-block " id="record-play">
+                                <i class="icon-white icon-play"></i> Listen
+                            </button>
+                            <button class="btn btn-info btn-large btn-block active mod-hidden" id="record-play-stop" style="margin-top: 0">
+                                <i class="icon-white icon-stop"></i> Stop
+                            </button>
+                            <button class="btn btn-danger btn-large btn-block" id="record-again">
+                                <i class="icon-white icon-repeat"></i> Record again
+                            </button>
+                            <button class="btn btn-inverse btn-large btn-block" id="record-delete">
+                                <i class="icon-white icon-remove"></i> Delete sample
+                            </button>
+                        </div>
+                        <div class="textleft mod-hidden" id="share-window-links">
+                            <small>&nbsp;</small>
+                            <p>Uploaded completed!</p>
+                            <p>Share to facebook, twitter, etc etc goes here</p>
+                            <p id="share-window-url"></p>
+                        </div>
+                    </div>
+                    <div id="share-window-bottom">
+                        <div id="share-wait-screenshot">Waiting for screenshot...</div>
+                        <div class="textright">
+                            <button style="margin-top: 3px" class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
         <!-- END PEDALBOARD SHARE WINDOW -->
@@ -956,7 +958,7 @@ $('document').ready(function() {
                 <p>The following software updates are available:</p>
                 <ul></ul>
                 <p class="textright">
-		    <button class="js-close btn btn-xs btn-danger">Cancel</button>
+                    <button class="js-close btn btn-xs btn-danger">Cancel</button>
                     <button class="js-upgrade btn btn-xs btn-info">Upgrade</button>
                 </p>
             </div>

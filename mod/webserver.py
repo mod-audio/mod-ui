@@ -628,6 +628,7 @@ class PedalboardSave(web.RequestHandler):
         self.finish()
 
 class PedalboardPackBundle(web.RequestHandler):
+    # TODO: need to update this to the latest cloud API
     @web.asynchronous
     @gen.engine
     def get(self):
@@ -1061,7 +1062,7 @@ class RecordingDownload(web.RequestHandler):
         recd = SESSION.web_recording_download()
         data = {
             'ok'   : bool(recd),
-            'audio': b64encode(recd) if recd else ""
+            'audio': b64encode(recd).decode("utf-8") if recd else ""
         }
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(data))

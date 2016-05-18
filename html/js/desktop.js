@@ -698,6 +698,8 @@ function Desktop(elements) {
         recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
         share: function (data, callback) {
+            /*
+             TODO: need to update this to the latest cloud API
             transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
                                               SITEURL + '/pedalboards/upload/',
                                               { to_args: { headers:
@@ -730,6 +732,15 @@ function Desktop(elements) {
             }
 
             transfer.start()
+            */
+
+            // simulate resp from server
+            var resp = {
+                //ok: true,
+                error: "some misc error here",
+                pedalboard_id: 0x00000,
+            }
+            callback(resp)
         },
 
         waitForScreenshot: function (callback) {
