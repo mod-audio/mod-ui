@@ -736,7 +736,7 @@ function Desktop(elements) {
 
             // simulate resp from server
             var resp = {
-                //ok: true,
+                ok: true,
                 error: "some misc error here",
                 pedalboard_id: 0x00000,
             }
