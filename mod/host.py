@@ -734,7 +734,7 @@ class Host(object):
             callback(ok)
             removed_connections = []
             for ports in self.connections:
-                if ports[0].startswith(instance) or ports[1].startswith(instance):
+                if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
                     removed_connections.append(ports)
             for ports in removed_connections:
                 self.connections.remove(ports)
@@ -1513,22 +1513,8 @@ _:b%i
 
         old_actuator_uri = self._unaddress(pluginData, port)
 
-        if actuator_uri and actuator_uri != kNullAddressURI:
-            # we're trying to midi-learn
-            if actuator_uri == kMidiLearnURI:
-                self.send("midi_learn %i %s" % (instance_id, port), callback, datatype='boolean')
-                return
-
-            # we're unmapping a midi control
-            elif actuator_uri == kMidiUnmapURI:
-                if port == ":bypass":
-                    pluginData['bypassCC'] = (-1, -1)
-                else:
-                    pluginData['midiCCs'][port] = (-1, -1)
-                self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
-                return
-
-            # we're addressing to HMI or control chain
+        # we're addressing to HMI
+        if actuator_uri and actuator_uri not in (kNullAddressURI, kMidiLearnURI, kMidiUnmapURI):
             options = []
 
             if port == ":bypass":
@@ -1589,28 +1575,44 @@ _:b%i
             self.addressings[actuator_uri]['addrs'].append(addressing)
             self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
 
+            if skipLoad:
+                return
+
+            def nextStepAddressing(ok):
+                self._addressing_load(actuator_uri, callback)
+
             if old_actuator_uri is not None:
-                if skipLoad:
-                    print("FIXME: possible race condition here!")
-
-                def nextStepAddressing(ok):
-                    self._addressing_load(actuator_uri, callback)
-
-                self._addressing_load(old_actuator_uri, nextStepAddressing)
-
-            elif not skipLoad:
-                self._addressing_load(actuator_uri, callback, value)
-
-        else:
-            # we're unaddressing
-            if old_actuator_uri is not None:
-                def nextStepUnaddressing(ok):
-                    old_actuator_hw = self._uri2hw_map[old_actuator_uri]
-                    self._address_next(old_actuator_hw, callback)
-                self.hmi.control_rm(instance_id, port, nextStepUnaddressing)
-
+                self.hmi.control_rm(instance_id, port, nextStepAddressing)
             else:
-                self.hmi.control_rm(instance_id, port, callback)
+                nextStepAddressing(True)
+            return
+
+        def unaddressingStep2(ok):
+            # we're trying to midi-learn
+            if actuator_uri == kMidiLearnURI:
+                self.send("midi_learn %i %s" % (instance_id, port), callback, datatype='boolean')
+                return
+
+            # we're unmapping a midi control
+            if actuator_uri == kMidiUnmapURI:
+                if port == ":bypass":
+                    pluginData['bypassCC'] = (-1, -1)
+                else:
+                    pluginData['midiCCs'][port] = (-1, -1)
+                self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
+                return
+
+            # nothing
+            callback(True)
+
+        def unaddressingStep1(ok):
+            old_actuator_hw = self._uri2hw_map[old_actuator_uri]
+            self._address_next(old_actuator_hw, unaddressingStep2)
+
+        if old_actuator_uri is not None:
+            self.hmi.control_rm(instance_id, port, unaddressingStep1)
+        else:
+            unaddressingStep2(True)
 
     def get_addressings(self):
         if len(self.addressings) == 0:
@@ -1671,6 +1673,7 @@ _:b%i
         try:
             addressing = addressings_addrs[addressings_idx]
         except IndexError:
+            print("Failed to get addressing for", actuator_uri)
             return
 
         actuator_hw = self._uri2hw_map[actuator_uri]

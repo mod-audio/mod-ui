@@ -475,7 +475,7 @@ JqueryClass('cloudPluginBox', {
     renderPlugin: function (plugin) {
         var self = $(this)
         var uri = escape(plugin.uri)
-        var comment = plugin.comment
+        var comment = plugin.comment.trim()
         var has_comment = ""
         if(!comment) {
             comment = "No description available";
@@ -630,22 +630,25 @@ JqueryClass('cloudPluginBox', {
                 return parts.join(".");
             }
 
-            for (var i = 0; i < plugin.ports.control.input.length; i++) {  // formating numbers and flooring ranges up to two decimal cases
-                plugin.ports.control.input[i].formatted = {}
-                plugin.ports.control.input[i].formatted.default = formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100);
-                plugin.ports.control.input[i].formatted.maximum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100);
-                plugin.ports.control.input[i].formatted.minimum = formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100);
+            // formating numbers and flooring ranges up to two decimal cases
+            for (var i = 0; i < plugin.ports.control.input.length; i++) {
+                plugin.ports.control.input[i].formatted = {
+                    "default": formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100),
+                    "maximum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100),
+                    "minimum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100)
+                }
             }
 
             var metadata = {
-                uri: uri,
+                author: plugin.author,
+                uri: plugin.uri,
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
-                category: plugin.category[0] || "",
+                category: plugin.category[0] || "None",
                 installed_version: version(plugin.installedVersion),
                 latest_version: version(plugin.latestVersion),
                 package_name: (plugin.bundle_name || plugin.bundles[0]).replace(/\.lv2$/, ''),
-                comment: plugin.comment || "No description available",
+                comment: plugin.comment.trim() || "No description available",
                 brand : plugin.brand,
                 name  : plugin.name,
                 label : plugin.label,
@@ -653,6 +656,11 @@ JqueryClass('cloudPluginBox', {
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
+
+            // hide control ports table if none available
+            if (plugin.ports.control.input.length == 0) {
+                info.find('.plugin-controlports').hide()
+            }
 
             var canInstall = false,
                 canUpgrade = false
