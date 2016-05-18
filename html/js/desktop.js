@@ -731,6 +731,19 @@ function Desktop(elements) {
 
             transfer.start()
         },
+
+        waitForScreenshot: function (callback) {
+            $.ajax({
+                url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),
+                success: function (resp) {
+                    callback(resp.ok)
+                },
+                error: function () {
+                    callback(false)
+                },
+                dataType: 'json'
+            })
+        },
     })
 
     /*
@@ -1236,7 +1249,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                     return
                 }
                 self.title = resp.name
-                self.pedalboardBundle = resp.bundlepath
+                self.pedalboardBundle = bundlepath
                 self.pedalboardEmpty = false
                 self.pedalboardModified = false
                 self.titleBox.text(resp.name);

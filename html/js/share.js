@@ -46,11 +46,12 @@ JqueryClass('shareBox', {
             recordReset: function (callback) {
                 callback()
             },
-
-            // Do the sharing in cloud
             share: function (data, callback) {
                 callback(true)
-            }
+            },
+            waitForScreenshot: function (callback) {
+                callback(true)
+            },
         }, options)
 
         self.data(options)
@@ -58,6 +59,7 @@ JqueryClass('shareBox', {
         self.data('recordedData', null)
         self.data('status', STOPPED)
         self.data('step', 0)
+        self.data('screenshotDone', false)
 
         self.find('#record-rec').click(function () {
             self.shareBox('recordStartCountdown');
@@ -97,6 +99,14 @@ JqueryClass('shareBox', {
         })
         */
 
+        // disable final share until we got a screenshot
+        $('#record-share').attr('disabled', true)
+        options.waitForScreenshot(function (ok) {
+            $('#share-wait-screenshot').hide()
+            self.data('screenshotDone', true)
+            self.shareBox('showStep', self.data('step'))
+        })
+
         $('body').keydown(function (e) {
             if (e.keyCode == 27)
                 self.shareBox('close')
@@ -131,11 +141,11 @@ JqueryClass('shareBox', {
         }
         var button = $('#record-share')
         if (step == 1) {
-            button.text('Just share').attr('disabled', false)
+            button.text('Just share').attr('disabled', !self.data('screenshotDone'))
         } else {
             button.text('Share')
             if (step == 4)
-                button.attr('disabled', false)
+                button.attr('disabled', !self.data('screenshotDone'))
             else
                 button.attr('disabled', true)
         }
