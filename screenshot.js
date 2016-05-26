@@ -65,7 +65,7 @@ function waitTwice(step, callback) {
         } else {
             callback()
         }
-    }, 5000)
+    }, 10000)
 }
 
 if (system.args.length != 5) {
