@@ -1163,32 +1163,32 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // version
 
     {
-        LilvNodes* const microvers = lilv_plugin_get_value(p, ns.lv2core_microVersion);
         LilvNodes* const minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion);
+        LilvNodes* const microvers = lilv_plugin_get_value(p, ns.lv2core_microVersion);
 
-        if (microvers == nullptr && minorvers == nullptr)
+        if (minorvers == nullptr && microvers == nullptr)
         {
             info.microVersion = 0;
             info.minorVersion = 0;
         }
         else
         {
-            if (microvers == nullptr)
-                info.microVersion = 0;
-            else
-                info.microVersion = lilv_node_as_int(lilv_nodes_get_first(microvers));
-
             if (minorvers == nullptr)
                 info.minorVersion = 0;
             else
                 info.minorVersion = lilv_node_as_int(lilv_nodes_get_first(minorvers));
 
-            lilv_nodes_free(microvers);
+            if (microvers == nullptr)
+                info.microVersion = 0;
+            else
+                info.microVersion = lilv_node_as_int(lilv_nodes_get_first(microvers));
+
             lilv_nodes_free(minorvers);
+            lilv_nodes_free(microvers);
         }
 
         char versiontmpstr[32+1] = { '\0' };
-        snprintf(versiontmpstr, 32, "%d.%d", info.microVersion, info.minorVersion);
+        snprintf(versiontmpstr, 32, "%d.%d", info.minorVersion, info.microVersion);
         info.version = strdup(versiontmpstr);
     }
 
@@ -1202,12 +1202,12 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         info.release = 0;
     }
 
-    if (info.minorVersion == 0 && info.microVersion == 0)
-        info.stability = kStabilityExperimental;
-    else if (info.minorVersion % 2 == 0)
-        info.stability = info.microVersion % 2 == 0 ? kStabilityStable : kStabilityTesting;
+    if (info.minorVersion == 0)
+        info.stability = info.microVersion == 0 ? kStabilityExperimental : kStabilityTesting;
+    else if (info.minorVersion % 2 != 0)
+        info.stability = info.microVersion % 2 != 0 ? kStabilityTesting : kStabilityUnstable;
     else
-        info.stability = kStabilityUnstable;
+        info.stability = kStabilityStable;
 
     // --------------------------------------------------------------------------------------------------------
     // author name
