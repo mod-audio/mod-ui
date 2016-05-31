@@ -1206,9 +1206,20 @@ application = web.Application(
             ],
             debug=LOG and False, **settings)
 
+def signal_upgrade_check():
+    with open("/root/check-upgrade-system", 'r') as fh:
+        countRead = fh.read().strip()
+        countNumb = int(countRead) if countRead else 0
+
+    with open("/root/check-upgrade-system", 'w') as fh:
+        fh.write("%i\n" % (countNumb+1))
+
+    SESSION.hmi.send("restore")
+
 def signal_recv(sig, frame=0):
     if sig == SIGUSR2:
-        tornado.ioloop.IOLoop.instance().add_callback_from_signal(SESSION.signal_disconnect)
+        func = signal_upgrade_check if os.path.exists("/root/check-upgrade-system") else SESSION.signal_disconnect
+        tornado.ioloop.IOLoop.instance().add_callback_from_signal(func)
 
 def prepare(isModApp = False):
     check_environment()
