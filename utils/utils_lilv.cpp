@@ -1202,10 +1202,15 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         info.release = 0;
     }
 
+    // 0.x is experimental
     if (info.minorVersion == 0)
-        info.stability = info.microVersion == 0 ? kStabilityExperimental : kStabilityTesting;
-    else if (info.minorVersion % 2 != 0)
-        info.stability = info.microVersion % 2 != 0 ? kStabilityTesting : kStabilityUnstable;
+        info.stability = kStabilityExperimental;
+
+    // odd x.2 or 2.x is testing/development
+    else if (info.minorVersion % 2 != 0 || info.microVersion % 2 != 0)
+        info.stability = kStabilityTesting;
+
+    // otherwise it's stable
     else
         info.stability = kStabilityStable;
 
