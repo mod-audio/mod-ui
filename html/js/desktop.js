@@ -698,49 +698,51 @@ function Desktop(elements) {
         recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
         share: function (data, callback) {
-            /*
-             TODO: need to update this to the latest cloud API
-            transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
-                                              SITEURL + '/pedalboards/upload/',
-                                              { to_args: { headers:
-                                              { 'Authorization' : 'MOD ' + self.userSession.access_token }
-                                              }})
+            $.ajax({
+                url: SITEURL + '/pedalboards/',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                data: JSON.stringify({
+                    author: "Alex Cunha",
+                    email: "ale@moddevices.com",
+                    description: data.description,
+                    title: data.title,
+                }),
+                success: function (resp) {
+                    var transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
+                                                          resp.upload_href,
+                                                          { to_args: { headers:
+                                                          { 'Authorization' : 'MOD ' + self.userSession.access_token }
+                                                          }})
 
-            transfer.reportFinished = function (resp) {
-                $.ajax({
-                    url: SITEURL + '/social/posts/',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
-                    data: JSON.stringify({
-                        pedalboard_id: resp.id,
-                        text: data.title,
-                    }),
-                    success: function (pluginData) {
-                        callback(true)
-                    },
-                    error: function (resp) {
-                        new Notification('error', "Failed to create new post")
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            }
+                    transfer.reportFinished = function (resp2) {
+                        console.log("reportFinished", resp2)
+                        callback({
+                            ok: true,
+                            id: resp.id,
+                        })
+                    }
 
-            transfer.reportError = function (error) {
-                new Notification('error', "Failed to upload pedalboard to cloud")
-            }
+                    transfer.reportError = function (error) {
+                        callback({
+                            ok: false,
+                            error: "Failed to upload pedalboard to cloud",
+                        })
+                    }
 
-            transfer.start()
-            */
-
-            // simulate resp from server
-            var resp = {
-                ok: true,
-                error: "some misc error here",
-                pedalboard_id: 0x00000,
-            }
-            callback(resp)
+                    transfer.start()
+                },
+                error: function (resp) {
+                    console.log("pedals error", resp)
+                    callback({
+                        ok: false,
+                        error: "some misc error here", // TODO: proper error
+                    })
+                },
+                cache: false,
+                dataType: 'json'
+            })
         },
 
         waitForScreenshot: function (callback) {

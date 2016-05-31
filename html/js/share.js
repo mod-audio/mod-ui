@@ -259,13 +259,13 @@ JqueryClass('shareBox', {
         var hasAudio = (step == 4)
         var shareNow = function (data) {
             self.data('share')(data, function (resp) {
-                console.log(resp)
+                console.log("final share", resp)
 
                 if (resp.ok) {
                     $('#record-step-' + step).hide()
                     $('#record-share').attr('disabled', resp.ok).hide()
 
-                    var pb_url = "http://pedalboards.moddevices.com/" + resp.pedalboard_id
+                    var pb_url = "http://pedalboards.moddevices.com/" + resp.id
                     $('#share-window-url').html('<a href="'+pb_url+'">'+pb_url+'</a>')
 
                     if (hasAudio) {
