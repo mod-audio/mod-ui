@@ -271,7 +271,7 @@ $('document').ready(function() {
 
         <!-- MANAGE PRESETS -->
         <div id="pedalboard-presets" class="save-popup">
-            <div class="mod-box">
+            <div class="mod-box" style="width: 400px">
                 <h1 class="pull-left">Manage presets</h1><span class="close">&times;</span>
                 <form class="bottom">
                     <div class="controls clearfix">                        
@@ -282,7 +282,8 @@ $('document').ready(function() {
                     </div>
                     <div class="controls actions">                      
                       <button class="btn btn-success">Load</button>
-                      <button class="btn btn-warning">Rename</button>
+                      <button class="btn btn-default">Rename</button>
+                      <button class="btn btn-warning">Assign</button>
                       <button class="btn btn-danger">Delete</button>
                     </div>
                 </form>
@@ -479,6 +480,7 @@ $('document').ready(function() {
                 <div class="actions">
                     <button class="js-preset menu-trigger">Presets</button>
                       <ul class="drop-menu">
+                        <li>Assign preset list</li>
                         <li>Save</li>
                         <li>Save as</li>
                         <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
