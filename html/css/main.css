@@ -7352,6 +7352,7 @@ header#pedalboard-actions .drop-menu,
   padding: 0;
   background-color: rgba(0, 0, 0, 0.3);
   color: #999;
+  width: 150px;
 }
 header#pedalboard-actions .drop-menu:hover,
 #bank-library header .drop-menu:hover,
