@@ -171,7 +171,10 @@ hr.dotted {
   border: 1px dotted #444;
   margin: 2px 0 3px 0;
 }
-
+.preset-list {
+  width: 100%;
+  height: 200px !important
+}
 .input-clean {
   &:after {
     content: "&times;";
@@ -490,6 +493,52 @@ header#pedalboard-actions,
     right: 10px;
     top: 16px;
   }
+  .drop-menu {
+    &:hover {
+      display: block;
+    }
+    position: absolute;
+    display: none;
+    list-style-type: none;
+    padding: 0;
+    background-color: rgba(0,0,0,0.3);
+    color: #999;
+    width: 150px;
+    li {
+      padding: 5px 20px;
+      &:hover {
+        color: white;
+        background-color: @brand-primary;
+      }
+    }  
+    .sub-menu {
+      &:hover {
+        display: block;
+      }
+      display: none;
+      list-style-type: none;
+      padding: 0;
+      position: absolute;
+      left: 150px;
+      height: 14em;
+      overflow-y: auto;
+      overflow-x: hidden;
+      margin-top: -50px;
+      background-color: rgba(0,0,0,0.5);
+      width: 15em;
+      border-left: 3px solid #666;
+    }
+  }
+  .menu-trigger:hover {
+    +.drop-menu {
+      display: block;
+    }
+  }
+  .sub-menu-trigger:hover {
+    ul {
+      display: block; 
+    }
+  }
   button {
     background-position: 8px 50%;
     background-size: 25px;
@@ -511,6 +560,10 @@ header#pedalboard-actions,
     }
     &.js-save-as {
         background-image: url(../img/icons/25/save.png);
+    }
+    &.js-preset {
+        background-image: url(../img/icons/36/presets.png);
+        background-size: 30px 30px;
     }
     &.js-reset {
         background-image: url(../img/icons/25/remove.png);

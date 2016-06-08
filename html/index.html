@@ -269,6 +269,28 @@ $('document').ready(function() {
     <!-- WRAPPER -->
     <div id="wrapper" class="mod-init-hidden">
 
+        <!-- MANAGE PRESETS -->
+        <div id="pedalboard-presets" class="save-popup mod-hidden">
+            <div class="mod-box" style="width: 400px">
+                <h1 class="pull-left">Manage presets</h1><span class="close">&times;</span>
+                <form class="bottom">
+                    <div class="controls clearfix">                        
+                        <select class="preset-list" size="9">
+                          <option>Preset name</option>
+                          <i class=""></i>
+                        </select>
+                    </div>
+                    <div class="controls actions">                      
+                      <button class="btn btn-success">Assign selected</button>
+                      <button class="btn btn-warning">Assign list</button>
+                      <button class="btn btn-default">Rename</button>
+                      <button class="btn btn-danger">Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END MANAGE PRESETS -->
+
         <!-- PEDALBOARD-SETTINGS-WINDOW -->
         <div id="pedalboard-settings" class="mod-hidden">
             <h1>Settings</h1>
@@ -302,7 +324,7 @@ $('document').ready(function() {
                     </form>
                 </div>
             </div>
-            <!-- END SAVE WINDOW -->
+            <!-- END SAVE WINDOW -->            
 
             <!-- LOGIN WINDOW -->
             <div id="login-window" class="save-popup mod-hidden">
@@ -459,9 +481,27 @@ $('document').ready(function() {
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <!-- <div class="favorite"></div> -->
                 <div class="actions">
-                    <button class="js-reset">New Pedalboard</button><button
-                    class="js-save">Save</button><button
-                    class="js-save-as">Save as</button>
+                    <button class="js-preset menu-trigger">Presets</button>
+                      <ul class="drop-menu">                        
+                        <li>Save</li>
+                        <li>Save as</li>
+                        <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
+                            <ul class="menu-preset-list sub-menu">
+                              <li>preset</li>
+                              <li>preset</li>
+                              <li>preset</li>
+                              <li>preset</li>
+                              <li>preset</li>
+                              <li>preset</li>
+                              <li>preset</li>
+                              <li>preset</li>
+                            </ul>
+                        </li>
+                        <li class="js-pedalboard-presets" >Manage / assign</li>
+                      </ul>
+                    <button class="js-reset">New Pedalboard</button>
+                    <button class="js-save">Save</button>
+                    <button class="js-save-as">Save as</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->

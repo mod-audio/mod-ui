@@ -10,7 +10,7 @@
     {{/newPresetStyle}}
     {{^newPresetStyle}}
     <!-- OLD STYLE -->
-    <div class="mod-presets clearfix">
+    <div class="mod-presets clearfix mod-hidden">
         <select mod-role="presets">
             <option value="">---</option>
             {{#effect.presets}}
@@ -22,6 +22,26 @@
     {{/newPresetStyle}}
     <div class="mod-controls clearfix">
         <div class="mod-control-group clearfix">
+            <div class="mod-enumerated mod-presets ">
+                <span class="mod-enumerated-title">Presets&emsp;&emsp;<span><input selected="selected" class="radio-preset" type="radio" name="preset_type"> Factory</span>&emsp;<span><input class="radio-preset" type="radio" name="preset_type"> user</span>                </span>
+                <div class="mod-enumerated-list"  mod-widget="custom-select">                    
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                </div>
+                <button class="btn btn-xs btn-primary">Save</button>
+                <button class="btn btn-xs btn-primary">Save as</button>                
+                <button class="btn btn-xs btn-primary">Assign selected</button>
+                <button class="btn btn-xs btn-primary">Rename</button>
+                <button class="btn btn-xs btn-primary">Delete</button>
+                <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+            </div>
+
             <div class="mod-switch bypass">
                 <span class="mod-switch-title">ON/OFF</span>
                 <div class="mod-light on" mod-role="bypass-light"></div>

@@ -7010,6 +7010,10 @@ hr.dotted {
   border: 1px dotted #444;
   margin: 2px 0 3px 0;
 }
+.preset-list {
+  width: 100%;
+  height: 200px !important;
+}
 .input-clean {
   background: #333;
   color: #fff;
@@ -7338,6 +7342,72 @@ header#pedalboard-actions .close,
   right: 10px;
   top: 16px;
 }
+header#pedalboard-actions .drop-menu,
+#bank-library header .drop-menu,
+#cloud-plugins-library header .drop-menu,
+#pedalboards-library header .drop-menu {
+  position: absolute;
+  display: none;
+  list-style-type: none;
+  padding: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #999;
+  width: 150px;
+}
+header#pedalboard-actions .drop-menu:hover,
+#bank-library header .drop-menu:hover,
+#cloud-plugins-library header .drop-menu:hover,
+#pedalboards-library header .drop-menu:hover {
+  display: block;
+}
+header#pedalboard-actions .drop-menu li,
+#bank-library header .drop-menu li,
+#cloud-plugins-library header .drop-menu li,
+#pedalboards-library header .drop-menu li {
+  padding: 5px 20px;
+}
+header#pedalboard-actions .drop-menu li:hover,
+#bank-library header .drop-menu li:hover,
+#cloud-plugins-library header .drop-menu li:hover,
+#pedalboards-library header .drop-menu li:hover {
+  color: white;
+  background-color: #883996;
+}
+header#pedalboard-actions .drop-menu .sub-menu,
+#bank-library header .drop-menu .sub-menu,
+#cloud-plugins-library header .drop-menu .sub-menu,
+#pedalboards-library header .drop-menu .sub-menu {
+  display: none;
+  list-style-type: none;
+  padding: 0;
+  position: absolute;
+  left: 150px;
+  height: 14em;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-top: -50px;
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 15em;
+  border-left: 3px solid #666;
+}
+header#pedalboard-actions .drop-menu .sub-menu:hover,
+#bank-library header .drop-menu .sub-menu:hover,
+#cloud-plugins-library header .drop-menu .sub-menu:hover,
+#pedalboards-library header .drop-menu .sub-menu:hover {
+  display: block;
+}
+header#pedalboard-actions .menu-trigger:hover + .drop-menu,
+#bank-library header .menu-trigger:hover + .drop-menu,
+#cloud-plugins-library header .menu-trigger:hover + .drop-menu,
+#pedalboards-library header .menu-trigger:hover + .drop-menu {
+  display: block;
+}
+header#pedalboard-actions .sub-menu-trigger:hover ul,
+#bank-library header .sub-menu-trigger:hover ul,
+#cloud-plugins-library header .sub-menu-trigger:hover ul,
+#pedalboards-library header .sub-menu-trigger:hover ul {
+  display: block;
+}
 header#pedalboard-actions button,
 #bank-library header button,
 #cloud-plugins-library header button,
@@ -7376,6 +7446,13 @@ header#pedalboard-actions button.js-save-as,
 #cloud-plugins-library header button.js-save-as,
 #pedalboards-library header button.js-save-as {
   background-image: url(../img/icons/25/save.png);
+}
+header#pedalboard-actions button.js-preset,
+#bank-library header button.js-preset,
+#cloud-plugins-library header button.js-preset,
+#pedalboards-library header button.js-preset {
+  background-image: url(../img/icons/36/presets.png);
+  background-size: 30px 30px;
 }
 header#pedalboard-actions button.js-reset,
 #bank-library header button.js-reset,
