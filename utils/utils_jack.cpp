@@ -73,7 +73,8 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
     {
         if (const char* const port_name = jack_port_name(port))
         {
-            if (strncmp(port_name, "system:", 7) != 0)
+            if (strncmp(port_name, "system:", 7) != 0 &&
+                strncmp(port_name, "nooice", 5) != 0)
                 return;
 
             const std::string portName(port_name);
@@ -290,7 +291,7 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
 
     const unsigned long flags = JackPortIsPhysical | (isOutput ? JackPortIsInput : JackPortIsOutput);
     const char* const type    = isAudio ? JACK_DEFAULT_AUDIO_TYPE : JACK_DEFAULT_MIDI_TYPE;
-    const char** const ports  = jack_get_ports(gClient, "system:", type, flags);
+    const char** const ports  = jack_get_ports(gClient, "", type, flags);
 
     if (ports == nullptr)
         return nullptr;

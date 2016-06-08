@@ -217,7 +217,7 @@ class Host(object):
             self.connections.remove(ports)
             self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
-        self.msg_callback("remove_hw_port /graph/%s" % (name.replace("system:","",1)))
+        self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
 
         for port in self.midiports:
             if name == port or (";" in port and name in port.split(";",1)):
@@ -252,10 +252,10 @@ class Host(object):
             return
 
         for port in get_jack_hardware_ports(True, False):
-            self.audioportsIn.append(port.replace("system:","",1))
+            self.audioportsIn.append(port.split(":",1)[-1])
 
         for port in get_jack_hardware_ports(True, True):
-            self.audioportsOut.append(port.replace("system:","",1))
+            self.audioportsOut.append(port.split(":",1)[-1])
 
     def close_jack(self):
         close_jack()
@@ -538,8 +538,8 @@ class Host(object):
             if alias:
                 title = alias.split("-",5)[-1].replace("-","_")
             else:
-                title = name.replace("system:","",1).title().replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.replace("system:","",1), title, i+1))
+                title = name.split(":",1)[-1].title().replace(" ","_")
+            websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
             if crashed:
                 connect_jack_ports(name, "mod-host:midi_in")
@@ -557,8 +557,8 @@ class Host(object):
             if alias:
                 title = alias.split("-",5)[-1].replace("-","_")
             else:
-                title = name.replace("system:","",1).title().replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.replace("system:","",1), title, i+1))
+                title = name.split(":",1)[-1].title().replace(" ","_")
+            websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         for instance_id, plugin in self.plugins.items():
             websocket.write_message("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'], plugin['x'], plugin['y'], int(plugin['bypassed'])))
@@ -868,6 +868,9 @@ class Host(object):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
                     return "mod-host:monitor-in_" + num
+            if data[2].startswith("nooice_capture_"):
+                num = data[2].replace("nooice_capture_","",1)
+                return "nooice%s:nooice_capture_%s" % (num, num)
             return "system:%s" % data[2]
 
         instance    = "/graph/%s" % data[2]
@@ -930,17 +933,17 @@ class Host(object):
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
         mappedOldMidiIns  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
         mappedOldMidiOuts = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
-        mappedNewMidiIns  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, False))
-        mappedNewMidiOuts = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.replace("system:","",1)) for p in get_jack_hardware_ports(False, True))
+        mappedNewMidiIns  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
+        mappedNewMidiOuts = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         curmidisymbols = []
         for port in self.midiports:
             if ";" in port:
                 ports = port.split(";", 1)
-                curmidisymbols.append(ports[0].replace("system:","",1))
-                curmidisymbols.append(ports[1].replace("system:","",1))
+                curmidisymbols.append(ports[0].split(":",1)[-1])
+                curmidisymbols.append(ports[1].split(":",1)[-1])
             else:
-                curmidisymbols.append(port.replace("system:","",1))
+                curmidisymbols.append(port.split(":",1)[-1])
 
         index = 0
         for name, symbol in mappedNewMidiIns.items():
@@ -1843,6 +1846,8 @@ _:b%i
         # MIDI Out
         ports = get_jack_hardware_ports(False, True)
         for port in ports:
+            if not port.startswith(("system:", "nooice")):
+                continue
             alias = get_jack_port_alias(port)
             if alias:
                 title = alias.split("-",5)[-1].replace("-"," ")
@@ -1851,6 +1856,8 @@ _:b%i
         # MIDI In
         ports = get_jack_hardware_ports(False, False)
         for port in ports:
+            if not port.startswith(("system:", "nooice")):
+                continue
             alias = get_jack_port_alias(port)
             if alias:
                 title = alias.split("-",5)[-1].replace("-"," ")
@@ -1876,7 +1883,7 @@ _:b%i
         if alias:
             return alias.split("-",5)[-1].replace("-"," ")
 
-        return portname.replace("system:","",1).title()
+        return portname.split(":",1)[-1].title()
 
     # Set the selected MIDI devices
     # Will remove or add new JACK ports (in mod-ui) as needed
@@ -1885,7 +1892,10 @@ _:b%i
             index = int(name[-1])
             title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
 
-            self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.replace("system:","",1), int(isOutput), title, index))
+            if name.startswith("nooice"):
+                index += 100
+
+            self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.split(":",1)[-1], int(isOutput), title, index))
 
             if not isOutput:
                 connect_jack_ports(name, "mod-host:midi_in")
@@ -1904,7 +1914,7 @@ _:b%i
                 self.connections.remove(ports)
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
-            self.msg_callback("remove_hw_port /graph/%s" % (name.replace("system:","",1)))
+            self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
             disconnect_jack_ports(name, "mod-host:midi_in")
 
         # remove
