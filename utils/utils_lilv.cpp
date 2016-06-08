@@ -64,7 +64,7 @@ static size_t HOMElen = strlen(HOME);
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
-    nullptr, 0, 0, 0,                            \
+    nullptr, 0, 0, 0, 0,                         \
     { nullptr, nullptr }                         \
 }
 
@@ -72,7 +72,7 @@ static size_t HOMElen = strlen(HOME);
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, 0, 0, 0,                                \
+    nullptr, 0, 0, 0, 0,                             \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -198,6 +198,7 @@ struct NamespaceDefinitions_Mini {
     LilvNode* const mod_brand;
     LilvNode* const mod_label;
     LilvNode* const mod_release;
+    LilvNode* const mod_builder;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
     LilvNode* const modgui_screenshot;
@@ -211,6 +212,7 @@ struct NamespaceDefinitions_Mini {
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
+          mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
           modgui_screenshot        (lilv_new_uri(W, LILV_NS_MODGUI "screenshot"        )),
@@ -225,6 +227,7 @@ struct NamespaceDefinitions_Mini {
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
         lilv_node_free(mod_release);
+        lilv_node_free(mod_builder);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
         lilv_node_free(modgui_screenshot);
@@ -258,6 +261,7 @@ struct NamespaceDefinitions {
     LilvNode* const mod_maximum;
     LilvNode* const mod_rangeSteps;
     LilvNode* const mod_release;
+    LilvNode* const mod_builder;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
     LilvNode* const modgui_iconTemplate;
@@ -308,6 +312,7 @@ struct NamespaceDefinitions {
           mod_maximum              (lilv_new_uri(W, LILV_NS_MOD    "maximum"           )),
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
+          mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
           modgui_iconTemplate      (lilv_new_uri(W, LILV_NS_MODGUI "iconTemplate"      )),
@@ -359,6 +364,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_maximum);
         lilv_node_free(mod_rangeSteps);
         lilv_node_free(mod_release);
+        lilv_node_free(mod_builder);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
         lilv_node_free(modgui_iconTemplate);
@@ -901,6 +907,16 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
         info.release = 0;
     }
 
+    if (LilvNodes* const buildernode = lilv_plugin_get_value(p, ns.mod_builder))
+    {
+        info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
+        lilv_nodes_free(buildernode);
+    }
+    else
+    {
+        info.builder = 0;
+    }
+
     // --------------------------------------------------------------------------------------------------------
     // gui
 
@@ -1200,6 +1216,16 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     else
     {
         info.release = 0;
+    }
+
+    if (LilvNodes* const buildernode = lilv_plugin_get_value(p, ns.mod_builder))
+    {
+        info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
+        lilv_nodes_free(buildernode);
+    }
+    else
+    {
+        info.builder = 0;
     }
 
     // 0.x is experimental
