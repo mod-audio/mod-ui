@@ -680,10 +680,6 @@ class Host(object):
                 if "notOnGUI" in port['properties']:
                     badports.append(port['symbol'])
 
-                # skip triggers
-                elif "trigger" in port['properties']:
-                    badports.append(port['symbol'])
-
                 # skip special designated controls
                 elif port['designation'] in ("http://lv2plug.in/ns/lv2core#freeWheeling",
                                              "http://lv2plug.in/ns/lv2core#latency",
@@ -984,10 +980,6 @@ class Host(object):
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
-                    badports.append(port['symbol'])
-
-                # skip triggers
-                elif "trigger" in port['properties']:
                     badports.append(port['symbol'])
 
                 # skip special designated controls
