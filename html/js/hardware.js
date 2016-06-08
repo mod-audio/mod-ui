@@ -135,16 +135,13 @@ function HardwareManager(options) {
             }
         }
 
-        // midi-learn is always available for some port types
-        if (
-            types.indexOf("float" ) >= 0 ||
-            types.indexOf("bypass") >= 0
-           )
+        // midi-learn is always available, except for enumeration
+        if (types.indexOf("enumeration" ) < 0)
         {
             available[kMidiLearnURI] = {
                 uri  : kMidiLearnURI,
                 name : "MIDI Learn...",
-                modes: ":float:trigger:bypass:",
+                modes: ":float:trigger:bypass:integer:toggled:",
                 steps: [],
                 max_assigns: 99
             }
@@ -223,7 +220,7 @@ function HardwareManager(options) {
             actuators[currentAddressing.uri] = {
                 uri  : currentAddressing.uri,
                 name : label,
-                modes: ":float:trigger:bypass:",
+                modes: ":float:trigger:bypass:integer:toggled:",
                 steps: [],
                 max_assigns: 99
             }
