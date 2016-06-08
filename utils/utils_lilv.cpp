@@ -1180,6 +1180,12 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         lilv_nodes_free(buildernode);
     }
 
+    {
+        char versiontmpstr[32+1] = { '\0' };
+        snprintf(versiontmpstr, 32, "%d.%d", info.minorVersion, info.microVersion);
+        info.version = strdup(versiontmpstr);
+    }
+
     // 0.x is experimental
     if (info.minorVersion == 0)
         info.stability = kStabilityExperimental;
