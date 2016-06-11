@@ -7470,6 +7470,14 @@ header#pedalboard-actions button.js-reset.selected,
 #pedalboards-library header button.js-reset.selected {
   background-color: #883996;
 }
+header#pedalboard-actions button.js-share,
+#bank-library header button.js-share,
+#cloud-plugins-library header button.js-share,
+#pedalboards-library header button.js-share {
+  background-image: url(../img/icn-share.png);
+  background-size: 32px;
+  background-position: 5px center;
+}
 header#pedalboard-actions h1,
 #bank-library header h1,
 #cloud-plugins-library header h1,

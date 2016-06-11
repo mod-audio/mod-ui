@@ -149,7 +149,8 @@
 }
 
 /* Share Pedalboard */
-#pedalboard-sharing {
+
+/*#pedalboard-sharing {
     height:36px;
     position:absolute;
     right:0;
@@ -162,7 +163,7 @@
     height:36px;
     width:64px;
 }
-
+*/
 #pedalboard-sharing .button:hover, #pedalboard-sharing .button.selected {
     background-color:#444;
 }
