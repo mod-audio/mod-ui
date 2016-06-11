@@ -21,9 +21,22 @@
     <!-- /OLD STYLE -->
     {{/newPresetStyle}}
     <div class="mod-controls clearfix">
-        <div class="mod-control-group clearfix">
+        <div class="mod-control-group clearfix">            
+            <div class="mod-switch bypass">
+                <span class="mod-switch-title">ON/OFF</span>
+                <div class="mod-light on" mod-role="bypass-light"></div>
+                <div class="mod-switch-image" mod-role="bypass"></div>
+                <div class="mod-address" mod-role="bypass-address"></div>
+            </div>
+
+            <!-- SWITCH PRESETS ON/OFF -->
+            <div class="mod-switch">
+                <span class="mod-switch-title">Presets</span>
+                <div class="mod-switch-image on" mod-widget="film"></div>
+            </div>
+            <!-- PRESET LIST -->
             <div class="mod-enumerated mod-presets ">
-                <span class="mod-enumerated-title">Presets&emsp;&emsp;<span><input selected="selected" class="radio-preset" type="radio" name="preset_type"> Factory</span>&emsp;<span><input class="radio-preset" type="radio" name="preset_type"> user</span>                </span>
+                <span class="mod-enumerated-title">Preset list&emsp;&emsp;<span><input selected="selected" class="radio-preset" type="radio" name="preset_type"> Factory</span>&emsp;<span><input class="radio-preset" type="radio" name="preset_type"> user</span>                </span>
                 <div class="mod-enumerated-list"  mod-widget="custom-select">                    
                     <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
                     <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
@@ -34,20 +47,19 @@
                     <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
                     <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
                 </div>
-                <button class="btn btn-xs btn-primary">Save</button>
-                <button class="btn btn-xs btn-primary">Save as</button>                
-                <button class="btn btn-xs btn-primary">Assign selected</button>
-                <button class="btn btn-xs btn-primary">Rename</button>
-                <button class="btn btn-xs btn-primary">Delete</button>
-                <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                <div>
+                    <button class="btn btn-xs btn-primary">Save</button>
+                    <button class="btn btn-xs btn-primary">Save as</button>                                    
+                    <button class="btn btn-xs btn-primary">Rename</button>
+                    <button class="btn btn-xs btn-primary">Delete</button>
+                    <button class="btn btn-xs btn-primary">Assign selected</button>
+                </div>
+                <footer class="assign-all">
+                    <button class="btn btn-xs btn-primary" mod-role="input-control-address" mod-port-symbol="{{symbol}}">Assign all</button>
+                </footer>
             </div>
+            <!-- END PRESETS -->
 
-            <div class="mod-switch bypass">
-                <span class="mod-switch-title">ON/OFF</span>
-                <div class="mod-light on" mod-role="bypass-light"></div>
-                <div class="mod-switch-image" mod-role="bypass"></div>
-                <div class="mod-address" mod-role="bypass-address"></div>
-            </div>
             {{#effect.ports.control.input}}
             {{#enumeration}}
             <div class="mod-enumerated">

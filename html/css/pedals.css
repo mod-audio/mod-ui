@@ -231,14 +231,37 @@ body > .mod-settings.mod-window-visible {
     padding:0 18px;
 }
 
+/* PRESETS */
+
 .mod-presets {
     margin:0;
     padding: 0 18px;
+}
+.mod-presets>div {
+    float: left;
+    width: 40%;
+}
+.mod-presets>div.mod-enumerated-list {
+    width: 60% ;
 }
 .mod-presets select {
     color: #000;
     background-color: #FFFFFE; /* forces mod-remote to use custom combo-box bg */
 }
+.mod-presets footer{
+    width: 60%;
+}
+.mod-presets .btn {
+    font-size: 10px;
+    width: 95%;
+    border-radius: 2px;
+    margin: 0 0 0 5%;
+    font-weight: bold;
+    clear: both;
+    background-color: black;
+    text-transform: uppercase !important;
+}
+
 .preset-manager {
     color: #000;
 }
@@ -340,14 +363,7 @@ body > .mod-settings.mod-window-visible {
     width: 9px !important;
     margin: 0 !important;
 }
-.mod-presets .btn {
-    font-size: 9px;
-    border-radius: 2px;
-    margin-top: 5px;
-    font-weight: bold;
-    background-color: black;
-    text-transform: uppercase !important;
-}
+
 
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list {
