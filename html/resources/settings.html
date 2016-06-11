@@ -36,7 +36,17 @@
             </div>
             <!-- PRESET LIST -->
             <div class="mod-enumerated mod-presets ">
-                <span class="mod-enumerated-title">Preset list&emsp;&emsp;<span><input selected="selected" class="radio-preset" type="radio" name="preset_type"> Factory</span>&emsp;<span><input class="radio-preset" type="radio" name="preset_type"> user</span>                </span>
+                <span class="mod-enumerated-title">
+                    Preset list&emsp;&emsp;
+                    <span> 
+                        <input class="radio-preset" type="radio" name="preset_type" id="preset_factory">
+                        <label for="preset_factory">Factory</label> 
+                    </span>&emsp;
+                    <span>
+                        <input selected="selected" class="radio-preset" checked="checked" type="radio" name="preset_type" id="preset_user">
+                        <label for="preset_factory">user</label>
+                    </span>
+                </span>
                 <div class="mod-enumerated-list"  mod-widget="custom-select">                    
                     <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
                     <div mod-role="enumeration-option" mod-port-value="preset">preset</div>

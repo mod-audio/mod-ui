@@ -240,9 +240,11 @@ body > .mod-settings.mod-window-visible {
 .mod-presets>div {
     float: left;
     width: 40%;
+    padding-left: 5%;
 }
 .mod-presets>div.mod-enumerated-list {
     width: 60% ;
+    padding-left: 0;
 }
 .mod-presets select {
     color: #000;
@@ -253,9 +255,9 @@ body > .mod-settings.mod-window-visible {
 }
 .mod-presets .btn {
     font-size: 10px;
-    width: 95%;
+    width: 100%;
     border-radius: 2px;
-    margin: 0 0 0 5%;
+    margin: 0;
     font-weight: bold;
     clear: both;
     background-color: black;
