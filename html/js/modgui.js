@@ -428,7 +428,8 @@ function GUI(effect, options) {
             {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
-                self.settings.find('[mod-role=presets]').hide()
+                self.settings.find('.mod-presets').hide()
+                // TODO: hide presets on/off switch
 
                 setTimeout(function () {
                     $('[mod-role="input-audio-port"]').addClass("mod-audio-input")
