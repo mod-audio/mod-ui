@@ -1329,10 +1329,13 @@ JqueryClass('saveBox', {
             return false
         }
 
-        self.find('.js-save').click(save)
+        self.find('.js-save').click(save).prop('disabled',true)
         self.find('.js-cancel-saving').click(function () {
             self.hide()
             return false
+        })
+        self.find('input').keyup(function () {
+            self.find('.js-save').prop('disabled', this.value.length == 0 ? true : false);
         })
         self.keydown(function (e) {
             if (e.keyCode == 13)
@@ -1359,6 +1362,7 @@ JqueryClass('saveBox', {
 
     edit: function () {
         var self = $(this)
+        self.find('.js-save').prop('disabled', self.find('input').val().length == 0 ? true : false);
         self.show()
         self.focus()
         self.find('input').focus()
@@ -1368,6 +1372,11 @@ JqueryClass('saveBox', {
         var self  = $(this)
         var title = self.find('input').val()
         var asNew = self.data('asNew')
+
+        if (title.length == 0) {
+            alert("Cannot save with an empty name!")
+            return
+        }
 
         self.data('save')(title, asNew,
             function (ok, errorOrPath, realTitle) {
