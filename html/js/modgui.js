@@ -423,6 +423,7 @@ function GUI(effect, options) {
             {
                 if (newPresetStyle)
                 {
+                    /*
                     var prmel = self.settings.find('.preset-manager')
                     self.presetManager = prmel.presetManager({})
 
@@ -488,6 +489,7 @@ function GUI(effect, options) {
                         })
                     }
                     self.presetManager.presetManager("setPresets", instance, _presets)
+                    */
                 }
                 else
                 {
