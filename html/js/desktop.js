@@ -468,7 +468,7 @@ function Desktop(elements) {
         for (var i in plugins)
         {
             var plugin = plugins[i]
-            versions[plugin.uri] = [plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+            versions[plugin.uri] = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release || 0]
             uris.push(plugin.uri)
         }
 
@@ -500,7 +500,7 @@ function Desktop(elements) {
                 }
                 else
                 {
-                    var version = [localplugin.minorVersion, localplugin.microVersion, localplugin.release || 0]
+                    var version = [localplugin.builder || 0, localplugin.minorVersion, localplugin.microVersion, localplugin.release || 0]
 
                     if (compareVersions(version, versions[uri]) < 0)
                         installPlugin(uri, data)

@@ -181,12 +181,12 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
-                cplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
+                cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (lplugin) {
                     if (!lplugin.installedVersion) {
                         console.log("local plugin is missing version info:", lplugin.uri)
-                        lplugin.installedVersion = [0, 0, 0]
+                        lplugin.installedVersion = [0, 0, 0, 0]
                     }
 
                     cplugin.installedVersion = lplugin.installedVersion
@@ -201,7 +201,7 @@ JqueryClass('cloudPluginBox', {
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
 
                 } else {
-                    cplugin.installedVersion = null // if set to [0, 0, 0], it appears as intalled on cloudplugininfo
+                    cplugin.installedVersion = null // if set to [0, 0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
                 }
 
@@ -279,7 +279,7 @@ JqueryClass('cloudPluginBox', {
                     var i, plugin, allplugins = {}
                     for (i in plugins) {
                         plugin = plugins[i]
-                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                        plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
                     desktop.resetPluginIndexer(allplugins)
@@ -308,11 +308,11 @@ JqueryClass('cloudPluginBox', {
 
                 if (!lplugin.installedVersion) {
                     console.log("local plugin is missing version info:", lplugin.uri)
-                    lplugin.installedVersion = [0, 0, 0]
+                    lplugin.installedVersion = [0, 0, 0, 0]
                 }
 
                 if (cplugin) {
-                    lplugin.latestVersion = [cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
+                    lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
                         lplugin.status = 'installed'
@@ -395,7 +395,7 @@ JqueryClass('cloudPluginBox', {
                     var i, plugin, allplugins = {}
                     for (i in plugins) {
                         plugin = plugins[i]
-                        plugin.installedVersion = [plugin.minorVersion, plugin.microVersion, plugin.release]
+                        plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
                     desktop.resetPluginIndexer(allplugins)
@@ -769,7 +769,7 @@ JqueryClass('cloudPluginBox', {
                     delete pluginData.installedVersion
                     // ready to merge
                     plugin = $.extend(pluginData, plugin)
-                    plugin.latestVersion = [plugin.minorVersion, plugin.microVersion, plugin.release_number]
+                    plugin.latestVersion = [plugin.builder_version || 0, plugin.minorVersion, plugin.microVersion, plugin.release_number]
                 } else {
                     plugin = $.extend(getDummyPluginData(), plugin)
                     plugin.latestVersion = null
@@ -795,7 +795,7 @@ function compareVersions(a, b) {
         return 1
     if (!a)
         return -1
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 4; i++) {
         if (a[i] > b[i])
             return 1
         if (a[i] < b[i])
