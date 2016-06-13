@@ -613,7 +613,7 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategoryCount', categories)
     },
 
-    showPluginInfo: function (plugin, autoAction) {
+    showPluginInfo: function (plugin) {
         var self = $(this)
         var uri  = escape(plugin.uri)
 
@@ -710,22 +710,9 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-latest-version').hide()
             }
 
-            if (autoAction) {
-                var elem
-                if (autoAction == "install" && canInstall) {
-                    elem = info.find('.js-install')
-                } else if (autoAction == "upgrade" && canUpgrade) {
-                    elem = info.find('.js-upgrade')
-                }
-                if (elem != null) {
-                    console.log("Processing", plugin.uri)
-                    elem.click()
-                }
-            } else {
-                info.appendTo($('body'))
-                info.window('open')
-                self.data('info', info)
-            }
+            info.appendTo($('body'))
+            info.window('open')
+            self.data('info', info)
         }
 
         // get full plugin info if plugin has a local version
