@@ -4,14 +4,16 @@
         <button class="js-close alignright btn btn-danger">Close</button>
     </header>
     <!-- OLD STYLE -->
+    <!--
     <div class="mod-presets clearfix mod-hidden">
         <select mod-role="presets">
-            <option value="">---</option>
+            <option value=""> - - - </option>
             {{#effect.presets}}
             <option mod-role="preset-label" value="{{uri}}">{{label}}</option>
             {{/effect.presets}}
         </select>
     </div>
+    -->
     <!-- /OLD STYLE -->
     <div class="mod-controls clearfix">
         <div class="mod-control-group clearfix">
@@ -36,19 +38,14 @@
                         <label for="preset_factory">Factory</label>
                     </span>&emsp;
                     <span>
-                        <input class="radio-preset" type="radio" name="preset_type" id="preset_user" checked="checked" selected="selected">
+                        <input class="radio-preset" type="radio" name="preset_type" id="preset_user">
                         <label for="preset_user">user</label>
                     </span>
                 </span>
                 <div class="mod-enumerated-list" mod-widget="custom-select">
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
-                    <div mod-role="enumeration-option" mod-port-value="preset">preset</div>
+                    {{#effect.presets}}
+                    <div mod-role="enumeration-option" mod-port-value="{{uri}}">{{label}}</div>
+                    {{/effect.presets}}
                 </div>
                 <div>
                     <button class="btn btn-xs btn-primary">Save</button>

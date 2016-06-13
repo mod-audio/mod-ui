@@ -413,10 +413,16 @@ function GUI(effect, options) {
 
             if (instance)
             {
-                self.settings.find('[mod-role=presets]').change(function () {
-                    var value = $(this).val()
-                    options.presetLoad(value)
+                var presetElem = self.settings.find('.mod-presets')
+                console.log(presetElem)
+
+                presetElem.find('.radio-preset').click(function () {
+                    console.log("radio box clicked")
+                    //console.log(this)
+                    //console.log($(this).find('.mod-enumerated-list'))
                 })
+
+                presetElem.find('.radio-preset')[0].click()
             }
             else
             {
