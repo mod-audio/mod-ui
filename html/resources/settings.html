@@ -41,20 +41,25 @@
                         <label><input type="radio" name="preset_type" class="radio-preset radio-preset-user"> User</label>
                     </span>
                 </span>
-                <div class="mod-enumerated-list" mod-widget="custom-select">
-                    {{#effect.presets}}
+                <div class="mod-enumerated-list mod-preset-factory" mod-widget="custom-select">
+                    {{#presets.factory}}
                     <div mod-role="enumeration-option" mod-port-value="{{uri}}">{{label}}</div>
-                    {{/effect.presets}}
+                    {{/presets.factory}}
+                </div>
+                <div class="mod-enumerated-list mod-preset-user mod-hidden" mod-widget="custom-select">
+                    {{#presets.user}}
+                    <div mod-role="enumeration-option" mod-port-value="{{uri}}">{{label}}</div>
+                    {{/presets.user}}
                 </div>
                 <div>
-                    <button class="btn btn-xs btn-primary">Save</button>
-                    <button class="btn btn-xs btn-primary">Save as</button>
-                    <button class="btn btn-xs btn-primary">Rename</button>
-                    <button class="btn btn-xs btn-primary">Delete</button>
-                    <button class="btn btn-xs btn-primary">Assign selected</button>
+                    <button class="btn btn-xs btn-primary preset-btn-save disabled">Save</button>
+                    <button class="btn btn-xs btn-primary preset-btn-save-as">Save as</button>
+                    <button class="btn btn-xs btn-primary preset-btn-rename disabled">Rename</button>
+                    <button class="btn btn-xs btn-primary preset-btn-delete disabled">Delete</button>
+                    <button class="btn btn-xs btn-primary preset-btn-assign-sel disabled">Assign selected</button>
                 </div>
                 <footer class="assign-all">
-                    <button class="btn btn-xs btn-primary" mod-role="presets-address">Assign all</button>
+                    <button class="btn btn-xs btn-primary preset-btn-assign-all" mod-role="presets-address">Assign all</button>
                 </footer>
             </div>
             <!-- END PRESETS -->

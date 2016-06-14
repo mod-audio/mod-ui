@@ -153,8 +153,6 @@ function GUI(effect, options) {
     if (!effect.gui)
         effect.gui = {}
 
-    self.currentValues = {}
-
     self.dependenciesCallbacks = []
 
     if (options.loadDependencies) {
@@ -174,6 +172,7 @@ function GUI(effect, options) {
     self.effect = effect
 
     self.bypassed = options.bypassed
+    self.currentPreset = ""
 
     this.makePortIndexes = function (ports) {
         var i, port, porti, indexes = {}
@@ -315,7 +314,6 @@ function GUI(effect, options) {
             port = self.controls[symbol]
 
         port.value = value
-        self.currentValues[symbol] = value
 
         for (var i in port.widgets) {
             widget = port.widgets[i]
@@ -435,6 +433,17 @@ function GUI(effect, options) {
             else
                 self.settings = $('<div class="mod-settings">')
 
+            var preset,
+                presets = {
+                factory: [],
+                user: []
+            }
+            for (var i in self.effect.presets) {
+                preset = self.effect.presets[i]
+                presets.factory.push(preset)
+            }
+            templateData.presets = presets
+
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
 
             self.assignControlFunctionality(self.settings, false)
@@ -442,21 +451,29 @@ function GUI(effect, options) {
             if (instance)
             {
                 var presetElem = self.settings.find('.mod-presets')
-                console.log(presetElem)
 
-                presetElem.find('.radio-preset').click(function () {
-                    console.log("radio box clicked")
-                    //console.log(this)
-                    //console.log($(this).find('.mod-enumerated-list'))
+                presetElem.find('.radio-preset-factory').click(function () {
+                    presetElem.find('.mod-preset-user').hide()
+                    presetElem.find('.mod-preset-factory').show()
                 })
 
-                presetElem.find('.radio-preset-factory').click()
+                presetElem.find('.radio-preset-user').click(function () {
+                    presetElem.find('.mod-preset-factory').hide()
+                    presetElem.find('.mod-preset-user').show()
+                })
+
+                // if there's no factory presets available, switch to user presets
+                if (presets.user.length > 0) {
+                    presetElem.find('.radio-preset-user').click()
+                } else {
+                    presetElem.find('.radio-preset-factory').click()
+                }
             }
             else
             {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
-                self.settings.find('.mod-presets').hide()
+                self.settings.find(".mod-presets").hide()
                 // TODO: hide presets on/off switch
 
                 setTimeout(function () {
@@ -853,20 +870,9 @@ function GUI(effect, options) {
     this.triggerJS = function (event) {
         if (!self.jsCallback || !self.jsStarted)
             return
-        /*
-        var e = {
-            event: event,
-            values: self.currentValues,
-            icon: self.icon,
-            settings: self.settings,
-            data: self.jsData
-        };
-        if (event.symbol)
-            e.port = self.controls[event.symbol]
-        */
+
         event.icon     = self.icon
         event.settings = self.settings
-
 
         try {
             self.jsCallback(event)
