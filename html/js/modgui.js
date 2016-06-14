@@ -275,6 +275,7 @@ function GUI(effect, options) {
         toggled: true,
         trigger: false,
     }
+
     this.setPortValue = function (symbol, value, source) {
         if (isNaN(value))
             throw "Invalid NaN value for " + symbol
@@ -337,6 +338,22 @@ function GUI(effect, options) {
 
     this.getPortValue = function (symbol) {
         return self.controls[symbol].value
+    }
+
+    this.selectPreset = function (value) {
+        self.currentPreset = value
+
+        var presetElems = [
+            self.icon.find('[mod-role=presets]'),
+            self.settings.find('.mod-presets')
+        ]
+        for (var i in presetElems) {
+            presetElems[i].find('[mod-role=enumeration-option]').removeClass("selected")
+            presetElems[i].find('[mod-role=enumeration-option][mod-port-value="' + value + '"]').addClass("selected")
+        }
+
+        // TODO: enable save, rename & delete if user preset
+        presetElems[1].find('.preset-btn-assign-sel').removeClass("disabled")
     }
 
     this.disable = function (symbol) {
@@ -425,8 +442,9 @@ function GUI(effect, options) {
 
             self.icon.find('[mod-role=presets]').change(function () {
                 var value = $(this).val()
-                options.presetLoad(value)
-                self.currentPreset = value
+                options.presetLoad(value, function () {
+                    self.selectPreset(value)
+                })
             })
 
             if (instance)
@@ -478,16 +496,10 @@ function GUI(effect, options) {
                         if (!presetElem.data('enabled'))
                             return presetElem.customSelect('prevent', e)
 
-                        // TODO: enable save, rename & delete if user preset
-                        // TODO: handle preset changes from outside
-
-                        presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
-                        presetElem.find('[mod-role=enumeration-option]').removeClass("selected")
-                        opt.addClass("selected")
-
                         var value = opt.attr('mod-port-value')
-                        options.presetLoad(value)
-                        self.currentPreset = value
+                        options.presetLoad(value, function () {
+                            self.selectPreset(value)
+                        })
                     })
                 })
 

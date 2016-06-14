@@ -67,6 +67,13 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "preset") {
+            var instance = data[1]
+            var value    = data[2]
+            desktop.pedalboard.pedalboard("selectPreset", instance, value);
+            return
+        }
+
         if (cmd == "midi_map") {
             var instance = data[1]
             var symbol   = data[2]

@@ -1123,10 +1123,11 @@ JqueryClass('pedalboard', {
                     self.pedalboard('focusPlugin', obj.icon)
                 }, 0)
             },
-            presetLoad: function (uri) {
-                self.data('pluginPresetLoad')(instance, uri,
-                    function (ok) {
-                        // TODO Handle error
+            presetLoad: function (uri, callback) {
+                self.data('pluginPresetLoad')(instance, uri, function (ok) {
+                        if (ok) {
+                            callback()
+                        }
                     })
             },
             midiLearn: function (port) {
@@ -1299,13 +1300,12 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var gui, plugin
         var retry = 0
-        //var symbolport = '[mod-port="' + subject.replace(/\//g, "\\/") + '"]'
 
         // keep trying until instance is available
         var trySetPortValue = function () {
             plugin = self.data('plugins')[instance]
 
-            if (plugin != null && plugin.data != null/*&& $(symbolport).length*/) {
+            if (plugin != null && plugin.data != null) {
                 gui = plugin.data('gui')
 
                 if (gui.controls[symbol] != null) {
@@ -1324,6 +1324,33 @@ JqueryClass('pedalboard', {
         }
 
         trySetPortValue()
+    },
+
+    selectPreset: function (instance, value) {
+        var self = $(this)
+        var gui, plugin
+        var retry = 0
+
+        // keep trying until instance is available
+        var trySelectPreset = function () {
+            plugin = self.data('plugins')[instance]
+
+            if (plugin != null && plugin.data != null) {
+                gui = plugin.data('gui')
+                gui.selectPreset(value);
+                return
+            }
+
+            retry += 1
+            if (retry == 50) {
+                console.log("selectPreset timed out for '"+instance+"'")
+                return
+            }
+
+            setTimeout(trySelectPreset, 100)
+        }
+
+        trySelectPreset()
     },
 
     // Redraw all connections from or to a plugin
