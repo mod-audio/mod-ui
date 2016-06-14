@@ -233,6 +233,7 @@ function GUI(effect, options) {
         enabled: true,
         value: self.bypassed ? 1 : 0,
         format: null,
+        scalePoints: [],
         scalePointsIndex: null,
         valueFields: [],
 
@@ -245,9 +246,36 @@ function GUI(effect, options) {
         logarithmic: false,
         toggled: true,
         trigger: false,
-        scalePoints: []
     }
 
+    // The same with bypass applies to presets, as ':presets' symbol
+    self.controls[':presets'] = {
+        name: 'Presets',
+        symbol: ':presets',
+        ranges: {
+            minimum: 0,
+            maximum: 1,
+            default: 1,
+        },
+        properties: ["enumeration", "integer"],
+        widgets: [],
+        enabled: true,
+        value: 0,
+        format: null,
+        scalePoints: [],
+        scalePointsIndex: null,
+        valueFields: [],
+
+        // FIXME: limits of mustache
+        default: 1,
+        maximum: 1,
+        minimum: 0,
+        enumeration: false,
+        integer: true,
+        logarithmic: false,
+        toggled: true,
+        trigger: false,
+    }
     this.setPortValue = function (symbol, value, source) {
         if (isNaN(value))
             throw "Invalid NaN value for " + symbol

@@ -1185,6 +1185,8 @@ JqueryClass('pedalboard', {
                 port = pluginGui.controls[symbol]
                 if (symbol == ':bypass') {
                     address = settings.find('[mod-role=bypass-address]')
+                } else if (symbol == ':presets') {
+                    address = settings.find('[mod-role=presets-address]')
                 } else {
                     address = settings.find('[mod-role=input-control-address][mod-port-symbol=' + symbol + ']')
                 }
