@@ -426,6 +426,7 @@ function GUI(effect, options) {
             self.icon.find('[mod-role=presets]').change(function () {
                 var value = $(this).val()
                 options.presetLoad(value)
+                self.currentPreset = value
             })
 
             if (instance)
@@ -451,22 +452,54 @@ function GUI(effect, options) {
             if (instance)
             {
                 var presetElem = self.settings.find('.mod-presets')
+                presetElem.data('enabled', true)
 
+                // FIXME: join these 2 functions
                 presetElem.find('.radio-preset-factory').click(function () {
                     presetElem.find('.mod-preset-user').hide()
                     presetElem.find('.mod-preset-factory').show()
+                    presetElem.find('.preset-btn-save').addClass("disabled")
+                    presetElem.find('.preset-btn-rename').addClass("disabled")
+                    presetElem.find('.preset-btn-delete').addClass("disabled")
+                    presetElem.find('.preset-btn-assign-sel').addClass("disabled")
                 })
-
                 presetElem.find('.radio-preset-user').click(function () {
                     presetElem.find('.mod-preset-factory').hide()
                     presetElem.find('.mod-preset-user').show()
+                    presetElem.find('.preset-btn-save').addClass("disabled")
+                    presetElem.find('.preset-btn-rename').addClass("disabled")
+                    presetElem.find('.preset-btn-delete').addClass("disabled")
+                    presetElem.find('.preset-btn-assign-sel').addClass("disabled")
+                })
+
+                presetElem.find('[mod-role=enumeration-option]').each(function () {
+                    var opt = $(this)
+                    opt.click(function (e) {
+                        if (!presetElem.data('enabled'))
+                            return presetElem.customSelect('prevent', e)
+
+                        // TODO: enable save, rename & delete if user preset
+                        // TODO: handle preset changes from outside
+
+                        presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+                        presetElem.find('[mod-role=enumeration-option]').removeClass("selected")
+                        opt.addClass("selected")
+
+                        var value = opt.attr('mod-port-value')
+                        options.presetLoad(value)
+                        self.currentPreset = value
+                    })
                 })
 
                 // if there's some user presets, show them first
-                if (presets.user.length > 0) {
+                if (presets.factory.length == 0 || presets.user.length > 0) {
                     presetElem.find('.radio-preset-user').click()
                 } else {
                     presetElem.find('.radio-preset-factory').click()
+                }
+
+                if (self.effect.presets.length < 2) {
+                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
                 }
             }
             else

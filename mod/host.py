@@ -567,6 +567,9 @@ class Host(object):
                 mchnnl, mctrl = plugin['bypassCC']
                 websocket.write_message("midi_map %s :bypass %i %i" % (plugin['instance'], mchnnl, mctrl))
 
+            if plugin['preset']:
+                self.msg_callback("preset %s %s" % (plugin['instance'], plugin['preset']))
+
             if crashed:
                 self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
                 if plugin['bypassed']:
@@ -1020,7 +1023,7 @@ class Host(object):
 
             if p['preset']:
                 self.send("preset_load %d %s" % (instance_id, p['preset']), lambda r:None)
-                #self.msg_callback("preset %s %s" % (instance, p['preset']))
+                self.msg_callback("preset %s %s" % (instance, p['preset']))
 
             for port in p['ports']:
                 symbol = port['symbol']
