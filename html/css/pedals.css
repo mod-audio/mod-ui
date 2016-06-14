@@ -235,15 +235,9 @@ body > .mod-settings.mod-window-visible {
 
 .mod-presets {
     margin:0;
-    padding: 0 18px;
-}
-.mod-presets>div {
-    float: left;
-    width: 40%;
-    padding-left: 5%;
 }
 .mod-presets>div.mod-enumerated-list {
-    width: 60% ;
+    width: 100% ;
     padding-left: 0;
 }
 .mod-presets select {
@@ -251,18 +245,39 @@ body > .mod-settings.mod-window-visible {
     background-color: #FFFFFE; /* forces mod-remote to use custom combo-box bg */
 }
 .mod-presets footer{
-    width: 60%;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    padding: 4px 10px;
 }
 .mod-presets .btn {
     font-size: 10px;
-    width: 100%;
-    border-radius: 2px;
+    border-radius: 0px;
     margin: 0;
+    min-height: 29px;
+    min-width: 29px;
     font-weight: bold;
     clear: both;
     background-color: black;
+    background-repeat: no-repeat;
+    background-position: center center;
     text-transform: uppercase !important;
 }
+.mod-presets .btn.preset-btn-save {
+    background-image: url('../img/icons/25/save.png');
+}
+.mod-presets .btn.preset-btn-save-as {
+    background-image: url('../img/icons/25/save_as.png');
+    width: 32px
+}
+.mod-presets .btn.preset-btn-rename {
+    background-image: url('../img/icons/25/rename.png');
+}
+.mod-presets .btn.preset-btn-delete {
+    background-image: url('../img/icons/25/delete.png');
+    margin-right: 5px
+}
+
 
 .preset-manager {
     color: #000;
@@ -370,7 +385,7 @@ body > .mod-settings.mod-window-visible {
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list {
     color:#fff;
-    height:92px;
+    height:95px;
     overflow:auto;
     position:relative;
 }

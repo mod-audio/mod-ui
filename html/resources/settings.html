@@ -45,16 +45,16 @@
                     {{#presets.user}}
                     <div mod-role="enumeration-option" mod-port-value="{{uri}}">{{label}}</div>
                     {{/presets.user}}
-                </div>
-                <div>
-                    <button class="btn btn-xs btn-primary preset-btn-save disabled">Save</button>
-                    <button class="btn btn-xs btn-primary preset-btn-save-as">Save as</button>
-                    <button class="btn btn-xs btn-primary preset-btn-rename disabled">Rename</button>
-                    <button class="btn btn-xs btn-primary preset-btn-delete disabled">Delete</button>
+                </div>                
+                <footer>
+                    <button class="btn btn-xs btn-primary preset-btn-save disabled" title="Save"></button>
+                    <button class="btn btn-xs btn-primary preset-btn-save-as" title="Save as"></button>
+                    <button class="btn btn-xs btn-primary preset-btn-rename disabled" title="Rename"></button>
+                    <button class="btn btn-xs btn-primary preset-btn-delete disabled" title="Delete"></button>
                     <button class="btn btn-xs btn-primary preset-btn-assign-sel disabled">Assign selected</button>
-                </div>
-                <footer class="assign-all">
-                    <button class="btn btn-xs btn-primary preset-btn-assign-all" mod-role="presets-address">Assign all</button>
+                    <span class="assign-all">
+                        <button class="btn btn-xs btn-primary preset-btn-assign-all" mod-role="presets-address">Assign all</button>
+                    </span>
                 </footer>
             </div>
             <!-- END PRESETS -->
