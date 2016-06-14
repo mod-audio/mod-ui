@@ -462,7 +462,7 @@ function GUI(effect, options) {
                     presetElem.find('.mod-preset-user').show()
                 })
 
-                // if there's no factory presets available, switch to user presets
+                // if there's some user presets, show them first
                 if (presets.user.length > 0) {
                     presetElem.find('.radio-preset-user').click()
                 } else {
