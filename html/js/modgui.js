@@ -143,7 +143,6 @@ function GUI(effect, options) {
         drag: new Function(),
         dragStop: new Function(),
         presetLoad: new Function(),
-        midiLearn: new Function(),
         bypassed: true,
         defaultIconTemplate: 'Template missing',
         defaultSettingsTemplate: 'Template missing',
@@ -474,12 +473,17 @@ function GUI(effect, options) {
 
                 // FIXME: join these 2 functions
                 presetElem.find('.radio-preset-factory').click(function () {
-                    presetElem.find('.mod-preset-user').hide()
-                    presetElem.find('.mod-preset-factory').show()
                     presetElem.find('.preset-btn-save').addClass("disabled")
                     presetElem.find('.preset-btn-rename').addClass("disabled")
                     presetElem.find('.preset-btn-delete').addClass("disabled")
-                    presetElem.find('.preset-btn-assign-sel').addClass("disabled")
+
+                    presetElem.find('.mod-preset-user').hide()
+
+                    if (presetElem.find('.mod-preset-factory').show().find('.selected').length == 0) {
+                        presetElem.find('.preset-btn-assign-sel').addClass("disabled")
+                    } else {
+                        presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+                    }
                 })
                 presetElem.find('.radio-preset-user').click(function () {
                     presetElem.find('.mod-preset-factory').hide()
@@ -612,10 +616,6 @@ function GUI(effect, options) {
                     port: port,
                     change: function (e, value) {
                         self.setPortValue(symbol, value, control)
-                    },
-                    midiLearn: function (e) {
-                        var port_path = $(this).attr('mod-port')
-                        options.midiLearn(port_path)
                     }
                 })
 
@@ -972,7 +972,6 @@ var baseWidget = {
         if (!(self.data('enabled') === false))
             self.data('enabled', true)
         self.bind('valuechange', options.change)
-        self.bind('midilearn', options.midiLearn)
 
         var port = options.port
 

@@ -63,11 +63,6 @@ JqueryClass('pedalboard', {
             },
 
             // Changes the parameter of a plugin's control port
-            pluginParameterMidiLearn: function (port, callback) {
-                callback(true)
-            },
-
-            // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value, callback) {
                 callback(true)
             },
@@ -105,7 +100,7 @@ JqueryClass('pedalboard', {
 
         self.pedalboard('wrapApplicationFunctions', options, [
             'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange',
-            'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData', 'pluginParameterMidiLearn'
+            'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData'
         ])
 
         self.data(options)
@@ -1129,12 +1124,6 @@ JqueryClass('pedalboard', {
                             callback()
                         }
                     })
-            },
-            midiLearn: function (port) {
-                self.data('pluginParameterMidiLearn')(port,
-                        function (ok) {
-                            // TODO Handle this error
-                        })
             },
             change: function (port, value) {
                 self.data('pluginParameterChange')(port, value,
