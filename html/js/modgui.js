@@ -422,7 +422,7 @@ function GUI(effect, options) {
                     //console.log($(this).find('.mod-enumerated-list'))
                 })
 
-                presetElem.find('.radio-preset')[0].click()
+                presetElem.find('.radio-preset-factory').click()
             }
             else
             {
