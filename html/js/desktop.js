@@ -214,14 +214,19 @@ function Desktop(elements) {
             self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
         },
         renderForm: function (instance, port) {
-            context = $.extend({
-                plugin: self.pedalboard.pedalboard('getGui', instance).effect
-            }, port)
+            var plugin = self.pedalboard.pedalboard('getGui', instance).effect
 
-            // FIXME: remove this
-            if (port.symbol == ':bypass') {
+            if (port.symbol == ':bypass' || port.symbol == ':presets') {
+                context = {
+                    label: plugin.label,
+                    name:  port.symbol == ':bypass' ? "Bypass" : "Presets"
+                }
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
+
+            context = $.extend({
+                plugin: plugin
+            }, port)
 
             return Mustache.render(TEMPLATES.addressing, context)
         }

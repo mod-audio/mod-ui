@@ -163,7 +163,7 @@ function HardwareManager(options) {
             $('<option value='+value+'>').appendTo(select)
             select.val(value)
             select.hide()
-            if (port.symbol != ":bypass") {
+            if (port.symbol != ":bypass" && port.symbol != ":presets") {
                 select.parent().parent().hide()
             }
             return
@@ -226,7 +226,7 @@ function HardwareManager(options) {
             }
         }
 
-        var pname = port.symbol == ":bypass" ? pluginLabel : port.shortName
+        var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
         var maxv  = currentAddressing.maximum != null ? currentAddressing.maximum : port.ranges.maximum
         var min   = form.find('input[name=min]').val(minv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
