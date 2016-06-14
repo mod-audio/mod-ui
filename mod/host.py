@@ -806,11 +806,30 @@ class Host(object):
 
         self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
-    def preset_save(self, instance, label, callback):
+    def preset_save_new(self, instance, name, callback):
         instance_id  = self.mapper.get_id_without_creating(instance)
-        labelsymbol  = symbolify(label)
-        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), labelsymbol)
         plugin_uri   = self.plugins[instance_id]['uri']
+        symbolname   = symbolify(name)
+        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
+
+        if os.path.exists(presetbundle):
+            # if presetbundle already exists, generate a new random bundle path
+            while True:
+                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), symbolname, randint(1,99999)))
+                if os.path.exists(presetbundle):
+                    continue
+                break
+
+        def add_bundle_callback(ok):
+            # done
+            preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
+            self.plugins[instance_id]['preset'] = preseturi
+            callback({
+                'ok'    : True,
+                'bundle': presetbundle,
+                'uri'   : preseturi
+            })
+            print("uri saved as '%s'" % preseturi)
 
         def host_callback(ok):
             if not ok:
@@ -818,37 +837,65 @@ class Host(object):
                     'ok': False,
                 })
                 return
-
-            def preset_callback(ok):
-                callback({
-                    'ok' : True,
-                    'uri': "file://%s.ttl" % os.path.join(presetbundle, labelsymbol)
-                })
-                print("uri saved as 'file://%s.ttl'" % os.path.join(presetbundle, labelsymbol))
-
-            self.add_bundle(presetbundle, preset_callback)
-
-            # rescan presets next time the plugin is loaded
             rescan_plugin_presets(plugin_uri)
+            self.add_bundle(presetbundle, add_bundle_callback)
+
+        self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, name.replace('"','\\"'), presetbundle, symbolname), host_callback, datatype='boolean')
+
+    def preset_save_replace(self, instance, uri, bundlepath, name, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        plugin_uri  = self.plugins[instance_id]['uri']
+        symbolname  = symbolify(name)
+
+        if self.plugins[instance_id]['preset'] != uri or not os.path.exists(bundlepath):
+            callback({
+                'ok': False,
+            })
+            return
+
+        def add_bundle_callback(ok):
+            preseturi = "file://%s.ttl" % os.path.join(bundlepath, symbolname)
+            self.plugins[instance_id]['preset'] = preseturi
+            callback({
+                'ok'    : True,
+                'bundle': bundlepath,
+                'uri'   : preseturi
+            })
+            print("uri saved as '%s'" % preseturi)
+
+        def host_callback(ok):
+            if not ok:
+                callback({
+                    'ok': False,
+                })
+                return
+            self.add_bundle(bundlepath, add_bundle_callback)
 
         def start(ok):
-            if os.path.exists(presetbundle):
-                rmtree(presetbundle)
+            rmtree(bundlepath)
+            rescan_plugin_presets(plugin_uri)
+            self.plugins[instance_id]['preset'] = ""
+            self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, name.replace('"','\\"'), bundlepath, symbolname), host_callback, datatype='boolean')
 
-            print("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol))
-            self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, label.replace('"','\\"'), presetbundle, labelsymbol), host_callback, datatype='boolean')
+        self.remove_bundle(bundlepath, False, start)
 
-        if os.path.exists(presetbundle):
-            self.remove_bundle(presetbundle, False, start)
+    def preset_delete(self, instance, uri, bundlepath, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        plugin_uri  = self.plugins[instance_id]['uri']
 
-            # if presetbundle already exists, generate a new random bundle path
-            #while True:
-                #presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), labelsymbol, randint(1,99999)))
-                #if os.path.exists(presetbundle):
-                    #continue
-                #break
-        else:
-            start(True)
+        if self.plugins[instance_id]['preset'] != uri or not os.path.exists(bundlepath):
+            callback({
+                'ok': False,
+            })
+            return
+
+        def start(ok):
+            rmtree(bundlepath)
+            rescan_plugin_presets(plugin_uri)
+            self.plugins[instance_id]['preset'] = ""
+            callback()
+
+        self.remove_bundle(bundlepath, False, start)
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)

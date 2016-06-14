@@ -138,11 +138,27 @@ function GUI(effect, options) {
         change: function(symbol, value) {
             console.log("PARAM CHANGE =>", symbol, value)
         },
-        click: new Function(),
-        dragStart: new Function(),
-        drag: new Function(),
-        dragStop: new Function(),
-        presetLoad: new Function(),
+        click: function (event) {
+        },
+        dragStart: function () {
+            return true
+        },
+        drag: function (e, ui) {
+        },
+        dragStop: function (e, ui) {
+        },
+        presetLoad: function (uri, callback) {
+            callback()
+        },
+        presetSaveNew: function (name, callback) {
+            callback()
+        },
+        presetSaveReplace: function (uri, bundlepath, name, callback) {
+            callback()
+        },
+        presetDelete: function (uri, bundlepath, callback) {
+            callback()
+        },
         bypassed: true,
         defaultIconTemplate: 'Template missing',
         defaultSettingsTemplate: 'Template missing',

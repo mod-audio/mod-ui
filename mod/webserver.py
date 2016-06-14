@@ -501,16 +501,37 @@ class EffectPresetLoad(web.RequestHandler):
     @gen.engine
     def get(self, instance):
         uri  = self.get_argument('uri')
-        resp = yield gen.Task(SESSION.web_preset_load, instance, uri)
+        resp = yield gen.Task(SESSION.host.preset_load, instance, uri)
         self.write(json.dumps(resp))
         self.finish()
 
-class EffectPresetSave(web.RequestHandler):
+class EffectPresetSaveNew(web.RequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
         name = self.get_argument('name')
-        resp = yield gen.Task(SESSION.web_preset_save, instance, name)
+        resp = yield gen.Task(SESSION.host.preset_save_new, instance, name)
+        self.write(json.dumps(resp))
+        self.finish()
+
+class EffectPresetSaveReplace(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        uri    = self.get_argument('uri')
+        bundle = self.get_argument('bundle')
+        name   = self.get_argument('name')
+        resp   = yield gen.Task(SESSION.host.preset_save_new, instance, uri, bundle, name)
+        self.write(json.dumps(resp))
+        self.finish()
+
+class EffectPresetDelete(web.RequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self, instance):
+        uri    = self.get_argument('uri')
+        bundle = self.get_argument('bundle')
+        resp   = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
         self.write(json.dumps(resp))
         self.finish()
 
@@ -1133,7 +1154,9 @@ application = web.Application(
 
             # plugin presets
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
-            (r"/effect/preset/save/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetSave),
+            (r"/effect/preset/save_new/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetSaveNew),
+            (r"/effect/preset/save_replace/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetSaveReplace),
+            (r"/effect/preset/delete/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetDelete),
 
             # misc plugin stuff
             (r"/effect/position/*(/[A-Za-z0-9_/]+[^/])/?", EffectPosition),
