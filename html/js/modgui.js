@@ -373,8 +373,6 @@ function GUI(effect, options) {
         }
 
         if (value) {
-            presetElem.find('.preset-btn-save-as').removeClass("disabled")
-
             // TODO: implement addressing for single presets
             //presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
 
@@ -389,7 +387,6 @@ function GUI(effect, options) {
             }
         } else {
             presetElem.find('.preset-btn-save').addClass("disabled")
-            presetElem.find('.preset-btn-save-as').addClass("disabled")
             presetElem.find('.preset-btn-rename').addClass("disabled")
             presetElem.find('.preset-btn-delete').addClass("disabled")
             presetElem.find('.preset-btn-assign-sel').addClass("disabled")
@@ -569,7 +566,9 @@ function GUI(effect, options) {
                             newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
 
                             presetElem.find('.radio-preset-user').click()
-                            presetElem.find('.preset-btn-assign-all').removeClass("disabled")
+
+                            // TODO: implement addressing for preset list
+                            //presetElem.find('.preset-btn-assign-all').removeClass("disabled")
 
                             self.selectPreset(resp.uri)
                         })
