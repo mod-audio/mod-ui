@@ -374,7 +374,10 @@ function GUI(effect, options) {
 
         if (value) {
             presetElem.find('.preset-btn-save-as').removeClass("disabled")
-            presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+
+            // TODO: implement addressing for single presets
+            //presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+
             if (bundlepath) {
                 presetElem.find('.preset-btn-save').removeClass("disabled")
                 presetElem.find('.preset-btn-rename').removeClass("disabled")
@@ -622,6 +625,9 @@ function GUI(effect, options) {
                 presetElem.find('[mod-role=enumeration-option]').each(function () {
                     $(this).click(presetItemClicked)
                 })
+
+                // TODO: implement addressing for preset list
+                presetElem.find('.preset-btn-assign-all').addClass("disabled")
 
                 if (self.effect.presets.length == 0) {
                     presetElem.find('.preset-btn-assign-all').addClass("disabled")
