@@ -58,7 +58,22 @@ JqueryClass('pedalboard', {
             },
 
             // Loads a preset
-            pluginPresetLoad: function (instance, label, callback) {
+            pluginPresetLoad: function (instance, uri, callback) {
+                callback(true)
+            },
+
+            // Save a new preset
+            pluginPresetSaveNew: function (instance, name, callback) {
+                callback({ok:false})
+            },
+
+            // Save a preset, replacing an existing one
+            pluginPresetSaveReplace: function (instance, uri, bundlepath, name, callback) {
+                callback({ok:false})
+            },
+
+            // Delete a preset
+            pluginPresetDelete: function (instance, uri, bundlepath, callback) {
                 callback(true)
             },
 
@@ -99,8 +114,10 @@ JqueryClass('pedalboard', {
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
-            'pluginLoad', 'pluginRemove', 'pluginPresetLoad', 'pluginParameterChange',
-            'portConnect', 'portDisconnect', 'reset', 'pluginMove', 'getPluginsData'
+            'pluginLoad', 'pluginRemove',
+            'pluginPresetLoad', 'pluginPresetSaveNew', 'pluginPresetSaveReplace', 'pluginPresetDelete',
+            'pluginParameterChange', 'pluginMove',
+            'portConnect', 'portDisconnect', 'reset', 'getPluginsData'
         ])
 
         self.data(options)
@@ -1118,6 +1135,12 @@ JqueryClass('pedalboard', {
                     self.pedalboard('focusPlugin', obj.icon)
                 }, 0)
             },
+            change: function (port, value) {
+                self.data('pluginParameterChange')(port, value,
+                    function (ok) {
+                            // TODO Handle this error
+                    })
+            },
             presetLoad: function (uri, callback) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {
                         if (ok) {
@@ -1125,10 +1148,25 @@ JqueryClass('pedalboard', {
                         }
                     })
             },
-            change: function (port, value) {
-                self.data('pluginParameterChange')(port, value,
-                    function (ok) {
-                            // TODO Handle this error
+            presetSaveNew: function (name, callback) {
+                self.data('pluginPresetSaveNew')(instance, name, function (resp) {
+                        if (resp.ok) {
+                            callback(resp)
+                        }
+                    })
+            },
+            presetSaveReplace: function (uri, bundlepath, name, callback) {
+                self.data('pluginPresetSaveReplace')(instance, uri, bundlepath, name, function (resp) {
+                        if (resp.ok) {
+                            callback(resp)
+                        }
+                    })
+            },
+            presetDelete: function (uri, bundlepath, callback) {
+                self.data('pluginPresetDelete')(instance, uri, bundlepath, function (ok) {
+                        if (ok) {
+                            callback()
+                        }
                     })
             },
             bypassed: bypassed ? 1 : 0,

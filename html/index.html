@@ -132,6 +132,7 @@ $('document').ready(function() {
       registrationWindow: $('#registration-window'),
       shareButton: $('#pedalboard-info .js-share'),
       shareWindow: $('#share-window'),
+      presetSaveBox: $('#save-preset'),
       userName: $('#user-name'),
       userAvatar: $('#user-avatar'),
       networkIcon: $('#mod-cloud'),
@@ -307,7 +308,7 @@ $('document').ready(function() {
             </div>
             <!-- END ZOOM CONTROLLERS -->
 
-            <!-- SAVE WINDOW -->
+            <!-- SAVE PEDALBOARD WINDOW -->
             <div id="save-pedalboard" class="save-popup mod-hidden">
                 <div class="mod-box">
                     <h1>Saving Pedalboard</h1>
@@ -323,7 +324,25 @@ $('document').ready(function() {
                     </form>
                 </div>
             </div>
-            <!-- END SAVE WINDOW -->
+            <!-- END SAVE PEDALBOARD WINDOW -->
+
+            <!-- SAVE PRESET WINDOW -->
+            <div id="save-preset" class="save-popup mod-hidden" style="z-index:1001;">
+                <div class="mod-box">
+                    <h1>Saving Preset</h1>
+                    <form class="bottom">
+                        <div class="controls clearfix">
+                            <label>Name</label>
+                            <input type="text"/>
+                        </div>
+                        <div class="controls actions">
+                            <button class="js-cancel-saving btn btn-danger">Cancel</button>
+                            <button class="js-save btn btn-success">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- END SAVE PRESET WINDOW -->
 
             <!-- LOGIN WINDOW -->
             <div id="login-window" class="save-popup mod-hidden">

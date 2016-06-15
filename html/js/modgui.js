@@ -151,10 +151,10 @@ function GUI(effect, options) {
             callback()
         },
         presetSaveNew: function (name, callback) {
-            callback()
+            callback({ok:false})
         },
         presetSaveReplace: function (uri, bundlepath, name, callback) {
-            callback()
+            callback({ok:false})
         },
         presetDelete: function (uri, bundlepath, callback) {
             callback()
@@ -358,17 +358,39 @@ function GUI(effect, options) {
     this.selectPreset = function (value) {
         self.currentPreset = value
 
-        var presetElems = [
+        var bundlepath,
+            presetElem,
+            presetElems = [
             self.icon.find('[mod-role=presets]'),
             self.settings.find('.mod-presets')
         ]
         for (var i in presetElems) {
-            presetElems[i].find('[mod-role=enumeration-option]').removeClass("selected")
-            presetElems[i].find('[mod-role=enumeration-option][mod-port-value="' + value + '"]').addClass("selected")
+            presetElem = presetElems[i]
+            presetElem.find('[mod-role=enumeration-option]').removeClass("selected")
+            if (value) {
+                bundlepath = presetElem.find('[mod-role=enumeration-option][mod-uri="' + value + '"]').addClass("selected").attr('mod-path')
+            }
         }
 
-        // TODO: enable save, rename & delete if user preset
-        presetElems[1].find('.preset-btn-assign-sel').removeClass("disabled")
+        if (value) {
+            presetElem.find('.preset-btn-save-as').removeClass("disabled")
+            presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+            if (bundlepath) {
+                presetElem.find('.preset-btn-save').removeClass("disabled")
+                presetElem.find('.preset-btn-rename').removeClass("disabled")
+                presetElem.find('.preset-btn-delete').removeClass("disabled")
+            } else {
+                presetElem.find('.preset-btn-save').addClass("disabled")
+                presetElem.find('.preset-btn-rename').addClass("disabled")
+                presetElem.find('.preset-btn-delete').addClass("disabled")
+            }
+        } else {
+            presetElem.find('.preset-btn-save').addClass("disabled")
+            presetElem.find('.preset-btn-save-as').addClass("disabled")
+            presetElem.find('.preset-btn-rename').addClass("disabled")
+            presetElem.find('.preset-btn-delete').addClass("disabled")
+            presetElem.find('.preset-btn-assign-sel').addClass("disabled")
+        }
     }
 
     this.disable = function (symbol) {
@@ -467,14 +489,18 @@ function GUI(effect, options) {
             else
                 self.settings = $('<div class="mod-settings">')
 
-            var preset,
-                presets = {
+            // split presets, factory vs user
+            var preset, presets = {
                 factory: [],
                 user: []
             }
             for (var i in self.effect.presets) {
                 preset = self.effect.presets[i]
-                presets.factory.push(preset)
+                if (preset.path) {
+                    presets.user.push(preset)
+                } else {
+                    presets.factory.push(preset)
+                }
             }
             templateData.presets = presets
 
@@ -487,51 +513,123 @@ function GUI(effect, options) {
                 var presetElem = self.settings.find('.mod-presets')
                 presetElem.data('enabled', true)
 
-                // FIXME: join these 2 functions
-                presetElem.find('.radio-preset-factory').click(function () {
-                    presetElem.find('.preset-btn-save').addClass("disabled")
-                    presetElem.find('.preset-btn-rename').addClass("disabled")
-                    presetElem.find('.preset-btn-delete').addClass("disabled")
-
-                    presetElem.find('.mod-preset-user').hide()
-
-                    if (presetElem.find('.mod-preset-factory').show().find('.selected').length == 0) {
-                        presetElem.find('.preset-btn-assign-sel').addClass("disabled")
-                    } else {
-                        presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+                var getCurrentPresetItem = function () {
+                    if (! self.currentPreset) {
+                        return null
                     }
-                })
-                presetElem.find('.radio-preset-user').click(function () {
-                    presetElem.find('.mod-preset-factory').hide()
-                    presetElem.find('.mod-preset-user').show()
-                    presetElem.find('.preset-btn-save').addClass("disabled")
-                    presetElem.find('.preset-btn-rename').addClass("disabled")
-                    presetElem.find('.preset-btn-delete').addClass("disabled")
-                    presetElem.find('.preset-btn-assign-sel').addClass("disabled")
+                    var opt = presetElem.find('[mod-role=enumeration-option][mod-uri="' + self.currentPreset + '"]')
+                    if (opt.length == 0) {
+                        return null
+                    }
+                    return opt
+                }
+
+                var presetItemClicked = function (e) {
+                    if (!presetElem.data('enabled'))
+                        return presetElem.customSelect('prevent', e)
+
+                    var value = $(this).attr('mod-uri')
+                    options.presetLoad(value, function () {
+                        self.selectPreset(value)
+                    })
+                }
+
+                presetElem.find('.preset-btn-save').click(function () {
+                    console.log("save clicked")
+                    var item = getCurrentPresetItem()
+                    if (! item) {
+                        return
+                    }
+                    var name = item.text() || "Untitled",
+                        path = item.attr('mod-path'),
+                        uri  = item.attr('mod-uri')
+                    if (! path || ! uri) {
+                        return
+                    }
+                    options.presetSaveReplace(uri, path, name, function (resp) {
+                        console.log(resp)
+                    })
                 })
 
-                presetElem.find('[mod-role=enumeration-option]').each(function () {
-                    var opt = $(this)
-                    opt.click(function (e) {
-                        if (!presetElem.data('enabled'))
-                            return presetElem.customSelect('prevent', e)
+                presetElem.find('.preset-btn-save-as').click(function () {
+                    console.log("save as clicked")
+                    var name = "",
+                        item = getCurrentPresetItem()
+                    if (item) {
+                        name = item.text()
+                    }
+                    desktop.openPresetSaveWindow(name, function (newName) {
+                        console.log("final name =>", newName)
+                        options.presetSaveNew(newName, function (resp) {
+                            console.log(resp)
+                            var newItem = $('<div mod-role="enumeration-option" mod-uri="'+resp.uri+'" mod-path="'+resp.bundle+'">'+newName+'</div>')
+                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
 
-                        var value = opt.attr('mod-port-value')
-                        options.presetLoad(value, function () {
-                            self.selectPreset(value)
+                            presetElem.find('.radio-preset-user').click()
+                            presetElem.find('.preset-btn-assign-all').removeClass("disabled")
+
+                            self.selectPreset(resp.uri)
                         })
                     })
                 })
 
-                // if there's some user presets, show them first
-                if (presets.factory.length == 0 || presets.user.length > 0) {
+                presetElem.find('.preset-btn-rename').click(function () {
+                    console.log("rename clicked")
+                    var item = getCurrentPresetItem()
+                    if (! item) {
+                        return
+                    }
+                    var name = name = item.text(),
+                        path = item.attr('mod-path'),
+                        uri  = item.attr('mod-uri')
+                    if (! path || ! uri) {
+                        return
+                    }
+                    desktop.openPresetSaveWindow(name, function (newName) {
+                        console.log("final rename =>", newName)
+                        options.presetSaveReplace(uri, path, newName, function (resp) {
+                            console.log(resp)
+                            item.text(newName)
+                        })
+                    })
+                })
+
+                presetElem.find('.preset-btn-delete').click(function () {
+                    console.log("delete clicked")
+                    var item = getCurrentPresetItem()
+                    if (! item) {
+                        return
+                    }
+                    var path = item.attr('mod-path')
+                    if (! path) {
+                        return
+                    }
+                    options.presetDelete(self.currentPreset, path, function () {
+                        self.selectPreset("")
+                        item.remove()
+                    })
+                })
+
+                presetElem.find('.radio-preset-factory').click(function () {
+                    presetElem.find('.mod-preset-user').hide()
+                    presetElem.find('.mod-preset-factory').show()
+                })
+                presetElem.find('.radio-preset-user').click(function () {
+                    presetElem.find('.mod-preset-factory').hide()
+                    presetElem.find('.mod-preset-user').show()
+                })
+
+                presetElem.find('[mod-role=enumeration-option]').each(function () {
+                    $(this).click(presetItemClicked)
+                })
+
+                if (self.effect.presets.length == 0) {
+                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
+                    presetElem.find('.radio-preset-user').click()
+                } else if (presets.user.length > 0) {
                     presetElem.find('.radio-preset-user').click()
                 } else {
                     presetElem.find('.radio-preset-factory').click()
-                }
-
-                if (self.effect.presets.length < 2) {
-                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
                 }
             }
             else

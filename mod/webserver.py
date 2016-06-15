@@ -521,7 +521,7 @@ class EffectPresetSaveReplace(web.RequestHandler):
         uri    = self.get_argument('uri')
         bundle = self.get_argument('bundle')
         name   = self.get_argument('name')
-        resp   = yield gen.Task(SESSION.host.preset_save_new, instance, uri, bundle, name)
+        resp   = yield gen.Task(SESSION.host.preset_save_replace, instance, uri, bundle, name)
         self.write(json.dumps(resp))
         self.finish()
 

@@ -884,16 +884,14 @@ class Host(object):
         plugin_uri  = self.plugins[instance_id]['uri']
 
         if self.plugins[instance_id]['preset'] != uri or not os.path.exists(bundlepath):
-            callback({
-                'ok': False,
-            })
+            callback(False)
             return
 
         def start(ok):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
             self.plugins[instance_id]['preset'] = ""
-            callback()
+            callback(True)
 
         self.remove_bundle(bundlepath, False, start)
 

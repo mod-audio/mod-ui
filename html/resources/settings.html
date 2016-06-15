@@ -38,14 +38,14 @@
                 </span>
                 <div class="mod-enumerated-list mod-preset-factory" mod-widget="custom-select">
                     {{#presets.factory}}
-                    <div mod-role="enumeration-option" mod-port-value="{{uri}}">{{label}}</div>
+                    <div mod-role="enumeration-option" mod-uri="{{uri}}" mod-path="{{path}}">{{label}}</div>
                     {{/presets.factory}}
                 </div>
                 <div class="mod-enumerated-list mod-preset-user mod-hidden" mod-widget="custom-select">
                     {{#presets.user}}
-                    <div mod-role="enumeration-option" mod-port-value="{{uri}}">{{label}}</div>
+                    <div mod-role="enumeration-option" mod-uri="{{uri}}" mod-path="{{path}}">{{label}}</div>
                     {{/presets.user}}
-                </div>                
+                </div>
                 <footer>
                     <button class="btn btn-xs btn-primary preset-btn-save disabled" title="Save"></button>
                     <button class="btn btn-xs btn-primary preset-btn-save-as" title="Save as"></button>

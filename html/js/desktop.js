@@ -51,7 +51,7 @@ function Desktop(elements) {
         registrationWindow: $('<div>'),
         shareButton: $('<div>'),
         shareWindow: $('<div>'),
-        xRunNotifier: $('<div>'),
+        presetSaveBox: $('<div>'),
         userName: $('<div>'),
         userAvatar: $('<div>'),
         networkIcon: $('<div>'),
@@ -447,10 +447,7 @@ function Desktop(elements) {
         elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
             elements.bankBoxTrigger)
-        /*
-        this.userBox = elements.userBox.userBox()
-        //this.xrun = elements.xRunNotifier.xRunNotifier()
-        */
+
     this.getPluginsData = function (uris, callback) {
         $.ajax({
             url: '/effect/bulk/',
@@ -603,6 +600,12 @@ function Desktop(elements) {
                 },
                 dataType: 'json'
             });
+        }
+    })
+
+    this.presetSaveBox = elements.presetSaveBox.saveBox({
+        save: function (title, asNew, callback) {
+            callback(true, "", title)
         }
     })
 
@@ -861,32 +864,57 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     uri: uri
                 },
                 success: function (resp) {
-                    /*
-                    // TODO trigger??
-                    if (!resp || self.data('trigger')) {
-                        self.data('value', oldValue)
-                        self.widget('sync')
-                    }
-                    */
                     callback(resp)
                 },
                 error: function () {
-                    /*
-                    self.data('value', oldValue)
-                    self.widget('sync')
-                    alert('erro no request (6)')
-                    */
                 },
                 cache: false,
-                'dataType': 'json'
+                dataType: 'json'
             })
         },
 
-        pluginParameterMidiLearn: function (port, callback) {
+        pluginPresetSaveNew: function (instance, name, callback) {
             $.ajax({
-                url: '/effect/parameter/midi/learn/' + port,
+                url: '/effect/preset/save_new/' + instance,
+                data: {
+                    name: name
+                },
                 success: function (resp) {
-                    // TODO trigger??
+                    callback(resp)
+                },
+                error: function () {
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
+        pluginPresetSaveReplace: function (instance, uri, bundlepath, name, callback) {
+            $.ajax({
+                url: '/effect/preset/save_replace/' + instance,
+                data: {
+                    uri   : uri,
+                    bundle: bundlepath,
+                    name  : name
+                },
+                success: function (resp) {
+                    callback(resp)
+                },
+                error: function () {
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
+        pluginPresetDelete: function (instance, uri, bundlepath, callback) {
+            $.ajax({
+                url: '/effect/preset/delete/' + instance,
+                data: {
+                    uri   : uri,
+                    bundle: bundlepath
+                },
+                success: function (resp) {
                     callback(resp)
                 },
                 error: function () {
@@ -1312,6 +1340,13 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
 
 Desktop.prototype.shareCurrentPedalboard = function (callback) {
     $('#pedalboard-sharing .button').click()
+}
+
+Desktop.prototype.openPresetSaveWindow = function (name, callback) {
+    this.presetSaveBox.saveBox('save', name, true,
+        function (ok, ignored, newName) {
+            callback(newName)
+        })
 }
 
 JqueryClass('saveBox', {
