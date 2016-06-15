@@ -357,9 +357,6 @@ function Desktop(elements) {
         $("body").addClass("initialized");
     }
 
-    // TODO: apply these changes in the css
-    $('#zoom-controllers').css({top: "44px"})
-
     this.authenticateDevice = function (callback) {
         $.ajax({
             method: 'GET',
