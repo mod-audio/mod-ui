@@ -111,6 +111,7 @@ typedef struct {
     bool valid;
     const char* uri;
     const char* label;
+    const char* path;
 } PluginPreset;
 
 typedef struct {

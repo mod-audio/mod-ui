@@ -476,6 +476,7 @@ void _swap_preset_data(PluginPreset* preset1, PluginPreset* preset2)
 {
     std::swap(preset1->uri,   preset2->uri);
     std::swap(preset1->label, preset2->label);
+    std::swap(preset1->path,  preset2->path);
 }
 
 // adjusted from https://stackoverflow.com/questions/19612152/quicksort-string-array-in-c
@@ -2143,10 +2144,13 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
             if (xlabel != nullptr)
             {
+                // TODO: find where preset bundle is and see if it's modifiable
+
                 presets[prindex++] = {
                     true,
                     strdup(lilv_node_as_uri(presetnode)),
                     strdup(lilv_node_as_string(xlabel)),
+                    nc
                 };
 
                 lilv_node_free(xlabel);
@@ -2451,6 +2455,8 @@ static void _clear_plugin_info(PluginInfo& info)
         {
             free((void*)info.presets[i].uri);
             free((void*)info.presets[i].label);
+            if (info.presets[i].path != nullptr && info.presets[i].path != nc)
+                free((void*)info.presets[i].path);
         }
         delete[] info.presets;
     }
@@ -2658,10 +2664,13 @@ static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const 
 
             if (xlabel != nullptr)
             {
+                // TODO: find where preset bundle is and see if it's modifiable
+
                 presets[prindex++] = {
                     true,
                     strdup(lilv_node_as_uri(presetnode)),
                     strdup(lilv_node_as_string(xlabel)),
+                    nc
                 };
 
                 lilv_node_free(xlabel);
