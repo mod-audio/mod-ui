@@ -672,7 +672,11 @@ static void _place_preset_info(PluginInfo& info,
                         if (lastSeenBundle[0] != '\0' && strcmp(bundlepath, lastSeenBundle) == 0)
                         {
                             // invalidate previous one
-                            presets[prindex-1].path = nc;
+                            if (presets[prindex-1].path != nc)
+                            {
+                                free((void*)presets[prindex-1].path);
+                                presets[prindex-1].path = nc;
+                            }
                         }
                         else
                         {
@@ -2340,9 +2344,9 @@ static char* _uri_parsed = nullptr;
 
 static void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 {
-    if (guiportinfo.name != nullptr && guiportinfo.name != nc)
+    if (guiportinfo.name != nc)
         free((void*)guiportinfo.name);
-    if (guiportinfo.symbol != nullptr && guiportinfo.symbol != nc)
+    if (guiportinfo.symbol != nc)
         free((void*)guiportinfo.symbol);
 
     memset(&guiportinfo, 0, sizeof(PluginGUIPort));
@@ -2350,13 +2354,13 @@ static void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 
 static void _clear_port_info(PluginPort& portinfo)
 {
-    if (portinfo.name != nullptr && portinfo.name != nc)
+    if (portinfo.name != nc)
         free((void*)portinfo.name);
-    if (portinfo.symbol != nullptr && portinfo.symbol != nc)
+    if (portinfo.symbol != nc)
         free((void*)portinfo.symbol);
-    if (portinfo.designation != nullptr && portinfo.designation != nc)
+    if (portinfo.designation != nc)
         free((void*)portinfo.designation);
-    if (portinfo.shortName != nullptr && portinfo.shortName != nc)
+    if (portinfo.shortName != nc)
         free((void*)portinfo.shortName);
 
     if (portinfo.properties != nullptr)
@@ -2375,11 +2379,11 @@ static void _clear_port_info(PluginPort& portinfo)
 
     if (portinfo.units._custom)
     {
-        if (portinfo.units.label != nullptr && portinfo.units.label != nc)
+        if (portinfo.units.label != nc)
             free((void*)portinfo.units.label);
-        if (portinfo.units.render != nullptr && portinfo.units.render != nc)
+        if (portinfo.units.render != nc)
             free((void*)portinfo.units.render);
-        if (portinfo.units.symbol != nullptr && portinfo.units.symbol != nc)
+        if (portinfo.units.symbol != nc)
             free((void*)portinfo.units.symbol);
     }
 
@@ -2388,51 +2392,51 @@ static void _clear_port_info(PluginPort& portinfo)
 
 static void _clear_plugin_info(PluginInfo& info)
 {
-    if (info.name != nullptr && info.name != nc)
+    if (info.name != nc)
         lilv_free((void*)info.name);
-    if (info.binary != nullptr && info.binary != nc)
+    if (info.binary != nc)
         free((void*)info.binary);
-    if (info.license != nullptr && info.license != nc)
+    if (info.license != nc)
         free((void*)info.license);
-    if (info.comment != nullptr && info.comment != nc)
+    if (info.comment != nc)
         free((void*)info.comment);
-    if (info.version != nullptr && info.version != nc)
+    if (info.version != nc)
         free((void*)info.version);
-    if (info.brand != nullptr && info.brand != nc)
+    if (info.brand != nc)
         free((void*)info.brand);
-    if (info.label != nullptr && info.label != nc)
+    if (info.label != nc)
         free((void*)info.label);
-    if (info.author.name != nullptr && info.author.name != nc)
+    if (info.author.name != nc)
         free((void*)info.author.name);
-    if (info.author.homepage != nullptr && info.author.homepage != nc)
+    if (info.author.homepage != nc)
         free((void*)info.author.homepage);
-    if (info.author.email != nullptr && info.author.email != nc)
+    if (info.author.email != nc)
         free((void*)info.author.email);
-    if (info.gui.resourcesDirectory != nullptr && info.gui.resourcesDirectory != nc)
+    if (info.gui.resourcesDirectory != nc)
         free((void*)info.gui.resourcesDirectory);
-    if (info.gui.iconTemplate != nullptr && info.gui.iconTemplate != nc)
+    if (info.gui.iconTemplate != nc)
         free((void*)info.gui.iconTemplate);
-    if (info.gui.settingsTemplate != nullptr && info.gui.settingsTemplate != nc)
+    if (info.gui.settingsTemplate != nc)
         free((void*)info.gui.settingsTemplate);
-    if (info.gui.javascript != nullptr && info.gui.javascript != nc)
+    if (info.gui.javascript != nc)
         free((void*)info.gui.javascript);
-    if (info.gui.stylesheet != nullptr && info.gui.stylesheet != nc)
+    if (info.gui.stylesheet != nc)
         free((void*)info.gui.stylesheet);
-    if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
+    if (info.gui.screenshot != nc)
         free((void*)info.gui.screenshot);
-    if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
+    if (info.gui.thumbnail != nc)
         free((void*)info.gui.thumbnail);
-    if (info.gui.brand != nullptr && info.gui.brand != nc)
+    if (info.gui.brand != nc)
         free((void*)info.gui.brand);
-    if (info.gui.label != nullptr && info.gui.label != nc)
+    if (info.gui.label != nc)
         free((void*)info.gui.label);
-    if (info.gui.model != nullptr && info.gui.model != nc)
+    if (info.gui.model != nc)
         free((void*)info.gui.model);
-    if (info.gui.panel != nullptr && info.gui.panel != nc)
+    if (info.gui.panel != nc)
         free((void*)info.gui.panel);
-    if (info.gui.color != nullptr && info.gui.color != nc)
+    if (info.gui.color != nc)
         free((void*)info.gui.color);
-    if (info.gui.knob != nullptr && info.gui.knob != nc)
+    if (info.gui.knob != nc)
         free((void*)info.gui.knob);
 
     if (info.bundles != nullptr)
@@ -2515,17 +2519,17 @@ static void _clear_plugin_info(PluginInfo& info)
 
 static void _clear_plugin_info_mini(PluginInfo_Mini& info)
 {
-    if (info.brand != nullptr && info.brand != nc)
+    if (info.brand != nc)
         free((void*)info.brand);
-    if (info.label != nullptr && info.label != nc)
+    if (info.label != nc)
         free((void*)info.label);
-    if (info.name != nullptr && info.name != nc)
+    if (info.name != nc)
         free((void*)info.name);
-    if (info.comment != nullptr && info.comment != nc)
+    if (info.comment != nc)
         free((void*)info.comment);
-    if (info.gui.screenshot != nullptr && info.gui.screenshot != nc)
+    if (info.gui.screenshot != nc)
         free((void*)info.gui.screenshot);
-    if (info.gui.thumbnail != nullptr && info.gui.thumbnail != nc)
+    if (info.gui.thumbnail != nc)
         free((void*)info.gui.thumbnail);
 
     memset(&info, 0, sizeof(PluginInfo_Mini));
@@ -2533,7 +2537,7 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
 
 static void _clear_pedalboard_info(PedalboardInfo& info)
 {
-    if (info.title != nullptr && info.title != nc)
+    if (info.title != nc)
         free((void*)info.title);
 
     if (info.connections != nullptr)
@@ -2555,7 +2559,7 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
             free((void*)p.instance);
             free((void*)p.uri);
 
-            if (p.preset != nullptr && p.preset != nc)
+            if (p.preset != nc)
                 free((void*)p.preset);
 
             if (p.ports != nullptr)
@@ -2597,16 +2601,6 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
     memset(&info, 0, sizeof(PedalboardInfo));
 }
 
-static void _clear_pedalboard_info_mini(PedalboardInfo_Mini& info)
-{
-    if (info.uri != nullptr)
-        free((void*)info.uri);
-    if (info.bundle != nullptr)
-        free((void*)info.bundle);
-    if (info.title != nullptr && info.title != nc)
-        free((void*)info.title);
-}
-
 static void _clear_pedalboards()
 {
     if (_pedal_ret != nullptr)
@@ -2626,7 +2620,11 @@ static void _clear_pedalboards()
         if (info == nullptr)
             break;
 
-        _clear_pedalboard_info_mini(*info);
+        free((void*)info->uri);
+        free((void*)info->bundle);
+        if (info->title != nc)
+            free((void*)info->title);
+
         delete info;
     }
 
