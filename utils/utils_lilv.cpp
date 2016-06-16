@@ -507,6 +507,7 @@ void _sort_presets_data(PluginPreset presets[], unsigned int count)
 
 // adjust bundle safely to lilv, as it wants the last character as the separator
 // this also ensures paths are always written the same way
+// NOTE: returned value must not be freed or cached
 const char* _get_safe_bundlepath(const char* const bundle, size_t& bundlepathsize)
 {
     static char tmppath[PATH_MAX+2];
@@ -681,7 +682,7 @@ static void _place_preset_info(PluginInfo& info,
                             bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
 
                             if (strcmp(mainBundle, bundlepath) != 0)
-                                presetpath = bundlepath;
+                                presetpath = strdup(bundlepath);
                         }
                     }
 
@@ -2503,7 +2504,7 @@ static void _clear_plugin_info(PluginInfo& info)
         {
             free((void*)info.presets[i].uri);
             free((void*)info.presets[i].label);
-            if (info.presets[i].path != nullptr && info.presets[i].path != nc)
+            if (info.presets[i].path != nc)
                 free((void*)info.presets[i].path);
         }
         delete[] info.presets;
@@ -2665,6 +2666,8 @@ static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const 
         {
             free((void*)info.presets[i].uri);
             free((void*)info.presets[i].label);
+            if (info.presets[i].path != nc)
+                free((void*)info.presets[i].path);
         }
         delete[] info.presets;
         info.presets = nullptr;
