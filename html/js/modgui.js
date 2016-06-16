@@ -456,27 +456,6 @@ function GUI(effect, options) {
             self.assignIconFunctionality(self.icon)
             self.assignControlFunctionality(self.icon, false)
 
-            // adjust icon size after adding all basic elements
-            setTimeout(function () {
-                var width = children.width(),
-                    height = children.height()
-
-                if (width != 0 && height != 0) {
-                    self.icon.width(width)
-                    self.icon.height(height)
-                }
-
-                // listen for future resizes
-                children.resize(function () {
-                    width = children.width(),
-                    height = children.height()
-                    if (width != 0 && height != 0) {
-                        self.icon.width(width)
-                        self.icon.height(height)
-                    }
-                })
-            }, 1)
-
             self.icon.find('[mod-role=presets]').change(function () {
                 var value = $(this).val()
                 options.presetLoad(value, function () {
@@ -508,9 +487,10 @@ function GUI(effect, options) {
 
             self.assignControlFunctionality(self.settings, false)
 
+            var presetElem = self.settings.find('.mod-presets')
+
             if (instance)
             {
-                var presetElem = self.settings.find('.mod-presets')
                 presetElem.data('enabled', true)
 
                 var getCurrentPresetItem = function () {
@@ -620,7 +600,6 @@ function GUI(effect, options) {
                     presetElem.find('.mod-preset-factory').hide()
                     presetElem.find('.mod-preset-user').show()
                 })
-
                 presetElem.find('[mod-role=enumeration-option]').each(function () {
                     $(this).click(presetItemClicked)
                 })
@@ -630,29 +609,50 @@ function GUI(effect, options) {
 
                 if (self.effect.presets.length == 0) {
                     presetElem.find('.preset-btn-assign-all').addClass("disabled")
-                    presetElem.find('.radio-preset-user').click()
-                } else if (presets.user.length > 0) {
-                    presetElem.find('.radio-preset-user').click()
-                } else {
-                    presetElem.find('.radio-preset-factory').click()
                 }
             }
             else
             {
+                presetElem.hide()
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
-                self.settings.find(".mod-presets").hide()
-                // TODO: hide presets on/off switch
+            }
 
-                setTimeout(function () {
+            // adjust icon size after adding all basic elements
+            setTimeout(function () {
+                var width = children.width(),
+                    height = children.height()
+
+                if (width != 0 && height != 0) {
+                    self.icon.width(width)
+                    self.icon.height(height)
+                }
+
+                if (instance) {
+                    if (presets.factory.length == 0 || presets.user.length > 0) {
+                        presetElem.find('.radio-preset-user').click()
+                    } else {
+                        presetElem.find('.radio-preset-factory').click()
+                    }
+                } else {
                     $('[mod-role="input-audio-port"]').addClass("mod-audio-input")
                     $('[mod-role="output-audio-port"]').addClass("mod-audio-output")
                     $('[mod-role="input-midi-port"]').addClass("mod-midi-input")
                     $('[mod-role="output-midi-port"]').addClass("mod-midi-output")
                     $('[mod-role="input-cv-port"]').addClass("mod-cv-input")
                     $('[mod-role="output-cv-port"]').addClass("mod-cv-output")
-                }, 1)
-            }
+                }
+
+                // listen for future resizes
+                children.resize(function () {
+                    width = children.width(),
+                    height = children.height()
+                    if (width != 0 && height != 0) {
+                        self.icon.width(width)
+                        self.icon.height(height)
+                    }
+                })
+            }, 1)
 
             self.jsStarted = true
             self.triggerJS({ type: 'start' })
