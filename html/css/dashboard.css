@@ -778,20 +778,24 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 #share-window  #record-rec {
-	border-radius: 50px !important;
+	border-radius: 50% !important;
+    padding-top: 8px !important;
 }
 #share-window span.btn {
 	text-align: center;
 	color: white;
 	font-size: 40px;
 	line-height: 50px;
-	padding-top: 25px;
-	margin: 10px auto;
+	padding-top: 15px;
+	margin: 15px auto;
 	display: block;
 	width: 75px;
-	height: 70px;
+	height: 75px;
 }
-
+#share-window  .btn-large {
+    width:50%;
+    margin:5px auto 0 auto;
+}
 #share-window .form-control {
 	width: 585px;
 }
@@ -810,7 +814,8 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 #share-window .textcenter{
-	width: 300px;
+	width: 100%;
+    float: left;
 	margin: auto;
 }
 #share-window-wrapper {
@@ -819,9 +824,8 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 #share-window-bottom {
 	border-top: 1px solid #ddd;
 	display: block;
-	width: 600px;
-	height: 30px;
-	padding-top: 5px;
+	width: 100%;
+	padding-top: 10px;
 }
 
 /*

@@ -450,8 +450,10 @@ $('document').ready(function() {
                             <p><small>(optional)</small><p>
                         </div>
                         <div class="controls actions mod-hidden" id="record-step-2">
-                            <h2 class="textcenter">Recording starts in</h2>
+                          <div class="textcenter">
+                            <h2>Recording starts in</h2>
                             <span class="btn btn-danger" id="record-countdown">3</span>
+                            </div>
                         </div>
                         <div class="textcenter mod-hidden" id="record-step-3">
                             <h2>Recording</h2>
@@ -459,7 +461,7 @@ $('document').ready(function() {
                             <p><small>(click the square to stop)</small><p>
                         </div>
                         <div class="textcenter mod-hidden" id="record-step-4">
-                            <small>&nbsp;</small>
+                            <br /><br />
                             <button class="btn btn-info btn-large btn-block " id="record-play">
                                 <i class="icon-white icon-play"></i> Listen
                             </button>
@@ -476,7 +478,12 @@ $('document').ready(function() {
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
                             <p>Uploaded completed!</p>
-                            <p>Share to facebook, twitter, etc etc goes here</p>
+                            <button class="btn btn-danger btn-large btn-block" id="record-again">
+                                <i class="icon-white icon-repeat"></i> Share to Facebook
+                            </button>
+                            <button class="btn btn-inverse btn-large btn-block" id="record-delete">
+                                <i class="icon-white icon-remove"></i> Share to Twitter
+                            </button>
                             <p id="share-window-url"></p>
                         </div>
                     </div>
