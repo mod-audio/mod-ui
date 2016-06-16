@@ -236,6 +236,12 @@ body > .mod-settings.mod-window-visible {
 .mod-presets {
     margin:0;
 }
+.mod-presets span.mod-enumerated-title {
+    overflow: initial !important;
+}
+.mod-presets input[type="radio"] {
+    vertical-align: middle;
+}
 .mod-presets>div.mod-enumerated-list {
     width: 100% ;
     padding-left: 0;
