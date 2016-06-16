@@ -325,7 +325,7 @@ function HardwareManager(options) {
             if (actuator.uri == currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 console.log("Doing nothing")
                 form.remove()
-                return;
+                return
             }
 
             // Check values

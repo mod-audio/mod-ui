@@ -536,9 +536,7 @@ function GUI(effect, options) {
                             newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
 
                             presetElem.find('.radio-preset-user').click()
-
-                            // TODO: implement addressing for preset list
-                            //presetElem.find('.preset-btn-assign-all').removeClass("disabled")
+                            presetElem.find('.preset-btn-assign-all').removeClass("disabled")
 
                             self.selectPreset(resp.uri)
                         })
@@ -593,9 +591,6 @@ function GUI(effect, options) {
                 presetElem.find('[mod-role=enumeration-option]').each(function () {
                     $(this).click(presetItemClicked)
                 })
-
-                // TODO: implement addressing for preset list
-                presetElem.find('.preset-btn-assign-all').addClass("disabled")
 
                 if (self.effect.presets.length == 0) {
                     presetElem.find('.preset-btn-assign-all').addClass("disabled")

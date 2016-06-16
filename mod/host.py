@@ -1564,6 +1564,19 @@ _:b%i
                 ctype = ADDRESSING_CTYPE_BYPASS
                 unit  = "none"
 
+            elif port == ":presets":
+                ctype = ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION|ADDRESSING_CTYPE_INTEGER
+                unit  = "none"
+
+                presets = get_plugin_info(pluginData["uri"])['presets']
+                minimum = 0
+                maximum = len(presets)
+
+                for i in range(maximum):
+                    options.append((str(i), presets[i]["label"]))
+
+                del presets
+
             else:
                 for port_info in get_plugin_control_input_ports(pluginData["uri"]):
                     if port_info["symbol"] == port:
@@ -1725,6 +1738,8 @@ _:b%i
             curvalue = value
         elif addressing['port'] == ":bypass":
             curvalue = 1.0 if self.plugins[addressing['instance_id']]['bypassed'] else 0.0
+        elif addressing['port'] == ":presets":
+            curvalue = 0 # TODO
         else:
             curvalue = self.plugins[addressing['instance_id']]['ports'][addressing['port']]
 
