@@ -267,28 +267,18 @@ function GUI(effect, options) {
         name: 'Presets',
         symbol: ':presets',
         ranges: {
-            minimum: 0,
-            maximum: 1,
-            default: 1,
+            minimum: -1,
+            maximum: 0,
+            default: -1,
         },
         properties: ["enumeration", "integer"],
         widgets: [],
         enabled: true,
-        value: 0,
+        value: -1,
         format: null,
         scalePoints: [],
         scalePointsIndex: null,
-        valueFields: [],
-
-        // FIXME: limits of mustache
-        default: 1,
-        maximum: 1,
-        minimum: 0,
-        enumeration: false,
-        integer: true,
-        logarithmic: false,
-        toggled: true,
-        trigger: false,
+        valueFields: []
     }
 
     this.setPortValue = function (symbol, value, source) {
@@ -645,7 +635,7 @@ function GUI(effect, options) {
 
                 // listen for future resizes
                 children.resize(function () {
-                    width = children.width(),
+                    width = children.width()
                     height = children.height()
                     if (width != 0 && height != 0) {
                         self.icon.width(width)
@@ -654,8 +644,15 @@ function GUI(effect, options) {
                 })
             }, 1)
 
+            var jsPorts = []
+            for (var i in self.controls) {
+                jsPorts.push({
+                    symbol: self.controls[i].symbol,
+                    value : self.controls[i].value
+                })
+            }
             self.jsStarted = true
-            self.triggerJS({ type: 'start' })
+            self.triggerJS({ type: 'start', ports: jsPorts })
 
             callback(self.icon, self.settings)
         }
