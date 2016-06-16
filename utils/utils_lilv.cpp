@@ -605,6 +605,113 @@ void _refresh()
     }
 }
 
+// common function used in 2 places
+static void _place_preset_info(PluginInfo& info,
+                               const LilvPlugin* const p,
+                               LilvNode* const pset_Preset,
+                               LilvNode* const rdfs_label)
+{
+    LilvNodes* const presetnodes = lilv_plugin_get_related(p, pset_Preset);
+
+    if (presetnodes == nullptr)
+        return;
+
+    const unsigned int presetcount = lilv_nodes_size(presetnodes);
+    unsigned int prindex = 0;
+
+    PluginPreset* const presets = new PluginPreset[presetcount+1];
+    memset(presets, 0, sizeof(PluginPreset) * (presetcount+1));
+
+    char lastSeenBundle[0xff];
+    lastSeenBundle[0] = lastSeenBundle[0xff-1] = '\0';
+
+    const char* const mainBundle(info.bundles[0]);
+
+    std::vector<const LilvNode*> loadedPresetResourceNodes;
+
+    LILV_FOREACH(nodes, itprs, presetnodes)
+    {
+        if (prindex >= presetcount)
+            continue;
+
+        const LilvNode* const presetnode = lilv_nodes_get(presetnodes, itprs);
+
+        // try to find label without loading the preset resource first
+        LilvNode* xlabel = lilv_world_get(W, presetnode, rdfs_label, nullptr);
+
+        // failed, try loading resource
+        if (xlabel == nullptr)
+        {
+            // if loading resource fails, skip this preset
+            if (lilv_world_load_resource(W, presetnode) == -1)
+                continue;
+
+            // ok, let's try again
+            xlabel = lilv_world_get(W, presetnode, rdfs_label, nullptr);
+
+            // need to unload later
+            loadedPresetResourceNodes.push_back(presetnode);
+        }
+
+        if (xlabel != nullptr)
+        {
+            const char* const preseturi  = lilv_node_as_uri(presetnode);
+            const char*       presetpath = nc;
+
+            // check if URI is a local file, to see if it's a user preset
+            if (strncmp(preseturi, "file://", 7) == 0)
+            {
+                if (char* const lilvparsed = lilv_file_uri_parse(preseturi, nullptr))
+                {
+                    if (const char* bundlepath = dirname(lilvparsed))
+                    {
+                        // cache and compare last seen bundle
+                        // bundles with more than 1 preset are not considered 'user' (ie, modifiable)
+
+                        if (lastSeenBundle[0] != '\0' && strcmp(bundlepath, lastSeenBundle) == 0)
+                        {
+                            // invalidate previous one
+                            presets[prindex-1].path = nc;
+                        }
+                        else
+                        {
+                            strncpy(lastSeenBundle, bundlepath, 0xff-1);
+
+                            size_t bundlepathsize;
+                            bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
+
+                            if (strcmp(mainBundle, bundlepath) != 0)
+                                presetpath = bundlepath;
+                        }
+                    }
+
+                    lilv_free(lilvparsed);
+                }
+            }
+
+            presets[prindex++] = {
+                true,
+                strdup(preseturi),
+                strdup(lilv_node_as_string(xlabel)),
+                presetpath
+            };
+
+            lilv_node_free(xlabel);
+        }
+    }
+
+    if (prindex > 1)
+        _sort_presets_data(presets, prindex);
+
+    for (const LilvNode* presetnode : loadedPresetResourceNodes)
+        lilv_world_unload_resource(W, presetnode);
+
+    info.presets = presets;
+
+    loadedPresetResourceNodes.clear();
+    lilv_nodes_free(presetnodes);
+}
+
 const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const NamespaceDefinitions_Mini& ns)
 {
     static PluginInfo_Mini info;
@@ -2536,76 +2643,6 @@ static void _clear_state_values()
 
     delete[] _state_ret;
     _state_ret = nullptr;
-}
-
-// common function used in 2 places
-static void _place_preset_info(PluginInfo& info,
-                               const LilvPlugin* const p,
-                               LilvNode* const pset_Preset,
-                               LilvNode* const rdfs_label)
-{
-    LilvNodes* const presetnodes = lilv_plugin_get_related(p, pset_Preset);
-
-    if (presetnodes == nullptr)
-        return;
-
-    const unsigned int presetcount = lilv_nodes_size(presetnodes);
-    unsigned int prindex = 0;
-
-    PluginPreset* const presets = new PluginPreset[presetcount+1];
-    memset(presets, 0, sizeof(PluginPreset) * (presetcount+1));
-
-    std::vector<const LilvNode*> loadedPresetResourceNodes;
-
-    LILV_FOREACH(nodes, itprs, presetnodes)
-    {
-        if (prindex >= presetcount)
-            continue;
-
-        const LilvNode* const presetnode = lilv_nodes_get(presetnodes, itprs);
-
-        // try to find label without loading the preset resource first
-        LilvNode* xlabel = lilv_world_get(W, presetnode, rdfs_label, nullptr);
-
-        // failed, try loading resource
-        if (xlabel == nullptr)
-        {
-            // if loading resource fails, skip this preset
-            if (lilv_world_load_resource(W, presetnode) == -1)
-                continue;
-
-            // ok, let's try again
-            xlabel = lilv_world_get(W, presetnode, rdfs_label, nullptr);
-
-            // need to unload later
-            loadedPresetResourceNodes.push_back(presetnode);
-        }
-
-        if (xlabel != nullptr)
-        {
-            // TODO: find where preset bundle is and see if it's modifiable
-
-            presets[prindex++] = {
-                true,
-                strdup(lilv_node_as_uri(presetnode)),
-                strdup(lilv_node_as_string(xlabel)),
-                nc
-            };
-
-            lilv_node_free(xlabel);
-        }
-    }
-
-    if (prindex > 1)
-        _sort_presets_data(presets, prindex);
-
-    for (const LilvNode* presetnode : loadedPresetResourceNodes)
-        lilv_world_unload_resource(W, presetnode);
-
-    info.presets = presets;
-
-    loadedPresetResourceNodes.clear();
-    lilv_nodes_free(presetnodes);
 }
 
 static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const std::string& uri)
