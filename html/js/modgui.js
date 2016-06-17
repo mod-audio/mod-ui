@@ -147,8 +147,7 @@ function GUI(effect, options) {
         },
         dragStop: function (e, ui) {
         },
-        presetLoad: function (uri, callback) {
-            callback()
+        presetLoad: function (uri) {
         },
         presetSaveNew: function (name, callback) {
             callback({ok:false})
@@ -448,9 +447,7 @@ function GUI(effect, options) {
 
             self.icon.find('[mod-role=presets]').change(function () {
                 var value = $(this).val()
-                options.presetLoad(value, function () {
-                    self.selectPreset(value)
-                })
+                options.presetLoad(value)
             })
 
             if (instance)
@@ -499,9 +496,7 @@ function GUI(effect, options) {
                         return presetElem.customSelect('prevent', e)
 
                     var value = $(this).attr('mod-uri')
-                    options.presetLoad(value, function () {
-                        self.selectPreset(value)
-                    })
+                    options.presetLoad(value)
                 }
 
                 presetElem.find('.preset-btn-save').click(function () {

@@ -1141,10 +1141,10 @@ JqueryClass('pedalboard', {
                             // TODO Handle this error
                     })
             },
-            presetLoad: function (uri, callback) {
+            presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {
                         if (ok) {
-                            callback()
+                            // TODO Handle this error
                         }
                     })
             },
