@@ -70,6 +70,9 @@ $('document').ready(function() {
         if (cmd == "preset") {
             var instance = data[1]
             var value    = data[2]
+            if (value == "null") {
+                value = ""
+            }
             desktop.pedalboard.pedalboard("selectPreset", instance, value);
             return
         }

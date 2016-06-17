@@ -78,6 +78,9 @@ kMidiLearnURI = "/midi-learn"
 kMidiUnmapURI = "/midi-unmap"
 kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
+# Limits
+kMaxAddressableScalepoints = 100
+
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
     def __init__(self):
@@ -701,6 +704,7 @@ class Host(object):
                 "ports"     : valports,
                 "badports"  : badports,
                 "preset"    : "",
+                "mapPresets": []
             }
 
             callback(resp)
@@ -777,6 +781,7 @@ class Host(object):
                 return
 
             self.plugins[instance_id]['preset'] = uri
+            self.msg_callback("preset %s %s" % (instance, uri))
 
             portValues = get_state_port_values(state)
             self.plugins[instance_id]['ports'].update(portValues)
@@ -824,6 +829,7 @@ class Host(object):
             # done
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             self.plugins[instance_id]['preset'] = preseturi
+
             callback({
                 'ok'    : True,
                 'bundle': presetbundle,
@@ -891,6 +897,7 @@ class Host(object):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
             self.plugins[instance_id]['preset'] = ""
+            self.msg_callback("preset %s null" % instance)
             callback(True)
 
         self.remove_bundle(bundlepath, False, start)
@@ -1051,6 +1058,7 @@ class Host(object):
                 "ports"     : valports,
                 "badports"  : badports,
                 "preset"    : p['preset'],
+                "mapPresets": []
             }
 
             self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
@@ -1559,6 +1567,7 @@ _:b%i
         # we're addressing to HMI
         if actuator_uri and actuator_uri not in (kNullAddressURI, kMidiLearnURI, kMidiUnmapURI):
             options = []
+            spreset = ""
 
             if port == ":bypass":
                 ctype = ADDRESSING_CTYPE_BYPASS
@@ -1570,11 +1579,31 @@ _:b%i
 
                 presets = get_plugin_info(pluginData["uri"])['presets']
                 minimum = 0
-                maximum = len(presets)
+                maximum = min(len(presets), kMaxAddressableScalepoints)
+
+                # save preset mapping index
+                pluginData['mapPresets'] = []
+
+                # if no preset selected yet, we need to force one
+                if not pluginData['preset']:
+                    pluginData['preset'] = presets[0]["uri"]
+                    # TODO: load preset
 
                 for i in range(maximum):
+                    uri = presets[i]["uri"]
+                    pluginData['mapPresets'].append(uri)
                     options.append((str(i), presets[i]["label"]))
+                    if pluginData['preset'] == uri:
+                        value = i
 
+                # handle case of current preset out of bounds (>100)
+                if pluginData['preset'] not in pluginData['mapPresets']:
+                    pluginData['mapPresets'].append(presets[i]["uri"])
+                    options.append((str(i), presets[i]["label"]))
+                    value = maximum
+                    maximum += 1
+
+                spreset = pluginData['preset']
                 del presets
 
             else:
@@ -1634,8 +1663,14 @@ _:b%i
             if skipLoad:
                 return
 
-            def nextStepAddressing(ok):
+            def nextStepAddressing2(ok):
                 self._addressing_load(actuator_uri, callback)
+
+            def nextStepAddressing(ok):
+                if spreset:
+                    self.preset_load(instance, spreset, nextStepAddressing2)
+                else:
+                    self._addressing_load(actuator_uri, callback)
 
             if old_actuator_uri is not None:
                 self.hmi.control_rm(instance_id, port, nextStepAddressing)
@@ -1733,17 +1768,19 @@ _:b%i
             return
 
         actuator_hw = self._uri2hw_map[actuator_uri]
+        plugin      = self.plugins[addressing['instance_id']]
+        portsymbol  = addressing['port']
 
         if value is not None:
             curvalue = value
-        elif addressing['port'] == ":bypass":
-            curvalue = 1.0 if self.plugins[addressing['instance_id']]['bypassed'] else 0.0
-        elif addressing['port'] == ":presets":
-            curvalue = 0 # TODO
+        elif portsymbol == ":bypass":
+            curvalue = 1.0 if plugin['bypassed'] else 0.0
+        elif portsymbol == ":presets":
+            curvalue = plugin['mapPresets'].index(plugin['preset'])
         else:
-            curvalue = self.plugins[addressing['instance_id']]['ports'][addressing['port']]
+            curvalue = plugin['ports'][portsymbol]
 
-        self.hmi.control_add(addressing['instance_id'], addressing['port'],
+        self.hmi.control_add(addressing['instance_id'], portsymbol,
                              addressing['label'], addressing['type'], addressing['unit'],
                              curvalue, addressing['maximum'], addressing['minimum'], addressing['steps'],
                              actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3],
@@ -1800,12 +1837,18 @@ _:b%i
         for actuator_uri in data:
             for addr in data[actuator_uri]:
                 instance_id = self.mapper.get_id_without_creating(addr['instance'])
-                if addr['port'] == ":bypass":
-                    curvalue = 1.0 if self.plugins[instance_id]['bypassed'] else 0.0
-                else:
-                    curvalue = self.plugins[instance_id]['ports'][addr['port']]
+                plugin      = self.plugins[instance_id]
+                portsymbol  = addr['port']
 
-                self.address(addr["instance"], addr["port"], actuator_uri, addr["label"], addr["maximum"], addr["minimum"], curvalue, addr["steps"], lambda r:None, True)
+                if portsymbol == ":bypass":
+                    curvalue = 1.0 if plugin['bypassed'] else 0.0
+                elif portsymbol == ":presets":
+                    # this value is changed during addressing, don't bother setting it now
+                    curvalue = 0
+                else:
+                    curvalue = plugin['ports'][portsymbol]
+
+                self.address(addr["instance"], portsymbol, actuator_uri, addr["label"], addr["maximum"], addr["minimum"], curvalue, addr["steps"], lambda r:None, True)
 
                 if actuator_uri not in used_actuators:
                     used_actuators.append(actuator_uri)
@@ -1867,7 +1910,7 @@ _:b%i
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
         instance = self.mapper.get_instance(instance_id)
-        plugin = self.plugins[instance_id]
+        plugin   = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -1878,6 +1921,13 @@ _:b%i
                 self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             self.send("bypass %d %d" % (instance_id, int(bypassed)), host_callback, datatype='boolean')
+
+        elif portsymbol == ":presets":
+            value = int(value)
+            if value < 0 or value > kMaxAddressableScalepoints+1:
+                callback(False)
+                return
+            self.preset_load(instance, plugin['mapPresets'][value], callback)
 
         # For "bad" ports only report value to mod-host, don't store it
         elif portsymbol in plugin['badports']:
