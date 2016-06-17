@@ -472,6 +472,7 @@ function GUI(effect, options) {
                 }
             }
             templateData.presets = presets
+            delete presets
 
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
 
@@ -616,13 +617,7 @@ function GUI(effect, options) {
                     self.icon.height(height)
                 }
 
-                if (instance) {
-                    if (presets.factory.length == 0 || presets.user.length > 0) {
-                        presetElem.find('.radio-preset-user').click()
-                    } else {
-                        presetElem.find('.radio-preset-factory').click()
-                    }
-                } else {
+                if (! instance) {
                     $('[mod-role="input-audio-port"]').addClass("mod-audio-input")
                     $('[mod-role="output-audio-port"]').addClass("mod-audio-output")
                     $('[mod-role="input-midi-port"]').addClass("mod-midi-input")

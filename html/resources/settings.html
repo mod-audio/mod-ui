@@ -3,18 +3,6 @@
         <h1 class="alignleft">{{effect.name}}</h1>
         <button class="js-close alignright btn btn-danger">Close</button>
     </header>
-    <!-- OLD STYLE -->
-    <!--
-    <div class="mod-presets clearfix mod-hidden">
-        <select mod-role="presets">
-            <option value=""> - - - </option>
-            {{#effect.presets}}
-            <option mod-role="preset-label" value="{{uri}}">{{label}}</option>
-            {{/effect.presets}}
-        </select>
-    </div>
-    -->
-    <!-- /OLD STYLE -->
     <div class="mod-controls clearfix">
         <div class="mod-control-group clearfix">
             <div class="mod-switch bypass">
@@ -29,7 +17,7 @@
                 <span class="mod-enumerated-title">
                     Preset list&emsp;&emsp;
                     <span>
-                        <label><input type="radio" name="preset_type" class="radio-preset radio-preset-factory"> Factory</label>
+                        <label><input type="radio" name="preset_type" class="radio-preset radio-preset-factory" checked> Factory</label>
                     </span>
                     &emsp;
                     <span>
@@ -38,7 +26,7 @@
                 </span>
                 <div class="mod-enumerated-list mod-preset-factory" mod-widget="custom-select">
                     {{#presets.factory}}
-                    <div mod-role="enumeration-option" mod-uri="{{uri}}" mod-path="{{path}}">{{label}}</div>
+                    <div mod-role="enumeration-option" mod-uri="{{uri}}">{{label}}</div>
                     {{/presets.factory}}
                 </div>
                 <div class="mod-enumerated-list mod-preset-user mod-hidden" mod-widget="custom-select">
@@ -57,7 +45,7 @@
                     </span>
                 </footer>
             </div>
-            <!-- END PRESETS -->
+            <!-- END PRESET LIST -->
 
             {{#effect.ports.control.input}}
             {{#enumeration}}
