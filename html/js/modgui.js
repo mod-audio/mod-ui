@@ -479,7 +479,7 @@ function GUI(effect, options) {
 
             var presetElem = self.settings.find('.mod-presets')
 
-            if (instance)
+            if (instance && (self.effect.presets.length > 0 || self.effect.ports.control.input.length > 0))
             {
                 presetElem.data('enabled', true)
 
@@ -599,6 +599,9 @@ function GUI(effect, options) {
             else
             {
                 presetElem.hide()
+            }
+
+            if (! instance) {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
             }
