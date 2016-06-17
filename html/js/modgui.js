@@ -367,10 +367,14 @@ function GUI(effect, options) {
 
             if (bundlepath) {
                 presetElem.find('.preset-btn-save').removeClass("disabled")
+            } else {
+                presetElem.find('.preset-btn-save').addClass("disabled")
+            }
+
+            if (bundlepath && presetElem.data('enabled')) {
                 presetElem.find('.preset-btn-rename').removeClass("disabled")
                 presetElem.find('.preset-btn-delete').removeClass("disabled")
             } else {
-                presetElem.find('.preset-btn-save').addClass("disabled")
                 presetElem.find('.preset-btn-rename').addClass("disabled")
                 presetElem.find('.preset-btn-delete').addClass("disabled")
             }
@@ -386,17 +390,27 @@ function GUI(effect, options) {
         var port = self.controls[symbol]
         port.enabled = false
 
-        // disable all related widgets
-        for (var i in port.widgets)
-            port.widgets[i].controlWidget('disable')
+        if (symbol == ":presets") {
+            self.icon.find('[mod-role=presets]').controlWidget('disable')
+            var presetElem = self.settings.find('.mod-presets')
+            presetElem.data('enabled', false)
+            presetElem.find('.preset-btn-rename').addClass("disabled")
+            presetElem.find('.preset-btn-delete').addClass("disabled")
+        } else {
+            // disable all related widgets
+            for (var i in port.widgets) {
+                port.widgets[i].controlWidget('disable')
+            }
 
-        // disable value fields if needed
-        if (port.properties.indexOf("enumeration") < 0 &&
-            port.properties.indexOf("toggled") < 0 &&
-            port.properties.indexOf("trigger") < 0)
-        {
-            for (var i in port.valueFields)
-                port.valueFields[i].attr('contenteditable', false)
+            // disable value fields if needed
+            if (port.properties.indexOf("enumeration") < 0 &&
+                port.properties.indexOf("toggled") < 0 &&
+                port.properties.indexOf("trigger") < 0)
+            {
+                for (var i in port.valueFields) {
+                    port.valueFields[i].attr('contenteditable', false)
+                }
+            }
         }
     }
 
@@ -404,17 +418,25 @@ function GUI(effect, options) {
         var port = self.controls[symbol]
         port.enabled = true
 
-        // enable all related widgets
-        for (var i in port.widgets)
-            port.widgets[i].controlWidget('enable')
+        if (symbol == ":presets") {
+            self.icon.find('[mod-role=presets]').controlWidget('enable')
+            self.settings.find('.mod-presets').data('enabled', true)
+            self.selectPreset(self.currentPreset)
+        } else {
+            // enable all related widgets
+            for (var i in port.widgets) {
+                port.widgets[i].controlWidget('enable')
+            }
 
-        // enable value fields if needed
-        if (port.properties.indexOf("enumeration") < 0 &&
-            port.properties.indexOf("toggled") < 0 &&
-            port.properties.indexOf("trigger") < 0)
-        {
-            for (var i in port.valueFields)
-                port.valueFields[i].attr('contenteditable', true)
+            // enable value fields if needed
+            if (port.properties.indexOf("enumeration") < 0 &&
+                port.properties.indexOf("toggled") < 0 &&
+                port.properties.indexOf("trigger") < 0)
+            {
+                for (var i in port.valueFields) {
+                    port.valueFields[i].attr('contenteditable', true)
+                }
+            }
         }
     }
 
