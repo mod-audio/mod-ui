@@ -768,9 +768,9 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 #share-window .box {
-    margin-left: -300px;
+    margin-left: -200px;
     top: 200px;
-    width: 600px;
+    width: 400px;
 }
 
 #share-window form {
@@ -795,7 +795,25 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 #share-window  .btn-large {
     width:50%;
     margin:5px auto 0 auto;
+    text-align: left
 }
+#share-window  .btn-large img{
+    height: 20px;
+    float: right;
+}
+#share-window .fb {
+    background-color: #3b5998 !important;
+    border-color: transparent !important;
+}
+#share-window .tw {
+    background-color: #55acee !important;
+    color: white;
+}
+#share-window h3 {
+    text-align: center;
+    margin-bottom: 1em;
+}
+
 #share-window .form-control {
 	width: 585px;
 }
