@@ -472,7 +472,6 @@ function GUI(effect, options) {
                 }
             }
             templateData.presets = presets
-            delete presets
 
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
 
@@ -593,8 +592,14 @@ function GUI(effect, options) {
                     $(this).click(presetItemClicked)
                 })
 
-                if (self.effect.presets.length == 0) {
-                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
+                if (presets.factory.length == 0) {
+                    presetElem.find('.mod-enumerated-title').find('span').hide()
+                    presetElem.find('.mod-preset-factory').hide()
+                    presetElem.find('.mod-preset-user').show()
+
+                    if (presets.user.length == 0) {
+                        presetElem.find('.preset-btn-assign-all').addClass("disabled")
+                    }
                 }
             }
             else

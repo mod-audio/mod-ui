@@ -15,14 +15,16 @@
             <!-- PRESET LIST -->
             <div class="mod-enumerated mod-presets">
                 <span class="mod-enumerated-title">
-                    Preset list&emsp;&emsp;
-                    <span>
-                        <label><input type="radio" name="preset_type" class="radio-preset radio-preset-factory" checked> Factory</label>
-                    </span>
-                    &emsp;
-                    <span>
-                        <label><input type="radio" name="preset_type" class="radio-preset radio-preset-user"> User</label>
-                    </span>
+                    <form>
+                        Preset list&emsp;&emsp;
+                        <span>
+                            <label><input type="radio" name="preset_type" autocomplete="off" class="radio-preset radio-preset-factory" value="factory" checked="checked"> Factory</label>
+                        </span>
+                        &emsp;
+                        <span>
+                            <label><input type="radio" name="preset_type" autocomplete="off" class="radio-preset radio-preset-user" value="user"> User</label>
+                        </span>
+                    </form>
                 </span>
                 <div class="mod-enumerated-list mod-preset-factory" mod-widget="custom-select">
                     {{#presets.factory}}
