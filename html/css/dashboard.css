@@ -795,7 +795,8 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 #share-window  .btn-large {
     width:50%;
     margin:5px auto 0 auto;
-    text-align: left
+    text-align: left;
+    white-space: normal;
 }
 #share-window  .btn-large img{
     height: 20px;
