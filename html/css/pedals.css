@@ -277,7 +277,13 @@ body > .mod-settings.mod-window-visible {
     width: 32px
 }
 .mod-presets .btn.preset-btn-rename {
-    background-image: url('../img/icons/25/rename.png');
+    /*background-image: url('../img/icons/25/rename.png');*/
+    width: 29px !important;
+    padding: 0;
+    font-size: 12px;
+}
+.btn.preset-btn-rename:after {
+    content: 'REN';
 }
 .mod-presets .btn.preset-btn-delete {
     background-image: url('../img/icons/25/delete.png');
