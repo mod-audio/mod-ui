@@ -707,7 +707,7 @@ function Desktop(elements) {
                 url: SITEURL + '/pedalboards/',
                 method: 'POST',
                 contentType: 'application/json',
-                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
+                headers: { 'Authorization' : 'MOD ' + desktop.cloudAccessToken },
                 data: JSON.stringify({
                     author: "Alex Cunha",
                     email: "ale@moddevices.com",
@@ -718,7 +718,7 @@ function Desktop(elements) {
                     var transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
                                                           resp.upload_href,
                                                           { to_args: { headers:
-                                                          { 'Authorization' : 'MOD ' + self.userSession.access_token }
+                                                          { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
                                                           }})
 
                     transfer.reportFinished = function (resp2) {
@@ -739,10 +739,9 @@ function Desktop(elements) {
                     transfer.start()
                 },
                 error: function (resp) {
-                    console.log("pedals error", resp)
                     callback({
                         ok: false,
-                        error: "some misc error here", // TODO: proper error
+                        error: resp.statusText
                     })
                 },
                 cache: false,
