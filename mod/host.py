@@ -798,8 +798,7 @@ class Host(object):
                     used_actuators.append(addressing['actuator_uri'])
 
             for actuator_uri in used_actuators:
-                actuator_hw = self._uri2hw_map[actuator_uri]
-                yield gen.Task(self._address_next, actuator_hw)
+                yield gen.Task(self._addressing_load, actuator_uri, skipPresets=True)
 
             callback(True)
 
@@ -1756,7 +1755,7 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def _addressing_load(self, actuator_uri, callback, value=None):
+    def _addressing_load(self, actuator_uri, callback, value=None, skipPresets=False):
         addressings       = self.addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         addressings_idx   = addressings['idx']
@@ -1776,6 +1775,10 @@ _:b%i
         elif portsymbol == ":bypass":
             curvalue = 1.0 if plugin['bypassed'] else 0.0
         elif portsymbol == ":presets":
+            if skipPresets:
+                print("NOTE: skipping re-address of presets")
+                callback(True)
+                return
             curvalue = plugin['mapPresets'].index(plugin['preset'])
         else:
             curvalue = plugin['ports'][portsymbol]
