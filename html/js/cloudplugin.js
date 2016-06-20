@@ -279,7 +279,7 @@ JqueryClass('cloudPluginBox', {
                     var i, plugin, allplugins = {}
                     for (i in plugins) {
                         plugin = plugins[i]
-                        plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
+                        plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
                     desktop.resetPluginIndexer(allplugins)
