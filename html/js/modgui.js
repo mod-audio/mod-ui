@@ -367,10 +367,14 @@ function GUI(effect, options) {
 
             if (bundlepath) {
                 presetElem.find('.preset-btn-save').removeClass("disabled")
+            } else {
+                presetElem.find('.preset-btn-save').addClass("disabled")
+            }
+
+            if (bundlepath && presetElem.data('enabled')) {
                 presetElem.find('.preset-btn-rename').removeClass("disabled")
                 presetElem.find('.preset-btn-delete').removeClass("disabled")
             } else {
-                presetElem.find('.preset-btn-save').addClass("disabled")
                 presetElem.find('.preset-btn-rename').addClass("disabled")
                 presetElem.find('.preset-btn-delete').addClass("disabled")
             }
@@ -386,17 +390,27 @@ function GUI(effect, options) {
         var port = self.controls[symbol]
         port.enabled = false
 
-        // disable all related widgets
-        for (var i in port.widgets)
-            port.widgets[i].controlWidget('disable')
+        if (symbol == ":presets") {
+            self.icon.find('[mod-role=presets]').controlWidget('disable')
+            var presetElem = self.settings.find('.mod-presets')
+            presetElem.data('enabled', false)
+            presetElem.find('.preset-btn-rename').addClass("disabled")
+            presetElem.find('.preset-btn-delete').addClass("disabled")
+        } else {
+            // disable all related widgets
+            for (var i in port.widgets) {
+                port.widgets[i].controlWidget('disable')
+            }
 
-        // disable value fields if needed
-        if (port.properties.indexOf("enumeration") < 0 &&
-            port.properties.indexOf("toggled") < 0 &&
-            port.properties.indexOf("trigger") < 0)
-        {
-            for (var i in port.valueFields)
-                port.valueFields[i].attr('contenteditable', false)
+            // disable value fields if needed
+            if (port.properties.indexOf("enumeration") < 0 &&
+                port.properties.indexOf("toggled") < 0 &&
+                port.properties.indexOf("trigger") < 0)
+            {
+                for (var i in port.valueFields) {
+                    port.valueFields[i].attr('contenteditable', false)
+                }
+            }
         }
     }
 
@@ -404,17 +418,25 @@ function GUI(effect, options) {
         var port = self.controls[symbol]
         port.enabled = true
 
-        // enable all related widgets
-        for (var i in port.widgets)
-            port.widgets[i].controlWidget('enable')
+        if (symbol == ":presets") {
+            self.icon.find('[mod-role=presets]').controlWidget('enable')
+            self.settings.find('.mod-presets').data('enabled', true)
+            self.selectPreset(self.currentPreset)
+        } else {
+            // enable all related widgets
+            for (var i in port.widgets) {
+                port.widgets[i].controlWidget('enable')
+            }
 
-        // enable value fields if needed
-        if (port.properties.indexOf("enumeration") < 0 &&
-            port.properties.indexOf("toggled") < 0 &&
-            port.properties.indexOf("trigger") < 0)
-        {
-            for (var i in port.valueFields)
-                port.valueFields[i].attr('contenteditable', true)
+            // enable value fields if needed
+            if (port.properties.indexOf("enumeration") < 0 &&
+                port.properties.indexOf("toggled") < 0 &&
+                port.properties.indexOf("trigger") < 0)
+            {
+                for (var i in port.valueFields) {
+                    port.valueFields[i].attr('contenteditable', true)
+                }
+            }
         }
     }
 
@@ -500,7 +522,9 @@ function GUI(effect, options) {
                 }
 
                 presetElem.find('.preset-btn-save').click(function () {
-                    console.log("save clicked")
+                    if ($(this).hasClass('disabled')) {
+                        return
+                    }
                     var item = getCurrentPresetItem()
                     if (! item) {
                         return
@@ -512,21 +536,17 @@ function GUI(effect, options) {
                         return
                     }
                     options.presetSaveReplace(uri, path, name, function (resp) {
-                        console.log(resp)
                     })
                 })
 
                 presetElem.find('.preset-btn-save-as').click(function () {
-                    console.log("save as clicked")
                     var name = "",
                         item = getCurrentPresetItem()
                     if (item) {
                         name = item.text()
                     }
                     desktop.openPresetSaveWindow(name, function (newName) {
-                        console.log("final name =>", newName)
                         options.presetSaveNew(newName, function (resp) {
-                            console.log(resp)
                             var newItem = $('<div mod-role="enumeration-option" mod-uri="'+resp.uri+'" mod-path="'+resp.bundle+'">'+newName+'</div>')
                             newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
 
@@ -539,7 +559,9 @@ function GUI(effect, options) {
                 })
 
                 presetElem.find('.preset-btn-rename').click(function () {
-                    console.log("rename clicked")
+                    if ($(this).hasClass('disabled') || ! presetElem.data('enabled')) {
+                        return
+                    }
                     var item = getCurrentPresetItem()
                     if (! item) {
                         return
@@ -551,16 +573,16 @@ function GUI(effect, options) {
                         return
                     }
                     desktop.openPresetSaveWindow(name, function (newName) {
-                        console.log("final rename =>", newName)
                         options.presetSaveReplace(uri, path, newName, function (resp) {
-                            console.log(resp)
                             item.text(newName)
                         })
                     })
                 })
 
                 presetElem.find('.preset-btn-delete').click(function () {
-                    console.log("delete clicked")
+                    if ($(this).hasClass('disabled') || ! presetElem.data('enabled')) {
+                        return
+                    }
                     var item = getCurrentPresetItem()
                     if (! item) {
                         return
@@ -959,7 +981,7 @@ function GUI(effect, options) {
             data.cns = '_' + escape(options.uri).split("/").join("_").split("%").join("_").split(".").join("_")
         }
 
-        // fill fields that might be present on modgui data
+        // fill fields that might not be present on modgui data
         if (!data.brand)
             data.brand = effect.gui.brand || ""
         if (!data.label)
@@ -994,8 +1016,7 @@ function GUI(effect, options) {
         if (data.effect.ports.control.input)
         {
             inputs = []
-            for (var i in data.effect.ports.control.input)
-            {
+            for (var i in data.effect.ports.control.input) {
                 var port = data.effect.ports.control.input[i]
                 if (shouldSkipPort(port))
                     continue

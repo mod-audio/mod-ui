@@ -1205,9 +1205,6 @@ JqueryClass('pedalboard', {
 
             var addressFactory = function (port) {
                 return function () {
-                    if ($(this).hasClass("disabled")) {
-                        return
-                    }
                     hardware.open(instance, port, pluginData.label)
                 }
             }
