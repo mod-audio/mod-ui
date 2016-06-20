@@ -1671,10 +1671,17 @@ _:b%i
                 else:
                     self._addressing_load(actuator_uri, callback)
 
+            def nextStepUnaddressing(ok):
+                old_actuator_hw = self._uri2hw_map[old_actuator_uri]
+                self._address_next(old_actuator_hw, nextStepAddressing)
+
             if old_actuator_uri is not None:
-                self.hmi.control_rm(instance_id, port, nextStepAddressing)
+                self.hmi.control_rm(instance_id, port, nextStepUnaddressing)
             else:
                 nextStepAddressing(True)
+            return
+
+        if skipLoad:
             return
 
         def unaddressingStep2(ok):
