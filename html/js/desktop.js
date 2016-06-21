@@ -947,6 +947,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     */
                 },
                 cache: false,
+                global: false,
                 dataType: 'json'
             })
         },
@@ -1023,6 +1024,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 },
                 success: callback,
                 cache: false,
+                global: false,
                 error: function (e) {
                     new Notification('error', "Can't save plugin position")
                 },
@@ -1042,7 +1044,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 error: function (e) {
                     new Notification('error', "Can't save window size")
                 },
-                cache: false
+                cache: false,
+                global: false,
+                dataType: 'json'
             })
         }
 
