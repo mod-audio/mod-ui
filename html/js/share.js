@@ -266,9 +266,11 @@ JqueryClass('shareBox', {
                     $('#record-share').attr('disabled', resp.ok).hide()
 
                     var pb_url = "http://pedalboards.moddevices.com/" + resp.id
-                    $('#share-window-url').value(pb_url)
-                    $('#share-window-fb').href($('#share-window-tw')+pb_url);
-                    $('#share-window-tw').href($('#share-window-tw')+pb_url);
+
+                    // FIXME
+                    //$('#share-window-url').value(pb_url)
+                    //$('#share-window-fb').href($('#share-window-tw')+pb_url);
+                    //$('#share-window-tw').href($('#share-window-tw')+pb_url);
 
                     if (hasAudio) {
                         self.data('recordReset')(function () {
