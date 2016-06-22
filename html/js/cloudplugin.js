@@ -215,7 +215,7 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(cplugin)
             }
 
-            if (! query.stable) {
+            if (! self.find('#cloud-plugins-stable').is(':visible') || ! query.stable) {
                 for (var uri in results.local) {
                     lplugin = results.local[uri]
                     lplugin.status = 'installed'
