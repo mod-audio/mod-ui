@@ -728,7 +728,6 @@ JqueryClass('pedalboard', {
         offsetY = Math.max(minOffsetY, offsetY)
         offsetY = Math.min(maxOffsetY, offsetY)
 
-        self.data('scale', scale)
         self.data('offsetX', offsetX)
         self.data('offsetY', offsetY)
 
@@ -741,10 +740,12 @@ JqueryClass('pedalboard', {
         }, {
             duration: duration,
             step: function (value, prop) {
-                if (prop.prop == 'scale') {
-                    self.css('webkitTransform', 'scale(' + value + ')')
-                    self.css('MozTransform', 'scale(' + value + ')')
+                if (prop.prop != 'scale') {
+                    return
                 }
+                self.css('webkitTransform', 'scale(' + value + ')')
+                self.css('MozTransform', 'scale(' + value + ')')
+                self.data('scale', value)
             },
         })
     },
@@ -921,8 +922,9 @@ JqueryClass('pedalboard', {
         }, {
             duration: time,
             step: function (scale, prop) {
-                if (prop.prop != 'scale')
+                if (prop.prop != 'scale') {
                     return
+                }
                 var width = viewWidth / scale
                 var height = viewHeight / scale
                 var offsetX = (viewWidth - width) / 2

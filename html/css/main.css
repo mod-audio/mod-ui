@@ -6991,6 +6991,15 @@ body {
 * {
   font-family: "cooper hewitt", Sans-serif !important;
 }
+.unpadded {
+  padding: 0 !important;
+}
+.unpadded-r {
+  padding: 0 0 0 7px;
+}
+.unpadded-l {
+  padding: 0 7px 0 0;
+}
 .ui-draggable:active {
   cursor: -webkit-grabbing !important;
 }

@@ -215,12 +215,14 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(cplugin)
             }
 
-            for (var uri in results.local) {
-                lplugin = results.local[uri]
-                lplugin.status = 'installed'
-                lplugin.latestVersion = null
-                self.cloudPluginBox('checkLocalScreenshot', lplugin)
-                plugins.push(lplugin)
+            if (! query.stable) {
+                for (var uri in results.local) {
+                    lplugin = results.local[uri]
+                    lplugin.status = 'installed'
+                    lplugin.latestVersion = null
+                    self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                    plugins.push(lplugin)
+                }
             }
 
             if (customRenderCallback) {

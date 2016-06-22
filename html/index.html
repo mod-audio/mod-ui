@@ -436,11 +436,16 @@ $('document').ready(function() {
         <!-- PEDALBOARD SHARE WINDOW -->
         <div id="share-window" class="save-popup mod-hidden">
             <div class="box">
-                <h1>SHARE</h1>
-                <a class="close-window" id="record-cancel"><i class="icon-black icon-remove"></i></a>
+                <h1>SHARE</h1>                
                 <form>
                     <div class="form-group" id="share-window-form">
-                        <label for="pedalboard-share-title"><input type="text" class="form-control" id="pedalboard-share-title"  placeholder="How will you call this pedalboard?"/></label>
+                      <div class="col-sm-6 unpadded-l">
+                        <label for="pedalboard-share-name">NAME<br /><input type="text" class="form-control" id="pedalboard-share-name"  /></label>
+                      </div>
+                      <div class="col-sm-6 unpadded">
+                        <label for="pedalboard-share-email">E-MAIL<br /><input type="text" class="form-control" id="pedalboard-share-email" /></label>
+                      </div>
+                        <label for="pedalboard-share-title">PEDALBOARD NAME<br /><input type="text" class="form-control" id="pedalboard-share-title"  placeholder="How will you call this pedalboard?"/></label>
                         <label for="pedalboard-share-comment"><textarea rows="4" id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea></label>
                     </div>
                     <div id="share-window-wrapper">
@@ -449,7 +454,7 @@ $('document').ready(function() {
                             <span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
                             <p><small>(optional)</small><p>
                         </div>
-                        <div class="controls actions mod-hidden" id="record-step-2">
+                        <div class="controls mod-hidden" id="record-step-2">
                           <div class="textcenter">
                             <h2>Recording starts in</h2>
                             <span class="btn btn-danger" id="record-countdown">3</span>
@@ -478,19 +483,20 @@ $('document').ready(function() {
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
                             <h3>Uploaded completed!</h3>
-                            <button class="btn btn-danger btn-large btn-block fb" >
+                            <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=" id="share-window-fb">
                                 Share to Facebook <img src="../img/icons/36/share-fb.png" />
-                            </button>
-                            <button class="btn btn-inverse btn-large btn-block tw" >
+                            </a>
+                            <a class="btn btn-inverse btn-large btn-block tw" target="_blank" href="https://twitter.com/intent/tweet?source=" id="share-window-tw">
                                 Share to Twitter <img src="../img/icons/36/share-tw.png" />
-                            </button>
-                            <p id="share-window-url"></p>
+                            </a>
+                            <input class="share-url" value="http://pedalboardurl.com" onmousedown="this.select()" readonly id="share-window-url"></p>
                         </div>
                     </div>
                     <div id="share-window-bottom">
-                        <div id="share-wait-screenshot">Waiting for screenshot...</div>
+                        <div id="share-wait-screenshot">Waiting for screenshot...</div>                        
                         <div class="textright">
-                            <button style="margin-top: 3px" class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
+                          <button class="js-close btn btn-danger">Close</button>
+                          <button class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
                         </div>
                     </div>
                 </form>
