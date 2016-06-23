@@ -655,25 +655,30 @@ class PedalboardPackBundle(web.RequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         parentpath = os.path.abspath(os.path.join(bundlepath, ".."))
-        bundledir  = bundlepath.replace(parentpath, "").replace(os.sep, "")
+        bundledir  = os.path.basename(bundlepath)
+        tmpaudio   = os.path.join(bundlepath, "audio.ogg")
         tmpfile    = "/tmp/upload-pedalboard.tar.gz"
 
         # make sure the screenshot is ready before proceeding
         yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
 
-        oldcwd = os.getcwd()
-        os.chdir(parentpath) # hmm, is there os.path.parent() ?
+        if SESSION.recordhandle is not None:
+            SESSION.recordhandle.seek(0)
+            with open(tmpaudio, 'wb') as fh:
+                fh.write(SESSION.recordhandle.read())
 
-        # FIXME - don't use external tools!
-        os.system("tar -cvzf %s %s" % (tmpfile, bundledir))
+        # FIXME - don't block wait
+        tarcmd = 'tar -cvzf "%s" -C "%s" "%s"' % (tmpfile, parentpath, bundledir)
+        print(tarcmd)
+        os.system(tarcmd)
 
-        os.chdir(oldcwd)
+        if SESSION.recordhandle is not None:
+            os.remove(tmpaudio)
 
-        with open(tmpfile, 'rb') as fd:
-            self.write(fd.read())
+        with open(tmpfile, 'rb') as fh:
+            self.write(fh.read())
 
         self.finish()
-
         os.remove(tmpfile)
 
 class PedalboardLoadBundle(web.RequestHandler):
