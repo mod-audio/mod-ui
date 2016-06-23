@@ -36,7 +36,7 @@ from mod.settings import (APP, LOG,
                           LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, DATA_DIR, AVATAR_URL,
+                          PACKAGE_REPOSITORY, DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP, BLUETOOTH_PIN)
 
 from mod import check_environment, jsoncall, json_handler
@@ -872,6 +872,13 @@ class TemplateHandler(web.RequestHandler):
 
     def index(self):
         context = {}
+        user_id = {}
+
+        try:
+            with open(USER_ID_JSON_FILE, 'r') as fd:
+                user_id = json.load(fd)
+        except:
+            pass
 
         with open(DEFAULT_ICON_TEMPLATE, 'r') as fd:
             default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
@@ -902,6 +909,8 @@ class TemplateHandler(web.RequestHandler):
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY else 'false',
+            'user_name': tornado.escape.xhtml_escape(user_id.get("name", "")),
+            'user_email': tornado.escape.xhtml_escape(user_id.get("email", "")),
         }
         return context
 
@@ -970,6 +979,19 @@ class TrueBypass(web.RequestHandler):
 class ResetXruns(web.RequestHandler):
     def post(self):
         reset_xruns()
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(True))
+        self.finish()
+
+class SaveUserId(web.RequestHandler):
+    def post(self):
+        name  = self.get_argument("name")
+        email = self.get_argument("email")
+        with open(USER_ID_JSON_FILE, 'w') as fh:
+            json.dump({
+                "name" : name,
+                "email": email,
+            }, fh)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(True))
         self.finish()
@@ -1223,6 +1245,8 @@ application = web.Application(
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/reset_xruns/", ResetXruns),
+
+            (r"/save_user_id/", SaveUserId),
 
             (r"/(index.html)?$", TemplateHandler),
             (r"/([a-z]+\.html)$", TemplateHandler),

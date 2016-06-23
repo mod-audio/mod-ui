@@ -250,9 +250,11 @@ JqueryClass('shareBox', {
         var self = $(this)
         var step = self.data('step')
         var data = {
-            bundlepath: self.data('bundlepath'),
-            description: self.find('textarea').val(),
-            title: self.find('input[type=text]').val()
+            bundlepath : self.data('bundlepath'),
+            name       : self.find('#pedalboard-share-name').val(),
+            email      : self.find('#pedalboard-share-email').val(),
+            description: self.find('#pedalboard-share-title').val(),
+            title      : self.find('#pedalboard-share-comment').val()
         }
         $('#record-share').attr('disabled', true)
 
@@ -307,7 +309,7 @@ JqueryClass('shareBox', {
         $('#share-window-links').hide()
         self.shareBox('showStep', 1)
         self.data('bundlepath', bundlepath)
-        self.find('input[type=text]').val(title)
+        self.find('#pedalboard-share-title').val(title)
         var text = self.find('textarea')
         text.val('').focus()
         self.data('screenshotGenerated', false)

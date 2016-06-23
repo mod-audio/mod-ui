@@ -442,13 +442,13 @@ $('document').ready(function() {
                       <div class="col-sm-6 unpadded-l">
                           <label for="pedalboard-share-name">
                               AUTHOR NAME <br/>
-                              <input type="text" class="form-control" id="pedalboard-share-name"/>
+                              <input type="text" class="form-control" id="pedalboard-share-name" value="{{user_name}}"/>
                           </label>
                       </div>
                       <div class="col-sm-6 unpadded">
                           <label for="pedalboard-share-email">
                               E-MAIL <br/>
-                              <input type="text" class="form-control" id="pedalboard-share-email"/>
+                              <input type="text" class="form-control" id="pedalboard-share-email" value="{{user_email}}"/>
                           </label>
                       </div>
                           <label for="pedalboard-share-title">
@@ -506,7 +506,7 @@ $('document').ready(function() {
                     <div id="share-window-bottom">
                         <div id="share-wait-screenshot">Waiting for screenshot...</div>
                         <div class="textright">
-                            <button class="js-close btn btn-danger">Close</button>
+                            <button class="js-close btn btn-danger" id="record-cancel">Close</button>
                             <button class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
                         </div>
                     </div>
