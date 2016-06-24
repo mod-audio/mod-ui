@@ -440,13 +440,24 @@ $('document').ready(function() {
                 <form>
                     <div class="form-group" id="share-window-form">
                       <div class="col-sm-6 unpadded-l">
-                        <label for="pedalboard-share-name">NAME<br /><input type="text" class="form-control" id="pedalboard-share-name"  /></label>
+                          <label for="pedalboard-share-name">
+                              AUTHOR NAME <br/>
+                              <input type="text" class="form-control" id="pedalboard-share-name" value="{{user_name}}"/>
+                          </label>
                       </div>
                       <div class="col-sm-6 unpadded">
-                        <label for="pedalboard-share-email">E-MAIL<br /><input type="text" class="form-control" id="pedalboard-share-email" /></label>
+                          <label for="pedalboard-share-email">
+                              E-MAIL <br/>
+                              <input type="text" class="form-control" id="pedalboard-share-email" value="{{user_email}}"/>
+                          </label>
                       </div>
-                        <label for="pedalboard-share-title">PEDALBOARD NAME<br /><input type="text" class="form-control" id="pedalboard-share-title"  placeholder="How will you call this pedalboard?"/></label>
-                        <label for="pedalboard-share-comment"><textarea rows="4" id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea></label>
+                          <label for="pedalboard-share-title">
+                              PEDALBOARD NAME <br/>
+                              <input type="text" class="form-control" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
+                          </label>
+                          <label for="pedalboard-share-comment">
+                              <textarea rows="4" id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea>
+                          </label>
                     </div>
                     <div id="share-window-wrapper">
                         <div class="textcenter" id="record-step-1">
@@ -483,20 +494,20 @@ $('document').ready(function() {
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
                             <h3>Uploaded completed!</h3>
-                            <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=" id="share-window-fb">
-                                Share to Facebook <img src="../img/icons/36/share-fb.png" />
+                            <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="#" id="share-window-fb">
+                                Share to Facebook <img src="/img/icons/36/share-fb.png" />
                             </a>
-                            <a class="btn btn-inverse btn-large btn-block tw" target="_blank" href="https://twitter.com/intent/tweet?source=" id="share-window-tw">
-                                Share to Twitter <img src="../img/icons/36/share-tw.png" />
+                            <a class="btn btn-inverse btn-large btn-block tw" target="_blank" href="#" id="share-window-tw">
+                                Share to Twitter <img src="/img/icons/36/share-tw.png" />
                             </a>
-                            <input class="share-url" value="http://pedalboardurl.com" onmousedown="this.select()" readonly id="share-window-url"></p>
+                            <input class="share-url" value="" onmousedown="this.select()" readonly id="share-window-url" style="background-color:inherit;"></input>
                         </div>
                     </div>
                     <div id="share-window-bottom">
                         <div id="share-wait-screenshot">Waiting for screenshot...</div>
                         <div class="textright">
-                          <button class="js-close btn btn-danger">Close</button>
-                          <button class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
+                            <button class="js-close btn btn-danger" id="record-cancel">Close</button>
+                            <button class="js-close btn btn-default btn-success" id="record-share" disabled="disabled">Just share</button>
                         </div>
                     </div>
                 </form>

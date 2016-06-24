@@ -430,6 +430,16 @@ function Desktop(elements) {
         })
     }
 
+    this.enableDevFeatures = function () {
+        // enable pedalboard actions
+        var actions = $("#pedalboard-actions")
+        actions.find(".js-preset").show()
+        actions.find(".js-share").show()
+
+        // enable non-stable plugins
+        $("#cloud-plugins-stable").parent().show()
+    }
+
     this.setupApp = function () {
         self.isApp = true
         $('#mod-bypassLeft').hide()
@@ -703,16 +713,29 @@ function Desktop(elements) {
         recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
         share: function (data, callback) {
+            // save user data
+            $.ajax({
+                url: '/save_user_id/',
+                method: 'POST',
+                data: data,
+                success: function () {},
+                error: function () {},
+                cache: false,
+                global: false,
+                dataType: 'json',
+            })
+
+            // pack & upload to cloud
             $.ajax({
                 url: SITEURL + '/pedalboards/',
                 method: 'POST',
                 contentType: 'application/json',
                 headers: { 'Authorization' : 'MOD ' + desktop.cloudAccessToken },
                 data: JSON.stringify({
-                    author: "Alex Cunha",
-                    email: "ale@moddevices.com",
+                    author     : data.name,
+                    email      : data.email,
                     description: data.description,
-                    title: data.title,
+                    title      : data.title,
                 }),
                 success: function (resp) {
                     var transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
