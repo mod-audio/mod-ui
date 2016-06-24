@@ -439,9 +439,15 @@ function Desktop(elements) {
         // enable non-stable plugins
         $("#cloud-plugins-stable").parent().show()
 
-        // enable install & update all plugins
+        // show install/update all plugins
         $('#cloud_install_all').show()
         $('#cloud_update_all').show()
+
+        // show xrun counter
+        $('#mod-xruns').show()
+
+        // echo to you
+        return "Dev mode enabled!"
     }
 
     this.setupApp = function () {
