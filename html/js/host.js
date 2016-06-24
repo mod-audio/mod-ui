@@ -17,7 +17,8 @@
 
 var ws
 var cached_cpuLoad = null,
-    cached_xruns   = null
+    cached_xruns   = null,
+    timeout_xruns  = null
 
 $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
@@ -48,6 +49,16 @@ $('document').ready(function() {
             if (xruns != cached_xruns) {
                 cached_xruns = xruns
                 $("#mod-xruns").text(xruns == 1 ? (xruns.toString()+" Xrun") : (xruns.toString()+" Xruns"))
+
+                if (timeout_xruns) {
+                    clearTimeout(timeout_xruns)
+                } else {
+                    $("#cpu-bar-text").css({color:"red"})
+                }
+                timeout_xruns = setTimeout(function () {
+                    $("#cpu-bar-text").css({color:"white"})
+                    timeout_xruns = null
+                }, 500)
             }
             return
         }
