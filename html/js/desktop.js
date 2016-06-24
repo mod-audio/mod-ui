@@ -438,6 +438,10 @@ function Desktop(elements) {
 
         // enable non-stable plugins
         $("#cloud-plugins-stable").parent().show()
+
+        // enable install & update all plugins
+        $('#cloud_install_all').show()
+        $('#cloud_update_all').show()
     }
 
     this.setupApp = function () {
