@@ -430,6 +430,16 @@ function Desktop(elements) {
         })
     }
 
+    this.enableDevFeatures = function () {
+        // enable pedalboard actions
+        var actions = $("#pedalboard-actions")
+        actions.find(".js-preset").show()
+        actions.find(".js-share").show()
+
+        // enable non-stable plugins
+        $("#cloud-plugins-stable").parent().show()
+    }
+
     this.setupApp = function () {
         self.isApp = true
         $('#mod-bypassLeft').hide()
