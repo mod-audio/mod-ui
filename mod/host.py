@@ -396,7 +396,6 @@ class Host(object):
             cmd = msg[0]
 
             if cmd == "param_set":
-                print("param_set", msg)
                 instance_id = int(msg[1])
                 portsymbol  = msg[2]
                 value       = float(msg[3])
