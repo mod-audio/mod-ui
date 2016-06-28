@@ -253,8 +253,8 @@ JqueryClass('shareBox', {
             bundlepath : self.data('bundlepath'),
             name       : self.find('#pedalboard-share-name').val(),
             email      : self.find('#pedalboard-share-email').val(),
-            description: self.find('#pedalboard-share-title').val(),
-            title      : self.find('#pedalboard-share-comment').val()
+            description: self.find('#pedalboard-share-comment').val(),
+            title      : self.find('#pedalboard-share-title').val()
         }
         $('#record-share').attr('disabled', true)
 
