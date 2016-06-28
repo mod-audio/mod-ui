@@ -32,7 +32,8 @@ from tornado import gen, iostream, web, websocket
 from uuid import uuid4
 
 from mod.settings import (APP, LOG,
-                          HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT, CLOUD_HTTP_ADDRESS,
+                          HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
+                          CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
@@ -891,6 +892,7 @@ class TemplateHandler(web.RequestHandler):
             'default_settings_template': default_settings_template,
             'default_pedalboard': DEFAULT_PEDALBOARD,
             'cloud_url': CLOUD_HTTP_ADDRESS,
+            'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
