@@ -296,17 +296,6 @@ function GUI(effect, options) {
             console.log("WARNING: setPortValue called with > max value, symbol:", symbol)
         }
 
-        // If trigger, switch back to default value after a few miliseconds
-        // Careful not to actually send the change to the host, it's not needed
-        if (port.properties.indexOf("trigger") >= 0 && value != port.ranges.default) {
-            setTimeout(function () {
-                self.setPortWidgetsValue(symbol, port.ranges.default, null, false)
-
-                // When running SDK there's no host, so simulate trigger here.
-                if (isSDK) options.change(mod_port, port.ranges.default);
-            }, 200)
-        }
-
         // update our own widgets
         self.setPortWidgetsValue(symbol, value, source, false)
 
@@ -338,6 +327,17 @@ function GUI(effect, options) {
         }
 
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
+
+        // If trigger, switch back to default value after a few miliseconds
+        // Careful not to actually send the change to the host, it's not needed
+        if (port.properties.indexOf("trigger") >= 0 && value != port.ranges.default) {
+            setTimeout(function () {
+                self.setPortWidgetsValue(symbol, port.ranges.default, null, false)
+
+                // When running SDK there's no host, so simulate trigger here.
+                if (isSDK) options.change(mod_port, port.ranges.default);
+            }, 200)
+        }
     }
 
     this.getPortValue = function (symbol) {
