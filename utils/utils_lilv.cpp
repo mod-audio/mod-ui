@@ -2824,7 +2824,7 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
             continue;
 
         // check if it's already cached
-        if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
+        if (PLUGNFO_Mini.count(uri) > 0)
             continue;
 
         // store new empty data
