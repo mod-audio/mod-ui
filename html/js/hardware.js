@@ -245,6 +245,26 @@ function HardwareManager(options) {
             var step = (maxv-minv)/100
             min.attr("step", step)
             max.attr("step", step)
+
+            actuatorSelect.bind('change keyup', function () {
+                var act = $(this).val()
+                if (act == "/midi-learn" || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+                    form.find('.range').hide()
+                    form.find('.sensibility').hide()
+                } else {
+                    form.find('.range').show()
+                    form.find('.sensibility').show()
+                }
+            })
+        } else {
+            actuatorSelect.bind('change keyup', function () {
+                var act = $(this).val()
+                if (act == "/midi-learn" || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+                    form.find('.range').hide()
+                } else {
+                    form.find('.range').show()
+                }
+            })
         }
 
         var sensibility = form.find('select[name=steps]')
