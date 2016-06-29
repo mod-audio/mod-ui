@@ -80,11 +80,9 @@ DEFAULT_PACKAGE_SERVER_PORT = 8889
 # using current host and default port above
 PACKAGE_SERVER_ADDRESS = os.environ.pop('MOD_PACKAGE_SERVER_ADDRESS', None)
 
-# Cloud API address, without final slash
+# Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com/v2")
-
-# Pedalboards API address, with final slash
-PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "http://pedalboards.dev.moddevices.com/")
+PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "http://pedalboards.dev.moddevices.com")
 
 if os.path.exists("/root/repository"):
     fh = open("/root/repository")

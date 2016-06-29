@@ -267,7 +267,7 @@ JqueryClass('shareBox', {
                     $('#record-step-' + step).hide()
                     $('#record-share').attr('disabled', resp.ok).hide()
 
-                    var pb_url = PEDALBOARDS_URL + resp.id
+                    var pb_url = PEDALBOARDS_URL + '/' + resp.id
                     $('#share-window-url').attr('value', pb_url)
                     $('#share-window-fb').attr('href', "https://www.facebook.com/sharer/sharer.php?u="+pb_url)
                     $('#share-window-tw').attr('href', "https://twitter.com/intent/tweet?source="+pb_url)
