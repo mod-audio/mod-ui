@@ -650,37 +650,71 @@ class PedalboardSave(web.RequestHandler):
         self.finish()
 
 class PedalboardPackBundle(web.RequestHandler):
-    # TODO: need to update this to the latest cloud API
     @web.asynchronous
     @gen.engine
     def get(self):
+        # ~/.pedalboards/name.pedalboard/
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        # ~/.pedalboards/
         parentpath = os.path.abspath(os.path.join(bundlepath, ".."))
-        bundledir  = os.path.basename(bundlepath)
-        tmpaudio   = os.path.join(bundlepath, "audio.ogg")
-        tmpfile    = "/tmp/upload-pedalboard.tar.gz"
+        # name.pedalboard
+        bundlename = os.path.basename(bundlepath)
+        # /tmp/*
+        tmpdir   = "/tmp"
+        tmpaudio = os.path.join(tmpdir, "audio.ogg")
+        tmpstep1 = os.path.join(tmpdir, "pedalboard.tar.gz")
+        tmpstep2 = os.path.join(tmpdir, "pedalboard+audio.tar.gz")
 
-        # make sure the screenshot is ready before proceeding
-        yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
+        # local usage
+        ioloop = tornado.ioloop.IOLoop.instance()
 
-        if SESSION.recordhandle is not None:
+        # save variable locally, used across callbacks
+        self.proc = None
+
+        # final callback
+        def end_procs(tmpfile):
+            with open(tmpfile, 'rb') as fh:
+                self.write(fh.read())
+            self.finish()
+            os.remove(tmpfile)
+
+        # callback for audio + pedalboard.tar.gz packing
+        def end_proc2(fileno, event):
+            if self.proc.poll() is None:
+                return
+            ioloop.remove_handler(fileno)
+
+            os.remove(tmpaudio)
+            os.remove(tmpstep1)
+            end_procs(tmpstep2)
+
+        # callback for pedalboard packing
+        def end_proc1(fileno, event):
+            if self.proc.poll() is None:
+                return
+            ioloop.remove_handler(fileno)
+
+            # stop now if no audio available
+            if SESSION.recordhandle is None:
+                end_procs(tmpstep1)
+                return
+
+            # dump audio to disk
             SESSION.recordhandle.seek(0)
             with open(tmpaudio, 'wb') as fh:
                 fh.write(SESSION.recordhandle.read())
 
-        # FIXME - don't block wait
-        tarcmd = 'tar -cvzf "%s" -C "%s" "%s"' % (tmpfile, parentpath, bundledir)
-        print(tarcmd)
-        os.system(tarcmd)
+            # pack audio + pedalboard.tar.gz
+            self.proc = subprocess.Popen(['tar', 'czf', tmpstep2, "audio.ogg", "pedalboard.tar.gz"],
+                                        cwd=tmpdir,
+                                        stdout=subprocess.PIPE)
+            ioloop.add_handler(self.proc.stdout.fileno(), end_proc2, 16)
 
-        if SESSION.recordhandle is not None:
-            os.remove(tmpaudio)
-
-        with open(tmpfile, 'rb') as fh:
-            self.write(fh.read())
-
-        self.finish()
-        os.remove(tmpfile)
+        # start packing pedalboard
+        self.proc = subprocess.Popen(['tar', 'czf', tmpstep1, bundlename],
+                                     cwd=parentpath,
+                                     stdout=subprocess.PIPE)
+        ioloop.add_handler(self.proc.stdout.fileno(), end_proc1, 16)
 
 class PedalboardLoadBundle(web.RequestHandler):
     @web.asynchronous
