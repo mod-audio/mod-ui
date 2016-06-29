@@ -359,9 +359,7 @@ JqueryClass('pedalboard', {
         // We might want to bypass application
         self.data('bypassApplication', false)
 
-        self.data('wait').start('Loading pedalboard...')
         var ourCallback = function () {
-            self.data('wait').stop()
             if (callback)
                 callback()
         }
