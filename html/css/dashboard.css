@@ -779,7 +779,16 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 #share-window  #record-rec {
 	border-radius: 50% !important;
-    padding-top: 8px !important;
+    padding: 0 !important;
+}
+#record-rec u {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin: 16px auto;
+    display: block;
+    background: #d43f3a;
+    border: 4px solid white;
 }
 #share-window span.btn {
 	text-align: center;
