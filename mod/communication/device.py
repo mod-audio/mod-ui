@@ -32,5 +32,5 @@ def get_image_version():
         raise Exception('Missing image version path')
     if os.path.isfile(IMAGE_VERSION_PATH):
         with open(IMAGE_VERSION_PATH, 'r') as fh:
-            return fh.read()
+            return fh.read().strip()
     return 'none'
