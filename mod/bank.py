@@ -81,7 +81,7 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
 
     with open(LAST_STATE_JSON_FILE, 'w') as fh:
         json.dump({
-            'bank': bank,
+            'bank': bank-1,
             'pedalboard': pedalboard
         }, fh)
 
@@ -100,7 +100,7 @@ def get_last_bank_and_pedalboard():
         print("ERROR in banks.py: failed to load last state file")
         return (-1, None)
 
-    return (state['bank'], state['pedalboard'])
+    return (state['bank']+1, state['pedalboard'])
 
 # Remove a pedalboard from banks, and banks that are or will become empty
 def remove_pedalboard_from_banks(pedalboard):

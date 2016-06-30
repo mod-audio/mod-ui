@@ -40,6 +40,7 @@ from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import (charPtrToString,
                        is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
                        get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
+                       get_all_pedalboards,
                        init_jack, close_jack, get_jack_data, get_jack_sample_rate,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
@@ -80,6 +81,16 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
 # Limits
 kMaxAddressableScalepoints = 100
+
+def get_all_good_pedalboards():
+    allpedals  = get_all_pedalboards()
+    goodpedals = []
+
+    for pb in allpedals:
+        if not pb['broken']:
+            goodpedals.append(pb)
+
+    return goodpedals
 
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
@@ -134,6 +145,7 @@ class Host(object):
         self._idle = True
         self.mapper = InstanceIdMapper()
         self.banks = list_banks()
+        self.allpedalboards = None
         self.plugins = {}
         self.connections = []
         self.audioportsIn = []
@@ -335,14 +347,16 @@ class Host(object):
             self._load_addressings(pedalboard)
 
         # report pedalboard and banks
-        if bank_id >= 0 and pedalboard and bank_id < len(self.banks):
-            bank = self.banks[bank_id]
+        if bank_id > 0 and pedalboard and bank_id <= len(self.banks):
+            bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
             navigateFootswitches = bank['navigateFootswitches']
         else:
+            if self.allpedalboards is None:
+                self.allpedalboards = get_all_good_pedalboards()
             bank_id = 0
-            pedalboard = ""
-            pedalboards = []
+            pedalboard = DEFAULT_PEDALBOARD
+            pedalboards = self.allpedalboards
             navigateFootswitches = False
 
         def footswitch_callback(ok):
@@ -371,6 +385,7 @@ class Host(object):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
         self.banks = []
+        self.allpedalboards = []
         self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
@@ -382,6 +397,7 @@ class Host(object):
             self.initialize_hmi(False, False, callback)
 
         self.banks = list_banks()
+        self.allpedalboards = get_all_good_pedalboards()
         self.hmi.ui_dis(initialize_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -663,7 +679,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
 
-        save_last_bank_and_pedalboard(-1, "")
+        save_last_bank_and_pedalboard(0, "")
         self.send("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
@@ -1130,7 +1146,7 @@ class Host(object):
             self.pedalboard_name     = ""
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
-            #save_last_bank_and_pedalboard(-1, "")
+            #save_last_bank_and_pedalboard(0, "")
         else:
             self.pedalboard_empty    = False
             self.pedalboard_modified = False
@@ -1178,7 +1194,7 @@ class Host(object):
         self.pedalboard_modified = False
         self.save_state_to_ttl(bundlepath, title, titlesym)
 
-        save_last_bank_and_pedalboard(-1, bundlepath)
+        save_last_bank_and_pedalboard(0, bundlepath)
 
         return bundlepath
 
@@ -1880,26 +1896,47 @@ _:b%i
 
     def hmi_list_banks(self, callback):
         logging.info("hmi list banks")
-        banks = " ".join('"%s" %d' % (bank['title'], i) for i, bank in enumerate(self.banks))
+
+        if len(self.allpedalboards) == 0:
+            callback(True, "")
+            return
+
+        banks = "All 0"
+
+        if len(self.banks) > 0:
+            banks += " "
+            banks += " ".join('"%s" %d' % (bank['title'], i+1) for i, bank in enumerate(self.banks))
+
         callback(True, banks)
 
     def hmi_list_bank_pedalboards(self, bank_id, callback):
         logging.info("hmi list bank pedalboards")
-        if bank_id < len(self.banks):
-            pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper(),
-                                                  pb['bundle']) for pb in self.banks[bank_id]['pedalboards'])
+
+        if bank_id < 0 or bank_id > len(self.banks):
+            print("ERROR: Trying to list pedalboards using out of bounds bank id %i" % (bank_id))
+            callback(False, "")
+            return
+
+        if bank_id == 0:
+            pedalboards = self.allpedalboards
         else:
-            pedalboards = ""
+            pedalboards = self.banks[bank_id-1]['pedalboards']
+
+        pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper(), pb['bundle']) for pb in pedalboards)
         callback(True, pedalboards)
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
-        if bank_id < 0 or bank_id >= len(self.banks):
-            print("ERROR: Trying to list pedalboards of out of bounds bank id %i" % (bank_id))
+
+        if bank_id < 0 or bank_id > len(self.banks):
+            print("ERROR: Trying to load pedalboard using out of bounds bank id %i" % (bank_id))
             callback(False)
             return
 
-        navigateFootswitches = self.banks[bank_id]['navigateFootswitches']
+        if bank_id == 0:
+            navigateFootswitches = False
+        else:
+            navigateFootswitches = self.banks[bank_id-1]['navigateFootswitches']
 
         def load_callback(ok):
             self.load(bundlepath, bank_id)
