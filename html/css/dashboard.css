@@ -802,7 +802,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	height: 75px;
 }
 #share-window  .btn-large {
-    width:50%;
+    width:60%;
     margin:5px auto 0 auto;
     text-align: left;
     white-space: normal;
@@ -820,7 +820,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     color: white;
 }
 #share-window input.share-url {
-    margin: 5px auto;
+    margin: 30px auto;
     display: block;
     width: 100%;
     border: 1px solid #e1e1e1;
