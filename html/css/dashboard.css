@@ -822,7 +822,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 #share-window input.share-url {
     margin: 5px auto;
     display: block;
-    width: 50%;
+    width: 100%;
     border: 1px solid #e1e1e1;
     padding-left: 5px;
 }

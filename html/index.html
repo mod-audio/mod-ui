@@ -495,13 +495,32 @@ $('document').ready(function() {
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
                             <h3>Uploaded completed!</h3>
+                            <input class="share-url" value="" onmouseup="this.select()" readonly id="share-window-url-link" style="background-color:inherit;"></input>
+                            <a class="btn btn-default btn-large btn-block" target="_blank" id="share-window-url">
+                                Copy url to clipboard
+<script>
+var copyTextareaBtn = document.getElementById('share-window-url');
+
+copyTextareaBtn.addEventListener('click', function(event) {
+  var copyTextarea = document.getElementById('share-window-url-link');
+  copyTextarea.select();
+
+  try {
+    var successful = document.execCommand('copy');    
+  } catch (err) {
+    console.log('Oops, unable to copy');
+  }
+});
+</script>
+
+                            </a>
                             <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="#" id="share-window-fb">
                                 Share to Facebook <img src="/img/icons/36/share-fb.png" />
                             </a>
                             <a class="btn btn-inverse btn-large btn-block tw" target="_blank" href="#" id="share-window-tw">
                                 Share to Twitter <img src="/img/icons/36/share-tw.png" />
                             </a>
-                            <input class="share-url" value="" onmousedown="this.select()" readonly id="share-window-url" style="background-color:inherit;"></input>
+                            
                         </div>
                     </div>
                     <div id="share-window-bottom">
