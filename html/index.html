@@ -838,9 +838,13 @@ $('document').ready(function() {
             <div id="bank-addressings" class="mod-hidden">
               <h1>Untitled</h1>
               <form class="form">
-                <div class="checkbox">
-                  <label><input type="checkbox" class="checkbox" id="js-navigate-bank" />Navigate pedalboards using footswitches</label>
-                </div>
+                  <label>
+                      <input type="radio" name="bank-navigation" autocomplete="off" id="js-navigate-footswitches" /> Navigate pedalboards using footswitches
+                  </label>
+                  <label>
+                      <input type="radio" name="bank-navigation" autocomplete="off" checked="checked" id="js-navigate-midi" /> Navigate pedalboards using MIDI program, channel:
+                      <input type="number" id="js-navigate-midi-channel" value="1" min="1" max="16" step="1"/>
+                  </label>
               </form>
               <!--
               <h2>Bank addressings:</h2>

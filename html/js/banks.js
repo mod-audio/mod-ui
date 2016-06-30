@@ -12,7 +12,9 @@ JqueryClass('bankBox', {
             resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
             resultCanvasMode: self.find('#bank-pedalboards-result .js-mode'),
             bankAddressing: self.find('#bank-addressings'),
-            bankNavigateFootswitches: self.find("#js-navigate-bank"),
+            bankNavigateFootswitches: self.find("#js-navigate-footswitches"),
+            bankNavigateMIDI: self.find("#js-navigate-midi"),
+            bankNavigateChannel: self.find("#js-navigate-midi-channel"),
             saving: $('#banks-saving'),
             list: function (callback) {
                 callback([])
@@ -42,10 +44,26 @@ JqueryClass('bankBox', {
             self.bankBox('create')
         })
 
-        options.bankNavigateFootswitches.click(function () {
+        options.bankNavigateFootswitches.change(function () {
             var current = self.data('currentBank')
             if (current) {
                 current.data('navigateFootswitches', $(this).is(':checked'))
+                self.bankBox('save')
+            }
+            options.bankNavigateChannel.addClass("disabled")
+        })
+        options.bankNavigateMIDI.change(function () {
+            var current = self.data('currentBank')
+            if (current) {
+                current.data('navigateFootswitches', !$(this).is(':checked'))
+                self.bankBox('save')
+            }
+            options.bankNavigateChannel.removeClass("disabled")
+        })
+        options.bankNavigateChannel.change(function () {
+            var current = self.data('currentBank')
+            if (current) {
+                current.data('navigateChannel', $(this).val())
                 self.bankBox('save')
             }
         })
@@ -174,6 +192,9 @@ JqueryClass('bankBox', {
                         self.bankBox('selectBank', bank)
                     }
                     */
+                    if (banks[i].navigateChannel == null) {
+                        banks[i].navigateChannel = 16
+                    }
                     self.bankBox('renderBank', banks[i], i)
                 }
             }
@@ -202,6 +223,7 @@ JqueryClass('bankBox', {
                 title: bank.find('.js-bank-title').text(),
                 pedalboards: pedalboardData,
                 navigateFootswitches: bank.data('navigateFootswitches'),
+                navigateChannel: bank.data('navigateChannel'),
             })
         });
         self.data('saving').html('Auto saving banks...').show()
@@ -234,6 +256,7 @@ JqueryClass('bankBox', {
             'title': '',
             'pedalboards': [],
             'navigateFootswitches': false,
+            'navigateChannel': 16,
         }
         var bank = self.bankBox('renderBank', bankData)
         self.bankBox('editBank', bank)
@@ -247,6 +270,7 @@ JqueryClass('bankBox', {
         bank.data('selected', false)
         bank.data('pedalboards', $('<div>'))
         bank.data('navigateFootswitches', bankData.navigateFootswitches)
+        bank.data('navigateChannel', bankData.navigateChannel)
         bank.data('title', bankData.title)
 
         var i, pedalboardData, rendered
@@ -315,6 +339,7 @@ JqueryClass('bankBox', {
         bank.addClass('selected')
 
         self.data('bankNavigateFootswitches').prop("checked", bank.data('navigateFootswitches'))
+        self.data('bankNavigateChannel').attr("value", bank.data('navigateChannel'))
         self.data('bankAddressing').find('h1').text(bank.data('title') || "Untitled")
         self.data('bankAddressing').show()
     },

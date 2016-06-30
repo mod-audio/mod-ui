@@ -146,6 +146,7 @@ class Host(object):
         self.mapper = InstanceIdMapper()
         self.banks = list_banks()
         self.allpedalboards = None
+        self.bank_id = 0
         self.plugins = {}
         self.connections = []
         self.audioportsIn = []
@@ -248,16 +249,31 @@ class Host(object):
         self.init_jack()
         self.open_connection_if_needed(None)
 
+        if self.allpedalboards is None:
+            self.allpedalboards = get_all_good_pedalboards()
+
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         if pedalboard:
-            self.load(pedalboard, bank_id)
+            self.bank_id = bank_id
+            self.load(pedalboard)
 
         else:
+            self.bank_id = 0
             self.send("remove -1", lambda r:None, datatype='boolean')
 
             if os.path.exists(DEFAULT_PEDALBOARD):
-                self.load(DEFAULT_PEDALBOARD, -1, True)
+                self.load(DEFAULT_PEDALBOARD, True)
+
+        if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
+            bank = self.banks[self.bank_id-1]
+            navigateFootswitches = bank['navigateFootswitches']
+            navigateChannel      = int(bank['navigateChannel'])-1 if "navigateChannel" in bank.keys() and not navigateFootswitches else 15
+        else:
+            navigateFootswitches = False
+            navigateChannel      = 15
+
+        self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel), lambda r:None, datatype='boolean')
 
     def init_jack(self):
         self.audioportsIn  = []
@@ -384,9 +400,12 @@ class Host(object):
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
+        def ui_con_callback(ok):
+            self.hmi.ui_con(footswitch_bank_callback)
+
         self.banks = []
         self.allpedalboards = []
-        self.hmi.ui_con(footswitch_bank_callback)
+        self.send("midi_program_listen 0 -1", ui_con_callback, datatype='boolean')
 
     def end_session(self, callback):
         if not self.hmi.initialized:
@@ -443,6 +462,25 @@ class Host(object):
 
                 self.msg_callback("midi_map %s %s %i %i" % (instance, portsymbol, channel, controller))
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+            elif cmd == "midi_program":
+                program = int(msg[1])
+
+                if self.bank_id > 0 and self.bank_id <= len(self.banks):
+                    pedalboards = self.banks[self.bank_id-1]
+                else:
+                    pedalboards = self.allpedalboards
+
+                if program >= 0 and program < len(pedalboards):
+                    bundlepath = pedalboards[program]['bundle']
+
+                    def load_callback(ok):
+                        self.load(bundlepath)
+
+                    def hmi_clear_callback(ok):
+                        self.hmi.clear(load_callback)
+
+                    self.reset(hmi_clear_callback)
 
             else:
                 logging.error("[host] unrecognized command: %s" % cmd)
@@ -668,6 +706,7 @@ class Host(object):
             self.msg_callback("remove :all")
             callback(ok)
 
+        self.bank_id = 0
         self.plugins = {}
         self.connections = []
         self.mapper.clear()
@@ -994,7 +1033,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
 
-    def load(self, bundlepath, bankId, isDefault=False):
+    def load(self, bundlepath, isDefault=False):
         self.msg_callback("loading_start %i 0" % int(isDefault))
 
         pb = get_pedalboard_info(bundlepath)
@@ -1152,7 +1191,7 @@ class Host(object):
             self.pedalboard_modified = False
             self.pedalboard_name     = pb['title']
             self.pedalboard_path     = bundlepath
-            save_last_bank_and_pedalboard(bankId, bundlepath)
+            save_last_bank_and_pedalboard(self.bank_id, bundlepath)
 
         return self.pedalboard_name
 
@@ -1935,12 +1974,16 @@ _:b%i
 
         if bank_id == 0:
             navigateFootswitches = False
+            navigateChannel      = 15
         else:
-            navigateFootswitches = self.banks[bank_id-1]['navigateFootswitches']
+            bank = self.banks[bank_id-1]
+            navigateFootswitches = bank['navigateFootswitches']
+            navigateChannel      = int(bank['navigateChannel'])-1 if "navigateChannel" in bank.keys() and not navigateFootswitches else 15
 
         def load_callback(ok):
-            self.load(bundlepath, bank_id)
-            callback(True)
+            self.bank_id = bank_id
+            self.load(bundlepath)
+            self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel), callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
