@@ -498,21 +498,6 @@ $('document').ready(function() {
                             <input class="share-url" value="" onmouseup="this.select()" readonly id="share-window-url" style="background-color:inherit;"></input>
                             <a class="btn btn-default btn-large btn-block" target="_blank" id="share-window-url-btn">
                                 Copy url to clipboard
-<script>
-var copyTextareaBtn = document.getElementById('share-window-url-btn');
-
-copyTextareaBtn.addEventListener('click', function(event) {
-  var copyTextarea = document.getElementById('share-window-url');
-  copyTextarea.select();
-
-  try {
-    var successful = document.execCommand('copy');    
-  } catch (err) {
-    console.log('Oops, unable to copy');
-  }
-});
-</script>
-
                             </a>
                             <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="#" id="share-window-fb">
                                 Share to Facebook <img src="/img/icons/36/share-fb.png" />
@@ -523,7 +508,6 @@ copyTextareaBtn.addEventListener('click', function(event) {
                             <a class="btn btn-inverse btn-large btn-block btn-warning" target="_blank" href="#" id="share-window-feed">
                                 Check out more pedalboards
                             </a>
-                            
                         </div>
                     </div>
                     <div id="share-window-bottom">

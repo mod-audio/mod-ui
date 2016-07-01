@@ -99,6 +99,21 @@ JqueryClass('shareBox', {
         })
         */
 
+        self.find('#share-window-url-btn').click(function () {
+            self.find('#share-window-url').select()
+
+            var ok
+            try {
+                ok = document.execCommand('copy')
+            } catch (err) {
+                ok = false
+            }
+
+            if (! ok) {
+                console.log('Unable to copy to clipboard.')
+            }
+        })
+
         // disable final share until we got a screenshot
         $('#record-share').attr('disabled', true)
         options.waitForScreenshot(function (ok) {
