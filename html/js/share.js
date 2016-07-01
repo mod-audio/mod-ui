@@ -93,11 +93,6 @@ JqueryClass('shareBox', {
             self.shareBox('share');
             return false
         })
-        /*
-        self.find('#pedalboard-share-fb').click(function () {
-            self.shareBox('checkFacebook')
-        })
-        */
 
         self.find('#share-window-url-btn').click(function () {
             self.find('#share-window-url').select()
@@ -127,23 +122,6 @@ JqueryClass('shareBox', {
                 self.shareBox('close')
         })
     },
-
-    /*
-    checkFacebook: function () {
-        var self = $(this)
-        var fb = self.find('#pedalboard-share-fb')
-        if (!fb.is(':checked')) {
-            self.find('iframe').remove()
-            return
-        }
-
-        sid = self.data('sid')
-        session = self.data('userSession')
-        self.find('iframe').remove()
-        $('<iframe>').attr('src', SITEURL.replace(/api$/, 'facebook/' + session.sid)).appendTo($('#fb-authorization-container'))
-        self.data('sid', session.sid)
-    },
-    */
 
     showStep: function (step) {
         var self = $(this)
@@ -289,12 +267,10 @@ JqueryClass('shareBox', {
 
                     if (hasAudio) {
                         self.data('recordReset')(function () {
-                            //self.hide()
                             $('#share-window-form').hide()
                             $('#share-window-links').show()
                         })
                     } else {
-                        //self.hide()
                         $('#share-window-form').hide()
                         $('#share-window-links').show()
                     }
@@ -335,9 +311,7 @@ JqueryClass('shareBox', {
     close: function () {
         var self = $(this)
         self.shareBox('recordStop', function () {
-            //console.log(self.data('recordReset'))
             self.data('recordReset')(function () {
-                //console.log('reset')
                 self.hide()
             })
         })
