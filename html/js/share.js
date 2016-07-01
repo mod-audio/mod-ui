@@ -62,7 +62,9 @@ JqueryClass('shareBox', {
         self.data('screenshotDone', false)
 
         self.find('#record-rec').click(function () {
-            self.shareBox('recordStartCountdown');
+            if (! $(this).hasClass("disabled")) {
+                self.shareBox('recordStartCountdown');
+            }
             return false
         })
         self.find('#record-stop').click(function () {
@@ -253,7 +255,11 @@ JqueryClass('shareBox', {
 
         var hasAudio = (step == 4)
         var shareNow = function (data) {
+            $('#record-rec').addClass("disabled").attr('disabled', true)
+
             self.data('share')(data, function (resp) {
+                $('#record-rec').removeClass("disabled").attr('disabled', false)
+
                 if (resp.ok) {
                     $('#record-step-' + step).hide()
                     $('#record-share').attr('disabled', resp.ok).hide()
