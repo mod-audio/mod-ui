@@ -71,7 +71,6 @@ function SimpleTransference(from, to, options) {
     var self = this
 
     this.start = function () {
-        console.log("[TRANSFERENCE] starting download...")
         var req = $.ajax($.extend({
             type: 'GET',
             url: self.origin,
@@ -100,7 +99,6 @@ function SimpleTransference(from, to, options) {
     }
 
     this.upload = function (file) {
-        console.log("[TRANSFERENCE] download finished, starting upload to " + self.destination)
         self.reauthorized = false
         var req = $.ajax($.extend({
             method: 'POST',
@@ -119,7 +117,6 @@ function SimpleTransference(from, to, options) {
     }
 
     this.success = function (resp) {
-        console.log("[TRANSFERENCE] upload finished")
         self.reportFinished(resp)
     }
 
