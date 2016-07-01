@@ -495,8 +495,16 @@ $('document').ready(function() {
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
                             <h3>Uploaded completed!</h3>
-                            <input class="share-url" value="" onmouseup="this.select()" readonly id="share-window-url" style="background-color:inherit;"></input>
-                            <a class="btn btn-default btn-large btn-block" target="_blank" id="share-window-url-btn">
+                            <div class="btn-group">
+                              <div class="tooltip top" role="tooltip" id="share-tooltip">
+                                <div class="tooltip-arrow"></div>
+                                <div class="tooltip-inner">
+                                  
+                                </div>
+                              </div>
+                              <input class="share-url" value="" onmouseup="this.select()" readonly id="share-window-url" style="background-color:inherit;" />
+                            </div>
+                            <a class="btn btn-default btn-large btn-block" id="share-window-url-btn">
                                 Copy url to clipboard
                             </a>
                             <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="#" id="share-window-fb">
