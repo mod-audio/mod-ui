@@ -779,7 +779,16 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 
 #share-window  #record-rec {
 	border-radius: 50% !important;
-    padding-top: 8px !important;
+    padding: 0 !important;
+}
+#record-rec u {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin: 16px auto;
+    display: block;
+    background: #d43f3a;
+    border: 4px solid white;
 }
 #share-window span.btn {
 	text-align: center;
@@ -793,7 +802,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	height: 75px;
 }
 #share-window  .btn-large {
-    width:50%;
+    width:60%;
     margin:5px auto 0 auto;
     text-align: left;
     white-space: normal;
@@ -811,9 +820,9 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     color: white;
 }
 #share-window input.share-url {
-    margin: 5px auto;
+    margin: 30px auto;
     display: block;
-    width: 50%;
+    width: 100%;
     border: 1px solid #e1e1e1;
     padding-left: 5px;
 }

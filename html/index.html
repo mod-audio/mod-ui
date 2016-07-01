@@ -463,7 +463,7 @@ $('document').ready(function() {
                     <div id="share-window-wrapper">
                         <div class="textcenter" id="record-step-1">
                             <h2>Record a sample</h2>
-                            <span class="btn btn-danger" id="record-rec">&nbsp;&#9654;</span>
+                            <span class="btn btn-danger" id="record-rec"><u></u></span>
                             <p><small>(optional)</small><p>
                         </div>
                         <div class="controls mod-hidden" id="record-step-2">
@@ -495,13 +495,19 @@ $('document').ready(function() {
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
                             <h3>Uploaded completed!</h3>
+                            <input class="share-url" value="" onmouseup="this.select()" readonly id="share-window-url" style="background-color:inherit;"></input>
+                            <a class="btn btn-default btn-large btn-block" target="_blank" id="share-window-url-btn">
+                                Copy url to clipboard
+                            </a>
                             <a class="btn btn-danger btn-large btn-block fb" target="_blank" href="#" id="share-window-fb">
                                 Share to Facebook <img src="/img/icons/36/share-fb.png" />
                             </a>
                             <a class="btn btn-inverse btn-large btn-block tw" target="_blank" href="#" id="share-window-tw">
                                 Share to Twitter <img src="/img/icons/36/share-tw.png" />
                             </a>
-                            <input class="share-url" value="" onmousedown="this.select()" readonly id="share-window-url" style="background-color:inherit;"></input>
+                            <a class="btn btn-inverse btn-large btn-block btn-warning" target="_blank" href="#" id="share-window-feed">
+                                Check out more pedalboards
+                            </a>
                         </div>
                     </div>
                     <div id="share-window-bottom">
@@ -545,14 +551,10 @@ $('document').ready(function() {
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>
-                    <button class="js-share mod-hidden">Share</button>
+                    <button class="js-share">Share</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
-
-            <!-- PEDALBOARD-SHARING -->
-
-            <!-- END PEDALBOARD-SHARING -->
 
         </header>
         <!-- END PEDALBOARD-ACTIONS -->

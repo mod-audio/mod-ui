@@ -62,7 +62,9 @@ JqueryClass('shareBox', {
         self.data('screenshotDone', false)
 
         self.find('#record-rec').click(function () {
-            self.shareBox('recordStartCountdown');
+            if (! $(this).hasClass("disabled")) {
+                self.shareBox('recordStartCountdown');
+            }
             return false
         })
         self.find('#record-stop').click(function () {
@@ -93,11 +95,21 @@ JqueryClass('shareBox', {
             self.shareBox('share');
             return false
         })
-        /*
-        self.find('#pedalboard-share-fb').click(function () {
-            self.shareBox('checkFacebook')
+
+        self.find('#share-window-url-btn').click(function () {
+            self.find('#share-window-url').select()
+
+            var ok
+            try {
+                ok = document.execCommand('copy')
+            } catch (err) {
+                ok = false
+            }
+
+            if (! ok) {
+                console.log('Unable to copy to clipboard.')
+            }
         })
-        */
 
         // disable final share until we got a screenshot
         $('#record-share').attr('disabled', true)
@@ -112,23 +124,6 @@ JqueryClass('shareBox', {
                 self.shareBox('close')
         })
     },
-
-    /*
-    checkFacebook: function () {
-        var self = $(this)
-        var fb = self.find('#pedalboard-share-fb')
-        if (!fb.is(':checked')) {
-            self.find('iframe').remove()
-            return
-        }
-
-        sid = self.data('sid')
-        session = self.data('userSession')
-        self.find('iframe').remove()
-        $('<iframe>').attr('src', SITEURL.replace(/api$/, 'facebook/' + session.sid)).appendTo($('#fb-authorization-container'))
-        self.data('sid', session.sid)
-    },
-    */
 
     showStep: function (step) {
         var self = $(this)
@@ -260,8 +255,10 @@ JqueryClass('shareBox', {
 
         var hasAudio = (step == 4)
         var shareNow = function (data) {
+            $('#record-rec').addClass("disabled").attr('disabled', true)
+
             self.data('share')(data, function (resp) {
-                console.log("final share", resp)
+                $('#record-rec').removeClass("disabled").attr('disabled', false)
 
                 if (resp.ok) {
                     $('#record-step-' + step).hide()
@@ -274,12 +271,10 @@ JqueryClass('shareBox', {
 
                     if (hasAudio) {
                         self.data('recordReset')(function () {
-                            //self.hide()
                             $('#share-window-form').hide()
                             $('#share-window-links').show()
                         })
                     } else {
-                        //self.hide()
                         $('#share-window-form').hide()
                         $('#share-window-links').show()
                     }
@@ -320,9 +315,7 @@ JqueryClass('shareBox', {
     close: function () {
         var self = $(this)
         self.shareBox('recordStop', function () {
-            //console.log(self.data('recordReset'))
             self.data('recordReset')(function () {
-                //console.log('reset')
                 self.hide()
             })
         })

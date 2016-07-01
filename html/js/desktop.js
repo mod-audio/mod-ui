@@ -755,7 +755,6 @@ function Desktop(elements) {
                                                           }})
 
                     transfer.reportFinished = function (resp2) {
-                        console.log("reportFinished", resp2)
                         callback({
                             ok: true,
                             id: resp.id,

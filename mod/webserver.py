@@ -246,8 +246,7 @@ class EffectBulk(web.RequestHandler):
                 continue
             result[uri] = info
 
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(result))
+        self.write(result)
         self.finish()
 
 class EffectList(web.RequestHandler):
@@ -408,15 +407,13 @@ class EffectAdd(web.RequestHandler):
 
         resp = yield gen.Task(SESSION.web_add, instance, uri, x, y)
 
-        self.set_header('Content-type', 'application/json')
-
         if resp >= 0:
             try:
                 data = get_plugin_info(uri)
             except:
                 print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
                 raise web.HTTPError(404)
-            self.write(json.dumps(data))
+            self.write(data)
         else:
             self.write(json.dumps(False))
 
@@ -440,8 +437,7 @@ class EffectGet(web.RequestHandler):
             print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
             raise web.HTTPError(404)
 
-        self.set_header('Content-type', 'application/json')
-        self.write(json.dumps(data))
+        self.write(data)
         self.finish()
 
 class EffectConnect(web.RequestHandler):
@@ -625,8 +621,7 @@ class PackageUninstall(web.RequestHandler):
             if len(broken) > 0:
                 list_banks(broken)
 
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(resp))
+        self.write(resp)
         self.finish()
 
 class PedalboardList(web.RequestHandler):
@@ -642,11 +637,10 @@ class PedalboardSave(web.RequestHandler):
 
         bundlepath = SESSION.web_save_pedalboard(title, asNew)
 
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({
+        self.write({
             'ok': bundlepath is not None,
             'bundlepath': bundlepath
-        }))
+        })
         self.finish()
 
 class PedalboardPackBundle(web.RequestHandler):
@@ -732,11 +726,10 @@ class PedalboardLoadBundle(web.RequestHandler):
         else:
             name = None
 
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({
+        self.write({
             'ok':   name is not None,
             'name': name or ""
-        }))
+        })
         self.finish()
 
 class PedalboardLoadWeb(SimpleFileReceiver):
@@ -767,8 +760,7 @@ class PedalboardLoadWeb(SimpleFileReceiver):
 class PedalboardInfo(web.RequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(get_pedalboard_info(bundlepath)))
+        self.write(get_pedalboard_info(bundlepath))
         self.finish()
 
 class PedalboardRemove(web.RequestHandler):
@@ -815,11 +807,10 @@ class PedalboardImageWait(web.RequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         ok, ctime = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({
+        self.write({
             'ok'   : ok,
             'ctime': "%.1f" % ctime,
-        }))
+        })
         self.finish()
 
 class DashboardClean(web.RequestHandler):
@@ -1054,12 +1045,11 @@ class SysMonProcessList(web.RequestHandler):
 class JackGetMidiDevices(web.RequestHandler):
     def get(self):
         devsInUse, devList, names = SESSION.web_get_midi_device_list()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({
+        self.write({
             "devsInUse": devsInUse,
             "devList"  : devList,
             "names"    : names,
-        }))
+        })
         self.finish()
 
 class JackSetMidiDevices(web.RequestHandler):
@@ -1073,8 +1063,7 @@ class JackSetMidiDevices(web.RequestHandler):
 class AuthNonce(web.RequestHandler):
     def post(self):
         if token is None:
-            self.set_header('Content-Type', 'application/json')
-            self.write("{}")
+            self.write({})
             return
 
         data = json.loads(self.request.body.decode())
@@ -1086,8 +1075,7 @@ class AuthToken(web.RequestHandler):
     def post(self):
         access_token = token.decode_and_decrypt(self.request.body.decode())
         # don't ever save this token locally
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({'access_token': access_token}))
+        self.write({'access_token': access_token})
 
 class RecordingStart(web.RequestHandler):
     def get(self):
@@ -1148,8 +1136,7 @@ class RecordingDownload(web.RequestHandler):
             'ok'   : bool(recd),
             'audio': b64encode(recd).decode("utf-8") if recd else ""
         }
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(data))
+        self.write(data)
 
 class TokensDelete(web.RequestHandler):
     def get(self):
@@ -1163,8 +1150,6 @@ class TokensGet(web.RequestHandler):
         #curtime    = int(time.time())
         tokensConf = os.path.join(DATA_DIR, "tokens.conf")
 
-        self.set_header('Content-Type', 'application/json')
-
         if os.path.exists(tokensConf):
             with open(tokensConf, 'r') as fd:
                 data = json.load(fd)
@@ -1173,9 +1158,9 @@ class TokensGet(web.RequestHandler):
                                   "access_token"  in keys and
                                   "refresh_token" in keys)
                 #data['curtime'] = curtime
-                return self.write(json.dumps(data))
+                return self.write(data)
 
-        return self.write(json.dumps({ 'ok': False }))
+        return self.write({ 'ok': False })
 
 class TokensSave(web.RequestHandler):
     @jsoncall
