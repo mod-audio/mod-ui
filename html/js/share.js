@@ -118,14 +118,6 @@ JqueryClass('shareBox', {
             }, 2000)
         })
 
-        // disable final share until we got a screenshot
-        $('#record-share').attr('disabled', true)
-        options.waitForScreenshot(function (ok) {
-            $('#share-wait-screenshot').hide()
-            self.data('screenshotDone', true)
-            self.shareBox('showStep', self.data('step'))
-        })
-
         $('body').keydown(function (e) {
             if (e.keyCode == 27)
                 self.shareBox('close')
@@ -311,11 +303,19 @@ JqueryClass('shareBox', {
         $('#share-window-links').hide()
         self.shareBox('showStep', 1)
         self.data('bundlepath', bundlepath)
+        self.data('screenshotDone', false)
         self.find('#pedalboard-share-title').val(title)
-        var text = self.find('textarea')
-        text.val('').focus()
-        self.data('screenshotGenerated', false)
+        self.find('#record-share').attr('disabled', true)
+        self.find('#share-wait-screenshot').show()
         self.find('.js-share').addClass('disabled')
+        self.find('textarea').val('').focus()
+
+        self.data('waitForScreenshot')(function (ok) {
+            self.data('screenshotDone', true)
+            self.find('#share-wait-screenshot').hide()
+            self.shareBox('showStep', self.data('step'))
+        })
+
         self.show()
     },
 
