@@ -361,16 +361,16 @@ function Desktop(elements) {
         $.ajax({
             method: 'GET',
             url: SITEURL + '/devices/nonce',
-            dataType: 'json',
+            cache: false,
             success: function (resp) {
                 if (!resp || !resp.nonce) {
                     callback(false);
                     return;
                 }
-
                 $.ajax({
                     url: '/auth/nonce',
                     type: 'POST',
+                    cache: false,
                     contentType: 'application/json',
                     dataType: 'json',
                     data: JSON.stringify(resp),
@@ -385,6 +385,7 @@ function Desktop(elements) {
                         $.ajax({
                             url: SITEURL + '/devices/tokens',
                             type: 'POST',
+                            cache: false,
                             contentType: 'application/json',
                             dataType: 'json',
                             data: JSON.stringify(resp),
@@ -393,10 +394,10 @@ function Desktop(elements) {
                                     callback(false);
                                     return;
                                 }
-
                                 $.ajax({
                                     url: '/auth/token',
                                     type: 'POST',
+                                    cache: false,
                                     contentType: 'application/json',
                                     dataType: 'json',
                                     data: JSON.stringify(resp),
