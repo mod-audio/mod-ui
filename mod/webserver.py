@@ -34,7 +34,8 @@ from uuid import uuid4
 from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
-                          LV2_PLUGIN_DIR, DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
+                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
+                          DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
                           PACKAGE_REPOSITORY, DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
@@ -141,7 +142,32 @@ def install_package(bundlename, callback):
     ioloop = tornado.ioloop.IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
 
-class SimpleFileReceiver(web.RequestHandler):
+class JsonRequestHandler(web.RequestHandler):
+    def write(self, data):
+        if isinstance(data, dict):
+            return web.RequestHandler.write(self, data)
+
+        elif data is True:
+            data = "true"
+            self.set_header('Content-type', 'application/json')
+
+        elif data is False:
+            data = "true"
+            self.set_header('Content-type', 'application/json')
+
+        # TESTING for data types, remove this later
+        elif not isinstance(data, list):
+            print("=== TESTING: Got new data type for RequestHandler.write():", type(data))
+            data = json.dumps(data)
+            self.set_header('Content-type', 'application/json')
+
+        else:
+            data = json.dumps(data)
+            self.set_header('Content-type', 'application/json')
+
+        return web.RequestHandler.write(self, data)
+
+class SimpleFileReceiver(JsonRequestHandler):
     @property
     def destination_dir(self):
         raise NotImplemented
@@ -152,7 +178,7 @@ class SimpleFileReceiver(web.RequestHandler):
             (r"/%s/$" % path, cls),
             #(r"/%s/([a-f0-9]{32})/(\d+)$" % path, cls),
             #(r"/%s/([a-f0-9]{40})/(finish)$" % path, cls),
-            ]
+        ]
 
     @web.asynchronous
     @gen.engine
@@ -163,36 +189,37 @@ class SimpleFileReceiver(web.RequestHandler):
         name = str(uuid4())
         if not os.path.exists(self.destination_dir):
             os.mkdir(self.destination_dir)
-        fh = open(os.path.join(self.destination_dir, name), 'wb')
-        fh.write(self.request.body)
-        fh.close()
-        data = dict(filename=name)
+        with open(os.path.join(self.destination_dir, name), 'wb') as fh:
+            fh.write(self.request.body)
+        data = {
+            "filename": name
+        }
         yield gen.Task(self.process_file, data)
-        info = {'ok': True, 'result': self.result}
-        self.write(json.dumps(info))
+        self.write({
+            'ok'    : True,
+            'result': self.result
+        })
         self.finish()
 
     def process_file(self, data, callback=lambda:None):
         """to be overriden"""
 
-class BluetoothSetPin(web.RequestHandler):
+class BluetoothSetPin(JsonRequestHandler):
     def post(self):
         pin = self.get_argument("pin", None)
 
-        self.set_header('Content-Type', 'application/json')
-
         if pin is None:
-            self.write(json.dumps(False))
+            self.write(False)
             self.finish()
             return
 
         with open(BLUETOOTH_PIN, 'w') as fh:
             fh.write(pin)
 
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
-class SystemInfo(web.RequestHandler):
+class SystemInfo(JsonRequestHandler):
     def get(self):
         uname = os.uname()
         info = {
@@ -216,7 +243,7 @@ class SystemInfo(web.RequestHandler):
             with open("/etc/mod-hardware-descriptor.json", 'r') as fd:
                 info["hardware"] = json.loads(fd.read())
 
-        self.write(json.dumps(info))
+        self.write(info)
         self.finish()
 
 class EffectInstaller(SimpleFileReceiver):
@@ -230,7 +257,7 @@ class EffectInstaller(SimpleFileReceiver):
             callback()
         install_package(data['filename'], on_finish)
 
-class EffectBulk(web.RequestHandler):
+class EffectBulk(JsonRequestHandler):
     def prepare(self):
         if self.request.headers.get("Content-Type") == "application/json":
             self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
@@ -249,11 +276,10 @@ class EffectBulk(web.RequestHandler):
         self.write(result)
         self.finish()
 
-class EffectList(web.RequestHandler):
+class EffectList(JsonRequestHandler):
     def get(self):
         data = get_all_plugins()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(data))
+        self.write(data)
         self.finish()
 
 class SDKEffectInstaller(EffectInstaller):
@@ -266,12 +292,11 @@ class SDKEffectInstaller(EffectInstaller):
             fh.write(b64decode(upload['body']))
 
         resp = yield gen.Task(install_package, upload['filename'])
-        dump = json.dumps(resp)
 
         if resp['ok']:
-            SESSION.msg_callback("rescan " + b64encode(dump.encode("utf-8")).decode("utf-8"))
+            SESSION.msg_callback("rescan " + b64encode(json.dumps(resp).encode("utf-8")).decode("utf-8"))
 
-        self.write(dump)
+        self.write(resp)
         self.finish()
 
 class EffectResource(web.StaticFileHandler):
@@ -333,6 +358,7 @@ class EffectImage(web.RequestHandler):
         with open(path, 'rb') as fd:
             self.set_header('Content-type', 'image/png')
             self.write(fd.read())
+            self.finish()
 
 class EffectHTML(web.RequestHandler):
     def get(self, html):
@@ -354,6 +380,7 @@ class EffectHTML(web.RequestHandler):
         with open(path, 'rb') as fd:
             self.set_header('Content-type', 'text/html')
             self.write(fd.read())
+            self.finish()
 
 class EffectStylesheet(web.RequestHandler):
     def get(self):
@@ -375,6 +402,7 @@ class EffectStylesheet(web.RequestHandler):
         with open(path, 'rb') as fd:
             self.set_header('Content-type', 'text/css')
             self.write(fd.read())
+            self.finish()
 
 class EffectJavascript(web.RequestHandler):
     def get(self):
@@ -396,8 +424,9 @@ class EffectJavascript(web.RequestHandler):
         with open(path, 'rb') as fd:
             self.set_header('Content-type', 'text/plain')
             self.write(fd.read())
+            self.finish()
 
-class EffectAdd(web.RequestHandler):
+class EffectAdd(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
@@ -405,29 +434,31 @@ class EffectAdd(web.RequestHandler):
         x   = float(self.request.arguments.get('x', [0])[0])
         y   = float(self.request.arguments.get('y', [0])[0])
 
-        resp = yield gen.Task(SESSION.web_add, instance, uri, x, y)
+        ok = yield gen.Task(SESSION.web_add, instance, uri, x, y)
 
-        if resp >= 0:
-            try:
-                data = get_plugin_info(uri)
-            except:
-                print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
-                raise web.HTTPError(404)
-            self.write(data)
-        else:
-            self.write(json.dumps(False))
+        if not ok:
+            self.write(False)
+            self.finish()
+            return
 
+        try:
+            data = get_plugin_info(uri)
+        except:
+            print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
+            raise web.HTTPError(404)
+
+        self.write(data)
         self.finish()
 
-class EffectRemove(web.RequestHandler):
+class EffectRemove(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        resp = yield gen.Task(SESSION.web_remove, instance)
-        self.write(json.dumps(resp))
+        ok = yield gen.Task(SESSION.web_remove, instance)
+        self.write(ok)
         self.finish()
 
-class EffectGet(web.RequestHandler):
+class EffectGet(JsonRequestHandler):
     def get(self):
         uri = self.get_argument('uri')
 
@@ -440,31 +471,31 @@ class EffectGet(web.RequestHandler):
         self.write(data)
         self.finish()
 
-class EffectConnect(web.RequestHandler):
+class EffectConnect(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port_from, port_to):
-        resp = yield gen.Task(SESSION.web_connect, port_from, port_to)
-        self.write(json.dumps(resp))
+        ok = yield gen.Task(SESSION.web_connect, port_from, port_to)
+        self.write(ok)
         self.finish()
 
-class EffectDisconnect(web.RequestHandler):
+class EffectDisconnect(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port_from, port_to):
-        resp = yield gen.Task(SESSION.web_disconnect, port_from, port_to)
-        self.write(json.dumps(resp))
+        ok = yield gen.Task(SESSION.web_disconnect, port_from, port_to)
+        self.write(ok)
         self.finish()
 
-class EffectParameterSet(web.RequestHandler):
+class EffectParameterSet(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port):
-        resp = yield gen.Task(SESSION.web_parameter_set, port, float(self.get_argument('value')))
-        self.write(json.dumps(resp))
+        ok = yield gen.Task(SESSION.web_parameter_set, port, float(self.get_argument('value')))
+        self.write(ok)
         self.finish()
 
-class EffectParameterAddress(web.RequestHandler):
+class EffectParameterAddress(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self, port):
@@ -481,37 +512,29 @@ class EffectParameterAddress(web.RequestHandler):
         value   = float(data['value'])
         steps   = int(data.get('steps', 33))
 
-        resp = yield gen.Task(SESSION.web_parameter_address, port, uri, label, maximum, minimum, value, steps)
-        self.write(json.dumps(resp))
+        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, maximum, minimum, value, steps)
+        self.write(ok)
         self.finish()
 
-class EffectParameterMidiLearn(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, port):
-        resp = yield gen.Task(SESSION.web_parameter_midi_learn, port)
-        self.write(json.dumps(resp))
-        self.finish()
-
-class EffectPresetLoad(web.RequestHandler):
+class EffectPresetLoad(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
-        uri  = self.get_argument('uri')
-        resp = yield gen.Task(SESSION.host.preset_load, instance, uri)
-        self.write(json.dumps(resp))
+        uri = self.get_argument('uri')
+        ok  = yield gen.Task(SESSION.host.preset_load, instance, uri)
+        self.write(ok)
         self.finish()
 
-class EffectPresetSaveNew(web.RequestHandler):
+class EffectPresetSaveNew(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
         name = self.get_argument('name')
         resp = yield gen.Task(SESSION.host.preset_save_new, instance, name)
-        self.write(json.dumps(resp))
+        self.write(resp)
         self.finish()
 
-class EffectPresetSaveReplace(web.RequestHandler):
+class EffectPresetSaveReplace(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
@@ -519,27 +542,25 @@ class EffectPresetSaveReplace(web.RequestHandler):
         bundle = self.get_argument('bundle')
         name   = self.get_argument('name')
         resp   = yield gen.Task(SESSION.host.preset_save_replace, instance, uri, bundle, name)
-        self.write(json.dumps(resp))
+        self.write(resp)
         self.finish()
 
-class EffectPresetDelete(web.RequestHandler):
+class EffectPresetDelete(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, instance):
         uri    = self.get_argument('uri')
         bundle = self.get_argument('bundle')
-        resp   = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
-        self.write(json.dumps(resp))
+        ok     = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
+        self.write(ok)
         self.finish()
 
-class EffectPosition(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
+class EffectPosition(JsonRequestHandler):
     def get(self, instance):
         x = float(self.get_argument('x'))
         y = float(self.get_argument('y'))
-        resp = SESSION.web_set_position(instance, x, y)
-        self.write(json.dumps(resp))
+        SESSION.web_set_position(instance, x, y)
+        self.write(True)
         self.finish()
 
 class ServerWebSocket(websocket.WebSocketHandler):
@@ -554,19 +575,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
         print("websocket close")
         yield gen.Task(SESSION.websocket_closed, self)
 
-# I think this is unused...
-#class PackageEffectList(web.RequestHandler):
-    #def get(self, bundle):
-        #if not bundle.endswith(os.sep):
-            #bundle += os.sep
-        #result = []
-        #for plugin in get_all_plugins():
-            #if bundle in plugin['bundles']:
-                #result.append(plugin)
-        #self.set_header('Content-Type', 'application/json')
-        #self.write(json.dumps(result))
-
-class PackageUninstall(web.RequestHandler):
+class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
@@ -624,13 +633,12 @@ class PackageUninstall(web.RequestHandler):
         self.write(resp)
         self.finish()
 
-class PedalboardList(web.RequestHandler):
+class PedalboardList(JsonRequestHandler):
     def get(self):
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(get_all_pedalboards()))
+        self.write(get_all_pedalboards())
         self.finish()
 
-class PedalboardSave(web.RequestHandler):
+class PedalboardSave(JsonRequestHandler):
     def post(self):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
@@ -710,7 +718,7 @@ class PedalboardPackBundle(web.RequestHandler):
                                      stdout=subprocess.PIPE)
         ioloop.add_handler(self.proc.stdout.fileno(), end_proc1, 16)
 
-class PedalboardLoadBundle(web.RequestHandler):
+class PedalboardLoadBundle(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
@@ -733,7 +741,7 @@ class PedalboardLoadBundle(web.RequestHandler):
         self.finish()
 
 class PedalboardLoadWeb(SimpleFileReceiver):
-    destination_dir = os.path.expanduser("~/.pedalboards/") # FIXME cross-platform, perhaps lookup in LV2_PATH
+    destination_dir = LV2_PEDALBOARDS_DIR
 
     def process_file(self, data, callback=lambda:None):
         filename = os.path.join(self.destination_dir, data['filename'])
@@ -757,32 +765,32 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         os.remove(filename)
         callback()
 
-class PedalboardInfo(web.RequestHandler):
+class PedalboardInfo(JsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         self.write(get_pedalboard_info(bundlepath))
         self.finish()
 
-class PedalboardRemove(web.RequestHandler):
+class PedalboardRemove(JsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
 
         if not os.path.exists(bundlepath):
-            self.write(json.dumps(False))
+            self.write(False)
             self.finish()
             return
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
-class PedalboardSize(web.RequestHandler):
+class PedalboardSize(JsonRequestHandler):
     def get(self):
         width  = int(self.get_argument('width'))
         height = int(self.get_argument('height'))
         SESSION.pedalboard_size(width, height)
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
 class PedalboardImage(web.RequestHandler):
@@ -800,29 +808,29 @@ class PedalboardImage(web.RequestHandler):
             #self.set_header('Content-type', 'image/%s' % imagetype)
             self.set_header('Content-type', 'image/png')
             self.write(fd.read())
+            self.finish()
 
-class PedalboardImageWait(web.RequestHandler):
+class PedalboardImageWait(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
-        ok, ctime = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
+        ok, ctime  = yield gen.Task(SESSION.screenshot_generator.wait_for_pending_jobs, bundlepath)
         self.write({
             'ok'   : ok,
             'ctime': "%.1f" % ctime,
         })
         self.finish()
 
-class DashboardClean(web.RequestHandler):
+class DashboardClean(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        resp = yield gen.Task(SESSION.reset)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(resp))
+        ok = yield gen.Task(SESSION.reset)
+        self.write(ok)
         self.finish()
 
-class BankLoad(web.RequestHandler):
+class BankLoad(JsonRequestHandler):
     def get(self):
         # Banks have only bundle and title of each pedalboard, which is the necessary information for the HMI.
         # But for the GUI we need to know information about the used pedalboards
@@ -845,25 +853,20 @@ class BankLoad(web.RequestHandler):
             bank['pedalboards'] = [pedalboards_data[os.path.abspath(pb['bundle'])] for pb in bank['pedalboards']]
 
         # All set
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(banks))
+        self.write(banks)
         self.finish()
 
-class BankSave(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
+class BankSave(JsonRequestHandler):
     def post(self):
         banks = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         save_banks(banks)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
-class HardwareLoad(web.RequestHandler):
+class HardwareLoad(JsonRequestHandler):
     def get(self):
         hardware = SESSION.get_hardware()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(hardware))
+        self.write(hardware)
         self.finish()
 
 class TemplateHandler(web.RequestHandler):
@@ -894,6 +897,10 @@ class TemplateHandler(web.RequestHandler):
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
+        if IMAGE_VERSION is not None:
+            version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
+            if version:
+                return tornado.escape.url_escape(version)
         return str(int(time.time()))
 
     def index(self):
@@ -958,13 +965,11 @@ class TemplateHandler(web.RequestHandler):
         context['pedalboard'] = b64encode(json.dumps(pedalboard).encode("utf-8"))
         return context
 
-#class EditionLoader(TemplateHandler):
-    #def get(self, path):
-        #super(EditionLoader, self).get(path)
-
 class TemplateLoader(web.RequestHandler):
     def get(self, path):
-        self.write(open(os.path.join(HTML_DIR, 'include', path)).read())
+        with open(os.path.join(HTML_DIR, 'include', path)) as fh:
+            self.write(fh.read())
+        self.finish()
 
 class BulkTemplateLoader(web.RequestHandler):
     def get(self):
@@ -980,37 +985,36 @@ class BulkTemplateLoader(web.RequestHandler):
                           tornado.escape.squeeze(contents.replace("'", "\\'"))
                           )
                        )
+        self.finish()
 
-class Ping(web.RequestHandler):
+class Ping(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        start = time.time()
-        ihm = 0
+        start  = time.time()
+        online = False
         if SESSION.hmi_initialized:
-            ihm = yield gen.Task(SESSION.web_ping_hmi)
-        res = {
-            'ihm_online': ihm,
-            'ihm_time': int((time.time() - start) * 1000),
+            online = yield gen.Task(SESSION.web_ping_hmi)
+        resp = {
+            'ihm_online': online,
+            'ihm_time'  : int((time.time() - start) * 1000),
         }
-        self.write(json.dumps(res))
+        self.write(resp)
         self.finish()
 
-class TrueBypass(web.RequestHandler):
+class TrueBypass(JsonRequestHandler):
     def get(self, channelName, bypassed):
-        resp = set_truebypass_value(channelName == "Right", bypassed == "true")
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(resp))
+        ok = set_truebypass_value(channelName == "Right", bypassed == "true")
+        self.write(ok)
         self.finish()
 
-class ResetXruns(web.RequestHandler):
+class ResetXruns(JsonRequestHandler):
     def post(self):
         reset_xruns()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
-class SaveUserId(web.RequestHandler):
+class SaveUserId(JsonRequestHandler):
     def post(self):
         name  = self.get_argument("name")
         email = self.get_argument("email")
@@ -1019,30 +1023,10 @@ class SaveUserId(web.RequestHandler):
                 "name" : name,
                 "email": email,
             }, fh)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
-class SysMonProcessList(web.RequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        yield gen.Task(self.get_ps_list)
-        self.write(self.ps_list[:-1])
-        self.finish()
-
-    def get_ps_list(self, callback):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock = iostream.IOStream(s)
-
-        def recv_ps_list():
-            def set_ps_list(v):
-                self.ps_list = v
-                callback()
-            self.sock.read_until("\0".encode("utf-8"), set_ps_list)
-        self.sock.connect(('127.0.0.1', 57890), recv_ps_list)
-
-class JackGetMidiDevices(web.RequestHandler):
+class JackGetMidiDevices(JsonRequestHandler):
     def get(self):
         devsInUse, devList, names = SESSION.web_get_midi_device_list()
         self.write({
@@ -1052,59 +1036,59 @@ class JackGetMidiDevices(web.RequestHandler):
         })
         self.finish()
 
-class JackSetMidiDevices(web.RequestHandler):
+class JackSetMidiDevices(JsonRequestHandler):
     def post(self):
         devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         SESSION.web_set_midi_devices(devs)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
         self.finish()
 
-class AuthNonce(web.RequestHandler):
+class AuthNonce(JsonRequestHandler):
     def post(self):
         if token is None:
-            self.write({})
-            return
+            message = {}
+        else:
+            data    = json.loads(self.request.body.decode())
+            message = token.create_token_message(data['nonce'])
 
-        data = json.loads(self.request.body.decode())
-        message = token.create_token_message(data['nonce'])
-        self.set_header('Content-Type', 'application/json')
         self.write(message)
+        self.finish()
 
-class AuthToken(web.RequestHandler):
+class AuthToken(JsonRequestHandler):
     def post(self):
         access_token = token.decode_and_decrypt(self.request.body.decode())
         # don't ever save this token locally
         self.write({'access_token': access_token})
+        self.finish()
 
-class RecordingStart(web.RequestHandler):
+class RecordingStart(JsonRequestHandler):
     def get(self):
         SESSION.web_recording_start()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
+        self.finish()
 
-class RecordingStop(web.RequestHandler):
+class RecordingStop(JsonRequestHandler):
     def get(self):
         SESSION.web_recording_stop()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
+        self.finish()
 
-class RecordingReset(web.RequestHandler):
+class RecordingReset(JsonRequestHandler):
     def get(self):
         SESSION.web_recording_delete()
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(True))
+        self.write(True)
+        self.finish()
 
-class RecordingPlay(web.RequestHandler):
+class RecordingPlay(JsonRequestHandler):
     waiting_request = None
 
     @web.asynchronous
     def get(self, action):
         if action == 'start':
             SESSION.web_playing_start(RecordingPlay.stop_callback)
-            self.set_header('Content-Type', 'application/json')
-            self.write(json.dumps(True))
-            return self.finish()
+            self.write(True)
+            self.finish()
+            return
 
         if action == 'wait':
             if RecordingPlay.waiting_request is not None:
@@ -1114,9 +1098,9 @@ class RecordingPlay(web.RequestHandler):
 
         if action == 'stop':
             SESSION.web_playing_stop()
-            self.set_header('Content-Type', 'application/json')
-            self.write(json.dumps(True))
-            return self.finish()
+            self.write(True)
+            self.finish()
+            return
 
         raise web.HTTPError(404)
 
@@ -1124,12 +1108,11 @@ class RecordingPlay(web.RequestHandler):
     def stop_callback(kls):
         if kls.waiting_request is None:
             return
-        kls.waiting_request.set_header('Content-Type', 'application/json')
-        kls.waiting_request.write(json.dumps(True))
+        kls.waiting_request.write(True)
         kls.waiting_request.finish()
         kls.waiting_request = None
 
-class RecordingDownload(web.RequestHandler):
+class RecordingDownload(JsonRequestHandler):
     def get(self):
         recd = SESSION.web_recording_download()
         data = {
@@ -1137,15 +1120,19 @@ class RecordingDownload(web.RequestHandler):
             'audio': b64encode(recd).decode("utf-8") if recd else ""
         }
         self.write(data)
+        self.finish()
 
-class TokensDelete(web.RequestHandler):
+class TokensDelete(JsonRequestHandler):
     def get(self):
         tokensConf = os.path.join(DATA_DIR, "tokens.conf")
 
         if os.path.exists(tokensConf):
             os.remove(tokensConf)
 
-class TokensGet(web.RequestHandler):
+        self.write(True)
+        self.finish()
+
+class TokensGet(JsonRequestHandler):
     def get(self):
         #curtime    = int(time.time())
         tokensConf = os.path.join(DATA_DIR, "tokens.conf")
@@ -1160,9 +1147,10 @@ class TokensGet(web.RequestHandler):
                 #data['curtime'] = curtime
                 return self.write(data)
 
-        return self.write({ 'ok': False })
+        self.write({ 'ok': False })
+        self.finish()
 
-class TokensSave(web.RequestHandler):
+class TokensSave(JsonRequestHandler):
     @jsoncall
     def post(self):
         #curtime    = int(time.time())
@@ -1172,17 +1160,17 @@ class TokensSave(web.RequestHandler):
         #data['time'] = curtime
         data.pop("expires_in_days")
 
-        with open(tokensConf, 'w') as fd:
-            json.dump(data, fd)
+        with open(tokensConf, 'w') as fh:
+            json.dump(data, fh)
+
+        self.write(True)
+        self.finish()
 
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
         EffectInstaller.urls('effect/install') +
         [
-            #TODO merge these
-            #(r"/system/install_pkg/([^/]+)/?", InstallPkg),
-            #(r"/system/install_pkg/do/([^/]+)/?", InstallPkgDo),
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/system/info", SystemInfo),
 
@@ -1198,7 +1186,6 @@ application = web.Application(
             # plugin parameters
             (r"/effect/parameter/set/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterSet),
             (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
-            (r"/effect/parameter/midi/learn/*(/[A-Za-z0-9_/]+[^/])/?", EffectParameterMidiLearn),
 
             # plugin presets
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
@@ -1219,7 +1206,6 @@ application = web.Application(
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
 
-            #(r"/package/([A-Za-z0-9_.-]+)/list/?", PackageEffectList),
             (r"/package/uninstall", PackageUninstall),
 
             # pedalboard stuff
@@ -1257,8 +1243,6 @@ application = web.Application(
 
             (r"/sdk/install/?", SDKEffectInstaller),
 
-            #(r"/sysmon/ps", SysMonProcessList),
-
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),
 
@@ -1277,8 +1261,8 @@ application = web.Application(
             (r"/websocket/?$", ServerWebSocket),
 
             (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
-            ],
-            debug=LOG and False, **settings)
+        ],
+        debug=LOG and False, **settings)
 
 def signal_upgrade_check():
     with open("/root/check-upgrade-system", 'r') as fh:

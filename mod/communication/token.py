@@ -12,7 +12,7 @@ def create_token_message(nonce: str):
     })
     encrypted = crypt.encrypt(device.get_server_key(), data)
     encoded = base64.encodebytes(encrypted)
-    return json.dumps({'message': encoded.decode()})
+    return {'message': encoded.decode()}
 
 
 def decode_and_decrypt(message: str):

@@ -726,7 +726,7 @@ class Host(object):
 
         def host_callback(resp):
             if resp < 0:
-                callback(resp)
+                callback(False)
                 return
             bypassed = False
 
@@ -762,7 +762,7 @@ class Host(object):
                 "mapPresets": []
             }
 
-            callback(resp)
+            callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
         self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')

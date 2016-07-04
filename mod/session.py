@@ -146,10 +146,6 @@ class Session(object):
         instance, port2 = port.rsplit("/",1)
         self.host.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
 
-    # Set a parameter for MIDI learn
-    def web_parameter_midi_learn(self, port, callback):
-        self.host.midi_learn(port, callback)
-
     # Set a plugin block position within the canvas
     def web_set_position(self, instance, x, y):
         self.host.set_position(instance, x, y)

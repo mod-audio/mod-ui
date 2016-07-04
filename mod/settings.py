@@ -37,6 +37,12 @@ DEVICE_SERIAL = os.environ.pop('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
 DEVICE_MODEL = os.environ.pop('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
 
+if os.path.isfile(IMAGE_VERSION_PATH):
+    with open(IMAGE_VERSION_PATH, 'r') as fh:
+        IMAGE_VERSION = fh.read().strip() or None
+else:
+    IMAGE_VERSION = None
+
 DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'last.json'))
