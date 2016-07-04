@@ -259,7 +259,7 @@ class EffectInstaller(SimpleFileReceiver):
 
 class EffectBulk(JsonRequestHandler):
     def prepare(self):
-        if self.request.headers.get("Content-Type") == "application/json":
+        if "application/json" in self.request.headers.get("Content-Type"):
             self.uris = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         else:
             raise web.HTTPError(501, 'Content-Type != "application/json"')
