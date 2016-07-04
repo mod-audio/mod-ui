@@ -266,7 +266,7 @@ class Session(object):
             ws.write_message(msg)
 
     def load_pedalboard(self, bundlepath, isDefault):
-        title = self.host.load(bundlepath, -1, isDefault)
+        title = self.host.load(bundlepath, isDefault)
         if isDefault:
             bundlepath = ""
             title = ""
