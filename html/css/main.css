@@ -8307,7 +8307,7 @@ header#pedalboard-actions {
   top: 0;
   left: 0;
   text-align: center;
-  z-index: 10000000;
+  z-index: 99999;
 }
 .blocker p {
   position: absolute;

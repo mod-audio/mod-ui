@@ -1264,6 +1264,9 @@ Desktop.prototype.reset = function (callback) {
     if (this.pedalboardModified)
         if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
             return
+
+    this.pedalboard.data('wait').start('Loading pedalboard...')
+
     this.title = ''
     this.pedalboardBundle = null
     this.pedalboardEmpty = true
