@@ -97,29 +97,27 @@ JqueryClass('shareBox', {
         })
 
         self.find('#share-window-url-btn').click(function () {
-            var msg;
             var isSafari = !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
 
-            self.find('#share-window-url').select()            
+            self.find('#share-window-url').select()
 
             var ok
             try {
                 ok = document.execCommand('copy')
-                $('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Copied to clipboard');
-                    setTimeout(function(){
-                    $('#share-tooltip').css('opacity',0);
-                },2000);
             } catch (err) {
                 ok = false
             }
 
-            if (! ok) {
+            if (ok) {
+                $('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Copied to clipboard')
+            } else {
                 console.log('Unable to copy to clipboard.')
-                $('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Press Ctrl/Cmd + C to copy');
-                    setTimeout(function(){
-                    $('#share-tooltip').css('opacity',0);
-                },2000);
+                $('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Press Ctrl/Cmd + C to copy')
             }
+
+            setTimeout(function() {
+                $('#share-tooltip').css('opacity',0)
+            }, 2000)
         })
 
         // disable final share until we got a screenshot
