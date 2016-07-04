@@ -34,7 +34,7 @@ from uuid import uuid4
 from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
-                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR,
+                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
@@ -897,6 +897,10 @@ class TemplateHandler(web.RequestHandler):
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
+        if IMAGE_VERSION is not None:
+            version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
+            if version:
+                return tornado.escape.url_escape(version)
         return str(int(time.time()))
 
     def index(self):
