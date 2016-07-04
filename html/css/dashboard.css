@@ -819,10 +819,16 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     background-color: #55acee !important;
     color: white;
 }
+#share-window .tooltip {
+    transition: opacity 500ms;
+}
+#share-window .btn-group {
+    width: 100%;
+}
 #share-window input.share-url {
     margin: 30px auto;
     display: block;
-    width: 100%;
+    width: 100% ;
     border: 1px solid #e1e1e1;
     padding-left: 5px;
 }
