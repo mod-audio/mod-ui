@@ -97,8 +97,6 @@ JqueryClass('shareBox', {
         })
 
         self.find('#share-window-url-btn').click(function () {
-            var isSafari = !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
-
             self.find('#share-window-url').select()
 
             var ok
@@ -118,14 +116,6 @@ JqueryClass('shareBox', {
             setTimeout(function() {
                 $('#share-tooltip').css('opacity',0)
             }, 2000)
-        })
-
-        // disable final share until we got a screenshot
-        $('#record-share').attr('disabled', true)
-        options.waitForScreenshot(function (ok) {
-            $('#share-wait-screenshot').hide()
-            self.data('screenshotDone', true)
-            self.shareBox('showStep', self.data('step'))
         })
 
         $('body').keydown(function (e) {
@@ -273,7 +263,7 @@ JqueryClass('shareBox', {
                     $('#record-step-' + step).hide()
                     $('#record-share').attr('disabled', resp.ok).hide()
 
-                    var pb_url = PEDALBOARDS_URL + '/' + resp.id
+                    var pb_url = PEDALBOARDS_URL + "/pedalboards/" + resp.id
                     $('#share-window-url').attr('value', pb_url)
                     $('#share-window-fb').attr('href', "https://www.facebook.com/sharer/sharer.php?u="+pb_url)
                     $('#share-window-tw').attr('href', "https://twitter.com/intent/tweet?source="+pb_url)
@@ -313,11 +303,19 @@ JqueryClass('shareBox', {
         $('#share-window-links').hide()
         self.shareBox('showStep', 1)
         self.data('bundlepath', bundlepath)
+        self.data('screenshotDone', false)
         self.find('#pedalboard-share-title').val(title)
-        var text = self.find('textarea')
-        text.val('').focus()
-        self.data('screenshotGenerated', false)
+        self.find('#record-share').attr('disabled', true)
+        self.find('#share-wait-screenshot').show()
         self.find('.js-share').addClass('disabled')
+        self.find('textarea').val('').focus()
+
+        self.data('waitForScreenshot')(function (ok) {
+            self.data('screenshotDone', true)
+            self.find('#share-wait-screenshot').hide()
+            self.shareBox('showStep', self.data('step'))
+        })
+
         self.show()
     },
 

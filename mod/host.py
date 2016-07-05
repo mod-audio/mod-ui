@@ -1638,24 +1638,47 @@ _:b%i
                 # save preset mapping index
                 pluginData['mapPresets'] = []
 
+                # safety check
+                if len(presets) == 0:
+                    pluginData['preset'] = ""
+                    if not skipLoad:
+                        callback(False)
+                    return
+
+                handled = False
+
                 # if no preset selected yet, we need to force one
                 if not pluginData['preset']:
                     pluginData['preset'] = presets[0]["uri"]
-                    # TODO: load preset
+                    handled = True
+                    value = 0
+                    # TODO: load preset?
 
+                # save preset list, within a limit
                 for i in range(maximum):
                     uri = presets[i]["uri"]
                     pluginData['mapPresets'].append(uri)
                     options.append((str(i), presets[i]["label"]))
+                    if handled:
+                        continue
                     if pluginData['preset'] == uri:
                         value = i
+                        handled = True
 
-                # handle case of current preset out of bounds (>100)
+                # check if selected preset is non-existent
+                if not handled and len(presets) == maximum:
+                    pluginData['mapPresets'] = []
+                    pluginData['preset'] = ""
+                    if not skipLoad:
+                        callback(False)
+                    return
+
+                # handle case of current preset out of limits (>100)
                 if pluginData['preset'] not in pluginData['mapPresets']:
+                    i = value = maximum
+                    maximum += 1
                     pluginData['mapPresets'].append(presets[i]["uri"])
                     options.append((str(i), presets[i]["label"]))
-                    value = maximum
-                    maximum += 1
 
                 spreset = pluginData['preset']
                 del presets
