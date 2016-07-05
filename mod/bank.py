@@ -42,22 +42,26 @@ def list_banks(brokenpedals = []):
 
         for pb in bank['pedalboards']:
             if 'bundle' not in pb.keys() or not pb['bundle']:
-                print("Auto-removing pedalboard '%s' from bank (missing bundle)" % pb['title'])
+                title = pb['title'].encode("ascii", "ignore").decode("ascii")
+                print("Auto-removing pedalboard '%s' from bank (missing bundle)" % title)
                 changed = True
                 continue
             if not os.path.exists(pb['bundle']):
-                print("ERROR in banks.py: referenced pedalboard does not exist:", pb['bundle'])
+                bundle = pb['bundle'].encode("ascii", "ignore").decode("ascii")
+                print("ERROR in banks.py: referenced pedalboard does not exist:", bundle)
                 changed = True
                 continue
             if checkbroken and os.path.abspath(pb['bundle']) in brokenpedals:
-                print("Auto-removing pedalboard '%s' from bank (it's broken)" % pb['title'])
+                title = pb['title'].encode("ascii", "ignore").decode("ascii")
+                print("Auto-removing pedalboard '%s' from bank (it's broken)" % title)
                 changed = True
                 continue
 
             validpedals.append(pb)
 
         if len(validpedals) == 0:
-            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % bank['title'])
+            title = bank['title'].encode("ascii", "ignore").decode("ascii")
+            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % title)
             changed = True
             continue
 
@@ -124,7 +128,8 @@ def remove_pedalboard_from_banks(pedalboard):
 
         # if there's no pedalboards left ignore this bank (ie, delete it)
         if len(newpedalboards) == 0:
-            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % bank['title'])
+            title = bank['title'].encode("ascii", "ignore").decode("ascii")
+            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % title)
             continue
 
         bank['pedalboards'] = newpedalboards
