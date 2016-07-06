@@ -37,8 +37,7 @@ from mod.settings import (APP, LOG,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
-                          PACKAGE_SERVER_ADDRESS, DEFAULT_PACKAGE_SERVER_PORT,
-                          PACKAGE_REPOSITORY, DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
+                          DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
                           JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP, BLUETOOTH_PIN)
 
 from mod import check_environment, jsoncall, json_handler
@@ -244,6 +243,25 @@ class SystemInfo(JsonRequestHandler):
                 info["hardware"] = json.loads(fd.read())
 
         self.write(info)
+        self.finish()
+
+class UpdateDownload(SimpleFileReceiver):
+    destination_dir = "/root/modduo.tar"
+
+    @web.asynchronous
+    @gen.engine
+    def process_file(self, data, callback=lambda:None):
+        print("UpdateDownload: process_file here")
+        print(data)
+
+        # TODO: verify checksum
+        callback()
+
+class UpdateBegin(JsonRequestHandler):
+    def post(self):
+        ok = yield gen.Task(SESSION.hmi.send, "restore")
+
+        self.write(ok)
         self.finish()
 
 class EffectInstaller(SimpleFileReceiver):
@@ -928,9 +946,6 @@ class TemplateHandler(web.RequestHandler):
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
             'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
             'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
-            'package_server_address': PACKAGE_SERVER_ADDRESS or '',
-            'default_package_server_port': DEFAULT_PACKAGE_SERVER_PORT,
-            'package_repository': PACKAGE_REPOSITORY,
             'js_custom_channel': 'true' if JS_CUSTOM_CHANNEL else 'false',
             'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
             'avatar_url': AVATAR_URL,
@@ -1173,6 +1188,9 @@ application = web.Application(
         [
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/system/info", SystemInfo),
+
+            (r"/update/download", UpdateDownload),
+            (r"/update/begin", UpdateBegin),
 
             (r"/resources/(.*)", EffectResource),
 

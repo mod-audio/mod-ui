@@ -81,22 +81,9 @@ MAX_THUMB_WIDTH = 350
 MAX_SCREENSHOT_HEIGHT = 1024
 MAX_SCREENSHOT_WIDTH = 1024
 
-DEFAULT_PACKAGE_SERVER_PORT = 8889
-# If environment variable is not set, then the address will be built by javascript,
-# using current host and default port above
-PACKAGE_SERVER_ADDRESS = os.environ.pop('MOD_PACKAGE_SERVER_ADDRESS', None)
-
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com/v2")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "http://pedalboards.dev.moddevices.com")
-
-if os.path.exists("/root/repository"):
-    fh = open("/root/repository")
-    default_repo = fh.read().strip()
-    fh.close()
-else:
-    default_repo = 'http://packages.moddevices.com/api'
-PACKAGE_REPOSITORY = os.environ.pop('MOD_PACKAGE_REPOSITORY', default_repo)
 
 if os.path.exists("/root/avatar"):
     fh = open("/root/avatar")

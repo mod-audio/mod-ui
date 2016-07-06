@@ -21,12 +21,13 @@ JqueryClass('upgradeWindow', {
 
         var icon = options.icon
         var windowManager = options.windowManager
+
         self.data('icon', icon)
         self.data('windowManager', options.windowManager)
-        self.data('uptodate', true)
-        self.data('warn', $('<p>'))
+        self.data('updatedata', null)
 
         icon.statusTooltip()
+        icon.statusTooltip('message', 'Checking for updates...', true)
 
         icon.click(function () {
             self.upgradeWindow('open')
@@ -42,36 +43,128 @@ JqueryClass('upgradeWindow', {
         })
 
         self.find('button.js-upgrade').click(function () {
-            if (!confirm("The MOD software will be upgraded. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
+            if ($(this).text() == "Upgrade Now") {
+                console.log("Upgrade Now!!! Now!!!")
                 return
-            var installer = new Installer({
-                repository: PACKAGE_REPOSITORY,
-                localServer: PACKAGE_SERVER_ADDRESS,
-                reportStatus: function (status) {
-                    self.upgradeWindow('reportInstallationStatus', status)
-                },
-                reportError: function (error) {}
-            })
+            }
+
             self.upgradeWindow('downloadStart')
-            installer.upgrade(function () {
-                self.upgradeWindow('downloadEnd')
-            })
         })
 
-        self.upgradeWindow('check')
         self.hide()
     },
 
     open: function () {
         var self = $(this)
-        if (!self.data('uptodate'))
-            self.show()
+        var data = self.data('updatedata')
+
+        if (! data) {
+            return
+        }
+
+        /*
+        var ul = self.find('ul')
+        ul.html('')
+        var i, pack
+        for (i = 0; i < packages.length; i++) {
+            pack = packages[i].replace(/^(.+)-([0-9.]+)-(\d+)-[^-]+.tar.xz$/,
+                function (m, pack, version, release) {
+                    return pack + ' v' + version + ' rel. ' + release
+                })
+            $('<li>').html(pack).appendTo(ul)
+        }
+        */
+
+        self.show()
     },
 
     close: function () {
         $(this).hide()
     },
 
+    setup: function (required, data) {
+        var self = $(this)
+        var icon = self.data('icon')
+
+        self.data('updatedata', data)
+        icon.statusTooltip('message', "An update is available, click to know details", false, 5000)
+        icon.statusTooltip('status', 'update-available')
+
+        if (required) {
+            // TODO
+        }
+    },
+
+    setErrored: function () {
+        var self = $(this)
+        var icon = self.data('icon')
+
+        icon.statusTooltip('message', "Failed to connect to MOD Cloud", true)
+        icon.statusTooltip('status', 'uptodate')
+    },
+
+    setUpdated: function () {
+        var self = $(this)
+        var icon = self.data('icon')
+
+        icon.statusTooltip('message', "System is up-to-date", true)
+        icon.statusTooltip('status', 'uptodate')
+    },
+
+    downloadStart: function () {
+        var self = $(this)
+        self.find('.mod-upgrade-details').hide()
+        self.find('.download-progress').show()
+        self.find('.progressbar').width(0)
+
+        self.find('.download-start').show()
+        self.find('.download-complete').hide()
+
+        var transfer = new SimpleTransference(self.data('updatedata')['download-url'], '/update/download')
+
+        transfer.reportFinished = function (resp2) {
+            console.log("transfer reportFinished")
+            self.upgradeWindow('downloadEnd')
+        }
+
+        transfer.reportError = function (error) {
+            console.log("transfer reportError")
+            self.upgradeWindow('downloadError')
+        }
+
+        transfer.reportStatus = function (status) {
+            console.log("transfer reportStatus")
+        }
+
+        console.log("Trying to download", self.data('updatedata')['download-url'])
+        transfer.start()
+    },
+
+    downloadEnd: function () {
+        var self = $(this)
+        self.find('.mod-upgrade-details').show()
+        self.find('.download-progress').hide()
+        self.find('button.js-upgrade').text("Upgrade Now")
+
+        self.find('.download-start').hide()
+        self.find('.download-complete').show()
+
+        if (!confirm("The MOD software will be upgraded. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
+            return
+
+        console.log("Upgrade Now!!")
+    },
+
+    downloadError: function () {
+        var self = $(this)
+        self.find('.mod-upgrade-details').show()
+        self.find('.download-progress').hide()
+
+        self.find('.download-start').show().text("Download failed!")
+        self.find('.download-complete').hide()
+    },
+
+    /*
     check: function (count) {
         var self = $(this)
         var icon = self.data('icon')
@@ -120,7 +213,9 @@ JqueryClass('upgradeWindow', {
             self.data('uptodate', false)
         })
     },
+    */
 
+    /*
     reportInstallationStatus: function (status) {
         var self = $(this)
         if (status.complete && status.numFile == status.totalFiles) {
@@ -138,41 +233,9 @@ JqueryClass('upgradeWindow', {
         self.find('.file-number').html(status.numFile)
         self.find('.total-files').html(status.totalFiles)
     },
+    */
 
-    downloadStart: function () {
-        var self = $(this)
-        self.find('.mod-upgrade-packages-list').hide()
-        self.find('.download-progress').show()
-        self.find('.download-info').hide()
-        self.find('.download-installing').hide()
-        self.find('.installation-checking').hide()
-        self.find('.download-start').show()
-        self.find('.progressbar').width(0)
-    },
-
-    downloadEnd: function () {
-        var self = $(this)
-        self.find('.download-installing').hide()
-        self.find('.installation-checking').show()
-        self.data('warn').remove()
-        var ping = function () {
-            $.ajax({
-                url: '/ping',
-                success: function (result) {
-                    // we must remove the v=CHECKSUM parameter from url, so page can get
-                    // a new parameter according to new software checksum.
-                    var url = document.location.href.replace(/v=[^&]+&?/, '').replace(/[?&]$/, '')
-                    document.location.href = url
-                },
-                error: function () {
-                    setTimeout(ping, 1000)
-                },
-                dataType: 'json'
-            })
-        }
-        setTimeout(ping, 1000)
-    },
-
+    /*
     block: function () {
         var self = $(this)
         self.data('windowManager').closeWindows()
@@ -188,4 +251,5 @@ JqueryClass('upgradeWindow', {
         $('#wrapper').css('z-index', -1)
         self.data('warn', warn)
     }
+    */
 })

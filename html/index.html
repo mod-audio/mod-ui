@@ -68,13 +68,6 @@
       var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
       var MAX_SCREENSHOT_WIDTH = 600
       var MAX_SCREENSHOT_HEIGHT = 600
-      var PACKAGE_SERVER_ADDRESS = ('{{package_server_address}}' ||
-       document.location.origin.replace(/(https?:\/\/[^/:]+).*/,
-          function(m, first) {
-              return first + ':' + {{default_package_server_port}}
-          })
-      )
-      var PACKAGE_REPOSITORY = '{{package_repository}}'
       var AVATAR_URL = '{{avatar_url}}'
       var JS_CUSTOM_CHANNEL = {{js_custom_channel}}
       var AUTO_CLOUD_BACKUP = {{auto_cloud_backup}}
@@ -90,9 +83,6 @@
           "python": {},
           "uname": {}
       }
-
-// FIXME: what is this for?
-// $('<script>').attr('src', PACKAGE_SERVER_ADDRESS+'/js/system.js').appendTo($('head'))
 
 $('document').ready(function() {
     var preloadImages = [
@@ -221,8 +211,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/hardware.js?v={{version}}"></script>
 <script type="text/javascript" src="js/share.js?v={{version}}"></script>
 <!--<script type="text/javascript" src="js/bluetooth.js?v={{version}}"></script>-->
-<!--<script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>-->
-<!--<script type="text/javascript" src="js/xrun.js?v={{version}}"></script>-->
+<script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/host.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 
@@ -619,7 +608,7 @@ $('document').ready(function() {
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass R</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass L</div>
         <div id="mod-add-midi" class="icon">Add MIDI Device</div>
-        <div id="mod-settings" class="icon hide"></div>
+        <div id="mod-settings" class="icon"></div>
         <div id="mod-bluetooth" class="icon hide"></div>
         <div id="mod-cloud" class="icon hide"></div>
 
@@ -1044,28 +1033,26 @@ $('document').ready(function() {
     <!-- END MOD UPDATE/UPGRADE TOOLTIP -->
 
     <!-- MOD UPDATE/UPGRADE BOX -->
-    <div id="mod-upgrade" class="mod-hidden">
-        <div class="box">
-            <div class="mod-upgrade-packages-list">
-                <p>The following software updates are available:</p>
-                <ul></ul>
-                <p class="textright">
-                    <button class="js-close btn btn-xs btn-danger">Cancel</button>
-                    <button class="js-upgrade btn btn-xs btn-info">Upgrade</button>
-                </p>
+<div id="mod-upgrade" class="mod-hidden">
+    <div class="box">
+        <div class="mod-upgrade-details">
+            <p>Update version v1.0.0</p>
+            <p>Released on X/X/XX</p>
+            <p class="textright">
+                <button class="js-close btn btn-xs btn-danger">Cancel</button>
+                <button class="js-upgrade btn btn-xs btn-info">Download</button>
+            </p>
+        </div>
+        <div class="download-progress mod-hidden">
+            <div class="download-start">Downloading...</div>
+            <div class="download-complete">Download complete</div>
+            <div class="progressbar-wrapper">
+                <div class="progressbar"></div>
             </div>
-            <div class="download-progress mod-hidden">
-             <div class="download-info">
-              <div class="downloading-file">Downloading <span class="filename"></span> (<span class="file-number"></span>/<span class="total-files"></span>)</div>
-          </div>
-          <div class="download-start">Starting download...</div>
-          <div class="download-installing">Installing packages... (may take a while)</div>
-          <div class="installation-checking">Installation complete! Reloading...</div>
-          <div class="progressbar-wrapper"><div class="progressbar"></div></div>
-      </div>
-  </div>
+        </div>
+    </div>
 </div>
-<!-- END MOD UPDATE/UPGRADE BOX -->
+    <!-- END MOD UPDATE/UPGRADE BOX -->
 
 
 
