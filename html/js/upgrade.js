@@ -117,7 +117,7 @@ JqueryClass('upgradeWindow', {
         self.find('.download-progress').show()
         self.find('.progressbar').width(0)
 
-        self.find('.download-start').show()
+        self.find('.download-start').show().text("Downloading...")
         self.find('.download-complete').hide()
 
         var transfer = new SimpleTransference(self.data('updatedata')['download-url'], '/update/download')
@@ -149,7 +149,7 @@ JqueryClass('upgradeWindow', {
         self.find('.download-start').hide()
         self.find('.download-complete').show()
 
-        if (!confirm("The MOD software will be upgraded. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
+        if (!confirm("The MOD will now be updated. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
             return
 
         console.log("Upgrade Now!!")
@@ -158,7 +158,7 @@ JqueryClass('upgradeWindow', {
     downloadError: function () {
         var self = $(this)
         self.find('.mod-upgrade-details').show()
-        self.find('.download-progress').hide()
+        self.find('button.js-upgrade').text("Retry")
 
         self.find('.download-start').show().text("Download failed!")
         self.find('.download-complete').hide()

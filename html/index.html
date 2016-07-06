@@ -1035,6 +1035,14 @@ $('document').ready(function() {
     <!-- MOD UPDATE/UPGRADE BOX -->
 <div id="mod-upgrade" class="mod-hidden">
     <div class="box">
+        <div class="download-progress mod-hidden">
+            <div class="download-start">Downloading...</div>
+            <div class="download-complete">Download complete</div>
+            <div class="progressbar-wrapper">
+                <div class="progressbar"></div>
+            </div>
+            <p><br/></p>
+        </div>
         <div class="mod-upgrade-details">
             <p>Update version v1.0.0</p>
             <p>Released on X/X/XX</p>
@@ -1042,13 +1050,6 @@ $('document').ready(function() {
                 <button class="js-close btn btn-xs btn-danger">Cancel</button>
                 <button class="js-upgrade btn btn-xs btn-info">Download</button>
             </p>
-        </div>
-        <div class="download-progress mod-hidden">
-            <div class="download-start">Downloading...</div>
-            <div class="download-complete">Download complete</div>
-            <div class="progressbar-wrapper">
-                <div class="progressbar"></div>
-            </div>
         </div>
     </div>
 </div>
