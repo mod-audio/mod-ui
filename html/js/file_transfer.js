@@ -68,6 +68,11 @@ function SimpleTransference(from, to, options) {
     this.reauthorize = null;
     this.reauthorized = false;
 
+    // fix path for tar downloads (the line below means 'endsWith')
+    if (this.origin.indexOf(".tar/", this.origin.length - 5) !== -1) {
+        this.origin = this.origin.substring(0, this.origin.length-1)
+    }
+
     var self = this
 
     this.start = function () {

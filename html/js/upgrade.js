@@ -62,18 +62,9 @@ JqueryClass('upgradeWindow', {
             return
         }
 
-        /*
-        var ul = self.find('ul')
-        ul.html('')
-        var i, pack
-        for (i = 0; i < packages.length; i++) {
-            pack = packages[i].replace(/^(.+)-([0-9.]+)-(\d+)-[^-]+.tar.xz$/,
-                function (m, pack, version, release) {
-                    return pack + ' v' + version + ' rel. ' + release
-                })
-            $('<li>').html(pack).appendTo(ul)
-        }
-        */
+        var p = self.find('.mod-upgrade-details').find('p')
+        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.")
+        $(p[1]).text("Released on " + data['release-date'].split('T')[0] + ".")
 
         self.show()
     },
@@ -120,7 +111,8 @@ JqueryClass('upgradeWindow', {
         self.find('.download-start').show().text("Downloading...")
         self.find('.download-complete').hide()
 
-        var transfer = new SimpleTransference(self.data('updatedata')['download-url'], '/update/download')
+        var url = self.data('updatedata')['download-url'] // TESTING "http://localhost/modduo-v0.15.0.tar"
+        var transfer = new SimpleTransference(url, '/update/download')
 
         transfer.reportFinished = function (resp2) {
             console.log("transfer reportFinished")
@@ -136,7 +128,7 @@ JqueryClass('upgradeWindow', {
             console.log("transfer reportStatus")
         }
 
-        console.log("Trying to download", self.data('updatedata')['download-url'])
+        console.log("Trying to download", url)
         transfer.start()
     },
 
