@@ -364,8 +364,9 @@ function Desktop(elements) {
             cache: false,
             success: function (resp) {
                 if (!resp || !resp.nonce) {
-                    callback(false);
-                    return;
+                    callback(false)
+                    elements.upgradeWindow.upgradeWindow('setErrored')
+                    return
                 }
                 $.ajax({
                     url: '/auth/nonce',
@@ -377,8 +378,9 @@ function Desktop(elements) {
                     success: function (resp) {
                         if (!resp || !resp.message) {
                             //$('#mod-cloud-plugins').hide()
+                            callback(false)
                             console.log("Webserver does not support MOD tokens, downloads will not be possible")
-                            callback(false);
+                            elements.upgradeWindow.upgradeWindow('setErrored')
                             return;
                         }
 
@@ -392,8 +394,27 @@ function Desktop(elements) {
                             success: function (resp) {
                                 if (!resp || !resp.message) {
                                     callback(false);
+                                    elements.upgradeWindow.upgradeWindow('setErrored')
                                     return;
                                 }
+
+                                if (resp['upgrade']) {
+                                    $.ajax({
+                                        method: 'GET',
+                                        url: resp['image-href'],
+                                        cache: false,
+                                        contentType: 'application/json',
+                                        success: function (data) {
+                                            elements.upgradeWindow.upgradeWindow('setup', resp['upgrade-required'], data)
+                                        },
+                                        error: function () {
+                                            elements.upgradeWindow.upgradeWindow('setErrored')
+                                        },
+                                    })
+                                } else {
+                                    elements.upgradeWindow.upgradeWindow('setUpdated')
+                                }
+
                                 $.ajax({
                                     url: '/auth/token',
                                     type: 'POST',
@@ -416,17 +437,20 @@ function Desktop(elements) {
                                 })
                             },
                             error: function () {
-                                callback(false);
+                                callback(false)
+                                elements.upgradeWindow.upgradeWindow('setErrored')
                             },
                         })
                     },
                     error: function () {
-                        callback(false);
+                        callback(false)
+                        elements.upgradeWindow.upgradeWindow('setErrored')
                     },
                 })
             },
             error: function () {
-                callback(false);
+                callback(false)
+                elements.upgradeWindow.upgradeWindow('setErrored')
             },
         })
     }
@@ -814,11 +838,24 @@ function Desktop(elements) {
     })
     */
 
-    /*
-    elements.upgradeWindow.upgradeWindow({
+    this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
         windowManager: self.windowManager,
-    })*/
+        startUpgrade: function (callback) {
+            $.ajax({
+                type: 'POST',
+                url: '/update/begin',
+                success: function (ok) {
+                    callback(ok)
+                },
+                error: function () {
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json',
+            })
+        },
+    })
 
     var prevent = function (ev) {
         ev.preventDefault()
@@ -827,15 +864,6 @@ function Desktop(elements) {
     $('body')[0].addEventListener('gesturechange', prevent)
     $('body')[0].addEventListener('touchmove', prevent)
     $('body')[0].addEventListener('dblclick', prevent)
-    /*
-     * when putting this function, we must remember to remove it from /ping call
-    $(document).bind('ajaxSend', function() {
-    $('body').css('cursor', 'wait')
-    })
-    $(document).bind('ajaxComplete', function() {
-    $('body').css('cursor', 'default')
-    })
-    */
 }
 
 Desktop.prototype.makePedalboard = function (el, effectBox) {
@@ -1519,12 +1547,12 @@ JqueryClass('statusTooltip', {
         self.addClass(status)
     },
 
-    message: function (message, silent) {
+    message: function (message, silent, timeout) {
         var self = $(this)
         var oldMsg = self.data('message')
         self.data('message', message)
         if (!silent && oldMsg != message)
-            self.statusTooltip('showTooltip', 1500)
+            self.statusTooltip('showTooltip', timeout || 1500)
     },
 
     showTooltip: function (timeout) {
