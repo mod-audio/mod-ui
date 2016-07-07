@@ -55,7 +55,8 @@ def check_environment():
     from mod.settings import (DEVICE_SERIAL, DEVICE_MODEL,
                               LV2_PEDALBOARDS_DIR,
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
-                              DATA_DIR, DOWNLOAD_TMP_DIR, BANKS_JSON_FILE)
+                              DATA_DIR, DOWNLOAD_TMP_DIR,
+                              BANKS_JSON_FILE, UPDATE_FILE)
 
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
@@ -72,6 +73,9 @@ def check_environment():
     if not os.path.exists(BANKS_JSON_FILE):
         with open(BANKS_JSON_FILE, 'w') as fh:
             fh.write("[]")
+
+    if os.path.exists(UPDATE_FILE):
+        os.remove(UPDATE_FILE)
 
     # TEMPORARIO, APENAS NO DESENVOLVIMENTO
     if os.path.exists(DEVICE_SERIAL) and not os.path.exists(DEVICE_MODEL):

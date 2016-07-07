@@ -115,49 +115,44 @@ JqueryClass('upgradeWindow', {
         self.find('.download-complete').hide()
 
         var url = self.data('updatedata')['download-url']
+
+        // TESTING
+        //url = "http://pipeline.moddevices.com/image/577e601e2564d4678c024a5c/file/"
+
         var transfer = new SimpleTransference(url, '/update/download')
 
-        transfer.reportFinished = function (resp2) {
-            console.log("transfer reportFinished")
-            self.upgradeWindow('downloadEnd')
+        transfer.reportPercentageStatus = function (percentage) {
+            self.find('.progressbar').width(self.find('.progressbar-wrapper').width() * percentage)
+
+            if (percentage == 1) {
+                self.find('.download-start').text("Preparing update...")
+            }
+        }
+
+        transfer.reportFinished = function (resp) {
+            self.find('.mod-upgrade-details').show().find('p:lt(2)').show()
+            self.find('.download-progress').hide()
+            self.find('button.js-upgrade').text("Upgrade Now")
+
+            self.find('.download-start').hide()
+            self.find('.download-complete').show()
+
+            if (!confirm("The MOD will now be updated. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
+                return
+
+            self.upgradeWindow('startUpgrade')
         }
 
         transfer.reportError = function (error) {
-            console.log("transfer reportError")
-            self.upgradeWindow('downloadError')
-        }
+            self.find('.mod-upgrade-details').show().find('p:lt(2)').hide()
+            self.find('button.js-upgrade').text("Retry")
 
-        transfer.reportStatus = function (status) {
-            console.log("transfer reportStatus")
-            console.log(status)
+            self.find('.download-start').show().text("Download failed!")
+            self.find('.download-complete').hide()
         }
 
         console.log("Trying to download", url)
         transfer.start()
-    },
-
-    downloadEnd: function () {
-        var self = $(this)
-        self.find('.mod-upgrade-details').show()
-        self.find('.download-progress').hide()
-        self.find('button.js-upgrade').text("Upgrade Now")
-
-        self.find('.download-start').hide()
-        self.find('.download-complete').show()
-
-        if (!confirm("The MOD will now be updated. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
-            return
-
-        self.upgradeWindow('startUpgrade')
-    },
-
-    downloadError: function () {
-        var self = $(this)
-        self.find('.mod-upgrade-details').show()
-        self.find('button.js-upgrade').text("Retry")
-
-        self.find('.download-start').show().text("Download failed!")
-        self.find('.download-complete').hide()
     },
 
     startUpgrade: function () {
@@ -171,93 +166,4 @@ JqueryClass('upgradeWindow', {
             }
         })
     },
-
-    /*
-    check: function (count) {
-        var self = $(this)
-        var icon = self.data('icon')
-        if (count == null)
-            count = 0
-        if (typeof (Installer) == "undefined" && count < 10) {
-            count++;
-            setTimeout(function () {
-                self.upgradeWindow('check', count)
-            }, 1000)
-            return
-        }
-        try {
-            var installer = new Installer({
-                repository: PACKAGE_REPOSITORY,
-                localServer: PACKAGE_SERVER_ADDRESS
-            })
-        } catch (err) {
-            icon.statusTooltip('message', 'Local upgrade server is offline')
-            return
-        }
-        icon.statusTooltip('message', 'Checking for updates...', true)
-        installer.checkUpgrade(function (packages) {
-            if (packages.length == 0) {
-                icon.statusTooltip('message', 'System is up-to-date', true)
-                icon.statusTooltip('status', 'uptodate')
-                self.data('uptodate', true)
-                self.hide()
-                return
-            }
-            icon.statusTooltip('status', 'update-available')
-            if (packages.length == 1)
-                icon.statusTooltip('message', '1 software update available')
-            else
-                icon.statusTooltip('message', sprintf('%d software updates available', packages.length))
-            var ul = self.find('ul')
-            ul.html('')
-            var i, pack
-            for (i = 0; i < packages.length; i++) {
-                pack = packages[i].replace(/^(.+)-([0-9.]+)-(\d+)-[^-]+.tar.xz$/,
-                    function (m, pack, version, release) {
-                        return pack + ' v' + version + ' rel. ' + release
-                    })
-                $('<li>').html(pack).appendTo(ul)
-            }
-            self.data('uptodate', false)
-        })
-    },
-    */
-
-    /*
-    reportInstallationStatus: function (status) {
-        var self = $(this)
-        if (status.complete && status.numFile == status.totalFiles) {
-            self.find('.download-info').hide()
-            self.find('.download-start').hide()
-            self.find('.download-installing').show()
-            self.upgradeWindow('block')
-        } else {
-            self.find('.download-info').show()
-            self.find('.download-start').hide()
-            self.find('.download-installing').hide()
-        }
-        self.find('.progressbar').width(self.find('.progressbar-wrapper').width() * status.percent / 100)
-        self.find('.filename').html(status.currentFile)
-        self.find('.file-number').html(status.numFile)
-        self.find('.total-files').html(status.totalFiles)
-    },
-    */
-
-    /*
-    block: function () {
-        var self = $(this)
-        self.data('windowManager').closeWindows()
-        var block = $('<div class="screen-updating blocker">');
-        var anim = $("#loading").clone();
-        anim.attr("id", null);
-        self.block.append(anim);
-        var warn = $('<p>').html('Do not turn off<br/>(might brick your MOD)').appendTo(block)
-        $('body').append(block).css('overflow', 'hidden')
-        block.width($(window).width() * 5)
-        block.height($(window).height() * 5)
-        block.css('margin-left', -$(window).width() * 2)
-        $('#wrapper').css('z-index', -1)
-        self.data('warn', warn)
-    }
-    */
 })

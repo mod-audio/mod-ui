@@ -15,6 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * the following function is based on jquery.binarytransport.js
+ * made by Henry Algus <henryalgus@gmail.com>
+ */
 $.ajaxTransport("+binary", function(options, originalOptions, jqXHR){
     // check for conditions and support for blob / arraybuffer response type
     if (window.FormData && ((options.dataType && (options.dataType == 'binary')) || (options.data && ((window.ArrayBuffer && options.data instanceof ArrayBuffer) || (window.Blob && options.data instanceof Blob)))))
@@ -38,6 +42,14 @@ $.ajaxTransport("+binary", function(options, originalOptions, jqXHR){
                     data[options.dataType] = xhr.response;
                     // make callback and send data
                     callback(xhr.status, xhr.statusText, data, xhr.getAllResponseHeaders());
+                });
+
+                xhr.addEventListener('progress', function(event){
+                    if (! event.lengthComputable) {
+                        return
+                    }
+                    var percentComplete = event.loaded / event.total;
+                    originalOptions.percentageStatus(percentComplete)
                 });
 
                 xhr.open(type, url, async, username, password);
@@ -68,11 +80,6 @@ function SimpleTransference(from, to, options) {
     this.reauthorize = null;
     this.reauthorized = false;
 
-    // fix path for tar downloads (the line below means 'endsWith')
-    if (this.origin.indexOf(".tar/", this.origin.length - 5) !== -1) {
-        this.origin = this.origin.substring(0, this.origin.length-1)
-    }
-
     var self = this
 
     this.start = function () {
@@ -98,7 +105,10 @@ function SimpleTransference(from, to, options) {
                     return;
                 }
                 self.abort(resp.statusText)
-            }
+            },
+            percentageStatus: function (percentage) {
+                self.percentageStatus(percentage)
+            },
         }, self.options.from_args))
         self.request = req
     }
@@ -121,25 +131,12 @@ function SimpleTransference(from, to, options) {
         self.request = req
     }
 
-    this.success = function (resp) {
-        self.reportFinished(resp)
+    this.percentageStatus = function (percentage) {
+        self.reportPercentageStatus(percentage)
     }
 
-    this.reportInitialStatus = function (upload) {
-        var status = {
-            complete: true,
-            ok: upload.ok,
-            percent: 0,
-            result: upload.result,
-            torrent_id: upload.id
-        }
-        for (var i in upload.status) {
-            if (upload.status[i])
-                status.percent += 100 / upload.status.length
-            else
-                status.complete = false
-        }
-        self.reportStatus(status)
+    this.success = function (resp) {
+        self.reportFinished(resp)
     }
 
     this.abort = function (error) {
@@ -161,7 +158,7 @@ function SimpleTransference(from, to, options) {
         }
     }
 
-    this.reportStatus = function (status) {}
+    this.reportPercentageStatus = function (percentage) {}
     this.reportFinished = function () {}
     this.reportError = function (error) {}
 }
