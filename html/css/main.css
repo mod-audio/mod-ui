@@ -7176,18 +7176,18 @@ hr.dotted {
   cursor: pointer;
 }
 #notifications .progressbar {
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  height: 18px;
+  border: 0;
+  height: 8px;
   overflow: hidden;
   position: absolute;
-  right: 40px;
-  top: 10px;
-  width: 250px;
+  left: 8px;
+  bottom: 0px;
+  width: 306px;
 }
 #notifications .progressbar .progressbar-value {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(136, 57, 150, 0.7);
   height: 90%;
-  margin: 1px;
+  margin: 0px;
 }
 #main-menu {
   background: #111;

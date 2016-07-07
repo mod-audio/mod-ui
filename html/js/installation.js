@@ -109,7 +109,7 @@ function InstallationQueue() {
         var bundle = queue[0]
         var callback = callbacks[0]
 
-        var installationMsg = 'Installing package ' + bundle.name
+        var installationMsg = 'Downloading package ' + bundle.name
         if (bundle.count > 1) {
             installationMsg += ' (contains ' + bundle.count + ' plugins)'
         }
@@ -125,8 +125,13 @@ function InstallationQueue() {
 
         trans.reauthorize = desktop.authenticateDevice;
 
-        trans.reportStatus = function (status) {
-            notification.bar(status.percent)
+        trans.reportPercentageStatus = function (percentage) {
+            notification.bar(percentage*100)
+
+            if (percentage == 1) {
+                installationMsg = installationMsg.replace("Downloading", "Installing")
+                notification.html(installationMsg)
+            }
         }
 
         trans.reportError = function (reason) {
@@ -144,7 +149,7 @@ function InstallationQueue() {
                 callbacks.shift()
 
                 notification.html(installationMsg + ' - OK!')
-                notification.bar(100)
+                notification.bar(0)
                 notification.type('success')
 
                 if (queue.length > 0) {
