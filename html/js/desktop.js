@@ -455,6 +455,29 @@ function Desktop(elements) {
         })
     }
 
+    this.validatePlugins = function (uris, callback) {
+        $.ajax({
+            url: SITEURL + '/pedalboards/validate/',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                uris: uris,
+            }),
+            success: function (resp) {
+                if (! resp.result) {
+                    new Notification('error', 'Cannot share pedalboard, it contains unstable plugins!')
+                    return
+                }
+                callback()
+            },
+            error: function (resp) {
+                new Bug("Couldn't validate pedalboard, error:<br/>" + resp.statusText)
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    }
+
     this.enableDevFeatures = function () {
         // enable pedalboard actions
         var actions = $("#pedalboard-actions")
@@ -702,13 +725,16 @@ function Desktop(elements) {
 
     elements.shareButton.click(function () {
         var share = function () {
-            //self.userSession.login(function () {
-                if (self.pedalboardEmpty || !self.pedalboardBundle) {
-                    return new Notification('warn', 'Nothing to share', 1500)
-                }
+            if (self.pedalboardEmpty || !self.pedalboardBundle) {
+                return new Notification('warn', 'Nothing to share', 1500)
+            }
+
+            var uris = self.pedalboard.pedalboard('getLoadedPluginURIs')
+            self.validatePlugins(uris, function () {
                 elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
-            //})
+            })
         }
+
         if (self.pedalboardModified) {
             if (confirm('There are unsaved modifications, pedalboard must first be saved. Save it?')) {
                 self.saveCurrentPedalboard(false, share)
@@ -800,29 +826,6 @@ function Desktop(elements) {
                         ok: false,
                         error: resp.statusText
                     })
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-
-        validate: function (uris, callback) {
-            $.ajax({
-                url: SITEURL + '/pedalboards/validate/',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    uris: uris,
-                }),
-                success: function (resp) {
-                    if (! resp.result) {
-                        new Notification('error', 'Cannot share pedalboard, it contains unstable plugins!')
-                        return
-                    }
-                    callback()
-                },
-                error: function (resp) {
-                    new Bug("Couldn't validate pedalboard, error:<br/>" + resp.statusText)
                 },
                 cache: false,
                 dataType: 'json'
