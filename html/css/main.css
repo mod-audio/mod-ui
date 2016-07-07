@@ -7294,19 +7294,6 @@ hr.dotted {
   color: #666;
   display: none;
 }
-#main-menu #mod-settings {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -180px top;
-  background-repeat: no-repeat;
-  border-color: #2b2b2b;
-  border-style: solid;
-  border-width: 0 0 0 1px;
-  float: right;
-}
-#main-menu #mod-settings.uptodate {
-  background-color: #000;
-  background-position: -180px bottom;
-}
 #main-menu #mod-add-midi,
 #main-menu .mod-bypass,
 #main-menu #mod-cpu,
@@ -7394,35 +7381,41 @@ hr.dotted {
   margin-left: 1em;
   color: white;
 }
-#main-menu #mod-bluetooth {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -225px bottom;
+#main-menu .status {
   background-repeat: no-repeat;
   border-color: #2b2b2b;
   border-style: solid;
-  border-width: 0 0 0 1px;
+  border-width: 0 1px 0 1px;
   float: right;
+  margin-right: -1px;
+}
+#main-menu #mod-settings {
+  background-image: url(../img/menu-icons-sprite.png);
+  background-position: -182px bottom;
+}
+#main-menu #mod-settings.uptodate {
+  background-color: #000;
+  background-position: -182px top;
+}
+#main-menu #mod-bluetooth {
+  background-image: url(../img/menu-icons-sprite.png);
+  background-position: -225px top;
 }
 #main-menu #mod-bluetooth.online {
   background-color: #000;
-  background-position: -225px top;
+  background-position: -225px bottom;
 }
 #main-menu #mod-cloud {
   background-image: url(../img/menu-icons-sprite.png);
-  background-position: -270px bottom;
-  background-repeat: no-repeat;
-  border-color: #2b2b2b;
-  border-style: solid;
-  border-width: 0 0 0 1px;
-  float: right;
+  background-position: -270px top;
 }
 #main-menu #mod-cloud.logged {
   background-color: #000;
-  background-position: -270px top;
+  background-position: -270px bottom;
 }
 #main-menu #mod-cloud.online {
   background-color: #000;
-  background-position: -270px top;
+  background-position: -270px bottom;
 }
 /* TOP MENUS */
 header#pedalboard-actions,
