@@ -34,7 +34,7 @@ from uuid import uuid4
 from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
-                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
+                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION, UPDATE_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
                           DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
@@ -246,15 +246,14 @@ class SystemInfo(JsonRequestHandler):
         self.finish()
 
 class UpdateDownload(SimpleFileReceiver):
-    destination_dir = "/root/modduo.tar"
+    destination_dir = "/tmp"
 
     @web.asynchronous
     @gen.engine
     def process_file(self, data, callback=lambda:None):
-        print("UpdateDownload: process_file here")
-        print(data)
-
-        # TODO: verify checksum
+        # TODO: verify checksum?
+        shutil.move(os.path.join(self.destination_dir, data['filename']), UPDATE_FILE)
+        self.result = True
         callback()
 
 class UpdateBegin(JsonRequestHandler):
@@ -1191,7 +1190,7 @@ application = web.Application(
             (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/system/info", SystemInfo),
 
-            (r"/update/download", UpdateDownload),
+            (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),
 
             (r"/resources/(.*)", EffectResource),

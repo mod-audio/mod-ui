@@ -1289,6 +1289,23 @@ JqueryClass('pedalboard', {
         return plugin.data('gui')
     },
 
+    getLoadedPluginURIs: function () {
+        var plugin, plugins = $(this).data('plugins')
+        var uri, uris = {}
+
+        for (var i in plugins) {
+            plugin = plugins[i]
+            if (plugin != null && plugin.data != null) {
+                uri = plugin.data('uri')
+                if (uri != null) {
+                    uris[uri] = true
+                }
+            }
+        }
+
+        return Object.keys(uris)
+    },
+
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
         var gui, plugin

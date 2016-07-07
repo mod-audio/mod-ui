@@ -296,8 +296,9 @@ JqueryClass('shareBox', {
         }
     },
 
-    open: function (bundlepath, title) {
+    open: function (bundlepath, title, uris) {
         var self = $(this)
+
         $('#record-share').show()
         $('#share-window-form').show()
         $('#share-window-links').hide()
@@ -306,17 +307,38 @@ JqueryClass('shareBox', {
         self.data('screenshotDone', false)
         self.find('#pedalboard-share-title').val(title)
         self.find('#record-share').attr('disabled', true)
-        self.find('#share-wait-screenshot').show()
+        self.find('#share-wait-screenshot').show().text("Waiting for screenshot...")
         self.find('.js-share').addClass('disabled')
         self.find('textarea').val('').focus()
+        self.show()
 
-        self.data('waitForScreenshot')(function (ok) {
+        var done = function () {
             self.data('screenshotDone', true)
             self.find('#share-wait-screenshot').hide()
             self.shareBox('showStep', self.data('step'))
-        })
+        }
 
-        self.show()
+        self.data('waitForScreenshot')(function (ok) {
+            if (ok) {
+                done()
+                return
+            }
+            // 2nd try
+            self.find('#share-wait-screenshot').text("Waiting for screenshot... (attempt #2)")
+            self.data('waitForScreenshot')(function (ok) {
+                if (ok) {
+                    done()
+                    return
+                }
+                // 3rd and final try
+                self.find('#share-wait-screenshot').text("Waiting for screenshot... (final attempt)")
+                self.data('waitForScreenshot')(function (ok) {
+                    // shit! just upload without screenshot then.. :(
+                    self.find('#share-wait-screenshot').text("Waiting for screenshot... failed!")
+                    done()
+                })
+            })
+        })
     },
 
     close: function () {

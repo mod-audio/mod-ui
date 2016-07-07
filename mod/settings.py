@@ -103,3 +103,5 @@ AUTO_CLOUD_BACKUP = bool(int(os.environ.pop('MOD_AUTO_CLOUD_BACKUP', False)))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
+
+UPDATE_FILE='/data/modduo.tar'
