@@ -806,6 +806,29 @@ function Desktop(elements) {
             })
         },
 
+        validate: function (uris, callback) {
+            $.ajax({
+                url: SITEURL + '/pedalboards/validate/',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    uris: uris,
+                }),
+                success: function (resp) {
+                    if (! resp.result) {
+                        new Notification('error', 'Cannot share pedalboard, it contains unstable plugins!')
+                        return
+                    }
+                    callback()
+                },
+                error: function (resp) {
+                    new Bug("Couldn't validate pedalboard, error:<br/>" + resp.statusText)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
         waitForScreenshot: function (callback) {
             $.ajax({
                 url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),

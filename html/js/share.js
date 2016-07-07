@@ -49,6 +49,9 @@ JqueryClass('shareBox', {
             share: function (data, callback) {
                 callback({ok:true})
             },
+            validate: function (uris, callback) {
+                callback({ok:true})
+            },
             waitForScreenshot: function (callback) {
                 callback(true)
             },
@@ -298,25 +301,31 @@ JqueryClass('shareBox', {
 
     open: function (bundlepath, title) {
         var self = $(this)
-        $('#record-share').show()
-        $('#share-window-form').show()
-        $('#share-window-links').hide()
-        self.shareBox('showStep', 1)
-        self.data('bundlepath', bundlepath)
-        self.data('screenshotDone', false)
-        self.find('#pedalboard-share-title').val(title)
-        self.find('#record-share').attr('disabled', true)
-        self.find('#share-wait-screenshot').show()
-        self.find('.js-share').addClass('disabled')
-        self.find('textarea').val('').focus()
+        var uris = []
 
-        self.data('waitForScreenshot')(function (ok) {
-            self.data('screenshotDone', true)
-            self.find('#share-wait-screenshot').hide()
-            self.shareBox('showStep', self.data('step'))
+        // TODO: fill in URIs
+
+        self.data('validate')(uris, function () {
+            $('#record-share').show()
+            $('#share-window-form').show()
+            $('#share-window-links').hide()
+            self.shareBox('showStep', 1)
+            self.data('bundlepath', bundlepath)
+            self.data('screenshotDone', false)
+            self.find('#pedalboard-share-title').val(title)
+            self.find('#record-share').attr('disabled', true)
+            self.find('#share-wait-screenshot').show()
+            self.find('.js-share').addClass('disabled')
+            self.find('textarea').val('').focus()
+
+            self.data('waitForScreenshot')(function (ok) {
+                self.data('screenshotDone', true)
+                self.find('#share-wait-screenshot').hide()
+                self.shareBox('showStep', self.data('step'))
+            })
+
+            self.show()
         })
-
-        self.show()
     },
 
     close: function () {
