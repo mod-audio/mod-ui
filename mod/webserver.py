@@ -258,8 +258,10 @@ class UpdateDownload(SimpleFileReceiver):
         callback()
 
 class UpdateBegin(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
-        ok = yield gen.Task(SESSION.hmi.send, "restore")
+        ok = yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
 
         self.write(ok)
         self.finish()

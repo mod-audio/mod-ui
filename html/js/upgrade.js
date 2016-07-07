@@ -19,17 +19,21 @@ JqueryClass('upgradeWindow', {
     init: function (options) {
         var self = $(this)
 
-        var icon = options.icon
-        var windowManager = options.windowManager
+        options = $.extend({
+            icon: $('<div>'),
+            windowManager: $('<div>'),
+            startUpgrade: function (callback) {
+                callback(true)
+            },
+        }, options)
 
-        self.data('icon', icon)
-        self.data('windowManager', options.windowManager)
+        self.data(options)
         self.data('updatedata', null)
 
-        icon.statusTooltip()
-        icon.statusTooltip('message', 'Checking for updates...', true)
+        options.icon.statusTooltip()
+        options.icon.statusTooltip('message', 'Checking for updates...', true)
 
-        icon.click(function () {
+        options.icon.click(function () {
             self.upgradeWindow('open')
         })
 
@@ -44,11 +48,10 @@ JqueryClass('upgradeWindow', {
 
         self.find('button.js-upgrade').click(function () {
             if ($(this).text() == "Upgrade Now") {
-                console.log("Upgrade Now!!! Now!!!")
-                return
+                self.upgradeWindow('startUpgrade')
+            } else {
+                self.upgradeWindow('downloadStart')
             }
-
-            self.upgradeWindow('downloadStart')
         })
 
         self.hide()
@@ -111,7 +114,7 @@ JqueryClass('upgradeWindow', {
         self.find('.download-start').show().text("Downloading...")
         self.find('.download-complete').hide()
 
-        var url = self.data('updatedata')['download-url'] // TESTING "http://localhost/modduo-v0.15.0.tar"
+        var url = self.data('updatedata')['download-url']
         var transfer = new SimpleTransference(url, '/update/download')
 
         transfer.reportFinished = function (resp2) {
@@ -126,6 +129,7 @@ JqueryClass('upgradeWindow', {
 
         transfer.reportStatus = function (status) {
             console.log("transfer reportStatus")
+            console.log(status)
         }
 
         console.log("Trying to download", url)
@@ -144,7 +148,7 @@ JqueryClass('upgradeWindow', {
         if (!confirm("The MOD will now be updated. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
             return
 
-        console.log("Upgrade Now!!")
+        self.upgradeWindow('startUpgrade')
     },
 
     downloadError: function () {
@@ -154,6 +158,18 @@ JqueryClass('upgradeWindow', {
 
         self.find('.download-start').show().text("Download failed!")
         self.find('.download-complete').hide()
+    },
+
+    startUpgrade: function () {
+        var self = $(this)
+
+        self.data('startUpgrade')(function (ok) {
+            if (ok) {
+                desktop.blockUI()
+            } else {
+                new Bug("Failed to start upgrade")
+            }
+        })
     },
 
     /*

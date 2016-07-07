@@ -841,6 +841,20 @@ function Desktop(elements) {
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
         windowManager: self.windowManager,
+        startUpgrade: function (callback) {
+            $.ajax({
+                type: 'POST',
+                url: '/update/begin',
+                success: function (ok) {
+                    callback(ok)
+                },
+                error: function () {
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json',
+            })
+        },
     })
 
     var prevent = function (ev) {
