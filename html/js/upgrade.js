@@ -68,8 +68,10 @@ JqueryClass('upgradeWindow', {
         }
 
         var p = self.find('.mod-upgrade-details').find('p')
-        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.")
-        $(p[1]).text("Released on " + data['release-date'].split('T')[0] + ".")
+        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
+                     "Released on " + data['release-date'].split('T')[0] + ".")
+
+        self.find('a').attr('href', data['release-url'])
 
         self.show()
     },
