@@ -888,21 +888,26 @@ class HardwareLoad(JsonRequestHandler):
 
 class TemplateHandler(web.RequestHandler):
     def get(self, path):
-        if not path:
-            path = 'index.html'
-        # Caching strategy. If we don't have a version parameter,
-        # let's redirect to one
+        # Caching strategy.
+        # 1. If we don't have a version parameter, redirect
+        curVersion = self.get_version()
         try:
             version = self.get_argument('v')
         except web.MissingArgumentError:
-            uri = self.request.uri
-            if self.request.query:
-                uri += '&'
-            else:
-                uri += '?'
-            uri += 'v=%s' % self.get_version()
+            uri  = self.request.uri
+            uri += '&' if self.request.query else '?'
+            uri += 'v=%s' % curVersion
             self.redirect(uri)
             return
+        # 2. Make sure version is correct
+        if IMAGE_VERSION is not None and version != curVersion:
+            uri = self.request.uri.replace('v=%s' % version, 'v=%s' % curVersion)
+            self.redirect(uri)
+            return
+
+        if not path:
+            path = 'index.html'
+
         loader = tornado.template.Loader(HTML_DIR)
         section = path.split('.')[0]
         try:
