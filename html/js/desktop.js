@@ -376,10 +376,8 @@ function Desktop(elements) {
     }
 
     this.enableDevFeatures = function () {
-        // enable pedalboard actions
-        var actions = $("#pedalboard-actions")
-        actions.find(".js-preset").show()
-        actions.find(".js-share").show()
+        // TODO: pedalboard presets
+        //$("#pedalboard-actions").find(".js-preset").show()
 
         // enable non-stable plugins
         $("#cloud-plugins-stable").parent().show()
@@ -387,6 +385,9 @@ function Desktop(elements) {
         // show install/update all plugins
         $('#cloud_install_all').show()
         $('#cloud_update_all').show()
+
+        // show network and controller ping times
+        $('#mod-status').show()
 
         // show xrun counter
         $('#mod-xruns').show()
