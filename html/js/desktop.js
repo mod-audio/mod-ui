@@ -23,7 +23,6 @@ function Desktop(elements) {
         titleBox: $('<div>'),
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
-        rec: $('<div>'),
         addMidiButton: $('<div>'),
         midiDevicesWindow: $('<div>'),
         midiDevicesList: $('<div>'),
