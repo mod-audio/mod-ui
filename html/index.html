@@ -155,8 +155,12 @@ $('document').ready(function() {
               console.log("MOD authentication succeeded")
           } else {
               console.log("MOD authentication failed")
+              desktop.upgradeWindow.upgradeWindow('setErrored')
           }
       })
+  } else {
+      console.log("MOD is not authenticated")
+      desktop.upgradeWindow.upgradeWindow('setErrored')
   }
 
   // start code for ajax loading bar

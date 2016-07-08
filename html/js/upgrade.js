@@ -55,6 +55,8 @@ JqueryClass('upgradeWindow', {
         })
 
         self.hide()
+
+        return self
     },
 
     open: function () {

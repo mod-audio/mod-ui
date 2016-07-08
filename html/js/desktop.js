@@ -365,7 +365,6 @@ function Desktop(elements) {
             success: function (resp) {
                 if (!resp || !resp.nonce) {
                     callback(false)
-                    elements.upgradeWindow.upgradeWindow('setErrored')
                     return
                 }
                 $.ajax({
@@ -380,7 +379,6 @@ function Desktop(elements) {
                             //$('#mod-cloud-plugins').hide()
                             callback(false)
                             console.log("Webserver does not support MOD tokens, downloads will not be possible")
-                            elements.upgradeWindow.upgradeWindow('setErrored')
                             return;
                         }
 
@@ -393,8 +391,7 @@ function Desktop(elements) {
                             data: JSON.stringify(resp),
                             success: function (resp) {
                                 if (!resp || !resp.message) {
-                                    callback(false);
-                                    elements.upgradeWindow.upgradeWindow('setErrored')
+                                    callback(false)
                                     return;
                                 }
 
@@ -438,19 +435,16 @@ function Desktop(elements) {
                             },
                             error: function () {
                                 callback(false)
-                                elements.upgradeWindow.upgradeWindow('setErrored')
                             },
                         })
                     },
                     error: function () {
                         callback(false)
-                        elements.upgradeWindow.upgradeWindow('setErrored')
                     },
                 })
             },
             error: function () {
                 callback(false)
-                elements.upgradeWindow.upgradeWindow('setErrored')
             },
         })
     }
