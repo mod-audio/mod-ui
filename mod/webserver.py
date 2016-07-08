@@ -36,9 +36,7 @@ from mod.settings import (APP, LOG,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION, UPDATE_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
-                          DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
-                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP, BLUETOOTH_PIN)
+                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, BLUETOOTH_PIN)
 
 from mod import check_environment, jsoncall, json_handler
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -890,21 +888,26 @@ class HardwareLoad(JsonRequestHandler):
 
 class TemplateHandler(web.RequestHandler):
     def get(self, path):
-        if not path:
-            path = 'index.html'
-        # Caching strategy. If we don't have a version parameter,
-        # let's redirect to one
+        # Caching strategy.
+        # 1. If we don't have a version parameter, redirect
+        curVersion = self.get_version()
         try:
             version = self.get_argument('v')
         except web.MissingArgumentError:
-            uri = self.request.uri
-            if self.request.query:
-                uri += '&'
-            else:
-                uri += '?'
-            uri += 'v=%s' % self.get_version()
+            uri  = self.request.uri
+            uri += '&' if self.request.query else '?'
+            uri += 'v=%s' % curVersion
             self.redirect(uri)
             return
+        # 2. Make sure version is correct
+        if IMAGE_VERSION is not None and version != curVersion:
+            uri = self.request.uri.replace('v=%s' % version, 'v=%s' % curVersion)
+            self.redirect(uri)
+            return
+
+        if not path:
+            path = 'index.html'
+
         loader = tornado.template.Loader(HTML_DIR)
         section = path.split('.')[0]
         try:
@@ -945,11 +948,6 @@ class TemplateHandler(web.RequestHandler):
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
-            'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
-            'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
-            'js_custom_channel': 'true' if JS_CUSTOM_CHANNEL else 'false',
-            'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
-            'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
@@ -1007,13 +1005,14 @@ class Ping(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        start  = time.time()
         online = False
-        if SESSION.hmi_initialized:
+        start = end = time.time()
+        if SESSION.hmi.initialized:
             online = yield gen.Task(SESSION.web_ping_hmi)
+            end    = time.time()
         resp = {
             'ihm_online': online,
-            'ihm_time'  : int((time.time() - start) * 1000),
+            'ihm_time'  : int((end - start) * 1000),
         }
         self.write(resp)
         self.finish()

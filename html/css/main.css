@@ -7124,7 +7124,7 @@ body {
   bottom: 0;
   left: 0;
   min-width: 980px;
-  overflow: auto;
+  overflow: hidden;
   position: absolute;
   right: 0;
   top: 0;
@@ -7294,19 +7294,6 @@ hr.dotted {
   color: #666;
   display: none;
 }
-#main-menu #mod-settings {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -180px top;
-  background-repeat: no-repeat;
-  border-color: #2b2b2b;
-  border-style: solid;
-  border-width: 0 0 0 1px;
-  float: right;
-}
-#main-menu #mod-settings.uptodate {
-  background-color: #000;
-  background-position: -180px bottom;
-}
 #main-menu #mod-add-midi,
 #main-menu .mod-bypass,
 #main-menu #mod-cpu,
@@ -7394,35 +7381,33 @@ hr.dotted {
   margin-left: 1em;
   color: white;
 }
-#main-menu #mod-bluetooth {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -225px bottom;
+#main-menu .status {
+  background-color: #111;
+  background-position: 3px 50%;
+  background-size: 36px;
   background-repeat: no-repeat;
   border-color: #2b2b2b;
   border-style: solid;
   border-width: 0 0 0 1px;
   float: right;
 }
-#main-menu #mod-bluetooth.online {
-  background-color: #000;
-  background-position: -225px top;
+#main-menu #mod-update {
+  background-image: url(../img/icons/36/update.png);
+}
+#main-menu #mod-update.uptodate {
+  background-image: url(../img/icons/36/ok.png);
+}
+#main-menu #mod-status {
+  background-image: url(../img/icons/36/disconnect.png);
+}
+#main-menu #mod-status.online {
+  background-image: url(../img/icons/36/disconnect.png);
 }
 #main-menu #mod-cloud {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -270px bottom;
-  background-repeat: no-repeat;
-  border-color: #2b2b2b;
-  border-style: solid;
-  border-width: 0 0 0 1px;
-  float: right;
-}
-#main-menu #mod-cloud.logged {
-  background-color: #000;
-  background-position: -270px top;
+  background-image: url(../img/icons/36/cloud.png);
 }
 #main-menu #mod-cloud.online {
-  background-color: #000;
-  background-position: -270px top;
+  background-image: url(../img/icons/36/cloud.png);
 }
 /* TOP MENUS */
 header#pedalboard-actions,
@@ -7645,7 +7630,7 @@ header#pedalboard-actions {
 #mod-upgrade {
   background: white;
   color: black;
-  font-size: 12px;
+  font-size: 15px;
   max-height: 350px;
   max-width: 450px;
   min-width: 350px;

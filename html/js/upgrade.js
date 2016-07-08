@@ -55,6 +55,8 @@ JqueryClass('upgradeWindow', {
         })
 
         self.hide()
+
+        return self
     },
 
     open: function () {
@@ -66,22 +68,28 @@ JqueryClass('upgradeWindow', {
         }
 
         var p = self.find('.mod-upgrade-details').find('p')
-        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.")
-        $(p[1]).text("Released on " + data['release-date'].split('T')[0] + ".")
+        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
+                     "Released on " + data['release-date'].split('T')[0] + ".")
+
+        self.find('a').attr('href', data['release-url'])
 
         self.show()
     },
 
     close: function () {
         $(this).hide()
+
+        setCookie("auto-updated-canceled", "true", 15)
     },
 
     setup: function (required, data) {
         var self = $(this)
         var icon = self.data('icon')
 
+        var ignoreUpdate = (getCookie("auto-updated-canceled", "false") == "true")
+
         self.data('updatedata', data)
-        icon.statusTooltip('message', "An update is available, click to know details", false, 5000)
+        icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate, 8000)
         icon.statusTooltip('status', 'update-available')
 
         if (required) {
@@ -94,7 +102,7 @@ JqueryClass('upgradeWindow', {
         var icon = self.data('icon')
 
         icon.statusTooltip('message', "Failed to connect to MOD Cloud", true)
-        icon.statusTooltip('status', 'uptodate')
+        icon.statusTooltip('status', 'error')
     },
 
     setUpdated: function () {

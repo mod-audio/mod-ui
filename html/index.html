@@ -24,10 +24,8 @@
 
 
     <link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
-    <!--<link rel="stylesheet" type="text/css" href="css/social.css?v={{version}}"/>-->
     <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
     <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
-    <!--<link rel="stylesheet" type="text/css" href="css/social.css?v={{version}}"/>-->
     <link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
     <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
     <!-- PEDALS -->
@@ -51,7 +49,6 @@
     <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
     <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
     <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/constants.js?v={{version}}"></script>
 
     <script type="text/javascript">
 
@@ -66,11 +63,6 @@
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
-      var MAX_SCREENSHOT_WIDTH = 600
-      var MAX_SCREENSHOT_HEIGHT = 600
-      var AVATAR_URL = '{{avatar_url}}'
-      var JS_CUSTOM_CHANNEL = {{js_custom_channel}}
-      var AUTO_CLOUD_BACKUP = {{auto_cloud_backup}}
       var DEBUG = true;
       if (!DEBUG) {
           console = console || {}
@@ -100,7 +92,6 @@ $('document').ready(function() {
       pedalboard: $('#pedalboard-dashboard'),
       zoomIn: $('.zoom-in'),
       zoomOut: $('.zoom-out'),
-      rec: $('#rec'),
       addMidiButton: $('#mod-add-midi'),
       midiDevicesWindow: $('#midi-device-window'),
       midiDevicesList: $("#midi-device-list"),
@@ -117,22 +108,12 @@ $('document').ready(function() {
       bankBox: $('#bank-library'),
       bankBoxTrigger: $('#main-menu #mod-bank'),
       bankList: $('#bank-list'),
-      socialTrigger: $('#mod-social'),
-      socialWindow: $('#mod-social-network'),
-      loginWindow: $('#login-window'),
-      registrationWindow: $('#registration-window'),
       shareButton: $('#pedalboard-info .js-share'),
       shareWindow: $('#share-window'),
       presetSaveBox: $('#save-preset'),
-      userName: $('#user-name'),
-      userAvatar: $('#user-avatar'),
-      networkIcon: $('#mod-cloud'),
-      bluetoothIcon: $('#mod-bluetooth'),
+      statusIcon: $('#mod-status'),
+      upgradeIcon: $('#mod-update'),
       upgradeWindow: $('#mod-upgrade'),
-      upgradeIcon: $('#mod-settings'),
-      feedButton: $('#cloud-feed-timeline'),
-      login: $('#login'),
-      logout: $('#logout'),
       bypassLeftButton: $("#mod-bypassLeft"),
       bypassRightButton: $("#mod-bypassRight"),
       xrunsButton: $('#mod-xruns'),
@@ -155,8 +136,12 @@ $('document').ready(function() {
               console.log("MOD authentication succeeded")
           } else {
               console.log("MOD authentication failed")
+              desktop.upgradeWindow.upgradeWindow('setErrored')
           }
       })
+  } else {
+      console.log("MOD is not authenticated")
+      desktop.upgradeWindow.upgradeWindow('setErrored')
   }
 
   // start code for ajax loading bar
@@ -193,7 +178,6 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/wait.js?v={{version}}"></script>
 <script type="text/javascript" src="js/file_transfer.js?v={{version}}"></script>
 <script type="text/javascript" src="js/window.js?v={{version}}"></script>
-<script type="text/javascript" src="js/tags.js?v={{version}}"></script>
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/installation.js?v={{version}}"></script>
@@ -203,14 +187,10 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/banks.js?v={{version}}"></script>
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cloudplugin.js?v={{version}}"></script>
-<script type="text/javascript" src="js/login.js?v={{version}}"></script>
 <script type="text/javascript" src="js/mididevices.js?v={{version}}"></script>
-<script type="text/javascript" src="js/register.js?v={{version}}"></script>
-<script type="text/javascript" src="js/feed.js?v={{version}}"></script>
-<script type="text/javascript" src="js/social.js?v={{version}}"></script>
 <script type="text/javascript" src="js/hardware.js?v={{version}}"></script>
 <script type="text/javascript" src="js/share.js?v={{version}}"></script>
-<!--<script type="text/javascript" src="js/bluetooth.js?v={{version}}"></script>-->
+<script type="text/javascript" src="js/bluetooth.js?v={{version}}"></script>
 <script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/host.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
@@ -291,13 +271,6 @@ $('document').ready(function() {
 
         <!-- PEDALBOARD -->
         <div id="pedalboard">
-            <!-- ZOOM CONTROLLERS -->
-            <div id="zoom-controllers">
-                <span class="zoom-out"></span>
-                <span class="zoom-in"></span>
-            </div>
-            <!-- END ZOOM CONTROLLERS -->
-
             <!-- SAVE PEDALBOARD WINDOW -->
             <div id="save-pedalboard" class="save-popup mod-hidden">
                 <div class="mod-box">
@@ -333,95 +306,6 @@ $('document').ready(function() {
                 </div>
             </div>
             <!-- END SAVE PRESET WINDOW -->
-
-            <!-- LOGIN WINDOW -->
-            <div id="login-window" class="save-popup mod-hidden">
-                <div class="mod-box">
-                    <div class="clearfix">
-                    <h1 class="pull-left">Login</h1>
-                    <small class="pull-right"><a onclick="goRegister()" href="#register"><strong>REGISTER</strong></a></small>
-                    </div>
-                    <!-- The div below will hold error message. It must have class "error" -->
-                    <!--
-                    <div class="error mod-hidden"></div>
-                    <form class="bottom">
-                        <div class="form-group">
-                            <label>User ID</label>
-                                <input type="text" class="form-control" name="user_id" value="" />
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                                <input type="password" class="form-control" name="password" value="" />
-                        </div>
-                        <div class="form-group">
-                            <a class="js-close btn btn-default"/>Cancel</a>
-                            <input type="submit" class="btn btn-primary" />
-                        </div>
-                    </form>
-                    -->
-                </div>
-            </div>
-            <!-- END LOGIN WINDOW -->
-
-            <!-- REGISTRATION WINDOW -->
-            <div id="registration-window" class="save-popup mod-hidden">
-                <div id="registration-form" class="mod-box">
-                    <h1>Register</h1>
-                    <!-- The div below will hold error message. It must have class "error" -->
-                    <!--
-                    <div class="error mod-hidden"></div>
-                    <form class="bottom form-horizontal">
-                        <div class="control-group">
-                            <label>User ID</label>
-                            <div class="mod-controls">
-                                <input type="text" name="user_id"/>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label>Name</label>
-                            <div class="mod-controls">
-                                <input type="text" name="name"/>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label>E-mail</label>
-                            <div class="mod-controls">
-                                <input type="text" name="email"/>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label>Country</label>
-                            <div class="mod-controls">
-                               <select name="country">
-                                {% include country_list.html %}
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label>Password</label>
-                            <div class="mod-controls">
-                                <input type="password" name="password"/>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label>Password (again)</label>
-                            <div class="mod-controls">
-                                <input type="password" name="password2"/>
-                            </div>
-                        </div>
-                        <div class="textright">
-                            <a class="js-close">Cancel</a>
-                            <input type="submit" class="btn btn-info"/>
-                        </div>
-                    </form>
-                    -->
-                </div>
-            </div>
-            <div id="registration-result" class="mod-box mod-hidden">
-                <div class="js-close">x</div>
-                <p></p>
-            </div>
-        </div>
-        <!-- END REGISTRATION WINDOW -->
 
         <!-- PEDALBOARD SHARE WINDOW -->
         <div id="share-window" class="save-popup mod-hidden">
@@ -551,6 +435,13 @@ $('document').ready(function() {
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
 
+            <!-- ZOOM CONTROLLERS -->
+            <div id="zoom-controllers">
+                <span class="zoom-out"></span>
+                <span class="zoom-in"></span>
+            </div>
+            <!-- END ZOOM CONTROLLERS -->
+
         </header>
         <!-- END PEDALBOARD-ACTIONS -->
 
@@ -578,16 +469,16 @@ $('document').ready(function() {
     </div>
     <!-- END PEDALBOARD -->
 
-
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
-        <div id="mod-social" class="icon hide"></div>
         <div id="mod-plugins" class="icon selected"></div>
         <div id="mod-pedalboard" class="icon"></div>
         <div id="mod-bank" class="icon"></div>
         <div id="mod-cloud-plugins" class="icon"></div>
         <div id="banks-saving">Auto saving banks...</div>
 
+        <div id="mod-update" class="status icon"></div>
+        <div id="mod-status" class="status icon mod-hidden"></div>
         <div id="mod-ram" class="icon">
           <div class="progress" id="ram-bar" style="width: 100%;">
             <div class="bar"></div> <!-- not sure if this is needed -->
@@ -608,13 +499,8 @@ $('document').ready(function() {
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass R</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass L</div>
         <div id="mod-add-midi" class="icon">Add MIDI Device</div>
-        <div id="mod-settings" class="icon"></div>
-        <div id="mod-bluetooth" class="icon hide"></div>
-        <div id="mod-cloud" class="icon hide"></div>
-
     </div>
     <!-- END MAIN MENU-->
-
 
     <!-- plugins-library -->
     <div id="plugins-library" class="js-main-library mod-init-hidden">
@@ -747,60 +633,6 @@ $('document').ready(function() {
                 </div>
                 <!-- <span class="close btn btn-danger js-close">Close</span> -->
             </header>
-            <!--<div class="form-horizontal filter clearfix">
-
-		<!-- TODO make this work (branch pedalboard_filter) -->
-		<!--
-                <div class="control-group">
-                    <label>Expression Pedal</label>
-                    <select>
-                        <option>Select</option>
-                        <option>0</option>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Inputs</label>
-                    <select>
-                        <option>Select</option>
-                        <option>1</option>
-                        <option>2</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Outputs</label>
-                    <select>
-                        <option>Select</option>
-                        <option>1</option>
-                        <option>2</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Addressed Encoders</label>
-                    <select>
-                        <option>Select</option>
-                        <option>0</option>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                        <option>4</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Addressed Footswitch</label>
-                    <select>
-                        <option>Select</option>
-                        <option>0</option>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                        <option>4</option>
-                    </select>
-                </div>
-            </div>
-		-->
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
     </div>
@@ -825,12 +657,6 @@ $('document').ready(function() {
         <!-- END BANK-LIST -->
 
         <!-- BANK-PEDALBOARDS -->
-                <!--
-                <div id="bank-pedalboards-mode" class="mode clearfix">
-                  <span class="grid selected"></span>
-                  <span class="list"></span>
-                </div>
-            -->
           <div id="bank-edit">
             <div id="bank-addressings" class="mod-hidden">
               <h1>Untitled</h1>
@@ -843,30 +669,6 @@ $('document').ready(function() {
                       <input type="number" id="js-navigate-midi-channel" value="1" min="1" max="16" step="1"/>
                   </label>
               </form>
-              <!--
-              <h2>Bank addressings:</h2>
-              <small>Select footswitch functionality for this bank. Pedalboard footswitches will be overriden.</small>
-                <select name="foot-0">
-                  <option value="0">Free</option>
-                  <option value="2">Next pedalboard</option>
-                  <option value="3">Previous pedalboard</option>
-              </select>
-              <select name="foot-1">
-                  <option value="0">Free</option>
-                  <option value="2">Next pedalboard</option>
-                  <option value="3">Previous pedalboard</option>
-              </select>
-              <select name="foot-2">
-                  <option value="0">Free</option>
-                  <option value="2">Next pedalboard</option>
-                  <option value="3">Previous pedalboard</option>
-              </select>
-              <select name="foot-3">
-                  <option value="0">Free</option>
-                  <option value="2">Next pedalboard</option>
-                  <option value="3">Previous pedalboard</option>
-              </select>
-              -->
           </div>
           <div id="bank-pedalboards" class="grid-selected">
           </div>
@@ -884,59 +686,6 @@ $('document').ready(function() {
                             <label for="searchBank" >Select pedalboards</label>
                             <input id="searchBank" class="form-control" length="20" placeholder="Filter by keyword(s)" type="search"/>
                         </div>
-			<!-- TODO make this work (branch pedalboard_filter) -->
-			<!--
-                        <div class="control-group alignleft">
-                            <label>Exp. Pedals</label>
-                            <select>
-                                <option>Select</option>
-                                <option>0</option>
-                                <option>1</option>
-                                <option>2</option>
-                                <option>3</option>
-                            </select>
-                        </div>
-                        <div class="control-group alignleft">
-                            <label>Footswitches</label>
-                            <select>
-                                <option>Select</option>
-                                <option>0</option>
-                                <option>1</option>
-                                <option>2</option>
-                                <option>3</option>
-                                <option>4</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="clearfix">
-                        <div class="control-group alignleft bottom">
-                            <label>Inputs</label>
-                            <select>
-                                <option>Select</option>
-                                <option>1</option>
-                                <option>2</option>
-                            </select>
-                        </div>
-                        <div class="control-group alignleft bottom">
-                            <label>Outputs</label>
-                            <select>
-                                <option>Select</option>
-                                <option>1</option>
-                                <option>2</option>
-                            </select>
-                        </div>
-                        <div class="control-group alignleft bottom">
-                            <label>Rot. Buttons</label>
-                            <select>
-                                <option>Select</option>
-                                <option>0</option>
-                                <option>1</option>
-                                <option>2</option>
-                                <option>3</option>
-                                <option>4</option>
-                            </select>
-                        </div>
-			-->
                     </div>
                 </div>
                 <!-- END FORM-HORIZONTAL -->
@@ -957,86 +706,14 @@ $('document').ready(function() {
 </div>
 <!-- END BANK LIBRARY -->
 
-
-<!-- MOD SOCIAL NETWORK -->
-<div id="mod-social-network" class="clearfix mod-hidden mod-init-hidden">
-    <div> <!-- wrapper -->
-        <header class="navbar navbar-default">
-          <div class="container">
-              <div class="col-sm-3 navbar-header">
-                  <button type="button" class="navbar-toggle hide">
-                      <span class="sr-only">Toggle navigation</span>
-                      <span class="icon-bar"></span>
-                      <span class="icon-bar"></span>
-                      <span class="icon-bar"></span>
-                  </button>
-                  <figure class="navbar-brand">
-                      <a ui-sref="home"><img src="img/social/logo-b.png"></a>
-                  </figure>
-              </div>
-          <div class="col-sm-9">
-              <div class="collapse navbar-collapse" collapse="menuCollapsed">
-                  <div class="col-sm-8 center-block text-center" style="padding-top: 0.6em;">
-                      <form ng-submit="search()">
-                      <div class="input-group">
-                              <input type="text" ng-model="terms" class="form-control" placeholder="Search...">
-                              <span class="input-group-btn">
-                                  <button type="submit" class="btn btn-default" style="box-shadow: none !important" >
-                                      <i class="glyphicon glyphicon-search"></i>
-                                  </button>
-                              </span>
-                          </div>
-                      </form>
-                  </div>
-                  <ul class="nav navbar-nav pull-right">
-                  <li class="hide" ui-sref-active="active">
-                  </li>
-                  <li ng-if="!logged" ui-sref-active="active">
-                      <a onclick="goRegister()">
-                          Register
-                      </a>
-                  </li>
-                  <li class="login">
-                      <a id="login">
-                          Login
-                      </a>
-                  </li>
-                  <li class="logout"><a id="logout">Logout</a></li>
-                  </ul>
-              </div>
-              </div>
-          </div>
-      </header>
-      <div class="content-wrapper">
-            <div class="container">
-                <div class="col-sm-12 home-feed">
-                              <!-- MAIN -->
-                    <div id="social-main" class="span9">
-                        <div class="box bottom left top row-fluid">
-                            <!-- FEED -->
-                            <div class="feeds">
-                              <div class="more"><button class="btn btn-block btn-default mod-hidden">Load more posts...</button></div>
-                            </div>
-                        </div>
-                        <!-- END MAIN -->
-                        <!-- ASIDE -->
-                        <div id="social-aside" class="span3"></div>
-                        <!-- END ASIDE -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-    <!-- END WRAPPER -->
-    <!-- MOD UPDATE/UPGRADE TOOLTIP -->
+<!-- MOD UPDATE/UPGRADE TOOLTIP -->
 <div class="tooltip mod-hidden" style="right:102px;">
     <div class="arrow"></div>
     <div class="text">New updates are available. Click to upgrade.</div>
 </div>
-    <!-- END MOD UPDATE/UPGRADE TOOLTIP -->
+<!-- END MOD UPDATE/UPGRADE TOOLTIP -->
 
-    <!-- MOD UPDATE/UPGRADE BOX -->
+<!-- MOD UPDATE/UPGRADE BOX -->
 <div id="mod-upgrade" class="mod-hidden">
     <div class="box">
         <div class="download-progress mod-hidden">
@@ -1048,8 +725,11 @@ $('document').ready(function() {
             <p><br/></p>
         </div>
         <div class="mod-upgrade-details">
-            <p>Update version <b>0.0.0</b></p>
-            <p>Released on 0000-00-00</p>
+            <p>
+                Update version <b>0.0.0</b>.<br/>
+                Released on 0000-00-00.
+            </p>
+            <p>For more information about this release <a href="#" target="_blank">click here</a>.</p>
             <p class="textright">
                 <button class="js-close btn btn-xs btn-danger">Cancel</button>
                 <button class="js-upgrade btn btn-xs btn-info">Download</button>
@@ -1057,10 +737,7 @@ $('document').ready(function() {
         </div>
     </div>
 </div>
-    <!-- END MOD UPDATE/UPGRADE BOX -->
-
-
-
+<!-- END MOD UPDATE/UPGRADE BOX -->
 
 </body>
 </html>

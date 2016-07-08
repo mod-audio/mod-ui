@@ -171,7 +171,7 @@ body {
   bottom: 0;
   left: 0;
   min-width: 980px;
-  overflow: auto;
+  overflow: hidden;
   position: absolute;
   right: 0;
   top: 0;
@@ -342,20 +342,6 @@ hr.dotted {
     color: #666;
     display: none;
   }
-  #mod-settings {
-    background-image: url(../img/menu-icons-sprite.png);
-    background-position: -180px top;
-    background-repeat: no-repeat;
-    border-color: #2b2b2b;
-    border-style: solid;
-    border-width: 0 0 0 1px;
-    float: right;
-    &.uptodate {
-      background-color: #000;
-      background-position: -180px bottom;
-    }
-  }
-
   #mod-add-midi,
   .mod-bypass,
   #mod-cpu, #mod-ram, #mod-xruns {
@@ -434,34 +420,31 @@ hr.dotted {
       color: white;
     }
 
-  #mod-bluetooth {
-    background-image: url(../img/menu-icons-sprite.png);
-    background-position: -225px bottom;
+  .status {
     background-repeat: no-repeat;
     border-color: #2b2b2b;
     border-style: solid;
     border-width: 0 0 0 1px;
     float: right;
+  }
+
+  #mod-update {
+    background-image: url(../img/icons/36/update.png);
+    &.uptodate {
+      background-image: url(../img/icons/36/ok.png);
+    }
+  }
+
+  #mod-status {
+    background-image: url(../img/icons/36/disconnect.png);
     &.online {
-      background-color: #000;
-      background-position: -225px top;
+      background-image: url(../img/icons/36/disconnect.png);
     }
   }
   #mod-cloud {
-    background-image: url(../img/menu-icons-sprite.png);
-    background-position: -270px bottom;
-    background-repeat: no-repeat;
-    border-color: #2b2b2b;
-    border-style: solid;
-    border-width: 0 0 0 1px;
-    float: right;
-    &.logged {
-      background-color: #000;
-      background-position: -270px top;
-    }
+    background-image: url(../img/icons/36/cloud.png);
     &.online {
-      background-color: #000;
-      background-position: -270px top;
+      background-image: url(../img/icons/36/cloud.png);
     }
   }
 }
@@ -630,7 +613,7 @@ header#pedalboard-actions {
 #mod-upgrade {
   background: white;
   color: black;
-  font-size: 12px;
+  font-size: 15px;
   max-height: 350px;
   max-width: 450px;
   min-width: 350px;

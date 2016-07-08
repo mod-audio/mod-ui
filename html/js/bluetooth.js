@@ -16,20 +16,20 @@
  */
 
 function Bluetooth(options) {
+    var self = this
 
     options = $.extend({
-        icon: null, // jquery dom element
+        icon: $('<div>'),
         frequency: 5000,
-        status: function (status) {}
-,        notify: function (msg) {
+        status: function (status) {
+        },
+        notify: function (msg) {
             console.log(msg)
         },
     }, options)
 
     var icon = options.icon
     var frequency = options.frequency
-
-    var self = this
 
     this.ping = function () {
         var start = Date.now()
@@ -49,10 +49,10 @@ function Bluetooth(options) {
         })
     }
 
-    this.status = function (online, bluetooth, ihm) {
+    this.status = function (online, network_time, ihm_time) {
         var msg
         if (online) {
-            msg = sprintf('Bluetooth: %dms Controls: %dms', bluetooth, ihm)
+            msg = sprintf('Network: %dms | Controller: %dms', network_time, ihm_time)
             options.status(true)
         } else {
             msg = 'OFFLINE'

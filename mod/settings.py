@@ -66,9 +66,10 @@ DEFAULT_PEDALBOARD = join(LV2_PEDALBOARDS_DIR, "default.pedalboard")
 
 DEFAULT_ICON_TEMPLATE = join(HTML_DIR, 'resources/templates/pedal-default.html')
 DEFAULT_SETTINGS_TEMPLATE = join(HTML_DIR, 'resources/settings.html')
-DEFAULT_ICON_IMAGE = { 'thumbnail': join(HTML_DIR, 'resources/pedals/default-thumbnail.png'),
-                       'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
-                       }
+DEFAULT_ICON_IMAGE = {
+    'thumbnail': join(HTML_DIR, 'resources/pedals/default-thumbnail.png'),
+    'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
+}
 
 BLUETOOTH_PIN = os.environ.pop('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pin'))
 
@@ -78,28 +79,15 @@ SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(sys.prefix, 'share/mod/
 
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350
-MAX_SCREENSHOT_HEIGHT = 1024
-MAX_SCREENSHOT_WIDTH = 1024
 
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com/v2")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "http://pedalboards.dev.moddevices.com")
 
-if os.path.exists("/root/avatar"):
-    fh = open("/root/avatar")
-    default_avatar_url = fh.read().strip()
-    fh.close()
-else:
-    default_avatar_url = 'http://gravatar.com/avatar'
-AVATAR_URL = os.environ.pop('MOD_AVATAR_URL', default_avatar_url)
-
 TUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner"
 TUNER = 9994
 TUNER_PORT = "in"
 TUNER_MON_PORT = "FREQ"
-
-JS_CUSTOM_CHANNEL = bool(int(os.environ.pop('MOD_JS_CUSTOM_CHANNEL', False)))
-AUTO_CLOUD_BACKUP = bool(int(os.environ.pop('MOD_AUTO_CLOUD_BACKUP', False)))
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'

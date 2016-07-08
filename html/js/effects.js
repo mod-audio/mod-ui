@@ -36,7 +36,6 @@ JqueryClass('effectBox', {
         options = $.extend({
             pedalboard: $('<div>'),
             windowManager: null,
-            userSession: null,
         }, options)
 
         self.data(options)
@@ -424,101 +423,6 @@ JqueryClass('effectBox', {
             })
         }
     },
-
-    /*
-    getReviews: function (uri, info, callback) {
-        // not implemented on cloud yet
-        if (callback) callback()
-        return
-
-        var self = $(this)
-        $.ajax({
-            url: SITEURL + '/effect/reviews/',
-            data: {
-                uri: uri
-            },
-            success: function (comments) {
-                var classes = ['', 'one', 'two', 'three', 'four', 'five']
-                for (var i in comments) {
-                    comments[i].created = renderTime(new Date(comments[i].created * 1000))
-                    if (comments[i].rating)
-                        comments[i].rating = classes[comments[i].rating]
-                }
-                var reviews = $(Mustache.render(TEMPLATES.plugin_reviews, {
-                    comments: comments
-                }))
-                info.find('section.comments').html('').append(reviews)
-                if (callback)
-                    callback()
-            },
-            dataType: 'json'
-        })
-    },
-    */
-
-    /*
-    getRating: function (plugin, widget, callback) {
-        var self = $(this)
-        var userSession = self.data('userSession')
-        var classes = ['---', 'one', 'two', 'three', 'four', 'five']
-        var setRate = function (rating) {
-            for (var i in classes)
-                widget.removeClass(classes[i])
-            if (rating)
-                widget.addClass(classes[rating])
-        }
-        var rate = function (element) {
-            var rating
-            for (var i in classes) {
-                if (element.hasClass(classes[i]))
-                    rating = i
-            }
-            setRate(rating)
-            $.ajax({
-                url: SITEURL + '/effect/rate/' + userSession.sid,
-                data: JSON.stringify({
-                    uri: plugin.uri,
-                    version: plugin.latestVersion,
-                    rating: rating
-                }),
-                method: 'POST',
-                success: function (result) {
-                    if (result.ok)
-                        setRate(result.rating)
-                    else
-                        alert(result.error)
-                },
-                dataType: 'json'
-            })
-        }
-        if (!userSession.sid) {
-            widget.children().click(function () {
-                var element = $(this)
-                userSession.login(function () {
-                    rate(element)
-                })
-            })
-            if (callback)
-                callback()
-            return
-        }
-        $.ajax({
-            url: SITEURL + '/effect/rate/' + userSession.sid + '/mine',
-            data: {
-                uri: plugin.uri
-            },
-            success: function (rating) {
-                setRate(rating)
-                widget.children().click(function () {
-                    rate($(this))
-                })
-                if (callback)
-                    callback()
-            },
-            dataType: 'json'
-        })
-    },
-    */
 
     cleanResults: function () {
         var self = $(this)

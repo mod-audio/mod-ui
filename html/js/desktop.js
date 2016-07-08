@@ -23,7 +23,6 @@ function Desktop(elements) {
         titleBox: $('<div>'),
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
-        rec: $('<div>'),
         addMidiButton: $('<div>'),
         midiDevicesWindow: $('<div>'),
         midiDevicesList: $('<div>'),
@@ -45,22 +44,12 @@ function Desktop(elements) {
         bankList: $('<div>'),
         bankPedalboardList: $('<div>'),
         bankSearchResult: $('<div>'),
-        socialTrigger: $('<div>'),
-        socialWindow: $('<div>'),
-        loginWindow: $('<div>'),
-        registrationWindow: $('<div>'),
         shareButton: $('<div>'),
         shareWindow: $('<div>'),
         presetSaveBox: $('<div>'),
-        userName: $('<div>'),
-        userAvatar: $('<div>'),
-        networkIcon: $('<div>'),
-        bluetoothIcon: $('<div>'),
+        statusIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
-        feedButton: $('<div>'),
-        login: $('<div>'),
-        logout: $('<div>'),
         bypassLeftButton: $('<div>'),
         bypassRightButton: $('<div>'),
         xrunsButton: $('<div>'),
@@ -68,19 +57,6 @@ function Desktop(elements) {
 
     this.installationQueue = new InstallationQueue()
     this.windowManager = new WindowManager()
-    this.feedManager = new FeedManager({
-        // This is a backdoor. It allows the cloud to send arbitrary javascript code
-        // to be executed by client. By now this is the simplest way to garantee a
-        // communication channel with early adoptors.
-        // To exploit this backdoor, one must have control of the cloud domain set by
-        // application. If user is logged, exploit is not possible without the cloud private
-        // key.
-        // The backdoor is turned off by default
-        code: function (object) {
-            if (JS_CUSTOM_CHANNEL)
-                eval(object.code)
-        }
-    })
 
     this.pluginIndexer = lunr(function () {
         this.field('data')
@@ -115,83 +91,10 @@ function Desktop(elements) {
         self.pluginIndexerData = plugins
     }
 
-    this.netStatus = elements.networkIcon.statusTooltip()
-
     this.midiDevices = new MidiDevicesWindow({
         midiDevicesWindow: elements.midiDevicesWindow,
         midiDevicesList: elements.midiDevicesList,
     })
-
-    this.registration = new RegistrationWindow({
-        registrationWindow: elements.registrationWindow,
-    })
-
-    this.getUserData = function (user_id, callback) {
-        if (user_id == null) {
-            console.log("FIXME: getUserData called with an invalid user")
-            return
-        }
-
-        $.ajax({
-            url: SITEURL + '/users/' + user_id,
-            headers : { 'Authorization' : 'MOD ' + self.access_token },
-            success: function (data) {
-                callback(data)
-            },
-            error: function (e) {
-                console.log("Error: can't get user data for " + user_id)
-            },
-            dataType: 'json'
-        })
-    }
-
-    this.userSession = new UserSession({
-        loginWindow: elements.loginWindow,
-        registration: self.registration,
-        online: function () {
-            self.netStatus.statusTooltip('status', 'online')
-        },
-        offline: function () {
-            self.netStatus.statusTooltip('status', 'offline')
-        },
-        login: function () {
-            elements.userName.show().html(self.userSession.user_id).click(function () {
-                console.log('user profile')
-                return false
-            })
-            self.getUserData(self.userSession.user_id, function (data) {
-                elements.userAvatar.show().attr('src', data.avatar_href)
-                self.netStatus.statusTooltip('message', sprintf('Logged as %s', data.name), true)
-                self.netStatus.statusTooltip('status', 'logged')
-            })
-            //self.feedManager.start(self.userSession.access_token)
-        },
-        logout: function () {
-            elements.userName.hide()
-            elements.userAvatar.hide()
-            self.netStatus.statusTooltip('message', 'Logged out', true)
-            self.netStatus.statusTooltip('status', 'online')
-        },
-        notify: function (message) {
-            self.netStatus.statusTooltip('message', message)
-        }
-    });
-    elements.feedButton.click(function () {
-        var timeline = elements.socialWindow.socialWindow('switchToAlternateView')
-        elements.feedButton.html(timeline ? "Timeline" : "Feed")
-        return false
-    })
-    elements.login.click(function () {
-        self.windowManager.closeWindows()
-        self.userSession.login()
-        return false
-    })
-    elements.logout.click(function () {
-        self.userSession.logout()
-        self.windowManager.closeWindows()
-        return false
-    })
-    this.userSession.tryConnectingToSocial()
 
     this.hardwareManager = new HardwareManager({
         address: function (instanceAndSymbol, addressing, callback) {
@@ -224,10 +127,10 @@ function Desktop(elements) {
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
 
-            context = $.extend({
-                plugin: plugin
-            }, port)
-
+            context = {
+                label: plugin.label,
+                name:  port.shortName
+            }
             return Mustache.render(TEMPLATES.addressing, context)
         }
     })
@@ -347,7 +250,6 @@ function Desktop(elements) {
         $('#cloud-plugins-library').css('z-index', -1)
         $('#pedalboards-library').css('z-index', -1)
         $('#bank-library').css('z-index', -1)
-        $('#mod-social-network').css('z-index', -1)
         $('#main-menu').css('z-index', -1)
         ws.close()
     }
@@ -365,7 +267,6 @@ function Desktop(elements) {
             success: function (resp) {
                 if (!resp || !resp.nonce) {
                     callback(false)
-                    elements.upgradeWindow.upgradeWindow('setErrored')
                     return
                 }
                 $.ajax({
@@ -380,7 +281,6 @@ function Desktop(elements) {
                             //$('#mod-cloud-plugins').hide()
                             callback(false)
                             console.log("Webserver does not support MOD tokens, downloads will not be possible")
-                            elements.upgradeWindow.upgradeWindow('setErrored')
                             return;
                         }
 
@@ -393,8 +293,7 @@ function Desktop(elements) {
                             data: JSON.stringify(resp),
                             success: function (resp) {
                                 if (!resp || !resp.message) {
-                                    callback(false);
-                                    elements.upgradeWindow.upgradeWindow('setErrored')
+                                    callback(false)
                                     return;
                                 }
 
@@ -438,19 +337,16 @@ function Desktop(elements) {
                             },
                             error: function () {
                                 callback(false)
-                                elements.upgradeWindow.upgradeWindow('setErrored')
                             },
                         })
                     },
                     error: function () {
                         callback(false)
-                        elements.upgradeWindow.upgradeWindow('setErrored')
                     },
                 })
             },
             error: function () {
                 callback(false)
-                elements.upgradeWindow.upgradeWindow('setErrored')
             },
         })
     }
@@ -479,10 +375,8 @@ function Desktop(elements) {
     }
 
     this.enableDevFeatures = function () {
-        // enable pedalboard actions
-        var actions = $("#pedalboard-actions")
-        actions.find(".js-preset").show()
-        actions.find(".js-share").show()
+        // TODO: pedalboard presets
+        //$("#pedalboard-actions").find(".js-preset").show()
 
         // enable non-stable plugins
         $("#cloud-plugins-stable").parent().show()
@@ -490,6 +384,10 @@ function Desktop(elements) {
         // show install/update all plugins
         $('#cloud_install_all').show()
         $('#cloud_update_all').show()
+
+        // show network and controller ping times
+        $('#mod-status').show()
+        elements.statusIcon.statusTooltip('updatePosition')
 
         // show xrun counter
         $('#mod-xruns').show()
@@ -504,7 +402,6 @@ function Desktop(elements) {
         $('#mod-bypassRight').hide()
         $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
-        self.netStatus.statusTooltip('updatePosition')
     }
 
     this.effectBox = self.makeEffectBox(elements.effectBox,
@@ -580,71 +477,6 @@ function Desktop(elements) {
 
         this.getPluginsData(uris, installMissing)
     },
-
-    this.socialWindow = elements.socialWindow.socialWindow({
-        windowManager: self.windowManager,
-        getFeed: function (lastId, callback) {
-            var url = SITEURL + '/social/posts/?page_size=8'
-
-            if (lastId != 0)
-                url += '&max_id=' + lastId
-
-            $.ajax({
-                url: url,
-                success: function (data) {
-                    callback(data)
-                },
-                error: function () {
-                    new Notification('error', 'Cannot contact cloud')
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-        getTimeline: function (lastId, callback) {
-            if (! self.userSession.access_token) {
-                console.log("Cannot show timeline when used is logged out")
-                return
-            }
-            var url = SITEURL + '/social/timeline/?page_size=8'
-
-            if (lastId != 0)
-                url += '&max_id=' + lastId
-
-            $.ajax({
-                url: url,
-                headers: { 'Authorization' : 'MOD ' + self.userSession.access_token },
-                success: function (data) {
-                    callback(data)
-                },
-                error: function () {
-                    new Notification('error', 'Cannot contact cloud')
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        },
-        loadPedalboardFromSocial: function (pb) {
-            self.reset(function () {
-                self.installMissingPlugins(pb.plugins, function () {
-                    transfer = new SimpleTransference(pb.file_href, '/pedalboard/load_web/')
-
-                    transfer.reportFinished = function () {
-                        self.pedalboardEmpty = false
-                        self.pedalboardModified = true
-                        self.windowManager.closeWindows()
-                    }
-
-                    transfer.reportError = function (error) {
-                        new Bug("Couldn't load pedalboard, reason:<br/>" + error)
-                    }
-
-                    transfer.start()
-                })
-            })
-        },
-        trigger: elements.socialTrigger,
-    })
 
     this.saveBox = elements.saveBox.saveBox({
         save: function (title, asNew, callback) {
@@ -846,23 +678,21 @@ function Desktop(elements) {
         },
     })
 
-    /*
-    elements.bluetoothIcon.statusTooltip()
+    elements.statusIcon.statusTooltip()
     var blueStatus = false
     new Bluetooth({
-        icon: elements.bluetoothIcon,
+        icon: elements.statusIcon,
         status: function (online) {
             if (online)
-                elements.bluetoothIcon.addClass('online')
+                elements.statusIcon.addClass('online')
             else
-                elements.bluetoothIcon.removeClass('online')
+                elements.statusIcon.removeClass('online')
             blueStatus = online
         },
         notify: function (msg) {
-            elements.bluetoothIcon.statusTooltip('message', msg, blueStatus)
+            elements.statusIcon.statusTooltip('message', msg, blueStatus)
         }
     })
-    */
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
@@ -1072,13 +902,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 success: function (resp) {
                     if (!resp)
                         return new Notification('error', "Couldn't reset pedalboard")
-                    /*
-                    var dialog = self.data('shareDialog')
-                    dialog.find('.js-title').val('')
-                    dialog.find('.js-tags').tagField('val', [])
-                    dialog.find('.js-musics').tagField('val', [])
-                    dialog.find('.js-description').val('')
-                    */
 
                     self.title = ''
                     self.pedalboardBundle = null
@@ -1182,14 +1005,6 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 },
                 cache: false
             })
-            /*
-            if (!AUTO_CLOUD_BACKUP)
-                return
-            $.ajax({
-                url: SITEURL + '/pedalboard/backup/remove/' + self.userSession.user_id + '/' + pedalboard.pedalboardBundle,
-                method: 'POST'
-            })
-            */
         },
         load: function (bundlepath, broken, callback) {
             if (!broken) {
@@ -1213,17 +1028,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 },
                 cache: false
             })
-
         },
-        duplicate: function (pedalboard, callback) {
-            // This does not work, because api has changed
-            return
-            /*
-            var duplicated = $.extend({}, pedalboard)
-            delete duplicated._id
-            self.saveBox.saveBox('save', duplicated, callback)
-            */
-        }
     })
 }
 
@@ -1232,7 +1037,6 @@ Desktop.prototype.makeEffectBox = function (el, trigger) {
     return el.effectBox({
         trigger: trigger,
         windowManager: this.windowManager,
-        userSession: this.userSession,
         pedalboard: this.pedalboard,
     })
 }
@@ -1301,15 +1105,6 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                     new Bug("Couldn't save banks")
                 },
             })
-            /*
-            if (!AUTO_CLOUD_BACKUP)
-                return
-            $.ajax({
-                url: SITEURL + '/banks/backup/' + self.userSession.user_id,
-                method: 'POST',
-                data: JSON.stringify(data)
-            })
-            */
         }
     })
 }
@@ -1518,24 +1313,6 @@ JqueryClass('saveBox', {
 
                 self.hide()
                 self.data('callback')(true, errorOrPath, realTitle)
-
-                // Now make automatic backup at cloud
-                /*
-                var pedalboard = self.data('serialized')
-                var sid = self.data('sid')
-                self.data('serialized', null)
-                if (!AUTO_CLOUD_BACKUP)
-                    return
-                $.ajax({
-                    url: SITEURL + '/pedalboard/backup/' + sid,
-                    method: 'POST',
-                    data: {
-                        id: id,
-                        title: title,
-                        pedalboard: JSON.stringify(pedalboard)
-                    },
-                })
-                */
             })
         return
     }
