@@ -27,7 +27,7 @@ $('document').ready(function() {
         empty    = false,
         modified = false
 
-    ws.onclose = function(evt) {
+    ws.onclose = function (evt) {
         desktop.blockUI()
     }
 

@@ -127,10 +127,10 @@ function Desktop(elements) {
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
 
-            context = $.extend({
-                plugin: plugin
-            }, port)
-
+            context = {
+                label: plugin.label,
+                name:  port.shortName
+            }
             return Mustache.render(TEMPLATES.addressing, context)
         }
     })
