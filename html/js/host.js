@@ -27,6 +27,10 @@ $('document').ready(function() {
         empty    = false,
         modified = false
 
+    ws.onclose = function(evt) {
+        desktop.blockUI()
+    }
+
     ws.onmessage = function (evt) {
         var data = evt.data.split(" ")
 
