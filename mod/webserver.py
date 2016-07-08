@@ -36,9 +36,7 @@ from mod.settings import (APP, LOG,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION, UPDATE_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, MAX_SCREENSHOT_WIDTH, MAX_SCREENSHOT_HEIGHT,
-                          DATA_DIR, USER_ID_JSON_FILE, AVATAR_URL,
-                          JS_CUSTOM_CHANNEL, AUTO_CLOUD_BACKUP, BLUETOOTH_PIN)
+                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, BLUETOOTH_PIN)
 
 from mod import check_environment, jsoncall, json_handler
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -945,11 +943,6 @@ class TemplateHandler(web.RequestHandler):
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
-            'max_screenshot_width': MAX_SCREENSHOT_WIDTH,
-            'max_screenshot_height': MAX_SCREENSHOT_HEIGHT,
-            'js_custom_channel': 'true' if JS_CUSTOM_CHANNEL else 'false',
-            'auto_cloud_backup': 'true' if AUTO_CLOUD_BACKUP else 'false',
-            'avatar_url': AVATAR_URL,
             'version': self.get_argument('v'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
@@ -1009,7 +1002,7 @@ class Ping(JsonRequestHandler):
     def get(self):
         start  = time.time()
         online = False
-        if SESSION.hmi_initialized:
+        if SESSION.hmi.initialized:
             online = yield gen.Task(SESSION.web_ping_hmi)
         resp = {
             'ihm_online': online,

@@ -126,9 +126,6 @@ JqueryClass('pedalboardBox', {
             load: function (bundlepath, broken, callback) {
                 callback()
             },
-            duplicate: function (pedalboard, callback) {
-                callback(pedalboard)
-            }
         }, options)
 
         self.data(options)
@@ -196,17 +193,6 @@ JqueryClass('pedalboardBox', {
         rendered.click(function () {
             self.data('load')(pedalboard.bundle, pedalboard.broken, function () {
                 self.window('close')
-            })
-            return false
-        })
-        rendered.find('.js-duplicate').click(function () {
-            self.data('duplicate')(pedalboard, function (duplicated) {
-                var dupRendered = self.pedalboardBox('render', duplicated, canvas)
-                dupRendered.insertAfter(rendered)
-                dupRendered.css('opacity', 0)
-                dupRendered.animate({
-                    opacity: 1
-                }, 200)
             })
             return false
         })
