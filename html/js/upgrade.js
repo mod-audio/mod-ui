@@ -96,7 +96,7 @@ JqueryClass('upgradeWindow', {
         var icon = self.data('icon')
 
         icon.statusTooltip('message', "Failed to connect to MOD Cloud", true)
-        icon.statusTooltip('status', 'uptodate')
+        icon.statusTooltip('status', 'error')
     },
 
     setUpdated: function () {

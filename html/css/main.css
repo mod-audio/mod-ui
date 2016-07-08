@@ -7382,6 +7382,9 @@ hr.dotted {
   color: white;
 }
 #main-menu .status {
+  background-color: #111;
+  background-position: 3px 50%;
+  background-size: 36px;
   background-repeat: no-repeat;
   border-color: #2b2b2b;
   border-style: solid;
@@ -7389,33 +7392,17 @@ hr.dotted {
   float: right;
 }
 #main-menu #mod-update {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -182px bottom;
+  background-image: url(../img/icons/36/update.png);
 }
 #main-menu #mod-update.uptodate {
-  background-color: #000;
-  background-position: -182px top;
+  background-image: url(../img/icons/36/ok.png);
 }
 #main-menu #mod-status {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -225px top;
+  background-image: url(../img/icons/36/disconnect.png);
   margin-right: -1px;
 }
 #main-menu #mod-status.online {
-  background-color: #000;
-  background-position: -225px bottom;
-}
-#main-menu #mod-cloud {
-  background-image: url(../img/menu-icons-sprite.png);
-  background-position: -270px top;
-}
-#main-menu #mod-cloud.logged {
-  background-color: #000;
-  background-position: -270px bottom;
-}
-#main-menu #mod-cloud.online {
-  background-color: #000;
-  background-position: -270px bottom;
+  background-image: url(../img/icons/36/disconnect.png);
 }
 /* TOP MENUS */
 header#pedalboard-actions,
