@@ -7387,7 +7387,6 @@ hr.dotted {
   border-style: solid;
   border-width: 0 1px 0 1px;
   float: right;
-  margin-right: -1px;
 }
 #main-menu #mod-update {
   background-image: url(../img/menu-icons-sprite.png);
@@ -7400,6 +7399,7 @@ hr.dotted {
 #main-menu #mod-status {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -225px top;
+  margin-right: -1px;
 }
 #main-menu #mod-status.online {
   background-color: #000;
