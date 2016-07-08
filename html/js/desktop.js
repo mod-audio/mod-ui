@@ -388,6 +388,7 @@ function Desktop(elements) {
 
         // show network and controller ping times
         $('#mod-status').show()
+        elements.statusIcon.statusTooltip('updatePosition')
 
         // show xrun counter
         $('#mod-xruns').show()
