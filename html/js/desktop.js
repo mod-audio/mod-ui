@@ -48,7 +48,7 @@ function Desktop(elements) {
         shareButton: $('<div>'),
         shareWindow: $('<div>'),
         presetSaveBox: $('<div>'),
-        bluetoothIcon: $('<div>'),
+        statusIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
         bypassLeftButton: $('<div>'),
@@ -677,19 +677,19 @@ function Desktop(elements) {
         },
     })
 
-    elements.bluetoothIcon.statusTooltip()
+    elements.statusIcon.statusTooltip()
     var blueStatus = false
     new Bluetooth({
-        icon: elements.bluetoothIcon,
+        icon: elements.statusIcon,
         status: function (online) {
             if (online)
-                elements.bluetoothIcon.addClass('online')
+                elements.statusIcon.addClass('online')
             else
-                elements.bluetoothIcon.removeClass('online')
+                elements.statusIcon.removeClass('online')
             blueStatus = online
         },
         notify: function (msg) {
-            elements.bluetoothIcon.statusTooltip('message', msg, blueStatus)
+            elements.statusIcon.statusTooltip('message', msg, blueStatus)
         }
     })
 

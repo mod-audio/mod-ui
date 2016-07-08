@@ -155,7 +155,7 @@ body {
 }
 
 /* MOD - Settings */
-#main-menu #mod-settings {
+#main-menu #mod-update {
     background-image:url(../img/menu-icons-sprite.png);
     background-position:-180px bottom;
     background-repeat:no-repeat;
@@ -164,7 +164,7 @@ body {
     border-width:0 0 0 1px;
     float:right;
 }
-#main-menu #mod-settings.uptodate {
+#main-menu #mod-update.uptodate {
     background-color:#000;
     background-position:-180px top;
 }
@@ -213,7 +213,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     color: white;
 }
 /* MOD - Bluetooth */
-#main-menu #mod-bluetooth {
+#main-menu #mod-status {
     background-image:url(../img/menu-icons-sprite.png);
     background-position:-225px bottom;
     background-repeat:no-repeat;
@@ -222,7 +222,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', end
     border-width:0 0 0 1px;
     float:right;
 }
-#main-menu #mod-bluetooth.online {
+#main-menu #mod-status.online {
     background-color:#000;
     background-position:-225px top;
 }

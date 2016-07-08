@@ -7389,19 +7389,19 @@ hr.dotted {
   float: right;
   margin-right: -1px;
 }
-#main-menu #mod-settings {
+#main-menu #mod-update {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -182px bottom;
 }
-#main-menu #mod-settings.uptodate {
+#main-menu #mod-update.uptodate {
   background-color: #000;
   background-position: -182px top;
 }
-#main-menu #mod-bluetooth {
+#main-menu #mod-status {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -225px top;
 }
-#main-menu #mod-bluetooth.online {
+#main-menu #mod-status.online {
   background-color: #000;
   background-position: -225px bottom;
 }
