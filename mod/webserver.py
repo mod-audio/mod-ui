@@ -143,7 +143,9 @@ def install_package(bundlename, callback):
 class JsonRequestHandler(web.RequestHandler):
     def write(self, data):
         if isinstance(data, dict):
-            return web.RequestHandler.write(self, data)
+            web.RequestHandler.write(self, data)
+            self.finish()
+            return
 
         elif data is True:
             data = "true"
@@ -163,7 +165,8 @@ class JsonRequestHandler(web.RequestHandler):
             data = json.dumps(data)
             self.set_header('Content-type', 'application/json')
 
-        return web.RequestHandler.write(self, data)
+        web.RequestHandler.write(self, data)
+        self.finish()
 
 class SimpleFileReceiver(JsonRequestHandler):
     @property
@@ -197,7 +200,6 @@ class SimpleFileReceiver(JsonRequestHandler):
             'ok'    : True,
             'result': self.result
         })
-        self.finish()
 
     def process_file(self, data, callback=lambda:None):
         """to be overriden"""
@@ -215,7 +217,6 @@ class BluetoothSetPin(JsonRequestHandler):
             fh.write(pin)
 
         self.write(True)
-        self.finish()
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
@@ -242,7 +243,6 @@ class SystemInfo(JsonRequestHandler):
                 info["hardware"] = json.loads(fd.read())
 
         self.write(info)
-        self.finish()
 
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp"
@@ -267,7 +267,6 @@ class UpdateBegin(JsonRequestHandler):
             ok = False
 
         self.write(ok)
-        self.finish()
 
 class EffectInstaller(SimpleFileReceiver):
     destination_dir = DOWNLOAD_TMP_DIR
@@ -297,13 +296,11 @@ class EffectBulk(JsonRequestHandler):
             result[uri] = info
 
         self.write(result)
-        self.finish()
 
 class EffectList(JsonRequestHandler):
     def get(self):
         data = get_all_plugins()
         self.write(data)
-        self.finish()
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
@@ -461,7 +458,6 @@ class EffectAdd(JsonRequestHandler):
 
         if not ok:
             self.write(False)
-            self.finish()
             return
 
         try:
@@ -471,7 +467,6 @@ class EffectAdd(JsonRequestHandler):
             raise web.HTTPError(404)
 
         self.write(data)
-        self.finish()
 
 class EffectRemove(JsonRequestHandler):
     @web.asynchronous
@@ -479,7 +474,6 @@ class EffectRemove(JsonRequestHandler):
     def get(self, instance):
         ok = yield gen.Task(SESSION.web_remove, instance)
         self.write(ok)
-        self.finish()
 
 class EffectGet(JsonRequestHandler):
     def get(self):
@@ -492,7 +486,6 @@ class EffectGet(JsonRequestHandler):
             raise web.HTTPError(404)
 
         self.write(data)
-        self.finish()
 
 class EffectConnect(JsonRequestHandler):
     @web.asynchronous
@@ -500,7 +493,6 @@ class EffectConnect(JsonRequestHandler):
     def get(self, port_from, port_to):
         ok = yield gen.Task(SESSION.web_connect, port_from, port_to)
         self.write(ok)
-        self.finish()
 
 class EffectDisconnect(JsonRequestHandler):
     @web.asynchronous
@@ -508,15 +500,14 @@ class EffectDisconnect(JsonRequestHandler):
     def get(self, port_from, port_to):
         ok = yield gen.Task(SESSION.web_disconnect, port_from, port_to)
         self.write(ok)
-        self.finish()
 
 class EffectParameterSet(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self, port):
-        ok = yield gen.Task(SESSION.web_parameter_set, port, float(self.get_argument('value')))
+        val = float(self.get_argument('value'))
+        ok  = yield gen.Task(SESSION.web_parameter_set, port, val)
         self.write(ok)
-        self.finish()
 
 class EffectParameterAddress(JsonRequestHandler):
     @web.asynchronous
@@ -537,7 +528,6 @@ class EffectParameterAddress(JsonRequestHandler):
 
         ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, maximum, minimum, value, steps)
         self.write(ok)
-        self.finish()
 
 class EffectPresetLoad(JsonRequestHandler):
     @web.asynchronous
@@ -546,7 +536,6 @@ class EffectPresetLoad(JsonRequestHandler):
         uri = self.get_argument('uri')
         ok  = yield gen.Task(SESSION.host.preset_load, instance, uri)
         self.write(ok)
-        self.finish()
 
 class EffectPresetSaveNew(JsonRequestHandler):
     @web.asynchronous
@@ -555,7 +544,6 @@ class EffectPresetSaveNew(JsonRequestHandler):
         name = self.get_argument('name')
         resp = yield gen.Task(SESSION.host.preset_save_new, instance, name)
         self.write(resp)
-        self.finish()
 
 class EffectPresetSaveReplace(JsonRequestHandler):
     @web.asynchronous
@@ -566,7 +554,6 @@ class EffectPresetSaveReplace(JsonRequestHandler):
         name   = self.get_argument('name')
         resp   = yield gen.Task(SESSION.host.preset_save_replace, instance, uri, bundle, name)
         self.write(resp)
-        self.finish()
 
 class EffectPresetDelete(JsonRequestHandler):
     @web.asynchronous
@@ -576,7 +563,6 @@ class EffectPresetDelete(JsonRequestHandler):
         bundle = self.get_argument('bundle')
         ok     = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
         self.write(ok)
-        self.finish()
 
 class EffectPosition(JsonRequestHandler):
     def get(self, instance):
@@ -584,7 +570,6 @@ class EffectPosition(JsonRequestHandler):
         y = float(self.get_argument('y'))
         SESSION.web_set_position(instance, x, y)
         self.write(True)
-        self.finish()
 
 class ServerWebSocket(websocket.WebSocketHandler):
     @gen.coroutine
@@ -654,12 +639,10 @@ class PackageUninstall(JsonRequestHandler):
                 list_banks(broken)
 
         self.write(resp)
-        self.finish()
 
 class PedalboardList(JsonRequestHandler):
     def get(self):
         self.write(get_all_pedalboards())
-        self.finish()
 
 class PedalboardSave(JsonRequestHandler):
     def post(self):
@@ -672,7 +655,6 @@ class PedalboardSave(JsonRequestHandler):
             'ok': bundlepath is not None,
             'bundlepath': bundlepath
         })
-        self.finish()
 
 class PedalboardPackBundle(web.RequestHandler):
     @web.asynchronous
@@ -761,7 +743,6 @@ class PedalboardLoadBundle(JsonRequestHandler):
             'ok':   name is not None,
             'name': name or ""
         })
-        self.finish()
 
 class PedalboardLoadWeb(SimpleFileReceiver):
     destination_dir = LV2_PEDALBOARDS_DIR
@@ -792,7 +773,6 @@ class PedalboardInfo(JsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         self.write(get_pedalboard_info(bundlepath))
-        self.finish()
 
 class PedalboardRemove(JsonRequestHandler):
     def get(self):
@@ -800,13 +780,11 @@ class PedalboardRemove(JsonRequestHandler):
 
         if not os.path.exists(bundlepath):
             self.write(False)
-            self.finish()
             return
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
         self.write(True)
-        self.finish()
 
 class PedalboardSize(JsonRequestHandler):
     def get(self):
@@ -814,7 +792,6 @@ class PedalboardSize(JsonRequestHandler):
         height = int(self.get_argument('height'))
         SESSION.pedalboard_size(width, height)
         self.write(True)
-        self.finish()
 
 class PedalboardImage(web.RequestHandler):
     def get(self, image):
@@ -843,7 +820,6 @@ class PedalboardImageWait(JsonRequestHandler):
             'ok'   : ok,
             'ctime': "%.1f" % ctime,
         })
-        self.finish()
 
 class DashboardClean(JsonRequestHandler):
     @web.asynchronous
@@ -851,7 +827,6 @@ class DashboardClean(JsonRequestHandler):
     def get(self):
         ok = yield gen.Task(SESSION.reset)
         self.write(ok)
-        self.finish()
 
 class BankLoad(JsonRequestHandler):
     def get(self):
@@ -877,20 +852,17 @@ class BankLoad(JsonRequestHandler):
 
         # All set
         self.write(banks)
-        self.finish()
 
 class BankSave(JsonRequestHandler):
     def post(self):
         banks = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         save_banks(banks)
         self.write(True)
-        self.finish()
 
 class HardwareLoad(JsonRequestHandler):
     def get(self):
         hardware = SESSION.get_hardware()
         self.write(hardware)
-        self.finish()
 
 class TemplateHandler(web.RequestHandler):
     def get(self, path):
@@ -1027,19 +999,16 @@ class Ping(JsonRequestHandler):
             }
 
         self.write(resp)
-        self.finish()
 
 class TrueBypass(JsonRequestHandler):
     def get(self, channelName, bypassed):
         ok = set_truebypass_value(channelName == "Right", bypassed == "true")
         self.write(ok)
-        self.finish()
 
 class ResetXruns(JsonRequestHandler):
     def post(self):
         reset_xruns()
         self.write(True)
-        self.finish()
 
 class SaveUserId(JsonRequestHandler):
     def post(self):
@@ -1051,7 +1020,6 @@ class SaveUserId(JsonRequestHandler):
                 "email": email,
             }, fh)
         self.write(True)
-        self.finish()
 
 class JackGetMidiDevices(JsonRequestHandler):
     def get(self):
@@ -1061,14 +1029,12 @@ class JackGetMidiDevices(JsonRequestHandler):
             "devList"  : devList,
             "names"    : names,
         })
-        self.finish()
 
 class JackSetMidiDevices(JsonRequestHandler):
     def post(self):
         devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         SESSION.web_set_midi_devices(devs)
         self.write(True)
-        self.finish()
 
 class AuthNonce(JsonRequestHandler):
     def post(self):
@@ -1079,32 +1045,27 @@ class AuthNonce(JsonRequestHandler):
             message = token.create_token_message(data['nonce'])
 
         self.write(message)
-        self.finish()
 
 class AuthToken(JsonRequestHandler):
     def post(self):
         access_token = token.decode_and_decrypt(self.request.body.decode())
         # don't ever save this token locally
         self.write({'access_token': access_token})
-        self.finish()
 
 class RecordingStart(JsonRequestHandler):
     def get(self):
         SESSION.web_recording_start()
         self.write(True)
-        self.finish()
 
 class RecordingStop(JsonRequestHandler):
     def get(self):
         SESSION.web_recording_stop()
         self.write(True)
-        self.finish()
 
 class RecordingReset(JsonRequestHandler):
     def get(self):
         SESSION.web_recording_delete()
         self.write(True)
-        self.finish()
 
 class RecordingPlay(JsonRequestHandler):
     waiting_request = None
@@ -1114,7 +1075,6 @@ class RecordingPlay(JsonRequestHandler):
         if action == 'start':
             SESSION.web_playing_start(RecordingPlay.stop_callback)
             self.write(True)
-            self.finish()
             return
 
         if action == 'wait':
@@ -1126,7 +1086,6 @@ class RecordingPlay(JsonRequestHandler):
         if action == 'stop':
             SESSION.web_playing_stop()
             self.write(True)
-            self.finish()
             return
 
         raise web.HTTPError(404)
@@ -1136,7 +1095,6 @@ class RecordingPlay(JsonRequestHandler):
         if kls.waiting_request is None:
             return
         kls.waiting_request.write(True)
-        kls.waiting_request.finish()
         kls.waiting_request = None
 
 class RecordingDownload(JsonRequestHandler):
@@ -1147,7 +1105,6 @@ class RecordingDownload(JsonRequestHandler):
             'audio': b64encode(recd).decode("utf-8") if recd else ""
         }
         self.write(data)
-        self.finish()
 
 class TokensDelete(JsonRequestHandler):
     def get(self):
@@ -1157,11 +1114,9 @@ class TokensDelete(JsonRequestHandler):
             os.remove(tokensConf)
 
         self.write(True)
-        self.finish()
 
 class TokensGet(JsonRequestHandler):
     def get(self):
-        #curtime    = int(time.time())
         tokensConf = os.path.join(DATA_DIR, "tokens.conf")
 
         if os.path.exists(tokensConf):
@@ -1171,27 +1126,24 @@ class TokensGet(JsonRequestHandler):
                 data['ok'] = bool("user_id"       in keys and
                                   "access_token"  in keys and
                                   "refresh_token" in keys)
-                #data['curtime'] = curtime
-                return self.write(data)
+                self.write(data)
+                self.finish()
+                return
 
         self.write({ 'ok': False })
-        self.finish()
 
 class TokensSave(JsonRequestHandler):
     @jsoncall
     def post(self):
-        #curtime    = int(time.time())
         tokensConf = os.path.join(DATA_DIR, "tokens.conf")
 
         data = dict(self.request.body)
-        #data['time'] = curtime
         data.pop("expires_in_days")
 
         with open(tokensConf, 'w') as fh:
             json.dump(data, fh)
 
         self.write(True)
-        self.finish()
 
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
