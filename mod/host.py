@@ -510,6 +510,7 @@ class Host(object):
             return
 
         data = get_jack_data()
+        websocket.write_message("mem_load " + self.get_free_memory_value())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
@@ -1550,9 +1551,9 @@ _:b%i
         data = get_jack_data()
         self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
-    def memtimer_callback(self):
+    def get_free_memory_value(self):
         if not self.memfile:
-            return
+            return "??"
 
         self.memfile.seek(self.memfseek)
         memfree = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
@@ -1563,7 +1564,10 @@ _:b%i
         memfree += float(int(self.memfile.readline().replace("Buffers:","",1).replace("kB","",1).strip()))
         memfree += float(int(self.memfile.readline().replace("Cached:" ,"",1).replace("kB","",1).strip()))
 
-        self.msg_callback("mem_load %0.1f" % ((self.memtotal-memfree)/self.memtotal*100.0))
+        return "%0.1f" % ((self.memtotal-memfree)/self.memtotal*100.0)
+
+    def memtimer_callback(self):
+        self.msg_callback("mem_load " + self.get_free_memory_value())
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (public stuff)
