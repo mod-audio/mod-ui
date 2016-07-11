@@ -82,11 +82,14 @@ class ScreenshotGenerator(object):
         self.callbacks = {}
         self.processing = None
 
-    def schedule_screenshot(self, bundlepath):
+    def schedule_screenshot(self, bundlepath, callback=None):
         bundlepath = os.path.abspath(bundlepath)
 
         if bundlepath not in self.queue:
             self.queue.append(bundlepath)
+
+        if callback is not None:
+            self.add_callback(bundlepath, callback)
 
         if self.processing is None:
             self.process_next()
@@ -128,6 +131,9 @@ class ScreenshotGenerator(object):
             return
 
         # report back later
+        self.add_callback(bundlepath, callback)
+
+    def add_callback(self, bundlepath, callback):
         if bundlepath not in self.callbacks.keys():
             self.callbacks[bundlepath] = [callback]
         else:

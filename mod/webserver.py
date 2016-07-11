@@ -818,6 +818,17 @@ class PedalboardImage(web.RequestHandler):
 
         self.finish()
 
+class PedalboardImageGenerate(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        ok, ctime  = yield gen.Task(SESSION.screenshot_generator.schedule_screenshot, bundlepath)
+        self.write({
+            'ok'   : ok,
+            'ctime': "%.1f" % ctime,
+        })
+
 class PedalboardImageWait(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1207,6 +1218,7 @@ application = web.Application(
             (r"/pedalboard/remove/", PedalboardRemove),
             (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
+            (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # bank stuff
