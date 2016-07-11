@@ -188,10 +188,7 @@ JqueryClass('shareBox', {
     recordStop: function (callback) {
         var self = $(this)
         var status = self.data('status')
-        var _callback = function () {
-            if (callback)
-                callback()
-        }
+        var _callback = callback || function () {}
         if (status == STOPPED) {
             return _callback()
         } else if (status == RECORDING) {
@@ -254,33 +251,45 @@ JqueryClass('shareBox', {
 
         var hasAudio = (step == 4)
         var shareNow = function (data) {
-            $('#record-rec').addClass("disabled").attr('disabled', true)
+            self.find('#record-rec').addClass("disabled").attr('disabled', true)
+            self.find('#record-stop').addClass("disabled").attr('disabled', true)
+            self.find('#record-play').addClass("disabled").attr('disabled', true)
+            self.find('#record-play-stop').addClass("disabled").attr('disabled', true)
+            self.find('#record-again').addClass("disabled").attr('disabled', true)
+            self.find('#record-delete').addClass("disabled").attr('disabled', true)
 
-            self.data('share')(data, function (resp) {
-                $('#record-rec').removeClass("disabled").attr('disabled', false)
+            self.shareBox('recordStop', function () {
+                self.data('share')(data, function (resp) {
+                    self.find('#record-rec').removeClass("disabled").attr('disabled', false)
+                    self.find('#record-stop').removeClass("disabled").attr('disabled', false)
+                    self.find('#record-play').removeClass("disabled").attr('disabled', false)
+                    self.find('#record-play-stop').removeClass("disabled").attr('disabled', false)
+                    self.find('#record-again').removeClass("disabled").attr('disabled', false)
+                    self.find('#record-delete').removeClass("disabled").attr('disabled', false)
 
-                if (resp.ok) {
-                    $('#record-step-' + step).hide()
-                    $('#record-share').attr('disabled', resp.ok).hide()
+                    if (resp.ok) {
+                        $('#record-step-' + step).hide()
+                        $('#record-share').attr('disabled', resp.ok).hide()
 
-                    var pb_url = PEDALBOARDS_URL + "/pedalboards/" + resp.id
-                    $('#share-window-url').attr('value', pb_url)
-                    $('#share-window-fb').attr('href', "https://www.facebook.com/sharer/sharer.php?u="+pb_url)
-                    $('#share-window-tw').attr('href', "https://twitter.com/intent/tweet?source="+pb_url)
+                        var pb_url = PEDALBOARDS_URL + "/pedalboards/" + resp.id
+                        $('#share-window-url').attr('value', pb_url)
+                        $('#share-window-fb').attr('href', "https://www.facebook.com/sharer/sharer.php?u="+pb_url)
+                        $('#share-window-tw').attr('href', "https://twitter.com/intent/tweet?source="+pb_url)
 
-                    if (hasAudio) {
-                        self.data('recordReset')(function () {
+                        if (hasAudio) {
+                            self.data('recordReset')(function () {
+                                $('#share-window-form').hide()
+                                $('#share-window-links').show()
+                            })
+                        } else {
                             $('#share-window-form').hide()
                             $('#share-window-links').show()
-                        })
+                        }
                     } else {
-                        $('#share-window-form').hide()
-                        $('#share-window-links').show()
+                        new Notification('error', "Couldn't share pedalboard: " + resp.error)
+                        $('#record-share').attr('disabled', false)
                     }
-                } else {
-                    new Notification('error', "Couldn't share pedalboard: " + resp.error)
-                    $('#record-share').attr('disabled', false)
-                }
+                })
             })
         }
 

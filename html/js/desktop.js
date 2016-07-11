@@ -562,6 +562,11 @@ function Desktop(elements) {
             }
 
             var uris = self.pedalboard.pedalboard('getLoadedPluginURIs')
+
+            if (uris.length == 0) {
+                return new Notification('warn', 'No plugins loaded, cannot share', 1500)
+            }
+
             self.validatePlugins(uris, function () {
                 elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
             })
@@ -679,18 +684,10 @@ function Desktop(elements) {
     })
 
     elements.statusIcon.statusTooltip()
-    var blueStatus = false
-    new Bluetooth({
+    new NetworkStatus({
         icon: elements.statusIcon,
-        status: function (online) {
-            if (online)
-                elements.statusIcon.addClass('online')
-            else
-                elements.statusIcon.removeClass('online')
-            blueStatus = online
-        },
         notify: function (msg) {
-            elements.statusIcon.statusTooltip('message', msg, blueStatus)
+            elements.statusIcon.statusTooltip('message', msg, true)
         }
     })
 

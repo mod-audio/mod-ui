@@ -176,9 +176,13 @@ class Session(object):
     def web_set_midi_devices(self, newDevs):
         return self.host.set_midi_devices(newDevs)
 
-    # Send a ping to HMI
-    def web_ping_hmi(self, callback):
-        self.hmi.ping(callback)
+    # Send a ping to HMI and Websockets
+    def web_ping(self, callback):
+        if self.hmi.initialized:
+            self.hmi.ping(callback)
+        else:
+            callback(False)
+        self.msg_callback("ping")
 
     # A new webbrowser page has been open
     # We need to cache its socket address and send any msg callbacks to it
