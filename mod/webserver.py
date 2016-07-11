@@ -1011,15 +1011,21 @@ class Ping(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        online = False
-        start = end = time.time()
-        if SESSION.hmi.initialized:
-            online = yield gen.Task(SESSION.web_ping_hmi)
-            end    = time.time()
-        resp = {
-            'ihm_online': online,
-            'ihm_time'  : int((end - start) * 1000),
-        }
+        start  = end = time.time()
+        online = yield gen.Task(SESSION.web_ping)
+
+        if online:
+            end  = time.time()
+            resp = {
+                'ihm_online': online,
+                'ihm_time'  : int((end - start) * 1000),
+            }
+        else:
+            resp = {
+                'ihm_online': False,
+                'ihm_time'  : int(start * 1000),
+            }
+
         self.write(resp)
         self.finish()
 

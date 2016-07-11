@@ -40,6 +40,10 @@ $('document').ready(function() {
 
         var cmd = data[0]
 
+        if (cmd == "ping") {
+            return
+        }
+
         if (cmd == "stats") {
             var cpuLoad = parseFloat(data[1])
             var xruns   = parseInt(data[2])
