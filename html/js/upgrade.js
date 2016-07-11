@@ -122,12 +122,7 @@ JqueryClass('upgradeWindow', {
         self.find('.download-start').show().text("Downloading...")
         self.find('.download-complete').hide()
 
-        var url = self.data('updatedata')['download-url']
-
-        // TESTING
-        //url = "http://pipeline.moddevices.com/image/577e601e2564d4678c024a5c/file/"
-
-        var transfer = new SimpleTransference(url, '/update/download')
+        var transfer = new SimpleTransference(self.data('updatedata')['download-url'], '/update/download')
 
         transfer.reportPercentageStatus = function (percentage) {
             self.find('.progressbar').width(self.find('.progressbar-wrapper').width() * percentage)
