@@ -249,20 +249,20 @@ function HardwareManager(options) {
             actuatorSelect.bind('change keyup', function () {
                 var act = $(this).val()
                 if (act == "/midi-learn" || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.range').hide()
-                    form.find('.sensibility').hide()
+                    form.find('.range').css({visibility:"hidden"})
+                    form.find('.sensibility').css({visibility:"hidden"})
                 } else {
-                    form.find('.range').show()
-                    form.find('.sensibility').show()
+                    form.find('.range').css({visibility:"visible"})
+                    form.find('.sensibility').css({visibility:"visible"})
                 }
             })
         } else {
             actuatorSelect.bind('change keyup', function () {
                 var act = $(this).val()
                 if (act == "/midi-learn" || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.range').hide()
+                    form.find('.range').css({visibility:"hidden"})
                 } else {
-                    form.find('.range').show()
+                    form.find('.range').css({visibility:"visible"})
                 }
             })
         }
