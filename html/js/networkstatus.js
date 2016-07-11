@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function Bluetooth(options) {
+function NetworkStatus(options) {
     var self = this
 
     options = $.extend({

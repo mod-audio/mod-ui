@@ -679,7 +679,7 @@ function Desktop(elements) {
     })
 
     elements.statusIcon.statusTooltip()
-    new Bluetooth({
+    new NetworkStatus({
         icon: elements.statusIcon,
         notify: function (msg) {
             elements.statusIcon.statusTooltip('message', msg, true)
