@@ -154,7 +154,6 @@ JqueryClass('upgradeWindow', {
             self.find('.download-complete').hide()
         }
 
-        console.log("Trying to download", url)
         transfer.start()
     },
 
