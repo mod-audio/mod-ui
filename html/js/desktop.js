@@ -562,6 +562,11 @@ function Desktop(elements) {
             }
 
             var uris = self.pedalboard.pedalboard('getLoadedPluginURIs')
+
+            if (uris.length == 0) {
+                return new Notification('warn', 'No plugins loaded, cannot share', 1500)
+            }
+
             self.validatePlugins(uris, function () {
                 elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
             })
