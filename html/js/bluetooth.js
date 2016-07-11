@@ -21,8 +21,6 @@ function Bluetooth(options) {
     options = $.extend({
         icon: $('<div>'),
         frequency: 5000,
-        status: function (status) {
-        },
         notify: function (msg) {
             console.log(msg)
         },
@@ -53,10 +51,8 @@ function Bluetooth(options) {
         var msg
         if (online) {
             msg = sprintf('Network: %dms | Controller: %dms', network_time, ihm_time)
-            options.status(true)
         } else {
             msg = 'OFFLINE'
-            options.status(false)
         }
 
         options.notify(msg)

@@ -679,18 +679,10 @@ function Desktop(elements) {
     })
 
     elements.statusIcon.statusTooltip()
-    var blueStatus = false
     new Bluetooth({
         icon: elements.statusIcon,
-        status: function (online) {
-            if (online)
-                elements.statusIcon.addClass('online')
-            else
-                elements.statusIcon.removeClass('online')
-            blueStatus = online
-        },
         notify: function (msg) {
-            elements.statusIcon.statusTooltip('message', msg, blueStatus)
+            elements.statusIcon.statusTooltip('message', msg, true)
         }
     })
 
