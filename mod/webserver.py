@@ -34,7 +34,8 @@ from uuid import uuid4
 from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
-                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION, UPDATE_FILE,
+                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
+                          UPDATE_NAME, UPDATE_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, BLUETOOTH_PIN)
 
@@ -250,7 +251,7 @@ class UpdateDownload(SimpleFileReceiver):
     @gen.engine
     def process_file(self, data, callback=lambda:None):
         # TODO: verify checksum?
-        shutil.move(os.path.join(self.destination_dir, data['filename']), UPDATE_FILE)
+        shutil.move(os.path.join(self.destination_dir, data['filename']), os.path.join(self.destination_dir, UPDATE_NAME))
         self.result = True
         callback()
 
@@ -258,7 +259,12 @@ class UpdateBegin(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        ok = yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
+        tmpfile = os.path.join("/tmp", UPDATE_NAME)
+        if os.path.exists(tmpfile):
+            shutil.move(tmpfile, UPDATE_FILE)
+            ok = yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
+        else:
+            ok = False
 
         self.write(ok)
         self.finish()
