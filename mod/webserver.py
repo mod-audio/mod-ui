@@ -210,7 +210,6 @@ class BluetoothSetPin(JsonRequestHandler):
 
         if pin is None:
             self.write(False)
-            self.finish()
             return
 
         with open(BLUETOOTH_PIN, 'w') as fh:
@@ -317,7 +316,6 @@ class SDKEffectInstaller(EffectInstaller):
             SESSION.msg_callback("rescan " + b64encode(json.dumps(resp).encode("utf-8")).decode("utf-8"))
 
         self.write(resp)
-        self.finish()
 
 class EffectResource(web.StaticFileHandler):
 
@@ -375,10 +373,12 @@ class EffectImage(web.RequestHandler):
             except:
                 raise web.HTTPError(404)
 
+        self.set_header('Content-type', 'image/png')
+
         with open(path, 'rb') as fd:
-            self.set_header('Content-type', 'image/png')
             self.write(fd.read())
-            self.finish()
+
+        self.finish()
 
 class EffectHTML(web.RequestHandler):
     def get(self, html):
@@ -397,10 +397,12 @@ class EffectHTML(web.RequestHandler):
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
+        self.set_header('Content-type', 'text/html')
+
         with open(path, 'rb') as fd:
-            self.set_header('Content-type', 'text/html')
             self.write(fd.read())
-            self.finish()
+
+        self.finish()
 
 class EffectStylesheet(web.RequestHandler):
     def get(self):
@@ -419,10 +421,12 @@ class EffectStylesheet(web.RequestHandler):
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
+        self.set_header('Content-type', 'text/css')
+
         with open(path, 'rb') as fd:
-            self.set_header('Content-type', 'text/css')
             self.write(fd.read())
-            self.finish()
+
+        self.finish()
 
 class EffectJavascript(web.RequestHandler):
     def get(self):
@@ -441,10 +445,12 @@ class EffectJavascript(web.RequestHandler):
         if not os.path.exists(path):
             raise web.HTTPError(404)
 
+        self.set_header('Content-type', 'text/plain')
+
         with open(path, 'rb') as fd:
-            self.set_header('Content-type', 'text/plain')
             self.write(fd.read())
-            self.finish()
+
+        self.finish()
 
 class EffectAdd(JsonRequestHandler):
     @web.asynchronous
@@ -804,11 +810,13 @@ class PedalboardImage(web.RequestHandler):
             #imagetype = "gif"
             raise web.HTTPError(404)
 
+        #self.set_header('Content-type', 'image/%s' % imagetype)
+        self.set_header('Content-type', 'image/png')
+
         with open(imagepath, 'rb') as fd:
-            #self.set_header('Content-type', 'image/%s' % imagetype)
-            self.set_header('Content-type', 'image/png')
             self.write(fd.read())
-            self.finish()
+
+        self.finish()
 
 class PedalboardImageWait(JsonRequestHandler):
     @web.asynchronous
@@ -1127,7 +1135,6 @@ class TokensGet(JsonRequestHandler):
                                   "access_token"  in keys and
                                   "refresh_token" in keys)
                 self.write(data)
-                self.finish()
                 return
 
         self.write({ 'ok': False })
