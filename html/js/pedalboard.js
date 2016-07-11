@@ -594,6 +594,8 @@ JqueryClass('pedalboard', {
                                 dummy.css({
                                     webkitTransform: trans,
                                     MozTransform: trans,
+                                    msTransform: trans,
+                                    transform: trans,
                                 })
                             }
                             children.resize(function () {
@@ -741,8 +743,12 @@ JqueryClass('pedalboard', {
                 if (prop.prop != 'scale') {
                     return
                 }
-                self.css('webkitTransform', 'scale(' + value + ')')
-                self.css('MozTransform', 'scale(' + value + ')')
+                self.css({
+                    webkitTransform: 'scale(' + value + ')',
+                    MozTransform: 'scale(' + value + ')',
+                    msTransform: 'scale(' + value + ')',
+                    transform: 'scale(' + value + ')',
+                })
                 self.data('scale', value)
             },
         })
@@ -932,6 +938,8 @@ JqueryClass('pedalboard', {
                 self.css({
                     webkitTransform: 'scale(' + scale + ')',
                     MozTransform: 'scale(' + scale + ')',
+                    msTransform: 'scale(' + scale + ')',
+                    transform: 'scale(' + scale + ')',
                     top: offsetY,
                     left: offsetX,
                 })
@@ -1405,7 +1413,6 @@ JqueryClass('pedalboard', {
         connMgr.iterateInstance(plugin.data('instance'), function (jack) {
             myjacks.push($(jack.data('svg')._container))
         })
-
         $('.hasSVG.cable-connected').filter(function(e) {!(e in myjacks)}).css({'z-index': 0})
 
         connMgr.iterateInstance(plugin.data('instance'), function (jack) {
@@ -1594,8 +1601,9 @@ JqueryClass('pedalboard', {
                 var jack = ui.draggable
                 var outputType = jack.parent().attr('mod-role').split(/-/)[1]
                 var inputType = element.attr('mod-role').split(/-/)[1]
-                if (outputType != inputType)
+                if (outputType != inputType) {
                     return
+                }
 
                 self.pedalboard('do_connect', jack, element, overCount)
                 element.removeClass('input-connecting-highlight')
@@ -1753,9 +1761,8 @@ JqueryClass('pedalboard', {
             },
             drag: function (e, ui) {
                 var scale = self.data('scale')
-                p = ui.position
-                p.top /= scale
-                p.left /= scale
+                ui.position.top /= scale
+                ui.position.left /= scale
                 self.pedalboard('drawJack', jack, true)
             },
             stop: function () {
@@ -1766,9 +1773,14 @@ JqueryClass('pedalboard', {
                 jack.removeClass('jack-connecting')
                 output.removeClass('output-connecting')
                 canvas.removeClass('cable-connecting')
-                if (!jack.hasClass('jack-connected'))
+                if (!jack.hasClass('jack-connected')) {
                     jack.addClass('jack-disconnected')
-
+                    jack.css({
+                        top: 'auto',
+                        left: 'auto',
+                        marginTop: 'auto',
+                    })
+                }
                 self.pedalboard('drawJack', jack)
             }
         })
@@ -1932,8 +1944,8 @@ JqueryClass('pedalboard', {
         self.bind('mousemove', moveHandler)
         self.data('ongoingConnection', connection)
         self.pedalboard('highlightInputs', true, jack)
-
     },
+
     finishConnection: function () {
         var self = $(this)
         var connection = self.data('ongoingConnection')
@@ -1984,8 +1996,9 @@ JqueryClass('pedalboard', {
 
         self.data('portConnect')(output.attr('mod-port'), input.attr('mod-port'),
             function (ok) {
-                if (!ok)
+                if (!ok) {
                     self.pedalboard('disconnect', jack)
+                }
             })
     },
 
@@ -2009,8 +2022,9 @@ JqueryClass('pedalboard', {
         }
 
         // Can only ports if they are the same type
-        if (input.data('portType') != output.data('portType'))
+        if (input.data('portType') != output.data('portType')) {
             return self.pedalboard('disconnect', jack)
+        }
 
         // Everything ok, let's do the connection
         self.pedalboard('finishConnection')
@@ -2058,30 +2072,20 @@ JqueryClass('pedalboard', {
         if (connected) {
             self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
             self.trigger('modified')
-        } else {
-            //// UGLY WORKAROUND :(
-            //if (output.hasClass("mod-audio-output") && !output.hasClass("hardware-output"))
-                //jack.css({
-                    //top: 12,
-                    //left: 0
-                //})
-            //else if (output.hasClass("mod-midi-output") && output.hasClass("hardware-output"))
-                //jack.css({
-                    //top: -15,
-                    //left: 0
-                //})
-            //else
-            jack.css({
-                top: 0,
-                left: 0
-            })
-        }
 
-        var connMgr = self.data('connectionManager')
-        var outport = output.attr('mod-port')
-        if (connMgr.origIndex[outport] && Object.keys(connMgr.origIndex[outport]).length == 1) {
-            output.addClass('output-disconnected')
-            output.removeClass('output-connected')
+            var connMgr = self.data('connectionManager')
+            var outport = output.attr('mod-port')
+            if (connMgr.origIndex[outport] && Object.keys(connMgr.origIndex[outport]).length == 1) {
+                output.addClass('output-disconnected')
+                output.removeClass('output-connected')
+            }
+
+        } else {
+            jack.css({
+                top: 'auto',
+                left: 'auto',
+                marginTop: 'auto',
+            })
         }
 
         jack.data('connected', false)
@@ -2137,11 +2141,10 @@ JqueryClass('pedalboard', {
             return
         var wrapper = $('<div class="mod-pedal-input-wrapper">')
         //var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
-        var jack
         wrapper.appendTo(input)
         wrapper.css('top', (input.height() - wrapper.height()) / 2)
         //arrow.css('top', wrapper.height() / 2 - 12)
-        var jack;
+        var jack
         var h = 0;
         for (var i = 0; i < jacks.length; i++) {
             jack = $(jacks[i]);

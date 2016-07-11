@@ -49,7 +49,7 @@ JqueryClass('shareBox', {
             share: function (data, callback) {
                 callback({ok:true})
             },
-            waitForScreenshot: function (callback) {
+            waitForScreenshot: function (generate, callback) {
                 callback(true)
             },
         }, options)
@@ -327,23 +327,23 @@ JqueryClass('shareBox', {
             self.shareBox('showStep', self.data('step'))
         }
 
-        self.data('waitForScreenshot')(function (ok) {
+        self.data('waitForScreenshot')(false, function (ok) {
             if (ok) {
                 done()
                 return
             }
             // 2nd try
-            self.find('#share-wait-screenshot').text("Waiting for screenshot... (attempt #2)")
-            self.data('waitForScreenshot')(function (ok) {
+            self.find('#share-wait-screenshot').text("Generating screenshot...")
+            self.data('waitForScreenshot')(true, function (ok) {
                 if (ok) {
                     done()
                     return
                 }
                 // 3rd and final try
-                self.find('#share-wait-screenshot').text("Waiting for screenshot... (final attempt)")
-                self.data('waitForScreenshot')(function (ok) {
+                self.find('#share-wait-screenshot').text("Generating for screenshot... (final attempt)")
+                self.data('waitForScreenshot')(true, function (ok) {
                     // shit! just upload without screenshot then.. :(
-                    self.find('#share-wait-screenshot').text("Waiting for screenshot... failed!")
+                    self.find('#share-wait-screenshot').text("Generating for screenshot... failed!")
                     done()
                 })
             })

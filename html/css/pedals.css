@@ -108,7 +108,7 @@
     position:relative;
     z-index:35;
     padding: 0 10px;
-    margin-left: -10px;
+    border-radius:10px;
 }
 
 .mod-pedal .mod-pedal-input {

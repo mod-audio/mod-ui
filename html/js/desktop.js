@@ -669,17 +669,30 @@ function Desktop(elements) {
             })
         },
 
-        waitForScreenshot: function (callback) {
-            $.ajax({
-                url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),
-                success: function (resp) {
-                    callback(resp.ok)
-                },
-                error: function () {
-                    callback(false)
-                },
-                dataType: 'json'
-            })
+        waitForScreenshot: function (generate, callback) {
+            if (generate) {
+                $.ajax({
+                    url: "/pedalboard/image/generate?bundlepath="+escape(self.pedalboardBundle),
+                    success: function (resp) {
+                        callback(resp.ok)
+                    },
+                    error: function () {
+                        callback(false)
+                    },
+                    dataType: 'json'
+                })
+            } else {
+                $.ajax({
+                    url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),
+                    success: function (resp) {
+                        callback(resp.ok)
+                    },
+                    error: function () {
+                        callback(false)
+                    },
+                    dataType: 'json'
+                })
+            }
         },
     })
 

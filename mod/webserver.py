@@ -29,6 +29,7 @@ import time
 from base64 import b64decode, b64encode
 from signal import signal, SIGUSR2
 from tornado import gen, iostream, web, websocket
+from tornado.util import unicode_type
 from uuid import uuid4
 
 from mod.settings import (APP, LOG,
@@ -142,7 +143,11 @@ def install_package(bundlename, callback):
 
 class JsonRequestHandler(web.RequestHandler):
     def write(self, data):
-        if isinstance(data, dict):
+        # FIXME: something is sending strings out, need to investigate what later..
+        # it's likely something using write(json.dumps(...))
+        # we want to prevent that as it causes issues under Mac OS
+
+        if isinstance(data, (bytes, unicode_type, dict)):
             web.RequestHandler.write(self, data)
             self.finish()
             return
@@ -152,14 +157,14 @@ class JsonRequestHandler(web.RequestHandler):
             self.set_header('Content-type', 'application/json')
 
         elif data is False:
-            data = "true"
+            data = "false"
             self.set_header('Content-type', 'application/json')
 
         # TESTING for data types, remove this later
-        elif not isinstance(data, list):
-            print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
-            data = json.dumps(data)
-            self.set_header('Content-type', 'application/json')
+        #elif not isinstance(data, list):
+            #print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
+            #data = json.dumps(data)
+            #self.set_header('Content-type', 'application/json')
 
         else:
             data = json.dumps(data)
@@ -818,6 +823,17 @@ class PedalboardImage(web.RequestHandler):
 
         self.finish()
 
+class PedalboardImageGenerate(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        ok, ctime  = yield gen.Task(SESSION.screenshot_generator.schedule_screenshot, bundlepath)
+        self.write({
+            'ok'   : ok,
+            'ctime': "%.1f" % ctime,
+        })
+
 class PedalboardImageWait(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1207,6 +1223,7 @@ application = web.Application(
             (r"/pedalboard/remove/", PedalboardRemove),
             (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
+            (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # bank stuff
