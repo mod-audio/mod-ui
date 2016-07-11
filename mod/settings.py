@@ -92,5 +92,4 @@ TUNER_MON_PORT = "FREQ"
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
-UPDATE_NAME='mod-auto-update.tar'
-UPDATE_FILE=join('/data', UPDATE_NAME)
+UPDATE_FILE='/data/modduo.tar'
