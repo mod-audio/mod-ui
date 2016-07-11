@@ -155,7 +155,7 @@ class JsonRequestHandler(web.RequestHandler):
 
         # TESTING for data types, remove this later
         elif not isinstance(data, list):
-            print("=== TESTING: Got new data type for RequestHandler.write():", type(data))
+            print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
             data = json.dumps(data)
             self.set_header('Content-type', 'application/json')
 
