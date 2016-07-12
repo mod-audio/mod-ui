@@ -427,29 +427,40 @@ function Desktop(elements) {
         var missingCount = 0
         var versions = {}
         var uris = []
+        var error = false
 
         // make list of uris
-        for (var i in plugins)
-        {
-            var plugin = plugins[i]
+        var plugin
+        for (var i in plugins) {
+            plugin = plugins[i]
             versions[plugin.uri] = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release || 0]
             uris.push(plugin.uri)
         }
 
+        var finalCallback = function () {
+            if (error && !confirm("Failed to install some required plugins, do you want to load the pedalboard anyway?")) {
+                callback(false)
+                return
+            }
+            callback(true)
+        }
+
         var installPlugin = function (uri, data) {
             missingCount++
+
             self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
                 // TODO: Fix this code for store updates (needed?)
                 //data[uri] = pluginData
 
                 if (! resp.ok) {
-                    return
+                    error = true
                 }
 
                 missingCount--
 
-                if (missingCount == 0)
-                    callback(data)
+                if (missingCount == 0) {
+                    finalCallback()
+                }
             })
         }
 
@@ -466,16 +477,39 @@ function Desktop(elements) {
                 {
                     var version = [localplugin.builder || 0, localplugin.minorVersion, localplugin.microVersion, localplugin.release || 0]
 
-                    if (compareVersions(version, versions[uri]) < 0)
+                    if (compareVersions(version, versions[uri]) < 0) {
                         installPlugin(uri, data)
+                    }
                 }
             }
 
-            if (missingCount == 0)
-                callback(data)
+            if (missingCount == 0) {
+                finalCallback()
+            }
         }
 
         this.getPluginsData(uris, installMissing)
+    },
+
+    this.loadRemotePedalboard = function (url) {
+        self.pedalboard.data('wait').start('Loading pedalboard...')
+        self.windowManager.closeWindows()
+
+        var transfer = new SimpleTransference(url, '/pedalboard/load_web/',
+                                              { from_args: { headers:
+                                              { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
+                                              }})
+
+        transfer.reportFinished = function () {
+            self.pedalboardEmpty = false
+            self.pedalboardModified = true
+        }
+
+        transfer.reportError = function (error) {
+            new Bug("Couldn't load pedalboard, reason:<br/>" + error)
+        }
+
+        transfer.start()
     },
 
     this.saveBox = elements.saveBox.saveBox({
@@ -1028,8 +1062,12 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 },
                 success: function (pbinfo) {
                     self.reset(function () {
-                        self.installMissingPlugins(pbinfo.plugins, function () {
-                            self.loadPedalboard(bundlepath, callback)
+                        self.installMissingPlugins(pbinfo.plugins, function (ok) {
+                            if (ok) {
+                                self.loadPedalboard(bundlepath, callback)
+                            } else {
+                                self.pedalboard.data('wait').stop()
+                            }
                         })
                     })
                 },
@@ -1120,9 +1158,9 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
 }
 
 Desktop.prototype.reset = function (callback) {
-    if (this.pedalboardModified)
-        if (!confirm("There are unsaved modifications that will be lost. Are you sure?"))
-            return
+    if (this.pedalboardModified && !confirm("There are unsaved modifications that will be lost. Are you sure?")) {
+        return
+    }
 
     this.pedalboard.data('wait').start('Loading pedalboard...')
 

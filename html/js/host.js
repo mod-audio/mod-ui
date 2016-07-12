@@ -298,6 +298,12 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "load-pb-remote") {
+            var url = data[1]
+            desktop.loadRemotePedalboard(url)
+            return
+        }
+
         console.log(data)
     }
 })

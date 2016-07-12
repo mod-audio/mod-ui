@@ -49,8 +49,10 @@ function InstallationQueue() {
                 }
                 if (targetfiles == null) {
                     new Notification('error', "Can't find bundle to install", 5000)
-                    if (queue.length == 0)
+                    if (queue.length == 0) {
                         notification.closeAfter(3000)
+                    }
+                    callback({ok:false})
                     return
                 }
                 queue.push({
@@ -60,13 +62,16 @@ function InstallationQueue() {
                     md5:   targetfiles.md5,
                 })
                 callbacks.push(callback)
-                if (queue.length == 1)
+                if (queue.length == 1) {
                     self.installNext()
+                }
             },
             error: function () {
                 new Notification('error', "Download failed", 5000)
-                if (queue.length == 0)
+                if (queue.length == 0) {
                     notification.closeAfter(3000)
+                }
+                callback({ok:false})
             },
             dataType: 'json',
         })
@@ -82,16 +87,20 @@ function InstallationQueue() {
             success: function (effects) {
                 if (effects.length == 0) {
                     new Notification('error', "Can't find plugin to install", 5000)
-                    if (queue.length == 0)
+                    if (queue.length == 0) {
                         notification.closeAfter(3000)
+                    }
+                    callback({ok:false})
                     return
                 }
                 self.installBundleId(effects[0].bundle_id, callback)
             },
             error: function () {
                 new Notification('error', 'Download failed', 5000)
-                if (queue.length == 0)
+                if (queue.length == 0) {
                     notification.closeAfter(3000)
+                }
+                callback({ok:false})
             },
             dataType: 'json',
         })

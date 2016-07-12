@@ -153,11 +153,11 @@ class JsonRequestHandler(web.RequestHandler):
 
         elif data is True:
             data = "true"
-            self.set_header('Content-type', 'application/json')
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         elif data is False:
             data = "false"
-            self.set_header('Content-type', 'application/json')
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         # TESTING for data types, remove this later
         #elif not isinstance(data, list):
@@ -167,10 +167,23 @@ class JsonRequestHandler(web.RequestHandler):
 
         else:
             data = json.dumps(data)
-            self.set_header('Content-type', 'application/json')
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         web.RequestHandler.write(self, data)
         self.finish()
+
+class RemoteRequestHandler(JsonRequestHandler):
+    def set_default_headers(self):
+        origin = self.request.headers['Origin']
+        match  = re.match(r'^(\w+)://([^/]*)/?', origin)
+        if match is None:
+            return
+        protocol, domain = match.groups()
+        if protocol not in ("http", "https"):
+            return
+        if not domain.endswith("moddevices.com"):
+            return
+        self.set_header("Access-Control-Allow-Origin", origin)
 
 class SimpleFileReceiver(JsonRequestHandler):
     @property
@@ -248,7 +261,7 @@ class SystemInfo(JsonRequestHandler):
         self.write(info)
 
 class UpdateDownload(SimpleFileReceiver):
-    destination_dir = "/tmp"
+    destination_dir = "/tmp/update"
 
     @web.asynchronous
     @gen.engine
@@ -752,9 +765,22 @@ class PedalboardLoadBundle(JsonRequestHandler):
             'name': name or ""
         })
 
-class PedalboardLoadWeb(SimpleFileReceiver):
-    destination_dir = LV2_PEDALBOARDS_DIR
+class PedalboardLoadRemote(RemoteRequestHandler):
+    def post(self):
+        url = self.get_argument("url")
 
+        if len(SESSION.websockets) == 0:
+            self.write(False)
+            return
+
+        SESSION.websockets[0].write_message("load-pb-remote " + url)
+        self.write(True)
+
+class PedalboardLoadWeb(SimpleFileReceiver):
+    destination_dir = "/tmp/pedalboards"
+
+    @web.asynchronous
+    @gen.engine
     def process_file(self, data, callback=lambda:None):
         filename = os.path.join(self.destination_dir, data['filename'])
 
@@ -1021,6 +1047,11 @@ class Ping(JsonRequestHandler):
 
         self.write(resp)
 
+class Hello(RemoteRequestHandler):
+    def get(self):
+        ok = len(SESSION.websockets) > 0
+        self.write(ok)
+
 class TrueBypass(JsonRequestHandler):
     def get(self, channelName, bypassed):
         ok = set_truebypass_value(channelName == "Right", bypassed == "true")
@@ -1215,6 +1246,7 @@ application = web.Application(
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
+            #(r"/pedalboard/load_remote/", PedalboardLoadRemote),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),
@@ -1250,6 +1282,7 @@ application = web.Application(
             (r"/jack/set_midi_devices", JackSetMidiDevices),
 
             (r"/ping/?", Ping),
+            #(r"/hello/", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/reset_xruns/", ResetXruns),
