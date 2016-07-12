@@ -54,7 +54,9 @@
              hardwareManager: new HardwareManager({}),
           })
           //console.log(PEDALBOARD_DATA)
-          el.pedalboard('fakeLoadFromServerData', PEDALBOARD_DATA)
+          el.pedalboard('fakeLoadFromServerData', PEDALBOARD_DATA, function () {
+              $("#fully-loaded-check").hide()
+          })
       })
 
     </script>
@@ -106,13 +108,17 @@
   <div id="notifications"></div>
   <!-- END NOTIFICATIONS -->
 
+  <!-- FULLY LOADED CHECK -->
+  <div id="fully-loaded-check"></div>
+  <!-- END FULLY LOADED CHECK -->
+
     <!-- WRAPPER -->
     <div id="wrapper">
 
         <!-- PEDALBOARD-SETTINGS-WINDOW -->
         <div id="pedalboard-settings" class="hidden">
             <h1>Settings</h1>
-	    <div class="js-canvas"></div>
+            <div class="js-canvas"></div>
         </div>
         <!-- END PEDALBOARD-SETTINGS-WINDOW -->
 
@@ -126,7 +132,9 @@
 
         </div>
         <!-- END PEDALBOARD -->
+
     </div>
+    <!-- END WRAPPER -->
 
 </body>
 </html>

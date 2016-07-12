@@ -55,7 +55,7 @@ function waitTwice(step, callback) {
         }
         // also check if 'loading pedalboard' message is not visible
         return page.evaluate(function() {
-            return !$(".screen-disconnected").is(":visible");
+            return !$("#fully-loaded-check").is(":visible");
         });
     }, function() {
         if (step == 1) {
