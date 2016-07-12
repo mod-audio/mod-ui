@@ -153,11 +153,11 @@ class JsonRequestHandler(web.RequestHandler):
 
         elif data is True:
             data = "true"
-            self.set_header('Content-type', 'application/json')
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         elif data is False:
             data = "false"
-            self.set_header('Content-type', 'application/json')
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         # TESTING for data types, remove this later
         #elif not isinstance(data, list):
@@ -167,7 +167,7 @@ class JsonRequestHandler(web.RequestHandler):
 
         else:
             data = json.dumps(data)
-            self.set_header('Content-type', 'application/json')
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         web.RequestHandler.write(self, data)
         self.finish()
@@ -1021,6 +1021,10 @@ class Ping(JsonRequestHandler):
 
         self.write(resp)
 
+class Hello(JsonRequestHandler):
+    def get(self):
+        self.write(True)
+
 class TrueBypass(JsonRequestHandler):
     def get(self, channelName, bypassed):
         ok = set_truebypass_value(channelName == "Right", bypassed == "true")
@@ -1250,6 +1254,7 @@ application = web.Application(
             (r"/jack/set_midi_devices", JackSetMidiDevices),
 
             (r"/ping/?", Ping),
+            (r"/hello/", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/reset_xruns/", ResetXruns),
