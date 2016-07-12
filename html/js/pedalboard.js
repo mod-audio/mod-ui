@@ -465,8 +465,9 @@ JqueryClass('pedalboard', {
 
             self.data('portConnect')(source, target,
                 function (ok) {
-                    if (!ok)
+                    if (!ok) {
                         return
+                    }
                     finalActions.push(function () {
                         var plugins = $.extend({
                             'system': self
