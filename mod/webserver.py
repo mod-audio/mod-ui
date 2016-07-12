@@ -604,6 +604,9 @@ class ServerWebSocket(websocket.WebSocketHandler):
         print("websocket close")
         yield gen.Task(SESSION.websocket_closed, self)
 
+    def on_message(self, message):
+        return
+
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
