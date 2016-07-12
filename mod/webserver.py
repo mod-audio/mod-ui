@@ -1246,7 +1246,7 @@ application = web.Application(
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
-            (r"/pedalboard/load_remote/", PedalboardLoadRemote),
+            #(r"/pedalboard/load_remote/", PedalboardLoadRemote),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),
@@ -1282,7 +1282,7 @@ application = web.Application(
             (r"/jack/set_midi_devices", JackSetMidiDevices),
 
             (r"/ping/?", Ping),
-            (r"/hello/", Hello),
+            #(r"/hello/", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/reset_xruns/", ResetXruns),
