@@ -172,6 +172,19 @@ class JsonRequestHandler(web.RequestHandler):
         web.RequestHandler.write(self, data)
         self.finish()
 
+class RemoteRequestHandler(JsonRequestHandler):
+    def set_default_headers(self):
+        origin = self.request.headers['Origin']
+        match  = re.match(r'^(\w+)://([^/]*)/?', origin)
+        if match is None:
+            return
+        protocol, domain = match.groups()
+        if protocol not in ("http", "https"):
+            return
+        if not domain.endswith("moddevices.com"):
+            return
+        self.set_header("Access-Control-Allow-Origin", origin)
+
 class SimpleFileReceiver(JsonRequestHandler):
     @property
     def destination_dir(self):
@@ -752,10 +765,7 @@ class PedalboardLoadBundle(JsonRequestHandler):
             'name': name or ""
         })
 
-class PedalboardLoadRemote(JsonRequestHandler):
-    def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "*")
-
+class PedalboardLoadRemote(RemoteRequestHandler):
     def post(self):
         url = self.get_argument("url")
 
@@ -1037,10 +1047,7 @@ class Ping(JsonRequestHandler):
 
         self.write(resp)
 
-class Hello(JsonRequestHandler):
-    def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "*")
-
+class Hello(RemoteRequestHandler):
     def get(self):
         ok = len(SESSION.websockets) > 0
         self.write(ok)
