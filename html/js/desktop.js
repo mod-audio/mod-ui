@@ -491,6 +491,27 @@ function Desktop(elements) {
         this.getPluginsData(uris, installMissing)
     },
 
+    this.loadRemotePedalboard = function (url) {
+        self.pedalboard.data('wait').start('Loading pedalboard...')
+        self.windowManager.closeWindows()
+
+        var transfer = new SimpleTransference(url, '/pedalboard/load_web/',
+                                              { from_args: { headers:
+                                              { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
+                                              }})
+
+        transfer.reportFinished = function () {
+            self.pedalboardEmpty = false
+            self.pedalboardModified = true
+        }
+
+        transfer.reportError = function (error) {
+            new Bug("Couldn't load pedalboard, reason:<br/>" + error)
+        }
+
+        transfer.start()
+    },
+
     this.saveBox = elements.saveBox.saveBox({
         save: function (title, asNew, callback) {
             $.ajax({
