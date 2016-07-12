@@ -41,6 +41,7 @@ $('document').ready(function() {
         var cmd = data[0]
 
         if (cmd == "ping") {
+            ws.send("pong")
             return
         }
 
