@@ -552,6 +552,7 @@ class Host(object):
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
+        websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
         crashed = self.crashed
         self.crashed = False
@@ -626,7 +627,7 @@ class Host(object):
                 websocket.write_message("midi_map %s :bypass %i %i" % (plugin['instance'], mchnnl, mctrl))
 
             if plugin['preset']:
-                self.msg_callback("preset %s %s" % (plugin['instance'], plugin['preset']))
+                websocket.write_message("preset %s %s" % (plugin['instance'], plugin['preset']))
 
             if crashed:
                 self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
@@ -1039,6 +1040,8 @@ class Host(object):
 
         pb = get_pedalboard_info(bundlepath)
 
+        self.msg_callback("size %d %d" % (pb['width'],pb['height']))
+
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
         mappedOldMidiIns  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
@@ -1192,6 +1195,7 @@ class Host(object):
             self.pedalboard_modified = False
             self.pedalboard_name     = pb['title']
             self.pedalboard_path     = bundlepath
+            self.pedalboard_size     = [pb['width'],pb['height']]
             save_last_bank_and_pedalboard(self.bank_id, bundlepath)
 
         return self.pedalboard_name

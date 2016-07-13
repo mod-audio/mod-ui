@@ -553,8 +553,6 @@ def get_pedalboard_size(bundle):
         raise Exception
     width  = int(size[0])
     height = int(size[1])
-    if 0 in (width, height):
-        raise Exception
     return (width, height)
 
 # Get port values from a plugin state

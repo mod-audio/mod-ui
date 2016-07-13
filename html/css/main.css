@@ -7406,8 +7406,18 @@ hr.dotted {
 #main-menu #mod-cloud {
   background-image: url(../img/icons/36/cloud.png);
 }
-#main-menu #mod-cloud.online {
-  background-image: url(../img/icons/36/cloud.png);
+#main-menu #mod-update {
+  background-image: url(../img/icons/36/update.png);
+}
+#cloud_install_all {
+  background-image: url(../img/icons/36/save.png);
+  float: right;
+  font-size: 21px;
+}
+#cloud_update_all {
+  background-image: url(../img/icons/36/update.png);
+  float: right;
+  font-size: 21px;
 }
 /* TOP MENUS */
 header#pedalboard-actions,

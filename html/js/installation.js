@@ -144,10 +144,12 @@ function InstallationQueue() {
         }
 
         trans.reportError = function (reason) {
-            queue.shift()
-            callbacks.shift()
+            queue = []
+            callbacks = []
             notification.close()
             new Notification('error', "Could not install plugin: " + reason, 5000)
+
+            desktop.updateAllPlugins()
         }
 
         trans.reportFinished = function (resp) {

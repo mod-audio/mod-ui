@@ -279,6 +279,13 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "size") {
+            var width  = data[1]
+            var height = data[2]
+            // TODO
+            return
+        }
+
         if (cmd == "truebypass") {
             var left  = parseInt(data[1]) != 0
             var right = parseInt(data[2]) != 0

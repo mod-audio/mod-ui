@@ -540,6 +540,9 @@ function GUI(effect, options) {
                 })
 
                 presetElem.find('.preset-btn-save-as').click(function () {
+                    if (desktop == null) {
+                        return
+                    }
                     var name = "",
                         item = getCurrentPresetItem()
                     if (item) {
@@ -559,6 +562,9 @@ function GUI(effect, options) {
                 })
 
                 presetElem.find('.preset-btn-rename').click(function () {
+                    if (desktop == null) {
+                        return
+                    }
                     if ($(this).hasClass('disabled') || ! presetElem.data('enabled')) {
                         return
                     }

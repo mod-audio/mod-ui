@@ -1001,8 +1001,14 @@ class TemplateHandler(web.RequestHandler):
             pedalboard = get_pedalboard_info(bundlepath)
         except:
             print("ERROR in webserver.py: get_pedalboard_info failed")
-            context['pedalboard'] = ""
-            return context
+            pedalboard = {
+                'height': 0,
+                'width': 0,
+                'title': "",
+                'connections': [],
+                'plugins': [],
+                'hardware': {},
+            }
 
         context['pedalboard'] = b64encode(json.dumps(pedalboard).encode("utf-8"))
         return context
