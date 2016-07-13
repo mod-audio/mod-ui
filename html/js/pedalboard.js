@@ -383,17 +383,26 @@ JqueryClass('pedalboard', {
         // information on all plugins
         loadPlugin = function (pluginsData) {
             var plugin = data.plugins.pop()
-            if (plugin == null)
+            if (plugin == null) {
                 // Queue is empty, let's create the hardware ports now
                 return createHardwarePorts()
+            }
 
             var pluginData = pluginsData[plugin.uri]
-            var instance   = self.pedalboard('generateInstance', pluginData.uri)
+
+            if (pluginData == null) {
+                console.log("Missing plugin:", plugin.uri)
+                loadPlugin(pluginsData)
+                return
+            }
+
+            var instance = self.pedalboard('generateInstance', pluginData.uri)
 
             self.data('pluginLoad')(plugin.uri, instance, plugin.x, plugin.y,
                 function (ok) {
-                    if (!ok)
+                    if (!ok) {
                         return
+                    }
                     var symbol, value
                     for (var i in plugin.ports) {
                         symbol = plugin.ports[i].symbol
