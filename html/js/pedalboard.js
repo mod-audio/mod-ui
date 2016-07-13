@@ -396,7 +396,12 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            var instance = self.pedalboard('generateInstance', pluginData.uri)
+            var instance
+            if (plugin.instance) {
+                instance = '/graph/' + plugin.instance
+            } else {
+                instance = self.pedalboard('generateInstance', pluginData.uri)
+            }
 
             self.data('pluginLoad')(plugin.uri, instance, plugin.x, plugin.y,
                 function (ok) {
