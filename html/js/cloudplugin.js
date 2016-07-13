@@ -89,10 +89,16 @@ JqueryClass('cloudPluginBox', {
         })
 
         $('#cloud_install_all').click(function (e) {
-            self.cloudPluginBox('installAllPlugins', false)
+            if (! $(this).hasClass("disabled")) {
+                $(this).addClass("disabled").css({color:'#444'})
+                self.cloudPluginBox('installAllPlugins', false)
+            }
         })
         $('#cloud_update_all').click(function (e) {
-            self.cloudPluginBox('installAllPlugins', true)
+            if (! $(this).hasClass("disabled")) {
+                $(this).addClass("disabled").css({color:'#444'})
+                self.cloudPluginBox('installAllPlugins', true)
+            }
         })
 
         var results = {}
@@ -538,18 +544,17 @@ JqueryClass('cloudPluginBox', {
                 }
             }
 
-            //var count = 0
+            var count = 0
             var finished = function (resp, bundlename) {
                 self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
-                /*
-                // force refresh after completion or failure
                 if (resp.ok) {
                     count += 1
-                    if (count != bundle_ids.length)
-                        return;
+                    if (count == bundle_ids.length) {
+                        $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                        $('#cloud_update_all').removeClass("disabled") //.css({color:'white'})
+                    }
                 }
                 self.cloudPluginBox('search')
-                */
             }
 
             for (var i in bundle_ids) {
