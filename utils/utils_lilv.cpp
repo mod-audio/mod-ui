@@ -3327,6 +3327,11 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const modpedal_height = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
 
     // --------------------------------------------------------------------------------------------------------
+    // uri node (ie, "this")
+
+    const LilvNode* const urinode = lilv_plugin_get_uri(p);
+
+    // --------------------------------------------------------------------------------------------------------
     // title
 
     if (LilvNode* const node = lilv_plugin_get_name(p))
@@ -3471,7 +3476,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         x != nullptr ? lilv_node_as_float(x) : 0.0f,
                         y != nullptr ? lilv_node_as_float(y) : 0.0f,
                         ports,
-                        preset != nullptr ? strdup(lilv_node_as_uri(preset)) : nc
+                        (preset != nullptr && !lilv_node_equals(preset, urinode)) ? strdup(lilv_node_as_uri(preset)) : nc
                     };
 
                     lilv_free(full_instance);
