@@ -107,14 +107,14 @@ JqueryClass('shareBox', {
             }
 
             if (ok) {
-                $('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Copied to clipboard')
+                self.find('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Copied to clipboard')
             } else {
                 console.log('Unable to copy to clipboard.')
-                $('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Press Ctrl/Cmd + C to copy')
+                self.find('#share-tooltip').css('opacity',1).find('.tooltip-inner').html('Press Ctrl/Cmd + C to copy')
             }
 
             setTimeout(function() {
-                $('#share-tooltip').css('opacity',0)
+                self.find('#share-tooltip').css('opacity',0)
             }, 2000)
         })
 
@@ -129,11 +129,11 @@ JqueryClass('shareBox', {
         self.data('step', step)
         for (var i = 1; i < 5; i++) {
             if (i == step)
-                $('#record-step-' + i).show()
+                self.find('#record-step-' + i).show()
             else
-                $('#record-step-' + i).hide()
+                self.find('#record-step-' + i).hide()
         }
-        var button = $('#record-share')
+        var button = self.find('#record-share')
         if (step == 1) {
             button.text('Just share').attr('disabled', !self.data('screenshotDone'))
         } else {
@@ -168,7 +168,7 @@ JqueryClass('shareBox', {
             })
             return
         }
-        $('#record-countdown').text(secs)
+        self.find('#record-countdown').text(secs)
         setTimeout(function () {
             self.shareBox('recordCountdown', secs - 1)
         }, 1000)
@@ -179,7 +179,7 @@ JqueryClass('shareBox', {
         if (secs == 0)
             return self.shareBox('recordStop')
         self.shareBox('showStep', 3)
-        $('#record-stop').text(secs)
+        self.find('#record-stop').text(secs)
         var timeout = setTimeout(function () {
             self.shareBox('recordStopCountdown', secs - 1)
         }, 1000)
@@ -198,8 +198,8 @@ JqueryClass('shareBox', {
             self.data('recordStop')(function () {
                 self.data('status', STOPPED)
                 self.shareBox('showStep', 4)
-                $('#record-play').show()
-                $('#record-play-stop').hide()
+                self.find('#record-play').show()
+                self.find('#record-play-stop').hide()
                 _callback()
             })
         } else { // PLAYING
@@ -214,12 +214,12 @@ JqueryClass('shareBox', {
         var self = $(this)
         var play = function () {
             self.data('playStart')(function () {
-                $('#record-play').hide()
-                $('#record-play-stop').show()
+                self.find('#record-play').hide()
+                self.find('#record-play-stop').show()
                 self.data('status', PLAYING)
             }, function () {
-                $('#record-play').show()
-                $('#record-play-stop').hide()
+                self.find('#record-play').show()
+                self.find('#record-play-stop').hide()
                 self.data('status', STOPPED)
             })
         }
@@ -247,7 +247,7 @@ JqueryClass('shareBox', {
             description: self.find('#pedalboard-share-comment').val(),
             title      : self.find('#pedalboard-share-title').val()
         }
-        $('#record-share').attr('disabled', true)
+        self.find('#record-share').attr('disabled', true)
 
         var hasAudio = (step == 4)
         var shareNow = function (data) {
@@ -257,6 +257,8 @@ JqueryClass('shareBox', {
             self.find('#record-play-stop').addClass("disabled").attr('disabled', true)
             self.find('#record-again').addClass("disabled").attr('disabled', true)
             self.find('#record-delete').addClass("disabled").attr('disabled', true)
+
+            self.find('#share-wait-message').text("Uploading. Please wait...")
 
             self.shareBox('recordStop', function () {
                 self.data('share')(data, function (resp) {
@@ -268,26 +270,28 @@ JqueryClass('shareBox', {
                     self.find('#record-delete').removeClass("disabled").attr('disabled', false)
 
                     if (resp.ok) {
-                        $('#record-step-' + step).hide()
-                        $('#record-share').attr('disabled', resp.ok).hide()
+                        self.find('#record-step-' + step).hide()
+                        self.find('#record-share').attr('disabled', resp.ok).hide()
+                        self.find('#share-wait-message').html("&nbsp;")
 
                         var pb_url = PEDALBOARDS_URL + "/pedalboards/" + resp.id
-                        $('#share-window-url').attr('value', pb_url)
-                        $('#share-window-fb').attr('href', "https://www.facebook.com/sharer/sharer.php?u="+pb_url)
-                        $('#share-window-tw').attr('href', "https://twitter.com/intent/tweet?source="+pb_url)
+                        self.find('#share-window-url').attr('value', pb_url)
+                        self.find('#share-window-fb').attr('href', "https://www.facebook.com/sharer/sharer.php?u="+pb_url)
+                        self.find('#share-window-tw').attr('href', "https://twitter.com/intent/tweet?source="+pb_url)
 
                         if (hasAudio) {
                             self.data('recordReset')(function () {
-                                $('#share-window-form').hide()
-                                $('#share-window-links').show()
+                                self.find('#share-window-form').hide()
+                                self.find('#share-window-links').show()
                             })
                         } else {
-                            $('#share-window-form').hide()
-                            $('#share-window-links').show()
+                            self.find('#share-window-form').hide()
+                            self.find('#share-window-links').show()
                         }
                     } else {
                         new Notification('error', "Couldn't share pedalboard: " + resp.error)
-                        $('#record-share').attr('disabled', false)
+                        self.find('#record-share').attr('disabled', false)
+                        self.find('#share-wait-message').text("Upload failed!")
                     }
                 })
             })
@@ -308,22 +312,22 @@ JqueryClass('shareBox', {
     open: function (bundlepath, title, uris) {
         var self = $(this)
 
-        $('#record-share').show()
-        $('#share-window-form').show()
-        $('#share-window-links').hide()
+        self.find('#record-share').show()
+        self.find('#share-window-form').show()
+        self.find('#share-window-links').hide()
         self.shareBox('showStep', 1)
         self.data('bundlepath', bundlepath)
         self.data('screenshotDone', false)
         self.find('#pedalboard-share-title').val(title)
         self.find('#record-share').attr('disabled', true)
-        self.find('#share-wait-screenshot').show().text("Waiting for screenshot...")
+        self.find('#share-wait-message').text("Waiting for screenshot...")
         self.find('.js-share').addClass('disabled')
         self.find('textarea').val('').focus()
         self.show()
 
         var done = function () {
             self.data('screenshotDone', true)
-            self.find('#share-wait-screenshot').hide()
+            self.find('#share-wait-message').html("&nbsp;")
             self.shareBox('showStep', self.data('step'))
         }
 
@@ -333,17 +337,17 @@ JqueryClass('shareBox', {
                 return
             }
             // 2nd try
-            self.find('#share-wait-screenshot').text("Generating screenshot...")
+            self.find('#share-wait-message').text("Generating screenshot...")
             self.data('waitForScreenshot')(true, function (ok) {
                 if (ok) {
                     done()
                     return
                 }
                 // 3rd and final try
-                self.find('#share-wait-screenshot').text("Generating for screenshot... (final attempt)")
+                self.find('#share-wait-message').text("Generating for screenshot... (final attempt)")
                 self.data('waitForScreenshot')(true, function (ok) {
                     // shit! just upload without screenshot then.. :(
-                    self.find('#share-wait-screenshot').text("Generating for screenshot... failed!")
+                    self.find('#share-wait-message').text("Generating for screenshot... failed!")
                     done()
                 })
             })

@@ -979,13 +979,13 @@ JqueryClass('pedalboard', {
                 self.pedalboard('positionHardwarePorts')
                 self.pedalboard('adapt')
                 self.data('wait').stopIfNeeded()
-                console.log("done!")
+                //console.log("done!")
 
             } else {
                 // decrease timer
                 self.data('adaptTime', curTime2-20)
                 setTimeout(callAdaptLater, 200)
-                console.log("pending...", curTime2)
+                //console.log("pending...", curTime2)
             }
         }
 

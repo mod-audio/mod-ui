@@ -1291,7 +1291,7 @@ application = web.Application(
             (r"/jack/set_midi_devices", JackSetMidiDevices),
 
             (r"/ping/?", Ping),
-            (r"/hello/", Hello),
+            (r"/hello/?", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/reset_xruns/", ResetXruns),
