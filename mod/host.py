@@ -44,7 +44,7 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, get_jack_sample_rate,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR
+from mod.settings import DEFAULT_PEDALBOARD
 
 ADDRESSING_CTYPE_LINEAR       = 0
 ADDRESSING_CTYPE_BYPASS       = 1
@@ -1036,7 +1036,7 @@ class Host(object):
     # Host stuff - load & save
 
     def load(self, bundlepath, isDefault=False):
-        self.msg_callback("loading_start %i %i" % (int(isDefault), 0 if bundlepath.startswith(LV2_PEDALBOARDS_DIR) else 1))
+        self.msg_callback("loading_start %i 0" % int(isDefault))
 
         pb = get_pedalboard_info(bundlepath)
 

@@ -592,7 +592,7 @@ function Desktop(elements) {
 
     elements.shareButton.click(function () {
         var share = function () {
-            if (self.pedalboardEmpty || !self.pedalboardBundle) {
+            if (self.pedalboardEmpty /*|| !self.pedalboardBundle*/) {
                 return new Notification('warn', 'Nothing to share', 1500)
             }
 
