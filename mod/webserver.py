@@ -797,6 +797,7 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         # FIXME - don't use external tools!
         tar_output = subprocess.getoutput('env LANG=C tar -xvf "%s" -C "%s"' % (filename, self.destination_dir))
         bundlepath = os.path.join(self.destination_dir, tar_output.strip().split("\n", 1)[0])
+        bundlepath = os.path.abspath(bundlepath)
 
         if not os.path.exists(bundlepath):
             raise IOError(bundlepath)
