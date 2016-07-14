@@ -592,7 +592,7 @@ function Desktop(elements) {
 
     elements.shareButton.click(function () {
         var share = function () {
-            if (self.pedalboardEmpty /*|| !self.pedalboardBundle*/) {
+            if (self.pedalboardEmpty) {
                 return new Notification('warn', 'Nothing to share', 1500)
             }
 
@@ -607,7 +607,7 @@ function Desktop(elements) {
             })
         }
 
-        if (self.pedalboardModified) {
+        if (self.pedalboardModified || ! (self.pedalboardEmpty || self.pedalboardBundle)) {
             if (confirm('There are unsaved modifications, pedalboard must first be saved. Save it?')) {
                 self.saveCurrentPedalboard(false, share)
             }
