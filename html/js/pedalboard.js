@@ -973,7 +973,7 @@ JqueryClass('pedalboard', {
         var callAdaptLater = function () {
             var curTime2 = self.data('adaptTime')
 
-            if (curTime2 <= 1) {
+            if (curTime2 <= 0) {
                 // proceed
                 self.data('adaptTime', 0)
                 self.pedalboard('positionHardwarePorts')
@@ -983,9 +983,9 @@ JqueryClass('pedalboard', {
 
             } else {
                 // decrease timer
-                self.data('adaptTime', curTime-10)
+                self.data('adaptTime', curTime2-20)
                 setTimeout(callAdaptLater, 200)
-                console.log("pending...")
+                console.log("pending...", curTime2)
             }
         }
 
@@ -993,13 +993,11 @@ JqueryClass('pedalboard', {
 
         if (curTime == 0) {
             // first time, setup everything
-            self.data('adaptTime', 201)
-
+            self.data('adaptTime', 101)
             setTimeout(callAdaptLater, 1)
-
         } else {
             // not first time, increase timer
-            self.data('adaptTime', curTime+50)
+            self.data('adaptTime', curTime+5)
         }
     },
 
