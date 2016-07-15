@@ -289,6 +289,8 @@ MOD_API const char* file_uri_parse(const char* fileuri);
 MOD_API bool init_jack(void);
 MOD_API void close_jack(void);
 MOD_API JackData* get_jack_data(void);
+MOD_API unsigned get_jack_buffer_size(void);
+MOD_API unsigned set_jack_buffer_size(unsigned size);
 MOD_API float get_jack_sample_rate(void);
 MOD_API const char* get_jack_port_alias(const char* portname);
 MOD_API const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput);

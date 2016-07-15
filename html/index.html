@@ -57,6 +57,7 @@
       SITEURL = '{{cloud_url}}'
       PEDALBOARDS_URL = '{{pedalboards_url}}'
       LV2_PLUGIN_DIR  = '{{lv2_plugin_dir}}'
+      var BUFFERSIZE  = {{bufferSize}}
       var SAMPLERATE  = {{sampleRate}}
       var NOTIFICATIONS_ENABLED = true
       var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
@@ -116,6 +117,7 @@ $('document').ready(function() {
       upgradeWindow: $('#mod-upgrade'),
       bypassLeftButton: $("#mod-bypassLeft"),
       bypassRightButton: $("#mod-bypassRight"),
+      bufferSizeButton: $('#mod-buffersize'),
       xrunsButton: $('#mod-xruns'),
   })
 
@@ -496,6 +498,7 @@ $('document').ready(function() {
           </p>
         </div>
         <div id="mod-xruns" class="icon mod-hidden">0 Xruns</div>
+        <div id="mod-buffersize" class="icon mod-hidden">{{bufferSize}} frames</div>
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass R</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass L</div>
         <div id="mod-add-midi" class="icon">Add MIDI Device</div>

@@ -93,3 +93,4 @@ CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
 UPDATE_FILE='/data/modduo.tar'
+USING_256_FRAMES_FILE='/data/using-256-frames'

@@ -52,6 +52,7 @@ function Desktop(elements) {
         upgradeWindow: $('<div>'),
         bypassLeftButton: $('<div>'),
         bypassRightButton: $('<div>'),
+        bufferSizeButton: $('<div>'),
         xrunsButton: $('<div>'),
     }, elements)
 
@@ -392,6 +393,9 @@ function Desktop(elements) {
         // show xrun counter
         $('#mod-xruns').show()
 
+        // show buffer size button
+        $('#mod-buffersize').show()
+
         // echo to you
         return "Dev mode enabled!"
     }
@@ -572,6 +576,30 @@ function Desktop(elements) {
     })
     elements.bypassRightButton.click(function () {
         self.triggerTrueBypass("Right", !$(this).hasClass("bypassed"))
+    })
+    elements.bufferSizeButton.click(function () {
+        var newsize
+        if ($(this).text() == "128 frames") {
+            newsize = '256'
+        } else {
+            newsize = '128'
+        }
+
+        $.ajax({
+            url: '/set_buffersize/' + newsize,
+            method: 'POST',
+            cache: false,
+            success: function (resp) {
+                console.log(resp)
+                if (! resp.ok) {
+                    new Bug("Couldn't set new buffer size")
+                }
+                $("#mod-buffersize").text(""+resp.size+" frames")
+            },
+            error: function () {
+                new Bug("Communication failure")
+            },
+        })
     })
     elements.xrunsButton.click(function () {
         if (cached_xruns == 0) {

@@ -439,6 +439,12 @@ utils.close_jack.restype  = None
 utils.get_jack_data.argtypes = None
 utils.get_jack_data.restype  = POINTER(JackData)
 
+utils.get_jack_buffer_size.argtypes = None
+utils.get_jack_buffer_size.restype  = c_uint
+
+utils.set_jack_buffer_size.argtypes = [c_uint]
+utils.set_jack_buffer_size.restype  = c_uint
+
 utils.get_jack_sample_rate.argtypes = None
 utils.get_jack_sample_rate.restype  = c_float
 
@@ -596,6 +602,12 @@ def get_jack_data():
         'cpuLoad': data.contents.cpuLoad,
         'xruns'  : data.contents.xruns,
     }
+
+def get_jack_buffer_size():
+    return int(utils.get_jack_buffer_size())
+
+def set_jack_buffer_size(size):
+    return int(utils.set_jack_buffer_size(size))
 
 def get_jack_sample_rate():
     return float(utils.get_jack_sample_rate())
