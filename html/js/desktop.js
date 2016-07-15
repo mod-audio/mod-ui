@@ -590,7 +590,6 @@ function Desktop(elements) {
             method: 'POST',
             cache: false,
             success: function (resp) {
-                console.log(resp)
                 if (! resp.ok) {
                     new Bug("Couldn't set new buffer size")
                 }
