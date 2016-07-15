@@ -7298,7 +7298,8 @@ hr.dotted {
 #main-menu .mod-bypass,
 #main-menu #mod-cpu,
 #main-menu #mod-ram,
-#main-menu #mod-xruns {
+#main-menu #mod-xruns,
+#main-menu #mod-buffersize {
   background-position: 8px 50%;
   background-repeat: no-repeat;
   padding-left: 40px;
@@ -7316,14 +7317,16 @@ hr.dotted {
 #main-menu .mod-bypass:hover,
 #main-menu #mod-cpu:hover,
 #main-menu #mod-ram:hover,
-#main-menu #mod-xruns:hover {
+#main-menu #mod-xruns:hover,
+#main-menu #mod-buffersize:hover {
   background-color: #000;
 }
 #main-menu #mod-add-midi.selected,
 #main-menu .mod-bypass.selected,
 #main-menu #mod-cpu.selected,
 #main-menu #mod-ram.selected,
-#main-menu #mod-xruns.selected {
+#main-menu #mod-xruns.selected,
+#main-menu #mod-buffersize.selected {
   background-color: #333;
 }
 #main-menu #mod-add-midi {
@@ -7358,6 +7361,10 @@ hr.dotted {
 #main-menu #mod-xruns {
   background-image: url(../img/icons/25/cpu.png);
   width: 115px !important;
+}
+#main-menu #mod-buffersize {
+  background-image: url(../img/icons/25/cpu.png);
+  width: 125px !important;
 }
 #main-menu .progress {
   height: 45px;

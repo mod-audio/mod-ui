@@ -35,7 +35,8 @@ from uuid import uuid4
 from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS,
-                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION, UPDATE_FILE,
+                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
+                          UPDATE_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, BLUETOOTH_PIN)
 
@@ -49,6 +50,8 @@ from mod.utils import (init as lv2_init,
                        get_plugin_info_mini,
                        get_all_pedalboards,
                        get_pedalboard_info,
+                       get_jack_buffer_size,
+                       set_jack_buffer_size,
                        get_jack_sample_rate,
                        set_truebypass_value,
                        set_process_name,
@@ -943,6 +946,7 @@ class TemplateHandler(web.RequestHandler):
         except AttributeError:
             context = {}
         context['cloud_url'] = CLOUD_HTTP_ADDRESS
+        context['bufferSize'] = get_jack_buffer_size()
         context['sampleRate'] = get_jack_sample_rate()
         self.write(loader.load(path).generate(**context))
 
@@ -1065,6 +1069,24 @@ class TrueBypass(JsonRequestHandler):
     def get(self, channelName, bypassed):
         ok = set_truebypass_value(channelName == "Right", bypassed == "true")
         self.write(ok)
+
+class SetBufferSize(JsonRequestHandler):
+    def post(self, size):
+        size = int(size)
+
+        # If running a real MOD, save this setting for next boot
+        if IMAGE_VERSION is not None:
+            if size == 256:
+                with open(USING_256_FRAMES_FILE, 'w') as fh:
+                    fh.write("# if this file exists, jack will use 256 frames instead of the default 128")
+            elif os.path.exists(USING_256_FRAMES_FILE):
+                os.remove(USING_256_FRAMES_FILE)
+
+        newsize = set_jack_buffer_size(size)
+        self.write({
+            'ok'  : newsize == size,
+            'size': newsize,
+        })
 
 class ResetXruns(JsonRequestHandler):
     def post(self):
@@ -1294,6 +1316,7 @@ application = web.Application(
             (r"/hello/?", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
+            (r"/set_buffersize/(128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
 
             (r"/save_user_id/", SaveUserId),

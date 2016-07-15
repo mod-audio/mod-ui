@@ -256,6 +256,25 @@ JackData* get_jack_data(void)
     return &data;
 }
 
+unsigned get_jack_buffer_size(void)
+{
+    if (gClient == nullptr)
+        return 128;
+
+    return jack_get_buffer_size(gClient);
+}
+
+unsigned set_jack_buffer_size(unsigned size)
+{
+    if (gClient == nullptr)
+        return 0;
+
+    if (jack_set_buffer_size(gClient, size) == 0)
+        return size;
+
+    return jack_get_buffer_size(gClient);
+}
+
 float get_jack_sample_rate(void)
 {
     if (gClient == nullptr)

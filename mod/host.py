@@ -41,7 +41,7 @@ from mod.utils import (charPtrToString,
                        is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
                        get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
                        get_all_pedalboards,
-                       init_jack, close_jack, get_jack_data, get_jack_sample_rate,
+                       init_jack, close_jack, get_jack_data,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
 from mod.settings import DEFAULT_PEDALBOARD
