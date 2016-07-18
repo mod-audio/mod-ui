@@ -28,7 +28,12 @@ $('document').ready(function() {
         modified = false
 
     ws.onclose = function (evt) {
+        console.log("websocket close", evt)
         desktop.blockUI()
+    }
+
+    ws.onerror = function (evt) {
+        console.log("websocket error", evt)
     }
 
     ws.onmessage = function (evt) {
