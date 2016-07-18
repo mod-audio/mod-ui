@@ -1062,8 +1062,11 @@ class Ping(JsonRequestHandler):
 
 class Hello(RemoteRequestHandler):
     def get(self):
-        ok = len(SESSION.websockets) > 0
-        self.write(ok)
+        resp = {
+          'online' : len(SESSION.websockets) > 0,
+          'version': IMAGE_VERSION,
+        }
+        self.write(resp)
 
 class TrueBypass(JsonRequestHandler):
     def get(self, channelName, bypassed):
