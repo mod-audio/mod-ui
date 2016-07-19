@@ -88,88 +88,88 @@ $('document').ready(function() {
         preloadImages[i] = img;
     }
 
-  desktop = new Desktop({
-      titleBox: $('#pedalboard-info h1'),
-      pedalboard: $('#pedalboard-dashboard'),
-      zoomIn: $('.zoom-in'),
-      zoomOut: $('.zoom-out'),
-      addMidiButton: $('#mod-add-midi'),
-      midiDevicesWindow: $('#midi-device-window'),
-      midiDevicesList: $("#midi-device-list"),
-      saveBox: $('#save-pedalboard'),
-      saveButton: $('#pedalboard-info .js-save'),
-      saveAsButton: $('#pedalboard-info .js-save-as'),
-      resetButton:  $('#pedalboard-info .js-reset'),
-      effectBox: $('#plugins-library'),
-      pedalboardTrigger: $('#main-menu #mod-plugins'),
-      cloudPluginBox: $('#cloud-plugins-library'),
-      cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
-      pedalboardBox: $('#pedalboards-library'),
-      pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
-      bankBox: $('#bank-library'),
-      bankBoxTrigger: $('#main-menu #mod-bank'),
-      bankList: $('#bank-list'),
-      shareButton: $('#pedalboard-info .js-share'),
-      shareWindow: $('#share-window'),
-      presetSaveBox: $('#save-preset'),
-      statusIcon: $('#mod-status'),
-      upgradeIcon: $('#mod-update'),
-      upgradeWindow: $('#mod-upgrade'),
-      bypassLeftButton: $("#mod-bypassLeft"),
-      bypassRightButton: $("#mod-bypassRight"),
-      bufferSizeButton: $('#mod-buffersize'),
-      xrunsButton: $('#mod-xruns'),
-  })
+    desktop = new Desktop({
+        titleBox: $('#pedalboard-info h1'),
+        pedalboard: $('#pedalboard-dashboard'),
+        zoomIn: $('.zoom-in'),
+        zoomOut: $('.zoom-out'),
+        addMidiButton: $('#mod-add-midi'),
+        midiDevicesWindow: $('#midi-device-window'),
+        midiDevicesList: $("#midi-device-list"),
+        saveBox: $('#save-pedalboard'),
+        saveButton: $('#pedalboard-info .js-save'),
+        saveAsButton: $('#pedalboard-info .js-save-as'),
+        resetButton:  $('#pedalboard-info .js-reset'),
+        effectBox: $('#plugins-library'),
+        pedalboardTrigger: $('#main-menu #mod-plugins'),
+        cloudPluginBox: $('#cloud-plugins-library'),
+        cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
+        pedalboardBox: $('#pedalboards-library'),
+        pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
+        bankBox: $('#bank-library'),
+        bankBoxTrigger: $('#main-menu #mod-bank'),
+        bankList: $('#bank-list'),
+        shareButton: $('#pedalboard-info .js-share'),
+        shareWindow: $('#share-window'),
+        presetSaveBox: $('#save-preset'),
+        statusIcon: $('#mod-status'),
+        upgradeIcon: $('#mod-update'),
+        upgradeWindow: $('#mod-upgrade'),
+        bypassLeftButton: $("#mod-bypassLeft"),
+        bypassRightButton: $("#mod-bypassRight"),
+        bufferSizeButton: $('#mod-buffersize'),
+        xrunsButton: $('#mod-xruns'),
+    })
 
-  if ('{{bundlepath}}' && '{{title}}') {
-      desktop.title = '{{title}}'
-      desktop.pedalboardBundle   = '{{bundlepath}}'
-      desktop.pedalboardEmpty    = false
-      desktop.pedalboardModified = true
-  }
+    if ('{{bundlepath}}' && '{{title}}') {
+        desktop.title = '{{title}}'
+        desktop.pedalboardBundle   = '{{bundlepath}}'
+        desktop.pedalboardEmpty    = false
+        desktop.pedalboardModified = true
+    }
 
-  if ({{using_app}}) {
-      desktop.setupApp()
-  }
+    if ({{using_app}}) {
+        desktop.setupApp()
+    }
 
-  if ({{using_mod}}) {
-      desktop.authenticateDevice(function (ok) {
-          if (ok) {
-              console.log("MOD authentication succeeded")
-          } else {
-              console.log("MOD authentication failed")
-              desktop.upgradeWindow.upgradeWindow('setErrored')
-          }
-      })
-  } else {
-      console.log("MOD is not authenticated")
-      desktop.upgradeWindow.upgradeWindow('setErrored')
-  }
+    if ({{using_mod}}) {
+        desktop.authenticateDevice(function (ok) {
+            if (ok) {
+                console.log("MOD authentication succeeded")
+            } else {
+                console.log("MOD authentication failed")
+                desktop.upgradeWindow.upgradeWindow('setErrored')
+            }
+        })
+    } else {
+        console.log("MOD is not authenticated")
+        desktop.upgradeWindow.upgradeWindow('setErrored')
+    }
 
-  // start code for ajax loading bar
+    // start code for ajax loading bar
 
-  NProgress.configure({
-    template: '<div class="bar" role="bar"><div class="peg"></div></div><div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
-  });
+    NProgress.configure({
+      template: '<div class="bar" role="bar"><div class="peg"></div></div><div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
+    });
 
-  $(document)
-  .ajaxStart(function(data) {
-    NProgress.start();
-  })
-  .ajaxComplete(function() {
-    NProgress.done();
-  });
+    $('document')
+    .ajaxStart(function(data) {
+        NProgress.start();
+    })
+    .ajaxComplete(function() {
+        NProgress.done();
+    });
 
-  // end code for ajax loading bar
+    // end code for ajax loading bar
 
-  $.ajax({
-      url: '/system/info',
-      method: 'GET',
-      success: function (info) {
-          INFO = info
-      },
-      dataType: 'json'
-  })
+    $.ajax({
+        url: '/system/info',
+        method: 'GET',
+        success: function (info) {
+            INFO = info
+        },
+        dataType: 'json'
+    })
 
 })
 
