@@ -240,6 +240,9 @@ function Desktop(elements) {
     }
 
     this.blockUI = function () {
+        if ($('body').find('.screen-disconnected').length != 0) {
+            return
+        }
         var block = $('<div class="screen-disconnected blocker">')
         block.html('<p>Disconnected</p>')
         var re = $("<div class='button icon'>Reload</div>").appendTo(block);
