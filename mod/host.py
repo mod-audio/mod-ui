@@ -1304,12 +1304,14 @@ _:b%i
     ingen:polyphonic false ;
     lv2:microVersion %i ;
     lv2:minorVersion %i ;
+    mod:builderVersion %i ;
+    mod:releaseNumber %i ;
     lv2:port <%s> ;
     lv2:prototype <%s> ;
     pedal:preset <%s> ;
     a ingen:Block .
 """ % (instance, plugin['x'], plugin['y'], "false" if plugin['bypassed'] else "true",
-       info['microVersion'], info['microVersion'],
+       info['microVersion'], info['minorVersion'], info['builder'], info['release'],
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
                                                                                           info['ports']['control']['input']+
@@ -1533,6 +1535,7 @@ _:b%i
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
 @prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
 @prefix pedal: <http://moddevices.com/ns/modpedal#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 %s%s%s

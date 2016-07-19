@@ -307,8 +307,8 @@ $('document').ready(function() {
         }
 
         if (cmd == "load-pb-remote") {
-            var url = data[1]
-            desktop.loadRemotePedalboard(url)
+            var pedalboard_id = data[1]
+            desktop.loadRemotePedalboard(pedalboard_id)
             return
         }
 
