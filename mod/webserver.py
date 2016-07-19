@@ -75,6 +75,12 @@ def install_bundles_in_tmp_dir(callback):
         if os.path.exists(bundlepath):
             resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
 
+            # When removing bundles we can ignore the ones that are not loaded
+            # It can happen if a previous install failed abruptely
+            if not resp and data == "Bundle not loaded":
+                resp = True
+                data = []
+
             if resp:
                 removed += data
                 shutil.rmtree(bundlepath)
