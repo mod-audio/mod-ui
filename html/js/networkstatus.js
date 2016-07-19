@@ -49,18 +49,26 @@ function NetworkStatus(options) {
                 setTimeout(self.ping, frequency)
             },
             error: function (resp, error) {
-                if (resp.status == 0 && $.active == 0) {
-                    if (error == "timeout") {
-                        switch (timedOutPhase) {
-                        case 1:
-                            desktop.blockUI()
-                            // fall-through
-                        case 0:
-                            timedOutPhase++;
-                            break;
+                if (resp.status == 0)
+                {
+                    if ($.active != 0)
+                    {
+                        timedOutPhase = 0
+                    }
+                    else
+                    {
+                        if (error == "timeout") {
+                            switch (timedOutPhase) {
+                            case 1:
+                                desktop.blockUI()
+                                // fall-through
+                            case 0:
+                                timedOutPhase++;
+                                break;
+                            }
+                        } else if (error == "error") {
+                            timedOutPhase = 3
                         }
-                    } else if (error == "error") {
-                        timedOutPhase = 3
                     }
                 }
                 self.status(false)
