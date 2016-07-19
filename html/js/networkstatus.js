@@ -28,22 +28,46 @@ function NetworkStatus(options) {
 
     var icon = options.icon
     var frequency = options.frequency
+    var timedOutPhase = 0
 
     this.ping = function () {
         var start = Date.now()
         $.ajax({
             url: '/ping',
+            cache: false,
             global: false,
-            success: function (result) {
-                var time = Date.now() - start - result.ihm_time
-                self.status(true, time, result.ihm_time)
+            success: function (resp) {
+                if (timedOutPhase >= 2) {
+                    location.reload()
+                    return
+                } else {
+                    timedOutPhase = 0
+                }
+
+                var time = Date.now() - start - resp.ihm_time
+                self.status(true, time, resp.ihm_time)
                 setTimeout(self.ping, frequency)
             },
-            error: function () {
+            error: function (resp, error) {
+                if (resp.status == 0 && $.active == 0) {
+                    if (error == "timeout") {
+                        switch (timedOutPhase) {
+                        case 1:
+                            desktop.blockUI()
+                            // fall-through
+                        case 0:
+                            timedOutPhase++;
+                            break;
+                        }
+                    } else if (error == "error") {
+                        timedOutPhase = 3
+                    }
+                }
                 self.status(false)
                 setTimeout(self.ping, frequency)
             },
-            dataType: 'json'
+            dataType: 'json',
+            timeout: frequency,
         })
     }
 
