@@ -501,22 +501,47 @@ function Desktop(elements) {
     this.loadRemotePedalboard = function (url) {
         self.windowManager.closeWindows()
 
-        self.reset(function () {
-            var transfer = new SimpleTransference(url, '/pedalboard/load_web/',
-                                                  { from_args: { headers:
-                                                  { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
-                                                  }})
+        var dataurl
+        if (url.x("/file")) {
+            dataurl = url.replace("/file","/")
+        } else {
+            // TODO
+            dataurl = url
+        }
 
-            transfer.reportFinished = function () {
-                self.pedalboardEmpty = false
-                self.pedalboardModified = true
-            }
+        $.ajax({
+            url: dataurl,
+            contentType: 'application/json',
+            success: function (resp) {
+                self.reset(function () {
+                    self.installMissingPlugins(resp.data.plugins, function (ok) {
+                        if (ok) {
+                            var transfer = new SimpleTransference(resp.file_href, '/pedalboard/load_web/',
+                                                                  { from_args: { headers:
+                                                                  { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
+                                                                  }})
 
-            transfer.reportError = function (error) {
-                new Bug("Couldn't load pedalboard, reason:<br/>" + error)
-            }
+                            transfer.reportFinished = function () {
+                                self.pedalboardEmpty = false
+                                self.pedalboardModified = true
+                            }
 
-            transfer.start()
+                            transfer.reportError = function (error) {
+                                new Bug("Couldn't load pedalboard, reason:<br/>" + error)
+                            }
+
+                            transfer.start()
+                        } else {
+                            self.pedalboard.data('wait').stop()
+                        }
+                    })
+                })
+            },
+            error: function (resp) {
+                  new Bug("Couldn't get pedalboard info, error:<br/>" + resp.statusText)
+            },
+            cache: false,
+            dataType: 'json'
         })
     },
 
