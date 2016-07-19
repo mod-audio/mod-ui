@@ -778,14 +778,14 @@ class PedalboardLoadBundle(JsonRequestHandler):
         })
 
 class PedalboardLoadRemote(RemoteRequestHandler):
-    def post(self):
-        url = self.get_argument("url")
+    def post(self, pedalboard_id):
+        print("PedalboardLoadRemote", pedalboard_id)
 
         if len(SESSION.websockets) == 0:
             self.write(False)
             return
 
-        SESSION.websockets[0].write_message("load-pb-remote " + url)
+        SESSION.websockets[0].write_message("load-pb-remote " + pedalboard_id)
         self.write(True)
 
 class PedalboardLoadWeb(SimpleFileReceiver):
@@ -1287,7 +1287,7 @@ application = web.Application(
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
-            (r"/pedalboard/load_remote/", PedalboardLoadRemote),
+            (r"/pedalboard/load_remote/*(/[A-Za-z0-9_/]+[^/])/?", PedalboardLoadRemote),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),

@@ -498,19 +498,11 @@ function Desktop(elements) {
         this.getPluginsData(uris, installMissing)
     },
 
-    this.loadRemotePedalboard = function (url) {
+    this.loadRemotePedalboard = function (pedalboard_id) {
         self.windowManager.closeWindows()
 
-        var dataurl
-        if (url.x("/file")) {
-            dataurl = url.replace("/file","/")
-        } else {
-            // TODO
-            dataurl = url
-        }
-
         $.ajax({
-            url: dataurl,
+            url: SITEURL + '/pedalboards/' + pedalboard_id,
             contentType: 'application/json',
             success: function (resp) {
                 self.reset(function () {
