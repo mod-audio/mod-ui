@@ -67,7 +67,7 @@ function NetworkStatus(options) {
                 setTimeout(self.ping, frequency)
             },
             dataType: 'json',
-            timeout: 4000,
+            timeout: frequency,
         })
     }
 
