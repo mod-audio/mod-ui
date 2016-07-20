@@ -3829,6 +3829,7 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
         {
             float fvalue = *(const float*)value;
             values->push_back({ true, strdup(portSymbol), fvalue });
+            return;
         }
         break;
 
@@ -3837,13 +3838,12 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
         {
             int32_t ivalue = *(const int32_t*)value;
             values->push_back({ true, strdup(portSymbol), (float)ivalue });
+            return;
         }
         break;
-
-    default:
-        printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
-        break;
     }
+
+    printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
 }
 
 StatePortValue* get_state_port_values(const char* const state)
