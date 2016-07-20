@@ -779,11 +779,12 @@ class PedalboardLoadBundle(JsonRequestHandler):
 
 class PedalboardLoadRemote(RemoteRequestHandler):
     def post(self, pedalboard_id):
-        print("PedalboardLoadRemote", pedalboard_id)
-
         if len(SESSION.websockets) == 0:
             self.write(False)
             return
+
+        if pedalboard_id[0] == '/':
+            pedalboard_id = pedalboard_id[1:]
 
         SESSION.websockets[0].write_message("load-pb-remote " + pedalboard_id)
         self.write(True)
