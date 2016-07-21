@@ -2296,7 +2296,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
     if (LilvNode* const node = lilv_plugin_get_name(p))
     {
         if (const char* const name = lilv_node_as_string(node))
-            info.title = strdup(name);
+            info.title = name[0] != '\0' ? strdup(name) : kUntitled;
         else
             info.title = kUntitled;
 
@@ -3339,7 +3339,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     if (LilvNode* const node = lilv_plugin_get_name(p))
     {
         if (const char* const name = lilv_node_as_string(node))
-            info.title = strdup(name);
+            info.title = name[0] != '\0' ? strdup(name) : kUntitled;
         else
             info.title = kUntitled;
 
