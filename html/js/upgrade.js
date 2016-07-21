@@ -29,6 +29,7 @@ JqueryClass('upgradeWindow', {
 
         self.data(options)
         self.data('updatedata', null)
+        self.data('updaterequired', false)
 
         options.icon.statusTooltip()
         options.icon.statusTooltip('message', 'Checking for updates...', true)
@@ -67,9 +68,16 @@ JqueryClass('upgradeWindow', {
             return
         }
 
+        var html = "Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
+                   "Released on " + data['release-date'].split('T')[0] + ".";
+
+        if (self.data('updaterequired')) {
+            html += "<br/><br/>" +
+                    "<b>This update is required!</b>";
+        }
+
         var p = self.find('.mod-upgrade-details').find('p')
-        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
-                     "Released on " + data['release-date'].split('T')[0] + ".")
+        $(p[0]).html(html)
 
         self.find('a').attr('href', data['release-url'])
 
@@ -89,11 +97,13 @@ JqueryClass('upgradeWindow', {
         var ignoreUpdate = (getCookie("auto-updated-canceled", "false") == "true")
 
         self.data('updatedata', data)
+        self.data('updaterequired', required)
         icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate, 8000)
         icon.statusTooltip('status', 'update-available')
 
-        if (required) {
-            // TODO
+        if (required && ! ignoreUpdate) {
+            self.upgradeWindow('open')
+            new Notification('warn', 'A required update is available.<br/>Please update.', 8000)
         }
     },
 
