@@ -699,17 +699,19 @@ function Desktop(elements) {
         recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
         share: function (data, callback) {
-            // save user data
-            $.ajax({
-                url: '/save_user_id/',
-                method: 'POST',
-                data: data,
-                success: function () {},
-                error: function () {},
-                cache: false,
-                global: false,
-                dataType: 'json',
-            })
+            if (! data.reauthorized) {
+                // save user data
+                $.ajax({
+                    url: '/save_user_id/',
+                    method: 'POST',
+                    data: data,
+                    success: function () {},
+                    error: function () {},
+                    cache: false,
+                    global: false,
+                    dataType: 'json',
+                })
+            }
 
             // pack & upload to cloud
             $.ajax({
@@ -730,6 +732,8 @@ function Desktop(elements) {
                                                           { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
                                                           }})
 
+                    transfer.reauthorizeUpload = desktop.authenticateDevice;
+
                     transfer.reportFinished = function (resp2) {
                         callback({
                             ok: true,
@@ -747,6 +751,25 @@ function Desktop(elements) {
                     transfer.start()
                 },
                 error: function (resp) {
+                    if (resp.status == 401 && ! data.reauthorized) {
+                        console.log("Pedalboard share unauthorized, retrying authentication...")
+                        data.reauthorized = true
+                        self.authenticateDevice(function (ok, options) {
+                            if (ok) {
+                                console.log("Authentication succeeded")
+                                self.options = $.extend(self.options, options)
+                                elements.shareWindow.shareBox('share', data, callback)
+                            } else {
+                                console.log("Authentication failed")
+                                callback({
+                                    ok: false,
+                                    error: resp.statusText
+                                })
+                            }
+                        })
+                        return;
+                    }
+
                     callback({
                         ok: false,
                         error: resp.statusText

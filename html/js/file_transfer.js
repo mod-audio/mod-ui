@@ -77,17 +77,26 @@ function SimpleTransference(from, to, options) {
                             }, options)
 
     this.request = null;
+
+    // download reauthorize
     this.reauthorize = null;
     this.reauthorized = false;
+
+    // upload reauthorize
+    this.reauthorizeUpload = null;
+    this.reauthorizedUpload = false;
 
     var self = this
 
     this.start = function () {
+        self.reauthorizedUpload = false
         var req = $.ajax($.extend({
             type: 'GET',
             url: self.origin,
             success: self.upload,
             dataType: 'binary',
+            cache: false,
+            global: false,
             error: function (resp) {
                 if (resp.status == 401 && self.reauthorize != null && ! self.reauthorized) {
                     console.log("[TRANSFERENCE] unauthorized, retrying authentication...")
@@ -123,10 +132,26 @@ function SimpleTransference(from, to, options) {
             success: self.success,
             processData: false,
             error: function (resp) {
+                if (resp.status == 401 && self.reauthorizeUpload != null && ! self.reauthorizedUpload) {
+                    console.log("[TRANSFERENCE] upload unauthorized, retrying authentication...")
+                    self.reauthorizedUpload = true
+                    self.reauthorizeUpload(function (ok, options) {
+                        if (ok) {
+                            console.log("[TRANSFERENCE] authentication succeeded")
+                            self.options = $.extend(self.options, options)
+                            self.upload()
+                        } else {
+                            console.log("[TRANSFERENCE] authentication failed")
+                            self.abort(resp.statusText)
+                        }
+                    })
+                    return;
+                }
                 self.abort(resp.statusText)
             },
             dataType: 'json',
-            cache: false
+            cache: false,
+            global: false,
         }, self.options.to_args))
         self.request = req
     }
