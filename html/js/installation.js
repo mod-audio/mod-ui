@@ -132,7 +132,7 @@ function InstallationQueue() {
                                            { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
                                            }})
 
-        trans.reauthorize = desktop.authenticateDevice;
+        trans.reauthorizeDownload = desktop.authenticateDevice;
 
         trans.reportPercentageStatus = function (percentage) {
             notification.bar(percentage*100)

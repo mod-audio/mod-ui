@@ -744,7 +744,7 @@ function Desktop(elements) {
                     transfer.reportError = function (error) {
                         callback({
                             ok: false,
-                            error: "Failed to upload pedalboard to cloud",
+                            error: "Failed to upload, reason:<br/>" + error,
                         })
                     }
 

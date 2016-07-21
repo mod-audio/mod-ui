@@ -79,8 +79,8 @@ function SimpleTransference(from, to, options) {
     this.request = null;
 
     // download reauthorize
-    this.reauthorize = null;
-    this.reauthorized = false;
+    this.reauthorizeDownload = null;
+    this.reauthorizedDownload = false;
 
     // upload reauthorize
     this.reauthorizeUpload = null;
@@ -98,10 +98,10 @@ function SimpleTransference(from, to, options) {
             cache: false,
             global: false,
             error: function (resp) {
-                if (resp.status == 401 && self.reauthorize != null && ! self.reauthorized) {
-                    console.log("[TRANSFERENCE] unauthorized, retrying authentication...")
-                    self.reauthorized = true
-                    self.reauthorize(function (ok, options) {
+                if (resp.status == 401 && self.reauthorizeDownload != null && ! self.reauthorizedDownload) {
+                    console.log("[TRANSFERENCE] download unauthorized, retrying authentication...")
+                    self.reauthorizedDownload = true
+                    self.reauthorizeDownload(function (ok, options) {
                         if (ok) {
                             console.log("[TRANSFERENCE] authentication succeeded")
                             self.options = $.extend(self.options, options)
@@ -123,7 +123,7 @@ function SimpleTransference(from, to, options) {
     }
 
     this.upload = function (file) {
-        self.reauthorized = false
+        self.reauthorizedDownload = false
         var req = $.ajax($.extend({
             method: 'POST',
             url: self.destination,
