@@ -173,28 +173,30 @@ function Desktop(elements) {
 
     this.cloudPluginListFunction = function (callback) {
         $.ajax({
-            'method': 'GET',
-            'url': '/effect/list',
-            'success': callback,
-            'dataType': 'json'
+            method: 'GET',
+            url: '/effect/list',
+            success: callback,
+            cache: false,
+            dataType: 'json',
         })
     }
 
     this.cloudPluginSearchFunction = function (query, callback) {
         $.ajax({
-            'method': 'GET',
-            'url': '/effect/search',
-            'query': query,
-            'success': callback,
-            'dataType': 'json'
+            method: 'GET',
+            url: '/effect/search',
+            query: query,
+            success: callback,
+            cache: false,
+            dataType: 'json'
         })
     }
 
     this.pedalboardListFunction = function (callback) {
         $.ajax({
-            'method': 'GET',
-            'url': '/pedalboard/list',
-            'success': function(pedals) {
+            method: 'GET',
+            url: '/pedalboard/list',
+            success: function(pedals) {
                 var allpedals = {}
                 for (var i=0; i<pedals.length; i++) {
                     var pedal = pedals[i]
@@ -209,7 +211,8 @@ function Desktop(elements) {
                 if (callback)
                     callback(pedals)
             },
-            'dataType': 'json'
+            cache: false,
+            dataType: 'json'
         })
     }
     this.pedalboardSearchFunction = function (local, query, callback) {
@@ -229,12 +232,13 @@ function Desktop(elements) {
         else
         {
             $.ajax({
-                'method': 'GET',
-                'url': SITEURL + '/pedalboard/search/?term=' + escape(query),
-                'success': function (pedals) {
+                method: 'GET',
+                url: SITEURL + '/pedalboard/search/?term=' + escape(query),
+                success: function (pedals) {
                     callback(pedalboards, SITEURL)
                 },
-                'dataType': 'json'
+                cache: false,
+                dataType: 'json'
             })
         }
     }
@@ -427,6 +431,7 @@ function Desktop(elements) {
             contentType: 'application/json',
             data: JSON.stringify(uris),
             success: callback,
+            cache: false,
             dataType: 'json'
         })
     }
@@ -557,6 +562,7 @@ function Desktop(elements) {
                     self.saveBox.hide()
                     new Bug("Couldn't save pedalboard")
                 },
+                cache: false,
                 dataType: 'json'
             });
         }
@@ -761,6 +767,7 @@ function Desktop(elements) {
                     error: function () {
                         callback(false)
                     },
+                    cache: false,
                     dataType: 'json'
                 })
             } else {
@@ -772,6 +779,7 @@ function Desktop(elements) {
                     error: function () {
                         callback(false)
                     },
+                    cache: false,
                     dataType: 'json'
                 })
             }
@@ -1200,6 +1208,7 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 error: function () {
                     new Bug("Couldn't save banks")
                 },
+                cache: false,
             })
         }
     })
