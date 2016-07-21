@@ -69,6 +69,8 @@ $.ajaxTransport("+binary", function(options, originalOptions, jqXHR){
     }
 });
 
+var isInstallingPackage = false
+
 function SimpleTransference(from, to, options) {
     this.origin = from.replace(/\/?$/, '/')
     this.destination = to.replace(/\/?$/, '/')
@@ -89,6 +91,7 @@ function SimpleTransference(from, to, options) {
     var self = this
 
     this.start = function () {
+        isInstallingPackage = true
         self.reauthorizedUpload = false
         var req = $.ajax($.extend({
             type: 'GET',
@@ -161,10 +164,12 @@ function SimpleTransference(from, to, options) {
     }
 
     this.success = function (resp) {
+        isInstallingPackage = false
         self.reportFinished(resp)
     }
 
     this.abort = function (error) {
+        isInstallingPackage = false
         for (var i in self.requests) {
             self.requests[i].abort()
         }
