@@ -153,7 +153,9 @@ function InstallationQueue() {
         }
 
         trans.reportFinished = function (resp) {
-            var result = resp.result
+            var localcallbacks = [callback],
+                result = resp.result
+
             if (result.ok)
             {
                 queue.shift()
@@ -162,6 +164,20 @@ function InstallationQueue() {
                 notification.html(installationMsg + ' - OK!')
                 notification.bar(0)
                 notification.type('success')
+
+                // check for duplicates
+                var duplicated = []
+                for (var i in queue) {
+                    if (JSON.stringify(queue[i]) === JSON.stringify(bundle)) {
+                        duplicated.push(i)
+                    }
+                }
+                // reverse order so we can pop from queue
+                duplicated.reverse()
+                for (var i in duplicated) {
+                    queue.pop(i)
+                    localcallbacks.push(callbacks.pop(i))
+                }
 
                 if (queue.length > 0) {
                     self.installNext()
@@ -187,7 +203,9 @@ function InstallationQueue() {
                 desktop.updateAllPlugins()
             }
 
-            callback(result, bundle.name)
+            for (var i in localcallbacks) {
+                localcallbacks[i](result, bundle.name)
+            }
         }
 
         trans.start()
