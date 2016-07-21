@@ -173,28 +173,30 @@ function Desktop(elements) {
 
     this.cloudPluginListFunction = function (callback) {
         $.ajax({
-            'method': 'GET',
-            'url': '/effect/list',
-            'success': callback,
-            'dataType': 'json'
+            method: 'GET',
+            url: '/effect/list',
+            success: callback,
+            cache: false,
+            dataType: 'json',
         })
     }
 
     this.cloudPluginSearchFunction = function (query, callback) {
         $.ajax({
-            'method': 'GET',
-            'url': '/effect/search',
-            'query': query,
-            'success': callback,
-            'dataType': 'json'
+            method: 'GET',
+            url: '/effect/search',
+            query: query,
+            success: callback,
+            cache: false,
+            dataType: 'json'
         })
     }
 
     this.pedalboardListFunction = function (callback) {
         $.ajax({
-            'method': 'GET',
-            'url': '/pedalboard/list',
-            'success': function(pedals) {
+            method: 'GET',
+            url: '/pedalboard/list',
+            success: function(pedals) {
                 var allpedals = {}
                 for (var i=0; i<pedals.length; i++) {
                     var pedal = pedals[i]
@@ -209,7 +211,8 @@ function Desktop(elements) {
                 if (callback)
                     callback(pedals)
             },
-            'dataType': 'json'
+            cache: false,
+            dataType: 'json'
         })
     }
     this.pedalboardSearchFunction = function (local, query, callback) {
@@ -229,12 +232,13 @@ function Desktop(elements) {
         else
         {
             $.ajax({
-                'method': 'GET',
-                'url': SITEURL + '/pedalboard/search/?term=' + escape(query),
-                'success': function (pedals) {
+                method: 'GET',
+                url: SITEURL + '/pedalboard/search/?term=' + escape(query),
+                success: function (pedals) {
                     callback(pedalboards, SITEURL)
                 },
-                'dataType': 'json'
+                cache: false,
+                dataType: 'json'
             })
         }
     }
@@ -427,6 +431,7 @@ function Desktop(elements) {
             contentType: 'application/json',
             data: JSON.stringify(uris),
             success: callback,
+            cache: false,
             dataType: 'json'
         })
     }
@@ -557,6 +562,7 @@ function Desktop(elements) {
                     self.saveBox.hide()
                     new Bug("Couldn't save pedalboard")
                 },
+                cache: false,
                 dataType: 'json'
             });
         }
@@ -693,17 +699,19 @@ function Desktop(elements) {
         recordReset: ajaxFactory('/recording/reset', "Can't reset your recording. Probably a connection problem."),
 
         share: function (data, callback) {
-            // save user data
-            $.ajax({
-                url: '/save_user_id/',
-                method: 'POST',
-                data: data,
-                success: function () {},
-                error: function () {},
-                cache: false,
-                global: false,
-                dataType: 'json',
-            })
+            if (! data.reauthorized) {
+                // save user data
+                $.ajax({
+                    url: '/save_user_id/',
+                    method: 'POST',
+                    data: data,
+                    success: function () {},
+                    error: function () {},
+                    cache: false,
+                    global: false,
+                    dataType: 'json',
+                })
+            }
 
             // pack & upload to cloud
             $.ajax({
@@ -724,6 +732,8 @@ function Desktop(elements) {
                                                           { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
                                                           }})
 
+                    transfer.reauthorizeUpload = desktop.authenticateDevice;
+
                     transfer.reportFinished = function (resp2) {
                         callback({
                             ok: true,
@@ -734,13 +744,32 @@ function Desktop(elements) {
                     transfer.reportError = function (error) {
                         callback({
                             ok: false,
-                            error: "Failed to upload pedalboard to cloud",
+                            error: "Failed to upload pedalboard to cloud (missing screenshot?)",
                         })
                     }
 
                     transfer.start()
                 },
                 error: function (resp) {
+                    if (resp.status == 401 && ! data.reauthorized) {
+                        console.log("Pedalboard share unauthorized, retrying authentication...")
+                        data.reauthorized = true
+                        self.authenticateDevice(function (ok, options) {
+                            if (ok) {
+                                console.log("Authentication succeeded")
+                                self.options = $.extend(self.options, options)
+                                elements.shareWindow.shareBox('share', data, callback)
+                            } else {
+                                console.log("Authentication failed")
+                                callback({
+                                    ok: false,
+                                    error: resp.statusText
+                                })
+                            }
+                        })
+                        return;
+                    }
+
                     callback({
                         ok: false,
                         error: resp.statusText
@@ -761,6 +790,7 @@ function Desktop(elements) {
                     error: function () {
                         callback(false)
                     },
+                    cache: false,
                     dataType: 'json'
                 })
             } else {
@@ -772,6 +802,7 @@ function Desktop(elements) {
                     error: function () {
                         callback(false)
                     },
+                    cache: false,
                     dataType: 'json'
                 })
             }
@@ -1200,6 +1231,7 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 error: function () {
                     new Bug("Couldn't save banks")
                 },
+                cache: false,
             })
         }
     })

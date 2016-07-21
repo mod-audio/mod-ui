@@ -433,6 +433,8 @@ static const char* const kStabilityStable = "stable";
 static const char* const kStabilityTesting = "testing";
 static const char* const kStabilityUnstable = "unstable";
 
+static const char* const kUntitled = "Untitled";
+
 // label, render, symbol
 static const char* const kUnit_s[] = { "seconds", "%f s", "s" };
 static const char* const kUnit_ms[] = { "milliseconds", "%f ms", "ms" };
@@ -2294,15 +2296,15 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
     if (LilvNode* const node = lilv_plugin_get_name(p))
     {
         if (const char* const name = lilv_node_as_string(node))
-            info.title = strdup(name);
+            info.title = name[0] != '\0' ? strdup(name) : kUntitled;
         else
-            info.title = nc;
+            info.title = kUntitled;
 
         lilv_node_free(node);
     }
     else
     {
-        info.title = nc;
+        info.title = kUntitled;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -2537,7 +2539,7 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
 
 static void _clear_pedalboard_info(PedalboardInfo& info)
 {
-    if (info.title != nc)
+    if (info.title != nc && info.title != kUntitled)
         free((void*)info.title);
 
     if (info.connections != nullptr)
@@ -2622,7 +2624,7 @@ static void _clear_pedalboards()
 
         free((void*)info->uri);
         free((void*)info->bundle);
-        if (info->title != nc)
+        if (info->title != nc && info->title != kUntitled)
             free((void*)info->title);
 
         delete info;
@@ -3337,15 +3339,15 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     if (LilvNode* const node = lilv_plugin_get_name(p))
     {
         if (const char* const name = lilv_node_as_string(node))
-            info.title = strdup(name);
+            info.title = name[0] != '\0' ? strdup(name) : kUntitled;
         else
-            info.title = nc;
+            info.title = kUntitled;
 
         lilv_node_free(node);
     }
     else
     {
-        info.title = nc;
+        info.title = kUntitled;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -3829,6 +3831,7 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
         {
             float fvalue = *(const float*)value;
             values->push_back({ true, strdup(portSymbol), fvalue });
+            return;
         }
         break;
 
@@ -3837,13 +3840,12 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
         {
             int32_t ivalue = *(const int32_t*)value;
             values->push_back({ true, strdup(portSymbol), (float)ivalue });
+            return;
         }
         break;
-
-    default:
-        printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
-        break;
     }
+
+    printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
 }
 
 StatePortValue* get_state_port_values(const char* const state)

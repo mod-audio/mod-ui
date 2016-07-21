@@ -20,17 +20,15 @@ function waitFor(testFx, onReady, timeOutMillis) {
                 condition = (typeof(testFx) === "string" ? eval(testFx) : testFx()); //< defensive code
             } else {
                 if(!condition) {
-                    // If condition still not fulfilled (timeout but condition is 'false')
-                    console.log("'waitFor()' timeout");
-                    phantom.exit(1);
+                    console.log("'waitFor()' timed out");
                 } else {
-                    // Condition fulfilled (timeout and/or condition is 'true')
                     console.log("'waitFor()' finished in " + (new Date().getTime() - start) + "ms.");
-                    typeof(onReady) === "string" ? eval(onReady) : onReady(); //< Do what it's supposed to do once the condition is fulfilled
-                    clearInterval(interval); //< Stop this interval
                 }
+
+                typeof(onReady) === "string" ? eval(onReady) : onReady(); //< Do what it's supposed to do once the condition is fulfilled
+                clearInterval(interval); //< Stop this interval
             }
-        }, 250); //< repeat check every 250ms
+        }, 500); //< repeat check every 500ms
 };
 
 var page = require('webpage').create(),
@@ -65,7 +63,7 @@ function waitTwice(step, callback) {
         } else {
             callback()
         }
-    }, 10000)
+    }, 30000)
 }
 
 if (system.args.length != 5) {

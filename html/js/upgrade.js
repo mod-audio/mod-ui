@@ -29,6 +29,7 @@ JqueryClass('upgradeWindow', {
 
         self.data(options)
         self.data('updatedata', null)
+        self.data('updaterequired', false)
 
         options.icon.statusTooltip()
         options.icon.statusTooltip('message', 'Checking for updates...', true)
@@ -67,9 +68,16 @@ JqueryClass('upgradeWindow', {
             return
         }
 
+        var html = "Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
+                   "Released on " + data['release-date'].split('T')[0] + ".";
+
+        if (self.data('updaterequired')) {
+            html += "<br/><br/>" +
+                    "<b>This update is required!</b>";
+        }
+
         var p = self.find('.mod-upgrade-details').find('p')
-        $(p[0]).html("Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
-                     "Released on " + data['release-date'].split('T')[0] + ".")
+        $(p[0]).html(html)
 
         self.find('a').attr('href', data['release-url'])
 
@@ -79,21 +87,23 @@ JqueryClass('upgradeWindow', {
     close: function () {
         $(this).hide()
 
-        setCookie("auto-updated-canceled", "true", 15)
+        setCookie("auto-updated-canceled_" + VERSION, "true", 15)
     },
 
     setup: function (required, data) {
         var self = $(this)
         var icon = self.data('icon')
 
-        var ignoreUpdate = (getCookie("auto-updated-canceled", "false") == "true")
+        var ignoreUpdate = (getCookie("auto-updated-canceled_" + VERSION, "false") == "true")
 
         self.data('updatedata', data)
-        icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate, 8000)
+        self.data('updaterequired', required)
+        icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate || required, 8000)
         icon.statusTooltip('status', 'update-available')
 
-        if (required) {
-            // TODO
+        if (required && ! ignoreUpdate) {
+            self.upgradeWindow('open')
+            new Notification('warn', 'A required update is available.<br/>Please update.', 8000)
         }
     },
 
@@ -128,7 +138,7 @@ JqueryClass('upgradeWindow', {
             self.find('.progressbar').width(self.find('.progressbar-wrapper').width() * percentage)
 
             if (percentage == 1) {
-                self.find('.download-start').text("Preparing update...")
+                self.find('.download-start').text("Preparing update... (may take a few minutes)")
             }
         }
 
