@@ -87,18 +87,18 @@ JqueryClass('upgradeWindow', {
     close: function () {
         $(this).hide()
 
-        setCookie("auto-updated-canceled", "true", 15)
+        setCookie("auto-updated-canceled_" + window.location.search.replace("?", ""), "true", 15)
     },
 
     setup: function (required, data) {
         var self = $(this)
         var icon = self.data('icon')
 
-        var ignoreUpdate = (getCookie("auto-updated-canceled", "false") == "true")
+        var ignoreUpdate = (getCookie("auto-updated-canceled_" + window.location.search.replace("?", ""), "false") == "true")
 
         self.data('updatedata', data)
         self.data('updaterequired', required)
-        icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate, 8000)
+        icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate || required, 8000)
         icon.statusTooltip('status', 'update-available')
 
         if (required && ! ignoreUpdate) {
