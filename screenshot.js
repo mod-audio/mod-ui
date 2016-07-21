@@ -28,7 +28,7 @@ function waitFor(testFx, onReady, timeOutMillis) {
                 typeof(onReady) === "string" ? eval(onReady) : onReady(); //< Do what it's supposed to do once the condition is fulfilled
                 clearInterval(interval); //< Stop this interval
             }
-        }, 250); //< repeat check every 250ms
+        }, 500); //< repeat check every 500ms
 };
 
 var page = require('webpage').create(),
