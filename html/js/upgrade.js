@@ -128,7 +128,7 @@ JqueryClass('upgradeWindow', {
             self.find('.progressbar').width(self.find('.progressbar-wrapper').width() * percentage)
 
             if (percentage == 1) {
-                self.find('.download-start').text("Preparing update... (will take a few seconds)")
+                self.find('.download-start').text("Preparing update... (may take a few minutes)")
             }
         }
 
