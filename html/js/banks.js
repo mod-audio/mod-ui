@@ -290,7 +290,7 @@ JqueryClass('bankBox', {
         }
 
         if(pedalboards.children().length == 0)
-            new Notification('warning', 'This bank is empty - drag pedalboards from the right panel')
+            new Notification('warning', 'This bank is empty - drag pedalboards from the right panel', 5000)
 
         canvas.append(bank.data('pedalboards').children())
 
