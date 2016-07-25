@@ -3796,14 +3796,21 @@ int* get_pedalboard_size(const char* const bundle)
 
 // --------------------------------------------------------------------------------------------------------
 
+// note: these ids must match the ones on the mapping (see 'kMapping')
+static const uint32_t k_urid_null        =  0;
+static const uint32_t k_urid_atom_int    =  1;
+static const uint32_t k_urid_atom_long   =  2;
+static const uint32_t k_urid_atom_float  =  3;
+
 static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
 {
     if (uri_ == nullptr || uri_[0] == '\0')
         return 0;
 
     static std::vector<std::string> kMapping = {
-        LV2_ATOM__Float,
         LV2_ATOM__Int,
+        LV2_ATOM__Long,
+        LV2_ATOM__Float,
     };
 
     const std::string uri(uri_);
@@ -3826,20 +3833,29 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
 
     switch (type)
     {
-    case 1:
-        if (size == sizeof(float))
-        {
-            float fvalue = *(const float*)value;
-            values->push_back({ true, strdup(portSymbol), fvalue });
-            return;
-        }
-        break;
-
-    case 2:
+    case k_urid_atom_int:
         if (size == sizeof(int32_t))
         {
             int32_t ivalue = *(const int32_t*)value;
             values->push_back({ true, strdup(portSymbol), (float)ivalue });
+            return;
+        }
+        break;
+
+    case k_urid_atom_long:
+        if (size == sizeof(int64_t))
+        {
+            int64_t ivalue = *(const int64_t*)value;
+            values->push_back({ true, strdup(portSymbol), (float)ivalue });
+            return;
+        }
+        break;
+
+    case k_urid_atom_float:
+        if (size == sizeof(float))
+        {
+            float fvalue = *(const float*)value;
+            values->push_back({ true, strdup(portSymbol), fvalue });
             return;
         }
         break;
