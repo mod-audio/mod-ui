@@ -831,7 +831,7 @@ class Host(object):
     def preset_save_new(self, instance, name, callback):
         instance_id  = self.mapper.get_id_without_creating(instance)
         plugin_uri   = self.plugins[instance_id]['uri']
-        symbolname   = symbolify(name)
+        symbolname   = symbolify(name)[:32]
         presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
 
         if os.path.exists(presetbundle):
@@ -868,7 +868,7 @@ class Host(object):
     def preset_save_replace(self, instance, uri, bundlepath, name, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         plugin_uri  = self.plugins[instance_id]['uri']
-        symbolname  = symbolify(name)
+        symbolname  = symbolify(name)[:32]
 
         if self.plugins[instance_id]['preset'] != uri or not os.path.exists(bundlepath):
             callback({
@@ -1165,7 +1165,7 @@ class Host(object):
         return self.pedalboard_name
 
     def save(self, title, asNew):
-        titlesym = symbolify(title)
+        titlesym = symbolify(title)[:16]
 
         # Save over existing bundlepath
         if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and not asNew:
@@ -1959,7 +1959,7 @@ _:b%i
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
-        pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper(), pb['bundle']) for pb in pedalboards)
+        pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper()[:31], pb['bundle']) for pb in pedalboards)
         callback(True, pedalboards)
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
