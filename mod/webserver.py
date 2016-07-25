@@ -931,7 +931,7 @@ class TemplateHandler(web.RequestHandler):
         # 1. If we don't have a version parameter, redirect
         curVersion = self.get_version()
         try:
-            version = self.get_argument('v')
+            version = tornado.escape.url_escape(self.get_argument('v'))
         except web.MissingArgumentError:
             uri  = self.request.uri
             uri += '&' if self.request.query else '?'
