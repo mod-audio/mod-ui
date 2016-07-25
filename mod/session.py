@@ -226,6 +226,8 @@ class Session(object):
 
     # Delete previous recording, if any
     def web_recording_delete(self):
+        self.player.stop()
+
         if self.recordhandle is not None:
             self.recordhandle.close()
             self.recordhandle = None
