@@ -422,14 +422,15 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('cleanResults')
 
         // sort plugins by label
-        var alower, blower
         plugins.sort(function (a, b) {
-            alower = a.label.toLowerCase()
-            blower = b.label.toLowerCase()
-            if (alower > blower)
+            a = a.label.toLowerCase()
+            b = b.label.toLowerCase()
+            if (a > b) {
                 return 1
-            if (alower < blower)
+            }
+            if (a < b) {
                 return -1
+            }
             return 0
         })
 
