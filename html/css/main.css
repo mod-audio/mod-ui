@@ -6623,11 +6623,13 @@ button.close {
 #bank-library #bank-pedalboards .pedalboard {
   color: #fff;
   cursor: -webkit-grab !important;
+  cursor: grab !important;
   width: 100%;
   transition: all 0.33s;
 }
 #bank-library #bank-pedalboards .pedalboard:active {
   cursor: -webkit-grabbing !important;
+  cursor: grabbing !important;
 }
 #bank-library #bank-pedalboards .pedalboard:hover {
   background-color: #883996;
@@ -6789,11 +6791,13 @@ button.close {
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
   cursor: -webkit-grab;
+  cursor: grab;
   margin: 0px 20px 20px 10px;
   transition: all 0.33s;
 }
 #bank-pedalboards-result .pedalboard:active {
   cursor: -webkit-grabbing !important;
+  cursor: grabbing !important;
 }
 #bank-pedalboards-result .pedalboard:hover {
   background-color: #883996;
@@ -7116,6 +7120,7 @@ body {
 }
 .ui-draggable:active {
   cursor: -webkit-grabbing !important;
+  cursor: grabbing !important;
 }
 .form-control {
   width: 100% !important;
@@ -7870,6 +7875,7 @@ header#pedalboard-actions {
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .thumb:active {
   cursor: -webkit-grabbing !important;
+  cursor: grabbing !important;
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .thumb img {
   height: auto;
@@ -8356,6 +8362,7 @@ header#pedalboard-actions {
 .drag-handle {
   bottom: 0;
   cursor: -webkit-grabbing !important;
+  cursor: grabbing !important;
   left: 0;
   position: absolute;
   right: 0;
