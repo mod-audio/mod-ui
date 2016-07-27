@@ -382,31 +382,6 @@ function Desktop(elements) {
         })
     }
 
-    this.enableDevFeatures = function () {
-        // TODO: pedalboard presets
-        //$("#pedalboard-actions").find(".js-preset").show()
-
-        // enable non-stable plugins
-        $("#cloud-plugins-stable").parent().show()
-
-        // show install/update all plugins
-        $('#cloud_install_all').show()
-        $('#cloud_update_all').show()
-
-        // show network and controller ping times
-        $('#mod-status').show()
-        elements.statusIcon.statusTooltip('updatePosition')
-
-        // show xrun counter
-        $('#mod-xruns').show()
-
-        // show buffer size button
-        $('#mod-buffersize').show()
-
-        // echo to you
-        return "Dev mode enabled!"
-    }
-
     this.setupApp = function () {
         self.isApp = true
         $('#mod-bypassLeft').hide()
@@ -1513,3 +1488,27 @@ JqueryClass('statusTooltip', {
         tooltip.css('right', $(window).width() - self.position().left - self.width())
     }
 })
+
+function enable_dev_mode() {
+    // TODO: pedalboard presets
+    //$("#pedalboard-actions").find(".js-preset").show()
+
+    // enable non-stable plugins, NOT!
+    //$("#cloud-plugins-stable").parent().show()
+
+    // show install/update all plugins
+    $('#cloud_install_all').show()
+    $('#cloud_update_all').show()
+
+    // show network and controller ping times
+    $('#mod-status').show().statusTooltip('updatePosition')
+
+    // show xrun counter
+    $('#mod-xruns').show()
+
+    // show buffer size button
+    $('#mod-buffersize').show()
+
+    // echo to you
+    return "Dev mode enabled!"
+}
