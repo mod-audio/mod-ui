@@ -243,15 +243,21 @@ function Desktop(elements) {
         }
     }
 
-    this.blockUI = function () {
+    this.blockUI = function (isUpdating) {
         if ($('body').find('.screen-disconnected').length != 0) {
             return
         }
         var block = $('<div class="screen-disconnected blocker">')
-        block.html('<p>Disconnected</p>')
-        var re = $("<div class='button icon'>Reload</div>").appendTo(block);
-        re.css("background-image", "url(img/icons/25/reload.png)");
-        re.click(function () { location.reload(); });
+
+        if (isUpdating) {
+            block.html('<p>Auto-update in progress, please wait...</p>')
+        } else {
+            block.html('<p>Disconnected</p>')
+            var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+            re.css("background-image", "url(img/icons/25/reload.png)");
+            re.click(function () { location.reload(); });
+        }
+
         $('body').append(block).css('overflow', 'hidden')
         $('#wrapper').css('z-index', -1)
         $('#plugins-library').css('z-index', -1)

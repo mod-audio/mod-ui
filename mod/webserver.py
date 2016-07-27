@@ -284,12 +284,16 @@ class UpdateBegin(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        if os.path.exists(UPDATE_FILE):
-            ok = yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
-        else:
-            ok = False
+        if not os.path.exists(UPDATE_FILE):
+            self.write(False)
+            return
 
-        self.write(ok)
+        # write & finish before sending message
+        self.write(True)
+
+        # send message asap, but not quite right now
+        yield gen.Task(self.flush, False)
+        yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
 
 class EffectInstaller(SimpleFileReceiver):
     destination_dir = DOWNLOAD_TMP_DIR

@@ -172,7 +172,7 @@ JqueryClass('upgradeWindow', {
 
         self.data('startUpgrade')(function (ok) {
             if (ok) {
-                desktop.blockUI()
+                desktop.blockUI(true)
             } else {
                 new Bug("Failed to start upgrade")
             }
