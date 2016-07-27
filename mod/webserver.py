@@ -149,6 +149,19 @@ def install_package(bundlename, callback):
     ioloop = tornado.ioloop.IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
 
+def move_file(src, dst, callback):
+    proc = subprocess.Popen(['mv', src, dst],
+                            stdout=subprocess.PIPE)
+
+    def end_move(fileno, event):
+        if proc.poll() is None:
+            return
+        ioloop.remove_handler(fileno)
+        callback()
+
+    ioloop = tornado.ioloop.IOLoop.instance()
+    ioloop.add_handler(proc.stdout.fileno(), end_move, 16)
+
 class JsonRequestHandler(web.RequestHandler):
     def write(self, data):
         # FIXME: something is sending strings out, need to investigate what later..
@@ -275,10 +288,14 @@ class UpdateDownload(SimpleFileReceiver):
     @web.asynchronous
     @gen.engine
     def process_file(self, data, callback=lambda:None):
+        self.sfr_callback = callback
+
         # TODO: verify checksum?
-        shutil.move(os.path.join(self.destination_dir, data['filename']), UPDATE_FILE)
+        move_file(os.path.join(self.destination_dir, data['filename']), UPDATE_FILE, self.move_file_finished)
+
+    def move_file_finished(self):
         self.result = True
-        callback()
+        self.sfr_callback()
 
 class UpdateBegin(JsonRequestHandler):
     @web.asynchronous
