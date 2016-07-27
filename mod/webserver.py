@@ -1063,7 +1063,7 @@ class Ping(JsonRequestHandler):
         else:
             resp = {
                 'ihm_online': False,
-                'ihm_time'  : int(start * 1000),
+                'ihm_time'  : 0,
             }
 
         self.write(resp)
