@@ -243,15 +243,21 @@ function Desktop(elements) {
         }
     }
 
-    this.blockUI = function () {
+    this.blockUI = function (isUpdating) {
         if ($('body').find('.screen-disconnected').length != 0) {
             return
         }
         var block = $('<div class="screen-disconnected blocker">')
-        block.html('<p>Disconnected</p>')
-        var re = $("<div class='button icon'>Reload</div>").appendTo(block);
-        re.css("background-image", "url(img/icons/25/reload.png)");
-        re.click(function () { location.reload(); });
+
+        if (isUpdating) {
+            block.html('<p>Auto-update in progress, please wait...</p>')
+        } else {
+            block.html('<p>Disconnected</p>')
+            var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+            re.css("background-image", "url(img/icons/25/reload.png)");
+            re.click(function () { location.reload(); });
+        }
+
         $('body').append(block).css('overflow', 'hidden')
         $('#wrapper').css('z-index', -1)
         $('#plugins-library').css('z-index', -1)
@@ -380,31 +386,6 @@ function Desktop(elements) {
             cache: false,
             dataType: 'json'
         })
-    }
-
-    this.enableDevFeatures = function () {
-        // TODO: pedalboard presets
-        //$("#pedalboard-actions").find(".js-preset").show()
-
-        // enable non-stable plugins
-        $("#cloud-plugins-stable").parent().show()
-
-        // show install/update all plugins
-        $('#cloud_install_all').show()
-        $('#cloud_update_all').show()
-
-        // show network and controller ping times
-        $('#mod-status').show()
-        elements.statusIcon.statusTooltip('updatePosition')
-
-        // show xrun counter
-        $('#mod-xruns').show()
-
-        // show buffer size button
-        $('#mod-buffersize').show()
-
-        // echo to you
-        return "Dev mode enabled!"
     }
 
     this.setupApp = function () {
@@ -1513,3 +1494,27 @@ JqueryClass('statusTooltip', {
         tooltip.css('right', $(window).width() - self.position().left - self.width())
     }
 })
+
+function enable_dev_mode() {
+    // TODO: pedalboard presets
+    //$("#pedalboard-actions").find(".js-preset").show()
+
+    // enable non-stable plugins, NOT!
+    //$("#cloud-plugins-stable").parent().show()
+
+    // show install/update all plugins
+    $('#cloud_install_all').show()
+    $('#cloud_update_all').show()
+
+    // show network and controller ping times
+    $('#mod-status').show().statusTooltip('updatePosition')
+
+    // show xrun counter
+    $('#mod-xruns').show()
+
+    // show buffer size button
+    $('#mod-buffersize').show()
+
+    // echo to you
+    return "Dev mode enabled!"
+}

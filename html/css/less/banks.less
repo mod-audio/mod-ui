@@ -300,10 +300,12 @@ input::selection {
   .pedalboard {
     color: #fff;
     cursor: -webkit-grab !important;
+    cursor: grab !important;
     width: 100%;
     transition: all 0.33s;
     &:active {
       cursor: -webkit-grabbing !important;
+      cursor: grabbing !important;
     }
     &:hover {
         background-color: @brand-primary;
@@ -480,10 +482,12 @@ input::selection {
     color: #fff;
     background: rgba(255,255,255,0.07);
     cursor: -webkit-grab;
+    cursor: grab;
     margin: 0px 20px 20px 10px;
     transition: all 0.33s;
     &:active {
       cursor: -webkit-grabbing !important;
+      cursor: grabbing !important;
     }
     &:hover {
         background-color: @brand-primary;

@@ -219,10 +219,14 @@ JqueryClass('effectBox', {
         var self = $(this)
         self.effectBox('cleanResults')
         plugins.sort(function (a, b) {
-            if (a.label > b.label)
+            a = a.label.toLowerCase()
+            b = b.label.toLowerCase()
+            if (a > b) {
                 return 1
-            if (a.label < b.label)
+            }
+            if (a < b) {
                 return -1
+            }
             return 0
         })
 
