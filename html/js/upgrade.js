@@ -121,6 +121,16 @@ JqueryClass('upgradeWindow', {
 
         icon.statusTooltip('message', "System is up-to-date", true)
         icon.statusTooltip('status', 'uptodate')
+
+        var date = new Date()
+        var d = date.getDay(),
+            m = date.getMonth();
+
+        if (m == 12 && (d == 24 || d == 25)) {
+            setTimeout(function() {
+                new Notification('warn', 'The MOD Team wishes you happy holidays!', 8000)
+            }, 5000)
+        }
     },
 
     downloadStart: function () {
