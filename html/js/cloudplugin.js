@@ -178,7 +178,8 @@ JqueryClass('cloudPluginBox', {
     searchAll: function (query, customRenderCallback) {
         var self = $(this)
         var results = {}
-        var cplugin, lplugin;
+        var cplugin, lplugin,
+            cloudReached = false
 
         renderResults = function () {
             var plugins = []
@@ -234,7 +235,7 @@ JqueryClass('cloudPluginBox', {
             if (customRenderCallback) {
                 customRenderCallback(plugins)
             } else {
-                self.cloudPluginBox('showPlugins', plugins)
+                self.cloudPluginBox('showPlugins', plugins, cloudReached)
             }
         }
 
@@ -244,6 +245,7 @@ JqueryClass('cloudPluginBox', {
             url: SITEURL + "/lv2/plugins",
             data: query,
             success: function (plugins) {
+                cloudReached = true
                 results.cloud = plugins
                 if (results.local != null) {
                     renderResults()
@@ -305,7 +307,8 @@ JqueryClass('cloudPluginBox', {
     searchInstalled: function (query, customRenderCallback) {
         var self = $(this)
         var results = {}
-        var cplugin, lplugin
+        var cplugin, lplugin,
+            cloudReached = false
 
         renderResults = function () {
             var plugins = []
@@ -320,6 +323,7 @@ JqueryClass('cloudPluginBox', {
                 }
 
                 if (cplugin) {
+                    lplugin.stable        = cplugin.stable
                     lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
@@ -329,6 +333,7 @@ JqueryClass('cloudPluginBox', {
                     }
                 } else {
                     lplugin.latestVersion = null
+                    lplugin.stable = false
                     lplugin.status = 'installed'
                 }
 
@@ -347,7 +352,7 @@ JqueryClass('cloudPluginBox', {
             if (customRenderCallback) {
                 customRenderCallback(plugins)
             } else {
-                self.cloudPluginBox('showPlugins', plugins)
+                self.cloudPluginBox('showPlugins', plugins, cloudReached)
             }
         }
 
@@ -362,6 +367,7 @@ JqueryClass('cloudPluginBox', {
                 for (var i in plugins) {
                     cplugins[plugins[i].uri] = plugins[i]
                 }
+                cloudReached = true
                 results.cloud = cplugins
                 if (results.local != null)
                     renderResults()
@@ -417,7 +423,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    showPlugins: function (plugins) {
+    showPlugins: function (plugins, cloudReached) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
@@ -447,7 +453,7 @@ JqueryClass('cloudPluginBox', {
         for (var i in plugins) {
             plugin   = plugins[i]
             category = plugin.category[0]
-            render   = self.cloudPluginBox('renderPlugin', plugin)
+            render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached)
 
             pluginsDict[plugin.uri] = plugin
 
@@ -481,7 +487,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    renderPlugin: function (plugin) {
+    renderPlugin: function (plugin, cloudReached) {
         var self = $(this)
         var uri = escape(plugin.uri)
         var comment = plugin.comment.trim()
@@ -497,13 +503,30 @@ JqueryClass('cloudPluginBox', {
             comment: comment,
             status: plugin.status,
             brand : plugin.brand,
-            label : plugin.label
+            label : plugin.label,
+            stable: !!(plugin.stable || !cloudReached),
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin)
         })
+
+        if (!plugin_data.stable) {
+            var rpos
+            switch (plugin.status) {
+            case "outdated":
+                rpos = '80px'
+                break
+            case "blocked":
+                rpos = '87px'
+                break
+            default: // installed
+                rpos = '68px'
+                break
+            }
+            rendered.find(".unstable").css({right:rpos})
+        }
 
         return rendered
     },
@@ -579,7 +602,7 @@ JqueryClass('cloudPluginBox', {
             plugin.installedVersion = plugin.latestVersion
 
             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
-            newElem = self.cloudPluginBox('renderPlugin', plugin)
+            newElem = self.cloudPluginBox('renderPlugin', plugin, true)
             oldElem.replaceWith(newElem)
         }
 
@@ -600,7 +623,7 @@ JqueryClass('cloudPluginBox', {
                 delete plugin.bundles
                 delete plugin.installedVersion
 
-                newElem = self.cloudPluginBox('renderPlugin', plugin)
+                newElem = self.cloudPluginBox('renderPlugin', plugin, true)
                 oldElem.replaceWith(newElem)
 
             } else {
