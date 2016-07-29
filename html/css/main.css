@@ -5770,9 +5770,8 @@ button.close {
   content: "not installed";
 }
 .cloud-plugins .cloud-plugin .status.unstable {
-  border: 1px solid red;
-  background-color: red;
-  color: #212121;
+  border: 1px solid #FF2927;
+  background-color: #FF2927;
 }
 .cloud-plugins .cloud-plugin .status.unstable:after {
   content: "unstable";
