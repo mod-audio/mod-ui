@@ -54,7 +54,7 @@
         margin-left: 10px;
       }
       .control-group {
-        
+
       }
       .control-group select {
         width: 50px;
@@ -122,10 +122,10 @@
   }
   .cloud-plugins {
     @gradient1: rgba(17,17,17,0);
-    @gradient2: rgba(17,17,17,1);        
+    @gradient2: rgba(17,17,17,1);
     @gradient3: fade(@gradient4, 0%);
     @gradient4: #212121;
-    left: 240px;    
+    left: 240px;
     position: fixed;
     right: 0;
     top: 45px;
@@ -252,6 +252,14 @@
          color: @brand-warning;
          &:after {
            content: "not installed";
+         }
+       }
+       .status.unstable {
+         border: 1px solid red;
+         background-color: red;
+         color: #212121;
+         &:after {
+           content: "unstable";
          }
        }
 
