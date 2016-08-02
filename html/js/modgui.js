@@ -55,14 +55,18 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
         baseUrl.replace(/\/?$/, '')
     }
 
+    var version    = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
+    var escapeduri = escape(effect.uri)
+    var plughash   = escapeduri + version
+
     if (effect.gui.iconTemplate) {
-        if (loadedIcons[effect.uri]) {
-            effect.gui.iconTemplate = loadedIcons[effect.uri]
+        if (loadedIcons[plughash]) {
+            effect.gui.iconTemplate = loadedIcons[plughash]
         } else {
             iconLoaded = false
-            var iconUrl = baseUrl + '/effect/icon.html?uri=' + escape(effect.uri)
+            var iconUrl = baseUrl + '/effect/icon.html?uri=' + escapeduri + '&ver=' + version
             $.get(iconUrl, function (data) {
-                effect.gui.iconTemplate = loadedIcons[effect.uri] = data
+                effect.gui.iconTemplate = loadedIcons[plughash] = data
                 iconLoaded = true
                 cb()
             })
@@ -70,40 +74,40 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
     }
 
     if (effect.gui.settingsTemplate) {
-        if (loadedSettings[effect.uri]) {
-            effect.gui.settingsTemplate = loadedSettings[effect.uri]
+        if (loadedSettings[plughash]) {
+            effect.gui.settingsTemplate = loadedSettings[plughash]
         } else {
             settingsLoaded = false
-            var settingsUrl = baseUrl + '/effect/settings.html?uri=' + escape(effect.uri)
+            var settingsUrl = baseUrl + '/effect/settings.html?uri=' + escapeduri + '&ver=' + version
             $.get(settingsUrl, function (data) {
-                effect.gui.settingsTemplate = loadedSettings[effect.uri] = data
+                effect.gui.settingsTemplate = loadedSettings[plughash] = data
                 settingsLoaded = true
                 cb()
             })
         }
     }
 
-    if (effect.gui.stylesheet && !loadedCSSs[effect.uri]) {
+    if (effect.gui.stylesheet && !loadedCSSs[plughash]) {
         cssLoaded = false
-        var cssUrl = baseUrl + '/effect/stylesheet.css?uri=' + escape(effect.uri)
+        var cssUrl = baseUrl + '/effect/stylesheet.css?uri=' + escapeduri + '&ver=' + version
         $.get(cssUrl, function (data) {
               data = Mustache.render(data, {
-                         ns : '?uri=' + escape(effect.uri),
-                         cns: '_' + escape(effect.uri).split("/").join("_").split("%").join("_").split(".").join("_")
+                         ns : '?uri=' + escapeduri + '&ver=' + version,
+                         cns: '_' + escapeduri.split("/").join("_").split("%").join("_").split(".").join("_") + version
                      })
             $('<style type="text/css">').text(data).appendTo($('head'))
-            loadedCSSs[effect.uri] = true
+            loadedCSSs[plughash] = true
             cssLoaded = true
             cb()
         })
     }
 
     if (effect.gui.javascript) {
-        if (loadedJSs[effect.uri]) {
-            gui.jsCallback = loadedJSs[effect.uri]
+        if (loadedJSs[plughash]) {
+            gui.jsCallback = loadedJSs[plughash]
         } else {
             jsLoaded = false
-            var jsUrl = baseUrl + '/effect/gui.js?uri=' + escape(effect.uri)
+            var jsUrl = baseUrl + '/effect/gui.js?uri=' + escapeduri + '&ver=' + version
             $.ajax({
                 url: jsUrl,
                 success: function (code) {
@@ -114,7 +118,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
                         method = null
                         console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin")
                     }
-                    loadedJSs[effect.uri] = method
+                    loadedJSs[plughash] = method
                     gui.jsCallback = method
                     jsLoaded = true
                     cb()
@@ -979,27 +983,30 @@ function GUI(effect, options) {
         var data = $.extend({}, options.gui.templateData)
         data.effect = options
 
+        var version    = [options.builder, options.microVersion, options.minorVersion, options.release].join('_')
+        var escapeduri = escape(options.uri)
+
         if (skipNamespace) {
             data.ns  = ''
             data.cns = '_sdk'
         } else {
-            data.ns  = '?uri=' + escape(options.uri)
-            data.cns = '_' + escape(options.uri).split("/").join("_").split("%").join("_").split(".").join("_")
+            data.ns  = '?uri=' + escapeduri + '&ver=' + version,
+            data.cns = '_' + escapeduri.split("/").join("_").split("%").join("_").split(".").join("_") + version
         }
 
         // fill fields that might not be present on modgui data
         if (!data.brand)
-            data.brand = effect.gui.brand || ""
+            data.brand = options.gui.brand || ""
         if (!data.label)
-            data.label = effect.gui.label || ""
+            data.label = options.gui.label || ""
         if (!data.color)
-            data.color = effect.gui.color
+            data.color = options.gui.color
         if (!data.knob)
-            data.knob = effect.gui.knob
+            data.knob = options.gui.knob
         if (!data.model)
-            data.model = effect.gui.model
+            data.model = options.gui.model
         if (!data.panel)
-            data.panel = effect.gui.panel
+            data.panel = options.gui.panel
         if (!data.controls)
             data.controls = options.gui.ports || {}
 
