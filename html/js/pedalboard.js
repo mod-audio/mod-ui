@@ -174,9 +174,20 @@ JqueryClass('pedalboard', {
         self.data('topmargin', self.offset().top)
 
         if (! options.skipAnimations) {
-            $(window).resize(function () {
-                self.pedalboard('fitToWindow')
-            })
+            var resizeTimeout;
+
+            function resizeThrottler() {
+                if (resizeTimeout) {
+                    clearTimeout(resizeTimeout);
+                }
+                resizeTimeout = setTimeout(function() {
+                    resizeTimeout = null;
+                    self.pedalboard('fitToWindow');
+                }, 250);
+            }
+
+            window.addEventListener("resize", resizeThrottler, false);
+            //$(window).resize(resizeThrottler)
         }
 
         // Create background element to catch dropped jacks
@@ -377,8 +388,9 @@ JqueryClass('pedalboard', {
 
             self.data('bypassApplication', false)
             setTimeout(function () {
-                self.pedalboard('fitToWindow')
-                self.pedalboard('adapt')
+                if (! self.pedalboard('fitToWindow')) {
+                    self.pedalboard('adapt')
+                }
                 ourCallback()
             }, 1)
         }
@@ -666,17 +678,18 @@ JqueryClass('pedalboard', {
         })
 
         var zoom = self.data('currentZoom')
-        if (!zoom)
-            return
+        if (!zoom) {
+            return false
+        }
 
         zoom.screenX = zoom.screenX * self.width() / old.width
         zoom.screenY = zoom.screenY * self.height() / old.height
 
-        self.pedalboard('zoom', zoom.scale, zoom.canvasX, zoom.canvasY, zoom.screenX, zoom.screenY, 0)
-
         self.data('windowSize')(self.width(), self.height())
+        self.pedalboard('zoom', Math.min(self.data('scale'), scale), zoom.canvasX, zoom.canvasY, zoom.screenX, zoom.screenY, 0)
+        self.pedalboard('adapt')
 
-        self.pedalboard('scheduleAdapt')
+        return true
     },
 
     // Prevents dragging of whole dashboard when dragging of effect or jack starts
@@ -898,10 +911,11 @@ JqueryClass('pedalboard', {
         if (maxY > h)
             hDif += maxY - h
 
-
+        /*
         if (wDif == 0 && hDif == 0)
         // nothing has changed
             return
+        */
 
         var scale = self.data('scale')
 
