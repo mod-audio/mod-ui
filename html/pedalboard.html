@@ -41,6 +41,7 @@
       $('document').ready(function() {
           var el = $('#pedalboard-dashboard').pedalboard({
              baseScale: 1,
+             skipAnimations: true,
              getPluginsData: function(uris, callback) {
                  $.ajax({
                      url: '/effect/bulk/',

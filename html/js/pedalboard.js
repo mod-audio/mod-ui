@@ -24,6 +24,9 @@ JqueryClass('pedalboard', {
             baseScale: 0.5,
             // maxScale is the maximum zoom.
             maxScale: 1,
+            // wherever to skip zoom animations
+            skipAnimations: false,
+
             // WindowManager instance
             windowManager: new WindowManager(),
             // HardwareManager instance, must be specified
@@ -170,9 +173,11 @@ JqueryClass('pedalboard', {
         self.data('vmargins', $(window).height() - self.parent().height())
         self.data('topmargin', self.offset().top)
 
-        $(window).resize(function () {
-            self.pedalboard('fitToWindow')
-        })
+        if (! options.skipAnimations) {
+            $(window).resize(function () {
+                self.pedalboard('fitToWindow')
+            })
+        }
 
         // Create background element to catch dropped jacks
         // Must be much bigger than screen, so that nothing can be
@@ -372,6 +377,7 @@ JqueryClass('pedalboard', {
 
             self.data('bypassApplication', false)
             setTimeout(function () {
+                self.pedalboard('fitToWindow')
                 self.pedalboard('adapt')
                 ourCallback()
             }, 1)
@@ -501,7 +507,12 @@ JqueryClass('pedalboard', {
             uris.push(data.plugins[i].uri)
 
         if (data.width > 0 && data.height > 0) {
-            // TODO: set initial window size
+            // FIXME: finish this
+            self.css({
+                width: data.width,
+                height: data.height,
+                position: 'absolute'
+            })
         }
 
         self.data('getPluginsData')(uris, loadPlugin)
@@ -643,8 +654,6 @@ JqueryClass('pedalboard', {
             height: self.height()
         }
 
-        var scale = self.data('baseScale')
-
         self.parent().css({
             width: $(window).width() - self.data('hmargins'),
             height: $(window).height() - self.data('vmargins')
@@ -746,8 +755,12 @@ JqueryClass('pedalboard', {
         self.data('offsetX', offsetX)
         self.data('offsetY', offsetY)
 
-        if (duration == null)
+        if (self.data('skipAnimations')) {
+            duration = 0
+        } else if (duration == null) {
             duration == 400
+        }
+
         self.animate({
             scale: scale,
             top: offsetY,
@@ -902,7 +915,7 @@ JqueryClass('pedalboard', {
         else if (ratio < w / h) // increse height to keep ratio
             h = w / ratio
 
-        var time = 400
+        var time = self.data('skipAnimations') ? 0 : 400
 
         // Move animate everything: move plugins, scale and position
         // canvas
@@ -969,6 +982,10 @@ JqueryClass('pedalboard', {
 
     scheduleAdapt: function () {
         var self = $(this)
+
+        if (self.data('skipAnimations')) {
+            return
+        }
 
         var callAdaptLater = function () {
             var curTime2 = self.data('adaptTime')
