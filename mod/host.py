@@ -538,10 +538,14 @@ class Host(object):
     def mute(self):
         disconnect_jack_ports("mod-host:monitor-out_1", "system:playback_1")
         disconnect_jack_ports("mod-host:monitor-out_2", "system:playback_2")
+        disconnect_jack_ports("mod-host:monitor-out_1", "mod-peakmeter:in_3")
+        disconnect_jack_ports("mod-host:monitor-out_2", "mod-peakmeter:in_4")
 
     def unmute(self):
         connect_jack_ports("mod-host:monitor-out_1", "system:playback_1")
         connect_jack_ports("mod-host:monitor-out_2", "system:playback_2")
+        connect_jack_ports("mod-host:monitor-out_1", "mod-peakmeter:in_3")
+        connect_jack_ports("mod-host:monitor-out_2", "mod-peakmeter:in_4")
 
     def report_current_state(self, websocket):
         if websocket is None:
