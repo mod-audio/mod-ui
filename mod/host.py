@@ -526,7 +526,7 @@ class Host(object):
         self.writesock.read_until(b"\0", check_response)
 
     def send(self, msg, callback, datatype='int'):
-        if msg.split(" ",1)[0] not in ("bundle_add", "bundle_remove"):
+        if not self.pedalboard_modified and msg.split(" ",1)[0] not in ("bundle_add", "bundle_remove", "midi_program_listen"):
             self.pedalboard_modified = True
         self._queue.append((msg, callback, datatype))
         if self._idle:
