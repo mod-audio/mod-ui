@@ -46,8 +46,7 @@ class Player(object):
         fhandle.seek(0)
         with open(PLAYBACK_PATH, 'wb') as fh:
             fh.write(fhandle.read())
-        self.proc = subprocess.Popen(['sndfile-jackplay', '-a', 'mod-host:monitor-in_%d', PLAYBACK_PATH],
-                                      stdout=subprocess.PIPE)
+        self.proc = subprocess.Popen(['sndfile-jackplay', PLAYBACK_PATH], stdout=subprocess.PIPE)
         self.fhandle = fhandle
         self.stop_callback = stop_callback
         ioloop.IOLoop().instance().add_handler(self.proc.stdout.fileno(), self.end_callback, 16)
