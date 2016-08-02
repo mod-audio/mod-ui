@@ -32,9 +32,6 @@ API_KEY = os.environ.pop('MOD_API_KEY', '/usr/share/mod/keys/mod_api_key.pub')
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
-KEYPATH = os.environ.pop('MOD_KEY_PATH', '/root/keys')
-DEVICE_SERIAL = os.environ.pop('MOD_DEVICE_SERIAL', join(KEYPATH, 'serial'))
-DEVICE_MODEL = os.environ.pop('MOD_DEVICE_MODEL', join(KEYPATH, 'model'))
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
