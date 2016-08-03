@@ -1012,13 +1012,22 @@ class Host(object):
 
     def disconnect(self, port_from, port_to, callback):
         def host_callback(ok):
-            callback(ok)
-            if ok:
-                try:
-                    self.connections.remove((port_from, port_to))
-                except:
-                    pass
-                self.msg_callback("disconnect %s %s" % (port_from, port_to))
+            # always return true. disconnect failures are not fatal, but still print error for debugging
+            callback(True)
+
+            if not ok:
+                print("ERROR: disconnect '%s' => '%s' failed" % (port_from, port_to))
+                return
+
+            try:
+                self.connections.remove((port_from, port_to))
+            except:
+                print("Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
+
+            self.msg_callback("disconnect %s %s" % (port_from, port_to))
+
+        if len(self.connections) == 0:
+            return host_callback(True)
 
         # If the plugin or port don't exist, assume disconnected
         try:
@@ -1033,8 +1042,7 @@ class Host(object):
             print("Requested '%s' target port doesn't exist, assume disconnected" % port_to)
             return host_callback(True)
 
-        # all ok, let's begin
-        self.send("disconnect %s %s" % (port_from_2, port_to_2), host_callback, datatype='boolean')
+        host_callback(disconnect_jack_ports(port_from_2, port_to_2))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save

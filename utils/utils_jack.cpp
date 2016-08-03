@@ -340,16 +340,35 @@ bool has_serial_midi_output_port(void)
 
 // --------------------------------------------------------------------------------------------------------
 
-void connect_jack_ports(const char* port1, const char* port2)
+bool connect_jack_ports(const char* port1, const char* port2)
 {
     if (gClient != nullptr)
-        jack_connect(gClient, port1, port2);
+        return false;
+
+    int ret;
+
+    ret = jack_connect(gClient, port1, port2);
+    if (ret == 0 || ret == EEXIST)
+        return true;
+
+    ret = jack_connect(gClient, port2, port1);
+    if (ret == 0 || ret == EEXIST)
+        return true;
+
+    return false;
 }
 
-void disconnect_jack_ports(const char* port1, const char* port2)
+bool disconnect_jack_ports(const char* port1, const char* port2)
 {
     if (gClient != nullptr)
-        jack_disconnect(gClient, port1, port2);
+        return false;
+
+    if (jack_disconnect(gClient, port1, port2) == 0)
+        return true;
+    if (jack_disconnect(gClient, port2, port1) == 0)
+        return true;
+
+    return false;
 }
 
 void reset_xruns(void)

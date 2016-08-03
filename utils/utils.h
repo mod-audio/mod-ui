@@ -296,8 +296,8 @@ MOD_API const char* get_jack_port_alias(const char* portname);
 MOD_API const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput);
 MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
-MOD_API void connect_jack_ports(const char* port1, const char* port2);
-MOD_API void disconnect_jack_ports(const char* port1, const char* port2);
+MOD_API bool connect_jack_ports(const char* port1, const char* port2);
+MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);
 MOD_API void reset_xruns(void);
 
 // alsa stuff

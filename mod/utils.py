@@ -461,10 +461,10 @@ utils.get_jack_hardware_ports.argtypes = [c_bool, c_bool]
 utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
 
 utils.connect_jack_ports.argtypes = [c_char_p, c_char_p]
-utils.connect_jack_ports.restype  = None
+utils.connect_jack_ports.restype  = c_bool
 
 utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
-utils.disconnect_jack_ports.restype  = None
+utils.disconnect_jack_ports.restype  = c_bool
 
 utils.reset_xruns.argtypes = None
 utils.reset_xruns.restype  = None
@@ -625,10 +625,10 @@ def get_jack_hardware_ports(isAudio, isOutput):
     return charPtrPtrToStringList(utils.get_jack_hardware_ports(isAudio, isOutput))
 
 def connect_jack_ports(port1, port2):
-    utils.connect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8"))
+    return bool(utils.connect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
 
 def disconnect_jack_ports(port1, port2):
-    utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8"))
+    return bool(utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
 
 def reset_xruns():
     utils.reset_xruns()
