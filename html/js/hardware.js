@@ -423,6 +423,10 @@ function HardwareManager(options) {
 
                     instanceAndSymbol = addressing.instance+"/"+addressing.port
 
+                    if (self.addressingsByActuator[uri].indexOf(instanceAndSymbol) >= 0) {
+                        continue
+                    }
+
                     self.addressingsByActuator  [uri].push(instanceAndSymbol)
                     self.addressingsByPortSymbol[instanceAndSymbol] = uri
                     self.addressingsData        [instanceAndSymbol] = {
@@ -509,10 +513,7 @@ function HardwareManager(options) {
 
             for (j in HARDWARE_PROFILE.actuators) {
                 actuator = HARDWARE_PROFILE.actuators[j]
-                index    = self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol)
-                if (index >= 0) {
-                    self.addressingsByActuator[actuator.uri].splice(index, 1)
-                }
+                remove_from_array(self.addressingsByActuator[actuator.uri], instanceAndSymbol)
             }
         }
     }
