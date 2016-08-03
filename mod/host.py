@@ -1211,7 +1211,8 @@ class Host(object):
         titlesym = symbolify(title)[:16]
 
         # Save over existing bundlepath
-        if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and not asNew:
+        if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and \
+            self.pedalboard_path.startswith(LV2_PEDALBOARDS_DIR) and not asNew:
             bundlepath = self.pedalboard_path
 
         # Save new
