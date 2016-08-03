@@ -1001,8 +1001,15 @@ JqueryClass('pedalboard', {
             return
         }
 
+        var firstTime = document.readyState != "complete"
+
         var callAdaptLater = function () {
             var curTime2 = self.data('adaptTime')
+
+            if (firstTime && document.readyState == "complete") {
+                curTime2  = 0
+                firstTime = false
+            }
 
             if (curTime2 <= 0) {
                 // proceed
@@ -1024,11 +1031,11 @@ JqueryClass('pedalboard', {
 
         if (curTime == 0) {
             // first time, setup everything
-            self.data('adaptTime', 101)
+            self.data('adaptTime', firstTime ? 201 : 101)
             setTimeout(callAdaptLater, 1)
         } else {
             // not first time, increase timer
-            self.data('adaptTime', curTime+5)
+            self.data('adaptTime', curTime+1)
         }
     },
 
