@@ -1014,6 +1014,7 @@ class Host(object):
         def host_callback(ok):
             # always return true. disconnect failures are not fatal, but still print error for debugging
             callback(True)
+            self.msg_callback("disconnect %s %s" % (port_from, port_to))
 
             if not ok:
                 print("ERROR: disconnect '%s' => '%s' failed" % (port_from, port_to))
@@ -1023,8 +1024,6 @@ class Host(object):
                 self.connections.remove((port_from, port_to))
             except:
                 print("Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
-
-            self.msg_callback("disconnect %s %s" % (port_from, port_to))
 
         if len(self.connections) == 0:
             return host_callback(True)
