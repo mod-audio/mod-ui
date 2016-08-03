@@ -342,7 +342,7 @@ bool has_serial_midi_output_port(void)
 
 bool connect_jack_ports(const char* port1, const char* port2)
 {
-    if (gClient != nullptr)
+    if (gClient == nullptr)
         return false;
 
     int ret;
@@ -360,7 +360,7 @@ bool connect_jack_ports(const char* port1, const char* port2)
 
 bool disconnect_jack_ports(const char* port1, const char* port2)
 {
-    if (gClient != nullptr)
+    if (gClient == nullptr)
         return false;
 
     if (jack_disconnect(gClient, port1, port2) == 0)
