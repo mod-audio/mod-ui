@@ -142,10 +142,9 @@ JqueryClass('cloudPluginBox', {
     },
     checkLocalScreenshot: function (plugin) {
         if (plugin.status == 'installed') {
-            var uri = escape(plugin.uri)
-            var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
-
             if (plugin.gui) {
+                var uri = escape(plugin.uri)
+                var ver = plugin.installedVersion.join('_')
                 plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
                 plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
             } else {
@@ -343,7 +342,7 @@ JqueryClass('cloudPluginBox', {
                 // we're showing installed only, so prefer to show installed modgui screenshot
                 if (lplugin.gui) {
                     var uri = escape(lplugin.uri)
-                    var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
+                    var ver = [lplugin.builder, lplugin.microVersion, lplugin.minorVersion, lplugin.release].join('_')
 
                     lplugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
                     lplugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
