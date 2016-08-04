@@ -2116,6 +2116,14 @@ _:b%i
             self.send("bypass %d %d" % (instance_id, 1 if bypassed else 0), lambda r:None)
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
+            addressing = pluginData['addressing'].get(":bypass", None)
+            if addressing is not None and addressing['actuator_uri'] not in used_actuators:
+                used_actuators.append(addressing['actuator_uri'])
+
+            addressing = pluginData['addressing'].get(":presets", None)
+            if addressing is not None and addressing['actuator_uri'] not in used_actuators:
+                used_actuators.append(addressing['actuator_uri'])
+
             if p['preset']:
                 preset = p['preset']
                 pluginData['preset'] = preset
