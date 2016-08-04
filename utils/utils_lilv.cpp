@@ -3975,11 +3975,18 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
                   if (strstr(portsymbol, full_instance) != nullptr)
                       memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
 
-                  ports[portCount++] = {
-                      true,
-                      portsymbol,
-                      lilv_node_as_float(portvalue)
-                  };
+                  if (strcmp(portsymbol, ":bypass") == 0)
+                  {
+                      lilv_free(portsymbol);
+                  }
+                  else
+                  {
+                      ports[portCount++] = {
+                          true,
+                          portsymbol,
+                          lilv_node_as_float(portvalue)
+                      };
+                  }
 
                   lilv_node_free(portvalue);
             }

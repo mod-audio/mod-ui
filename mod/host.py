@@ -2110,11 +2110,11 @@ _:b%i
             instance_id = self.mapper.get_id(instance)
             pluginData  = self.plugins[instance_id]
 
-            bypass = 1 if p['bypassed'] else 0
-            pluginData['bypassed'] = bool(bypass)
+            bypassed = bool(p['bypassed'])
+            pluginData['bypassed'] = bypassed
 
-            self.send("bypass %d %d" % (instance_id, bypass), lambda r:None)
-            self.msg_callback("param_set %d :bypass %d" % (instance_id, bypass))
+            self.send("bypass %d %d" % (instance_id, 1 if bypassed else 0), lambda r:None)
+            self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             if p['preset']:
                 preset = p['preset']
