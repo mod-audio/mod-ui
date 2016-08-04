@@ -140,11 +140,14 @@ JqueryClass('cloudPluginBox', {
             $(this).html($(this).html().split(/\s/)[0])
         });
     },
-    checkLocalScreenshot: function(plugin) {
+    checkLocalScreenshot: function (plugin) {
         if (plugin.status == 'installed') {
+            var uri = escape(plugin.uri)
+            var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
+
             if (plugin.gui) {
-                plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + escape(plugin.uri)
-                plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + escape(plugin.uri)
+                plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
+                plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
             } else {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
@@ -339,8 +342,11 @@ JqueryClass('cloudPluginBox', {
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
                 if (lplugin.gui) {
-                    lplugin.screenshot_href = "/effect/image/screenshot.png?uri=" + escape(lplugin.uri)
-                    lplugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + escape(lplugin.uri)
+                    var uri = escape(lplugin.uri)
+                    var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
+
+                    lplugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
+                    lplugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
                 } else {
                     lplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                     lplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"

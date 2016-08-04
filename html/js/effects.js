@@ -306,13 +306,14 @@ JqueryClass('effectBox', {
         if (container.length == 0)
             return
         var uri = escape(plugin.uri)
+        var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
 
         var plugin_data = {
             uri   : uri,
             brand : plugin.brand,
             label : plugin.label,
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                          ? ("/effect/image/thumbnail.png?uri=" + uri)
+                          ? ("/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
         }
 
@@ -363,14 +364,16 @@ JqueryClass('effectBox', {
                 }
             }
 
+            var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
+
             var metadata = {
                 author: plugin.author,
                 uri: plugin.uri,
                 thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                              ? "/effect/image/thumbnail.png?uri=" + uri
+                              ? "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
                               : "/resources/pedals/default-thumbnail.png",
                 screenshot_href: (plugin.gui && plugin.gui.screenshot)
-                              ? "/effect/image/screenshot.png?uri=" + uri
+                              ? "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
                               : "/resources/pedals/default-screenshot.png",
                 category: plugin.category[0] || "None",
                 installed_version: version(plugin.installedVersion),
