@@ -208,9 +208,8 @@ class Host(object):
         Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
         #Protocol.register_cmd_callback("tuner", self.tuner_set)
         #Protocol.register_cmd_callback("tuner_input", self.tuner_set_input)
-        #Protocol.register_cmd_callback("pedalboard_save", self.save_current_pedalboard)
-        #Protocol.register_cmd_callback("pedalboard_reset", self.reset_current_pedalboard)
-        #Protocol.register_cmd_callback("jack_cpu_load", self.jack_cpu_load)
+        Protocol.register_cmd_callback("pedalboard_save", self.hmi_save_current_pedalboard)
+        Protocol.register_cmd_callback("pedalboard_reset", self.hmi_reset_current_pedalboard)
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -1258,6 +1257,11 @@ class Host(object):
         return bundlepath
 
     def save_state_to_ttl(self, bundlepath, title, titlesym):
+        self.save_state_manifest(bundlepath, titlesym)
+        self.save_state_addressings(bundlepath)
+        self.save_state_mainfile(bundlepath, title, titlesym)
+
+    def save_state_manifest(self, bundlepath, titlesym):
         # Write manifest.ttl
         with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
             fh.write("""\
@@ -1274,12 +1278,14 @@ class Host(object):
     rdfs:seeAlso <%s.ttl> .
 """ % (titlesym, titlesym))
 
+    def save_state_addressings(self, bundlepath):
         # Write addressings.json
         addressings = self.get_addressings()
 
         with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
             json.dump(addressings, fh)
 
+    def save_state_mainfile(self, bundlepath, title, titlesym):
         # Create list of midi in/out ports
         midiportsIn  = []
         midiportsOut = []
@@ -2085,6 +2091,15 @@ _:b%i
         logging.info("hmi parameter addressing next")
         actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator_hw, callback)
+
+    def hmi_save_current_pedalboard(self):
+        logging.info("hmi save current pedalboard")
+        titlesym = symbolify(self.pedalboard_name)[:16]
+        self.save_state_mainfile(self, self.pedalboard_path, self.pedalboard_name, titlesym)
+
+    def hmi_reset_current_pedalboard(self):
+        logging.info("hmi reset current pedalboard")
+        # TODO
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
