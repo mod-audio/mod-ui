@@ -288,9 +288,9 @@ class PedalboardPluginPort(Structure):
 class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("bypassed", c_bool),
         ("instance", c_char_p),
         ("uri", c_char_p),
-        ("bypassed", c_bool),
         ("bypassCC", PedalboardMidiControl),
         ("x", c_float),
         ("y", c_float),
@@ -348,6 +348,15 @@ class StatePortValue(Structure):
         ("valid", c_bool),
         ("symbol", c_char_p),
         ("value", c_float),
+    ]
+
+class PedalboardPluginValues(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("bypassed", c_bool),
+        ("instance", c_char_p),
+        ("preset", c_char_p),
+        ("ports", POINTER(StatePortValue)),
     ]
 
 class JackData(Structure):
@@ -420,6 +429,9 @@ utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
 utils.get_pedalboard_size.argtypes = [c_char_p]
 utils.get_pedalboard_size.restype  = POINTER(c_int)
+
+utils.get_pedalboard_plugin_values.argtypes = [c_char_p]
+utils.get_pedalboard_plugin_values.restype  = POINTER(PedalboardPluginValues)
 
 utils.get_state_port_values.argtypes = [c_char_p]
 utils.get_state_port_values.restype  = POINTER(StatePortValue)
@@ -560,6 +572,11 @@ def get_pedalboard_size(bundle):
     width  = int(size[0])
     height = int(size[1])
     return (width, height)
+
+# Get plugin port values of a pedalboard
+# NOTE: may throw
+def get_pedalboard_plugin_values(bundle):
+    return structPtrToList(utils.get_pedalboard_plugin_values(bundle.encode("utf-8")))
 
 # Get port values from a plugin state
 def get_state_port_values(state):

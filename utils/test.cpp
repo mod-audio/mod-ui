@@ -60,6 +60,7 @@ void scanPlugins()
 
             get_pedalboard_info(pedalboards[i]->bundle);
             get_pedalboard_size(pedalboards[i]->bundle);
+            get_pedalboard_plugin_values(pedalboards[i]->bundle);
         }
     }
 #endif

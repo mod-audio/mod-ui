@@ -40,7 +40,7 @@ from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import (charPtrToString,
                        is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
                        get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
-                       get_all_pedalboards,
+                       get_all_pedalboards, get_pedalboard_plugin_values,
                        init_jack, close_jack, get_jack_data,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
@@ -1881,6 +1881,7 @@ _:b%i
             addressing = addressings_addrs[addressings_idx]
         except IndexError:
             print("Failed to get addressing for", actuator_uri)
+            callback(False)
             return
 
         actuator_hw = self._uri2hw_map[actuator_uri]
@@ -2092,14 +2093,53 @@ _:b%i
         actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
         self._address_next(actuator_hw, callback)
 
-    def hmi_save_current_pedalboard(self):
+    def hmi_save_current_pedalboard(self, callback):
         logging.info("hmi save current pedalboard")
         titlesym = symbolify(self.pedalboard_name)[:16]
-        self.save_state_mainfile(self, self.pedalboard_path, self.pedalboard_name, titlesym)
+        self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
+        callback(True)
 
-    def hmi_reset_current_pedalboard(self):
+    @gen.coroutine
+    def hmi_reset_current_pedalboard(self, callback):
         logging.info("hmi reset current pedalboard")
-        # TODO
+        pb_values = get_pedalboard_plugin_values(self.pedalboard_path)
+        used_actuators = []
+
+        for p in pb_values:
+            instance    = "/graph/%s" % p['instance']
+            instance_id = self.mapper.get_id(instance)
+            pluginData  = self.plugins[instance_id]
+
+            bypass = 1 if p['bypassed'] else 0
+            pluginData['bypassed'] = bool(bypass)
+
+            self.send("bypass %d %d" % (instance_id, bypass), lambda r:None)
+            self.msg_callback("param_set %d :bypass %d" % (instance_id, bypass))
+
+            if p['preset']:
+                preset = p['preset']
+                pluginData['preset'] = preset
+                self.send("preset_load %d %s" % (instance_id, preset), lambda r:None)
+                self.msg_callback("preset %s %s" % (instance, preset))
+
+            for port in p['ports']:
+                symbol = port['symbol']
+                value  = port['value']
+
+                pluginData['ports'][symbol] = value
+                self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
+
+                if symbol not in pluginData['badports']:
+                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+
+                addressing = pluginData['addressing'].get(symbol, None)
+                if addressing is not None and addressing['actuator_uri'] not in used_actuators:
+                    used_actuators.append(addressing['actuator_uri'])
+
+        callback(True)
+
+        for actuator_uri in used_actuators:
+            yield gen.Task(self._addressing_load, actuator_uri)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

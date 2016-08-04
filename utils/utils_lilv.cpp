@@ -2341,6 +2341,7 @@ static PedalboardInfo_Mini** _pedals_ret = nullptr;
 static PedalboardInfo* _pedal_ret;
 static int _plug_lastsize = 0;
 static const char** _bundles_ret = nullptr;
+static const PedalboardPluginValues* _pb_values_ret = nullptr;
 static StatePortValue* _state_ret = nullptr;
 static char* _uri_parsed = nullptr;
 
@@ -2634,6 +2635,32 @@ static void _clear_pedalboards()
     _pedals_ret = nullptr;
 }
 
+static void _clear_pedalboard_plugin_values()
+{
+    if (_pb_values_ret == nullptr)
+        return;
+
+    for (int i=0; _pb_values_ret[i].valid; ++i)
+    {
+        const PedalboardPluginValues& pvals(_pb_values_ret[i]);
+
+        free((void*)pvals.instance);
+
+        if (pvals.preset != nc)
+            free((void*)pvals.preset);
+
+        if (pvals.ports != nullptr)
+        {
+            for (int j=0; pvals.ports[j].valid; ++j)
+                lilv_free((void*)pvals.ports[j].symbol);
+            delete[] pvals.ports;
+        }
+    }
+
+    delete[] _pb_values_ret;
+    _pb_values_ret = nullptr;
+}
+
 static void _clear_state_values()
 {
     if (_state_ret == nullptr)
@@ -2740,6 +2767,7 @@ void cleanup(void)
     }
 
     _clear_pedalboards();
+    _clear_pedalboard_plugin_values();
     _clear_state_values();
 }
 
@@ -3452,6 +3480,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               {
                                   bypassCC.channel = mchan;
                                   bypassCC.control = mctrl;
+                                  lilv_free(portsymbol);
                               }
                               else
                               {
@@ -3471,9 +3500,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                     plugs[count++] = {
                         true,
+                        enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
                         instance,
                         strdup(uri),
-                        enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
                         bypassCC,
                         x != nullptr ? lilv_node_as_float(x) : 0.0f,
                         y != nullptr ? lilv_node_as_float(y) : 0.0f,
@@ -3794,6 +3823,197 @@ int* get_pedalboard_size(const char* const bundle)
     return size;
 }
 
+const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
+{
+    // NOTE: most of this code is duplicated from get_pedalboard_info
+
+    size_t bundlepathsize;
+    const char* const bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
+
+    if (bundlepath == nullptr)
+        return nullptr;
+
+    LilvWorld* const w = lilv_world_new();
+    lilv_world_load_specifications(w);
+    lilv_world_load_plugin_classes(w);
+
+    LilvNode* const b = lilv_new_file_uri(w, nullptr, bundlepath);
+    lilv_world_load_bundle(w, b);
+    lilv_node_free(b);
+
+    const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
+
+    if (lilv_plugins_size(plugins) != 1)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    const LilvPlugin* p = nullptr;
+
+    LILV_FOREACH(plugins, itpls, plugins) {
+        p = lilv_plugins_get(plugins, itpls);
+        break;
+    }
+
+    if (p == nullptr)
+    {
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    bool isPedalboard = false;
+    LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, rdftypenode))
+    {
+        LILV_FOREACH(nodes, it, nodes)
+        {
+            const LilvNode* const node = lilv_nodes_get(nodes, it);
+
+            if (const char* const nodestr = lilv_node_as_string(node))
+            {
+                if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
+                {
+                    isPedalboard = true;
+                    break;
+                }
+            }
+        }
+
+        lilv_nodes_free(nodes);
+    }
+
+    if (! isPedalboard)
+    {
+        lilv_node_free(rdftypenode);
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // plugins
+
+    LilvNode* const ingen_block = lilv_new_uri(w, LILV_NS_INGEN "block");
+    LilvNodes* const blocks = lilv_plugin_get_value(p, ingen_block);
+
+    if (blocks == nullptr)
+    {
+        lilv_node_free(ingen_block);
+        lilv_node_free(rdftypenode);
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    unsigned int blockCount = lilv_nodes_size(blocks);
+
+    if (blockCount == 0)
+    {
+        lilv_nodes_free(blocks);
+        lilv_node_free(ingen_block);
+        lilv_node_free(rdftypenode);
+        lilv_world_free(w);
+        return nullptr;
+    }
+
+    LilvNode* const ingen_enabled   = lilv_new_uri(w, LILV_NS_INGEN "enabled");
+    LilvNode* const ingen_value     = lilv_new_uri(w, LILV_NS_INGEN "value");
+    LilvNode* const lv2_port        = lilv_new_uri(w, LV2_CORE__port);
+    LilvNode* const modpedal_preset = lilv_new_uri(w, LILV_NS_MODPEDAL "preset");
+
+    // --------------------------------------------------------------------------------------------------------
+    // uri node (ie, "this")
+
+    const LilvNode* const urinode = lilv_plugin_get_uri(p);
+
+    // --------------------------------------------------------------------------------------------------------
+    // ready to parse
+
+    _clear_pedalboard_plugin_values();
+
+    PedalboardPluginValues* const plugs = new PedalboardPluginValues[blockCount+1];
+    memset(plugs, 0, sizeof(PedalboardPluginValues) * (blockCount+1));
+
+    blockCount = 0;
+    LILV_FOREACH(nodes, itblocks, blocks)
+    {
+        const LilvNode* const block = lilv_nodes_get(blocks, itblocks);
+        char* full_instance = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
+        char* instance;
+
+        if (strstr(full_instance, bundlepath) != nullptr)
+            instance = strdup(full_instance+(bundlepathsize+1));
+        else
+            instance = strdup(full_instance);
+
+        LilvNode* const enabled = lilv_world_get(w, block, ingen_enabled, nullptr);
+        LilvNode* const preset  = lilv_world_get(w, block, modpedal_preset, nullptr);
+
+        StatePortValue* ports = nullptr;
+
+        if (LilvNodes* const portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
+        {
+            unsigned int portCount = lilv_nodes_size(portnodes);
+
+            ports = new StatePortValue[portCount+1];
+            memset(ports, 0, sizeof(StatePortValue) * (portCount+1));
+
+            const size_t full_instance_size = strlen(full_instance);
+
+            portCount = 0;
+            LILV_FOREACH(nodes, itport, portnodes)
+            {
+                  const LilvNode* const portnode = lilv_nodes_get(portnodes, itport);
+
+                  LilvNode* const portvalue = lilv_world_get(w, portnode, ingen_value, nullptr);
+
+                  if (portvalue == nullptr)
+                      continue;
+
+                  char* portsymbol = lilv_file_uri_parse(lilv_node_as_string(portnode), nullptr);
+
+                  if (strstr(portsymbol, full_instance) != nullptr)
+                      memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
+
+                  ports[portCount++] = {
+                      true,
+                      portsymbol,
+                      lilv_node_as_float(portvalue)
+                  };
+
+                  lilv_node_free(portvalue);
+            }
+
+            lilv_nodes_free(portnodes);
+        }
+
+        plugs[blockCount++] = {
+            true,
+            enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
+            instance,
+            (preset != nullptr && !lilv_node_equals(preset, urinode)) ? strdup(lilv_node_as_uri(preset)) : nc,
+            ports,
+        };
+
+        lilv_free(full_instance);
+        lilv_node_free(enabled);
+        lilv_node_free(preset);
+    }
+
+    lilv_nodes_free(blocks);
+    lilv_node_free(ingen_block);
+    lilv_node_free(ingen_enabled);
+    lilv_node_free(ingen_value);
+    lilv_node_free(lv2_port);
+    lilv_node_free(modpedal_preset);
+    lilv_node_free(rdftypenode);
+    lilv_world_free(w);
+
+    _pb_values_ret = plugs;
+
+    return plugs;
+}
+
 // --------------------------------------------------------------------------------------------------------
 
 // note: these ids must match the ones on the mapping (see 'kMapping')
@@ -3864,7 +4084,7 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
     printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
 }
 
-StatePortValue* get_state_port_values(const char* const state)
+const StatePortValue* get_state_port_values(const char* const state)
 {
     static LV2_URID_Map uridMap = {
         (void*)0x1, // non-null

@@ -166,9 +166,9 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    bool bypassed;
     const char* instance;
     const char* uri;
-    bool bypassed;
     PedalboardMidiControl bypassCC;
     float x;
     float y;
@@ -220,6 +220,14 @@ typedef struct {
     const char* symbol;
     float value;
 } StatePortValue;
+
+typedef struct {
+    bool valid;
+    bool bypassed;
+    const char* instance;
+    const char* preset;
+    const StatePortValue* ports;
+} PedalboardPluginValues;
 
 typedef struct {
     float cpuLoad;
@@ -276,8 +284,12 @@ MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);
 // NOTE: may return null
 MOD_API int* get_pedalboard_size(const char* bundle);
 
+// Get plugin port values of a pedalboard
+// NOTE: may return null
+MOD_API const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle);
+
 // Get port values from a plugin state
-MOD_API StatePortValue* get_state_port_values(const char* state);
+MOD_API const StatePortValue* get_state_port_values(const char* state);
 
 // list plugins present in a single bundle
 MOD_API const char* const* list_plugins_in_bundle(const char* bundle);
