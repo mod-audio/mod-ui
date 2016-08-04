@@ -389,7 +389,7 @@ JqueryClass('pedalboard', {
             self.data('bypassApplication', false)
             setTimeout(function () {
                 if (! self.pedalboard('fitToWindow')) {
-                    self.pedalboard('adapt')
+                    self.pedalboard('adapt', true)
                 }
                 ourCallback()
             }, 1)
@@ -581,7 +581,7 @@ JqueryClass('pedalboard', {
                     /*
                     self.pedalboard('addPlugin', pluginData, instance, false, position.x, position.y)
                     setTimeout(function () {
-                        self.pedalboard('adapt')
+                        self.pedalboard('adapt', true)
                     }, 1)
                     */
                     waiter.stopPlugin(instance, false)
@@ -687,7 +687,7 @@ JqueryClass('pedalboard', {
 
         self.data('windowSize')(self.width(), self.height())
         self.pedalboard('zoom', Math.min(self.data('scale'), scale), zoom.canvasX, zoom.canvasY, zoom.screenX, zoom.screenY, 0)
-        self.pedalboard('adapt')
+        self.pedalboard('adapt', true)
 
         return true
     },
@@ -861,7 +861,7 @@ JqueryClass('pedalboard', {
     },
 
     // Enlarge the pedalboard to a minimum size capable of accommodating all plugins.
-    adapt: function () {
+    adapt: function (forcedUpdate) {
         var self = $(this)
             // First, get the minmum bounding rectangle,
             // given by minX, maxX, minY and maxY
@@ -911,11 +911,10 @@ JqueryClass('pedalboard', {
         if (maxY > h)
             hDif += maxY - h
 
-        /*
-        if (wDif == 0 && hDif == 0)
-        // nothing has changed
+        if (wDif == 0 && hDif == 0 && ! forcedUpdate) {
+            // nothing has changed
             return
-        */
+        }
 
         var scale = self.data('scale')
 
@@ -1015,7 +1014,7 @@ JqueryClass('pedalboard', {
                 // proceed
                 self.data('adaptTime', 0)
                 self.pedalboard('positionHardwarePorts')
-                self.pedalboard('adapt')
+                self.pedalboard('adapt', true)
                 self.data('wait').stopIfNeeded()
                 //console.log("done!")
 
@@ -1177,7 +1176,7 @@ JqueryClass('pedalboard', {
                 self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
                 self.data('pluginMove')(instance, ui.position.left, ui.position.top, function (r) {})
-                self.pedalboard('adapt')
+                self.pedalboard('adapt', false)
             },
             click: function (event) {
                 obj.icon.css({'z-index': self.data('z_index')+1})
