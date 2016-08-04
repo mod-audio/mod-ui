@@ -78,16 +78,6 @@
       }
 
 $('document').ready(function() {
-    var preloadImages = [
-        "/img/icons/blocked.svg",
-        "/img/icons/25/reload.png",
-    ];
-    for (var i = 0; i < preloadImages.length; i++) {
-        var img = new Image();
-        img.src = preloadImages[i];
-        preloadImages[i] = img;
-    }
-
     desktop = new Desktop({
         titleBox: $('#pedalboard-info h1'),
         pedalboard: $('#pedalboard-dashboard'),
@@ -235,6 +225,12 @@ $('document').ready(function() {
      style="fill:#212121;fill-opacity:1;fill-rule:evenodd;stroke:none"
      class="loadinglogo" />
   </svg>
+  <!-- PRELOAD -->
+  <div class="mod-hidden">
+      <img src="/img/icons/blocked.svg" alt=""/>
+      <img src="/img/icons/25/reload.png" alt=""/>
+  </div>
+  <!-- END PRELOAD -->
   <!-- NOTIFICATIONS -->
   <div id="notifications" class="mod-hidden mod-init-hidden"></div>
   <!-- END NOTIFICATIONS -->
