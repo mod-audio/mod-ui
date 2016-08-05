@@ -197,7 +197,7 @@ $('document').ready(function() {
 
                         if (!$(instancekey).length) {
                             var cb = function () {
-                                desktop.pedalboard.pedalboard('scheduleAdapt')
+                                desktop.pedalboard.pedalboard('scheduleAdapt', false)
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
 
                                 $(document).unbindArrive(instancekey, cb)
@@ -268,7 +268,7 @@ $('document').ready(function() {
                     loading = false
                     HARDWARE_PROFILE = data
                     desktop.hardwareManager.registerAllAddressings()
-                    desktop.pedalboard.pedalboard('scheduleAdapt')
+                    desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
                     desktop.pedalboardModified = modified
                     desktop.init();
