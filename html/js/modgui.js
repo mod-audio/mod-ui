@@ -1350,7 +1350,7 @@ JqueryClass('film', baseWidget, {
                 self.data('size', sw)
                 callback()
                 if (! isSDK && desktop != null) {
-                    desktop.pedalboard.pedalboard('scheduleAdapt')
+                    desktop.pedalboard.pedalboard('scheduleAdapt', false)
                 }
             }
             bgImg.setAttribute('src', url);

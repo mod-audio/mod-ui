@@ -993,11 +993,15 @@ JqueryClass('pedalboard', {
 
     },
 
-    scheduleAdapt: function () {
+    scheduleAdapt: function (forcedUpdate) {
         var self = $(this)
 
         if (self.data('skipAnimations')) {
             return
+        }
+
+        if (forcedUpdate) {
+            self.data('adaptForcedUpdate', true)
         }
 
         var firstTime = document.readyState != "complete"
@@ -1012,9 +1016,11 @@ JqueryClass('pedalboard', {
 
             if (curTime2 <= 0) {
                 // proceed
+                var forcedUpdate = self.data('adaptForcedUpdate')
+                self.data('adaptForcedUpdate', false)
                 self.data('adaptTime', 0)
                 self.pedalboard('positionHardwarePorts')
-                self.pedalboard('adapt', true)
+                self.pedalboard('adapt', forcedUpdate)
                 self.data('wait').stopIfNeeded()
                 //console.log("done!")
 
