@@ -1029,9 +1029,15 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
             resdir = lilv_file_abspath(lilv_node_as_string(resdirn));
 
             lilv_node_free(modguigui);
-            modguigui = lilv_node_duplicate(mgui);
-
             lilv_node_free(resdirn);
+
+            if (resdir == nullptr)
+            {
+                modguigui = nullptr;
+                continue;
+            }
+
+            modguigui = lilv_node_duplicate(mgui);
 
             if (strncmp(resdir, HOME, HOMElen) == 0)
                 // found a modgui in the home dir, stop here and use it
