@@ -63,6 +63,7 @@ function NetworkStatus(options) {
                                 desktop.blockUI()
                                 // fall-through
                             case 0:
+                                console.log("Connection timed out")
                                 timedOutPhase++;
                                 break;
                             }
