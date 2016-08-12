@@ -1255,6 +1255,7 @@ var baseWidget = {
 JqueryClass('film', baseWidget, {
     init: function (options) {
         var self = $(this)
+        self.data('dragged', false)
         self.data('initialized', false)
         self.data('initvalue', options.port.ranges.default)
         self.film('getAndSetSize', options.dummy, function () {
@@ -1277,7 +1278,6 @@ JqueryClass('film', baseWidget, {
             self.film('mouseUp', e)
             $(document).unbind('mouseup', upHandler)
             $(document).unbind('mousemove', moveHandler)
-                //self.trigger('filmstop')
         }
 
         self.mousedown(function (e) {
@@ -1302,6 +1302,12 @@ JqueryClass('film', baseWidget, {
         self.click(function (e) {
             if (!self.data('enabled'))
                 return self.film('prevent', e)
+            if (self.data('dragged')) {
+                /* If we get a click after dragging the knob, ignore the click.
+                   This happens when the user releases the mouse while hovering the knob.
+                   We DO NOT want this click event, as it will bump the current value again. */
+                return
+            }
             self.film('mouseClick', e)
         })
 
@@ -1360,6 +1366,7 @@ JqueryClass('film', baseWidget, {
 
     mouseDown: function (e) {
         var self = $(this)
+        self.data('dragged', false)
         self.data('lastY', e.pageY)
         self.data('lastX', e.pageX)
     },
@@ -1370,6 +1377,8 @@ JqueryClass('film', baseWidget, {
 
     mouseMove: function (e) {
         var self = $(this)
+        self.data('dragged', true)
+
         var vdiff = self.data('lastY') - e.pageY
         vdiff = parseInt(vdiff / self.data('dragPrecisionVertical'))
         var hdiff = e.pageX - self.data('lastX')
