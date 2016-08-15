@@ -1053,12 +1053,14 @@ function GUI(effect, options) {
         return data
     }
 
+    this.jsData = {}
     this.jsStarted = false
 
     this.triggerJS = function (event) {
         if (!self.jsCallback || !self.jsStarted)
             return
 
+        event.data     = self.jsData
         event.icon     = self.icon
         event.settings = self.settings
 
