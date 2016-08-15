@@ -188,6 +188,7 @@ function GUI(effect, options) {
     }
 
     self.effect = effect
+    self.instance = null
 
     self.bypassed = options.bypassed
     self.currentPreset = ""
@@ -288,7 +289,7 @@ function GUI(effect, options) {
         if (isNaN(value))
             throw "Invalid NaN value for " + symbol
         var port = self.controls[symbol]
-        var mod_port = source ? source.attr("mod-port") : symbol
+        var mod_port = source ? source.attr("mod-port") : (self.instance ? self.instance+'/'+symbol : symbol)
         if (!port.enabled || port.value == value)
             return
 
@@ -445,6 +446,8 @@ function GUI(effect, options) {
     }
 
     this.render = function (instance, callback, skipNamespace) {
+        self.instance = instance
+
         var render = function () {
             if (instance)
                 self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
@@ -671,6 +674,9 @@ function GUI(effect, options) {
 
             var jsPorts = []
             for (var i in self.controls) {
+                if (i == ':presets') {
+                    continue
+                }
                 jsPorts.push({
                     symbol: self.controls[i].symbol,
                     value : self.controls[i].value
@@ -693,7 +699,7 @@ function GUI(effect, options) {
         var render = function () {
             var icon = $('<div class="mod-pedal dummy">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
-                self.getTemplateData(effect, false)))
+                      self.getTemplateData(effect, false)))
             self.assignControlFunctionality(icon, true)
             callback(icon)
         }
@@ -1056,19 +1062,27 @@ function GUI(effect, options) {
     this.jsData = {}
     this.jsStarted = false
 
+    this.jsFuncs = {
+        // added in v1: allow plugin js code to change plugin controls
+        set_port_value: function (symbol, value) {
+            self.setPortValue(symbol, value, null)
+        }
+    }
+
     this.triggerJS = function (event) {
         if (!self.jsCallback || !self.jsStarted)
             return
 
-        // bump this everytime the data structure or events change
+        // bump this everytime the data structure or funtions change
         event.api_version = 1
 
+        // normal data
         event.data     = self.jsData
         event.icon     = self.icon
         event.settings = self.settings
 
         try {
-            self.jsCallback(event)
+            self.jsCallback(event, self.jsFuncs)
         } catch (err) {
             self.jsCallback = null
             console.log("A plugin javascript code is broken and has been disabled")
