@@ -1060,6 +1060,9 @@ function GUI(effect, options) {
         if (!self.jsCallback || !self.jsStarted)
             return
 
+        // bump this everytime the data structure or events change
+        event.api_version = 1
+
         event.data     = self.jsData
         event.icon     = self.icon
         event.settings = self.settings
