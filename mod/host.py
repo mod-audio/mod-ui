@@ -466,7 +466,7 @@ class Host(object):
                 program = int(msg[1])
 
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
-                    pedalboards = self.banks[self.bank_id-1]
+                    pedalboards = self.banks[self.bank_id-1]['pedalboards']
                 else:
                     pedalboards = self.allpedalboards
 
