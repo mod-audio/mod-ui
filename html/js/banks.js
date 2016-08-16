@@ -338,8 +338,12 @@ JqueryClass('bankBox', {
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
 
-        self.data('bankNavigateFootswitches').prop("checked", bank.data('navigateFootswitches'))
-        self.data('bankNavigateChannel').attr("value", bank.data('navigateChannel'))
+        var channel = bank.data('navigateChannel'),
+            navigFoots = bank.data('navigateFootswitches');
+
+        self.data('bankNavigateFootswitches').prop("checked", navigFoots)
+        self.data('bankNavigateMIDI').prop("checked", !navigFoots)
+        self.data('bankNavigateChannel').attr("value", channel).val(channel).value = channel
         self.data('bankAddressing').find('h1').text(bank.data('title') || "Untitled")
         self.data('bankAddressing').show()
     },
