@@ -51,7 +51,7 @@ function NetworkStatus(options) {
             error: function (resp, error) {
                 if (resp.status == 0)
                 {
-                    if ($.active != 0 || isInstallingPackage)
+                    if ($.active != 0 || isInstallingPackage || document.readyState != "complete")
                     {
                         timedOutPhase = 0
                     }
