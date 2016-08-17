@@ -465,6 +465,7 @@ class Host(object):
 
             elif cmd == "midi_program":
                 program = int(msg[1])
+                bank_id = self.bank_id
 
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
                     pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -475,6 +476,7 @@ class Host(object):
                     bundlepath = pedalboards[program]['bundle']
 
                     def load_callback(ok):
+                        self.bank_id = bank_id
                         self.load(bundlepath)
 
                     def hmi_clear_callback(ok):
