@@ -357,10 +357,6 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        # load addressings if requested, regardless of bank
-        if pedalboard and loadAddressings:
-            self._load_addressings(pedalboard)
-
         # report pedalboard and banks
         if bank_id > 0 and pedalboard and bank_id <= len(self.banks):
             bank = self.banks[bank_id-1]
@@ -374,12 +370,29 @@ class Host(object):
             pedalboards = self.allpedalboards
             navigateFootswitches = False
 
+        num = 0
+        for pb in pedalboards:
+            if pb['bundle'] == pedalboard:
+                pedalboard_id = num
+                break
+            num += 1
+
+        else:
+            bank_id = 0
+            pedalboard_id = 0
+            pedalboard = ""
+            pedalboards = []
+
+        # load addressings if requested, regardless of bank
+        if pedalboard and loadAddressings:
+            self._load_addressings(pedalboard)
+
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(True, callback)
 
         def initial_state_callback(ok):
             cb = footswitch_callback if navigateFootswitches else callback
-            self.hmi.initial_state(bank_id, pedalboard, pedalboards, cb)
+            self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         self.setNavigateWithFootswitches(False, initial_state_callback)
 
@@ -2025,8 +2038,7 @@ _:b%i
         num = 0
         for pb in pedalboards:
             title   = pb['title'].replace('"', '').upper()[:31]
-            bundle  = pb['bundle']
-            data    = '"%s" "%s"' % (title, bundle)
+            data    = '"%s" "%i"' % (title, num)
             dataLen = len(data)
 
             if numBytesFree-dataLen-2 < 0:
@@ -2048,7 +2060,7 @@ _:b%i
 
         callback(True, pedalboardsData)
 
-    def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
+    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback):
         logging.info("hmi load bank pedalboard")
 
         if bank_id < 0 or bank_id > len(self.banks):
@@ -2056,13 +2068,33 @@ _:b%i
             callback(False)
             return
 
+        try:
+            pedalboard_id = int(pedalboard_id)
+        except:
+            print("ERROR: Trying to load pedalboard using invalid pedalboard_id '%s'" % (pedalboard_id))
+            callback(False)
+            return
+
         if bank_id == 0:
+            pedalboards = self.allpedalboards
             navigateFootswitches = False
             navigateChannel      = 15
         else:
-            bank = self.banks[bank_id-1]
+            bank        = self.banks[bank_id-1]
+            pedalboards = bank['pedalboards']
             navigateFootswitches = bank['navigateFootswitches']
-            navigateChannel      = int(bank['navigateChannel'])-1 if "navigateChannel" in bank.keys() and not navigateFootswitches else 15
+
+            if "navigateChannel" in bank.keys() and not navigateFootswitches:
+                navigateChannel = int(bank['navigateChannel'])-1
+            else:
+                navigateChannel = 15
+
+        if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
+            print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
+            callback(False)
+            return
+
+        bundlepath = pedalboards[pedalboard_id]['bundle']
 
         def load_callback(ok):
             self.bank_id = bank_id
