@@ -2012,8 +2012,36 @@ _:b%i
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
-        pedalboards = " ".join('"%s" "%s"' % (pb['title'].replace('"', '').upper()[:31], pb['bundle']) for pb in pedalboards)
-        callback(True, pedalboards)
+        pedalboards += pedalboards
+
+        numBytesFree = 2048-64
+        pedalboardsData = None
+
+        num = 0
+        for pb in pedalboards:
+            title   = pb['title'].replace('"', '').upper()[:31]
+            bundle  = pb['bundle']
+            data    = '"%s" "%s"' % (title, bundle)
+            dataLen = len(data)
+
+            if numBytesFree-dataLen-2 < 0:
+                print("ERROR: Controller out of memory when listing pedalboards (stopping at %i)" % num)
+                break
+
+            num += 1
+
+            if pedalboardsData is None:
+                pedalboardsData = ""
+            else:
+                pedalboardsData += " "
+
+            numBytesFree -= dataLen+1
+            pedalboardsData += data
+
+        if pedalboardsData is None:
+            pedalboardsData = ""
+
+        callback(True, pedalboardsData)
 
     def hmi_load_bank_pedalboard(self, bank_id, bundlepath, callback):
         logging.info("hmi load bank pedalboard")
