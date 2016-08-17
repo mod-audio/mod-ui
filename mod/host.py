@@ -2012,8 +2012,6 @@ _:b%i
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
-        pedalboards += pedalboards
-
         numBytesFree = 2048-64
         pedalboardsData = None
 

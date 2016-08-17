@@ -157,8 +157,6 @@ class HMI(object):
         numBytesFree = 2048-64
         pedalboardsData = None
 
-        pedalboards += pedalboards
-
         num = 0
         for pb in pedalboards:
             title   = pb['title'].replace('"', '').upper()[:31]
