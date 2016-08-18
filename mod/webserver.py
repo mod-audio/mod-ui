@@ -168,7 +168,7 @@ class JsonRequestHandler(web.RequestHandler):
         # it's likely something using write(json.dumps(...))
         # we want to prevent that as it causes issues under Mac OS
 
-        if isinstance(data, (bytes, unicode_type, dict)):
+        if isinstance(data, dict): # (bytes, unicode_type, dict)
             web.RequestHandler.write(self, data)
             self.finish()
             return
@@ -182,10 +182,10 @@ class JsonRequestHandler(web.RequestHandler):
             self.set_header("Content-Type", "application/json; charset=UTF-8")
 
         # TESTING for data types, remove this later
-        #elif not isinstance(data, list):
-            #print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
-            #data = json.dumps(data)
-            #self.set_header('Content-type', 'application/json')
+        elif not isinstance(data, list):
+            print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
+            data = json.dumps(data)
+            self.set_header('Content-type', 'application/json; charset=UTF-8')
 
         else:
             data = json.dumps(data)
