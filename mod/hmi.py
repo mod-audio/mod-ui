@@ -90,7 +90,7 @@ class HMI(object):
 
     def checker(self, data=None):
         if data is not None:
-            logging.info('[hmi] received <- %s' % repr(data))
+            #logging.info('[hmi] received <- %s' % repr(data))
             try:
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
@@ -105,7 +105,8 @@ class HMI(object):
                         logging.error("[hmi] NOT SYNCED")
                     else:
                         if callback is not None:
-                            logging.info("[hmi] calling callback for %s" % original_msg)
+                            if "ping" not in original_msg:
+                                logging.info("[hmi] calling callback for %s" % original_msg)
                             callback(msg.process_resp(datatype))
                         self.process_queue()
                 else:
@@ -127,12 +128,14 @@ class HMI(object):
 
         try:
             msg, callback, datatype = self.queue[0] # fist msg on the queue
-            logging.info("[hmi] popped from queue: %s" % msg)
+            if "ping" not in msg:
+                logging.info("[hmi] popped from queue: %s" % msg)
             self.sp.write(bytes(msg, 'utf-8') + b"\0")
-            logging.info("[hmi] sending -> %s" % msg)
+            if "ping" not in msg:
+                logging.info("[hmi] sending -> %s" % msg)
             self.queue_idle = False
         except IndexError:
-            logging.info("[hmi] queue is empty, nothing to do")
+            #logging.info("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
 
     def reply_protocol_error(self, error):
@@ -145,7 +148,8 @@ class HMI(object):
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
-            logging.info("[hmi] scheduling -> %s" % str(msg))
+            if "ping" not in msg:
+                logging.info("[hmi] scheduling -> %s" % str(msg))
             if self.queue_idle:
                 self.process_queue()
             return
