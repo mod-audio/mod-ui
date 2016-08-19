@@ -6419,6 +6419,7 @@ button.close {
   font-weight: bold;
   overflow: hidden;
   position: relative;
+  height: 32px;
 }
 #pedalboards-library .pedalboards .pedalboard .description {
   display: block;
