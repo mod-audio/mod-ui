@@ -1002,6 +1002,8 @@ class TemplateHandler(web.RequestHandler):
         with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fd:
             default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
+        pbname = tornado.escape.xhtml_escape(SESSION.host.pedalboard_name)
+
         context = {
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
@@ -1012,9 +1014,9 @@ class TemplateHandler(web.RequestHandler):
             'version': self.get_argument('v'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
-            'title': SESSION.host.pedalboard_name,
+            'title':  pbname,
             'size': json.dumps(SESSION.host.pedalboard_size),
-            'fulltitle': SESSION.host.pedalboard_name or "Untitled",
+            'fulltitle':  pbname or "Untitled",
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY else 'false',
