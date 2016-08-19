@@ -1580,7 +1580,7 @@ _:b%i
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
     ingen:polyphony 1 ;
-""" % (arcs, blocks, ports, title, self.pedalboard_size[0], self.pedalboard_size[1])
+""" % (arcs, blocks, ports, title.replace('"','\\"'), self.pedalboard_size[0], self.pedalboard_size[1])
 
         # Arcs (connections)
         if len(self.connections) > 0:
