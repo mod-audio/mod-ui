@@ -83,11 +83,14 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
     if bank is None:
         return
 
-    with open(LAST_STATE_JSON_FILE, 'w') as fh:
-        json.dump({
-            'bank': bank-1,
-            'pedalboard': pedalboard
-        }, fh)
+    try:
+        with open(LAST_STATE_JSON_FILE, 'w') as fh:
+            json.dump({
+                'bank': bank-1,
+                'pedalboard': pedalboard
+            }, fh)
+    except OSError:
+        return
 
 # get last bank id and pedalboard path
 def get_last_bank_and_pedalboard():

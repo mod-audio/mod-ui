@@ -1398,7 +1398,7 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            setTimeout(trySetEnabled, 100)
+            setTimeout(trySetEnabled, 200)
         }
 
         trySetEnabled()
@@ -1428,7 +1428,7 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            setTimeout(trySetPortValue, 100)
+            setTimeout(trySetPortValue, 200)
         }
 
         trySetPortValue()
@@ -1455,7 +1455,7 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            setTimeout(trySelectPreset, 100)
+            setTimeout(trySelectPreset, 200)
         }
 
         trySelectPreset()
