@@ -82,9 +82,9 @@ CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.mo
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.moddevices.com")
 
 TUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner"
-TUNER = 9994
-TUNER_PORT = "in"
-TUNER_MON_PORT = "FREQ"
+TUNER_INSTANCE = 9994
+TUNER_INPUT_PORT = "in"
+TUNER_MONITOR_PORT = "FREQ"
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'

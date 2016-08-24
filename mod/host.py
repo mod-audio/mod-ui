@@ -44,7 +44,8 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR
+from mod.settings import (DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+                          TUNER_URI, TUNER_INSTANCE, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
 
 ADDRESSING_CTYPE_LINEAR       = 0
@@ -142,6 +143,7 @@ class Host(object):
         self.writesock = None
         self.crashed = False
         self.connected = False
+        self.current_tuner_port = 1
         self._queue = []
         self._idle = True
         self.mapper = InstanceIdMapper()
@@ -462,9 +464,12 @@ class Host(object):
                 portsymbol  = msg[2]
                 value       = float(msg[3])
 
-                instance = self.mapper.get_instance(instance_id)
+                if instance_id == TUNER_INSTANCE:
+                    self.set_tuner_value(value)
 
-                self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
+                else:
+                    instance = self.mapper.get_instance(instance_id)
+                    self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "midi_mapped":
                 instance_id = int(msg[1])
@@ -2220,48 +2225,64 @@ _:b%i
             yield gen.Task(self._addressing_load, actuator_uri)
 
     def hmi_tuner(self, status, callback):
-        print("hmi_tuner", status)
+        if status == "on":
+            self.hmi_tuner_on(callback)
+        else:
+            self.hmi_tuner_off(callback)
+
+    def hmi_tuner_on(self, callback):
+        logging.info("hmi tuner on")
+
+        def monitor_added(ok):
+            if not ok or not connect_jack_ports("system:capture_%d" % self.current_tuner_port,
+                                                "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT)):
+                self.send("remove %d" % TUNER_INSTANCE, lambda r:None, datatype='boolean')
+                callback(False)
+                return
+
+            self.mute()
+            callback(True)
+
+        def tuner_added(ok):
+            if not ok:
+                callback(False)
+                return
+            self.send("monitor_output %d %s" % (TUNER_INSTANCE, TUNER_MONITOR_PORT), monitor_added)
+
+        self.send("add %s %d" % (TUNER_URI, TUNER_INSTANCE), tuner_added)
+
+    def hmi_tuner_off(self, callback):
+        logging.info("hmi tuner off")
+
+        def tuner_removed(ok):
+            self.unmute()
+            callback(True)
+
+        self.send("remove %d" % TUNER_INSTANCE, callback)
+
+    def hmi_tuner_input(self, input_port, callback):
+        logging.info("hmi tuner input")
+
+        if 0 <= input_port > 2:
+            callback(False)
+            return
+
+        disconnect_jack_ports("system:capture_%s" % self.current_tuner_port,
+                              "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT))
+
+        connect_jack_ports("system:capture_%s" % input_port,
+                           "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT))
+
+        self.current_tuner_port = input_port
         callback(True)
-
-        #if "on" in status:
-            #self.hmi_tuner_on(callback)
-        #elif "off" in status:
-            #self.hmi_tuner_off(callback)
-
-    #def hmi_tuner_on(self, cb):
-        #def mon_tuner(ok):
-            #if ok:
-                #self.parameter_monitor(TUNER, TUNER_MON_PORT, ">=", 0, cb)
-
-        #def setup_tuner(ok):
-            #if ok:
-                #self._tuner = True
-                #self.connect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), mon_tuner, True)
-
-        #def mute_callback():
-            #self.add(TUNER_URI, TUNER, setup_tuner, True)
-        #self.mute(mute_callback)
-
-    #def hmi_tuner_off(self, cb):
-        #def callback():
-            #self.remove(TUNER, cb, True)
-            #self._tuner = False
-        #self.unmute(callback)
 
     @gen.coroutine
-    def hmi_tuner_input(self, input, callback):
-        print("hmi_tuner_input", input)
-        callback(True)
-        from random import random
-        yield gen.Task(self.tuner, int(512*random()))
+    def set_tuner_value(self, value):
+        if value == 0.0:
+            return
 
-        #self.disconnect("system:capture_%s" % self._tuner_port, "effect_%d:%s" % (TUNER, TUNER_PORT), lambda r:r, True)
-        #self._tuner_port = input
-        #self.connect("system:capture_%s" % input, "effect_%d:%s" % (TUNER, TUNER_PORT), callback, True)
-
-    def tuner(self, value, callback=lambda r:r):
         freq, note, cents = find_freqnotecents(value)
-        self.hmi.tuner(freq, note, cents, callback)
+        yield gen.Task(self.hmi.tuner, freq, note, cents)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

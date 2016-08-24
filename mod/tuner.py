@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,10 +25,9 @@ FREQS = reduce(lambda l1, l2: l1+l2, ([ freq/2**i for freq in _freqs4 ] for i in
 def find_freqnotecents(f):
     freq = min(FREQS, key=lambda i: abs(i-f))
     idx = FREQS.index(freq)
-    octave = idx / 12
+    octave = int(idx / 12)
     note = NOTES[FREQS.index(freq/2**octave)]
     d = 1 if f >= freq else -1
     next_f = FREQS[idx+d]
     cents =  int(100 * (f - freq) / (next_f - freq)) * d
     return freq, "%s%d" % (note, octave), cents
-
