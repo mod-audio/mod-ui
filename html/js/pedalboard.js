@@ -1434,6 +1434,16 @@ JqueryClass('pedalboard', {
         trySetPortValue()
     },
 
+    setOutputPortValue: function (instance, symbol, value) {
+        var self = $(this)
+        var plugin = self.data('plugins')[instance]
+
+        if (plugin != null && plugin.data != null) {
+            var gui = plugin.data('gui')
+            gui.setOutputPortValue(symbol, value);
+        }
+    },
+
     selectPreset: function (instance, value) {
         var self = $(this)
         var gui, plugin

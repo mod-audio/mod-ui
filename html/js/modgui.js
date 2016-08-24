@@ -345,6 +345,10 @@ function GUI(effect, options) {
         }
     }
 
+    this.setOutputPortValue = function (symbol, value) {
+        self.triggerJS({ type: 'change', symbol: symbol, value: value })
+    }
+
     this.getPortValue = function (symbol) {
         return self.controls[symbol].value
     }
@@ -672,14 +676,41 @@ function GUI(effect, options) {
                 })
             }, 1)
 
-            var jsPorts = []
-            for (var i in self.controls) {
-                if (i == ':presets') {
-                    continue
+            // make list of ports to pass to javascript 'start' event
+            var port, value, jsPorts = [{
+                symbol: ":bypass",
+                value : self.bypassed ? 1 : 0
+            }]
+            // inputs
+            for (var i in self.effect.ports.control.input) {
+                port = self.effect.ports.control.input[i]
+
+                if (self.controls[port.symbol] != null) {
+                    value = self.controls[port.symbol].value
+                } else if (port.ranges.default !== undefined) {
+                    value = port.ranges.default
+                } else {
+                    value = port.ranges.minimum
                 }
+
                 jsPorts.push({
-                    symbol: self.controls[i].symbol,
-                    value : self.controls[i].value
+                    symbol: port.symbol,
+                    value : value
+                })
+            }
+            // outputs
+            for (var i in self.effect.ports.control.output) {
+                port = self.effect.ports.control.output[i]
+
+                if (port.ranges.default !== undefined) {
+                    value = port.ranges.default
+                } else {
+                    value = port.ranges.minimum
+                }
+
+                jsPorts.push({
+                    symbol: port.symbol,
+                    value : value
                 })
             }
             self.jsStarted = true

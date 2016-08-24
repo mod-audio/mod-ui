@@ -87,6 +87,14 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "output_set") {
+            var instance = data[1]
+            var symbol   = data[2]
+            var value    = parseFloat(data[3])
+            desktop.pedalboard.pedalboard("setOutputPortValue", instance, symbol, value);
+            return
+        }
+
         if (cmd == "preset") {
             var instance = data[1]
             var value    = data[2]

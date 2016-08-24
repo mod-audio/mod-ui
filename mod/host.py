@@ -456,6 +456,15 @@ class Host(object):
 
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
+            elif cmd == "output_set":
+                instance_id = int(msg[1])
+                portsymbol  = msg[2]
+                value       = float(msg[3])
+
+                instance = self.mapper.get_instance(instance_id)
+
+                self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
+
             elif cmd == "midi_mapped":
                 instance_id = int(msg[1])
                 portsymbol  = msg[2]
