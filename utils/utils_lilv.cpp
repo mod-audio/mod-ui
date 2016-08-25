@@ -98,6 +98,7 @@ static const std::vector<std::string> BLACKLIST = {
     "urn:50m30n3:plugins:SO-666",
     "urn:50m30n3:plugins:SO-kl5",
     "urn:mod:tuner1",
+    "urn:mod:tuner2",
     "urn:juce:JuceDemoHost",
     "urn:juced:DrumSynth",
     "file:///usr/lib/lv2/MonoEffect.ingen/MonoEffect.ttl",
