@@ -81,18 +81,18 @@ MAX_THUMB_WIDTH = 350
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com/v2")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.moddevices.com")
 
-TUNER = os.environ.get('MOD_TUNER_PLUGIN', "tuna")
+TUNER = os.environ.get('MOD_TUNER_PLUGIN', "gxtuner")
 
-if TUNER == "gxtuner":
-    TUNER_URI = "urn:mod:gxtuner"
-    TUNER_INSTANCE = 9994
-    TUNER_INPUT_PORT = "in"
-    TUNER_MONITOR_PORT = "FREQ"
-else:
+if TUNER == "tuna":
     TUNER_URI = "urn:mod:tuna"
     TUNER_INSTANCE = 9994
     TUNER_INPUT_PORT = "in"
     TUNER_MONITOR_PORT = "freq_out"
+else:
+    TUNER_URI = "urn:mod:gxtuner"
+    TUNER_INSTANCE = 9994
+    TUNER_INPUT_PORT = "in"
+    TUNER_MONITOR_PORT = "FREQ"
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
