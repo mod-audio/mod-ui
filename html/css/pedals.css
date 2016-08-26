@@ -130,8 +130,16 @@
     right: -8px;
 }
 .mod-input.expanded .mod-output-jack {
-    background-image:url(../img/audio-jack.png) !important;
     height: 40px;
+}
+.mod-audio-input.expanded .mod-output-jack {
+    background-image:url(../img/audio-jack.png) !important;
+}
+.mod-midi-input.expanded .mod-output-jack {
+    background-image:url(../img/midi-jack.png) !important;
+}
+.mod-cv-input.expanded .mod-output-jack {
+    background-image:url(../img/cv-jack.png) !important;
 }
 
 /* = OUTPUT
