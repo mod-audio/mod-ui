@@ -1398,7 +1398,7 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            setTimeout(trySetEnabled, 100)
+            setTimeout(trySetEnabled, 200)
         }
 
         trySetEnabled()
@@ -1428,10 +1428,20 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            setTimeout(trySetPortValue, 100)
+            setTimeout(trySetPortValue, 200)
         }
 
         trySetPortValue()
+    },
+
+    setOutputPortValue: function (instance, symbol, value) {
+        var self = $(this)
+        var plugin = self.data('plugins')[instance]
+
+        if (plugin != null && plugin.data != null) {
+            var gui = plugin.data('gui')
+            gui.setOutputPortValue(symbol, value);
+        }
     },
 
     selectPreset: function (instance, value) {
@@ -1455,7 +1465,7 @@ JqueryClass('pedalboard', {
                 return
             }
 
-            setTimeout(trySelectPreset, 100)
+            setTimeout(trySelectPreset, 200)
         }
 
         trySelectPreset()

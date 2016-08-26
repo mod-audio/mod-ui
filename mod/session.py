@@ -24,15 +24,13 @@ from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA,
-                          TUNER, TUNER_URI, TUNER_MON_PORT, TUNER_PORT)
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA)
 from mod import get_hardware
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
-from mod.tuner import NOTES, FREQS, find_freqnotecents
 
 if HOST_CARLA:
     from mod.host_carla import Host
@@ -41,11 +39,6 @@ else:
 
 class Session(object):
     def __init__(self):
-        self._tuner = False
-        self._tuner_port = 1
-
-        self.monitor_server = None
-
         self.ioloop = ioloop.IOLoop.instance()
 
         self.player = Player()
@@ -288,14 +281,6 @@ class Session(object):
 
         self.pedalboard_changed_callback(True, "", "")
 
-    #def setup_monitor(self):
-        #if self.monitor_server is None:
-            #from mod.monitor import MonitorServer
-            #self.monitor_server = MonitorServer()
-            #self.monitor_server.listen(12345)
-
-            #self.set_monitor("localhost", 12345, 1, self.add_tools)
-
     # host commands
 
     def bypass(self, instance, value, callback):
@@ -307,16 +292,9 @@ class Session(object):
             port = "effect_%s" % port
         return port
 
-    #def set_monitor(self, addr, port, status, callback):
-        #self.host.monitor(addr, port, status, callback)
-
     # END host commands
 
     def pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)
-
-    def tuner(self, value, callback):
-        freq, note, cents = find_freqnotecents(value)
-        self.hmi.tuner(freq, note, cents, callback)
 
 SESSION = Session()
