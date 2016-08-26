@@ -1436,12 +1436,29 @@ JqueryClass('pedalboard', {
 
     setOutputPortValue: function (instance, symbol, value) {
         var self = $(this)
-        var plugin = self.data('plugins')[instance]
+        var plugin, gui
+        var retry = 0
 
-        if (plugin != null && plugin.data != null) {
-            var gui = plugin.data('gui')
-            gui.setOutputPortValue(symbol, value);
+        // keep trying until instance is available
+        var trySetOutputValue = function () {
+            plugin = self.data('plugins')[instance]
+
+            if (plugin != null && plugin.data != null) {
+                gui = plugin.data('gui')
+                gui.setOutputPortValue(symbol, value);
+                return
+            }
+
+            retry += 1
+            if (retry == 50) {
+                console.log("setOutputPortValue timed out for '"+instance+"/"+symbol+"', failed to set port value")
+                return
+            }
+
+            setTimeout(trySetOutputValue, 200)
         }
+
+        trySetOutputValue()
     },
 
     selectPreset: function (instance, value) {

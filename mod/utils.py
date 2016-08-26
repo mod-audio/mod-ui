@@ -552,7 +552,7 @@ def get_plugin_control_inputs_and_monitored_outputs(uri):
     info = utils.get_plugin_control_inputs_and_monitored_outputs(uri.encode("utf-8"))
     if not info:
         return {'inputs':[],'monitoredOutputs':[]}
-    return structPtrToList(info.contents)
+    return structToDict(info.contents)
 
 # trigger a preset rescan for a plugin the next time it's loaded
 def rescan_plugin_presets(uri):

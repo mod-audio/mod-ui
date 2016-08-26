@@ -805,6 +805,9 @@ class Host(object):
                 "mapPresets": []
             }
 
+            for output in allports['monitoredOutputs']:
+                self.send("monitor_output %d %s" % (instance_id, output), lambda r:None, datatype='boolean')
+
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
@@ -1201,6 +1204,9 @@ class Host(object):
                     if mchnnl >= 0 and mctrl >= 0:
                         self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
                         self.msg_callback("midi_map %s %s %i %i" % (instance, symbol, mchnnl, mctrl))
+
+            for output in allports['monitoredOutputs']:
+                self.send("monitor_output %d %s" % (instance_id, output), lambda r:None)
 
         for c in pb['connections']:
             if c['source'] in mappedOldMidiIns.keys():
