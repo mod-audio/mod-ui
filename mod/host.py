@@ -39,7 +39,8 @@ from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_an
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import (charPtrToString,
                        is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
-                       get_plugin_info, get_plugin_control_input_ports, get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
+                       get_plugin_info, get_plugin_control_inputs_and_monitored_outputs,
+                       get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
                        get_all_pedalboards, get_pedalboard_plugin_values,
                        init_jack, close_jack, get_jack_data,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
@@ -469,6 +470,7 @@ class Host(object):
 
                 else:
                     instance = self.mapper.get_instance(instance_id)
+                    self.plugins[instance_id]['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "midi_mapped":
@@ -681,6 +683,11 @@ class Host(object):
                 if crashed:
                     self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
 
+            for symbol, value in plugin['outputs'].items():
+                if value is None:
+                    continue
+                websocket.write_message("output_set %s %s %f" % (plugin['instance'], symbol, value))
+
             for symbol, data in plugin['midiCCs'].items():
                 if -1 not in data and symbol not in badports:
                     mchnnl, mctrl = data
@@ -765,11 +772,11 @@ class Host(object):
                 return
             bypassed = False
 
-            allports = get_plugin_control_input_ports(uri)
+            allports = get_plugin_control_inputs_and_monitored_outputs(uri)
             badports = []
             valports = {}
 
-            for port in allports:
+            for port in allports['inputs']:
                 valports[port['symbol']] = port['ranges']['default']
 
                 # skip notOnGUI controls
@@ -790,9 +797,10 @@ class Host(object):
                 "x"         : x,
                 "y"         : y,
                 "addressing": {}, # symbol: addressing
-                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports),
+                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports['inputs']),
                 "ports"     : valports,
                 "badports"  : badports,
+                "outputs"   : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"    : "",
                 "mapPresets": []
             }
@@ -1126,11 +1134,11 @@ class Host(object):
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
 
-            allports = get_plugin_control_input_ports(p['uri'])
+            allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
             badports = []
             valports = {}
 
-            for port in allports:
+            for port in allports['inputs']:
                 valports[port['symbol']] = port['ranges']['default']
 
                 # skip notOnGUI controls
@@ -1151,9 +1159,10 @@ class Host(object):
                 "x"         : p['x'],
                 "y"         : p['y'],
                 "addressing": {}, # filled in later in _load_addressings()
-                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports),
+                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports['inputs']),
                 "ports"     : valports,
                 "badports"  : badports,
+                "outputs"   : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"    : p['preset'],
                 "mapPresets": []
             }
@@ -1746,7 +1755,7 @@ _:b%i
                 del presets
 
             else:
-                for port_info in get_plugin_control_input_ports(pluginData["uri"]):
+                for port_info in get_plugin_control_inputs_and_monitored_outputs(pluginData["uri"])['inputs']:
                     if port_info["symbol"] == port:
                         break
                 else:

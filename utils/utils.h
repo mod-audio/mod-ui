@@ -55,6 +55,7 @@ typedef struct {
     const char* color;
     const char* knob;
     PluginGUIPort* ports;
+    const char* const* monitoredOutputs;
 } PluginGUI;
 
 typedef struct {
@@ -151,6 +152,11 @@ typedef struct {
     int builder;
     PluginGUI_Mini gui;
 } PluginInfo_Mini;
+
+typedef struct {
+    const PluginPort* inputs;
+    const char* const* monitoredOutputs;
+} PluginInfo_Controls;
 
 typedef struct {
     int8_t channel;
@@ -266,8 +272,8 @@ MOD_API const PluginInfo* get_plugin_info(const char* uri);
 // NOTE: may return null
 MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
 
-// get all control input ports for a specific plugin
-MOD_API const PluginPort* get_plugin_control_input_ports(const char* uri);
+// get all control inputs and monitored outputs for a specific plugin
+MOD_API const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const char* uri);
 
 // trigger a preset rescan for a plugin the next time it's loaded
 MOD_API void rescan_plugin_presets(const char* uri);
