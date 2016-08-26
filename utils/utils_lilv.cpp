@@ -81,7 +81,7 @@ static size_t HOMElen = strlen(HOME);
         nullptr, nullptr,                            \
         nullptr, nullptr,                            \
         nullptr, nullptr, nullptr, nullptr,          \
-        nullptr                                      \
+        nullptr, nullptr                             \
     },                                               \
     {                                                \
         { nullptr, nullptr },                        \
@@ -279,6 +279,7 @@ struct NamespaceDefinitions {
     LilvNode* const modgui_color;
     LilvNode* const modgui_knob;
     LilvNode* const modgui_port;
+    LilvNode* const modgui_monitoredOutputs;
     LilvNode* const atom_bufferType;
     LilvNode* const atom_Sequence;
     LilvNode* const midi_MidiEvent;
@@ -330,6 +331,7 @@ struct NamespaceDefinitions {
           modgui_color             (lilv_new_uri(W, LILV_NS_MODGUI "color"             )),
           modgui_knob              (lilv_new_uri(W, LILV_NS_MODGUI "knob"              )),
           modgui_port              (lilv_new_uri(W, LILV_NS_MODGUI "port"              )),
+          modgui_monitoredOutputs  (lilv_new_uri(W, LILV_NS_MODGUI "monitoredOutputs"  )),
           atom_bufferType          (lilv_new_uri(W, LV2_ATOM__bufferType               )),
           atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
           midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )),
@@ -382,6 +384,7 @@ struct NamespaceDefinitions {
         lilv_node_free(modgui_color);
         lilv_node_free(modgui_knob);
         lilv_node_free(modgui_port);
+        lilv_node_free(modgui_monitoredOutputs);
         lilv_node_free(atom_bufferType);
         lilv_node_free(atom_Sequence);
         lilv_node_free(midi_MidiEvent);
@@ -1105,6 +1108,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
     info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
+    printf("NOTICE: Now scanning plugin '%s'...\n", info.uri);
+
     // --------------------------------------------------------------------------------------------------------
     // name
 
@@ -1705,6 +1710,30 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             lilv_nodes_free(modgui_ports);
         }
 
+        if (LilvNodes* const modgui_monitors = lilv_world_find_nodes(W, modguigui, ns.modgui_monitoredOutputs, nullptr))
+        {
+            unsigned int monitorcount = lilv_nodes_size(modgui_monitors);
+
+            const char** monitors = new const char*[monitorcount+1];
+            memset(monitors, 0, sizeof(const char*) * (monitorcount+1));
+
+            monitorcount = 0;
+            LILV_FOREACH(nodes, it, modgui_monitors)
+            {
+                const LilvNode* const modgui_monitor = lilv_nodes_get(modgui_monitors, it);
+
+                if (LilvNode* const monitor_symbol = lilv_world_get(W, modgui_monitor, ns.lv2core_symbol, nullptr))
+                {
+                    monitors[monitorcount++] = strdup(lilv_node_as_string(monitor_symbol));
+                    lilv_node_free(monitor_symbol);
+                }
+            }
+
+            info.gui.monitoredOutputs = monitors;
+
+            lilv_nodes_free(modgui_monitors);
+        }
+
         lilv_node_free(modguigui);
     }
     else
@@ -2237,6 +2266,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     lilv_free((void*)bundle);
 
     info.valid = true;
+    printf("NOTICE: Finished scanning '%s'\n", info.uri);
+
     return info;
 }
 
@@ -2450,18 +2481,25 @@ static void _clear_plugin_info(PluginInfo& info)
     if (info.gui.knob != nc)
         free((void*)info.gui.knob);
 
-    if (info.bundles != nullptr)
-    {
-        for (int i=0; info.bundles[i]; ++i)
-            free((void*)info.bundles[i]);
-        delete[] info.bundles;
-    }
-
     if (info.gui.ports != nullptr)
     {
         for (int i=0; info.gui.ports[i].valid; ++i)
             _clear_gui_port_info(info.gui.ports[i]);
         delete[] info.gui.ports;
+    }
+
+    if (info.gui.monitoredOutputs != nullptr)
+    {
+        for (int i=0; info.gui.monitoredOutputs[i]; ++i)
+            free((void*)info.gui.monitoredOutputs[i]);
+        delete[] info.gui.monitoredOutputs;
+    }
+
+    if (info.bundles != nullptr)
+    {
+        for (int i=0; info.bundles[i]; ++i)
+            free((void*)info.bundles[i]);
+        delete[] info.bundles;
     }
 
     if (info.ports.audio.input != nullptr)
@@ -3119,7 +3157,6 @@ const PluginInfo* get_plugin_info(const char* const uri_)
 
     if (p != nullptr)
     {
-        printf("NOTICE: Plugin '%s' was not (fully2) cached, scanning it now...\n", uri_);
         const NamespaceDefinitions ns;
         PLUGNFO[uri] = _get_plugin_info(p, ns);
         return &PLUGNFO[uri];
@@ -3164,8 +3201,10 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* const uri_)
 
 // --------------------------------------------------------------------------------------------------------
 
-const PluginPort* get_plugin_control_input_ports(const char* const uri_)
+const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const char* const uri_)
 {
+    static PluginInfo_Controls info;
+
     const std::string uri = uri_;
 
     // check if plugin exists
@@ -3174,7 +3213,13 @@ const PluginPort* get_plugin_control_input_ports(const char* const uri_)
 
     // check if plugin is already cached
     if (PLUGNFO[uri].valid)
-        return PLUGNFO[uri].ports.control.input;
+    {
+        const PluginInfo& pInfo = PLUGNFO[uri];
+
+        info.inputs = pInfo.ports.control.input;
+        info.monitoredOutputs = pInfo.gui.monitoredOutputs;
+        return &info;
+    }
 
     const NamespaceDefinitions ns;
 
@@ -3189,9 +3234,12 @@ const PluginPort* get_plugin_control_input_ports(const char* const uri_)
             continue;
 
         // found the plugin
-        printf("NOTICE: Plugin '%s' was not (fully) cached, scanning it now...\n", uri_);
-        PLUGNFO[uri] = _get_plugin_info(p, ns);
-        return PLUGNFO[uri].ports.control.input;
+        const PluginInfo& pInfo = _get_plugin_info(p, ns);
+        PLUGNFO[uri] = pInfo;
+
+        info.inputs = pInfo.ports.control.input;
+        info.monitoredOutputs = pInfo.gui.monitoredOutputs;
+        return &info;
     }
 
     // plugin not found

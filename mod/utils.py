@@ -164,6 +164,7 @@ class PluginGUI(Structure):
         ("color", c_char_p),
         ("knob", c_char_p),
         ("ports", POINTER(PluginGUIPort)),
+        ("monitoredOutputs", POINTER(c_char_p)),
     ]
 
 class PluginGUI_Mini(Structure):
@@ -269,6 +270,12 @@ class PluginInfo_Mini(Structure):
         ("release", c_int),
         ("builder", c_int),
         ("gui", PluginGUI_Mini),
+    ]
+
+class PluginInfo_Controls(Structure):
+    _fields_ = [
+        ("inputs", POINTER(PluginPort)),
+        ("monitoredOutputs", POINTER(c_char_p)),
     ]
 
 class PedalboardMidiControl(Structure):
@@ -415,8 +422,8 @@ utils.get_plugin_info.restype  = POINTER(PluginInfo)
 utils.get_plugin_info_mini.argtypes = [c_char_p]
 utils.get_plugin_info_mini.restype  = POINTER(PluginInfo_Mini)
 
-utils.get_plugin_control_input_ports.argtypes = [c_char_p]
-utils.get_plugin_control_input_ports.restype  = POINTER(PluginPort)
+utils.get_plugin_control_inputs_and_monitored_outputs.argtypes = [c_char_p]
+utils.get_plugin_control_inputs_and_monitored_outputs.restype  = POINTER(PluginInfo_Controls)
 
 utils.rescan_plugin_presets.argtypes = [c_char_p]
 utils.rescan_plugin_presets.restype  = None
@@ -540,9 +547,12 @@ def get_plugin_info_mini(uri):
         raise Exception
     return structToDict(info.contents)
 
-# get all control input ports for a specific plugin
-def get_plugin_control_input_ports(uri):
-    return structPtrToList(utils.get_plugin_control_input_ports(uri.encode("utf-8")))
+# get all control inputs and monitored outputs for a specific plugin
+def get_plugin_control_inputs_and_monitored_outputs(uri):
+    info = utils.get_plugin_control_inputs_and_monitored_outputs(uri.encode("utf-8"))
+    if not info:
+        return {'inputs':[],'monitoredOutputs':[]}
+    return structPtrToList(info.contents)
 
 # trigger a preset rescan for a plugin the next time it's loaded
 def rescan_plugin_presets(uri):
