@@ -48,6 +48,9 @@ JqueryClass('upgradeWindow', {
         })
 
         self.find('button.js-upgrade').click(function () {
+            if ($(this).hasClass('disabled')) {
+                return
+            }
             if ($(this).text() == "Upgrade Now") {
                 self.upgradeWindow('startUpgrade')
             } else {
@@ -71,7 +74,13 @@ JqueryClass('upgradeWindow', {
         var html = "Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
                    "Released on " + data['release-date'].split('T')[0] + ".";
 
-        if (self.data('updaterequired')) {
+        if (window.location.host == "192.168.50.1") {
+            html += "<br/><br/>" +
+                    "Sorry, cannot update via bluetooth.<br/>" +
+                    "Please connect the MOD via USB and try again.";
+            self.find('button.js-upgrade').addClass('disabled')
+
+        } else if (self.data('updaterequired')) {
             html += "<br/><br/>" +
                     "<b>This update is required!</b>";
         }
