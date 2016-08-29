@@ -2273,7 +2273,7 @@ _:b%i
             self.unmute()
             callback(True)
 
-        self.send("remove %d" % TUNER_INSTANCE, callback)
+        self.send("remove %d" % TUNER_INSTANCE, tuner_removed)
 
     def hmi_tuner_input(self, input_port, callback):
         logging.info("hmi tuner input")
