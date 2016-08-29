@@ -246,6 +246,8 @@ function GUI(effect, options) {
             maximum: 1,
             default: 1,
         },
+        comment: "",
+        designation: "",
         properties: ["toggled", "integer"],
         widgets: [],
         enabled: true,
@@ -275,6 +277,8 @@ function GUI(effect, options) {
             maximum: 0,
             default: -1,
         },
+        comment: "",
+        designation: "",
         properties: ["enumeration", "integer"],
         widgets: [],
         enabled: true,
@@ -1047,13 +1051,14 @@ function GUI(effect, options) {
         if (!data.controls)
             data.controls = options.gui.ports || {}
 
-        // insert scalePoints into controls
+        // insert comment and scalePoints into controls
         for (var i in data.controls)
         {
             var dcontrol = data.controls[i]
             var scontrol = self.controls[dcontrol.symbol]
 
             if (scontrol) {
+                dcontrol.comment     = scontrol.comment
                 dcontrol.scalePoints = scontrol.scalePoints
             } else {
                 console.log("Control port symbol '" + dcontrol.symbol + "' is missing")
@@ -1065,7 +1070,7 @@ function GUI(effect, options) {
         // don't show some special ports
         if (data.effect.ports.control.input)
         {
-            inputs = []
+            var inputs = []
             for (var i in data.effect.ports.control.input) {
                 var port = data.effect.ports.control.input[i]
                 if (shouldSkipPort(port))
