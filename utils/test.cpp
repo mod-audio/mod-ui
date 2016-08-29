@@ -42,7 +42,7 @@ void scanPlugins()
 
             get_plugin_info(plugins[i]->uri);
             get_plugin_info_mini(plugins[i]->uri);
-            get_plugin_control_input_ports(plugins[i]->uri);
+            get_plugin_control_inputs_and_monitored_outputs(plugins[i]->uri);
         }
     }
 #endif
@@ -76,7 +76,7 @@ int main()
     rescan_plugin_presets(PLUGIN_TEST_URI);
     get_plugin_info(PLUGIN_TEST_URI);
     get_plugin_info_mini(PLUGIN_TEST_URI);
-    get_plugin_control_input_ports(PLUGIN_TEST_URI);
+    get_plugin_control_inputs_and_monitored_outputs(PLUGIN_TEST_URI);
 # undef PLUGIN_TEST_URI
 # endif
     cleanup();

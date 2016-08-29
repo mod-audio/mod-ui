@@ -73,7 +73,7 @@ typedef struct {
     const char* label;
     const char* render;
     const char* symbol;
-    bool _custom;
+    bool _custom; // internal
 } PluginPortUnits;
 
 typedef struct {
@@ -89,6 +89,7 @@ typedef struct {
     const char* symbol;
     PluginPortRanges ranges;
     PluginPortUnits units;
+    const char* comment;
     const char* designation;
     const char* const* properties;
     int rangeSteps;

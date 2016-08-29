@@ -185,7 +185,7 @@ class PluginPortUnits(Structure):
         ("label", c_char_p),
         ("render", c_char_p),
         ("symbol", c_char_p),
-        ("_custom", c_bool),
+        ("_custom", c_bool), # internal, do not use
     ]
 
 class PluginPortScalePoint(Structure):
@@ -203,6 +203,7 @@ class PluginPort(Structure):
         ("symbol", c_char_p),
         ("ranges", PluginPortRanges),
         ("units", PluginPortUnits),
+        ("comment", c_char_p),
         ("designation", c_char_p),
         ("properties", POINTER(c_char_p)),
         ("rangeSteps", c_int),
