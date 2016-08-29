@@ -3807,6 +3807,7 @@ static const uint32_t k_urid_null        =  0;
 static const uint32_t k_urid_atom_int    =  1;
 static const uint32_t k_urid_atom_long   =  2;
 static const uint32_t k_urid_atom_float  =  3;
+static const uint32_t k_urid_atom_double =  4;
 
 static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
 {
@@ -3817,6 +3818,7 @@ static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
         LV2_ATOM__Int,
         LV2_ATOM__Long,
         LV2_ATOM__Float,
+        LV2_ATOM__Double,
     };
 
     const std::string uri(uri_);
@@ -3862,6 +3864,15 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
         {
             float fvalue = *(const float*)value;
             values->push_back({ true, strdup(portSymbol), fvalue });
+            return;
+        }
+        break;
+
+    case k_urid_atom_double:
+        if (size == sizeof(double))
+        {
+            double dvalue = *(const double*)value;
+            values->push_back({ true, strdup(portSymbol), (float)dvalue });
             return;
         }
         break;
