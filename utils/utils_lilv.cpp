@@ -4080,11 +4080,11 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
 // --------------------------------------------------------------------------------------------------------
 
 // note: these ids must match the ones on the mapping (see 'kMapping')
-static const uint32_t k_urid_null        =  0;
-static const uint32_t k_urid_atom_int    =  1;
-static const uint32_t k_urid_atom_long   =  2;
-static const uint32_t k_urid_atom_float  =  3;
-static const uint32_t k_urid_atom_double =  4;
+static const uint32_t k_urid_null        = 0;
+static const uint32_t k_urid_atom_int    = 1;
+static const uint32_t k_urid_atom_long   = 2;
+static const uint32_t k_urid_atom_float  = 3;
+static const uint32_t k_urid_atom_double = 4;
 
 static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
 {
