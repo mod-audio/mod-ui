@@ -274,15 +274,19 @@ function Desktop(elements) {
     }
 
     this.authenticateDevice = function (callback) {
+        console.log("attempting authentication...")
         $.ajax({
             method: 'GET',
             url: SITEURL + '/devices/nonce',
             cache: false,
             success: function (resp) {
                 if (!resp || !resp.nonce) {
+                    console.log("Cloud /devices/nonce failed, resp:", resp)
                     callback(false)
                     return
                 }
+                console.log("Cloud /devices/nonce ok, resp:", resp)
+
                 $.ajax({
                     url: '/auth/nonce',
                     type: 'POST',
@@ -297,6 +301,7 @@ function Desktop(elements) {
                             console.log("Webserver does not support MOD tokens, downloads will not be possible")
                             return;
                         }
+                        console.log("Local /auth/nonce ok, resp:", resp)
 
                         $.ajax({
                             url: SITEURL + '/devices/tokens',
@@ -307,9 +312,11 @@ function Desktop(elements) {
                             data: JSON.stringify(resp),
                             success: function (resp) {
                                 if (!resp || !resp.message) {
+                                    console.log("Cloud /devices/tokens failed, resp:", resp)
                                     callback(false)
                                     return;
                                 }
+                                console.log("Cloud /devices/tokens ok, resp:", resp)
 
                                 if (resp['upgrade']) {
                                     $.ajax({
@@ -336,6 +343,7 @@ function Desktop(elements) {
                                     dataType: 'json',
                                     data: JSON.stringify(resp),
                                     success: function (resp) {
+                                        console.log("Local /auth/token ok, resp:", resp)
                                         self.cloudAccessToken = resp.access_token;
                                         var opts = {
                                             from_args: {
@@ -344,22 +352,26 @@ function Desktop(elements) {
                                         }
                                         callback(true, opts);
                                     },
-                                    error: function () {
+                                    error: function (resp) {
+                                        console.log("Local /auth/token error, resp:", resp)
                                         callback(false);
                                     },
                                 })
                             },
-                            error: function () {
+                            error: function (resp) {
+                                console.log("Cloud /devices/tokens error, resp:", resp)
                                 callback(false)
                             },
                         })
                     },
-                    error: function () {
+                    error: function (resp) {
+                        console.log("Local /auth/nonce error, resp:", resp)
                         callback(false)
                     },
                 })
             },
-            error: function () {
+            error: function (resp) {
+                console.log("Cloud /devices/nonce error, resp:", resp)
                 callback(false)
             },
         })
