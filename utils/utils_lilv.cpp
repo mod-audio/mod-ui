@@ -1973,6 +1973,19 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 ((char*)portinfo.shortName)[16] = '\0';
 
             // ----------------------------------------------------------------------------------------------------
+            // comment
+
+            if (LilvNodes* const nodes = lilv_port_get_value(p, port, ns.rdfs_comment))
+            {
+                portinfo.comment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+                lilv_nodes_free(nodes);
+            }
+            else
+            {
+                portinfo.comment = nc;
+            }
+
+            // ----------------------------------------------------------------------------------------------------
             // designation
 
             if (LilvNodes* const nodes = lilv_port_get_value(p, port, ns.lv2core_designation))
@@ -2400,6 +2413,8 @@ static void _clear_port_info(PluginPort& portinfo)
         free((void*)portinfo.name);
     if (portinfo.symbol != nc)
         free((void*)portinfo.symbol);
+    if (portinfo.comment != nc)
+        free((void*)portinfo.comment);
     if (portinfo.designation != nc)
         free((void*)portinfo.designation);
     if (portinfo.shortName != nc)

@@ -203,6 +203,7 @@ class PluginPort(Structure):
         ("symbol", c_char_p),
         ("ranges", PluginPortRanges),
         ("units", PluginPortUnits),
+        ("comment", c_char_p),
         ("designation", c_char_p),
         ("properties", POINTER(c_char_p)),
         ("rangeSteps", c_int),

@@ -89,6 +89,7 @@ typedef struct {
     const char* symbol;
     PluginPortRanges ranges;
     PluginPortUnits units;
+    const char* comment;
     const char* designation;
     const char* const* properties;
     int rangeSteps;
