@@ -73,7 +73,7 @@ typedef struct {
     const char* label;
     const char* render;
     const char* symbol;
-    bool _custom;
+    bool _custom; // internal
 } PluginPortUnits;
 
 typedef struct {
