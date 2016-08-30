@@ -51,6 +51,8 @@ function NetworkStatus(options) {
             error: function (resp, error) {
                 if (resp.status == 0)
                 {
+                    console.log("Timeout reached, status:", document.readyState, $.active, isInstallingPackage)
+
                     if ($.active != 0 || isInstallingPackage || document.readyState != "complete")
                     {
                         timedOutPhase = 0
