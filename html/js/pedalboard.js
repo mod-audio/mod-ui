@@ -81,9 +81,7 @@ JqueryClass('pedalboard', {
             },
 
             // Changes the parameter of a plugin's control port
-            pluginParameterChange: function (port, value, callback) {
-                callback(true)
-            },
+            pluginParameterChange: function (port, value) {},
 
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
@@ -101,9 +99,7 @@ JqueryClass('pedalboard', {
             },
 
             // Marks the position of a plugin
-            pluginMove: function (instance, x, y, callback) {
-                callback(true)
-            },
+            pluginMove: function (instance, x, y) {},
 
             // Takes a list of plugin URIs and gets a dictionary containing all those plugins's data,
             // indexed by URI
@@ -147,6 +143,9 @@ JqueryClass('pedalboard', {
 
         // last adapt schedule time
         self.data('adaptTime', 0)
+
+        // widgets on the arrive list
+        self.data('callbacksToArrive', [])
 
         // Pedalboard itself will get big dimensions and will have it's scale and position changed dinamically
         // often. So, let's wrap it inside an element with same original dimensions and positioning, with overflow
@@ -959,7 +958,7 @@ JqueryClass('pedalboard', {
                 step: drawFactory(plugin),
                 complete: drawFactory(plugin)
             })
-            self.data('pluginMove')(instance, x, y, function (r) {})
+            self.data('pluginMove')(instance, x, y)
         }
 
         var viewWidth = self.parent().width()
@@ -1193,7 +1192,7 @@ JqueryClass('pedalboard', {
                 self.trigger('modified')
                 self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
-                self.data('pluginMove')(instance, ui.position.left, ui.position.top, function (r) {})
+                self.data('pluginMove')(instance, ui.position.left, ui.position.top)
                 self.pedalboard('adapt', false)
             },
             click: function (event) {
@@ -1212,10 +1211,7 @@ JqueryClass('pedalboard', {
                 }, 0)
             },
             change: function (port, value) {
-                self.data('pluginParameterChange')(port, value,
-                    function (ok) {
-                            // TODO Handle this error
-                    })
+                self.data('pluginParameterChange')(port, value)
             },
             presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {
@@ -1384,120 +1380,102 @@ JqueryClass('pedalboard', {
 
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
-        var gui, plugin
-        var retry = 0
 
-        // keep trying until instance is available
-        var trySetEnabled = function () {
-            plugin = self.data('plugins')[instance]
+        var targetname   = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
+        var targetwidget = $(targetname)
 
-            if (plugin != null && plugin.data != null/*&& $(symbolport).length*/) {
-                gui = plugin.data('gui')
+        if (targetwidget.length) {
+            var plugin = self.data('plugins')[instance]
+            if (enabled) {
+                plugin.data('gui').enable(symbol)
+            } else {
+                plugin.data('gui').disable(symbol)
+            }
 
-                if (gui.controls[symbol] != null) {
-                    if (enabled) {
-                        gui.enable(symbol);
-                    } else {
-                        gui.disable(symbol)
-                    }
-                    return
+        } else {
+            var cb = function () {
+                remove_from_array(self.data('callbacksToArrive'), cb)
+                $(document).unbindArrive(targetname, cb)
+
+                var plugin = self.data('plugins')[instance]
+                if (enabled) {
+                    plugin.data('gui').enable(symbol)
+                } else {
+                    plugin.data('gui').disable(symbol)
                 }
             }
-
-            retry += 1
-            if (retry == 50) {
-                console.log("setPortEnabled timed out, failed to disable port")
-                return
-            }
-
-            setTimeout(trySetEnabled, 200)
+            $(document).arrive(targetname, cb)
+            self.data('callbacksToArrive').push(cb)
         }
-
-        trySetEnabled()
     },
 
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
-        var gui, plugin
-        var retry = 0
 
-        // keep trying until instance is available
-        var trySetPortValue = function () {
-            plugin = self.data('plugins')[instance]
+        var targetname   = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
+        var targetwidget = $(targetname)
 
-            if (plugin != null && plugin.data != null) {
-                gui = plugin.data('gui')
+        if (targetwidget.length) {
+            var plugin = self.data('plugins')[instance]
+            plugin.data('gui').setPortWidgetsValue(symbol, value, null, true)
 
-                if (gui.controls[symbol] != null) {
-                    gui.setPortWidgetsValue(symbol, value, null, true);
-                    return
-                }
+        } else {
+            var cb = function () {
+                remove_from_array(self.data('callbacksToArrive'), cb)
+                $(document).unbindArrive(targetname, cb)
+
+                var plugin = self.data('plugins')[instance]
+                plugin.data('gui').setPortWidgetsValue(symbol, value, null, true)
             }
-
-            retry += 1
-            if (retry == 50) {
-                console.log("setPortWidgetsValue timed out for '"+instance+"/"+symbol+"', failed to set port value")
-                return
-            }
-
-            setTimeout(trySetPortValue, 200)
+            $(document).arrive(targetname, cb)
+            self.data('callbacksToArrive').push(cb)
         }
-
-        trySetPortValue()
     },
 
     setOutputPortValue: function (instance, symbol, value) {
         var self = $(this)
-        var plugin, gui
-        var retry = 0
 
-        // keep trying until instance is available
-        var trySetOutputValue = function () {
-            plugin = self.data('plugins')[instance]
+        var targetname   = '.mod-pedal [mod-instance="'+instance+'"]'
+        var targetwidget = $(targetname)
 
-            if (plugin != null && plugin.data != null) {
-                gui = plugin.data('gui')
-                gui.setOutputPortValue(symbol, value);
-                return
+        if (targetwidget.length) {
+            var plugin = self.data('plugins')[instance]
+            plugin.data('gui').setOutputPortValue(symbol, value)
+
+        } else {
+            var cb = function () {
+                remove_from_array(self.data('callbacksToArrive'), cb)
+                $(document).unbindArrive(targetname, cb)
+
+                var plugin = self.data('plugins')[instance]
+                plugin.data('gui').setOutputPortValue(symbol, value)
             }
-
-            retry += 1
-            if (retry == 50) {
-                console.log("setOutputPortValue timed out for '"+instance+"/"+symbol+"', failed to set port value")
-                return
-            }
-
-            setTimeout(trySetOutputValue, 200)
+            $(document).arrive(targetname, cb)
+            self.data('callbacksToArrive').push(cb)
         }
-
-        trySetOutputValue()
     },
 
     selectPreset: function (instance, value) {
         var self = $(this)
-        var gui, plugin
-        var retry = 0
 
-        // keep trying until instance is available
-        var trySelectPreset = function () {
-            plugin = self.data('plugins')[instance]
+        var targetname   = '.mod-pedal [mod-instance="'+instance+'"]'
+        var targetwidget = $(targetname)
 
-            if (plugin != null && plugin.data != null) {
-                gui = plugin.data('gui')
-                gui.selectPreset(value);
-                return
+        if (targetwidget.length) {
+            var plugin = self.data('plugins')[instance]
+            plugin.data('gui').selectPreset(value)
+
+        } else {
+            var cb = function () {
+                remove_from_array(self.data('callbacksToArrive'), cb)
+                $(document).unbindArrive(targetname, cb)
+
+                var plugin = self.data('plugins')[instance]
+                plugin.data('gui').selectPreset(value)
             }
-
-            retry += 1
-            if (retry == 50) {
-                console.log("selectPreset timed out for '"+instance+"'")
-                return
-            }
-
-            setTimeout(trySelectPreset, 200)
+            $(document).arrive(targetname, cb)
+            self.data('callbacksToArrive').push(cb)
         }
-
-        trySelectPreset()
     },
 
     // Redraw all connections from or to a plugin
@@ -1628,6 +1606,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
 
         self.data('bypassApplication', false)
+        self.data('callbacksToArrive', [])
 
         var connMgr = self.data('connectionManager')
         connMgr.iterate(function (jack) {

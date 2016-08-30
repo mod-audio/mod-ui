@@ -119,17 +119,6 @@ class Session(object):
     def web_remove(self, instance, callback):
         self.host.remove_plugin(instance, callback)
 
-    # Set a plugin parameter
-    # We use ":bypass" symbol for on/off state
-    def web_parameter_set(self, port, value, callback):
-        instance, portsymbol = port.rsplit("/",1)
-
-        if portsymbol == ":bypass":
-            value = value >= 0.5
-            self.host.bypass(instance, value, callback)
-        else:
-            self.host.param_set(port, value, callback)
-
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, maximum, minimum, value, steps, callback):
         if not (self.hmi.initialized or actuator_uri.startswith("/midi-")):
@@ -138,10 +127,6 @@ class Session(object):
 
         instance, port2 = port.rsplit("/",1)
         self.host.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
-
-    # Set a plugin block position within the canvas
-    def web_set_position(self, instance, x, y):
-        self.host.set_position(instance, x, y)
 
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
@@ -253,6 +238,29 @@ class Session(object):
         self.player.stop()
 
     # -----------------------------------------------------------------------------------------------------------------
+    # Websocket funtions, called when receiving messages from socket (see webserver.py)
+    # There are no callbacks for these functions.
+
+    # Set a plugin parameter
+    # We use ":bypass" symbol for on/off state
+    def ws_parameter_set(self, port, value):
+        instance, portsymbol = port.rsplit("/",1)
+
+        if portsymbol == ":bypass":
+            value = value >= 0.5
+            self.host.bypass(instance, value, None)
+        else:
+            self.host.param_set(port, value, None)
+
+    # Set a plugin block position within the canvas
+    def ws_plugin_position(self, instance, x, y):
+        self.host.set_position(instance, x, y)
+
+    # set the size of the pedalboard (in 1:1 view, aka "full zoom")
+    def ws_pedalboard_size(self, width, height):
+        self.host.set_pedalboard_size(width, height)
+
+    # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
 
@@ -293,8 +301,5 @@ class Session(object):
         return port
 
     # END host commands
-
-    def pedalboard_size(self, width, height):
-        self.host.set_pedalboard_size(width, height)
 
 SESSION = Session()

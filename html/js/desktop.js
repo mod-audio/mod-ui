@@ -961,35 +961,6 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        pluginParameterChange: function (port, value, callback) {
-            $.ajax({
-                url: '/effect/parameter/set/' + port,
-                data: {
-                    value: value
-                },
-                success: function (resp) {
-                    /*
-                    // TODO trigger??
-                    if (!resp || self.data('trigger')) {
-                        self.data('value', oldValue)
-                        self.widget('sync')
-                    }
-                    */
-                    callback(resp)
-                },
-                error: function () {
-                    /*
-                    self.data('value', oldValue)
-                    self.widget('sync')
-                    alert('erro no request (6)')
-                    */
-                },
-                cache: false,
-                global: false,
-                dataType: 'json'
-            })
-        },
-
         portConnect: function (fromPort, toPort, callback) {
             var urlParam = fromPort + ',' + toPort
             $.ajax({
@@ -1042,45 +1013,19 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
         getPluginsData: self.getPluginsData,
 
-        pluginMove: function (instance, x, y, callback) {
-            if (callback == null) {
-                callback = function (r) {}
-            }
-            $.ajax({
-                url: '/effect/position/' + instance,
-                type: 'GET',
-                data: {
-                    x: x,
-                    y: y
-                },
-                success: callback,
-                cache: false,
-                global: false,
-                error: function (e) {
-                    new Notification('error', "Can't save plugin position")
-                },
-                dataType: 'json'
-            })
+        pluginParameterChange: function (port, value) {
+            ws.send(sprintf("param_set %s %f", port, value))
+        },
+
+        pluginMove: function (instance, x, y) {
+            ws.send(sprintf("plugin_pos %s %f %f", instance, x, y))
         },
 
         windowSize: function (width, height) {
-            $.ajax({
-                url: '/pedalboard/size',
-                type: 'GET',
-                data: {
-                    width: width,
-                    height: height
-                },
-                success: function () {},
-                error: function (e) {
-                    new Notification('error', "Can't save window size")
-                },
-                cache: false,
-                global: false,
-                dataType: 'json'
-            })
-        }
-
+            if (ws && width > 0 && height > 0) {
+                ws.send(sprintf("pb_size %f %f", width, height))
+            }
+        },
     });
 
     // Bind events
