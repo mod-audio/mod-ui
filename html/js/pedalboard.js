@@ -928,7 +928,7 @@ JqueryClass('pedalboard', {
         else if (ratio < w / h) // increse height to keep ratio
             h = w / ratio
 
-        var time = self.data('skipAnimations') ? 0 : 400
+        var time = (self.data('skipAnimations') || forcedUpdate) ? 0 : 400
 
         // Move animate everything: move plugins, scale and position
         // canvas
@@ -943,8 +943,14 @@ JqueryClass('pedalboard', {
         for (instance in plugins) {
             plugin = plugins[instance]
             if (!plugin.position) continue
+            pos = plugin.position()
+            old_x = Math.round(pos.left / scale)
+            old_y = Math.round(pos.top / scale)
             x = parseInt(plugin.css('left')) + left
             y = parseInt(plugin.css('top')) + top
+            if (old_x == x && old_y == y) {
+                continue
+            }
             plugin.animate({
                 left: x,
                 top: y
@@ -1009,12 +1015,18 @@ JqueryClass('pedalboard', {
         var callAdaptLater = function () {
             var curTime2 = self.data('adaptTime')
 
-            if (firstTime && document.readyState == "complete") {
-                curTime2  = 0
-                firstTime = false
-            }
-
             if (curTime2 <= 0) {
+                if (firstTime) {
+                    if (document.readyState == "complete") {
+                        // ready to roll
+                        firstTime = false
+                    } else {
+                        // still not ready
+                        setTimeout(callAdaptLater, 250)
+                        return
+                    }
+                }
+
                 // proceed
                 var forcedUpdate = self.data('adaptForcedUpdate')
                 self.data('adaptForcedUpdate', false)
