@@ -34,6 +34,12 @@ DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
 
+if DEVICE_KEY:
+    print("DEVICE_KEY is available, len:", len(DEVICE_KEY))
+else:
+    print("DEVICE_KEY is NOT available, will not be able to use cloud stuff")
+    print(DEVICE_KEY)
+
 if os.path.isfile(IMAGE_VERSION_PATH):
     with open(IMAGE_VERSION_PATH, 'r') as fh:
         IMAGE_VERSION = fh.read().strip() or None
