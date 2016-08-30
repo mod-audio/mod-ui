@@ -81,9 +81,7 @@ JqueryClass('pedalboard', {
             },
 
             // Changes the parameter of a plugin's control port
-            pluginParameterChange: function (port, value, callback) {
-                callback(true)
-            },
+            pluginParameterChange: function (port, value) {},
 
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
@@ -101,9 +99,7 @@ JqueryClass('pedalboard', {
             },
 
             // Marks the position of a plugin
-            pluginMove: function (instance, x, y, callback) {
-                callback(true)
-            },
+            pluginMove: function (instance, x, y) {},
 
             // Takes a list of plugin URIs and gets a dictionary containing all those plugins's data,
             // indexed by URI
@@ -959,7 +955,7 @@ JqueryClass('pedalboard', {
                 step: drawFactory(plugin),
                 complete: drawFactory(plugin)
             })
-            self.data('pluginMove')(instance, x, y, function (r) {})
+            self.data('pluginMove')(instance, x, y)
         }
 
         var viewWidth = self.parent().width()
@@ -1193,7 +1189,7 @@ JqueryClass('pedalboard', {
                 self.trigger('modified')
                 self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
-                self.data('pluginMove')(instance, ui.position.left, ui.position.top, function (r) {})
+                self.data('pluginMove')(instance, ui.position.left, ui.position.top)
                 self.pedalboard('adapt', false)
             },
             click: function (event) {
@@ -1212,10 +1208,7 @@ JqueryClass('pedalboard', {
                 }, 0)
             },
             change: function (port, value) {
-                self.data('pluginParameterChange')(port, value,
-                    function (ok) {
-                            // TODO Handle this error
-                    })
+                self.data('pluginParameterChange')(port, value)
             },
             presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {

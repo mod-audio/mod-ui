@@ -552,14 +552,6 @@ class EffectDisconnect(JsonRequestHandler):
         ok = yield gen.Task(SESSION.web_disconnect, port_from, port_to)
         self.write(ok)
 
-class EffectParameterSet(JsonRequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self, port):
-        val = float(self.get_argument('value'))
-        ok  = yield gen.Task(SESSION.web_parameter_set, port, val)
-        self.write(ok)
-
 class EffectParameterAddress(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -615,13 +607,6 @@ class EffectPresetDelete(JsonRequestHandler):
         ok     = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
         self.write(ok)
 
-class EffectPosition(JsonRequestHandler):
-    def get(self, instance):
-        x = float(self.get_argument('x'))
-        y = float(self.get_argument('y'))
-        SESSION.web_set_position(instance, x, y)
-        self.write(True)
-
 class ServerWebSocket(websocket.WebSocketHandler):
     @gen.coroutine
     def open(self):
@@ -635,7 +620,27 @@ class ServerWebSocket(websocket.WebSocketHandler):
         yield gen.Task(SESSION.websocket_closed, self)
 
     def on_message(self, message):
-        return
+        if message == "pong":
+            return
+
+        data = message.split(" ")
+        cmd  = data[0]
+
+        if cmd == "param_set":
+            port  = data[1]
+            value = float(data[2])
+            SESSION.ws_parameter_set(port, value)
+
+        elif cmd == "plugin_pos":
+            inst = data[1]
+            x    = float(data[2])
+            y    = float(data[3])
+            SESSION.ws_plugin_position(inst, x, y)
+
+        elif cmd == "pb_size":
+            width  = int(float(data[1]))
+            height = int(float(data[2]))
+            SESSION.ws_pedalboard_size(width, height)
 
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
@@ -853,13 +858,6 @@ class PedalboardRemove(JsonRequestHandler):
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
-        self.write(True)
-
-class PedalboardSize(JsonRequestHandler):
-    def get(self):
-        width  = int(self.get_argument('width'))
-        height = int(self.get_argument('height'))
-        SESSION.pedalboard_size(width, height)
         self.write(True)
 
 class PedalboardImage(web.RequestHandler):
@@ -1282,7 +1280,6 @@ application = web.Application(
             (r"/effect/list", EffectList),
 
             # plugin parameters
-            (r"/effect/parameter/set/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterSet),
             (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
 
             # plugin presets
@@ -1290,9 +1287,6 @@ application = web.Application(
             (r"/effect/preset/save_new/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetSaveNew),
             (r"/effect/preset/save_replace/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetSaveReplace),
             (r"/effect/preset/delete/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetDelete),
-
-            # misc plugin stuff
-            (r"/effect/position/*(/[A-Za-z0-9_/]+[^/])/?", EffectPosition),
 
             # plugin resources
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
@@ -1315,7 +1309,6 @@ application = web.Application(
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),
-            (r"/pedalboard/size/?", PedalboardSize),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/wait", PedalboardImageWait),

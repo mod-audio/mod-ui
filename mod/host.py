@@ -532,18 +532,20 @@ class Host(object):
             return
 
         def check_response(resp):
-            resp = resp.decode("utf-8", errors="ignore")
-            logging.info("[host] received <- %s" % repr(resp))
+            if callback is not None:
+                resp = resp.decode("utf-8", errors="ignore")
+                logging.info("[host] received <- %s" % repr(resp))
 
-            if datatype == 'string':
-                r = resp
-            elif not resp.startswith("resp"):
-                logging.error("[host] protocol error: %s" % ProtocolError(resp))
-                r = None
-            else:
-                r = resp.replace("resp ", "").replace("\0", "").strip()
+                if datatype == 'string':
+                    r = resp
+                elif not resp.startswith("resp"):
+                    logging.error("[host] protocol error: %s" % ProtocolError(resp))
+                    r = None
+                else:
+                    r = resp.replace("resp ", "").replace("\0", "").strip()
 
-            callback(process_resp(r, datatype))
+                callback(process_resp(r, datatype))
+
             self.process_write_queue()
 
         self._idle = False
