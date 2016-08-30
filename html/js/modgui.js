@@ -1392,6 +1392,7 @@ JqueryClass('film', baseWidget, {
             var url = self.css('background-image') || "none";
             url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i);
             if (!url) {
+                console.log("WARNING: The background-image definition for '" + self[0].className + "' was not available, retrying later");
                 self.resize(tryGetAndSetSizeNow)
                 return
             }
