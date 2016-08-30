@@ -535,6 +535,34 @@ function Desktop(elements) {
         })
     },
 
+    this.waitForScreenshot = function (generate, callback) {
+        if (generate) {
+            $.ajax({
+                url: "/pedalboard/image/generate?bundlepath="+escape(self.pedalboardBundle),
+                success: function (resp) {
+                    callback(resp.ok)
+                },
+                error: function () {
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        } else {
+            $.ajax({
+                url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),
+                success: function (resp) {
+                    callback(resp.ok)
+                },
+                error: function () {
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        }
+    },
+
     this.saveBox = elements.saveBox.saveBox({
         save: function (title, asNew, callback) {
             $.ajax({
@@ -546,10 +574,13 @@ function Desktop(elements) {
                 },
                 success: function (result) {
                     if (result.ok) {
+                        // dummy call to keep 1 ajax request active while screenshot is generated
+                        self.waitForScreenshot(false, function(){})
+                        // all set
                         callback(true, result.bundlepath, title)
-                    }
-                    else
+                    } else {
                         callback(false, "Failed to save")
+                    }
                 },
                 error: function (resp) {
                     self.saveBox.hide()
@@ -773,33 +804,7 @@ function Desktop(elements) {
             })
         },
 
-        waitForScreenshot: function (generate, callback) {
-            if (generate) {
-                $.ajax({
-                    url: "/pedalboard/image/generate?bundlepath="+escape(self.pedalboardBundle),
-                    success: function (resp) {
-                        callback(resp.ok)
-                    },
-                    error: function () {
-                        callback(false)
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            } else {
-                $.ajax({
-                    url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),
-                    success: function (resp) {
-                        callback(resp.ok)
-                    },
-                    error: function () {
-                        callback(false)
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            }
-        },
+        waitForScreenshot: self.waitForScreenshot,
     })
 
     elements.statusIcon.statusTooltip()
