@@ -229,12 +229,12 @@ class Host(object):
             jackports = (self._fix_host_connection_port(ports[0]), self._fix_host_connection_port(ports[1]))
             if name not in jackports:
                 continue
-            self.send("disconnect %s %s" % (jackports[0], jackports[1]), lambda r:None, datatype='boolean')
+            disconnect_jack_ports(jackports[0], jackports[1])
             removed_ports.append(ports)
 
         for ports in removed_ports:
             self.connections.remove(ports)
-            self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+            disconnect_jack_ports(ports[0], ports[1])
 
         self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
 
@@ -263,7 +263,7 @@ class Host(object):
 
         else:
             self.bank_id = 0
-            self.send("remove -1", lambda r:None, datatype='boolean')
+            self.send("remove -1")
 
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
@@ -276,7 +276,7 @@ class Host(object):
             navigateFootswitches = False
             navigateChannel      = 15
 
-        self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel), lambda r:None, datatype='boolean')
+        self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
 
     def init_jack(self):
         self.audioportsIn  = []
@@ -558,7 +558,7 @@ class Host(object):
         self.writesock.write(encmsg.encode("utf-8"))
         self.writesock.read_until(b"\0", check_response)
 
-    def send(self, msg, callback, datatype='int'):
+    def send(self, msg, callback=None, datatype='int'):
         if not self.pedalboard_modified and msg.split(" ",1)[0] not in ("bundle_add", "bundle_remove", "midi_program_listen"):
             self.pedalboard_modified = True
         self._queue.append((msg, callback, datatype))
@@ -667,14 +667,14 @@ class Host(object):
                 websocket.write_message("preset %s %s" % (plugin['instance'], plugin['preset']))
 
             if crashed:
-                self.send("add %s %d" % (plugin['uri'], instance_id), lambda r:None, datatype='int')
+                self.send("add %s %d" % (plugin['uri'], instance_id))
                 if plugin['bypassed']:
-                    self.send("bypass %d 1" % (instance_id,), lambda r:None, datatype='boolean')
+                    self.send("bypass %d 1" % (instance_id,))
                 if -1 not in plugin['bypassCC']:
                     mchnnl, mctrl = plugin['bypassCC']
-                    self.send("midi_map %d :bypass %i %i" % (instance_id, mchnnl, mctrl), lambda r:None)
+                    self.send("midi_map %d :bypass %i %i" % (instance_id, mchnnl, mctrl))
                 if plugin['preset']:
-                    self.send("preset_load %d %s" % (instance_id, plugin['preset']), lambda r:None, datatype='boolean')
+                    self.send("preset_load %d %s" % (instance_id, plugin['preset']))
 
             badports = plugin['badports']
 
@@ -683,7 +683,7 @@ class Host(object):
                     websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
-                    self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None, datatype='boolean')
+                    self.send("param_set %d %s %f" % (instance_id, symbol, value))
 
             for symbol, value in plugin['outputs'].items():
                 if value is None:
@@ -696,14 +696,14 @@ class Host(object):
                     websocket.write_message("midi_map %s %s %i %i" % (plugin['instance'], symbol, mchnnl, mctrl))
 
                     if crashed:
-                        self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
+                        self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl))
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
 
             if crashed:
                 self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
-                                             self._fix_host_connection_port(port_to)), lambda r:None, datatype='boolean')
+                                             self._fix_host_connection_port(port_to)))
 
         websocket.write_message("loading_end")
 
@@ -808,7 +808,7 @@ class Host(object):
             }
 
             for output in allports['monitoredOutputs']:
-                self.send("monitor_output %d %s" % (instance_id, output), lambda r:None, datatype='boolean')
+                self.send("monitor_output %d %s" % (instance_id, output))
 
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
@@ -1172,21 +1172,21 @@ class Host(object):
                 "mapPresets": []
             }
 
-            self.send("add %s %d" % (p['uri'], instance_id), lambda r:None)
+            self.send("add %s %d" % (p['uri'], instance_id))
 
             if p['bypassed']:
-                self.send("bypass %d 1" % (instance_id,), lambda r:None)
+                self.send("bypass %d 1" % (instance_id,))
 
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 self.send("midi_map %d :bypass %i %i" % (instance_id, p['bypassCC']['channel'],
-                                                                      p['bypassCC']['control']), lambda r:None)
+                                                                      p['bypassCC']['control']))
                 self.msg_callback("midi_map %s :bypass %i %i" % (instance, p['bypassCC']['channel'],
                                                                            p['bypassCC']['control']))
 
             if p['preset']:
-                self.send("preset_load %d %s" % (instance_id, p['preset']), lambda r:None)
+                self.send("preset_load %d %s" % (instance_id, p['preset']))
                 self.msg_callback("preset %s %s" % (instance, p['preset']))
 
             for port in p['ports']:
@@ -1198,17 +1198,17 @@ class Host(object):
                 self.plugins[instance_id]['ports'][symbol] = value
                 self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl)
 
-                self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
+                self.send("param_set %d %s %f" % (instance_id, symbol, value))
 
                 if symbol not in badports:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                     if mchnnl >= 0 and mctrl >= 0:
-                        self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl), lambda r:None)
+                        self.send("midi_map %d %s %i %i" % (instance_id, symbol, mchnnl, mctrl))
                         self.msg_callback("midi_map %s %s %i %i" % (instance, symbol, mchnnl, mctrl))
 
             for output in allports['monitoredOutputs']:
-                self.send("monitor_output %d %s" % (instance_id, output), lambda r:None)
+                self.send("monitor_output %d %s" % (instance_id, output))
 
         for c in pb['connections']:
             if c['source'] in mappedOldMidiIns.keys():
@@ -1229,7 +1229,8 @@ class Host(object):
 
             port_from = "/graph/%s" % c['source']
             port_to   = "/graph/%s" % c['target']
-            self.send("connect %s %s" % (self._fix_host_connection_port(port_from), self._fix_host_connection_port(port_to)), lambda r:None)
+            self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
+                                         self._fix_host_connection_port(port_to)))
 
             self.connections.append((port_from, port_to))
             self.msg_callback("connect %s %s" % (port_from, port_to))
@@ -2205,7 +2206,7 @@ _:b%i
             bypassed = bool(p['bypassed'])
             pluginData['bypassed'] = bypassed
 
-            self.send("bypass %d %d" % (instance_id, 1 if bypassed else 0), lambda r:None)
+            self.send("bypass %d %d" % (instance_id, 1 if bypassed else 0))
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             addressing = pluginData['addressing'].get(":bypass", None)
@@ -2219,7 +2220,7 @@ _:b%i
             if p['preset']:
                 preset = p['preset']
                 pluginData['preset'] = preset
-                self.send("preset_load %d %s" % (instance_id, preset), lambda r:None)
+                self.send("preset_load %d %s" % (instance_id, preset))
                 self.msg_callback("preset %s %s" % (instance, preset))
 
             for port in p['ports']:
@@ -2227,7 +2228,7 @@ _:b%i
                 value  = port['value']
 
                 pluginData['ports'][symbol] = value
-                self.send("param_set %d %s %f" % (instance_id, symbol, value), lambda r:None)
+                self.send("param_set %d %s %f" % (instance_id, symbol, value))
 
                 if symbol not in pluginData['badports']:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
@@ -2253,7 +2254,7 @@ _:b%i
         def monitor_added(ok):
             if not ok or not connect_jack_ports("system:capture_%d" % self.current_tuner_port,
                                                 "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT)):
-                self.send("remove %d" % TUNER_INSTANCE, lambda r:None, datatype='boolean')
+                self.send("remove %d" % TUNER_INSTANCE)
                 callback(False)
                 return
 
@@ -2374,7 +2375,7 @@ _:b%i
                 jackports = (self._fix_host_connection_port(ports[0]), self._fix_host_connection_port(ports[1]))
                 if name not in jackports:
                     continue
-                self.send("disconnect %s %s" % (jackports[0], jackports[1]), lambda r:None, datatype='boolean')
+                disconnect_jack_ports(jackports[0], jackports[1])
                 removed_ports.append(ports)
 
             for ports in removed_ports:
