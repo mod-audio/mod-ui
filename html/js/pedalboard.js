@@ -145,7 +145,7 @@ JqueryClass('pedalboard', {
         self.data('adaptTime', 0)
 
         // widgets on the arrive list
-        self.data('callbacksToArrive', [])
+        self.data('callbacksToArrive', {})
 
         // Pedalboard itself will get big dimensions and will have it's scale and position changed dinamically
         // often. So, let's wrap it inside an element with same original dimensions and positioning, with overflow
@@ -1356,9 +1356,11 @@ JqueryClass('pedalboard', {
     },
 
     getGui: function (instance) {
-        var self = $(this)
-        var plugin = self.data('plugins')[instance]
-        return plugin.data('gui')
+        var plugin = $(this).data('plugins')[instance]
+        if (plugin && plugin.data) {
+            return plugin.data('gui')
+        }
+        return null
     },
 
     getLoadedPluginURIs: function () {
@@ -1380,102 +1382,108 @@ JqueryClass('pedalboard', {
 
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
+        var targetname = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
 
-        var targetname   = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
-        var targetwidget = $(targetname)
-
-        if (targetwidget.length) {
-            var plugin = self.data('plugins')[instance]
+        if ($(targetname).length) {
+            var gui = self.pedalboard('getGui', instance)
             if (enabled) {
-                plugin.data('gui').enable(symbol)
+                gui.enable(symbol)
             } else {
-                plugin.data('gui').disable(symbol)
+                gui.disable(symbol)
             }
 
         } else {
             var cb = function () {
-                remove_from_array(self.data('callbacksToArrive'), cb)
+                delete self.data('callbacksToArrive')[targetname]
                 $(document).unbindArrive(targetname, cb)
 
-                var plugin = self.data('plugins')[instance]
+                var gui = self.pedalboard('getGui', instance)
                 if (enabled) {
-                    plugin.data('gui').enable(symbol)
+                    gui.enable(symbol)
                 } else {
-                    plugin.data('gui').disable(symbol)
+                    gui.disable(symbol)
                 }
             }
-            $(document).arrive(targetname, cb)
-            self.data('callbacksToArrive').push(cb)
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
         }
     },
 
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
+        var targetname = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
 
-        var targetname   = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
-        var targetwidget = $(targetname)
-
-        if (targetwidget.length) {
-            var plugin = self.data('plugins')[instance]
-            plugin.data('gui').setPortWidgetsValue(symbol, value, null, true)
+        if ($(targetname).length) {
+            var gui = self.pedalboard('getGui', instance)
+            gui.setPortWidgetsValue(symbol, value, null, true)
 
         } else {
             var cb = function () {
-                remove_from_array(self.data('callbacksToArrive'), cb)
+                delete self.data('callbacksToArrive')[targetname]
                 $(document).unbindArrive(targetname, cb)
 
-                var plugin = self.data('plugins')[instance]
-                plugin.data('gui').setPortWidgetsValue(symbol, value, null, true)
+                var gui = self.pedalboard('getGui', instance)
+                gui.setPortWidgetsValue(symbol, value, null, true)
             }
-            $(document).arrive(targetname, cb)
-            self.data('callbacksToArrive').push(cb)
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
         }
     },
 
     setOutputPortValue: function (instance, symbol, value) {
         var self = $(this)
+        var gui = self.pedalboard('getGui', instance)
 
-        var targetname   = '.mod-pedal [mod-instance="'+instance+'"]'
-        var targetwidget = $(targetname)
-
-        if (targetwidget.length) {
-            var plugin = self.data('plugins')[instance]
-            plugin.data('gui').setOutputPortValue(symbol, value)
+        if (gui) {
+            gui.setOutputPortValue(symbol, value)
 
         } else {
+            var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+
             var cb = function () {
-                remove_from_array(self.data('callbacksToArrive'), cb)
+                delete self.data('callbacksToArrive')[targetname]
                 $(document).unbindArrive(targetname, cb)
 
-                var plugin = self.data('plugins')[instance]
-                plugin.data('gui').setOutputPortValue(symbol, value)
+                var gui = self.pedalboard('getGui', instance)
+                gui.setOutputPortValue(symbol, value)
             }
-            $(document).arrive(targetname, cb)
-            self.data('callbacksToArrive').push(cb)
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
         }
     },
 
     selectPreset: function (instance, value) {
         var self = $(this)
+        var gui = self.pedalboard('getGui', instance)
 
-        var targetname   = '.mod-pedal [mod-instance="'+instance+'"]'
-        var targetwidget = $(targetname)
-
-        if (targetwidget.length) {
-            var plugin = self.data('plugins')[instance]
-            plugin.data('gui').selectPreset(value)
+        if (gui) {
+            gui.selectPreset(value)
 
         } else {
+            var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+
             var cb = function () {
-                remove_from_array(self.data('callbacksToArrive'), cb)
+                delete self.data('callbacksToArrive')[targetname]
                 $(document).unbindArrive(targetname, cb)
 
-                var plugin = self.data('plugins')[instance]
-                plugin.data('gui').selectPreset(value)
+                var gui = self.pedalboard('getGui', instance)
+                gui.selectPreset(value)
             }
-            $(document).arrive(targetname, cb)
-            self.data('callbacksToArrive').push(cb)
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
         }
+    },
+
+    addUniqueCallbackToArrive: function (cb, targetname) {
+        var callbacks = $(this).data('callbacksToArrive'),
+            currentCallback = callbacks[targetname];
+
+        if (currentCallback) {
+            $(document).unbindArrive(targetname, currentCallback)
+        }
+
+        callbacks[targetname] = cb
+        $(document).arrive(targetname, cb)
     },
 
     // Redraw all connections from or to a plugin
@@ -1606,7 +1614,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
 
         self.data('bypassApplication', false)
-        self.data('callbacksToArrive', [])
+        self.data('callbacksToArrive', {})
 
         var connMgr = self.data('connectionManager')
         connMgr.iterate(function (jack) {
