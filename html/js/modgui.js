@@ -1384,7 +1384,9 @@ JqueryClass('film', baseWidget, {
 
     getAndSetSize: function (dummy, callback) {
         var self = $(this)
-        var tryGetAndSetSizeNow = function () {
+        var binded = false
+
+        function tryGetAndSetSizeNow() {
             if (dummy && ! self.is(":visible"))
                 return
             if (self.data('initialized'))
@@ -1392,7 +1394,8 @@ JqueryClass('film', baseWidget, {
             var url = self.css('background-image') || "none";
             url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i);
             if (!url) {
-                self.resize(tryGetAndSetSizeNow)
+                binded = true
+                self.bind('resize', tryGetAndSetSizeNow)
                 return
             }
             url = url[1];
@@ -1414,8 +1417,13 @@ JqueryClass('film', baseWidget, {
                 }
             }
             bgImg.setAttribute('src', url);
+
+            if (binded) {
+                self.unbind('resize')
+            }
         }
-        setTimeout(tryGetAndSetSizeNow, 5)
+
+        tryGetAndSetSizeNow()
     },
 
     mouseDown: function (e) {
