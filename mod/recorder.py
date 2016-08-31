@@ -1,7 +1,7 @@
 import time, subprocess, os, copy, json
 from signal import SIGINT
 from tornado import ioloop
-from mod.settings import CAPTURE_PATH, PLAYBACK_PATH
+from mod.settings import CAPTURE_PATH, PLAYBACK_PATH, DEVICE_KEY
 
 class Recorder(object):
     def __init__(self):
@@ -13,16 +13,11 @@ class Recorder(object):
         if self.recording:
             self.stop(False)
         self.tstamp = time.time()
-        self.proc = subprocess.Popen(['jack_capture',
-                                      '-f', 'ogg',
-                                      '-V', '-dc',
-                                      '-d', '65',
-                                      '--port', 'mod-host:monitor-out_1',
-                                      '--port', 'mod-host:monitor-out_2',
-                                      CAPTURE_PATH],
-                                     #stdout=open('/tmp/capture.err', 'w'),
-                                     #stderr=open('/tmp/capture.out', 'w')
-                                     )
+        cmd = ['jack_capture', '-f', 'ogg', '-V', '-dc', '-d', '65', '--port', 'mod-host:monitor-out_1',
+                                                                     '--port', 'mod-host:monitor-out_2', CAPTURE_PATH]
+        if DEVICE_KEY: # if using a real MOD, setup niceness
+            cmd = ["/usr/bin/nice", "-n", "+1"] + cmd
+        self.proc = subprocess.Popen(cmd)
         self.recording = True
 
     def stop(self, returnFileHandle):
@@ -46,7 +41,10 @@ class Player(object):
         fhandle.seek(0)
         with open(PLAYBACK_PATH, 'wb') as fh:
             fh.write(fhandle.read())
-        self.proc = subprocess.Popen(['sndfile-jackplay', PLAYBACK_PATH], stdout=subprocess.PIPE)
+        cmd = ['sndfile-jackplay', PLAYBACK_PATH]
+        if DEVICE_KEY: # if using a real MOD, setup niceness
+            cmd = ["/usr/bin/nice", "-n", "+1"] + cmd
+        self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         self.fhandle = fhandle
         self.stop_callback = stop_callback
         ioloop.IOLoop().instance().add_handler(self.proc.stdout.fileno(), self.end_callback, 16)
