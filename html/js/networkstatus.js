@@ -51,7 +51,9 @@ function NetworkStatus(options) {
             error: function (resp, error) {
                 if (resp.status == 0)
                 {
-                    if ($.active != 0 || isInstallingPackage || document.readyState != "complete")
+                    var loading = $('.screen-loading').is(':visible')
+
+                    if (document.readyState != "complete" || $.active != 0 || loading || isInstallingPackage)
                     {
                         timedOutPhase = 0
                     }
