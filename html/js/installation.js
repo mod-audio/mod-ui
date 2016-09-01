@@ -83,7 +83,11 @@ function InstallationQueue() {
         }
 
         $.ajax({
-            url: SITEURL + '/lv2/plugins?uri=' + escape(uri),
+            url: SITEURL + '/lv2/plugins',
+            data: {
+                uri: uri,
+                image_version: VERSION,
+            },
             success: function (effects) {
                 if (effects.length == 0) {
                     new Notification('error', "Can't find plugin to install", 5000)

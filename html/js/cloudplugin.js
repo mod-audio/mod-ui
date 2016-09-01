@@ -167,6 +167,7 @@ JqueryClass('cloudPluginBox', {
         var query = {
             text: self.data('searchbox').val(),
             summary: "true",
+            image_version: VERSION,
         }
         if (self.find('input:checkbox[name=stable]:checked').length > 0) {
             query.stable = "true"
@@ -782,7 +783,8 @@ JqueryClass('cloudPluginBox', {
         $.ajax({
             url: SITEURL + "/lv2/plugins",
             data: {
-                uri: plugin.uri
+                uri: plugin.uri,
+                image_version: VERSION,
             },
             success: function (pluginData) {
                 if (pluginData && pluginData.length > 0) {
