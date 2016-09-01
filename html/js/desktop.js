@@ -231,6 +231,7 @@ function Desktop(elements) {
         }
         else
         {
+            // NOTE: this part is never called. pedalboard search is always local
             $.ajax({
                 method: 'GET',
                 url: SITEURL + '/pedalboard/search/?term=' + escape(query),

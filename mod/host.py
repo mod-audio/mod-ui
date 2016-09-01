@@ -452,13 +452,14 @@ class Host(object):
                 value       = float(msg[3])
 
                 instance = self.mapper.get_instance(instance_id)
+                plugin   = self.plugins.get(instance_id)
 
-                if portsymbol == ":bypass":
-                    self.plugins[instance_id]['bypassed'] = bool(value)
-                else:
-                    self.plugins[instance_id]['ports'][portsymbol] = value
-
-                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+                if plugin is not None:
+                    if portsymbol == ":bypass":
+                        plugin['bypassed'] = bool(value)
+                    else:
+                        plugin['ports'][portsymbol] = value
+                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "output_set":
                 instance_id = int(msg[1])
@@ -470,8 +471,11 @@ class Host(object):
 
                 else:
                     instance = self.mapper.get_instance(instance_id)
-                    self.plugins[instance_id]['outputs'][portsymbol] = value
-                    self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
+                    plugin   = self.plugins.get(instance_id)
+
+                    if plugin is not None:
+                        plugin['outputs'][portsymbol] = value
+                        self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "midi_mapped":
                 instance_id = int(msg[1])
