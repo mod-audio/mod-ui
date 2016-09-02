@@ -65,7 +65,7 @@ static size_t HOMElen = strlen(HOME);
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
     nullptr, 0, 0, 0, 0,                         \
-    { nullptr, nullptr }                         \
+    { nullptr, nullptr, nullptr }                \
 }
 
 #define PluginInfo_Init {                            \
@@ -1018,11 +1018,11 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // gui
 
+    LilvNode* modguigui = nullptr;
+    char* resdir = nullptr;
+
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.modgui_gui))
     {
-        LilvNode* modguigui = nullptr;
-        char* resdir = nullptr;
-
         LILV_FOREACH(nodes, it, nodes)
         {
             const LilvNode* const mgui = lilv_nodes_get(nodes, it);
@@ -1049,40 +1049,34 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                 break;
         }
 
-        free(resdir);
-
-        if (modguigui != nullptr)
-        {
-            if (LilvNode* const modgui_scrn = lilv_world_get(W, modguigui, ns.modgui_screenshot, nullptr))
-            {
-                info.gui.screenshot = lilv_file_abspath(lilv_node_as_string(modgui_scrn));
-                lilv_node_free(modgui_scrn);
-            }
-
-            if (info.gui.screenshot == nullptr)
-                info.gui.screenshot = nc;
-
-            if (LilvNode* const modgui_thumb = lilv_world_get(W, modguigui, ns.modgui_thumbnail, nullptr))
-            {
-                info.gui.thumbnail = lilv_file_abspath(lilv_node_as_string(modgui_thumb));
-                lilv_node_free(modgui_thumb);
-            }
-
-            if (info.gui.thumbnail == nullptr)
-                info.gui.thumbnail = nc;
-
-            lilv_node_free(modguigui);
-        }
-        else
-        {
-            info.gui.screenshot = nc;
-            info.gui.thumbnail  = nc;
-        }
-
         lilv_nodes_free(nodes);
+    }
+
+    if (modguigui != nullptr && resdir != nullptr)
+    {
+        info.gui.resourcesDirectory = resdir;
+
+        if (LilvNode* const modgui_scrn = lilv_world_get(W, modguigui, ns.modgui_screenshot, nullptr))
+        {
+            info.gui.screenshot = lilv_file_abspath(lilv_node_as_string(modgui_scrn));
+            lilv_node_free(modgui_scrn);
+        }
+        if (info.gui.screenshot == nullptr)
+            info.gui.screenshot = nc;
+
+        if (LilvNode* const modgui_thumb = lilv_world_get(W, modguigui, ns.modgui_thumbnail, nullptr))
+        {
+            info.gui.thumbnail = lilv_file_abspath(lilv_node_as_string(modgui_thumb));
+            lilv_node_free(modgui_thumb);
+        }
+        if (info.gui.thumbnail == nullptr)
+            info.gui.thumbnail = nc;
+
+        lilv_node_free(modguigui);
     }
     else
     {
+        info.gui.resourcesDirectory = nc;
         info.gui.screenshot = nc;
         info.gui.thumbnail  = nc;
     }
@@ -1515,7 +1509,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // get the proper modgui
+    // gui
 
     LilvNode* modguigui = nullptr;
     char* resdir = nullptr;
@@ -1533,9 +1527,15 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             resdir = lilv_file_abspath(lilv_node_as_string(resdirn));
 
             lilv_node_free(modguigui);
-            modguigui = lilv_node_duplicate(mgui);
-
             lilv_node_free(resdirn);
+
+            if (resdir == nullptr)
+            {
+                modguigui = nullptr;
+                continue;
+            }
+
+            modguigui = lilv_node_duplicate(mgui);
 
             if (strncmp(resdir, HOME, HOMElen) == 0)
                 // found a modgui in the home dir, stop here and use it
@@ -1545,13 +1545,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         lilv_nodes_free(nodes);
     }
 
-    // --------------------------------------------------------------------------------------------------------
-    // gui
-
-    if (modguigui != nullptr)
+    if (modguigui != nullptr && resdir != nullptr)
     {
         info.gui.resourcesDirectory = resdir;
-        resdir = nullptr;
 
         // icon and settings templates
         if (LilvNode* const modgui_icon = lilv_world_get(W, modguigui, ns.modgui_iconTemplate, nullptr))
@@ -2591,6 +2587,8 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
         free((void*)info.name);
     if (info.comment != nc)
         free((void*)info.comment);
+    if (info.gui.resourcesDirectory != nc)
+        free((void*)info.gui.resourcesDirectory);
     if (info.gui.screenshot != nc)
         free((void*)info.gui.screenshot);
     if (info.gui.thumbnail != nc)
@@ -3180,7 +3178,38 @@ const PluginInfo* get_plugin_info(const char* const uri_)
     return nullptr;
 }
 
-const PluginInfo_Mini* get_plugin_info_mini(const char* const uri_)
+const PluginGUI* get_plugin_gui(const char* uri_)
+{
+    const std::string uri = uri_;
+
+    // check if it exists
+    if (PLUGNFO.count(uri) == 0)
+        return nullptr;
+
+    // check if it's already cached
+    if (PLUGNFO[uri].valid)
+        return &PLUGNFO[uri].gui;
+
+    LilvNode* const urinode = lilv_new_uri(W, uri_);
+
+    if (urinode == nullptr)
+        return nullptr;
+
+    const LilvPlugin* const p = lilv_plugins_get_by_uri(PLUGINS, urinode);
+    lilv_node_free(urinode);
+
+    if (p != nullptr)
+    {
+        const NamespaceDefinitions ns;
+        PLUGNFO[uri] = _get_plugin_info(p, ns);
+        return &PLUGNFO[uri].gui;
+    }
+
+    // not found
+    return nullptr;
+}
+
+const PluginGUI_Mini* get_plugin_gui_mini(const char* uri_)
 {
     const std::string uri = uri_;
 
@@ -3190,7 +3219,7 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* const uri_)
 
     // check if it's already cached
     if (PLUGNFO_Mini[uri].valid)
-        return &PLUGNFO_Mini[uri];
+        return &PLUGNFO_Mini[uri].gui;
 
     const NamespaceDefinitions_Mini ns;
 
@@ -3207,7 +3236,7 @@ const PluginInfo_Mini* get_plugin_info_mini(const char* const uri_)
         // found it
         printf("NOTICE: Plugin '%s' was not (small) cached, scanning it now...\n", uri_);
         PLUGNFO_Mini[uri] = _get_plugin_info_mini(p, ns);
-        return &PLUGNFO_Mini[uri];
+        return &PLUGNFO_Mini[uri].gui;
     }
 
     // not found

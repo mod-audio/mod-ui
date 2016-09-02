@@ -41,7 +41,8 @@ void scanPlugins()
             }
 
             get_plugin_info(plugins[i]->uri);
-            get_plugin_info_mini(plugins[i]->uri);
+            get_plugin_gui(plugins[i]->uri);
+            get_plugin_gui_mini(plugins[i]->uri);
             get_plugin_control_inputs_and_monitored_outputs(plugins[i]->uri);
         }
     }
@@ -75,7 +76,8 @@ int main()
 # define PLUGIN_TEST_URI "http://code.google.com/p/amsynth/amsynth"
     rescan_plugin_presets(PLUGIN_TEST_URI);
     get_plugin_info(PLUGIN_TEST_URI);
-    get_plugin_info_mini(PLUGIN_TEST_URI);
+    get_plugin_gui(PLUGIN_TEST_URI);
+    get_plugin_gui_mini(PLUGIN_TEST_URI);
     get_plugin_control_inputs_and_monitored_outputs(PLUGIN_TEST_URI);
 # undef PLUGIN_TEST_URI
 # endif

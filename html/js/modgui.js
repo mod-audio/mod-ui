@@ -64,7 +64,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             effect.gui.iconTemplate = loadedIcons[plughash]
         } else {
             iconLoaded = false
-            var iconUrl = baseUrl + '/effect/icon.html?uri=' + escapeduri + '&ver=' + version
+            var iconUrl = baseUrl + '/effect/file/iconTemplate?uri=' + escapeduri + '&ver=' + version
             $.get(iconUrl, function (data) {
                 effect.gui.iconTemplate = loadedIcons[plughash] = data
                 iconLoaded = true
@@ -78,7 +78,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             effect.gui.settingsTemplate = loadedSettings[plughash]
         } else {
             settingsLoaded = false
-            var settingsUrl = baseUrl + '/effect/settings.html?uri=' + escapeduri + '&ver=' + version
+            var settingsUrl = baseUrl + '/effect/file/settingsTemplate?uri=' + escapeduri + '&ver=' + version
             $.get(settingsUrl, function (data) {
                 effect.gui.settingsTemplate = loadedSettings[plughash] = data
                 settingsLoaded = true
@@ -89,7 +89,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
 
     if (effect.gui.stylesheet && !loadedCSSs[plughash]) {
         cssLoaded = false
-        var cssUrl = baseUrl + '/effect/stylesheet.css?uri=' + escapeduri + '&ver=' + version
+        var cssUrl = baseUrl + '/effect/file/stylesheet?uri=' + escapeduri + '&ver=' + version
         $.get(cssUrl, function (data) {
               data = Mustache.render(data, {
                          ns : '?uri=' + escapeduri + '&ver=' + version,
@@ -107,7 +107,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             gui.jsCallback = loadedJSs[plughash]
         } else {
             jsLoaded = false
-            var jsUrl = baseUrl + '/effect/gui.js?uri=' + escapeduri + '&ver=' + version
+            var jsUrl = baseUrl + '/effect/file/javascript?uri=' + escapeduri + '&ver=' + version
             $.ajax({
                 url: jsUrl,
                 success: function (code) {

@@ -169,6 +169,7 @@ class PluginGUI(Structure):
 
 class PluginGUI_Mini(Structure):
     _fields_ = [
+        ("resourcesDirectory", c_char_p),
         ("screenshot", c_char_p),
         ("thumbnail", c_char_p),
     ]
@@ -420,8 +421,11 @@ utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
 utils.get_plugin_info.argtypes = [c_char_p]
 utils.get_plugin_info.restype  = POINTER(PluginInfo)
 
-utils.get_plugin_info_mini.argtypes = [c_char_p]
-utils.get_plugin_info_mini.restype  = POINTER(PluginInfo_Mini)
+utils.get_plugin_gui.argtypes = [c_char_p]
+utils.get_plugin_gui.restype  = POINTER(PluginGUI)
+
+utils.get_plugin_gui_mini.argtypes = [c_char_p]
+utils.get_plugin_gui_mini.restype  = POINTER(PluginGUI_Mini)
 
 utils.get_plugin_control_inputs_and_monitored_outputs.argtypes = [c_char_p]
 utils.get_plugin_control_inputs_and_monitored_outputs.restype  = POINTER(PluginInfo_Controls)
@@ -540,10 +544,18 @@ def get_plugin_info(uri):
         raise Exception
     return structToDict(info.contents)
 
-# get a specific plugin
+# get a specific plugin's modgui
 # NOTE: may throw
-def get_plugin_info_mini(uri):
-    info = utils.get_plugin_info_mini(uri.encode("utf-8"))
+def get_plugin_gui(uri):
+    info = utils.get_plugin_gui(uri.encode("utf-8"))
+    if not info:
+        raise Exception
+    return structToDict(info.contents)
+
+# get a specific plugin's modgui (mini)
+# NOTE: may throw
+def get_plugin_gui_mini(uri):
+    info = utils.get_plugin_gui_mini(uri.encode("utf-8"))
     if not info:
         raise Exception
     return structToDict(info.contents)
