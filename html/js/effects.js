@@ -313,7 +313,7 @@ JqueryClass('effectBox', {
             brand : plugin.brand,
             label : plugin.label,
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                          ? ("/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver)
+                          ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
         }
 
@@ -370,10 +370,10 @@ JqueryClass('effectBox', {
                 author: plugin.author,
                 uri: plugin.uri,
                 thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                              ? "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
+                              ? "/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver
                               : "/resources/pedals/default-thumbnail.png",
                 screenshot_href: (plugin.gui && plugin.gui.screenshot)
-                              ? "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
+                              ? "/effect/image/screenshot.png?uri=" + uri + "&v=" + ver
                               : "/resources/pedals/default-screenshot.png",
                 category: plugin.category[0] || "None",
                 installed_version: version(plugin.installedVersion),
