@@ -1423,7 +1423,7 @@ JqueryClass('film', baseWidget, {
             }
         }
 
-        tryGetAndSetSizeNow()
+        setTimeout(tryGetAndSetSizeNow, 5)
     },
 
     mouseDown: function (e) {
