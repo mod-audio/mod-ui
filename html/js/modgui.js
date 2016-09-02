@@ -64,7 +64,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             effect.gui.iconTemplate = loadedIcons[plughash]
         } else {
             iconLoaded = false
-            var iconUrl = baseUrl + '/effect/icon.html?uri=' + escapeduri + '&ver=' + version
+            var iconUrl = baseUrl + '/effect/file/iconTemplate?uri=' + escapeduri + '&v=' + version
             $.get(iconUrl, function (data) {
                 effect.gui.iconTemplate = loadedIcons[plughash] = data
                 iconLoaded = true
@@ -78,7 +78,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             effect.gui.settingsTemplate = loadedSettings[plughash]
         } else {
             settingsLoaded = false
-            var settingsUrl = baseUrl + '/effect/settings.html?uri=' + escapeduri + '&ver=' + version
+            var settingsUrl = baseUrl + '/effect/file/settingsTemplate?uri=' + escapeduri + '&v=' + version
             $.get(settingsUrl, function (data) {
                 effect.gui.settingsTemplate = loadedSettings[plughash] = data
                 settingsLoaded = true
@@ -89,10 +89,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
 
     if (effect.gui.stylesheet && !loadedCSSs[plughash]) {
         cssLoaded = false
-        var cssUrl = baseUrl + '/effect/stylesheet.css?uri=' + escapeduri + '&ver=' + version
+        var cssUrl = baseUrl + '/effect/file/stylesheet?uri=' + escapeduri + '&v=' + version
         $.get(cssUrl, function (data) {
               data = Mustache.render(data, {
-                         ns : '?uri=' + escapeduri + '&ver=' + version,
+                         ns : '?uri=' + escapeduri + '&v=' + version,
                          cns: '_' + escapeduri.split("/").join("_").split("%").join("_").split(".").join("_") + version
                      })
             $('<style type="text/css">').text(data).appendTo($('head'))
@@ -107,7 +107,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             gui.jsCallback = loadedJSs[plughash]
         } else {
             jsLoaded = false
-            var jsUrl = baseUrl + '/effect/gui.js?uri=' + escapeduri + '&ver=' + version
+            var jsUrl = baseUrl + '/effect/file/javascript?uri=' + escapeduri + '&v=' + version
             $.ajax({
                 url: jsUrl,
                 success: function (code) {
@@ -1031,7 +1031,7 @@ function GUI(effect, options) {
             data.ns  = ''
             data.cns = '_sdk'
         } else {
-            data.ns  = '?uri=' + escapeduri + '&ver=' + version,
+            data.ns  = '?uri=' + escapeduri + '&v=' + version,
             data.cns = '_' + escapeduri.split("/").join("_").split("%").join("_").split(".").join("_") + version
         }
 
@@ -1423,7 +1423,7 @@ JqueryClass('film', baseWidget, {
             }
         }
 
-        tryGetAndSetSizeNow()
+        setTimeout(tryGetAndSetSizeNow, 5)
     },
 
     mouseDown: function (e) {

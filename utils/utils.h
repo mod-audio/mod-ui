@@ -59,6 +59,7 @@ typedef struct {
 } PluginGUI;
 
 typedef struct {
+    const char* resourcesDirectory;
     const char* screenshot;
     const char* thumbnail;
 } PluginGUI_Mini;
@@ -269,9 +270,13 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
 
-// get a specific plugin (mini)
+// get a specific plugin's modgui
 // NOTE: may return null
-MOD_API const PluginInfo_Mini* get_plugin_info_mini(const char* uri);
+MOD_API const PluginGUI* get_plugin_gui(const char* uri);
+
+// get a specific plugin's modgui (mini)
+// NOTE: may return null
+MOD_API const PluginGUI_Mini* get_plugin_gui_mini(const char* uri);
 
 // get all control inputs and monitored outputs for a specific plugin
 MOD_API const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const char* uri);

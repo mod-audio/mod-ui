@@ -145,8 +145,8 @@ JqueryClass('cloudPluginBox', {
             if (plugin.gui) {
                 var uri = escape(plugin.uri)
                 var ver = plugin.installedVersion.join('_')
-                plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
-                plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
+                plugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&v=" + ver
+                plugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver
             } else {
                 plugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                 plugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
@@ -345,8 +345,8 @@ JqueryClass('cloudPluginBox', {
                     var uri = escape(lplugin.uri)
                     var ver = [lplugin.builder, lplugin.microVersion, lplugin.minorVersion, lplugin.release].join('_')
 
-                    lplugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&ver=" + ver
-                    lplugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&ver=" + ver
+                    lplugin.screenshot_href = "/effect/image/screenshot.png?uri=" + uri + "&v=" + ver
+                    lplugin.thumbnail_href  = "/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver
                 } else {
                     lplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                     lplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"

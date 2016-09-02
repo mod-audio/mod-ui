@@ -47,7 +47,8 @@ from mod.utils import (init as lv2_init,
                        cleanup as lv2_cleanup,
                        get_all_plugins,
                        get_plugin_info,
-                       get_plugin_info_mini,
+                       get_plugin_gui,
+                       get_plugin_gui_mini,
                        get_all_pedalboards,
                        get_pedalboard_info,
                        get_jack_buffer_size,
@@ -375,12 +376,12 @@ class EffectResource(web.StaticFileHandler):
             return self.shared_resource(path)
 
         try:
-            data = get_plugin_info(uri)
+            modgui = get_plugin_gui_mini(uri)
         except:
             raise web.HTTPError(404)
 
         try:
-            root = data['gui']['resourcesDirectory']
+            root = modgui['resourcesDirectory']
         except:
             raise web.HTTPError(404)
 
@@ -398,17 +399,25 @@ class EffectResource(web.StaticFileHandler):
         super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
         return super(EffectResource, self).get(path)
 
-class EffectImage(web.RequestHandler):
-    def get(self, image):
+class EffectImage(web.StaticFileHandler):
+    def initialize(self):
         uri = self.get_argument('uri')
 
         try:
-            data = get_plugin_info_mini(uri)
+            self.modgui = get_plugin_gui_mini(uri)
         except:
             raise web.HTTPError(404)
 
         try:
-            path = data['gui'][image]
+            root = self.modgui['resourcesDirectory']
+        except:
+            raise web.HTTPError(404)
+
+        return web.StaticFileHandler.initialize(self, root)
+
+    def parse_url_path(self, image):
+        try:
+            path = self.modgui[image]
         except:
             path = None
 
@@ -418,84 +427,31 @@ class EffectImage(web.RequestHandler):
             except:
                 raise web.HTTPError(404)
 
-        self.set_header('Content-type', 'image/png')
+        return path
 
-        with open(path, 'rb') as fd:
-            self.write(fd.read())
-
-        self.finish()
-
-class EffectHTML(web.RequestHandler):
-    def get(self, html):
+class EffectFile(web.StaticFileHandler):
+    def initialize(self):
         uri = self.get_argument('uri')
 
         try:
-            data = get_plugin_info(uri)
+            self.modgui = get_plugin_gui(uri)
         except:
             raise web.HTTPError(404)
 
         try:
-            path = data['gui']['%sTemplate' % html]
+            root = self.modgui['resourcesDirectory']
         except:
             raise web.HTTPError(404)
 
-        if not os.path.exists(path):
-            raise web.HTTPError(404)
+        return web.StaticFileHandler.initialize(self, root)
 
-        self.set_header('Content-type', 'text/html')
-
-        with open(path, 'rb') as fd:
-            self.write(fd.read())
-
-        self.finish()
-
-class EffectStylesheet(web.RequestHandler):
-    def get(self):
-        uri = self.get_argument('uri')
-
+    def parse_url_path(self, prop):
         try:
-            data = get_plugin_info(uri)
+            path = self.modgui[prop]
         except:
             raise web.HTTPError(404)
 
-        try:
-            path = data['gui']['stylesheet']
-        except:
-            raise web.HTTPError(404)
-
-        if not os.path.exists(path):
-            raise web.HTTPError(404)
-
-        self.set_header('Content-type', 'text/css')
-
-        with open(path, 'rb') as fd:
-            self.write(fd.read())
-
-        self.finish()
-
-class EffectJavascript(web.RequestHandler):
-    def get(self):
-        uri = self.get_argument('uri')
-
-        try:
-            data = get_plugin_info(uri)
-        except:
-            raise web.HTTPError(404)
-
-        try:
-            path = data['gui']['javascript']
-        except:
-            raise web.HTTPError(404)
-
-        if not os.path.exists(path):
-            raise web.HTTPError(404)
-
-        self.set_header('Content-type', 'text/plain')
-
-        with open(path, 'rb') as fd:
-            self.write(fd.read())
-
-        self.finish()
+        return path
 
 class EffectAdd(JsonRequestHandler):
     @web.asynchronous
@@ -860,24 +816,13 @@ class PedalboardRemove(JsonRequestHandler):
         remove_pedalboard_from_banks(bundlepath)
         self.write(True)
 
-class PedalboardImage(web.RequestHandler):
-    def get(self, image):
-        bundlepath = self.get_argument('bundlepath')
-        imagepath  = os.path.join(bundlepath, "%s.png" % image)
-        #imagetype  = "png"
+class PedalboardImage(web.StaticFileHandler):
+    def initialize(self):
+        root = self.get_argument('bundlepath')
+        return web.StaticFileHandler.initialize(self, root)
 
-        if not os.path.exists(imagepath):
-            #imagepath = os.path.join(HTML_DIR, "img", "loading-effect.gif")
-            #imagetype = "gif"
-            raise web.HTTPError(404)
-
-        #self.set_header('Content-type', 'image/%s' % imagetype)
-        self.set_header('Content-type', 'image/png')
-
-        with open(imagepath, 'rb') as fd:
-            self.write(fd.read())
-
-        self.finish()
+    def parse_url_path(self, image):
+        return os.path.join(self.root, "%s.png" % image)
 
 class PedalboardImageGenerate(JsonRequestHandler):
     @web.asynchronous
@@ -1290,9 +1235,7 @@ application = web.Application(
 
             # plugin resources
             (r"/effect/image/(screenshot|thumbnail).png", EffectImage),
-            (r"/effect/(icon|settings).html", EffectHTML),
-            (r"/effect/stylesheet.css", EffectStylesheet),
-            (r"/effect/gui.js", EffectJavascript),
+            (r"/effect/file/(.*)", EffectFile),
 
             # connections
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
