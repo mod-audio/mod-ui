@@ -127,7 +127,10 @@ JqueryClass('effectBox', {
 
         //self.effectBox('fold')
         self.effectBox('setCategory', 'All')
-        self.effectBox('search')
+
+        // don't search just yet.
+        // it's a little expensive, let init time go for loading the pedalboard first
+        self.effectBox('showPlugins', [])
 
         self.mouseenter(function () { self.effectBox('mouseEnter'); });
         $("#main-menu").mouseenter(function () { self.trigger("mouseenter") });
@@ -177,7 +180,7 @@ JqueryClass('effectBox', {
         self.effectBox('calculateNavigation')
     },
 
-    search: function () {
+    search: function (callback) {
         var self = $(this)
         var searchbox = self.data('searchbox')
         var term = searchbox.val()
@@ -208,14 +211,14 @@ JqueryClass('effectBox', {
                         allplugins[plugin.uri] = plugin
                     }
                     desktop.resetPluginIndexer(allplugins)
-                    self.effectBox('showPlugins', plugins)
+                    self.effectBox('showPlugins', plugins, callback)
                 },
                 dataType: 'json'
             })
         }
     },
 
-    showPlugins: function (plugins) {
+    showPlugins: function (plugins, callback) {
         var self = $(this)
         self.effectBox('cleanResults')
         plugins.sort(function (a, b) {
@@ -268,6 +271,7 @@ JqueryClass('effectBox', {
         function renderNextPlugin(c) {
             if (self.data('showPluginsRenderId') != currentRenderId) {
                 // another render is in place, stop this one
+                if (callback) { callback() }
                 return
             }
 
@@ -279,6 +283,7 @@ JqueryClass('effectBox', {
                     // no other renders in queue, take the chance and reset the id
                     self.data('showPluginsRenderId', 0)
                 }
+                if (callback) { callback() }
                 return
             }
 
