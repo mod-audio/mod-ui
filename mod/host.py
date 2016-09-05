@@ -321,11 +321,13 @@ class Host(object):
         # Main socket, used for sending messages
         self.writesock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
         self.writesock.set_close_callback(self.writer_connection_closed)
+        self.writesock.set_nodelay(True)
         self.writesock.connect(self.addr, writer_check_response)
 
         # Extra socket, used for receiving messages
         self.readsock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
         self.readsock.set_close_callback(self.reader_connection_closed)
+        self.readsock.set_nodelay(True)
         self.readsock.connect((self.addr[0], self.addr[1]+1), reader_check_response)
 
     def reader_connection_closed(self):
@@ -521,6 +523,9 @@ class Host(object):
 
                     self.reset(hmi_clear_callback)
 
+            elif cmd == "data_finish":
+                self.send_data_handled()
+
             else:
                 logging.error("[host] unrecognized command: %s" % cmd)
 
@@ -530,6 +535,10 @@ class Host(object):
             return
 
         self.readsock.read_until(b"\0", check_message)
+
+    @gen.coroutine
+    def send_data_handled(self):
+        yield gen.Task(self.send, "data_handled", datatype='boolean')
 
     def process_write_queue(self):
         try:
