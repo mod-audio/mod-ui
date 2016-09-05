@@ -1059,7 +1059,7 @@ JqueryClass('pedalboard', {
 
         if (curTime == 0) {
             // first time, setup everything
-            self.data('adaptTime', firstTime ? 401 : 101)
+            self.data('adaptTime', firstTime ? 201 : 101)
             setTimeout(callAdaptLater, 1)
         } else if (curTime < 500) {
             // not first time, increase timer
