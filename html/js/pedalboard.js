@@ -108,7 +108,12 @@ JqueryClass('pedalboard', {
             },
 
             // Sets the size of the pedalboard
-            windowSize: function (width, height) {}
+            windowSize: function (width, height) {},
+
+            // inform dekstop instance that pedalboard has finished loading
+            pedalboardFinishedLoading: function (callback) {
+                callback()
+            },
 
         }, options)
 
@@ -143,6 +148,9 @@ JqueryClass('pedalboard', {
 
         // last adapt schedule time
         self.data('adaptTime', 0)
+
+        // if first time to adapt
+        self.data('adaptFirstTime', true)
 
         // widgets on the arrive list
         self.data('callbacksToArrive', {})
@@ -1009,7 +1017,7 @@ JqueryClass('pedalboard', {
             self.data('adaptForcedUpdate', true)
         }
 
-        var firstTime = document.readyState != "complete"
+        var firstTime = self.data('adaptFirstTime')
 
         var callAdaptLater = function () {
             var curTime2 = self.data('adaptTime')
@@ -1019,6 +1027,7 @@ JqueryClass('pedalboard', {
                     if (document.readyState == "complete") {
                         // ready to roll
                         firstTime = false
+                        self.data('adaptFirstTime', false)
                     } else {
                         // still not ready
                         setTimeout(callAdaptLater, 250)
@@ -1031,8 +1040,11 @@ JqueryClass('pedalboard', {
                 self.data('adaptForcedUpdate', false)
                 self.data('adaptTime', 0)
                 self.pedalboard('positionHardwarePorts')
-                self.pedalboard('adapt', forcedUpdate)
-                self.data('wait').stopIfNeeded()
+                self.data('pedalboardFinishedLoading')(function () {
+                    self.pedalboard('adapt', forcedUpdate)
+                    self.data('wait').stopIfNeeded()
+                })
+
                 //console.log("done!")
 
             } else {
@@ -1049,9 +1061,9 @@ JqueryClass('pedalboard', {
             // first time, setup everything
             self.data('adaptTime', firstTime ? 201 : 101)
             setTimeout(callAdaptLater, 1)
-        } else {
+        } else if (curTime < 500) {
             // not first time, increase timer
-            self.data('adaptTime', curTime+1)
+            self.data('adaptTime', curTime + (firstTime ? 4 : 1))
         }
     },
 

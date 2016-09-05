@@ -1385,20 +1385,32 @@ JqueryClass('film', baseWidget, {
     getAndSetSize: function (dummy, callback) {
         var self = $(this)
         var binded = false
+        var handled = false
 
         function tryGetAndSetSizeNow() {
             if (dummy && ! self.is(":visible"))
                 return
-            if (self.data('initialized'))
+            if (self.data('initialized') || handled) {
+                desktop.pedalboard.pedalboard('scheduleAdapt', false)
                 return
+            }
+
             var url = self.css('background-image') || "none";
             url = url.match(/^url\(['"]?([^\)'"]*)['"]?\)/i);
             if (!url) {
-                binded = true
-                self.bind('resize', tryGetAndSetSizeNow)
+                if (! binded) {
+                    binded = true
+                    self.bind('resize', tryGetAndSetSizeNow)
+                }
                 return
             }
+
+            handled = true
             url = url[1];
+            if (binded) {
+                self.unbind('resize')
+            }
+
             var height = parseInt(self.css('background-size').split(" ")[1] || 0);
             var bgImg = new Image;
             bgImg.onload = function () {
@@ -1417,10 +1429,6 @@ JqueryClass('film', baseWidget, {
                 }
             }
             bgImg.setAttribute('src', url);
-
-            if (binded) {
-                self.unbind('resize')
-            }
         }
 
         setTimeout(tryGetAndSetSizeNow, 5)

@@ -451,10 +451,12 @@ class Host(object):
                 portsymbol  = msg[2]
                 value       = float(msg[3])
 
-                instance = self.mapper.get_instance(instance_id)
-                plugin   = self.plugins.get(instance_id)
-
-                if plugin is not None:
+                try:
+                    instance = self.mapper.get_instance(instance_id)
+                    plugin   = self.plugins[instance_id]
+                except:
+                    pass
+                else:
                     if portsymbol == ":bypass":
                         plugin['bypassed'] = bool(value)
                     else:
@@ -470,10 +472,12 @@ class Host(object):
                     self.set_tuner_value(value)
 
                 else:
-                    instance = self.mapper.get_instance(instance_id)
-                    plugin   = self.plugins.get(instance_id)
-
-                    if plugin is not None:
+                    try:
+                        instance = self.mapper.get_instance(instance_id)
+                        plugin   = self.plugins[instance_id]
+                    except:
+                        pass
+                    else:
                         plugin['outputs'][portsymbol] = value
                         self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 

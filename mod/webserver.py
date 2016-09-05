@@ -431,6 +431,9 @@ class EffectImage(web.StaticFileHandler):
 
 class EffectFile(web.StaticFileHandler):
     def initialize(self):
+        # return custom type directly. The browser will do the parsing
+        self.custom_type = None
+
         uri = self.get_argument('uri')
 
         try:
@@ -451,7 +454,15 @@ class EffectFile(web.StaticFileHandler):
         except:
             raise web.HTTPError(404)
 
+        if prop in ("iconTemplate", "settingsTemplate", "stylesheet", "javascript"):
+            self.custom_type = "text/plain"
+
         return path
+
+    def get_content_type(self):
+        if self.custom_type is not None:
+            return self.custom_type
+        return web.StaticFileHandler.get_content_type(self)
 
 class EffectAdd(JsonRequestHandler):
     @web.asynchronous

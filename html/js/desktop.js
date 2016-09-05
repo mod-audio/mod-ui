@@ -142,6 +142,7 @@ function Desktop(elements) {
     this.pedalboardBundle = null
     this.pedalboardEmpty = true
     this.pedalboardModified = false
+    this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
     elements.zoomIn.click(function () {
@@ -1023,9 +1024,24 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         windowSize: function (width, height) {
+            // FIXME
             if (ws && width > 0 && height > 0) {
                 ws.send(sprintf("pb_size %f %f", width, height))
             }
+        },
+
+        pedalboardFinishedLoading: function (callback) {
+            if (! self.loadingPeldaboardForFirstTime) {
+                callback()
+                return
+            }
+
+            self.loadingPeldaboardForFirstTime = false
+            self.effectBox.effectBox('search', function () {
+                setTimeout(function () {
+                    callback()
+                }, 500)
+            })
         },
     });
 
