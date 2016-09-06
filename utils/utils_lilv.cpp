@@ -41,6 +41,24 @@
 
 #define OS_SEP '/'
 
+#ifndef HAVE_NEW_LILV
+#warning Your current lilv version is too old, please update it
+char* lilv_file_uri_parse2(const char* uri, const char*)
+{
+    if (const char* const parsed = lilv_uri_to_path(uri))
+        return strdup(parsed);
+    return nullptr;
+}
+
+LilvNode* lilv_new_file_uri(LilvWorld* world, const char* host, const char* path)
+{
+    // TODO
+    return nullptr;
+}
+#define lilv_free(x) free(x)
+#define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
+#endif
+
 // our lilv world
 LilvWorld* W = nullptr;
 
@@ -715,8 +733,10 @@ static void _place_preset_info(PluginInfo& info,
     if (prindex > 1)
         _sort_presets_data(presets, prindex);
 
+#ifdef HAVE_NEW_LILV
     for (const LilvNode* presetnode : loadedPresetResourceNodes)
         lilv_world_unload_resource(W, presetnode);
+#endif
 
     info.presets = presets;
 
@@ -2860,6 +2880,7 @@ bool is_bundle_loaded(const char* const bundle)
 
 const char* const* add_bundle_to_lilv_world(const char* const bundle)
 {
+#ifdef HAVE_NEW_LILV
     // lilv wants the last character as the separator
     char tmppath[PATH_MAX+2];
     char* cbundlepath = realpath(bundle, tmppath);
@@ -2943,12 +2964,14 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
 
         return _bundles_ret;
     }
+#endif
 
     return nullptr;
 }
 
 const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 {
+#ifdef HAVE_NEW_LILV
     // lilv wants the last character as the separator
     char tmppath[PATH_MAX+2];
     char* cbundlepath = realpath(bundle, tmppath);
@@ -3078,6 +3101,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 
         return _bundles_ret;
     }
+#endif
 
     return nullptr;
 }
@@ -3372,8 +3396,10 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         return nullptr;
 
     LilvWorld* const w = lilv_world_new();
+#ifdef HAVE_NEW_LILV
     lilv_world_load_specifications(w);
     lilv_world_load_plugin_classes(w);
+#endif
 
     LilvNode* const b = lilv_new_file_uri(w, nullptr, bundlepath);
     lilv_world_load_bundle(w, b);
@@ -3934,8 +3960,10 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
         return nullptr;
 
     LilvWorld* const w = lilv_world_new();
+#ifdef HAVE_NEW_LILV
     lilv_world_load_specifications(w);
     lilv_world_load_plugin_classes(w);
+#endif
 
     LilvNode* const b = lilv_new_file_uri(w, nullptr, bundlepath);
     lilv_world_load_bundle(w, b);
@@ -4204,6 +4232,7 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
 
 const StatePortValue* get_state_port_values(const char* const state)
 {
+#ifdef HAVE_NEW_LILV
     static LV2_URID_Map uridMap = {
         (void*)0x1, // non-null
         lv2_urid_map
@@ -4229,6 +4258,7 @@ const StatePortValue* get_state_port_values(const char* const state)
             return _state_ret;
         }
     }
+#endif
 
     return nullptr;
 }
