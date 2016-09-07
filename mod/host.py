@@ -198,7 +198,7 @@ class Host(object):
 
         self.msg_callback = msg_callback
 
-        set_util_callbacks(self.midi_port_deleted, self.true_bypass_changed)
+        set_util_callbacks(self.midi_port_appeared, self.midi_port_deleted, self.true_bypass_changed)
 
         # Register HMI protocol callbacks
         self._init_addressings()
@@ -221,6 +221,27 @@ class Host(object):
         self.msg_callback("stop")
         self.close_jack()
 
+    def midi_port_appeared(self, name, isOutput):
+        name = charPtrToString(name)
+        isOutput = bool(isOutput)
+
+        for port in self.midiports:
+            if name == port or (";" in port and name in port.split(";",1)):
+                break
+        else:
+            return
+
+        index = int(name[-1])
+        title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
+
+        if name.startswith("nooice"):
+            index += 100
+
+        self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.split(":",1)[-1], int(isOutput), title, index))
+
+        if not isOutput:
+            connect_jack_ports(name, "mod-host:midi_in")
+
     def midi_port_deleted(self, name):
         name = charPtrToString(name)
         removed_ports = []
@@ -232,15 +253,13 @@ class Host(object):
             disconnect_jack_ports(jackports[0], jackports[1])
             removed_ports.append(ports)
 
+        # Q: should we store connections for when the port reappears?
+        # it's kinda inconsistent cause we won't have that list next time MOD boots..
         for ports in removed_ports:
             self.connections.remove(ports)
             disconnect_jack_ports(ports[0], ports[1])
 
         self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
-
-        for port in self.midiports:
-            if name == port or (";" in port and name in port.split(";",1)):
-                self.midiports.remove(port)
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
