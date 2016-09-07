@@ -1140,10 +1140,11 @@ class Host(object):
 
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
-        mappedOldMidiIns  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
-        mappedOldMidiOuts = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
-        mappedNewMidiIns  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
-        mappedNewMidiOuts = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," "), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
+        mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
+        mappedOldMidiOuts  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
+        mappedOldMidiOuts2 = dict((p['name'], p['symbol']) for p in pb['hardware']['midi_outs'])
+        mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
+        mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         curmidisymbols = []
         for port in self.midiportIds:
@@ -1154,6 +1155,24 @@ class Host(object):
             else:
                 curmidisymbols.append(port.split(":",1)[-1])
 
+        # try to find old devices that are not available right now
+        for symbol, name in mappedOldMidiIns.items():
+            if symbol in curmidisymbols:
+                continue
+            if name in mappedNewMidiOuts.keys():
+                continue
+            # found it
+            if name in mappedOldMidiOuts2.keys():
+                outsymbol   = mappedOldMidiOuts2[name]
+                storedname  = "system:%s;system:%s" % (symbol, outsymbol)
+                storedtitle = name+";"+name
+            else:
+                storedname  = "system:" + symbol
+                storedtitle = name
+            self.midiportIds.append(storedname)
+            self.midiportAlias.append(storedtitle)
+
+        # register devices
         index = 0
         for name, symbol in mappedNewMidiIns.items():
             index += 1
@@ -1164,13 +1183,13 @@ class Host(object):
             self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (symbol, name.replace(" ","_"), index))
             connect_jack_ports("system:" + symbol, "mod-host:midi_in")
 
-            # TODO
             if name in mappedNewMidiOuts.keys():
-                storedname  = "system:%s;system:%s" % (symbol, mappedNewMidiOuts[name])
-                storedtitle = ";"
+                outsymbol   = mappedNewMidiOuts[name]
+                storedname  = "system:%s;system:%s" % (symbol, outsymbol)
+                storedtitle = name+";"+name
             else:
                 storedname  = "system:" + symbol
-                storedtitle = ""
+                storedtitle = name
             self.midiportIds.append(storedname)
             self.midiportAlias.append(storedtitle)
 
@@ -1383,16 +1402,22 @@ class Host(object):
 
     def save_state_mainfile(self, bundlepath, title, titlesym):
         # Create list of midi in/out ports
-        midiportsIn  = []
-        midiportsOut = []
+        midiportsIn   = []
+        midiportsOut  = []
+        midiportAlias = {}
 
-        for port in self.midiportIds:
+        for i in range(len(self.midiportIds)):
+            port = self.midiportIds[i]
             if ";" in port:
                 inp, outp = port.split(";",1)
                 midiportsIn.append(inp)
                 midiportsOut.append(outp)
+                title_in, title_out = self.midiportAlias[i].split(";",1)
+                midiportAlias[inp]  = title_in
+                midiportAlias[outp] = title_out
             else:
                 midiportsIn.append(port)
+                midiportAlias[port] = self.midiportAlias[i]
 
         # Arcs (connections)
         arcs = ""
@@ -1591,7 +1616,7 @@ _:b%i
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
     a atom:AtomPort ,
         lv2:InputPort .
-""" % (sname, index, self.get_port_name_alias(port), sname)
+""" % (sname, index, midiportAlias[port], sname)
 
         # Ports (MIDI Out)
         for port in midiportsOut:
@@ -1608,7 +1633,7 @@ _:b%i
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
     a atom:AtomPort ,
         lv2:OutputPort .
-""" % (sname, index, self.get_port_name_alias(port), sname)
+""" % (sname, index, midiportAlias[port], sname)
 
         # Serial MIDI In
         if self.hasSerialMidiIn:
@@ -2372,9 +2397,10 @@ _:b%i
             if not port.startswith(("system:", "nooice")):
                 continue
             alias = get_jack_port_alias(port)
-            if alias:
-                title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
-                out_ports[title] = port
+            if not alias:
+                continue
+            title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            out_ports[title] = port
 
         # Extra MIDI Ins
         ports = get_jack_hardware_ports(False, False)
@@ -2382,11 +2408,12 @@ _:b%i
             if not port.startswith(("system:", "nooice")):
                 continue
             alias = get_jack_port_alias(port)
-            if alias:
-                title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
-                if title in out_ports.keys():
-                    port = "%s;%s" % (port, out_ports[title])
-                full_ports[port] = title
+            if not alias:
+                continue
+            title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            if title in out_ports.keys():
+                port = "%s;%s" % (port, out_ports[title])
+            full_ports[port] = title
 
         devsInUse = []
         devList = []
@@ -2452,7 +2479,7 @@ _:b%i
             else:
                 remove_port(port)
 
-            self.midiportIds.remove(port)
+            self.midiportIds.pop(i)
             self.midiportAlias.pop(i)
 
         # add
@@ -2463,12 +2490,12 @@ _:b%i
             if ";" in port:
                 inp, outp = port.split(";",1)
                 title_in  = self.get_port_name_alias(inp)
-                title_out = self.get_port_name_alias(inp)
+                title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
                 add_port(inp, title_in, False)
                 add_port(outp, title_out, True)
             else:
-                title = self.get_port_name_alias(inp)
+                title = self.get_port_name_alias(port)
                 add_port(port, title, False)
 
             self.midiportIds.append(port)
