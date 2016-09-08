@@ -50,13 +50,13 @@ char* lilv_file_uri_parse2(const char* uri, const char*)
     return nullptr;
 }
 
-LilvNode* lilv_new_file_uri(LilvWorld* world, const char* host, const char* path)
+LilvNode* lilv_new_file_uri2(LilvWorld* world, const char*, const char* path)
 {
-    // TODO
-    return nullptr;
+    return lilv_new_uri(world, path);
 }
 #define lilv_free(x) free(x)
 #define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
+#define lilv_new_file_uri(x,y,z) lilv_new_file_uri2(x,y,z)
 #endif
 
 // our lilv world
