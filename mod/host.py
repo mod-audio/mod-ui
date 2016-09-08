@@ -560,7 +560,7 @@ class Host(object):
                     self.reset(hmi_clear_callback)
 
             elif cmd == "data_finish":
-                self.send_data_handled()
+                self.send_output_data_ready()
 
             else:
                 logging.error("[host] unrecognized command: %s" % cmd)
@@ -573,8 +573,8 @@ class Host(object):
         self.readsock.read_until(b"\0", check_message)
 
     @gen.coroutine
-    def send_data_handled(self):
-        yield gen.Task(self.send, "data_handled", datatype='boolean')
+    def send_output_data_ready(self):
+        yield gen.Task(self.send, "output_data_ready", datatype='boolean')
 
     def process_write_queue(self):
         try:
