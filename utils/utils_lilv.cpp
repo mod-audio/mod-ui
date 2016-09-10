@@ -52,7 +52,12 @@ char* lilv_file_uri_parse2(const char* uri, const char*)
 
 LilvNode* lilv_new_file_uri2(LilvWorld* world, const char*, const char* path)
 {
-    return lilv_new_uri(world, path);
+    const size_t pathlen = strlen(path);
+    char uripath[pathlen+12];
+    strcpy(uripath, "file://");
+    strcat(uripath, path);
+
+    return lilv_new_uri(world, uripath);
 }
 #define lilv_free(x) free(x)
 #define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
@@ -2967,6 +2972,11 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
 #endif
 
     return nullptr;
+
+#ifndef HAVE_NEW_LILV
+    // unused
+    (void)bundle;
+#endif
 }
 
 const char* const* remove_bundle_from_lilv_world(const char* const bundle)
@@ -3104,6 +3114,11 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 #endif
 
     return nullptr;
+
+#ifndef HAVE_NEW_LILV
+    // unused
+    (void)bundle;
+#endif
 }
 
 const PluginInfo_Mini* const* get_all_plugins(void)
@@ -4151,6 +4166,7 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
 
 // --------------------------------------------------------------------------------------------------------
 
+#ifdef HAVE_NEW_LILV
 // note: these ids must match the ones on the mapping (see 'kMapping')
 static const uint32_t k_urid_null        = 0;
 static const uint32_t k_urid_atom_int    = 1;
@@ -4229,6 +4245,7 @@ static void lilv_set_port_value(const char* const portSymbol, void* const userDa
 
     printf("lilv_set_port_value called with unknown type: %u %u\n", type, size);
 }
+#endif
 
 const StatePortValue* get_state_port_values(const char* const state)
 {
@@ -4261,6 +4278,11 @@ const StatePortValue* get_state_port_values(const char* const state)
 #endif
 
     return nullptr;
+
+#ifndef HAVE_NEW_LILV
+    // unused
+    (void)state;
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
