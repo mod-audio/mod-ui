@@ -24,12 +24,14 @@ class FakeCommunicator(object):
     def init(self, callback):
         pass
 
-    def send(self, msg, callback, datatype=None):
+    def send(self, msg, callback=None, datatype=None):
         logging.info(msg)
         if callback is None:
             return
         if datatype == 'boolean':
             callback(True)
+        elif datatype == 'string':
+            callback("")
         else:
             callback(0)
 
