@@ -15,37 +15,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function MidiDevicesWindow(options) {
+function MidiPortsWindow(options) {
     var self = this;
 
     options = $.extend({
-        midiDevicesWindow: $('<div>'),
-        midiDevicesList: $('<div>'),
+        midiPortsWindow: $('<div>'),
+        midiPortsList: $('<div>'),
     }, options)
 
-    options.midiDevicesWindow.find('.js-cancel').click(function () {
-        options.midiDevicesWindow.hide()
+    options.midiPortsWindow.find('.js-cancel').click(function () {
+        options.midiPortsWindow.hide()
         return false
     })
 
-    options.midiDevicesWindow.find('.js-submit').click(function () {
+    options.midiPortsWindow.find('.js-submit').click(function () {
         var devs = []
 
-        $.each(options.midiDevicesList.find('input'), function (index, input) {
+        $.each(options.midiPortsList.find('input'), function (index, input) {
             var input = $(input)
             if (input.is(':checked'))
                 devs.push(input.val())
         })
 
         self.selectDevices(devs)
-        options.midiDevicesWindow.hide()
+        options.midiPortsWindow.hide()
         return false
     })
 
     this.start = function () {
         // clear old entries
-        options.midiDevicesList.find('input').remove()
-        options.midiDevicesList.find('span').remove()
+        options.midiPortsList.find('input').remove()
+        options.midiPortsList.find('span').remove()
 
         self.getDeviceList(function (devsInUse, devList, names) {
             if (devList.length == 0)
@@ -58,10 +58,10 @@ function MidiDevicesWindow(options) {
                 var elem = $('<input type="checkbox" name="' + name + '" value="' + dev + '" '
                          + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + name + '<br/></span>')
 
-                elem.appendTo(options.midiDevicesList)
+                elem.appendTo(options.midiPortsList)
             }
 
-            options.midiDevicesWindow.show()
+            options.midiPortsWindow.show()
         })
     }
 

@@ -729,14 +729,14 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 
 
-#midi-device-window .mod-box {
+#midi-ports-window .mod-box {
     width:500px;
     margin:-150px -280px;
 }
-#midi-device-list {
+#midi-ports-list {
     width:500px;
 }
-#midi-device-window input {
+#midi-ports-window input {
     vertical-align:text-top;
     margin-right:3px;
 }

@@ -83,9 +83,9 @@ $('document').ready(function() {
         pedalboard: $('#pedalboard-dashboard'),
         zoomIn: $('.zoom-in'),
         zoomOut: $('.zoom-out'),
-        addMidiButton: $('#mod-add-midi'),
-        midiDevicesWindow: $('#midi-device-window'),
-        midiDevicesList: $("#midi-device-list"),
+        addMidiButton: $('#mod-show-midi-port'),
+        midiPortsWindow: $('#midi-ports-window'),
+        midiPortsList: $("#midi-ports-list"),
         saveBox: $('#save-pedalboard'),
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
@@ -449,11 +449,11 @@ $('document').ready(function() {
         <!-- END PEDALBOARD-DASHBOARD -->
 
         <!-- MIDI DEVICE LIST WINDOW -->
-        <div id="midi-device-window" class="save-popup mod-hidden">
+        <div id="midi-ports-window" class="save-popup mod-hidden">
             <div class="mod-box">
-                <h1>MIDI Device List</h1>
+                <h1>MIDI Ports List</h1>
                 <form class="bottom">
-                    <div class="controls clearfix" id="midi-device-list">
+                    <div class="controls clearfix" id="midi-ports-list">
                     </div>
                     <div class="controls actions">
                         <button class="js-cancel btn btn-danger">Cancel</button>
@@ -497,7 +497,7 @@ $('document').ready(function() {
         <div id="mod-buffersize" class="icon mod-hidden">{{bufferSize}} frames</div>
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass R</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass L</div>
-        <div id="mod-add-midi" class="icon">Add MIDI Device</div>
+        <div id="mod-show-midi-port" class="icon">Show MIDI Port</div>
     </div>
     <!-- END MAIN MENU-->
 
