@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -234,7 +234,7 @@ JackData* get_jack_data(void)
             {
                 if (jack_port_t* const port = jack_port_by_name(gClient, portName.c_str()))
                 {
-                    const bool isOutput = jack_port_flags(port) & JackPortIsOutput;
+                    const bool isOutput = jack_port_flags(port) & JackPortIsInput; // inverted on purpose
                     jack_midi_port_appeared_cb(portName.c_str(), isOutput);
                 }
             }
