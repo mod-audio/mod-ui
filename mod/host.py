@@ -229,7 +229,9 @@ class Host(object):
         if not alias:
             return
         alias = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
-        newnode = name.replace("system:","/graph/")
+
+        if not isOutput:
+            connect_jack_ports(name, "mod-host:midi_in")
 
         for i in range(len(self.midiports)):
             port_symbol, port_alias, port_conns = self.midiports[i]
@@ -255,14 +257,12 @@ class Host(object):
 
         index = int(name[-1])
         title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
+        newnode = name.replace("system:","/graph/")
 
         if name.startswith("nooice"):
             index += 100
 
         self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.split(":",1)[-1], int(isOutput), title, index))
-
-        if not isOutput:
-            connect_jack_ports(name, "mod-host:midi_in")
 
         for i in reversed(range(len(port_conns))):
             if port_conns[i][0] == oldnode:
@@ -714,9 +714,6 @@ class Host(object):
             else:
                 title = name.split(":",1)[-1].title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
-
-            if crashed:
-                connect_jack_ports(name, "mod-host:midi_in")
 
         # MIDI Out
         if self.hasSerialMidiOut:
@@ -1214,7 +1211,6 @@ class Host(object):
             if symbol in curmidisymbols:
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (symbol, name.replace(" ","_"), index))
-            connect_jack_ports("system:" + symbol, "mod-host:midi_in")
 
             if name in mappedNewMidiOuts.keys():
                 outsymbol    = mappedNewMidiOuts[name]
@@ -2489,9 +2485,6 @@ _:b%i
 
             self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.split(":",1)[-1], int(isOutput), title, index))
 
-            if not isOutput:
-                connect_jack_ports(name, "mod-host:midi_in")
-
         def remove_port(name):
             removed_conns = []
 
@@ -2507,7 +2500,6 @@ _:b%i
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
             self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
-            disconnect_jack_ports(name, "mod-host:midi_in")
 
         midiportIds = tuple(i[0] for i in self.midiports)
 
