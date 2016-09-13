@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -242,6 +242,7 @@ typedef struct {
     unsigned xruns;
 } JackData;
 
+typedef void (*JackMidiPortAppeared)(const char* name, bool isOutput);
 typedef void (*JackMidiPortDeleted)(const char* name);
 typedef void (*TrueBypassStateChanged)(bool left, bool right);
 
@@ -329,7 +330,9 @@ MOD_API bool get_truebypass_value(bool right);
 MOD_API bool set_truebypass_value(bool right, bool bypassed);
 
 // callbacks
-MOD_API void set_util_callbacks(JackMidiPortDeleted midiPortDeleted, TrueBypassStateChanged trueBypassChanged);
+MOD_API void set_util_callbacks(JackMidiPortAppeared midiPortAppeared,
+                                JackMidiPortDeleted midiPortDeleted,
+                                TrueBypassStateChanged trueBypassChanged);
 
 #ifdef __cplusplus
 } // extern "C"

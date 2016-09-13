@@ -6765,7 +6765,7 @@ hr.dotted {
   color: #666;
   display: none;
 }
-#main-menu #mod-add-midi,
+#main-menu #mod-show-midi-port,
 #main-menu .mod-bypass,
 #main-menu #mod-cpu,
 #main-menu #mod-ram,
@@ -6784,7 +6784,7 @@ hr.dotted {
   width: auto !important;
   transition: all 0.33s;
 }
-#main-menu #mod-add-midi:hover,
+#main-menu #mod-show-midi-port:hover,
 #main-menu .mod-bypass:hover,
 #main-menu #mod-cpu:hover,
 #main-menu #mod-ram:hover,
@@ -6792,7 +6792,7 @@ hr.dotted {
 #main-menu #mod-buffersize:hover {
   background-color: #000;
 }
-#main-menu #mod-add-midi.selected,
+#main-menu #mod-show-midi-port.selected,
 #main-menu .mod-bypass.selected,
 #main-menu #mod-cpu.selected,
 #main-menu #mod-ram.selected,
@@ -6800,7 +6800,7 @@ hr.dotted {
 #main-menu #mod-buffersize.selected {
   background-color: #333;
 }
-#main-menu #mod-add-midi {
+#main-menu #mod-show-midi-port {
   background-image: url(../img/icons/25/midi.png);
 }
 #main-menu .mod-bypass {

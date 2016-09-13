@@ -24,8 +24,8 @@ function Desktop(elements) {
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
         addMidiButton: $('<div>'),
-        midiDevicesWindow: $('<div>'),
-        midiDevicesList: $('<div>'),
+        midiPortsWindow: $('<div>'),
+        midiPortsList: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
@@ -92,9 +92,9 @@ function Desktop(elements) {
         self.pluginIndexerData = plugins
     }
 
-    this.midiDevices = new MidiDevicesWindow({
-        midiDevicesWindow: elements.midiDevicesWindow,
-        midiDevicesList: elements.midiDevicesList,
+    this.midiDevices = new MidiPortsWindow({
+        midiPortsWindow: elements.midiPortsWindow,
+        midiPortsList: elements.midiPortsList,
     })
 
     this.hardwareManager = new HardwareManager({

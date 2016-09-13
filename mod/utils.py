@@ -374,6 +374,7 @@ class JackData(Structure):
         ("xruns", c_uint),
     ]
 
+JackMidiPortAppeared = CFUNCTYPE(None, c_char_p, c_bool)
 JackMidiPortDeleted = CFUNCTYPE(None, c_char_p)
 TrueBypassStateChanged = CFUNCTYPE(None, c_bool, c_bool)
 
@@ -499,7 +500,7 @@ utils.get_truebypass_value.restype  = c_bool
 utils.set_truebypass_value.argtypes = [c_bool, c_bool]
 utils.set_truebypass_value.restype  = c_bool
 
-utils.set_util_callbacks.argtypes = [JackMidiPortDeleted, TrueBypassStateChanged]
+utils.set_util_callbacks.argtypes = [JackMidiPortAppeared, JackMidiPortDeleted, TrueBypassStateChanged]
 utils.set_util_callbacks.restype  = None
 
 # ------------------------------------------------------------------------------------------------------------
@@ -685,14 +686,15 @@ def set_truebypass_value(right, bypassed):
 # ------------------------------------------------------------------------------------------------------------
 # callbacks
 
-global midiPortDeletedCb, trueBypassChangedCb
-midiPortDeletedCb = trueBypassChangedCb = None
+global midiPortAppearedCb, midiPortDeletedCb, trueBypassChangedCb
+midiPortAppearedCb = midiPortDeletedCb = trueBypassChangedCb = None
 
-def set_util_callbacks(midiPortDeleted, trueBypassChanged):
-    global midiPortDeletedCb, trueBypassChangedCb
+def set_util_callbacks(midiPortAppeared, midiPortDeleted, trueBypassChanged):
+    global midiPortAppearedCb, midiPortDeletedCb, trueBypassChangedCb
+    midiPortAppearedCb  = JackMidiPortAppeared(midiPortAppeared)
     midiPortDeletedCb   = JackMidiPortDeleted(midiPortDeleted)
     trueBypassChangedCb = TrueBypassStateChanged(trueBypassChanged)
-    utils.set_util_callbacks(midiPortDeletedCb, trueBypassChangedCb)
+    utils.set_util_callbacks(midiPortAppearedCb, midiPortDeletedCb, trueBypassChangedCb)
 
 # ------------------------------------------------------------------------------------------------------------
 # set process name
