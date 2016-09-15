@@ -4,11 +4,17 @@ from mod.settings import API_KEY, DEVICE_KEY, DEVICE_TAG, DEVICE_UID, IMAGE_VERS
 def get_uid():
     if DEVICE_UID is None:
         raise Exception('Missing device uid')
+    if os.path.isfile(DEVICE_UID):
+        with open(DEVICE_UID, 'r') as fh:
+            return fh.read()
     return DEVICE_UID
 
 def get_tag():
     if DEVICE_TAG is None:
         raise Exception('Missing device tag')
+    if os.path.isfile(DEVICE_TAG):
+        with open(DEVICE_TAG, 'r') as fh:
+            return fh.read()
     return DEVICE_TAG
 
 def get_device_key():
