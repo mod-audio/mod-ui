@@ -489,6 +489,17 @@ function Desktop(elements) {
     this.loadRemotePedalboard = function (pedalboard_id) {
         self.windowManager.closeWindows()
 
+        if (self.cloudAccessToken == null) {
+            self.authenticateDevice(function (ok) {
+                if (ok && self.cloudAccessToken != null) {
+                    self.loadRemotePedalboard(pedalboard_id)
+                } else {
+                    new Notification('error', "Cannot load remote pedalboards, authentication failure")
+                }
+            })
+            return
+        }
+
         $.ajax({
             url: SITEURL + '/pedalboards/' + pedalboard_id,
             contentType: 'application/json',
@@ -498,8 +509,10 @@ function Desktop(elements) {
                         if (ok) {
                             var transfer = new SimpleTransference(resp.file_href, '/pedalboard/load_web/',
                                                                   { from_args: { headers:
-                                                                  { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
+                                                                  { 'Authorization' : 'MOD ' + self.cloudAccessToken }
                                                                   }})
+
+                            transfer.reauthorizeDownload = self.authenticateDevice
 
                             transfer.reportFinished = function () {
                                 self.pedalboardEmpty = false
@@ -727,9 +740,9 @@ function Desktop(elements) {
                 })
             }
 
-            if (desktop.cloudAccessToken == null) {
-                desktop.authenticateDevice(function (ok) {
-                    if (ok && desktop.cloudAccessToken != null) {
+            if (self.cloudAccessToken == null) {
+                self.authenticateDevice(function (ok) {
+                    if (ok && self.cloudAccessToken != null) {
                         elements.shareWindow.shareBox('share', data, callback)
                     } else {
                         callback({
@@ -746,7 +759,7 @@ function Desktop(elements) {
                 url: SITEURL + '/pedalboards/',
                 method: 'POST',
                 contentType: 'application/json',
-                headers: { 'Authorization' : 'MOD ' + desktop.cloudAccessToken },
+                headers: { 'Authorization' : 'MOD ' + self.cloudAccessToken },
                 data: JSON.stringify({
                     author     : data.name,
                     email      : data.email,
@@ -757,10 +770,10 @@ function Desktop(elements) {
                     var transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
                                                           resp.upload_href,
                                                           { to_args: { headers:
-                                                          { 'Authorization' : 'MOD ' + desktop.cloudAccessToken }
+                                                          { 'Authorization' : 'MOD ' + self.cloudAccessToken }
                                                           }})
 
-                    transfer.reauthorizeUpload = desktop.authenticateDevice;
+                    transfer.reauthorizeUpload = self.authenticateDevice;
 
                     transfer.reportFinished = function (resp2) {
                         callback({
