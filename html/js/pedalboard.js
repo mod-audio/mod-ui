@@ -1394,7 +1394,7 @@ JqueryClass('pedalboard', {
 
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
-        var targetname = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
+        var targetname = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
 
         if ($(targetname).length) {
             var gui = self.pedalboard('getGui', instance)
@@ -1423,7 +1423,7 @@ JqueryClass('pedalboard', {
 
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
-        var targetname = '.mod-pedal [mod-role="input-control-port"][mod-port="'+instance+'/'+symbol+'"]'
+        var targetname = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
 
         if ($(targetname).length) {
             var gui = self.pedalboard('getGui', instance)

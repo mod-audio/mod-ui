@@ -682,7 +682,7 @@ class Host(object):
                 midiports.append(inp)
                 midiports.append(outp)
             else:
-                midiports.append(port)
+                midiports.append(port_id)
 
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
