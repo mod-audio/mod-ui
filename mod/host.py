@@ -239,14 +239,14 @@ class Host(object):
                 split = port_symbol.split(";")
 
                 if len(split) == 1:
-                    oldnode = port_symbol.replace("system:","/graph/")
+                    oldnode = "/graph/" + port_symbol.split(":",1)[-1]
                     port_symbol = name
                 else:
                     if isOutput:
-                        oldnode = split[1].replace("system:","/graph/")
+                        oldnode = "/graph/" + split[1].split(":",1)[-1]
                         split[1] = name
                     else:
-                        oldnode = split[0].replace("system:","/graph/")
+                        oldnode = "/graph/" + split[0].split(":",1)[-1]
                         split[0] = name
                     port_symbol = ";".join(split)
 
@@ -257,7 +257,7 @@ class Host(object):
 
         index = int(name[-1])
         title = self.get_port_name_alias(name).replace("-","_").replace(" ","_")
-        newnode = name.replace("system:","/graph/")
+        newnode = "/graph/" + name.split(":",1)[-1]
 
         if name.startswith("nooice"):
             index += 100
@@ -2425,8 +2425,10 @@ _:b%i
 
         # Current setup
         for port_symbol, port_alias, _ in self.midiports:
-            port_alias = port_alias.split(";",1)[0]
-            out_ports[port_alias]   = port_symbol
+            port_aliases = port_alias.split(";",1)
+            port_alias   = port_aliases[0]
+            if len(port_aliases) != 1:
+                out_ports[port_alias] = port_symbol
             full_ports[port_symbol] = port_alias
 
         # Extra MIDI Outs
@@ -2457,11 +2459,11 @@ _:b%i
         devList = []
         names = {}
         midiportIds = tuple(i[0] for i in self.midiports)
-        for port, alias in full_ports.items():
-            devList.append(port)
-            if port in midiportIds:
-                devsInUse.append(port)
-            names[port] = alias + (" (in+out)" if alias in out_ports else " (in)")
+        for port_id, port_alias in full_ports.items():
+            devList.append(port_id)
+            if port_id in midiportIds:
+                devsInUse.append(port_id)
+            names[port_id] = port_alias + (" (in+out)" if port_alias in out_ports else " (in)")
 
         devList.sort()
         return (devsInUse, devList, names)
