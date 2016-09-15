@@ -727,6 +727,20 @@ function Desktop(elements) {
                 })
             }
 
+            if (desktop.cloudAccessToken == null) {
+                desktop.authenticateDevice(function (ok) {
+                    if (ok && desktop.cloudAccessToken != null) {
+                        elements.shareWindow.shareBox('share', data, callback)
+                    } else {
+                        callback({
+                            ok: false,
+                            error: "authentication failure"
+                        })
+                    }
+                })
+                return
+            }
+
             // pack & upload to cloud
             $.ajax({
                 url: SITEURL + '/pedalboards/',
