@@ -1186,22 +1186,6 @@ class Host(object):
             else:
                 curmidisymbols.append(port_symbol.split(":",1)[-1])
 
-        # try to find old devices that are not available right now
-        for symbol, name in mappedOldMidiIns.items():
-            if symbol in curmidisymbols:
-                continue
-            if name in mappedNewMidiOuts.keys():
-                continue
-            # found it
-            if name in mappedOldMidiOuts2.keys():
-                outsymbol    = mappedOldMidiOuts2[name]
-                storedsymbol = "system:%s;system:%s" % (symbol, outsymbol)
-                storedtitle  = name+";"+name
-            else:
-                storedsymbol = "system:" + symbol
-                storedtitle  = name
-            self.midiports.append([storedsymbol, storedtitle, []])
-
         # register devices
         index = 0
         for name, symbol in mappedNewMidiIns.items():
@@ -1214,11 +1198,39 @@ class Host(object):
 
             if name in mappedNewMidiOuts.keys():
                 outsymbol    = mappedNewMidiOuts[name]
-                storedsymbol = "system:%s;system:%s" % (symbol, outsymbol)
                 storedtitle  = name+";"+name
+                storedsymbol = "system:%s;system:%s" % (symbol, outsymbol)
             else:
-                storedsymbol = "system:" + symbol
-                storedtitle  = name
+                storedtitle = name
+                if symbol.startswith("nooice_capture_"):
+                    num = symbol.replace("nooice_capture_","",1)
+                    storedsymbol = "nooice%s:nooice_capture_%s" % (num, num)
+                else:
+                    storedsymbol = "system:" + symbol
+            curmidisymbols.append(symbol)
+            self.midiports.append([storedsymbol, storedtitle, []])
+
+        # try to find old devices that are not available right now
+        for symbol, name in mappedOldMidiIns.items():
+            if symbol.split(":",1)[-1] in curmidisymbols:
+                continue
+            print("it", symbol, name)
+            if name in mappedNewMidiOuts.keys():
+                continue
+            # found it
+            if name in mappedOldMidiOuts2.keys():
+                outsymbol   = mappedOldMidiOuts2[name]
+                storedtitle = name+";"+name
+                if ":" in symbol:
+                    storedsymbol = "%s;%s" % (symbol, outsymbol)
+                else:
+                    storedsymbol = "system:%s;system:%s" % (symbol, outsymbol)
+            else:
+                storedtitle = name
+                if ":" in symbol:
+                    storedsymbol = symbol
+                else:
+                    storedsymbol = "system:" + symbol
             self.midiports.append([storedsymbol, storedtitle, []])
 
         index = 0
