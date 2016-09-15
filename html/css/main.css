@@ -5762,13 +5762,6 @@ button.close {
 .cloud-plugins .cloud-plugin .status.outdated:after {
   content: "new version";
 }
-.cloud-plugins .cloud-plugin .status.blocked {
-  border: 1px solid #f29446;
-  color: #f29446;
-}
-.cloud-plugins .cloud-plugin .status.blocked:after {
-  content: "not installed";
-}
 .cloud-plugins .cloud-plugin .status.unstable {
   border: 1px solid #FF2927;
   background-color: #FF2927;
