@@ -6,7 +6,7 @@ def get_uid():
         raise Exception('Missing device uid')
     if os.path.isfile(DEVICE_UID):
         with open(DEVICE_UID, 'r') as fh:
-            return fh.read()
+            return fh.read().strip()
     return DEVICE_UID
 
 def get_tag():
@@ -14,7 +14,7 @@ def get_tag():
         raise Exception('Missing device tag')
     if os.path.isfile(DEVICE_TAG):
         with open(DEVICE_TAG, 'r') as fh:
-            return fh.read()
+            return fh.read().strip()
     return DEVICE_TAG
 
 def get_device_key():
@@ -22,7 +22,7 @@ def get_device_key():
         raise Exception('Missing device key')
     if os.path.isfile(DEVICE_KEY):
         with open(DEVICE_KEY, 'r') as fh:
-            return fh.read()
+            return fh.read().strip()
     return DEVICE_KEY
 
 def get_server_key():
@@ -30,7 +30,7 @@ def get_server_key():
         raise Exception('Missing API key')
     if os.path.isfile(API_KEY):
         with open(API_KEY, 'r') as fh:
-            return fh.read()
+            return fh.read().strip()
     return API_KEY
 
 def get_image_version():
