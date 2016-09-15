@@ -122,6 +122,20 @@ function InstallationQueue() {
         var bundle = queue[0]
         var callback = callbacks[0]
 
+        if (desktop.cloudAccessToken == null) {
+            desktop.authenticateDevice(function (ok) {
+                if (ok && desktop.cloudAccessToken != null) {
+                    self.installNext()
+                } else {
+                    queue = []
+                    callbacks = []
+                    notification.close()
+                    new Notification('error', "Cannot install plugins, authentication failure", 8000)
+                }
+            })
+            return
+        }
+
         var installationMsg = 'Downloading package ' + bundle.name
         if (bundle.count > 1) {
             installationMsg += ' (contains ' + bundle.count + ' plugins)'
