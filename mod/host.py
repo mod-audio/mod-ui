@@ -429,6 +429,11 @@ class Host(object):
             bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
             navigateFootswitches = bank['navigateFootswitches']
+            if "navigateChannel" in bank.keys() and not navigateFootswitches:
+                navigateChannel = int(bank['navigateChannel'])-1
+            else:
+                navigateChannel = 15
+
         else:
             if self.allpedalboards is None:
                 self.allpedalboards = get_all_good_pedalboards()
@@ -436,6 +441,7 @@ class Host(object):
             pedalboard = DEFAULT_PEDALBOARD
             pedalboards = self.allpedalboards
             navigateFootswitches = False
+            navigateChannel = 15
 
         num = 0
         for pb in pedalboards:
@@ -457,8 +463,11 @@ class Host(object):
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(True, callback)
 
+        def midi_prog_callback(ok):
+            self.send("midi_program_listen 1 %d" % navigateChannel, callback, datatype='boolean')
+
         def initial_state_callback(ok):
-            cb = footswitch_callback if navigateFootswitches else callback
+            cb = footswitch_callback if navigateFootswitches else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         self.setNavigateWithFootswitches(False, initial_state_callback)
@@ -1214,7 +1223,6 @@ class Host(object):
         for symbol, name in mappedOldMidiIns.items():
             if symbol.split(":",1)[-1] in curmidisymbols:
                 continue
-            print("it", symbol, name)
             if name in mappedNewMidiOuts.keys():
                 continue
             # found it
