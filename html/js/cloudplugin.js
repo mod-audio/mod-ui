@@ -141,7 +141,7 @@ JqueryClass('cloudPluginBox', {
         });
     },
     checkLocalScreenshot: function (plugin) {
-        if (plugin.status == 'installed') {
+        if (plugin.installed) {
             if (plugin.gui) {
                 var uri = escape(plugin.uri)
                 var ver = plugin.installedVersion.join('_')
@@ -202,10 +202,9 @@ JqueryClass('cloudPluginBox', {
                     cplugin.installedVersion = lplugin.installedVersion
                     delete results.local[cplugin.uri]
 
-                    if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) >= 0) {
-                        cplugin.status = 'installed'
-                    } else {
-                        cplugin.status = 'outdated'
+                    cplugin.installed = true;
+                    if (compareVersions(cplugin.installedVersion, cplugin.latestVersion) < 0) {
+                        cplugin.status = 'outdated';
                     }
 
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
@@ -228,7 +227,7 @@ JqueryClass('cloudPluginBox', {
             if (! self.find('#cloud-plugins-stable').is(':visible') || ! query.stable) {
                 for (var uri in results.local) {
                     lplugin = results.local[uri]
-                    lplugin.status = 'installed'
+                    lplugin.installed = true;
                     lplugin.latestVersion = null
                     self.cloudPluginBox('checkLocalScreenshot', lplugin)
                     plugins.push(lplugin)
@@ -318,6 +317,7 @@ JqueryClass('cloudPluginBox', {
 
             for (var i in results.local) {
                 lplugin = results.local[i]
+                lplugin.installed = true;
                 cplugin = results.cloud[lplugin.uri]
 
                 if (!lplugin.installedVersion) {
@@ -329,15 +329,12 @@ JqueryClass('cloudPluginBox', {
                     lplugin.stable        = cplugin.stable
                     lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
-                    if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
-                        lplugin.status = 'installed'
-                    } else {
-                        lplugin.status = 'outdated'
+                    if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) < 0) {
+                        lplugin.status = 'outdated';
                     }
                 } else {
                     lplugin.latestVersion = null
-                    lplugin.stable = false
-                    lplugin.status = 'installed'
+                    lplugin.stable = false;
                 }
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
@@ -511,28 +508,13 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
+            installed: plugin.installed
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin)
         })
-
-        if (!plugin_data.stable) {
-            var rpos
-            switch (plugin.status) {
-            case "outdated":
-                rpos = '80px'
-                break
-            case "blocked":
-                rpos = '87px'
-                break
-            default: // installed
-                rpos = '68px'
-                break
-            }
-            rendered.find(".unstable").css({right:rpos})
-        }
 
         return rendered
     },
@@ -603,7 +585,7 @@ JqueryClass('cloudPluginBox', {
             uri    = installed[i]
             plugin = self.data('pluginsDict')[uri]
 
-            plugin.status = 'installed'
+            plugin.installed = true;
             plugin.bundles = [bundle]
             plugin.installedVersion = plugin.latestVersion
 

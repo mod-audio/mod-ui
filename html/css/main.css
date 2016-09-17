@@ -5736,16 +5736,20 @@ button.close {
   line-height: 1.25em;
   overflow: hidden;
 }
+.cloud-plugins .cloud-plugin .status-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: right;
+  padding-right: 2px;
+}
 .cloud-plugins .cloud-plugin .status {
-  display: block;
   padding: 1px 4px;
   text-align: center;
   text-transform: uppercase;
   font-weight: bold;
   font-size: 9px;
-  position: absolute;
-  top: 3px;
-  right: 8px;
 }
 .cloud-plugins .cloud-plugin .status.installed {
   border: 1px solid #883996;

@@ -6,8 +6,15 @@
         <hr class="dotted" />
         <p class="{{has_comment}}">{{comment}}<span class="limiter"></span></p>
     </div>
-    <span class="status {{status}}"></span>
-    {{^stable}}
-    <span class="status unstable"></span>
-    {{/stable}}
+    <div class="status-container">
+        {{#status}}
+        <span class="status {{status}}"></span>
+        {{/status}}
+        {{^stable}}
+        <span class="status unstable"></span>
+        {{/stable}}
+        {{#installed}}
+        <span class="status installed"></span>
+        {{/installed}}
+    </div>
 </div>
