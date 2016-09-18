@@ -7056,7 +7056,7 @@ header#pedalboard-actions button.js-reset,
 #bank-library header button.js-reset,
 #cloud-plugins-library header button.js-reset,
 #pedalboards-library header button.js-reset {
-  background-image: url(../img/icons/25/remove.png);
+  background-image: url(../img/icons/25/new.png);
 }
 header#pedalboard-actions button.js-reset:hover,
 #bank-library header button.js-reset:hover,
