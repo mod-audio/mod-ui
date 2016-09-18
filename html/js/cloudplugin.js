@@ -508,7 +508,8 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            installed: plugin.installed
+            installed: plugin.installed,
+            demo: !!plugin.demo
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))

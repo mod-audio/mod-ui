@@ -5750,6 +5750,7 @@ button.close {
   text-transform: uppercase;
   font-weight: bold;
   font-size: 9px;
+  margin-left: 2px;
 }
 .cloud-plugins .cloud-plugin .status.installed {
   border: 1px solid #883996;
@@ -5772,6 +5773,13 @@ button.close {
 }
 .cloud-plugins .cloud-plugin .status.unstable:after {
   content: "unstable";
+}
+.cloud-plugins .cloud-plugin .status.demo {
+  border: 1px solid #235789;
+  background-color: #235789;
+}
+.cloud-plugins .cloud-plugin .status.demo:after {
+  content: "demo";
 }
 .cloud-plugins .cloud-plugin .actions {
   font-size: 11px;

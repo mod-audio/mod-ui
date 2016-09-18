@@ -235,6 +235,7 @@
          text-transform: uppercase;
          font-weight: bold;
          font-size: 9px;
+         margin-left: 2px;
        }
        .status.installed {
          border: 1px solid @brand-success;
@@ -256,6 +257,13 @@
          background-color: #FF2927;
          &:after {
            content: "unstable";
+         }
+       }
+      .status.demo {
+         border: 1px solid #235789;
+         background-color: #235789;
+         &:after {
+           content: "demo";
          }
        }
 
