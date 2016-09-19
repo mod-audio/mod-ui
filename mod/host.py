@@ -488,12 +488,11 @@ class Host(object):
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        def ui_con_callback(ok):
-            self.hmi.ui_con(footswitch_bank_callback)
+        self.send("midi_program_listen 0 -1")
 
         self.banks = []
         self.allpedalboards = []
-        self.send("midi_program_listen 0 -1", ui_con_callback, datatype='boolean')
+        self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
         if not self.hmi.initialized:
