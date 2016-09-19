@@ -426,6 +426,8 @@ class EffectImage(web.StaticFileHandler):
                 path = DEFAULT_ICON_IMAGE[image]
             except:
                 raise web.HTTPError(404)
+            else:
+                web.StaticFileHandler.initialize(self, os.path.dirname(path))
 
         return path
 
