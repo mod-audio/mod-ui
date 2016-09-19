@@ -243,14 +243,16 @@ class Session(object):
 
     # Set a plugin parameter
     # We use ":bypass" symbol for on/off state
-    def ws_parameter_set(self, port, value):
+    def ws_parameter_set(self, port, value, ws):
         instance, portsymbol = port.rsplit("/",1)
 
         if portsymbol == ":bypass":
-            value = value >= 0.5
-            self.host.bypass(instance, value, None)
+            bvalue = value >= 0.5
+            self.host.bypass(instance, bvalue, None)
         else:
             self.host.param_set(port, value, None)
+
+        self.msg_callback_broadcast("param_set %s %s %f" % (instance, portsymbol, value), ws)
 
     # Set a plugin block position within the canvas
     def ws_plugin_position(self, instance, x, y):
@@ -266,6 +268,11 @@ class Session(object):
 
     def msg_callback(self, msg):
         for ws in self.websockets:
+            ws.write_message(msg)
+
+    def msg_callback_broadcast(self, msg, ws2):
+        for ws in self.websockets:
+            if ws == ws2: continue
             ws.write_message(msg)
 
     def load_pedalboard(self, bundlepath, isDefault):

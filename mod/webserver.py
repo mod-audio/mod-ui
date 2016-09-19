@@ -596,7 +596,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
         if cmd == "param_set":
             port  = data[1]
             value = float(data[2])
-            SESSION.ws_parameter_set(port, value)
+            SESSION.ws_parameter_set(port, value, self)
 
         elif cmd == "plugin_pos":
             inst = data[1]
