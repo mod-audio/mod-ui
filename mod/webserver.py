@@ -939,7 +939,10 @@ class TemplateHandler(web.RequestHandler):
         if IMAGE_VERSION is not None:
             version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
             if version:
-                return tornado.escape.url_escape(version)
+                rversion = ".".join(version.split(".")[:3])
+                if "-" in version:
+                    rversion += version.rsplit("-",1)[1]
+                return tornado.escape.url_escape(rversion)
         return str(int(time.time()))
 
     def index(self):
