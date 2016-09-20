@@ -939,9 +939,13 @@ class TemplateHandler(web.RequestHandler):
         if IMAGE_VERSION is not None:
             version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
             if version:
-                rversion = ".".join(version.split(".")[:3])
                 if "-" in version:
+                    # Special build, strip build version
+                    rversion  = ".".join(version.split(".")[:3])
                     rversion += version.rsplit("-",1)[1]
+                else:
+                    # Normal build (internal or official), show entire version
+                    rversion = version
                 return tornado.escape.url_escape(rversion)
         return str(int(time.time()))
 
