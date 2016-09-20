@@ -790,7 +790,7 @@ function GUI(effect, options) {
                 }
 
                 if (port.properties.indexOf("expensive") >= 0) {
-                    element.find(".mod-address").hide()
+                    element.find('.mod-address[mod-port-symbol=' + symbol + ']').addClass('disabled').hide()
                 }
 
                 control.controlWidget({
