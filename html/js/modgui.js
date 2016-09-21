@@ -1421,7 +1421,7 @@ JqueryClass('film', baseWidget, {
                     new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
                 }
                 height = height || h;
-                self.data('filmSteps', height * w / (sw * h));
+                self.data('filmSteps', Math.round(height * w / (sw * h)));
                 self.data('size', sw)
                 callback()
                 if (! isSDK && desktop != null) {
@@ -1465,7 +1465,6 @@ JqueryClass('film', baseWidget, {
         position = Math.min(self.data("filmSteps"), Math.max(0, position));
 
         self.data('position', position)
-
         self.film('setRotation', position)
         var value = self.film('valueFromSteps', position)
         self.trigger('valuechange', value)
