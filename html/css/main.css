@@ -7661,6 +7661,13 @@ header#pedalboard-actions {
 .plugin-info form.comment-form textarea {
   height: 180px;
 }
+.plugin-info .pedalboard-href {
+  display: inline-block;
+  padding: 10px;
+  background: #883996;
+  color: white;
+  margin-bottom: 10px;
+}
 .clearfix:after,
 .container:after,
 .dl-horizontal dd:after,

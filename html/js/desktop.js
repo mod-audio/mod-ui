@@ -92,6 +92,28 @@ function Desktop(elements) {
         self.pluginIndexerData = plugins
     }
 
+    this.pedalboardStatsSuccess = false;
+    this.pedalboardStats = {};
+    this.resetPedalboardStats = function() {
+        this.pedalboardStatsSuccess = false;
+        $.ajax({
+            url: SITEURL + '/pedalboards/stats',
+            type: 'GET',
+            success: function(stats) {
+                self.pedalboardStatsSuccess = true;
+                self.pedalboardStats = stats;
+            }
+        })
+    };
+    this.getPedalboardHref = function(uri) {
+        var base64Uri = btoa(uri);
+        if (!this.pedalboardStatsSuccess || !this.pedalboardStats[base64Uri]) {
+            return null;
+        }
+        var encodedUri = encodeURIComponent(uri);
+        return PEDALBOARDS_URL + '/?plugin_uri=' + encodedUri;
+    };
+
     this.midiDevices = new MidiPortsWindow({
         midiPortsWindow: elements.midiPortsWindow,
         midiPortsList: elements.midiPortsList,

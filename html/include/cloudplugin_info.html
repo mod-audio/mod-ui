@@ -28,7 +28,9 @@
                         </p>
                     </header>
                     <p>{{comment}}</p>
-
+                    {{#pedalboard_href}}
+                    <a target="_blank" href="{{pedalboard_href}}" class="pedalboard-href"><span>See it in action</span></a>
+                    {{/pedalboard_href}}
                     <div class="plugin-controlports">
                         <p><strong>CONTROL PORTS:</strong></p>
                         <table class="plugin-specs table table-bordered">
