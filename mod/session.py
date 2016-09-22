@@ -129,8 +129,8 @@ class Session(object):
             callback(False)
             return
 
-        instance, port2 = port.rsplit("/",1)
-        self.host.address(instance, port2, actuator_uri, label, maximum, minimum, value, steps, callback)
+        instance, portsymbol = port.rsplit("/",1)
+        self.host.address(instance, portsymbol, actuator_uri, label, maximum, minimum, value, steps, callback)
 
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
