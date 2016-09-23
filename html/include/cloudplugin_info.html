@@ -1,4 +1,4 @@
-<div class="js-close plugin-info">
+<div class="js-close plugin-info plugin-container">
     <div class="container box">
         <span class="js-close alignright btn btn-mini btn-danger">Close</span>
         <div class="row-fluid clearfix">
@@ -10,6 +10,11 @@
                 <div class="plugin-description">
                     <header>
                         <h1>{{name}}</h1>
+                        {{#demo}}
+                        <div style="margin-bottom: 5px;">
+                            <span class="status demo" style="margin: 0;" title="This plugin is for demo purposes only and shall not be used live or in a studio"></span>
+                        </div>
+                        {{/demo}}
                         <br/>
                         <p>
                             <b>URI:</b> {{uri}}<br/>

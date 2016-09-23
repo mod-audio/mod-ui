@@ -5736,7 +5736,7 @@ button.close {
   line-height: 1.25em;
   overflow: hidden;
 }
-.cloud-plugins .cloud-plugin .status-container {
+.plugin-container .status-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -5744,7 +5744,7 @@ button.close {
   text-align: right;
   padding-right: 2px;
 }
-.cloud-plugins .cloud-plugin .status {
+.plugin-container .status {
   padding: 1px 4px;
   text-align: center;
   text-transform: uppercase;
@@ -5752,33 +5752,34 @@ button.close {
   font-size: 9px;
   margin-left: 2px;
 }
-.cloud-plugins .cloud-plugin .status.installed {
+.plugin-container .status.installed {
   border: 1px solid #883996;
   background-color: #883996;
 }
-.cloud-plugins .cloud-plugin .status.installed:after {
+.plugin-container .status.installed:after {
   content: "installed";
 }
-.cloud-plugins .cloud-plugin .status.outdated {
+.plugin-container .status.outdated {
   border: 1px solid #f29446;
   background-color: #f29446;
   color: #212121;
 }
-.cloud-plugins .cloud-plugin .status.outdated:after {
+.plugin-container .status.outdated:after {
   content: "new version";
 }
-.cloud-plugins .cloud-plugin .status.unstable {
+.plugin-container .status.unstable {
   border: 1px solid #FF2927;
   background-color: #FF2927;
 }
-.cloud-plugins .cloud-plugin .status.unstable:after {
+.plugin-container .status.unstable:after {
   content: "unstable";
 }
-.cloud-plugins .cloud-plugin .status.demo {
+.plugin-container .status.demo {
   border: 1px solid #235789;
   background-color: #235789;
+  color: #FFFFFF;
 }
-.cloud-plugins .cloud-plugin .status.demo:after {
+.plugin-container .status.demo:after {
   content: "demo";
 }
 .cloud-plugins .cloud-plugin .actions {

@@ -389,7 +389,8 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                pedalboard_href: desktop.getPedalboardHref(plugin.uri)
+                pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                demo: !!plugin.demo
             };
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
