@@ -773,6 +773,9 @@ class Host(object):
                     continue
                 websocket.write_message("output_set %s %s %f" % (plugin['instance'], symbol, value))
 
+                if crashed:
+                    self.send("monitor_output %d %s" % (instance_id, symbol))
+
             for symbol, data in plugin['midiCCs'].items():
                 if -1 not in data and symbol not in badports:
                     mchnnl, mctrl = data
