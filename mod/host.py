@@ -338,6 +338,7 @@ class Host(object):
             navigateChannel      = 15
 
         self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
+        self.send("output_data_ready")
 
     def init_jack(self):
         self.audioportsIn  = []
