@@ -1395,6 +1395,7 @@ JqueryClass('pedalboard', {
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
         var targetname = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
+        var callbackId = instance+'/'+symbol+":enabled"
 
         if ($(targetname).length) {
             var gui = self.pedalboard('getGui', instance)
@@ -1406,7 +1407,7 @@ JqueryClass('pedalboard', {
 
         } else {
             var cb = function () {
-                delete self.data('callbacksToArrive')[targetname]
+                delete self.data('callbacksToArrive')[callbackId]
                 $(document).unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
@@ -1417,13 +1418,14 @@ JqueryClass('pedalboard', {
                 }
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
         var targetname = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
+        var callbackId = instance+'/'+symbol+":value"
 
         if ($(targetname).length) {
             var gui = self.pedalboard('getGui', instance)
@@ -1431,14 +1433,14 @@ JqueryClass('pedalboard', {
 
         } else {
             var cb = function () {
-                delete self.data('callbacksToArrive')[targetname]
+                delete self.data('callbacksToArrive')[callbackId]
                 $(document).unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setPortWidgetsValue(symbol, value, null, true)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, symbol)
         }
     },
 
@@ -1451,16 +1453,17 @@ JqueryClass('pedalboard', {
 
         } else {
             var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+            var callbackId = instance+'/'+symbol+":value"
 
             var cb = function () {
-                delete self.data('callbacksToArrive')[targetname]
+                delete self.data('callbacksToArrive')[callbackId]
                 $(document).unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setOutputPortValue(symbol, value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, symbol)
         }
     },
 
@@ -1473,28 +1476,29 @@ JqueryClass('pedalboard', {
 
         } else {
             var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+            var callbackId = instance+'/'+":presets"
 
             var cb = function () {
-                delete self.data('callbacksToArrive')[targetname]
+                delete self.data('callbacksToArrive')[callbackId]
                 $(document).unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.selectPreset(value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
-    addUniqueCallbackToArrive: function (cb, targetname) {
+    addUniqueCallbackToArrive: function (cb, targetname, callbackId) {
         var callbacks = $(this).data('callbacksToArrive'),
-            currentCallback = callbacks[targetname];
+            currentCallback = callbacks[callbackId];
 
         if (currentCallback) {
             $(document).unbindArrive(targetname, currentCallback)
         }
 
-        callbacks[targetname] = cb
+        callbacks[callbackId] = cb
         $(document).arrive(targetname, cb)
     },
 
