@@ -1440,7 +1440,7 @@ JqueryClass('pedalboard', {
                 gui.setPortWidgetsValue(symbol, value, null, true)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, symbol)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
@@ -1463,7 +1463,7 @@ JqueryClass('pedalboard', {
                 gui.setOutputPortValue(symbol, value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, symbol)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
