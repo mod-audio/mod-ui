@@ -318,13 +318,14 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
+        self.send("remove -1")
+
         if pedalboard:
             self.bank_id = bank_id
             self.load(pedalboard)
 
         else:
             self.bank_id = 0
-            self.send("remove -1")
 
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
