@@ -85,8 +85,8 @@ class HMI(object):
             else:
                 self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
 
-        self.ioloop.add_callback(self.checker)
-        self.ioloop.add_callback(lambda:self.ping(ping_callback))
+        self.ping(ping_callback)
+        self.checker()
 
     def checker(self, data=None):
         if data is not None:

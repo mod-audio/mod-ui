@@ -309,6 +309,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
+    @gen.coroutine
     def init_host(self):
         self.init_jack()
         self.open_connection_if_needed(None)
@@ -318,7 +319,7 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        self.send("remove -1")
+        yield gen.Task(self.send, "remove -1", datatype='boolean')
 
         if pedalboard:
             self.bank_id = bank_id
