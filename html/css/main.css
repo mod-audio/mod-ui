@@ -7358,6 +7358,12 @@ header#pedalboard-actions {
   margin: 0 auto;
   width: 16px;
 }
+#plugins-library #plugins-list .plugins-wrapper .plugin .status.demo {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  margin: 0;
+}
 #plugins-library #plugins-list .plugins-wrapper .plugin .status.installed {
   background-image: url(../img/icn-installed.png);
   background-position: center center;
@@ -7406,6 +7412,13 @@ header#pedalboard-actions {
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .downloads {
   display: block;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .demo-container {
+  position: absolute;
+  left: 0;
+  bottom: 3px;
+  right: 0;
+  text-align: center;
 }
 .plugin-info {
   background-color: rgba(20, 20, 20, 0.9);

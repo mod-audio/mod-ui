@@ -28,7 +28,15 @@
  * - results: dictionary containing detailed data of all plugins
  *            displayed
  */
-
+var DEMO_PLUGIN_URIS = [
+    'http://moddevices.com/plugins/mod-devel/2Voices',
+    'http://moddevices.com/plugins/mda/Ambience',
+    'http://moddevices.com/plugins/caps/AmpVTS',
+    'http://code.google.com/p/amsynth/amsynth',
+    'http://gareus.org/oss/lv2/fat1',
+    'http://moddevices.com/plugins/tap/autopan'
+];
+var remotePluginMap = null;
 JqueryClass('effectBox', {
     init: function (options) {
         var self = $(this)
@@ -185,36 +193,65 @@ JqueryClass('effectBox', {
         var searchbox = self.data('searchbox')
         var term = searchbox.val()
 
-        if (term)
-        {
-            var allplugins = desktop.pluginIndexerData
-            var plugins    = []
-
-            var ret = desktop.pluginIndexer.search(term)
-            for (var i in ret) {
-                var uri = ret[i].ref
-                plugins.push(allplugins[uri])
-            }
-
-            self.effectBox('showPlugins', plugins)
-        }
-        else
-        {
+        if (!remotePluginMap) {
             $.ajax({
                 method: 'GET',
-                url: '/effect/list',
-                success: function (plugins) {
-                    var i, plugin, allplugins = {}
-                    for (i in plugins) {
-                        plugin = plugins[i]
-                        plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
-                        allplugins[plugin.uri] = plugin
-                    }
-                    desktop.resetPluginIndexer(allplugins)
-                    self.effectBox('showPlugins', plugins, callback)
+                url: SITEURL + "/lv2/plugins",
+                cache: true,
+                data: {
+                    summary: 'true',
+                    stable: 'true',
+                    image_version: VERSION
                 },
-                dataType: 'json'
-            })
+                success: function(remotePlugins) {
+                    remotePluginMap = {};
+                    if (!!remotePlugins) {
+                        for (var j = 0; j < remotePlugins.length; j++) {
+                            var remotePlugin = remotePlugins[j];
+                            remotePluginMap[remotePlugin.uri] = remotePlugin;
+                        }
+                    }
+                },
+                complete: function() {
+                    doSearch();
+                }
+            });
+        } else {
+            doSearch();
+        }
+
+        function doSearch() {
+            if (term)
+            {
+                var allplugins = desktop.pluginIndexerData
+                var plugins    = []
+
+                var ret = desktop.pluginIndexer.search(term)
+                for (var i in ret) {
+                    var uri = ret[i].ref
+                    plugins.push(allplugins[uri])
+                }
+
+                self.effectBox('showPlugins', plugins)
+            }
+            else
+            {
+                $.ajax({
+                    method: 'GET',
+                    url: '/effect/list',
+                    success: function (plugins) {
+                        var i, plugin, allplugins = {}
+                        for (i in plugins) {
+                            plugin = plugins[i]
+                            plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
+                            allplugins[plugin.uri] = plugin
+                        }
+                        desktop.resetPluginIndexer(allplugins)
+                        self.effectBox('showPlugins', plugins, callback)
+                    },
+                    dataType: 'json'
+                })
+            }
         }
     },
 
@@ -288,6 +325,9 @@ JqueryClass('effectBox', {
             }
 
             plugin   = plugins[renderedIndex]
+            if (!!remotePluginMap && !!remotePluginMap[plugin.uri]) {
+                plugin.demo = remotePluginMap[plugin.uri].demo || DEMO_PLUGIN_URIS.indexOf(plugin.uri) > -1;
+            }
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
@@ -320,6 +360,7 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
+            demo: plugin.demo
         }
 
         var div = document.createElement("div");
