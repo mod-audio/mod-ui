@@ -425,11 +425,12 @@ function Desktop(elements) {
         var error = false
 
         // make list of uris
-        var plugin
         for (var i in plugins) {
-            plugin = plugins[i]
-            versions[plugin.uri] = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release || 0]
-            uris.push(plugin.uri)
+            var plugin = plugins[i]
+            if (uris.indexOf(plugin.uri) < 0) {
+                versions[plugin.uri] = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release || 0]
+                uris.push(plugin.uri)
+            }
         }
 
         var finalCallback = function () {
@@ -444,9 +445,6 @@ function Desktop(elements) {
             missingCount++
 
             self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
-                // TODO: Fix this code for store updates (needed?)
-                //data[uri] = pluginData
-
                 if (! resp.ok) {
                     error = true
                 }
