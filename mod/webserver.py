@@ -940,9 +940,12 @@ class TemplateHandler(web.RequestHandler):
             version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
             if version:
                 if "-" in version:
-                    # Special build, strip build version
-                    rversion  = ".".join(version.split(".")[:3])
-                    rversion += "-"+version.rsplit("-",1)[1]
+                    # Special build with label, separated by '-'
+                    label = version.rsplit("-",1)[1]
+                    # Get the first 3 digits (up to 3, might be less)
+                    rversion = ".".join(version.split(".")[:3])
+                    if label != "stable":
+                        rversion += "-"+label
                 else:
                     # Normal build (internal or official), show entire version
                     rversion = version
