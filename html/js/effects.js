@@ -34,7 +34,8 @@ var DEMO_PLUGIN_URIS = [
     'http://moddevices.com/plugins/caps/AmpVTS',
     'http://code.google.com/p/amsynth/amsynth',
     'http://gareus.org/oss/lv2/fat1',
-    'http://moddevices.com/plugins/tap/autopan'
+    'http://moddevices.com/plugins/tap/autopan',
+    'http://moddevices.com/plugins/mda/Combo'
 ];
 var remotePluginMap = null;
 JqueryClass('effectBox', {
@@ -325,9 +326,7 @@ JqueryClass('effectBox', {
             }
 
             plugin   = plugins[renderedIndex]
-            if (!!remotePluginMap && !!remotePluginMap[plugin.uri]) {
-                plugin.demo = remotePluginMap[plugin.uri].demo || DEMO_PLUGIN_URIS.indexOf(plugin.uri) > -1;
-            }
+            plugin.demo = (!!remotePluginMap && !!remotePluginMap[plugin.uri] && remotePluginMap[plugin.uri].demo) || DEMO_PLUGIN_URIS.indexOf(plugin.uri) > -1;
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))

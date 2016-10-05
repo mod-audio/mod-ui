@@ -33,7 +33,8 @@ var DEMO_PLUGIN_URIS = [
     'http://moddevices.com/plugins/caps/AmpVTS',
     'http://code.google.com/p/amsynth/amsynth',
     'http://gareus.org/oss/lv2/fat1',
-    'http://moddevices.com/plugins/tap/autopan'
+    'http://moddevices.com/plugins/tap/autopan',
+    'http://moddevices.com/plugins/mda/Combo'
 ];
 JqueryClass('cloudPluginBox', {
     init: function (options) {
