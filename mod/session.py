@@ -104,7 +104,7 @@ class Session(object):
         logging.info("hmi initialized")
         self.hmi.initialized = True
         uiConnected = bool(len(self.websockets) > 0)
-        yield gen.Task(self.host.initialize_hmi, uiConnected, True)
+        yield gen.Task(self.host.initialize_hmi, uiConnected)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)

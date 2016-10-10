@@ -419,7 +419,7 @@ class Host(object):
         cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
         self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
 
-    def initialize_hmi(self, uiConnected, loadAddressings, callback):
+    def initialize_hmi(self, uiConnected, callback):
         # If UI is already connected, do nothing
         if uiConnected:
             callback(True)
@@ -458,10 +458,6 @@ class Host(object):
             pedalboard_id = 0
             pedalboard = ""
             pedalboards = []
-
-        # load addressings if requested, regardless of bank
-        if pedalboard and loadAddressings:
-            self._load_addressings(pedalboard)
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(True, callback)
