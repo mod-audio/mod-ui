@@ -27,15 +27,6 @@ function getDummyPluginData() {
     })
 }
 
-var DEMO_PLUGIN_URIS = [
-    'http://moddevices.com/plugins/mod-devel/2Voices',
-    'http://moddevices.com/plugins/mda/Ambience',
-    'http://moddevices.com/plugins/caps/AmpVTS',
-    'http://code.google.com/p/amsynth/amsynth',
-    'http://gareus.org/oss/lv2/fat1',
-    'http://moddevices.com/plugins/tap/autopan',
-    'http://moddevices.com/plugins/mda/Combo'
-];
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -198,7 +189,6 @@ JqueryClass('cloudPluginBox', {
 
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
-                cplugin.demo = DEMO_PLUGIN_URIS.indexOf(cplugin.uri) > -1;
                 lplugin = results.local[cplugin.uri]
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]

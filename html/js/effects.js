@@ -28,15 +28,6 @@
  * - results: dictionary containing detailed data of all plugins
  *            displayed
  */
-var DEMO_PLUGIN_URIS = [
-    'http://moddevices.com/plugins/mod-devel/2Voices',
-    'http://moddevices.com/plugins/mda/Ambience',
-    'http://moddevices.com/plugins/caps/AmpVTS',
-    'http://code.google.com/p/amsynth/amsynth',
-    'http://gareus.org/oss/lv2/fat1',
-    'http://moddevices.com/plugins/tap/autopan',
-    'http://moddevices.com/plugins/mda/Combo'
-];
 var remotePluginMap = null;
 JqueryClass('effectBox', {
     init: function (options) {
@@ -326,7 +317,7 @@ JqueryClass('effectBox', {
             }
 
             plugin   = plugins[renderedIndex]
-            plugin.demo = (!!remotePluginMap && !!remotePluginMap[plugin.uri] && remotePluginMap[plugin.uri].demo) || DEMO_PLUGIN_URIS.indexOf(plugin.uri) > -1;
+            plugin.demo = (!!remotePluginMap && !!remotePluginMap[plugin.uri] && remotePluginMap[plugin.uri].demo);
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
