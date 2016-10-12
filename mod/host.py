@@ -500,7 +500,7 @@ class Host(object):
             return
 
         def initialize_callback(ok):
-            self.initialize_hmi(False, False, callback)
+            self.initialize_hmi(False, callback)
 
         self.banks = list_banks()
         self.allpedalboards = get_all_good_pedalboards()
