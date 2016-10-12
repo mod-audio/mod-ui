@@ -236,7 +236,8 @@ JqueryClass('effectBox', {
         // count plugins first
         var pluginCount = plugins.length
         var categories = {
-            'All': 0
+            'All': 0,
+            'Favorites': FAVORITES.length,
         }
         var category
         for (i in plugins) {
@@ -291,6 +292,10 @@ JqueryClass('effectBox', {
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
+
+            if (FAVORITES.indexOf(plugin.uri) >= 0) {
+                self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+            }
 
             if (category && category != 'All') {
                 self.effectBox('renderPlugin', plugin, self.find('#effect-content-' + category))

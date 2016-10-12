@@ -117,6 +117,8 @@ def install_bundles_in_tmp_dir(callback):
             'installed': installed,
         }
 
+    # TODO: remove plugins from favorites if needed
+
     callback(resp)
 
 def install_package(bundlename, callback):
@@ -979,6 +981,7 @@ class TemplateHandler(web.RequestHandler):
             'using_mod': 'true' if DEVICE_KEY else 'false',
             'user_name': tornado.escape.xhtml_escape(user_id.get("name", "")),
             'user_email': tornado.escape.xhtml_escape(user_id.get("email", "")),
+            'favorites': json.dumps(SESSION.favorites),
         }
         return context
 
@@ -1108,6 +1111,36 @@ class JackSetMidiDevices(JsonRequestHandler):
     def post(self):
         devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         SESSION.web_set_midi_devices(devs)
+        self.write(True)
+
+class FavoritesAdd(JsonRequestHandler):
+    def post(self, uri):
+        # safety check, no duplicates please
+        if uri in SESSION.favorites:
+            self.write(False)
+            return
+
+        # add and save
+        SESSION.favorites.append(uri)
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
+            json.dump(SESSION.favorites, fh)
+
+        # done
+        self.write(True)
+
+class FavoritesRemove(JsonRequestHandler):
+    def post(self, uri):
+        # safety check
+        if uri not in SESSION.favorites:
+            self.write(False)
+            return
+
+        # remove and save
+        SESSION.favorites.remove(uri)
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
+            json.dump(SESSION.favorites, fh)
+
+        # done
         self.write(True)
 
 class AuthNonce(JsonRequestHandler):
@@ -1295,6 +1328,9 @@ application = web.Application(
 
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),
+
+            (r"/favorites/add/?", FavoritesAdd),
+            (r"/favorites/remove/?", FavoritesRemove),
 
             (r"/ping/?", Ping),
             (r"/hello/?", Hello),
