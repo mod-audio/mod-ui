@@ -236,8 +236,19 @@ JqueryClass('effectBox', {
         // count plugins first
         var pluginCount = plugins.length
         var categories = {
-            'All': 0,
             'Favorites': FAVORITES.length,
+            'All': 0,
+            'Delay': 0,
+            'Distortion': 0,
+            'Dynamics': 0,
+            'Filter': 0,
+            'Generator': 0,
+            'Modulator': 0,
+            'Reverb': 0,
+            'Simulator': 0,
+            'Spatial': 0,
+            'Spectral': 0,
+            'Utility': 0,
         }
         var category
         for (i in plugins) {
