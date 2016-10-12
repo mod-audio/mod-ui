@@ -163,6 +163,7 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
+        self.next_hmi_pedalboard = None
 
         self.statstimer = ioloop.PeriodicCallback(self.statstimer_callback, 1000)
 
@@ -2241,6 +2242,12 @@ _:b%i
             callback(False)
             return
 
+        if self.next_hmi_pedalboard is not None:
+            print("NOTE: Delaying loading of %i:%i" % (bank_id, pedalboard_id))
+            self.next_hmi_pedalboard = (bank_id, pedalboard_id)
+            callback(False)
+            return
+
         if bank_id == 0:
             pedalboards = self.allpedalboards
             navigateFootswitches = False
@@ -2260,12 +2267,31 @@ _:b%i
             callback(False)
             return
 
+        self.next_hmi_pedalboard = (bank_id, pedalboard_id)
+        callback(True)
+
         bundlepath = pedalboards[pedalboard_id]['bundle']
+
+        def loaded2_callback(ok):
+            next_pedalboard = self.next_hmi_pedalboard
+            self.next_hmi_pedalboard = None
+            if ok:
+                print("NOTE: Delayed loading of %i:%i has started" % next_pedalboard)
+            else:
+                print("NOTE: Delayed loading of %i:%i failed!" % next_pedalboard)
+
+        def loaded_callback(ok):
+            next_pedalboard = self.next_hmi_pedalboard
+            self.next_hmi_pedalboard = None
+
+            if next_pedalboard is not None and next_pedalboard != (bank_id, pedalboard_id):
+                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], loaded2_callback)
 
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel), callback, datatype='boolean')
+            self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel),
+                      loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
