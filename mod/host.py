@@ -2273,18 +2273,19 @@ _:b%i
         bundlepath = pedalboards[pedalboard_id]['bundle']
 
         def loaded2_callback(ok):
-            next_pedalboard = self.next_hmi_pedalboard
-            self.next_hmi_pedalboard = None
             if ok:
-                print("NOTE: Delayed loading of %i:%i has started" % next_pedalboard)
+                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard)
             else:
-                print("NOTE: Delayed loading of %i:%i failed!" % next_pedalboard)
+                print("NOTE: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard)
 
         def loaded_callback(ok):
+            print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
+
+            # Check if there's a pending pedalboard to be loaded
             next_pedalboard = self.next_hmi_pedalboard
             self.next_hmi_pedalboard = None
 
-            if next_pedalboard is not None and next_pedalboard != (bank_id, pedalboard_id):
+            if next_pedalboard != (bank_id, pedalboard_id):
                 self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], loaded2_callback)
 
         def load_callback(ok):
