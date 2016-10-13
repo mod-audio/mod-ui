@@ -64,6 +64,7 @@
       var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
       var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
       var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
+      var FAVORITES = {{favorites}}
       var DEBUG = true;
       if (!DEBUG) {
           console = console || {}
@@ -505,6 +506,7 @@ $('document').ready(function() {
     <div id="plugins-library" class="js-main-library mod-init-hidden">
         <!-- EFFECTS MENU ITEMS -->
         <ul class="clearfix js-category-tabs">
+            <li id="effect-tab-Favorites">Favorites</li>
             <li id="effect-tab-All">All</li>
             <li id="effect-tab-Delay">Delay</li>
             <li id="effect-tab-Distortion">Distortion</li>
@@ -537,6 +539,7 @@ $('document').ready(function() {
             <div class="nav nav-left"></div>
             <div id="plugins-results">
                 <div id="plugin-results-wrapper">
+                    <div id="effect-content-Favorites" class="plugins-wrapper"></div>
                     <div id="effect-content-All" class="plugins-wrapper"></div>
                     <div id="effect-content-Delay" class="plugins-wrapper"></div>
                     <div id="effect-content-Distortion" class="plugins-wrapper"></div>

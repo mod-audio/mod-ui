@@ -126,7 +126,7 @@ JqueryClass('effectBox', {
         self.data("scrollTO", false);
 
         //self.effectBox('fold')
-        self.effectBox('setCategory', 'All')
+        self.effectBox('setCategory', 'Favorites')
 
         // don't search just yet.
         // it's a little expensive, let init time go for loading the pedalboard first
@@ -213,6 +213,7 @@ JqueryClass('effectBox', {
                     desktop.resetPluginIndexer(allplugins)
                     self.effectBox('showPlugins', plugins, callback)
                 },
+                cache: false,
                 dataType: 'json'
             })
         }
@@ -236,7 +237,19 @@ JqueryClass('effectBox', {
         // count plugins first
         var pluginCount = plugins.length
         var categories = {
-            'All': 0
+            'Favorites': FAVORITES.length,
+            'All': 0,
+            'Delay': 0,
+            'Distortion': 0,
+            'Dynamics': 0,
+            'Filter': 0,
+            'Generator': 0,
+            'Modulator': 0,
+            'Reverb': 0,
+            'Simulator': 0,
+            'Spatial': 0,
+            'Spectral': 0,
+            'Utility': 0,
         }
         var category
         for (i in plugins) {
@@ -291,6 +304,10 @@ JqueryClass('effectBox', {
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
+
+            if (FAVORITES.indexOf(plugin.uri) >= 0) {
+                self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+            }
 
             if (category && category != 'All') {
                 self.effectBox('renderPlugin', plugin, self.find('#effect-content-' + category))
@@ -389,7 +406,8 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                installed: true
+                installed: true,
+                favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
@@ -404,9 +422,41 @@ JqueryClass('effectBox', {
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
             }
-            
-            info.find('.favorite-button').on('click', function() {
-                $(this).toggleClass('favorite');
+
+            info.find('.favorite-button').on('click', function () {
+                var isFavorite = $(this).hasClass('favorite'),
+                    widget = $(this)
+
+                $.ajax({
+                    url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
+                    type: 'POST',
+                    data: {
+                        uri: plugin.uri,
+                    },
+                    success: function (ok) {
+                        if (! ok) {
+                            console.log("favorite action failed")
+                            return
+                        }
+
+                        if (isFavorite) {
+                            // was favorite, not anymore
+                            widget.removeClass('favorite');
+                            remove_from_array(FAVORITES, plugin.uri)
+                            self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
+
+                        } else {
+                            // was not favorite, now is
+                            widget.addClass('favorite');
+                            FAVORITES.push(plugin.uri)
+                            self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+                        }
+
+                        self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             });
 
             info.window({
@@ -436,6 +486,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
+                cache: false,
                 dataType: 'json'
             })
         }

@@ -38,7 +38,7 @@ from mod.settings import (APP, LOG,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, BLUETOOTH_PIN)
+                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, FAVORITES_JSON_FILE, BLUETOOTH_PIN)
 
 from mod import check_environment, jsoncall, json_handler
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -67,6 +67,7 @@ def install_bundles_in_tmp_dir(callback):
     error     = ""
     removed   = []
     installed = []
+    needsToSaveFavorites = False
 
     for bundle in os.listdir(DOWNLOAD_TMP_DIR):
         tmppath    = os.path.join(DOWNLOAD_TMP_DIR, bundle)
@@ -98,6 +99,15 @@ def install_bundles_in_tmp_dir(callback):
             # remove bundle that produces errors
             shutil.rmtree(bundlepath)
             break
+
+    for uri in removed:
+        if uri not in installed:
+            needsToSaveFavorites = True
+            SESSION.favorites.remove(uri)
+
+    if needsToSaveFavorites:
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
+            json.dump(SESSION.favorites, fh)
 
     if error or len(installed) == 0:
         # Delete old temp files
@@ -979,6 +989,7 @@ class TemplateHandler(web.RequestHandler):
             'using_mod': 'true' if DEVICE_KEY else 'false',
             'user_name': tornado.escape.xhtml_escape(user_id.get("name", "")),
             'user_email': tornado.escape.xhtml_escape(user_id.get("email", "")),
+            'favorites': json.dumps(SESSION.favorites),
         }
         return context
 
@@ -1108,6 +1119,42 @@ class JackSetMidiDevices(JsonRequestHandler):
     def post(self):
         devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         SESSION.web_set_midi_devices(devs)
+        self.write(True)
+
+class FavoritesAdd(JsonRequestHandler):
+    def post(self):
+        uri = self.get_argument("uri")
+
+        # safety check, no duplicates please
+        if uri in SESSION.favorites:
+            print("ERROR: URI '%s' already in favorites" % uri)
+            self.write(False)
+            return
+
+        # add and save
+        SESSION.favorites.append(uri)
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
+            json.dump(SESSION.favorites, fh)
+
+        # done
+        self.write(True)
+
+class FavoritesRemove(JsonRequestHandler):
+    def post(self):
+        uri = self.get_argument("uri")
+
+        # safety check
+        if uri not in SESSION.favorites:
+            print("ERROR: URI '%s' not in favorites" % uri)
+            self.write(False)
+            return
+
+        # remove and save
+        SESSION.favorites.remove(uri)
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
+            json.dump(SESSION.favorites, fh)
+
+        # done
         self.write(True)
 
 class AuthNonce(JsonRequestHandler):
@@ -1295,6 +1342,9 @@ application = web.Application(
 
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),
+
+            (r"/favorites/add", FavoritesAdd),
+            (r"/favorites/remove", FavoritesRemove),
 
             (r"/ping/?", Ping),
             (r"/hello/?", Hello),

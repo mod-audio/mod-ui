@@ -619,6 +619,13 @@ JqueryClass('cloudPluginBox', {
                 continue
             }
 
+            var favoriteIndex = FAVORITES.indexOf(uri)
+            if (favoriteIndex >= 0) {
+                FAVORITES.splice(favoriteIndex, 1)
+                $('#effect-content-Favorites').find('[mod-uri="'+escape(uri)+'"]').remove()
+                $('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+            }
+
             plugin  = self.data('pluginsDict')[uri]
             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
 
@@ -690,7 +697,6 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                installed: plugin.status === 'installed' || plugin.status === 'outdated'
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
@@ -699,10 +705,6 @@ JqueryClass('cloudPluginBox', {
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
             }
-
-            info.find('.favorite-button').on('click', function() {
-                $(this).toggleClass('favorite');
-            });
 
             var canInstall = false,
                 canUpgrade = false
