@@ -38,7 +38,7 @@ from mod.settings import (APP, LOG,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, BLUETOOTH_PIN)
+                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, FAVORITES_JSON_FILE, BLUETOOTH_PIN)
 
 from mod import check_environment, jsoncall, json_handler
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -1114,9 +1114,12 @@ class JackSetMidiDevices(JsonRequestHandler):
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):
-    def post(self, uri):
+    def post(self):
+        uri = self.get_argument("uri")
+
         # safety check, no duplicates please
         if uri in SESSION.favorites:
+            print("ERROR: URI '%s' already in favorites" % uri)
             self.write(False)
             return
 
@@ -1129,9 +1132,12 @@ class FavoritesAdd(JsonRequestHandler):
         self.write(True)
 
 class FavoritesRemove(JsonRequestHandler):
-    def post(self, uri):
+    def post(self):
+        uri = self.get_argument("uri")
+
         # safety check
         if uri not in SESSION.favorites:
+            print("ERROR: URI '%s' not in favorites" % uri)
             self.write(False)
             return
 
@@ -1329,8 +1335,8 @@ application = web.Application(
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),
 
-            (r"/favorites/add/?", FavoritesAdd),
-            (r"/favorites/remove/?", FavoritesRemove),
+            (r"/favorites/add", FavoritesAdd),
+            (r"/favorites/remove", FavoritesRemove),
 
             (r"/ping/?", Ping),
             (r"/hello/?", Hello),

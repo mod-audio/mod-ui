@@ -213,6 +213,7 @@ JqueryClass('effectBox', {
                     desktop.resetPluginIndexer(allplugins)
                     self.effectBox('showPlugins', plugins, callback)
                 },
+                cache: false,
                 dataType: 'json'
             })
         }
@@ -405,7 +406,8 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                installed: true
+                installed: true,
+                favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
@@ -420,9 +422,41 @@ JqueryClass('effectBox', {
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
             }
-            
-            info.find('.favorite-button').on('click', function() {
-                $(this).toggleClass('favorite');
+
+            info.find('.favorite-button').on('click', function () {
+                var isFavorite = $(this).hasClass('favorite'),
+                    widget = $(this)
+
+                $.ajax({
+                    url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
+                    type: 'POST',
+                    data: {
+                        uri: plugin.uri,
+                    },
+                    success: function (ok) {
+                        if (! ok) {
+                            console.log("favorite action failed")
+                            return
+                        }
+
+                        if (isFavorite) {
+                            // was favorite, not anymore
+                            widget.removeClass('favorite');
+                            remove_from_array(FAVORITES, plugin.uri)
+                            self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
+
+                        } else {
+                            // was not favorite, now is
+                            widget.addClass('favorite');
+                            FAVORITES.push(plugin.uri)
+                            self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+                        }
+
+                        self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             });
 
             info.window({
@@ -452,6 +486,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
+                cache: false,
                 dataType: 'json'
             })
         }

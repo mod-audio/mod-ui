@@ -619,6 +619,13 @@ JqueryClass('cloudPluginBox', {
                 continue
             }
 
+            var favoriteIndex = FAVORITES.indexOf(uri)
+            if (favoriteIndex >= 0) {
+                FAVORITES.splice(favoriteIndex, 1)
+                $('#effect-content-Favorites').find('[mod-uri="'+escape(uri)+'"]').remove()
+                $('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+            }
+
             plugin  = self.data('pluginsDict')[uri]
             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
 
