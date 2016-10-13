@@ -389,6 +389,7 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
+                installed: true
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))

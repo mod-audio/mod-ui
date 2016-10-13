@@ -690,6 +690,7 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
+                installed: plugin.status === 'installed' || plugin.status === 'outdated'
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
