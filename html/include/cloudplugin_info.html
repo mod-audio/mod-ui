@@ -10,6 +10,9 @@
                 <div class="plugin-description">
                     <header>
                         <h1>{{name}}</h1>
+                        {{#installed}}
+                        <a class="favorite-button" title="Favorite Plugin"></a>
+                        {{/installed}}
                         <br/>
                         <p>
                             <b>URI:</b> {{uri}}<br/>

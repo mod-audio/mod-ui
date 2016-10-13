@@ -690,6 +690,7 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
+                installed: plugin.status === 'installed' || plugin.status === 'outdated'
             }
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
@@ -698,6 +699,10 @@ JqueryClass('cloudPluginBox', {
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
             }
+
+            info.find('.favorite-button').on('click', function() {
+                $(this).toggleClass('favorite');
+            });
 
             var canInstall = false,
                 canUpgrade = false
