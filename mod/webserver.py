@@ -67,6 +67,7 @@ def install_bundles_in_tmp_dir(callback):
     error     = ""
     removed   = []
     installed = []
+    needsToSaveFavorites = False
 
     for bundle in os.listdir(DOWNLOAD_TMP_DIR):
         tmppath    = os.path.join(DOWNLOAD_TMP_DIR, bundle)
@@ -99,6 +100,15 @@ def install_bundles_in_tmp_dir(callback):
             shutil.rmtree(bundlepath)
             break
 
+    for uri in removed:
+        if uri not in installed:
+            needsToSaveFavorites = True
+            SESSION.favorites.remove(uri)
+
+    if needsToSaveFavorites:
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
+            json.dump(SESSION.favorites, fh)
+
     if error or len(installed) == 0:
         # Delete old temp files
         for bundle in os.listdir(DOWNLOAD_TMP_DIR):
@@ -116,8 +126,6 @@ def install_bundles_in_tmp_dir(callback):
             'removed'  : removed,
             'installed': installed,
         }
-
-    # TODO: remove plugins from favorites if needed
 
     callback(resp)
 
