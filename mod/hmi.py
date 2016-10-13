@@ -154,13 +154,16 @@ class HMI(object):
         self.sp.write(msg.encode('utf-8') + b'\0')
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        numBytesFree = 2048-64
+        numBytesFree = 1024-64
         pedalboardsData = None
 
         num = 0
         for pb in pedalboards:
+            if num > 50:
+                break
+
             title   = pb['title'].replace('"', '').upper()[:31]
-            data    = '"%s" "%i"' % (title, num)
+            data    = '"%s" %i' % (title, num)
             dataLen = len(data)
 
             if numBytesFree-dataLen-2 < 0:
