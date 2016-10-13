@@ -699,6 +699,10 @@ JqueryClass('cloudPluginBox', {
                 info.find('.plugin-controlports').hide()
             }
 
+            info.find('.favorite-button').on('click', function() {
+                $(this).toggleClass('favorite');
+            });
+
             var canInstall = false,
                 canUpgrade = false
 

@@ -985,6 +985,8 @@ header#pedalboard-actions {
     header {
       padding: 18px 0 0;
       h1 {
+        display: inline-block;
+        vertical-align: middle;
         color: #fff;
         font-size: 27px;
         font-weight: bold;
@@ -1166,7 +1168,29 @@ header#pedalboard-actions {
         height: 180px;
       }
     }
-}
+    .favorite-button {
+      display: inline-block;
+      vertical-align: middle;
+      width: 30px;
+      height: 30px;
+      background: url(../img/icons/25/star-border.png) no-repeat center center;
+      cursor: pointer;
+      opacity: .5;
+
+      &:hover {
+        opacity: .8;
+      }
+
+      &.favorite {
+        opacity: 1;
+        background: url(../img/icons/25/star.png) no-repeat center center;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
 
 
 .clearfix:after,

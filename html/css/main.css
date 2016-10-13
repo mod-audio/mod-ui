@@ -7484,6 +7484,8 @@ header#pedalboard-actions {
   padding: 18px 0 0;
 }
 .plugin-info header h1 {
+  display: inline-block;
+  vertical-align: middle;
   color: #fff;
   font-size: 27px;
   font-weight: bold;
@@ -7655,6 +7657,25 @@ header#pedalboard-actions {
 }
 .plugin-info form.comment-form textarea {
   height: 180px;
+}
+.plugin-info .favorite-button {
+  display: inline-block;
+  vertical-align: middle;
+  width: 30px;
+  height: 30px;
+  background: url(../img/icons/25/star-border.png) no-repeat center center;
+  cursor: pointer;
+  opacity: .5;
+}
+.plugin-info .favorite-button:hover {
+  opacity: .8;
+}
+.plugin-info .favorite-button.favorite {
+  opacity: 1;
+  background: url(../img/icons/25/star.png) no-repeat center center;
+}
+.plugin-info .favorite-button.favorite:hover {
+  opacity: 1;
 }
 .clearfix:after,
 .container:after,
