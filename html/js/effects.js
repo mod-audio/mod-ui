@@ -300,7 +300,6 @@ JqueryClass('effectBox', {
             }
 
             plugin   = plugins[renderedIndex]
-            plugin.demo = !!remotePluginMap && !!remotePluginMap[plugin.uri] && remotePluginMap[plugin.uri].demo;
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
