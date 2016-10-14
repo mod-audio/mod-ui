@@ -160,8 +160,9 @@ $('document').ready(function() {
             INFO = info
         },
         dataType: 'json'
-    })
+    });
 
+    desktop.resetPedalboardStats();
 })
 
 </script>
@@ -631,8 +632,11 @@ $('document').ready(function() {
                 <div class="form-group">
                     <input id="searchPedalboard" class="form-control" length="20" placeholder="Filter by keyword(s)" type="search"/>
                 </div>
-                <a style="display:inline-block;float:right;color:#AAA;font-size:1.1em;margin-right:20px;"
-                   href="http://pedalboards.moddevices.com/" target="_blank">View more pedalboards online</a>
+                <a style="display:inline-block;float:right;color:#AAA;font-size:1.1em;margin-right:30px;"
+                   href="http://pedalboards.moddevices.com/" target="_blank">
+                    <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png">
+                    <span style="vertical-align: middle;">Browse Online Pedalboards</span>
+                </a>
             </header>
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>

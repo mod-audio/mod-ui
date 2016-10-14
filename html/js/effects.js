@@ -28,7 +28,6 @@
  * - results: dictionary containing detailed data of all plugins
  *            displayed
  */
-
 JqueryClass('effectBox', {
     init: function (options) {
         var self = $(this)
@@ -215,7 +214,7 @@ JqueryClass('effectBox', {
                 },
                 cache: false,
                 dataType: 'json'
-            })
+            });
         }
     },
 
@@ -301,6 +300,7 @@ JqueryClass('effectBox', {
             }
 
             plugin   = plugins[renderedIndex]
+            plugin.demo = !!remotePluginMap && !!remotePluginMap[plugin.uri] && remotePluginMap[plugin.uri].demo;
             category = plugin.category[0]
 
             self.effectBox('renderPlugin', plugin, self.find('#effect-content-All'))
@@ -337,6 +337,7 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
+            demo: plugin.demo
         }
 
         var div = document.createElement("div");
@@ -408,7 +409,10 @@ JqueryClass('effectBox', {
                 ports : plugin.ports,
                 installed: true,
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
-            }
+                pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+            };
+
+            // TODO: add 'demo' directly in TTL and read from there
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 

@@ -1,4 +1,4 @@
-<div class="js-close plugin-info">
+<div class="js-close plugin-info plugin-container">
     <div class="container box">
         <span class="js-close alignright btn btn-mini btn-danger">Close</span>
         <div class="row-fluid clearfix">
@@ -13,6 +13,14 @@
                         {{#installed}}
                         <a class="favorite-button {{favorite_class}}" title="Favorite Plugin"></a>
                         {{/installed}}
+                        {{#demo}}
+                        <div style="margin-bottom: 5px;">
+                            <span class="status demo"></span>
+                            <span style="display: block;">
+                                This plugin is for demo purposes only and shall not be used live or in a studio.
+                            </span>
+                        </div>
+                        {{/demo}}
                         <br/>
                         <p>
                             <b>URI:</b> {{uri}}<br/>
@@ -31,7 +39,9 @@
                         </p>
                     </header>
                     <p>{{comment}}</p>
-
+                    {{#pedalboard_href}}
+                    <a target="_blank" href="{{pedalboard_href}}" class="btn btn-info pedalboard-href"><span>See it in action</span></a>
+                    {{/pedalboard_href}}
                     <div class="plugin-controlports">
                         <p><strong>CONTROL PORTS:</strong></p>
                         <table class="plugin-specs table table-bordered">

@@ -1,4 +1,4 @@
-<div class="cloud-plugin available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="{{uri}}">
+<div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="{{uri}}">
     <figure class="thumb" style="background-image: url('{{screenshot_href}}');"></figure>
     <div class="description">
         <span class="title">{{label}}</span>
@@ -6,8 +6,15 @@
         <hr class="dotted" />
         <p class="{{has_comment}}">{{comment}}<span class="limiter"></span></p>
     </div>
-    <span class="status {{status}}"></span>
-    {{^stable}}
-    <span class="status unstable"></span>
-    {{/stable}}
+    <div class="status-container">
+        {{#status}}
+        <span class="status {{status}}"></span>
+        {{/status}}
+        {{^stable}}
+        <span class="status unstable"></span>
+        {{/stable}}
+        {{#demo}}
+        <span class="status demo" title="This plugin is for demo purposes only and shall not be used live or in a studio"></span>
+        {{/demo}}
+    </div>
 </div>

@@ -573,7 +573,7 @@ header#pedalboard-actions,
         background-size: 30px 30px;
     }
     &.js-reset {
-        background-image: url(../img/icons/25/remove.png);
+        background-image: url(../img/icons/25/new.png);
         &:hover, &.selected {
             background-color: @brand-primary;
         }
@@ -868,6 +868,12 @@ header#pedalboard-actions {
         margin: 0 auto;
         width: 16px;
       }
+      .plugins-wrapper .plugin .status.demo {
+        display: inline-block;
+        width: auto;
+        height: auto;
+        margin: 0;
+      }
       .plugins-wrapper .plugin .status.installed {
         background-image: url(../img/icn-installed.png);
         background-position: center center;
@@ -916,6 +922,13 @@ header#pedalboard-actions {
       }
       .plugins-wrapper .plugin .downloads {
         display: block;
+      }
+      .plugins-wrapper .plugin .demo-container {
+        position: absolute;
+        left: 0;
+        bottom: 3px;
+        right: 0;
+        text-align: center;
       }
     }
   }
@@ -1190,8 +1203,17 @@ header#pedalboard-actions {
         }
       }
     }
-  }
-
+    .pedalboard-href {
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .status.demo {
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 2px 0;
+      font-size: 0.8em;
+    }
+}
 
 .clearfix:after,
 .container:after {

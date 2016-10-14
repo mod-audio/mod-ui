@@ -221,46 +221,6 @@
           overflow: hidden;
         }
       }
-      .status {
-         display: block;
-         padding: 1px 4px;
-         text-align: center;
-         text-transform: uppercase;
-         font-weight: bold;
-         font-size: 9px;
-         position: absolute;
-         top: 3px;
-         right: 8px;
-       }
-       .status.installed {
-         border: 1px solid @brand-success;
-         background-color: @brand-success;
-         &:after {
-           content: "installed";
-         }
-       }
-       .status.outdated {
-         border: 1px solid @brand-warning;
-         background-color: @brand-warning;
-         color: #212121;
-         &:after {
-           content: "new version";
-         }
-       }
-       .status.blocked {
-         border: 1px solid @brand-warning;
-         color: @brand-warning;
-         &:after {
-           content: "not installed";
-         }
-       }
-       .status.unstable {
-         border: 1px solid #FF2927;
-         background-color: #FF2927;
-         &:after {
-           content: "unstable";
-         }
-       }
 
       .actions {
         font-size: 11px;
@@ -276,5 +236,54 @@
        .actions span.duplicate {
         margin: 0 6px;
       }
+  }
+}
+
+.plugin-container {
+  .status-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    text-align: right;
+    padding-right: 2px;
+  }
+  .status {
+    padding: 1px 4px;
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 9px;
+    margin-left: 2px;
+  }
+  .status.installed {
+    border: 1px solid @brand-success;
+    background-color: @brand-success;
+    &:after {
+      content: "installed";
+    }
+  }
+  .status.outdated {
+    border: 1px solid @brand-warning;
+    background-color: @brand-warning;
+    color: #212121;
+    &:after {
+      content: "new version";
+    }
+  }
+  .status.unstable {
+    border: 1px solid #FF2927;
+    background-color: #FF2927;
+    &:after {
+      content: "unstable";
+    }
+  }
+  .status.demo {
+    border: 1px solid #235789;
+    background-color: #235789;
+    color: #FFFFFF;
+    &:after {
+      content: "demo";
+    }
   }
 }

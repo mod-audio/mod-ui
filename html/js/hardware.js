@@ -202,6 +202,10 @@ function HardwareManager(options) {
 
         var actuators = self.availableActuators(instance, port)
         var actuatorSelect = form.find('select[name=actuator]')
+        var midiLearnHint = form.find('.midi-learn-hint');
+        actuatorSelect.on('change', function() {
+            midiLearnHint.toggle(actuatorSelect.val() === '/midi-learn');
+        });
         $('<option value="'+kNullAddressURI+'">').text('None').appendTo(actuatorSelect)
 
         var actuator

@@ -5736,46 +5736,6 @@ button.close {
   line-height: 1.25em;
   overflow: hidden;
 }
-.cloud-plugins .cloud-plugin .status {
-  display: block;
-  padding: 1px 4px;
-  text-align: center;
-  text-transform: uppercase;
-  font-weight: bold;
-  font-size: 9px;
-  position: absolute;
-  top: 3px;
-  right: 8px;
-}
-.cloud-plugins .cloud-plugin .status.installed {
-  border: 1px solid #883996;
-  background-color: #883996;
-}
-.cloud-plugins .cloud-plugin .status.installed:after {
-  content: "installed";
-}
-.cloud-plugins .cloud-plugin .status.outdated {
-  border: 1px solid #f29446;
-  background-color: #f29446;
-  color: #212121;
-}
-.cloud-plugins .cloud-plugin .status.outdated:after {
-  content: "new version";
-}
-.cloud-plugins .cloud-plugin .status.blocked {
-  border: 1px solid #f29446;
-  color: #f29446;
-}
-.cloud-plugins .cloud-plugin .status.blocked:after {
-  content: "not installed";
-}
-.cloud-plugins .cloud-plugin .status.unstable {
-  border: 1px solid #FF2927;
-  background-color: #FF2927;
-}
-.cloud-plugins .cloud-plugin .status.unstable:after {
-  content: "unstable";
-}
 .cloud-plugins .cloud-plugin .actions {
   font-size: 11px;
   font-weight: bold;
@@ -5789,6 +5749,52 @@ button.close {
 }
 .cloud-plugins .cloud-plugin .actions span.duplicate {
   margin: 0 6px;
+}
+.plugin-container .status-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: right;
+  padding-right: 2px;
+}
+.plugin-container .status {
+  padding: 1px 4px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 9px;
+  margin-left: 2px;
+}
+.plugin-container .status.installed {
+  border: 1px solid #883996;
+  background-color: #883996;
+}
+.plugin-container .status.installed:after {
+  content: "installed";
+}
+.plugin-container .status.outdated {
+  border: 1px solid #f29446;
+  background-color: #f29446;
+  color: #212121;
+}
+.plugin-container .status.outdated:after {
+  content: "new version";
+}
+.plugin-container .status.unstable {
+  border: 1px solid #FF2927;
+  background-color: #FF2927;
+}
+.plugin-container .status.unstable:after {
+  content: "unstable";
+}
+.plugin-container .status.demo {
+  border: 1px solid #235789;
+  background-color: #235789;
+  color: #FFFFFF;
+}
+.plugin-container .status.demo:after {
+  content: "demo";
 }
 #bank-library {
   bottom: 45px;
@@ -7051,7 +7057,7 @@ header#pedalboard-actions button.js-reset,
 #bank-library header button.js-reset,
 #cloud-plugins-library header button.js-reset,
 #pedalboards-library header button.js-reset {
-  background-image: url(../img/icons/25/remove.png);
+  background-image: url(../img/icons/25/new.png);
 }
 header#pedalboard-actions button.js-reset:hover,
 #bank-library header button.js-reset:hover,
@@ -7352,6 +7358,12 @@ header#pedalboard-actions {
   margin: 0 auto;
   width: 16px;
 }
+#plugins-library #plugins-list .plugins-wrapper .plugin .status.demo {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  margin: 0;
+}
 #plugins-library #plugins-list .plugins-wrapper .plugin .status.installed {
   background-image: url(../img/icn-installed.png);
   background-position: center center;
@@ -7400,6 +7412,13 @@ header#pedalboard-actions {
 }
 #plugins-library #plugins-list .plugins-wrapper .plugin .downloads {
   display: block;
+}
+#plugins-library #plugins-list .plugins-wrapper .plugin .demo-container {
+  position: absolute;
+  left: 0;
+  bottom: 3px;
+  right: 0;
+  text-align: center;
 }
 .plugin-info {
   background-color: rgba(20, 20, 20, 0.9);
@@ -7676,6 +7695,16 @@ header#pedalboard-actions {
 }
 .plugin-info .favorite-button.favorite:hover {
   opacity: 1;
+}
+.plugin-info .pedalboard-href {
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.plugin-info .status.demo {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 2px 0;
+  font-size: 0.8em;
 }
 .clearfix:after,
 .container:after,

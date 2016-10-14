@@ -511,28 +511,13 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
+            demo: !!plugin.demo
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin)
         })
-
-        if (!plugin_data.stable) {
-            var rpos
-            switch (plugin.status) {
-            case "outdated":
-                rpos = '80px'
-                break
-            case "blocked":
-                rpos = '87px'
-                break
-            default: // installed
-                rpos = '68px'
-                break
-            }
-            rendered.find(".unstable").css({right:rpos})
-        }
 
         return rendered
     },
@@ -697,7 +682,9 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-            }
+                pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                demo: !!plugin.demo
+            };
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
