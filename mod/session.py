@@ -24,7 +24,7 @@ from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
 from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA, FAVORITES_JSON_FILE)
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA)
 from mod import get_hardware
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
@@ -47,17 +47,6 @@ class Session(object):
 
         self.screenshot_generator = ScreenshotGenerator()
         self.websockets = []
-
-        # list of favorite plugins
-        self.favorites = []
-
-        if os.path.exists(FAVORITES_JSON_FILE):
-            with open(FAVORITES_JSON_FILE, 'r') as fd:
-                self.favorites = json.load(fd)
-            if not isinstance(self.favorites, list):
-                self.favorites = []
-
-            # TODO: check what plugins exist and those that don't
 
         # Used in mod-app to know when the current pedalboard changed
         self.pedalboard_changed_callback = lambda ok,bundlepath,title:None

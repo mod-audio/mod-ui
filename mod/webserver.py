@@ -44,6 +44,7 @@ from mod import check_environment, jsoncall, json_handler
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.utils import (init as lv2_init,
+                       get_plugin_list,
                        get_all_plugins,
                        get_plugin_info,
                        get_plugin_gui,
@@ -61,6 +62,15 @@ try:
     from mod.communication import token
 except:
     token = None
+
+# Global webserver state, not part of session
+class GlobalWebServerState(object):
+    __slots__ = [
+        'favorites'
+    ]
+
+gState = GlobalWebServerState()
+gState.favorites = []
 
 @gen.coroutine
 def install_bundles_in_tmp_dir(callback):
@@ -1384,6 +1394,18 @@ def signal_recv(sig, frame=0):
 def prepare(isModApp = False):
     check_environment()
     lv2_init()
+
+    if os.path.exists(FAVORITES_JSON_FILE):
+        with open(FAVORITES_JSON_FILE, 'r') as fd:
+            gState.favorites = json.load(fd)
+
+        if isinstance(gState.favorites, list):
+            uris = get_plugin_list()
+            for uri in gState.favorites:
+                if uri not in uris:
+                    gState.favorites.remove(uri)
+        else:
+            gState.favorites = []
 
     if False:
         print("Scanning plugins, this may take a little...")
