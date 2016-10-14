@@ -2332,14 +2332,33 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
 
 // --------------------------------------------------------------------------------------------------------
 
-static const PluginInfo_Mini** _plug_ret = nullptr;
-static PedalboardInfo_Mini** _pedals_ret = nullptr;
-static PedalboardInfo* _pedal_ret;
-static int _plug_lastsize = 0;
-static const char** _bundles_ret = nullptr;
-static const PedalboardPluginValues* _pb_values_ret = nullptr;
-static StatePortValue* _state_ret = nullptr;
-static char* _uri_parsed = nullptr;
+// get_plugin_list
+static const char** _get_plug_list_ret = nullptr;
+static int _get_plug_list_lastsize = 0;
+
+// get_all_plugins
+static const PluginInfo_Mini** _get_plugs_mini_ret = nullptr;
+static int _get_plugs_mini_lastsize = 0;
+
+// get_all_pedalboards
+static PedalboardInfo_Mini** _get_pedals_mini_ret = nullptr;
+
+// get_pedalboard_info
+static PedalboardInfo* _get_pedal_info_ret;
+
+// add_bundle_to_lilv_world/remove_bundle_from_lilv_world
+static const char** _add_remove_bundles_ret = nullptr;
+
+// get_pedalboard_plugin_values
+static const PedalboardPluginValues* _get_pedal_values_ret = nullptr;
+
+// get_state_port_values
+static StatePortValue* _get_state_values_ret = nullptr;
+
+// file_uri_parse
+static char* _file_uri_parse_ret = nullptr;
+
+// --------------------------------------------------------------------------------------------------------
 
 static void _clear_gui_port_info(PluginGUIPort& guiportinfo)
 {
@@ -2611,22 +2630,24 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
     memset(&info, 0, sizeof(PedalboardInfo));
 }
 
+// --------------------------------------------------------------------------------------------------------
+
 static void _clear_pedalboards()
 {
-    if (_pedal_ret != nullptr)
+    if (_get_pedal_info_ret != nullptr)
     {
-        _clear_pedalboard_info(*_pedal_ret);
-        _pedal_ret = nullptr;
+        _clear_pedalboard_info(*_get_pedal_info_ret);
+        _get_pedal_info_ret = nullptr;
     }
 
-    if (_pedals_ret == nullptr)
+    if (_get_pedals_mini_ret == nullptr)
         return;
 
     PedalboardInfo_Mini* info;
 
     for (int i=0;; ++i)
     {
-        info = _pedals_ret[i];
+        info = _get_pedals_mini_ret[i];
         if (info == nullptr)
             break;
 
@@ -2638,18 +2659,18 @@ static void _clear_pedalboards()
         delete info;
     }
 
-    delete[] _pedals_ret;
-    _pedals_ret = nullptr;
+    delete[] _get_pedals_mini_ret;
+    _get_pedals_mini_ret = nullptr;
 }
 
 static void _clear_pedalboard_plugin_values()
 {
-    if (_pb_values_ret == nullptr)
+    if (_get_pedal_values_ret == nullptr)
         return;
 
-    for (int i=0; _pb_values_ret[i].valid; ++i)
+    for (int i=0; _get_pedal_values_ret[i].valid; ++i)
     {
-        const PedalboardPluginValues& pvals(_pb_values_ret[i]);
+        const PedalboardPluginValues& pvals(_get_pedal_values_ret[i]);
 
         free((void*)pvals.instance);
 
@@ -2664,21 +2685,23 @@ static void _clear_pedalboard_plugin_values()
         }
     }
 
-    delete[] _pb_values_ret;
-    _pb_values_ret = nullptr;
+    delete[] _get_pedal_values_ret;
+    _get_pedal_values_ret = nullptr;
 }
 
 static void _clear_state_values()
 {
-    if (_state_ret == nullptr)
+    if (_get_state_values_ret == nullptr)
         return;
 
-    for (int i=0; _state_ret[i].valid; ++i)
-        free((void*)_state_ret[i].symbol);
+    for (int i=0; _get_state_values_ret[i].valid; ++i)
+        free((void*)_get_state_values_ret[i].symbol);
 
-    delete[] _state_ret;
-    _state_ret = nullptr;
+    delete[] _get_state_values_ret;
+    _get_state_values_ret = nullptr;
 }
+
+// --------------------------------------------------------------------------------------------------------
 
 static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const std::string& uri)
 {
@@ -2730,21 +2753,28 @@ void init(void)
 
 void cleanup(void)
 {
-    if (_bundles_ret != nullptr)
+    if (_add_remove_bundles_ret != nullptr)
     {
-        for (int i=0; _bundles_ret[i] != nullptr; ++i)
-            free((void*)_bundles_ret[i]);
-        delete[] _bundles_ret;
-        _bundles_ret = nullptr;
+        for (int i=0; _add_remove_bundles_ret[i] != nullptr; ++i)
+            free((void*)_add_remove_bundles_ret[i]);
+        delete[] _add_remove_bundles_ret;
+        _add_remove_bundles_ret = nullptr;
     }
 
-    if (_plug_ret != nullptr)
+    if (_get_plug_list_ret != nullptr)
     {
-        delete[] _plug_ret;
-        _plug_ret = nullptr;
+        delete[] _get_plug_list_ret;
+        _get_plug_list_ret = nullptr;
     }
 
-    _plug_lastsize = 0;
+    if (_get_plugs_mini_ret != nullptr)
+    {
+        delete[] _get_plugs_mini_ret;
+        _get_plugs_mini_ret = nullptr;
+    }
+
+    _get_plug_list_lastsize = 0;
+    _get_plugs_mini_lastsize = 0;
 
     PLUGINS = nullptr;
     BUNDLES.clear();
@@ -2767,10 +2797,10 @@ void cleanup(void)
     lilv_world_free(W);
     W = nullptr;
 
-    if (_uri_parsed != nullptr)
+    if (_file_uri_parse_ret != nullptr)
     {
-        free(_uri_parsed);
-        _uri_parsed = nullptr;
+        free(_file_uri_parse_ret);
+        _file_uri_parse_ret = nullptr;
     }
 
     _clear_pedalboards();
@@ -2874,23 +2904,23 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
 
     if (size_t plugCount = addedPlugins.size())
     {
-        if (_bundles_ret != nullptr)
+        if (_add_remove_bundles_ret != nullptr)
         {
-            for (int i=0; _bundles_ret[i] != nullptr; ++i)
-                free((void*)_bundles_ret[i]);
-            delete[] _bundles_ret;
+            for (int i=0; _add_remove_bundles_ret[i] != nullptr; ++i)
+                free((void*)_add_remove_bundles_ret[i]);
+            delete[] _add_remove_bundles_ret;
         }
 
-        _bundles_ret = new const char*[plugCount+1];
-        memset(_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
+        _add_remove_bundles_ret = new const char*[plugCount+1];
+        memset(_add_remove_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
 
         plugCount = 0;
         for (const std::string& uri : addedPlugins)
-            _bundles_ret[plugCount++] = strdup(uri.c_str());
+            _add_remove_bundles_ret[plugCount++] = strdup(uri.c_str());
 
         addedPlugins.clear();
 
-        return _bundles_ret;
+        return _add_remove_bundles_ret;
     }
 #endif
 
@@ -3013,26 +3043,27 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 
     if (size_t plugCount = removedPlugins.size())
     {
-        if (_bundles_ret != nullptr)
+        if (_add_remove_bundles_ret != nullptr)
         {
-            for (int i=0; _bundles_ret[i] != nullptr; ++i)
-                free((void*)_bundles_ret[i]);
-            delete[] _bundles_ret;
+            for (int i=0; _add_remove_bundles_ret[i] != nullptr; ++i)
+                free((void*)_add_remove_bundles_ret[i]);
+            delete[] _add_remove_bundles_ret;
         }
 
-        _bundles_ret = new const char*[plugCount+1];
-        memset(_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
+        _add_remove_bundles_ret = new const char*[plugCount+1];
+        memset(_add_remove_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
 
         plugCount = 0;
         for (const std::string& uri : removedPlugins)
-            _bundles_ret[plugCount++] = strdup(uri.c_str());
+            _add_remove_bundles_ret[plugCount++] = strdup(uri.c_str());
 
         removedPlugins.clear();
 
-        // force get_all_plugins to reload info next time
-        _plug_lastsize = -1;
+        // force get_plugin_list/get_all_plugins to reload info next time
+        _get_plug_list_lastsize = -1;
+        _get_plugs_mini_lastsize = -1;
 
-        return _bundles_ret;
+        return _add_remove_bundles_ret;
     }
 #endif
 
@@ -3044,40 +3075,89 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 #endif
 }
 
+const char* const* get_plugin_list(void)
+{
+    const int newsize = (int)lilv_plugins_size(PLUGINS);
+
+    if (newsize == 0)
+    {
+        if (_get_plug_list_ret != nullptr)
+        {
+            delete[] _get_plug_list_ret;
+            _get_plug_list_ret = nullptr;
+        }
+        _get_plug_list_lastsize = 0;
+        return nullptr;
+    }
+
+    if (newsize > _get_plug_list_lastsize)
+    {
+        _get_plug_list_lastsize = newsize;
+
+        if (_get_plug_list_ret != nullptr)
+            delete[] _get_plug_list_ret;
+
+        _get_plug_list_ret = new const char*[newsize+1];
+        memset(_get_plug_list_ret, 0, sizeof(void*) * (newsize+1));
+    }
+    else if (newsize < _get_plug_list_lastsize)
+    {
+        memset(_get_plug_list_ret, 0, sizeof(void*) * (newsize+1));
+    }
+
+    int curIndex = 0;
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        if (curIndex >= newsize)
+            break;
+
+        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
+
+        const char* const uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+        const std::string uri2(uri);
+
+        if (std::find(BLACKLIST.begin(), BLACKLIST.end(), uri2) != BLACKLIST.end())
+            continue;
+
+        _get_plug_list_ret[curIndex++] = uri;
+    }
+
+    return _get_plug_list_ret;
+}
+
 const PluginInfo_Mini* const* get_all_plugins(void)
 {
     const int newsize = (int)lilv_plugins_size(PLUGINS);
 
     if (newsize == 0)
     {
-        if (_plug_ret != nullptr)
+        if (_get_plugs_mini_ret != nullptr)
         {
-            delete[] _plug_ret;
-            _plug_ret = nullptr;
+            delete[] _get_plugs_mini_ret;
+            _get_plugs_mini_ret = nullptr;
         }
-        _plug_lastsize = 0;
+        _get_plugs_mini_lastsize = 0;
         return nullptr;
     }
 
-    if (newsize > _plug_lastsize)
+    if (newsize > _get_plugs_mini_lastsize)
     {
-        _plug_lastsize = newsize;
+        _get_plugs_mini_lastsize = newsize;
 
-        if (_plug_ret != nullptr)
-            delete[] _plug_ret;
+        if (_get_plugs_mini_ret != nullptr)
+            delete[] _get_plugs_mini_ret;
 
-        _plug_ret = new const PluginInfo_Mini*[newsize+1];
-        memset(_plug_ret, 0, sizeof(void*) * (newsize+1));
+        _get_plugs_mini_ret = new const PluginInfo_Mini*[newsize+1];
+        memset(_get_plugs_mini_ret, 0, sizeof(void*) * (newsize+1));
     }
-    else if (newsize < _plug_lastsize)
+    else if (newsize < _get_plugs_mini_lastsize)
     {
-        memset(_plug_ret, 0, sizeof(void*) * (newsize+1));
+        memset(_get_plugs_mini_ret, 0, sizeof(void*) * (newsize+1));
     }
 
     const NamespaceDefinitions_Mini ns;
-    int curIndex = 0;
 
-    // Make a list of all installed bundles
+    int curIndex = 0;
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
         if (curIndex >= newsize)
@@ -3093,7 +3173,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
         // check if it's already cached
         if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
         {
-            _plug_ret[curIndex++] = &PLUGNFO_Mini[uri];
+            _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
             continue;
         }
 
@@ -3104,10 +3184,10 @@ const PluginInfo_Mini* const* get_all_plugins(void)
             continue;
 
         PLUGNFO_Mini[uri] = info;
-        _plug_ret[curIndex++] = &PLUGNFO_Mini[uri];
+        _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
     }
 
-    return _plug_ret;
+    return _get_plugs_mini_ret;
 }
 
 const PluginInfo* get_plugin_info(const char* const uri_)
@@ -3284,7 +3364,6 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
     const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
 
-    // Make a list of all installed bundles
     LILV_FOREACH(plugins, itpls, plugins)
     {
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
@@ -3310,14 +3389,14 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     {
         _clear_pedalboards();
 
-        _pedals_ret = new PedalboardInfo_Mini*[pbcount+1];
-        memset(_pedals_ret, 0, sizeof(void*) * (pbcount+1));
+        _get_pedals_mini_ret = new PedalboardInfo_Mini*[pbcount+1];
+        memset(_get_pedals_mini_ret, 0, sizeof(void*) * (pbcount+1));
 
         pbcount = 0;
         for (PedalboardInfo_Mini* info : allpedals)
-            _pedals_ret[pbcount++] = info;
+            _get_pedals_mini_ret[pbcount++] = info;
 
-        return _pedals_ret;
+        return _get_pedals_mini_ret;
     }
 
     return nullptr;
@@ -3393,10 +3472,10 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         return nullptr;
     }
 
-    if (_pedal_ret != nullptr)
+    if (_get_pedal_info_ret != nullptr)
     {
-        _clear_pedalboard_info(*_pedal_ret);
-        _pedal_ret = nullptr;
+        _clear_pedalboard_info(*_get_pedal_info_ret);
+        _get_pedal_info_ret = nullptr;
     }
 
     memset(&info, 0, sizeof(PedalboardInfo));
@@ -3820,7 +3899,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 
-    _pedal_ret = &info;
+    _get_pedal_info_ret = &info;
     return &info;
 }
 
@@ -4082,7 +4161,7 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 
-    _pb_values_ret = plugs;
+    _get_pedal_values_ret = plugs;
 
     return plugs;
 }
@@ -4188,14 +4267,14 @@ const StatePortValue* get_state_port_values(const char* const state)
         {
             _clear_state_values();
 
-            _state_ret = new StatePortValue[count+1];
-            memset(_state_ret, 0, sizeof(StatePortValue) * (count+1));
+            _get_state_values_ret = new StatePortValue[count+1];
+            memset(_get_state_values_ret, 0, sizeof(StatePortValue) * (count+1));
 
             count = 0;
             for (const StatePortValue& v : values)
-                _state_ret[count++] = v;
+                _get_state_values_ret[count++] = v;
 
-            return _state_ret;
+            return _get_state_values_ret;
         }
     }
 #endif
@@ -4246,23 +4325,23 @@ const char* const* list_plugins_in_bundle(const char* bundle)
 
     if (size_t count = pluginURIs.size())
     {
-        if (_bundles_ret != nullptr)
+        if (_add_remove_bundles_ret != nullptr)
         {
-            for (int i=0; _bundles_ret[i] != nullptr; ++i)
-                free((void*)_bundles_ret[i]);
-            delete[] _bundles_ret;
+            for (int i=0; _add_remove_bundles_ret[i] != nullptr; ++i)
+                free((void*)_add_remove_bundles_ret[i]);
+            delete[] _add_remove_bundles_ret;
         }
 
-        _bundles_ret = new const char*[count+1];
-        memset(_bundles_ret, 0, sizeof(const char*) * (count+1));
+        _add_remove_bundles_ret = new const char*[count+1];
+        memset(_add_remove_bundles_ret, 0, sizeof(const char*) * (count+1));
 
         count = 0;
         for (const std::string& uri : pluginURIs)
-            _bundles_ret[count++] = strdup(uri.c_str());
+            _add_remove_bundles_ret[count++] = strdup(uri.c_str());
 
         pluginURIs.clear();
 
-        return _bundles_ret;
+        return _add_remove_bundles_ret;
     }
 
     return nullptr;
@@ -4270,12 +4349,12 @@ const char* const* list_plugins_in_bundle(const char* bundle)
 
 const char* file_uri_parse(const char* const fileuri)
 {
-    if (_uri_parsed)
-        free(_uri_parsed);
+    if (_file_uri_parse_ret)
+        free(_file_uri_parse_ret);
 
-    _uri_parsed = lilv_file_abspath(fileuri);
+    _file_uri_parse_ret = lilv_file_abspath(fileuri);
 
-    return _uri_parsed != nullptr ? _uri_parsed : nc;
+    return _file_uri_parse_ret != nullptr ? _file_uri_parse_ret : nc;
 }
 
 // --------------------------------------------------------------------------------------------------------

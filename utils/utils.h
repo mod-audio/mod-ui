@@ -263,8 +263,11 @@ MOD_API const char* const* add_bundle_to_lilv_world(const char* bundle);
 // returns uri list of removed plugins (null for none)
 MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle);
 
+// get list of all available plugins
+MOD_API const char* const* get_plugin_list(void);
+
 // get all available plugins
-// this triggers scanning of all plugins
+// this triggers short scanning of all plugins
 MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 
 // get a specific plugin

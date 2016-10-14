@@ -416,6 +416,9 @@ utils.add_bundle_to_lilv_world.restype  = POINTER(c_char_p)
 utils.remove_bundle_from_lilv_world.argtypes = [c_char_p]
 utils.remove_bundle_from_lilv_world.restype  = POINTER(c_char_p)
 
+utils.get_plugin_list.argtypes = None
+utils.get_plugin_list.restype  = POINTER(c_char_p)
+
 utils.get_all_plugins.argtypes = None
 utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
 
@@ -532,8 +535,12 @@ def remove_bundle_from_lilv_world(bundlepath):
 # ------------------------------------------------------------------------------------------------------------
 
 # get all available plugins
-# this triggers scanning of all plugins
-# returned value depends on MODGUI_SHOW_MODE
+# this triggers short scanning of all plugins
+def get_plugin_list():
+    return charPtrPtrToStringList(utils.get_plugin_list())
+
+# get all available plugins
+# this triggers short scanning of all plugins
 def get_all_plugins():
     return structPtrPtrToList(utils.get_all_plugins())
 
@@ -598,7 +605,6 @@ def get_pedalboard_size(bundle):
     return (width, height)
 
 # Get plugin port values of a pedalboard
-# NOTE: may throw
 def get_pedalboard_plugin_values(bundle):
     return structPtrToList(utils.get_pedalboard_plugin_values(bundle.encode("utf-8")))
 

@@ -30,6 +30,13 @@
 void scanPlugins()
 {
 #if 1
+    if (const char* const* const uris = get_plugin_list())
+    {
+        for (int i=0; uris[i] != nullptr; ++i)
+            // do nothing
+            continue;
+    }
+
     if (const PluginInfo_Mini* const* const plugins = get_all_plugins())
     {
         for (int i=0; plugins[i] != nullptr; ++i)
