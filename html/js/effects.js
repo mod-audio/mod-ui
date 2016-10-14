@@ -406,12 +406,11 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
+                demo  : !!plugin.demo,
                 installed: true,
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
-
-            // TODO: add 'demo' directly in TTL and read from there
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 

@@ -682,8 +682,8 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
+                demo  : !!plugin.demo,
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
-                demo: !!plugin.demo
             };
 
             var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))

@@ -87,7 +87,7 @@ static size_t HOMElen = strlen(HOME);
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
-    nullptr, 0, 0, 0, 0,                         \
+    nullptr, 0, 0, 0, 0, false,                  \
     { nullptr, nullptr, nullptr }                \
 }
 
@@ -95,7 +95,7 @@ static size_t HOMElen = strlen(HOME);
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, 0, 0, 0, 0,                             \
+    nullptr, 0, 0, 0, 0, false,                      \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -964,6 +964,11 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // demo
+
+    // TODO
+
+    // --------------------------------------------------------------------------------------------------------
     // gui
 
     LilvNode* modguigui = nullptr;
@@ -1267,6 +1272,11 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // otherwise it's stable
     else
         info.stability = kStabilityStable;
+
+    // --------------------------------------------------------------------------------------------------------
+    // demo
+
+    // TODO
 
     // --------------------------------------------------------------------------------------------------------
     // author name
