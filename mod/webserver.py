@@ -113,11 +113,11 @@ def install_bundles_in_tmp_dir(callback):
     for uri in removed:
         if uri not in installed:
             needsToSaveFavorites = True
-            SESSION.favorites.remove(uri)
+            gState.favorites.remove(uri)
 
     if needsToSaveFavorites:
         with open(FAVORITES_JSON_FILE, 'w') as fh:
-            json.dump(SESSION.favorites, fh)
+            json.dump(gState.favorites, fh)
 
     if error or len(installed) == 0:
         # Delete old temp files
@@ -999,7 +999,7 @@ class TemplateHandler(web.RequestHandler):
             'using_mod': 'true' if DEVICE_KEY else 'false',
             'user_name': tornado.escape.xhtml_escape(user_id.get("name", "")),
             'user_email': tornado.escape.xhtml_escape(user_id.get("email", "")),
-            'favorites': json.dumps(SESSION.favorites),
+            'favorites': json.dumps(gState.favorites),
         }
         return context
 
@@ -1136,15 +1136,15 @@ class FavoritesAdd(JsonRequestHandler):
         uri = self.get_argument("uri")
 
         # safety check, no duplicates please
-        if uri in SESSION.favorites:
+        if uri in gState.favorites:
             print("ERROR: URI '%s' already in favorites" % uri)
             self.write(False)
             return
 
         # add and save
-        SESSION.favorites.append(uri)
+        gState.favorites.append(uri)
         with open(FAVORITES_JSON_FILE, 'w') as fh:
-            json.dump(SESSION.favorites, fh)
+            json.dump(gState.favorites, fh)
 
         # done
         self.write(True)
@@ -1154,15 +1154,15 @@ class FavoritesRemove(JsonRequestHandler):
         uri = self.get_argument("uri")
 
         # safety check
-        if uri not in SESSION.favorites:
+        if uri not in gState.favorites:
             print("ERROR: URI '%s' not in favorites" % uri)
             self.write(False)
             return
 
         # remove and save
-        SESSION.favorites.remove(uri)
+        gState.favorites.remove(uri)
         with open(FAVORITES_JSON_FILE, 'w') as fh:
-            json.dump(SESSION.favorites, fh)
+            json.dump(gState.favorites, fh)
 
         # done
         self.write(True)
