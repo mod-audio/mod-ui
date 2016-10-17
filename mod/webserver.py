@@ -77,7 +77,7 @@ def install_bundles_in_tmp_dir(callback):
     error     = ""
     removed   = []
     installed = []
-    needsToSaveFavorites = False
+    pluginsWereRemoved = False
 
     for bundle in os.listdir(DOWNLOAD_TMP_DIR):
         tmppath    = os.path.join(DOWNLOAD_TMP_DIR, bundle)
@@ -112,12 +112,21 @@ def install_bundles_in_tmp_dir(callback):
 
     for uri in removed:
         if uri not in installed:
-            needsToSaveFavorites = True
-            gState.favorites.remove(uri)
+            pluginsWereRemoved = True
+            try:
+                gState.favorites.remove(uri)
+            except ValueError:
+                pass
 
-    if needsToSaveFavorites:
+    if pluginsWereRemoved:
+        # Re-save favorites list
         with open(FAVORITES_JSON_FILE, 'w') as fh:
             json.dump(gState.favorites, fh)
+
+        # Re-save banks
+        broken = get_broken_pedalboards()
+        if len(broken) > 0:
+            list_banks(broken)
 
     if error or len(installed) == 0:
         # Delete old temp files
@@ -667,13 +676,9 @@ class PackageUninstall(JsonRequestHandler):
                 'removed': removed,
             }
 
-        # FIXME: alternatively we can do this when requested
-        #        but we'll need a quick "get_broken_pedalboards" function first
         if len(removed) > 0:
-            # Re-save banks, as pedalboards might contain the removed plugin
-            broken = []
-            for pb in get_all_pedalboards():
-                if pb['broken']: broken.append(os.path.abspath(pb['bundle']))
+            # Re-save banks, as pedalboards might contain the removed plugins
+            broken = get_broken_pedalboards()
             if len(broken) > 0:
                 list_banks(broken)
 
