@@ -442,6 +442,9 @@ utils.rescan_plugin_presets.restype  = None
 utils.get_all_pedalboards.argtypes = None
 utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo_Mini))
 
+utils.get_broken_pedalboards.argtypes = None
+utils.get_broken_pedalboards.restype  = POINTER(c_char_p)
+
 utils.get_pedalboard_info.argtypes = [c_char_p]
 utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
@@ -586,6 +589,10 @@ def rescan_plugin_presets(uri):
 # get all available pedalboards (ie, plugins with pedalboard type)
 def get_all_pedalboards():
     return structPtrPtrToList(utils.get_all_pedalboards())
+
+# get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
+def get_broken_pedalboards():
+    return charPtrPtrToStringList(utils.get_broken_pedalboards())
 
 # Get a specific pedalboard
 # NOTE: may throw

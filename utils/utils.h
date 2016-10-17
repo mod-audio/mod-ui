@@ -293,6 +293,9 @@ MOD_API void rescan_plugin_presets(const char* uri);
 // get all available pedalboards (ie, plugins with pedalboard type)
 MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
 
+// get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
+MOD_API const char* const* get_broken_pedalboards(void);
+
 // Get a specific pedalboard
 // NOTE: may return null
 MOD_API const PedalboardInfo* get_pedalboard_info(const char* bundle);

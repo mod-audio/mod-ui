@@ -56,6 +56,13 @@ void scanPlugins()
 #endif
 
 #if 1
+    if (const char* const* const pedalboards = get_broken_pedalboards())
+    {
+        for (int i=0; pedalboards[i] != nullptr; ++i)
+            // do nothing
+            continue;
+    }
+
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
     {
         for (int i=0; pedalboards[i] != nullptr; ++i)
