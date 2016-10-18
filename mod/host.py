@@ -2327,15 +2327,12 @@ _:b%i
             bypassed = bool(value)
             plugin['bypassed'] = bypassed
 
-            def host_callback(ok):
-                callback(ok)
-                self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
-
-            self.send("bypass %d %d" % (instance_id, int(bypassed)), host_callback, datatype='boolean')
+            self.send("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
+            self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
         elif portsymbol == ":presets":
             value = int(value)
-            if value < 0 or value > kMaxAddressableScalepoints+1:
+            if value < 0 or value >= len(plugin['mapPresets']):
                 callback(False)
                 return
             self.preset_load(instance, plugin['mapPresets'][value], callback)
@@ -2347,11 +2344,8 @@ _:b%i
         else:
             plugin['ports'][portsymbol] = value
 
-            def host_callback2(ok):
-                callback(ok)
-                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-
-            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), host_callback2, datatype='boolean')
+            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+            self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
