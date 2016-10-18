@@ -1268,9 +1268,11 @@ class Host(object):
             allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
             badports = []
             valports = {}
+            ranges   = {}
 
             for port in allports['inputs']:
                 valports[port['symbol']] = port['ranges']['default']
+                ranges[port['symbol']] = (port['ranges']['minimum'], port['ranges']['maximum'])
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
@@ -1325,12 +1327,10 @@ class Host(object):
                     minimum = port['midiCC']['minimum']
                     maximum = port['midiCC']['maximum']
                 else:
-                    # FIXME
-                    minimum = port['ranges']['minimum']
-                    maximum = port['ranges']['maximum']
+                    minimum, maximum = ranges[symbol]
 
                 self.plugins[instance_id]['ports'][symbol] = value
-                self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl)
+                self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
 
                 self.send("param_set %d %s %f" % (instance_id, symbol, value))
 
@@ -1609,6 +1609,8 @@ _:b%i
     midi:binding [
         midi:channel %i ;
         midi:controllerNumber %i ;
+        lv2:minimum %f ;
+        lv2:maximum %f ;
         a midi:Controller ;
     ] ;""" % plugin['midiCCs'][symbol]) if -1 not in plugin['midiCCs'][symbol] else "")
 
