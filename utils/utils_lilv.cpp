@@ -3647,6 +3647,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const ingen_head      = lilv_new_uri(w, LILV_NS_INGEN "head");
     LilvNode* const ingen_tail      = lilv_new_uri(w, LILV_NS_INGEN "tail");
     LilvNode* const ingen_value     = lilv_new_uri(w, LILV_NS_INGEN "value");
+    LilvNode* const lv2_maximum     = lilv_new_uri(w, LV2_CORE__maximum);
+    LilvNode* const lv2_minimum     = lilv_new_uri(w, LV2_CORE__minimum);
     LilvNode* const lv2_name        = lilv_new_uri(w, LV2_CORE__name);
     LilvNode* const lv2_port        = lilv_new_uri(w, LV2_CORE__port);
     LilvNode* const lv2_prototype   = lilv_new_uri(w, LV2_CORE__prototype);
@@ -3752,28 +3754,39 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               float minimum = 0.0f, maximum = 1.0f;
                               bool hasRanges = false;
 
-                              if (LilvNode* const portbinding = lilv_world_get(w, portnode, midi_binding, nullptr))
+                              if (LilvNode* const bind = lilv_world_get(w, portnode, midi_binding, nullptr))
                               {
-                                  if (LilvNode* const bindChan = lilv_world_get(w, portbinding, midi_channel, nullptr))
+                                  LilvNode* const bindChan = lilv_world_get(w, bind, midi_channel, nullptr);
+                                  LilvNode* const bindCtrl = lilv_world_get(w, bind, midi_controlNum, nullptr);
+
+                                  if (bindChan != nullptr && bindCtrl != nullptr)
                                   {
-                                      if (LilvNode* const bindCtrl = lilv_world_get(w, portbinding, midi_controlNum, nullptr))
+                                      const int mchantest = lilv_node_as_int(bindChan);
+                                      const int mctrltest = lilv_node_as_int(bindCtrl);
+
+                                      if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 128)
                                       {
-                                          const int mchantest = lilv_node_as_int(bindChan);
-                                          const int mctrltest = lilv_node_as_int(bindCtrl);
+                                          mchan = (int8_t)mchantest;
+                                          mctrl = (int8_t)mctrltest;
 
-                                          // TODO: read maximum and minimum
+                                          LilvNode* const bindMin = lilv_world_get(w, bind, lv2_minimum, nullptr);
+                                          LilvNode* const bindMax = lilv_world_get(w, bind, lv2_maximum, nullptr);
 
-                                          if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 128)
+                                          if (bindMin != nullptr && bindMax != nullptr)
                                           {
-                                              mchan = (int8_t)mchantest;
-                                              mctrl = (int8_t)mctrltest;
+                                              hasRanges = true;
+                                              minimum = lilv_node_as_float(bindMin);
+                                              maximum = lilv_node_as_float(bindMax);
                                           }
 
-                                          lilv_node_free(bindCtrl);
+                                          lilv_node_free(bindMin);
+                                          lilv_node_free(bindMax);
                                       }
-                                      lilv_node_free(bindChan);
                                   }
-                                  lilv_node_free(portbinding);
+
+                                  lilv_node_free(bindCtrl);
+                                  lilv_node_free(bindChan);
+                                  lilv_node_free(bind);
                               }
 
                               char* portsymbol = lilv_file_uri_parse(lilv_node_as_string(portnode), nullptr);
@@ -4049,6 +4062,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(ingen_head);
     lilv_node_free(ingen_tail);
     lilv_node_free(ingen_value);
+    lilv_node_free(lv2_maximum);
+    lilv_node_free(lv2_minimum);
     lilv_node_free(lv2_name);
     lilv_node_free(lv2_port);
     lilv_node_free(lv2_prototype);
