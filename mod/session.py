@@ -68,6 +68,10 @@ class Session(object):
         else:
             self.host = Host(self.hmi, self.msg_callback)
 
+    def signal_save(self):
+        # reuse HMI function
+        self.host.hmi_save_current_pedalboard(lambda r:None)
+
     def signal_disconnect(self):
         sockets = self.websockets
         self.websockets = []
