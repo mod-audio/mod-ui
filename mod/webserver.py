@@ -1387,8 +1387,20 @@ def signal_upgrade_check():
     SESSION.hmi.send("restore")
 
 def signal_recv(sig, frame=0):
-    if sig == SIGUSR2:
-        func = signal_upgrade_check if os.path.exists("/root/check-upgrade-system") else SESSION.signal_disconnect
+    func = None
+
+    if sig == SIGUSR1:
+        # TODO
+        return
+
+    elif sig == SIGUSR2:
+        if os.path.exists("/root/check-upgrade-system") and \
+           os.path.exists("/etc/systemd/system/upgrade-system-check.service"):
+            func = signal_upgrade_check
+        else:
+            func = SESSION.signal_disconnect
+
+    if func is not None:
         tornado.ioloop.IOLoop.instance().add_callback_from_signal(func)
 
 def prepare(isModApp = False):
