@@ -68,13 +68,18 @@ def check_environment():
             os.remove(path)
 
     # check RW access
-    if not os.access(DATA_DIR, os.W_OK):
-        return False
+    if os.path.exists(DATA_DIR):
+        if not os.access(DATA_DIR, os.W_OK):
+            print("ERROR: No write access to data dir '%s'" % DATA_DIR)
+            return False
+    else:
+        try:
+            os.makedirs(DATA_DIR)
+        except OSError:
+            print("ERROR: Cannot create data dir '%s'" % DATA_DIR)
+            return False
 
     # create needed dirs and files
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
     if not os.path.exists(LV2_PEDALBOARDS_DIR):
         os.makedirs(LV2_PEDALBOARDS_DIR)
 
