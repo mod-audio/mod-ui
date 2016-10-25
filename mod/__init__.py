@@ -55,7 +55,7 @@ def check_environment():
     from mod.settings import (LV2_PEDALBOARDS_DIR,
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
                               DATA_DIR, DOWNLOAD_TMP_DIR,
-                              BANKS_JSON_FILE, UPDATE_FILE,
+                              BANKS_JSON_FILE, FAVORITES_JSON_FILE, UPDATE_FILE,
                               CAPTURE_PATH, PLAYBACK_PATH)
 
     # create temp dirs
@@ -83,6 +83,10 @@ def check_environment():
 
     if not os.path.exists(BANKS_JSON_FILE):
         with open(BANKS_JSON_FILE, 'w') as fh:
+            fh.write("[]")
+
+    if not os.path.exists(FAVORITES_JSON_FILE):
+        with open(FAVORITES_JSON_FILE, 'w') as fh:
             fh.write("[]")
 
     # remove previous update file
