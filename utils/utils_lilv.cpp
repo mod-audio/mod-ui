@@ -3726,7 +3726,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     LilvNode* const y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
                     LilvNode* const preset  = lilv_world_get(w, block, modpedal_preset, nullptr);
 
-                    PedalboardMidiControl bypassCC = { -1, -1 };
+                    PedalboardMidiControl bypassCC = { -1, -1, false, 0.0f, 1.0f };
                     PedalboardPluginPort* ports = nullptr;
 
                     if (LilvNodes* const portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
@@ -3749,6 +3749,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                   continue;
 
                               int8_t mchan = -1, mctrl = -1;
+                              float minimum = 0.0f, maximum = 1.0f;
+                              bool hasRanges = false;
 
                               if (LilvNode* const portbinding = lilv_world_get(w, portnode, midi_binding, nullptr))
                               {
@@ -3758,6 +3760,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                       {
                                           const int mchantest = lilv_node_as_int(bindChan);
                                           const int mctrltest = lilv_node_as_int(bindCtrl);
+
+                                          // TODO: read maximum and minimum
 
                                           if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 128)
                                           {
@@ -3789,7 +3793,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                       true,
                                       portsymbol,
                                       lilv_node_as_float(portvalue),
-                                      { mchan, mctrl }
+                                      { mchan, mctrl, hasRanges, minimum, maximum }
                                   };
                               }
 

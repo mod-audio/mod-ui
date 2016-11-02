@@ -286,6 +286,10 @@ class PedalboardMidiControl(Structure):
     _fields_ = [
         ("channel", c_int8),
         ("control", c_int8),
+        # ranges added in v1.2, flag needed for old format compatibility
+        ("hasRanges", c_bool),
+        ("minimum", c_float),
+        ("maximum", c_float),
     ]
 
 class PedalboardPluginPort(Structure):
