@@ -322,6 +322,8 @@ class Host(object):
 
         yield gen.Task(self.send, "remove -1", datatype='boolean')
 
+        # FIXME: ensure HMI is initialized by now
+
         if pedalboard:
             self.bank_id = bank_id
             self.load(pedalboard)
@@ -887,19 +889,19 @@ class Host(object):
                     badports.append(port['symbol'])
 
             self.plugins[instance_id] = {
-                "instance"  : instance,
-                "uri"       : uri,
-                "bypassed"  : bypassed,
-                "bypassCC"  : (-1,-1),
-                "x"         : x,
-                "y"         : y,
-                "addressing": {}, # symbol: addressing
-                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports['inputs']),
-                "ports"     : valports,
-                "badports"  : badports,
-                "outputs"   : dict((symbol, None) for symbol in allports['monitoredOutputs']),
-                "preset"    : "",
-                "mapPresets": []
+                "instance"   : instance,
+                "uri"        : uri,
+                "bypassed"   : bypassed,
+                "bypassCC"   : (-1,-1),
+                "x"          : x,
+                "y"          : y,
+                "addressings": {}, # symbol: addressing
+                "midiCCs"    : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
+                "ports"      : valports,
+                "badports"   : badports,
+                "outputs"    : dict((symbol, None) for symbol in allports['monitoredOutputs']),
+                "preset"     : "",
+                "mapPresets" : []
             }
 
             for output in allports['monitoredOutputs']:
@@ -921,7 +923,7 @@ class Host(object):
             return
 
         used_actuators = []
-        for symbol in [symbol for symbol in data['addressing'].keys()]:
+        for symbol in [symbol for symbol in data['addressings'].keys()]:
             actuator_uri = self._unaddress(data, symbol)
 
             if actuator_uri is not None and actuator_uri not in used_actuators:
@@ -991,7 +993,7 @@ class Host(object):
                 if symbol not in badports:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
-                addressing = self.plugins[instance_id]['addressing'].get(symbol, None)
+                addressing = self.plugins[instance_id]['addressings'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
                     used_actuators.append(addressing['actuator_uri'])
 
@@ -1287,19 +1289,19 @@ class Host(object):
                     badports.append(port['symbol'])
 
             self.plugins[instance_id] = {
-                "instance"  : instance,
-                "uri"       : p['uri'],
-                "bypassed"  : p['bypassed'],
-                "bypassCC"  : (p['bypassCC']['channel'], p['bypassCC']['control']),
-                "x"         : p['x'],
-                "y"         : p['y'],
-                "addressing": {}, # filled in later in _load_addressings()
-                "midiCCs"   : dict((p['symbol'], (-1,-1)) for p in allports['inputs']),
-                "ports"     : valports,
-                "badports"  : badports,
-                "outputs"   : dict((symbol, None) for symbol in allports['monitoredOutputs']),
-                "preset"    : p['preset'],
-                "mapPresets": []
+                "instance"   : instance,
+                "uri"        : p['uri'],
+                "bypassed"   : p['bypassed'],
+                "bypassCC"   : (p['bypassCC']['channel'], p['bypassCC']['control']),
+                "x"          : p['x'],
+                "y"          : p['y'],
+                "addressings": {}, # symbol: addressing
+                "midiCCs"    : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
+                "ports"      : valports,
+                "badports"   : badports,
+                "outputs"    : dict((symbol, None) for symbol in allports['monitoredOutputs']),
+                "preset"     : p['preset'],
+                "mapPresets" : []
             }
 
             self.send("add %s %d" % (p['uri'], instance_id))
@@ -1971,7 +1973,7 @@ _:b%i
                 'steps': steps,
                 'options': options,
             }
-            pluginData['addressing'][port] = addressing
+            pluginData['addressings'][port] = addressing
             self.addressings[actuator_uri]['addrs'].append(addressing)
             self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
 
@@ -2130,7 +2132,7 @@ _:b%i
             self.hmi.control_clean(actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3], callback)
 
     def _unaddress(self, pluginData, port):
-        addressing = pluginData['addressing'].pop(port, None)
+        addressing = pluginData['addressings'].pop(port, None)
         if addressing is None:
             return None
 
@@ -2395,11 +2397,11 @@ _:b%i
             self.send("bypass %d %d" % (instance_id, 1 if bypassed else 0))
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
-            addressing = pluginData['addressing'].get(":bypass", None)
+            addressing = pluginData['addressings'].get(":bypass", None)
             if addressing is not None and addressing['actuator_uri'] not in used_actuators:
                 used_actuators.append(addressing['actuator_uri'])
 
-            addressing = pluginData['addressing'].get(":presets", None)
+            addressing = pluginData['addressings'].get(":presets", None)
             if addressing is not None and addressing['actuator_uri'] not in used_actuators:
                 used_actuators.append(addressing['actuator_uri'])
 
@@ -2419,7 +2421,7 @@ _:b%i
                 if symbol not in pluginData['badports']:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
-                addressing = pluginData['addressing'].get(symbol, None)
+                addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
                     used_actuators.append(addressing['actuator_uri'])
 
