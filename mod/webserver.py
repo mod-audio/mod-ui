@@ -563,7 +563,7 @@ class EffectParameterAddress(JsonRequestHandler):
         value   = float(data['value'])
         steps   = int(data.get('steps', 33))
 
-        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, maximum, minimum, value, steps)
+        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps)
         self.write(ok)
 
 class EffectPresetLoad(JsonRequestHandler):
