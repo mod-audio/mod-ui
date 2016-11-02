@@ -244,29 +244,25 @@ function HardwareManager(options) {
             max.attr("step", step)
             // hide ranges
             form.find('.range').hide()
+
         } else if (port.properties.indexOf("integer") < 0) {
             // float, allow non-integer stepping
             var step = (maxv-minv)/100
             min.attr("step", step)
             max.attr("step", step)
 
+            // Hide sensibility options for MIDI
+            var act = actuatorSelect.val()
+            if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+                form.find('.sensibility').css({visibility:"hidden"})
+            }
+
             actuatorSelect.bind('change keyup', function () {
                 var act = $(this).val()
-                if (act == "/midi-learn" || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.range').css({visibility:"hidden"})
+                if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                     form.find('.sensibility').css({visibility:"hidden"})
                 } else {
-                    form.find('.range').css({visibility:"visible"})
                     form.find('.sensibility').css({visibility:"visible"})
-                }
-            })
-        } else {
-            actuatorSelect.bind('change keyup', function () {
-                var act = $(this).val()
-                if (act == "/midi-learn" || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.range').css({visibility:"hidden"})
-                } else {
-                    form.find('.range').css({visibility:"visible"})
                 }
             })
         }
@@ -448,7 +444,7 @@ function HardwareManager(options) {
         }
     }
 
-    this.addMidiMapping = function (instance, portSymbol, channel, control) {
+    this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
         var instanceAndSymbol = instance+"/"+portSymbol
         var mappingURI = kMidiCustomPrefixURI + "Ch." + (channel+1).toString() + "_CC#" + control.toString()
 
@@ -457,8 +453,8 @@ function HardwareManager(options) {
         self.addressingsData        [instanceAndSymbol] = {
             uri    : mappingURI,
             label  : null,
-            minimum: null,
-            maximum: null,
+            minimum: minimum,
+            maximum: maximum,
             steps  : null,
         }
 
@@ -491,6 +487,7 @@ function HardwareManager(options) {
                 minimum: null,
                 maximum: null,
                 steps  : null,
+                // TODO: restore minimum and maximum
             }
         }
     }

@@ -558,6 +558,8 @@ class Host(object):
                 channel     = int(msg[3])
                 controller  = int(msg[4])
                 value       = float(msg[5])
+                minimum     = float(msg[6])
+                maximum     = float(msg[7])
 
                 instance = self.mapper.get_instance(instance_id)
 
@@ -568,7 +570,9 @@ class Host(object):
                     self.plugins[instance_id]['midiCCs'][portsymbol] = (channel, controller)
                     self.plugins[instance_id]['ports'][portsymbol] = value
 
-                self.msg_callback("midi_map %s %s %i %i" % (instance, portsymbol, channel, controller))
+                self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, portsymbol,
+                                                                  channel, controller,
+                                                                  minimum, maximum))
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "midi_program":
@@ -1979,7 +1983,8 @@ _:b%i
         def unaddressingStep2(ok):
             # we're trying to midi-learn
             if actuator_uri == kMidiLearnURI:
-                self.send("midi_learn %i %s" % (instance_id, port), callback, datatype='boolean')
+                self.send("midi_learn %i %s %f %f" % (instance_id, port,
+                                                      minimum, maximum), callback, datatype='boolean')
                 return
 
             # we're unmapping a midi control

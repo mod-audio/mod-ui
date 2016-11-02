@@ -110,13 +110,15 @@ $('document').ready(function() {
             var symbol   = data[2]
             var channel  = parseInt(data[3])
             var control  = parseInt(data[4])
+            var minimum  = parseFloat(data[5])
+            var maximum  = parseFloat(data[6])
 
             if (channel < 0 || control < 0) {
                 console.log("WARNING: Received MIDI mapping with invalid values, ignored")
                 return
             }
 
-            desktop.hardwareManager.addMidiMapping(instance, symbol, channel, control)
+            desktop.hardwareManager.addMidiMapping(instance, symbol, channel, control, minimum, maximum)
             return
         }
 
