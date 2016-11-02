@@ -1924,7 +1924,8 @@ _:b%i
                     ctype |= ADDRESSING_CTYPE_LOGARITHMIC
                 if "trigger" in pprops:
                     ctype |= ADDRESSING_CTYPE_TRIGGER
-                if "tap_tempo" in pprops: # TODO
+
+                if "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
                     ctype |= ADDRESSING_CTYPE_TAP_TEMPO
 
                 # FIXME: make fw accept scalepoints without enumeration

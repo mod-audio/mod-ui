@@ -89,7 +89,7 @@ function HardwareManager(options) {
             available.push("logarithmic")
         if (properties.indexOf("trigger") >= 0)
             available.push("trigger")
-        if (properties.indexOf("taptempo") >= 0)
+        if (properties.indexOf("tapTempo") >= 0)
             available.push("taptempo")
 
         if (port.scalePoints.length >= 2)
