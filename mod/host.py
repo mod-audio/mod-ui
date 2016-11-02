@@ -1194,8 +1194,10 @@ class Host(object):
         mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
         mappedOldMidiOuts  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
         mappedOldMidiOuts2 = dict((p['name'], p['symbol']) for p in pb['hardware']['midi_outs'])
-        mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
-        mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."), p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
+        mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+                                          p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
+        mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+                                          p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         curmidisymbols = []
         for port_symbol, port_alias, _ in self.midiports:
@@ -1330,20 +1332,18 @@ class Host(object):
                     minimum, maximum = ranges[symbol]
 
                 self.plugins[instance_id]['ports'][symbol] = value
-                self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
 
                 self.send("param_set %d %s %f" % (instance_id, symbol, value))
 
-                if symbol not in badports:
-                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                if symbol in badports:
+                    continue
 
-                    if mchnnl >= 0 and mctrl >= 0:
-                        self.send("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
-                                                                  mchnnl, mctrl,
-                                                                  minimum, maximum))
-                        self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol,
-                                                                          mchnnl, mctrl,
-                                                                          minimum, maximum))
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+
+                if mchnnl >= 0 and mctrl >= 0:
+                    self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
+                    self.send("midi_map %d %s %i %i %f %f" % (instance_id, symbol, mchnnl, mctrl, minimum, maximum))
+                    self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol, mchnnl, mctrl, minimum, maximum))
 
             for output in allports['monitoredOutputs']:
                 self.send("monitor_output %d %s" % (instance_id, output))
