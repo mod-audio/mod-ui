@@ -409,6 +409,51 @@ function HardwareManager(options) {
         form.appendTo($('body'))
     }
 
+    this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
+        var instanceAndSymbol = instance+"/"+portSymbol
+        var actuator_uri = kMidiCustomPrefixURI + "Ch." + (channel+1).toString() + "_CC#" + control.toString()
+
+        self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
+        self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
+        self.addressingsData        [instanceAndSymbol] = {
+            uri    : actuator_uri,
+            label  : null,
+            minimum: minimum,
+            maximum: maximum,
+            steps  : null,
+        }
+
+        // disable this control
+        options.setEnabled(instance, portSymbol, false)
+    }
+
+    // Removes an instance
+    this.removeInstance = function (instance) {
+        var i, j, index, actuator, instanceAndSymbol, instanceAndSymbols = []
+        var instanceSansGraph = instance.replace("/graph/","")
+
+        var keys = Object.keys(self.addressingsByPortSymbol)
+        for (i in keys) {
+            instanceAndSymbol = keys[i]
+            if (instanceAndSymbol.replace("/graph/","").split(/\//)[0] == instanceSansGraph) {
+                if (instanceAndSymbols.indexOf(instanceAndSymbol) < 0) {
+                    instanceAndSymbols.push(instanceAndSymbol)
+                }
+            }
+        }
+
+        for (i in instanceAndSymbols) {
+            instanceAndSymbol = instanceAndSymbols[i]
+            delete self.addressingsByPortSymbol[instanceAndSymbol]
+            delete self.addressingsData        [instanceAndSymbol]
+
+            for (j in HARDWARE_PROFILE.actuators) {
+                actuator = HARDWARE_PROFILE.actuators[j]
+                remove_from_array(self.addressingsByActuator[actuator.uri], instanceAndSymbol)
+            }
+        }
+    }
+
     // Callback from pedalboard.js for when a plugin instance is added
     this.instanceAdded = function (instance) {
         if (HARDWARE_PROFILE.addressings) {
@@ -444,24 +489,6 @@ function HardwareManager(options) {
         }
     }
 
-    this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
-        var instanceAndSymbol = instance+"/"+portSymbol
-        var mappingURI = kMidiCustomPrefixURI + "Ch." + (channel+1).toString() + "_CC#" + control.toString()
-
-        self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
-        self.addressingsByPortSymbol[instanceAndSymbol] = mappingURI
-        self.addressingsData        [instanceAndSymbol] = {
-            uri    : mappingURI,
-            label  : null,
-            minimum: minimum,
-            maximum: maximum,
-            steps  : null,
-        }
-
-        // disable this control
-        options.setEnabled(instance, portSymbol, false)
-    }
-
     this.registerAllAddressings = function () {
         // save current midi maps
         var instanceAndSymbol, mappingURI, midiBackup = {}
@@ -488,33 +515,6 @@ function HardwareManager(options) {
                 maximum: null,
                 steps  : null,
                 // TODO: restore minimum and maximum
-            }
-        }
-    }
-
-    // Removes an instance
-    this.removeInstance = function (instance) {
-        var i, j, index, actuator, instanceAndSymbol, instanceAndSymbols = []
-        var instanceSansGraph = instance.replace("/graph/","")
-
-        var keys = Object.keys(self.addressingsByPortSymbol)
-        for (i in keys) {
-            instanceAndSymbol = keys[i]
-            if (instanceAndSymbol.replace("/graph/","").split(/\//)[0] == instanceSansGraph) {
-                if (instanceAndSymbols.indexOf(instanceAndSymbol) < 0) {
-                    instanceAndSymbols.push(instanceAndSymbol)
-                }
-            }
-        }
-
-        for (i in instanceAndSymbols) {
-            instanceAndSymbol = instanceAndSymbols[i]
-            delete self.addressingsByPortSymbol[instanceAndSymbol]
-            delete self.addressingsData        [instanceAndSymbol]
-
-            for (j in HARDWARE_PROFILE.actuators) {
-                actuator = HARDWARE_PROFILE.actuators[j]
-                remove_from_array(self.addressingsByActuator[actuator.uri], instanceAndSymbol)
             }
         }
     }
