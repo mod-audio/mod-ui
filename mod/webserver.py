@@ -953,20 +953,10 @@ class TemplateHandler(web.RequestHandler):
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
-        if IMAGE_VERSION is not None:
+        if IMAGE_VERSION is not None and len(IMAGE_VERSION) > 1:
+            # strip initial 'v' from version if present
             version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
-            if version:
-                if "-" in version:
-                    # Special build with label, separated by '-'
-                    label = version.rsplit("-",1)[1]
-                    # Get the first 3 digits (up to 3, might be less)
-                    rversion = ".".join(version.split(".")[:3])
-                    if label != "stable":
-                        rversion += "-"+label
-                else:
-                    # Normal build (internal or official), show entire version
-                    rversion = version
-                return tornado.escape.url_escape(rversion)
+            return tornado.escape.url_escape(version)
         return str(int(time.time()))
 
     def index(self):
