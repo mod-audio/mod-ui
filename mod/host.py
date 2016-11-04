@@ -342,8 +342,8 @@ class Host(object):
             navigateFootswitches = False
             navigateChannel      = 15
 
-        self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
-        self.send("output_data_ready")
+        self.send_notmidified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
+        self.send_notmidified("output_data_ready")
 
     def init_jack(self):
         self.audioportsIn  = []
@@ -466,7 +466,7 @@ class Host(object):
             self.setNavigateWithFootswitches(True, callback)
 
         def midi_prog_callback(ok):
-            self.send("midi_program_listen 1 %d" % navigateChannel, callback, datatype='boolean')
+            self.send_notmidified("midi_program_listen 1 %d" % navigateChannel, callback, datatype='boolean')
 
         def initial_state_callback(ok):
             cb = footswitch_callback if navigateFootswitches else midi_prog_callback
@@ -490,7 +490,7 @@ class Host(object):
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        self.send("midi_program_listen 0 -1")
+        self.send_notmidified("midi_program_listen 0 -1")
 
         self.banks = []
         self.allpedalboards = []
@@ -613,7 +613,7 @@ class Host(object):
 
     @gen.coroutine
     def send_output_data_ready(self):
-        yield gen.Task(self.send, "output_data_ready", datatype='boolean')
+        yield gen.Task(self.send_notmidified, "output_data_ready", datatype='boolean')
 
     def process_write_queue(self):
         try:
@@ -651,8 +651,13 @@ class Host(object):
         self.writesock.read_until(b"\0", check_response)
 
     def send(self, msg, callback=None, datatype='int'):
-        if not self.pedalboard_modified and msg.split(" ",1)[0] not in ("bundle_add", "bundle_remove", "midi_program_listen"):
-            self.pedalboard_modified = True
+        self.pedalboard_modified = True
+        self._queue.append((msg, callback, datatype))
+        if self._idle:
+            self.process_write_queue()
+
+    # same as send, skip modified check
+    def send_notmidified(self, msg, callback=None, datatype='int'):
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()
@@ -781,7 +786,7 @@ class Host(object):
                 websocket.write_message("output_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
-                    self.send("monitor_output %d %s" % (instance_id, symbol))
+                    self.send_notmidified("monitor_output %d %s" % (instance_id, symbol))
 
             for symbol, data in plugin['midiCCs'].items():
                 mchnnl, mctrl, minimum, maximum = data
@@ -817,7 +822,7 @@ class Host(object):
             plugins = add_bundle_to_lilv_world(bundlepath)
             callback((True, plugins))
 
-        self.send("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
+        self.send_notmidified("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     def remove_bundle(self, bundlepath, isPluginBundle, callback):
         if not is_bundle_loaded(bundlepath):
@@ -837,7 +842,7 @@ class Host(object):
             plugins = remove_bundle_from_lilv_world(bundlepath)
             callback((True, plugins))
 
-        self.send("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
+        self.send_notmidified("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
@@ -860,7 +865,7 @@ class Host(object):
         self.pedalboard_size     = [0,0]
 
         save_last_bank_and_pedalboard(0, "")
-        self.send("remove -1", host_callback, datatype='boolean')
+        self.send_notmidified("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
@@ -905,7 +910,7 @@ class Host(object):
             }
 
             for output in allports['monitoredOutputs']:
-                self.send("monitor_output %d %s" % (instance_id, output))
+                self.send_notmidified("monitor_output %d %s" % (instance_id, output))
 
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
@@ -1006,7 +1011,7 @@ class Host(object):
             if not ok:
                 callback(False)
                 return
-            self.send("preset_show %s" % uri, preset_callback, datatype='string')
+            self.send_notmidified("preset_show %s" % uri, preset_callback, datatype='string')
 
         self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
@@ -1045,7 +1050,10 @@ class Host(object):
             rescan_plugin_presets(plugin_uri)
             self.add_bundle(presetbundle, add_bundle_callback)
 
-        self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, name.replace('"','\\"'), presetbundle, symbolname), host_callback, datatype='boolean')
+        self.send_notmidified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
+                                                                   name.replace('"','\\"'),
+                                                                   presetbundle,
+                                                                   symbolname), host_callback, datatype='boolean')
 
     def preset_save_replace(self, instance, uri, bundlepath, name, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -1080,7 +1088,10 @@ class Host(object):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
             self.plugins[instance_id]['preset'] = ""
-            self.send("preset_save %d \"%s\" %s %s.ttl" % (instance_id, name.replace('"','\\"'), bundlepath, symbolname), host_callback, datatype='boolean')
+            self.send_notmidified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
+                                                                       name.replace('"','\\"'),
+                                                                       bundlepath,
+                                                                       symbolname), host_callback, datatype='boolean')
 
         self.remove_bundle(bundlepath, False, start)
 
@@ -1348,7 +1359,7 @@ class Host(object):
                     self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol, mchnnl, mctrl, minimum, maximum))
 
             for output in allports['monitoredOutputs']:
-                self.send("monitor_output %d %s" % (instance_id, output))
+                self.send_notmidified("monitor_output %d %s" % (instance_id, output))
 
         for c in pb['connections']:
             doConnectionNow = True
@@ -2005,8 +2016,8 @@ _:b%i
         def unaddressingStep2(ok):
             # we're trying to midi-learn
             if actuator_uri == kMidiLearnURI:
-                self.send("midi_learn %i %s %f %f" % (instance_id, port,
-                                                      minimum, maximum), callback, datatype='boolean')
+                self.send_notmidified("midi_learn %i %s %f %f" % (instance_id, port,
+                                                                  minimum, maximum), callback, datatype='boolean')
                 return
 
             # we're unmapping a midi control
@@ -2325,8 +2336,8 @@ _:b%i
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel),
-                      loaded_callback, datatype='boolean')
+            self.send_notmidified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel),
+                                  loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
@@ -2442,7 +2453,7 @@ _:b%i
         def monitor_added(ok):
             if not ok or not connect_jack_ports("system:capture_%d" % self.current_tuner_port,
                                                 "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT)):
-                self.send("remove %d" % TUNER_INSTANCE)
+                self.send_notmidified("remove %d" % TUNER_INSTANCE)
                 callback(False)
                 return
 
@@ -2453,9 +2464,9 @@ _:b%i
             if not ok:
                 callback(False)
                 return
-            self.send("monitor_output %d %s" % (TUNER_INSTANCE, TUNER_MONITOR_PORT), monitor_added)
+            self.send_notmidified("monitor_output %d %s" % (TUNER_INSTANCE, TUNER_MONITOR_PORT), monitor_added)
 
-        self.send("add %s %d" % (TUNER_URI, TUNER_INSTANCE), tuner_added)
+        self.send_notmidified("add %s %d" % (TUNER_URI, TUNER_INSTANCE), tuner_added)
 
     def hmi_tuner_off(self, callback):
         logging.info("hmi tuner off")
@@ -2464,7 +2475,7 @@ _:b%i
             self.unmute()
             callback(True)
 
-        self.send("remove %d" % TUNER_INSTANCE, tuner_removed)
+        self.send_notmidified("remove %d" % TUNER_INSTANCE, tuner_removed)
 
     def hmi_tuner_input(self, input_port, callback):
         logging.info("hmi tuner input")
