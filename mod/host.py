@@ -342,8 +342,8 @@ class Host(object):
             navigateFootswitches = False
             navigateChannel      = 15
 
-        self.send_notmidified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
-        self.send_notmidified("output_data_ready")
+        self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
+        self.send_notmodified("output_data_ready")
 
     def init_jack(self):
         self.audioportsIn  = []
@@ -466,7 +466,7 @@ class Host(object):
             self.setNavigateWithFootswitches(True, callback)
 
         def midi_prog_callback(ok):
-            self.send_notmidified("midi_program_listen 1 %d" % navigateChannel, callback, datatype='boolean')
+            self.send_notmodified("midi_program_listen 1 %d" % navigateChannel, callback, datatype='boolean')
 
         def initial_state_callback(ok):
             cb = footswitch_callback if navigateFootswitches else midi_prog_callback
@@ -490,7 +490,7 @@ class Host(object):
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        self.send_notmidified("midi_program_listen 0 -1")
+        self.send_notmodified("midi_program_listen 0 -1")
 
         self.banks = []
         self.allpedalboards = []
@@ -615,7 +615,7 @@ class Host(object):
 
     @gen.coroutine
     def send_output_data_ready(self):
-        yield gen.Task(self.send_notmidified, "output_data_ready", datatype='boolean')
+        yield gen.Task(self.send_notmodified, "output_data_ready", datatype='boolean')
 
     def process_write_queue(self):
         try:
@@ -659,7 +659,7 @@ class Host(object):
             self.process_write_queue()
 
     # same as send, skip modified check
-    def send_notmidified(self, msg, callback=None, datatype='int'):
+    def send_notmodified(self, msg, callback=None, datatype='int'):
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()
@@ -764,14 +764,14 @@ class Host(object):
                 websocket.write_message("preset %s %s" % (plugin['instance'], plugin['preset']))
 
             if crashed:
-                self.send_notmidified("add %s %d" % (plugin['uri'], instance_id))
+                self.send_notmodified("add %s %d" % (plugin['uri'], instance_id))
                 if plugin['bypassed']:
-                    self.send_notmidified("bypass %d 1" % (instance_id,))
+                    self.send_notmodified("bypass %d 1" % (instance_id,))
                 if -1 not in plugin['bypassCC']:
                     mchnnl, mctrl = plugin['bypassCC']
-                    self.send_notmidified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, mchnnl, mctrl))
+                    self.send_notmodified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, mchnnl, mctrl))
                 if plugin['preset']:
-                    self.send_notmidified("preset_load %d %s" % (instance_id, plugin['preset']))
+                    self.send_notmodified("preset_load %d %s" % (instance_id, plugin['preset']))
 
             badports = plugin['badports']
 
@@ -780,7 +780,7 @@ class Host(object):
                     websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
-                    self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
+                    self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
 
             for symbol, value in plugin['outputs'].items():
                 if value is None:
@@ -788,7 +788,7 @@ class Host(object):
                 websocket.write_message("output_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
-                    self.send_notmidified("monitor_output %d %s" % (instance_id, symbol))
+                    self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))
 
             for symbol, data in plugin['midiCCs'].items():
                 mchnnl, mctrl, minimum, maximum = data
@@ -800,14 +800,14 @@ class Host(object):
                                                                         minimum, maximum))
 
                 if crashed:
-                    self.send_notmidified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
+                    self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
                                                                           mchnnl, mctrl, minimum, maximum))
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
 
             if crashed:
-                self.send_notmidified("connect %s %s" % (self._fix_host_connection_port(port_from),
+                self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
         websocket.write_message("loading_end")
@@ -825,7 +825,7 @@ class Host(object):
             plugins = add_bundle_to_lilv_world(bundlepath)
             callback((True, plugins))
 
-        self.send_notmidified("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
+        self.send_notmodified("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     def remove_bundle(self, bundlepath, isPluginBundle, callback):
         if not is_bundle_loaded(bundlepath):
@@ -845,7 +845,7 @@ class Host(object):
             plugins = remove_bundle_from_lilv_world(bundlepath)
             callback((True, plugins))
 
-        self.send_notmidified("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
+        self.send_notmodified("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
@@ -868,7 +868,7 @@ class Host(object):
         self.pedalboard_size     = [0,0]
 
         save_last_bank_and_pedalboard(0, "")
-        self.send_notmidified("remove -1", host_callback, datatype='boolean')
+        self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
@@ -913,7 +913,7 @@ class Host(object):
             }
 
             for output in allports['monitoredOutputs']:
-                self.send_notmidified("monitor_output %d %s" % (instance_id, output))
+                self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
@@ -1014,7 +1014,7 @@ class Host(object):
             if not ok:
                 callback(False)
                 return
-            self.send_notmidified("preset_show %s" % uri, preset_callback, datatype='string')
+            self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
 
         self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
@@ -1053,7 +1053,7 @@ class Host(object):
             rescan_plugin_presets(plugin_uri)
             self.add_bundle(presetbundle, add_bundle_callback)
 
-        self.send_notmidified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
+        self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
                                                                    name.replace('"','\\"'),
                                                                    presetbundle,
                                                                    symbolname), host_callback, datatype='boolean')
@@ -1091,7 +1091,7 @@ class Host(object):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
             self.plugins[instance_id]['preset'] = ""
-            self.send_notmidified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
+            self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
                                                                        name.replace('"','\\"'),
                                                                        bundlepath,
                                                                        symbolname), host_callback, datatype='boolean')
@@ -1320,21 +1320,21 @@ class Host(object):
                 "mapPresets" : []
             }
 
-            self.send_notmidified("add %s %d" % (p['uri'], instance_id))
+            self.send_notmodified("add %s %d" % (p['uri'], instance_id))
 
             if p['bypassed']:
-                self.send_notmidified("bypass %d 1" % (instance_id,))
+                self.send_notmodified("bypass %d 1" % (instance_id,))
 
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
-                self.send_notmidified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, p['bypassCC']['channel'],
+                self.send_notmodified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, p['bypassCC']['channel'],
                                                                                           p['bypassCC']['control']))
                 self.msg_callback("midi_map %s :bypass %i %i 0.0 1.0" % (instance, p['bypassCC']['channel'],
                                                                                    p['bypassCC']['control']))
 
             if p['preset']:
-                self.send_notmidified("preset_load %d %s" % (instance_id, p['preset']))
+                self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
                 self.msg_callback("preset %s %s" % (instance, p['preset']))
 
             for port in p['ports']:
@@ -1351,7 +1351,7 @@ class Host(object):
 
                 self.plugins[instance_id]['ports'][symbol] = value
 
-                self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
+                self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
 
                 if symbol in badports:
                     continue
@@ -1360,13 +1360,13 @@ class Host(object):
 
                 if mchnnl >= 0 and mctrl >= 0:
                     self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
-                    self.send_notmidified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
+                    self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
                                                                           mchnnl, mctrl, minimum, maximum))
                     self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol,
                                                                       mchnnl, mctrl, minimum, maximum))
 
             for output in allports['monitoredOutputs']:
-                self.send_notmidified("monitor_output %d %s" % (instance_id, output))
+                self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
         for c in pb['connections']:
             doConnectionNow = True
@@ -1394,7 +1394,7 @@ class Host(object):
             port_to   = "/graph/%s" % c['target']
 
             if doConnectionNow:
-                self.send_notmidified("connect %s %s" % (self._fix_host_connection_port(port_from),
+                self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
                 self.connections.append((port_from, port_to))
                 self.msg_callback("connect %s %s" % (port_from, port_to))
@@ -2023,7 +2023,7 @@ _:b%i
         def unaddressingStep2(ok):
             # we're trying to midi-learn
             if actuator_uri == kMidiLearnURI:
-                self.send_notmidified("midi_learn %i %s %f %f" % (instance_id, port,
+                self.send_notmodified("midi_learn %i %s %f %f" % (instance_id, port,
                                                                   minimum, maximum), callback, datatype='boolean')
                 return
 
@@ -2343,7 +2343,7 @@ _:b%i
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send_notmidified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel),
+            self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel),
                                   loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
@@ -2412,7 +2412,7 @@ _:b%i
             bypassed = bool(p['bypassed'])
             pluginData['bypassed'] = bypassed
 
-            self.send_notmidified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
+            self.send_notmodified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
 
             addressing = pluginData['addressings'].get(":bypass", None)
             if addressing is not None and addressing['actuator_uri'] not in used_actuators:
@@ -2425,14 +2425,14 @@ _:b%i
             if p['preset']:
                 preset = p['preset']
                 pluginData['preset'] = preset
-                self.send_notmidified("preset_load %d %s" % (instance_id, preset))
+                self.send_notmodified("preset_load %d %s" % (instance_id, preset))
 
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
 
                 pluginData['ports'][symbol] = value
-                self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
+                self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
@@ -2456,7 +2456,7 @@ _:b%i
         def monitor_added(ok):
             if not ok or not connect_jack_ports("system:capture_%d" % self.current_tuner_port,
                                                 "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT)):
-                self.send_notmidified("remove %d" % TUNER_INSTANCE)
+                self.send_notmodified("remove %d" % TUNER_INSTANCE)
                 callback(False)
                 return
 
@@ -2467,9 +2467,9 @@ _:b%i
             if not ok:
                 callback(False)
                 return
-            self.send_notmidified("monitor_output %d %s" % (TUNER_INSTANCE, TUNER_MONITOR_PORT), monitor_added)
+            self.send_notmodified("monitor_output %d %s" % (TUNER_INSTANCE, TUNER_MONITOR_PORT), monitor_added)
 
-        self.send_notmidified("add %s %d" % (TUNER_URI, TUNER_INSTANCE), tuner_added)
+        self.send_notmodified("add %s %d" % (TUNER_URI, TUNER_INSTANCE), tuner_added)
 
     def hmi_tuner_off(self, callback):
         logging.info("hmi tuner off")
@@ -2478,7 +2478,7 @@ _:b%i
             self.unmute()
             callback(True)
 
-        self.send_notmidified("remove %d" % TUNER_INSTANCE, tuner_removed)
+        self.send_notmodified("remove %d" % TUNER_INSTANCE, tuner_removed)
 
     def hmi_tuner_input(self, input_port, callback):
         logging.info("hmi tuner input")
