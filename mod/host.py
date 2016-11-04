@@ -2411,7 +2411,6 @@ _:b%i
             pluginData['bypassed'] = bypassed
 
             self.send_notmidified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
-            self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             addressing = pluginData['addressings'].get(":bypass", None)
             if addressing is not None and addressing['actuator_uri'] not in used_actuators:
@@ -2425,7 +2424,6 @@ _:b%i
                 preset = p['preset']
                 pluginData['preset'] = preset
                 self.send_notmidified("preset_load %d %s" % (instance_id, preset))
-                self.msg_callback("preset %s %s" % (instance, preset))
 
             for port in p['ports']:
                 symbol = port['symbol']
@@ -2433,9 +2431,6 @@ _:b%i
 
                 pluginData['ports'][symbol] = value
                 self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
-
-                if symbol not in pluginData['badports']:
-                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
