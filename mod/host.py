@@ -534,6 +534,7 @@ class Host(object):
                         plugin['bypassed'] = bool(value)
                     else:
                         plugin['ports'][portsymbol] = value
+                    self.pedalboard_modified = True
                     self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "output_set":
@@ -572,6 +573,7 @@ class Host(object):
                     self.plugins[instance_id]['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
                     self.plugins[instance_id]['ports'][portsymbol] = value
 
+                self.pedalboard_modified = True
                 self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, portsymbol,
                                                                   channel, controller,
                                                                   minimum, maximum))
