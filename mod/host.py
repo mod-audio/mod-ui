@@ -625,6 +625,10 @@ class Host(object):
             self._idle = True
             return
 
+        if self.writesock is None:
+            self.process_write_queue()
+            return
+
         def check_response(resp):
             if callback is not None:
                 resp = resp.decode("utf-8", errors="ignore")
@@ -644,9 +648,6 @@ class Host(object):
 
         self._idle = False
         logging.info("[host] sending -> %s" % msg)
-
-        if self.writesock is None:
-            return
 
         encmsg = "%s\0" % str(msg)
         self.writesock.write(encmsg.encode("utf-8"))
