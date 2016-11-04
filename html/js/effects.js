@@ -125,7 +125,11 @@ JqueryClass('effectBox', {
         self.data("scrollTO", false);
 
         //self.effectBox('fold')
-        self.effectBox('setCategory', 'Favorites')
+        if (FAVORITES.length > 0) {
+            self.effectBox('setCategory', 'Favorites')
+        } else {
+            self.effectBox('setCategory', 'All')
+        }
 
         // don't search just yet.
         // it's a little expensive, let init time go for loading the pedalboard first
