@@ -136,7 +136,7 @@ function HardwareManager(options) {
         }
 
         // midi-learn is always available, except for enumeration
-        if (types.indexOf("enumeration" ) < 0)
+        if (types.indexOf("enumeration") < 0 || port.scalePoints.length == 2)
         {
             available[kMidiLearnURI] = {
                 uri  : kMidiLearnURI,
