@@ -85,7 +85,7 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
     {
         if (const char* const port_name = jack_port_name(port))
         {
-            if (strncmp(port_name, "system:", 7) != 0 &&
+            if (strncmp(port_name, "system:midi_", 12) != 0 &&
                 strncmp(port_name, "nooice", 5) != 0)
                 return;
 
