@@ -70,6 +70,9 @@ static bool _get_alsa_switch_value(snd_mixer_elem_t* const elem)
 
 static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 {
+    if (gClient == nullptr)
+        return;
+
     if (reg)
     {
         if (jack_midi_port_appeared_cb == nullptr)
