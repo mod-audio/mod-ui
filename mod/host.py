@@ -320,7 +320,7 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        yield gen.Task(self.send, "remove -1", datatype='boolean')
+        yield gen.Task(self.send_notmodified, "remove -1", datatype='boolean')
 
         # FIXME: ensure HMI is initialized by now
 
@@ -652,13 +652,14 @@ class Host(object):
         self.writesock.write(encmsg.encode("utf-8"))
         self.writesock.read_until(b"\0", check_response)
 
-    def send(self, msg, callback=None, datatype='int'):
+    # send data to host, set modified flag to true
+    def send_modified(self, msg, callback=None, datatype='int'):
         self.pedalboard_modified = True
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()
 
-    # same as send, skip modified check
+    # send data to host, don't change modified flag
     def send_notmodified(self, msg, callback=None, datatype='int'):
         self._queue.append((msg, callback, datatype))
         if self._idle:
@@ -918,7 +919,7 @@ class Host(object):
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
-        self.send("add %s %d" % (uri, instance_id), host_callback, datatype='int')
+        self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
     @gen.coroutine
     def remove_plugin(self, instance, callback):
@@ -954,7 +955,7 @@ class Host(object):
             self.msg_callback("remove %s" % (instance))
 
         def hmi_callback(ok):
-            self.send("remove %d" % instance_id, host_callback, datatype='boolean')
+            self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
         if self.hmi.initialized:
             self.hmi.control_rm(instance_id, ":all", hmi_callback)
@@ -968,7 +969,7 @@ class Host(object):
         instance_id = self.mapper.get_id_without_creating(instance)
 
         self.plugins[instance_id]['bypassed'] = bypassed
-        self.send("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
+        self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
     def param_set(self, port, value, callback):
         instance, symbol = port.rsplit("/", 1)
@@ -977,7 +978,7 @@ class Host(object):
         if symbol not in self.plugins[instance_id]['badports']:
             self.plugins[instance_id]['ports'][symbol] = value
 
-        self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
+        self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -1016,7 +1017,7 @@ class Host(object):
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
 
-        self.send("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
+        self.send_modified("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
 
     def preset_save_new(self, instance, name, callback):
         instance_id  = self.mapper.get_id_without_creating(instance)
@@ -1160,8 +1161,9 @@ class Host(object):
             else:
                 print("ERROR: backend failed to connect ports: '%s' => '%s'" % (port_from, port_to))
 
-        self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
-                                     self._fix_host_connection_port(port_to)), host_callback, datatype='boolean')
+        self.send_modified("connect %s %s" % (self._fix_host_connection_port(port_from),
+                                              self._fix_host_connection_port(port_to)),
+                           host_callback, datatype='boolean')
 
     def disconnect(self, port_from, port_to, callback):
         def host_callback(ok):
@@ -2033,7 +2035,7 @@ _:b%i
                     pluginData['bypassCC'] = (-1, -1)
                 else:
                     pluginData['midiCCs'][port] = (-1, -1)
-                self.send("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
+                self.send_modified("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
                 return
 
             # nothing
@@ -2367,7 +2369,7 @@ _:b%i
             bypassed = bool(value)
             plugin['bypassed'] = bypassed
 
-            self.send("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
+            self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
         elif portsymbol == ":presets":
@@ -2379,12 +2381,12 @@ _:b%i
 
         # For "bad" ports only report value to mod-host, don't store it
         elif portsymbol in plugin['badports']:
-            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+            self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
 
         else:
             plugin['ports'][portsymbol] = value
 
-            self.send("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+            self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
