@@ -1386,9 +1386,9 @@ JqueryClass('saveBox', {
             self.find('.js-save').prop('disabled', this.value.length == 0 ? true : false);
         })
         self.keydown(function (e) {
-            if (e.keyCode == 13)
+            if (e.keyCode == 13) {
                 return save()
-            else if (e.keyCode == 27) {
+            } else if (e.keyCode == 27) {
                 self.hide()
                 return false
             }

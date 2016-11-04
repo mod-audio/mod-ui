@@ -409,7 +409,17 @@ function HardwareManager(options) {
             form.remove()
         })
 
+        form.keydown(function (e) {
+            if (e.keyCode == 27) {
+                form.remove()
+                return false
+            }
+        })
+
         form.appendTo($('body'))
+
+        form.focus()
+        actuatorSelect.focus()
     }
 
     this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
