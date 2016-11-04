@@ -762,14 +762,14 @@ class Host(object):
                 websocket.write_message("preset %s %s" % (plugin['instance'], plugin['preset']))
 
             if crashed:
-                self.send("add %s %d" % (plugin['uri'], instance_id))
+                self.send_notmidified("add %s %d" % (plugin['uri'], instance_id))
                 if plugin['bypassed']:
-                    self.send("bypass %d 1" % (instance_id,))
+                    self.send_notmidified("bypass %d 1" % (instance_id,))
                 if -1 not in plugin['bypassCC']:
                     mchnnl, mctrl = plugin['bypassCC']
-                    self.send("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, mchnnl, mctrl))
+                    self.send_notmidified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, mchnnl, mctrl))
                 if plugin['preset']:
-                    self.send("preset_load %d %s" % (instance_id, plugin['preset']))
+                    self.send_notmidified("preset_load %d %s" % (instance_id, plugin['preset']))
 
             badports = plugin['badports']
 
@@ -778,7 +778,7 @@ class Host(object):
                     websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
-                    self.send("param_set %d %s %f" % (instance_id, symbol, value))
+                    self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
 
             for symbol, value in plugin['outputs'].items():
                 if value is None:
@@ -798,14 +798,15 @@ class Host(object):
                                                                         minimum, maximum))
 
                 if crashed:
-                    self.send("midi_map %d %s %i %i %f %f" % (instance_id, symbol, mchnnl, mctrl, minimum, maximum))
+                    self.send_notmidified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
+                                                                          mchnnl, mctrl, minimum, maximum))
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
 
             if crashed:
-                self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
-                                             self._fix_host_connection_port(port_to)))
+                self.send_notmidified("connect %s %s" % (self._fix_host_connection_port(port_from),
+                                                         self._fix_host_connection_port(port_to)))
 
         websocket.write_message("loading_end")
 
@@ -1170,13 +1171,15 @@ class Host(object):
                 print("ERROR: disconnect '%s' => '%s' failed" % (port_from, port_to))
                 return
 
+            self.pedalboard_modified = True
+
             try:
                 self.connections.remove((port_from, port_to))
             except:
                 print("Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
 
         if len(self.connections) == 0:
-            return host_callback(True)
+            return host_callback(False)
 
         # If the plugin or port don't exist, assume disconnected
         try:
@@ -1315,21 +1318,21 @@ class Host(object):
                 "mapPresets" : []
             }
 
-            self.send("add %s %d" % (p['uri'], instance_id))
+            self.send_notmidified("add %s %d" % (p['uri'], instance_id))
 
             if p['bypassed']:
-                self.send("bypass %d 1" % (instance_id,))
+                self.send_notmidified("bypass %d 1" % (instance_id,))
 
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
-                self.send("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, p['bypassCC']['channel'],
-                                                                              p['bypassCC']['control']))
+                self.send_notmidified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, p['bypassCC']['channel'],
+                                                                                          p['bypassCC']['control']))
                 self.msg_callback("midi_map %s :bypass %i %i 0.0 1.0" % (instance, p['bypassCC']['channel'],
                                                                                    p['bypassCC']['control']))
 
             if p['preset']:
-                self.send("preset_load %d %s" % (instance_id, p['preset']))
+                self.send_notmidified("preset_load %d %s" % (instance_id, p['preset']))
                 self.msg_callback("preset %s %s" % (instance, p['preset']))
 
             for port in p['ports']:
@@ -1346,7 +1349,7 @@ class Host(object):
 
                 self.plugins[instance_id]['ports'][symbol] = value
 
-                self.send("param_set %d %s %f" % (instance_id, symbol, value))
+                self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
 
                 if symbol in badports:
                     continue
@@ -1355,8 +1358,10 @@ class Host(object):
 
                 if mchnnl >= 0 and mctrl >= 0:
                     self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
-                    self.send("midi_map %d %s %i %i %f %f" % (instance_id, symbol, mchnnl, mctrl, minimum, maximum))
-                    self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol, mchnnl, mctrl, minimum, maximum))
+                    self.send_notmidified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
+                                                                          mchnnl, mctrl, minimum, maximum))
+                    self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol,
+                                                                      mchnnl, mctrl, minimum, maximum))
 
             for output in allports['monitoredOutputs']:
                 self.send_notmidified("monitor_output %d %s" % (instance_id, output))
@@ -1387,8 +1392,8 @@ class Host(object):
             port_to   = "/graph/%s" % c['target']
 
             if doConnectionNow:
-                self.send("connect %s %s" % (self._fix_host_connection_port(port_from),
-                                             self._fix_host_connection_port(port_to)))
+                self.send_notmidified("connect %s %s" % (self._fix_host_connection_port(port_from),
+                                                         self._fix_host_connection_port(port_to)))
                 self.connections.append((port_from, port_to))
                 self.msg_callback("connect %s %s" % (port_from, port_to))
 
@@ -2405,7 +2410,7 @@ _:b%i
             bypassed = bool(p['bypassed'])
             pluginData['bypassed'] = bypassed
 
-            self.send("bypass %d %d" % (instance_id, 1 if bypassed else 0))
+            self.send_notmidified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             addressing = pluginData['addressings'].get(":bypass", None)
@@ -2419,7 +2424,7 @@ _:b%i
             if p['preset']:
                 preset = p['preset']
                 pluginData['preset'] = preset
-                self.send("preset_load %d %s" % (instance_id, preset))
+                self.send_notmidified("preset_load %d %s" % (instance_id, preset))
                 self.msg_callback("preset %s %s" % (instance, preset))
 
             for port in p['ports']:
@@ -2427,7 +2432,7 @@ _:b%i
                 value  = port['value']
 
                 pluginData['ports'][symbol] = value
-                self.send("param_set %d %s %f" % (instance_id, symbol, value))
+                self.send_notmidified("param_set %d %s %f" % (instance_id, symbol, value))
 
                 if symbol not in pluginData['badports']:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
@@ -2436,6 +2441,7 @@ _:b%i
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
                     used_actuators.append(addressing['actuator_uri'])
 
+        self.pedalboard_modified = False
         callback(True)
 
         for actuator_uri in used_actuators:
