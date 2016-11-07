@@ -1397,9 +1397,9 @@ JqueryClass('pedalboard', {
         var targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
         var targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
         var callbackId  = instance+'/'+symbol+":enabled"
+        var gui = self.pedalboard('getGui', instance)
 
-        if ($(targetname1).length || $(targetname2).length) {
-            var gui = self.pedalboard('getGui', instance)
+        if (gui && ($(targetname1).length || $(targetname2).length)) {
             if (enabled) {
                 gui.enable(symbol)
             } else {
@@ -1430,9 +1430,9 @@ JqueryClass('pedalboard', {
         var targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
         var targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
         var callbackId  = instance+'/'+symbol+":value"
+        var gui = self.pedalboard('getGui', instance)
 
-        if ($(targetname1).length || $(targetname2).length) {
-            var gui = self.pedalboard('getGui', instance)
+        if (gui && ($(targetname1).length || $(targetname2).length)) {
             gui.setPortWidgetsValue(symbol, value, null, true)
 
         } else {
