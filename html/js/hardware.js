@@ -504,7 +504,7 @@ function HardwareManager(options) {
 
     this.registerAllAddressings = function () {
         // save current midi maps
-        var instanceAndSymbol, mappingURI, midiBackup = {}
+        var instanceAndSymbol, addressingsData, mappingURI, midiBackup = {}
         self.addressingsByActuator[kMidiLearnURI]
         for (var i in self.addressingsByActuator[kMidiLearnURI]) {
             instanceAndSymbol = self.addressingsByActuator[kMidiLearnURI][i]
@@ -518,6 +518,8 @@ function HardwareManager(options) {
 
         // restore midi maps
         for (mappingURI in midiBackup) {
+            instanceAndSymbol = midiBackup[mappingURI][0]
+            addressingsData   = midiBackup[mappingURI][1]
             self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
             self.addressingsByPortSymbol[instanceAndSymbol] = mappingURI
             self.addressingsData        [instanceAndSymbol] = {
