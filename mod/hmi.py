@@ -200,11 +200,34 @@ class HMI(object):
                     hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
         label = '"%s"' % label.upper().replace('"', "")
         unit = '"%s"' % unit.replace('"', '')
-        length = len(options)
+        optionsData = []
+
         if options:
-            options = [ '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                        for o in options ]
-        options = "%d %s" % (length, " ".join(options))
+            currentNum = 0
+            numBytesFree = 1024-128
+
+            for o in options:
+                if currentNum > 50:
+                    if value >= currentNum:
+                        value = 0
+                    max = currentNum
+                    break
+
+                data    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
+                dataLen = len(data)
+
+                if numBytesFree-dataLen-2 < 0:
+                    print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
+                    if value >= currentNum:
+                        value = 0.0
+                    max = currentNum
+                    break
+
+                currentNum += 1
+                numBytesFree -= dataLen+1
+                optionsData.append(data)
+
+        options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
 
         self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
