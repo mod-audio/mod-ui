@@ -1024,21 +1024,22 @@ class TemplateHandler(web.RequestHandler):
 
 class TemplateLoader(web.RequestHandler):
     def get(self, path):
-        with open(os.path.join(HTML_DIR, 'include', path)) as fh:
+        self.set_header("Content-Type", "text/plain; charset=UTF-8")
+        with open(os.path.join(HTML_DIR, 'include', path), 'r') as fh:
             self.write(fh.read())
         self.finish()
 
 class BulkTemplateLoader(web.RequestHandler):
     def get(self):
-        self.set_header('Content-Type', 'text/javascript')
+        self.set_header("Content-Type", "text/plain; charset=UTF-8")
         basedir = os.path.join(HTML_DIR, 'include')
         for template in os.listdir(basedir):
             if not re.match('^[a-z_]+\.html$', template):
                 continue
-            contents = open(os.path.join(basedir, template)).read()
-            template = template[:-5]
+            with open(os.path.join(basedir, template), 'r') as fh:
+                contents = fh.read()
             self.write("TEMPLATES['%s'] = '%s';\n\n"
-                       % (template,
+                       % (template[:-5],
                           tornado.escape.squeeze(contents.replace("'", "\\'"))
                           )
                        )
