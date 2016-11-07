@@ -83,7 +83,7 @@ kMidiUnmapURI = "/midi-unmap"
 kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
 # Limits
-kMaxAddressableScalepoints = 100
+kMaxAddressableScalepoints = 50
 
 def get_all_good_pedalboards():
     allpedals  = get_all_pedalboards()

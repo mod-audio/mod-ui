@@ -1394,10 +1394,17 @@ JqueryClass('pedalboard', {
 
     setPortEnabled: function (instance, symbol, enabled) {
         var self = $(this)
-        var targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
-        var targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
+        var targetname1, targetname2
         var callbackId  = instance+'/'+symbol+":enabled"
         var gui = self.pedalboard('getGui', instance)
+
+        if (symbol == ":presets") {
+            targetname1 = '.mod-pedal[mod-instance="'+instance+'"] [mod-role="presets"]'
+            targetname2 = '[mod-instance="'+instance+'"] .mod-pedal-settings .mod-presets'
+        } else {
+            targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
+            targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
+        }
 
         if (gui && ($(targetname1).length || $(targetname2).length)) {
             if (enabled) {
