@@ -794,7 +794,7 @@ class Host(object):
 
             for symbol, data in plugin['midiCCs'].items():
                 mchnnl, mctrl, minimum, maximum = data
-                if -1 in (mchnnl, mctrl) or symbol not in badports:
+                if -1 in (mchnnl, mctrl) or symbol in badports:
                     continue
 
                 websocket.write_message("midi_map %s %s %i %i %f %f" % (plugin['instance'], symbol,

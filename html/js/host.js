@@ -113,7 +113,7 @@ $('document').ready(function() {
             var minimum  = parseFloat(data[5])
             var maximum  = parseFloat(data[6])
 
-            if (channel < 0 || control < 0) {
+            if (channel < 0 || control < 0 || minimum >= maximum) {
                 console.log("WARNING: Received MIDI mapping with invalid values, ignored")
                 return
             }
