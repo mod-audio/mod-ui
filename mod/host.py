@@ -2033,9 +2033,9 @@ _:b%i
             # we're unmapping a midi control
             if actuator_uri == kMidiUnmapURI:
                 if port == ":bypass":
-                    pluginData['bypassCC'] = (-1, -1)
+                    pluginData['bypassCC'] = (-1,-1)
                 else:
-                    pluginData['midiCCs'][port] = (-1, -1)
+                    pluginData['midiCCs'][port] = (-1,-1,0.0,1.0)
                 self.send_modified("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
                 return
 

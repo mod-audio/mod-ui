@@ -509,7 +509,7 @@ function HardwareManager(options) {
         for (var i in self.addressingsByActuator[kMidiLearnURI]) {
             instanceAndSymbol = self.addressingsByActuator[kMidiLearnURI][i]
             mappingURI        = self.addressingsByPortSymbol[instanceAndSymbol]
-            midiBackup[mappingURI] = instanceAndSymbol
+            midiBackup[mappingURI] = [instanceAndSymbol, self.addressingsData[instanceAndSymbol]]
         }
 
         // reset and register all HW
@@ -518,16 +518,14 @@ function HardwareManager(options) {
 
         // restore midi maps
         for (mappingURI in midiBackup) {
-            instanceAndSymbol = midiBackup[mappingURI]
             self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
             self.addressingsByPortSymbol[instanceAndSymbol] = mappingURI
             self.addressingsData        [instanceAndSymbol] = {
                 uri    : mappingURI,
                 label  : null,
-                minimum: null,
-                maximum: null,
+                minimum: addressingsData.minimum,
+                maximum: addressingsData.maximum,
                 steps  : null,
-                // TODO: restore minimum and maximum
             }
         }
     }
