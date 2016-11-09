@@ -21,6 +21,8 @@ function shouldSkipPort(port) {
     if (port.properties.indexOf("notOnGUI") >= 0)
         return true
     // skip special designated controls
+    if (port.designation == "http://lv2plug.in/ns/lv2core#enabled")
+        return true
     if (port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling")
         return true
     if (port.designation == "http://lv2plug.in/ns/lv2core#latency")

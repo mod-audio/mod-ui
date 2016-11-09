@@ -893,7 +893,8 @@ class Host(object):
                     badports.append(port['symbol'])
 
                 # skip special designated controls
-                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#freeWheeling",
+                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#enabled",
+                                             "http://lv2plug.in/ns/lv2core#freeWheeling",
                                              "http://lv2plug.in/ns/lv2core#latency",
                                              "http://lv2plug.in/ns/ext/parameters#sampleRate"):
                     badports.append(port['symbol'])
@@ -1302,7 +1303,8 @@ class Host(object):
                     badports.append(port['symbol'])
 
                 # skip special designated controls
-                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#freeWheeling",
+                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#enabled",
+                                             "http://lv2plug.in/ns/lv2core#freeWheeling",
                                              "http://lv2plug.in/ns/lv2core#latency",
                                              "http://lv2plug.in/ns/ext/parameters#sampleRate"):
                     badports.append(port['symbol'])
