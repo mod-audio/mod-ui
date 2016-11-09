@@ -775,11 +775,8 @@ class Host(object):
                 if plugin['preset']:
                     self.send_notmodified("preset_load %d %s" % (instance_id, plugin['preset']))
 
-            badports = plugin['badports']
-
             for symbol, value in plugin['ports'].items():
-                if symbol not in badports:
-                    websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
+                websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
 
                 if crashed:
                     self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
@@ -794,7 +791,11 @@ class Host(object):
 
             for symbol, data in plugin['midiCCs'].items():
                 mchnnl, mctrl, minimum, maximum = data
-                if -1 in (mchnnl, mctrl) or symbol in badports:
+
+                if -1 in (mchnnl, mctrl):
+                    continue
+                # don't address "bad" ports
+                if symbol in plugin['badports']:
                     continue
 
                 websocket.write_message("midi_map %s %s %i %i %f %f" % (plugin['instance'], symbol,
@@ -885,34 +886,43 @@ class Host(object):
             badports = []
             valports = {}
 
+            enabled_symbol = None
+            freewheel_symbol = None
+
             for port in allports['inputs']:
-                valports[port['symbol']] = port['ranges']['default']
+                symbol = port['symbol']
+                valports[symbol] = port['ranges']['default']
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
-                    badports.append(port['symbol'])
+                    badports.append(symbol)
 
                 # skip special designated controls
-                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#enabled",
-                                             "http://lv2plug.in/ns/lv2core#freeWheeling",
-                                             "http://lv2plug.in/ns/lv2core#latency",
-                                             "http://lv2plug.in/ns/ext/parameters#sampleRate"):
-                    badports.append(port['symbol'])
+                elif port['designation'] == "http://lv2plug.in/ns/lv2core#enabled":
+                    enabled_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 0.0 if bypassed else 1.0
+
+                elif port['designation'] == "http://lv2plug.in/ns/lv2core#freeWheeling":
+                    freewheel_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 0.0
 
             self.plugins[instance_id] = {
-                "instance"   : instance,
-                "uri"        : uri,
-                "bypassed"   : bypassed,
-                "bypassCC"   : (-1,-1),
-                "x"          : x,
-                "y"          : y,
-                "addressings": {}, # symbol: addressing
-                "midiCCs"    : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
-                "ports"      : valports,
-                "badports"   : badports,
-                "outputs"    : dict((symbol, None) for symbol in allports['monitoredOutputs']),
-                "preset"     : "",
-                "mapPresets" : []
+                "instance"    : instance,
+                "uri"         : uri,
+                "bypassed"    : bypassed,
+                "bypassCC"    : (-1,-1),
+                "x"           : x,
+                "y"           : y,
+                "addressings" : {}, # symbol: addressing
+                "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
+                "ports"       : valports,
+                "badports"    : badports,
+                "designations": (enabled_symbol, freewheel_symbol),
+                "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
+                "preset"      : "",
+                "mapPresets"  : []
             }
 
             for output in allports['monitoredOutputs']:
@@ -973,13 +983,23 @@ class Host(object):
         self.plugins[instance_id]['bypassed'] = bypassed
         self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
+        enabled_symbol = self.plugins[instance_id]['designations'][0]
+        if enabled_symbol is None:
+            return
+
+        value = 0.0 if bypassed else 1.0
+        self.plugins[instance_id]['ports'][enabled_symbol] = value
+        self.send_modified("param_set %d %s %f" % (instance_id, enabled_symbol, value), callback, datatype='boolean')
+
     def param_set(self, port, value, callback):
         instance, symbol = port.rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        if symbol not in self.plugins[instance_id]['badports']:
-            self.plugins[instance_id]['ports'][symbol] = value
+        if symbol in self.plugins[instance_id]['designations']:
+            print("ERROR: Trying to modify a specially designated port '%s', stop!" % symbol)
+            return
 
+        self.plugins[instance_id]['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
     def preset_load(self, instance, uri, callback):
@@ -991,20 +1011,28 @@ class Host(object):
                 callback(False)
                 return
 
-            self.plugins[instance_id]['preset'] = uri
+            plugin = self.plugins[instance_id]
+
+            plugin['preset'] = uri
             self.msg_callback("preset %s %s" % (instance, uri))
 
             portValues = get_state_port_values(state)
-            self.plugins[instance_id]['ports'].update(portValues)
+            plugin['ports'].update(portValues)
 
-            badports = self.plugins[instance_id]['badports']
+            badports = plugin['badports']
             used_actuators = []
 
-            for symbol, value in self.plugins[instance_id]['ports'].items():
-                if symbol not in badports:
-                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+            enabled_symbol, freewheel_symbol = plugin['designations']
 
-                addressing = self.plugins[instance_id]['addressings'].get(symbol, None)
+            for symbol, value in plugin['ports'].items():
+                if symbol == enabled_symbol:
+                    value = 0.0 if plugin['bypassed'] else 1.0
+                elif symbol == freewheel_symbol:
+                    value = 0.0
+
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+
+                addressing = plugin['addressings'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
                     used_actuators.append(addressing['actuator_uri'])
 
@@ -1294,35 +1322,44 @@ class Host(object):
             valports = {}
             ranges   = {}
 
+            enabled_symbol = None
+            freewheel_symbol = None
+
             for port in allports['inputs']:
-                valports[port['symbol']] = port['ranges']['default']
-                ranges[port['symbol']] = (port['ranges']['minimum'], port['ranges']['maximum'])
+                symbol = port['symbol']
+                valports[symbol] = port['ranges']['default']
+                ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
-                    badports.append(port['symbol'])
+                    badports.append(symbol)
 
                 # skip special designated controls
-                elif port['designation'] in ("http://lv2plug.in/ns/lv2core#enabled",
-                                             "http://lv2plug.in/ns/lv2core#freeWheeling",
-                                             "http://lv2plug.in/ns/lv2core#latency",
-                                             "http://lv2plug.in/ns/ext/parameters#sampleRate"):
-                    badports.append(port['symbol'])
+                elif port['designation'] == "http://lv2plug.in/ns/lv2core#enabled":
+                    enabled_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 0.0 if p['bypassed'] else 1.0
+
+                elif port['designation'] == "http://lv2plug.in/ns/lv2core#freeWheeling":
+                    freewheel_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 0.0
 
             self.plugins[instance_id] = {
-                "instance"   : instance,
-                "uri"        : p['uri'],
-                "bypassed"   : p['bypassed'],
-                "bypassCC"   : (p['bypassCC']['channel'], p['bypassCC']['control']),
-                "x"          : p['x'],
-                "y"          : p['y'],
-                "addressings": {}, # symbol: addressing
-                "midiCCs"    : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
-                "ports"      : valports,
-                "badports"   : badports,
-                "outputs"    : dict((symbol, None) for symbol in allports['monitoredOutputs']),
-                "preset"     : p['preset'],
-                "mapPresets" : []
+                "instance"    : instance,
+                "uri"         : p['uri'],
+                "bypassed"    : p['bypassed'],
+                "bypassCC"    : (p['bypassCC']['channel'], p['bypassCC']['control']),
+                "x"           : p['x'],
+                "y"           : p['y'],
+                "addressings" : {}, # symbol: addressing
+                "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
+                "ports"       : valports,
+                "badports"    : badports,
+                "designations": (enabled_symbol, freewheel_symbol),
+                "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
+                "preset"      : p['preset'],
+                "mapPresets"  : []
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -1357,11 +1394,11 @@ class Host(object):
                 self.plugins[instance_id]['ports'][symbol] = value
 
                 self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
+                # don't address "bad" ports
                 if symbol in badports:
                     continue
-
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 if mchnnl >= 0 and mctrl >= 0:
                     self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
@@ -1881,7 +1918,7 @@ _:b%i
         old_actuator_uri = self._unaddress(pluginData, port)
 
         # we're addressing to HMI
-        if actuator_uri and actuator_uri not in (kNullAddressURI, kMidiLearnURI, kMidiUnmapURI):
+        if actuator_uri and actuator_uri not in (kNullAddressURI, kMidiLearnURI, kMidiUnmapURI) and port not in pluginData['designations']:
             options = []
             spreset = ""
 
@@ -2371,9 +2408,16 @@ _:b%i
         if portsymbol == ":bypass":
             bypassed = bool(value)
             plugin['bypassed'] = bypassed
-
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
+
+            enabled_symbol = plugin['designations'][0]
+            if enabled_symbol is None:
+                return
+
+            value = 0.0 if bypassed else 1.0
+            plugin['ports'][enabled_symbol] = value
+            self.msg_callback("param_set %s %s %f" % (instance, enabled_symbol, value))
 
         elif portsymbol == ":presets":
             value = int(value)
@@ -2382,13 +2426,8 @@ _:b%i
                 return
             self.preset_load(instance, plugin['mapPresets'][value], callback)
 
-        # For "bad" ports only report value to mod-host, don't store it
-        elif portsymbol in plugin['badports']:
-            self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-
         else:
             plugin['ports'][portsymbol] = value
-
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 

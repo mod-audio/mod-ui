@@ -15,24 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-function shouldSkipPort(port) {
-    // skip notOnGUI controls
-    if (port.properties.indexOf("notOnGUI") >= 0)
-        return true
-    // skip special designated controls
-    if (port.designation == "http://lv2plug.in/ns/lv2core#enabled")
-        return true
-    if (port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling")
-        return true
-    if (port.designation == "http://lv2plug.in/ns/lv2core#latency")
-        return true
-    if (port.designation == "http://lv2plug.in/ns/ext/parameters#sampleRate")
-        return true
-    // what else?
-    return false;
-}
-
 var loadedIcons = {}
 var loadedSettings = {}
 var loadedCSSs = {}
@@ -200,10 +182,6 @@ function GUI(effect, options) {
 
         for (i in ports) {
             porti = ports[i]
-
-            // skip notOnGUI controls
-            if (shouldSkipPort(porti))
-                continue
 
             port = {
                 enabled: true,
@@ -688,8 +666,8 @@ function GUI(effect, options) {
                 value : self.bypassed ? 1 : 0
             }]
             // inputs
-            for (var i in self.effect.ports.control.input) {
-                port = self.effect.ports.control.input[i]
+            for (var i in self.effect.all_control_in_ports) {
+                port = self.effect.all_control_in_ports[i]
 
                 if (self.controls[port.symbol] != null) {
                     value = self.controls[port.symbol].value
@@ -1067,16 +1045,22 @@ function GUI(effect, options) {
             }
         }
 
-        // FIXME - this is a little ugly hack, sorry!
-
-        // don't show some special ports
+        // skip notOnGUI controls
         if (data.effect.ports.control.input)
         {
             var inputs = []
             for (var i in data.effect.ports.control.input) {
                 var port = data.effect.ports.control.input[i]
-                if (shouldSkipPort(port))
+
+                // skip notOnGUI controls
+                if (port.properties.indexOf("notOnGUI") >= 0) {
                     continue
+                }
+                // skip special designated controls
+                if (port.designation == "http://lv2plug.in/ns/lv2core#enabled" ||
+                    port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling") {
+                    continue
+                }
 
                 port['enumeration'] = port.properties.indexOf("enumeration") >= 0
                 port['integer'    ] = port.properties.indexOf("integer") >= 0
@@ -1086,7 +1070,13 @@ function GUI(effect, options) {
 
                 inputs.push(port)
             }
+
+            data.effect.all_control_in_ports = data.effect.ports.control.input
             data.effect.ports.control.input = inputs
+        }
+        else
+        {
+            data.effect.all_control_in_ports = []
         }
 
         if (isSDK) {
