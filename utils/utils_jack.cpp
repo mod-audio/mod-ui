@@ -428,13 +428,13 @@ void init_bypass(void)
     if (gAlsaControlLeft != nullptr)
     {
         gLastAlsaValueLeft = false;
-        snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, false);
+        snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, 0);
     }
 
     if (gAlsaControlRight != nullptr)
     {
         gLastAlsaValueRight = false;
-        snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, false);
+        snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, 0);
     }
 
     snd_mixer_selem_id_t* sid;
@@ -444,7 +444,7 @@ void init_bypass(void)
         snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK);
 
         if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
-            snd_mixer_selem_set_playback_switch_all(elem, false);
+            snd_mixer_selem_set_playback_switch_all(elem, 0);
 
         snd_mixer_selem_id_free(sid);
     }
