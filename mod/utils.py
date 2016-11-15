@@ -506,6 +506,9 @@ utils.disconnect_jack_ports.restype  = c_bool
 utils.reset_xruns.argtypes = None
 utils.reset_xruns.restype  = None
 
+utils.init_bypass.argtypes = None
+utils.init_bypass.restype  = None
+
 utils.get_truebypass_value.argtypes = [c_bool]
 utils.get_truebypass_value.restype  = c_bool
 
@@ -695,6 +698,9 @@ def reset_xruns():
 
 # ------------------------------------------------------------------------------------------------------------
 # alsa stuff
+
+def init_bypass():
+    utils.init_bypass()
 
 def get_truebypass_value(right):
     return bool(utils.get_truebypass_value(right))

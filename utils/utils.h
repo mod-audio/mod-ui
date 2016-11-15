@@ -338,6 +338,7 @@ MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);
 MOD_API void reset_xruns(void);
 
 // alsa stuff
+MOD_API void init_bypass(void);
 MOD_API bool get_truebypass_value(bool right);
 MOD_API bool set_truebypass_value(bool right, bool bypassed);
 

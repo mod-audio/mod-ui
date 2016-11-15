@@ -27,13 +27,10 @@
 #include <mutex>
 #include <vector>
 
-#define ALSA_SOUNDCARD_ID  "hw:MODDUO"
-#define ALSA_CONTROL_LEFT  "Left True-Bypass"
-#define ALSA_CONTROL_RIGHT "Right True-Bypass"
-
-// #define ALSA_SOUNDCARD_ID  "hw:PCH"
-// #define ALSA_CONTROL_LEFT  "IEC958"
-// #define ALSA_CONTROL_RIGHT "IEC958_"
+#define ALSA_SOUNDCARD_ID         "hw:MODDUO"
+#define ALSA_CONTROL_BYPASS_LEFT  "Left True-Bypass"
+#define ALSA_CONTROL_BYPASS_RIGHT "Right True-Bypass"
+#define ALSA_CONTROL_LOOPBACK     "LOOPBACK"
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -135,13 +132,13 @@ bool init_jack(void)
                 snd_mixer_selem_id_malloc(&sid) == 0)
             {
                 snd_mixer_selem_id_set_index(sid, 0);
-                snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LEFT);
+                snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_LEFT);
 
                 if ((gAlsaControlLeft = snd_mixer_find_selem(gAlsaMixer, sid)) != nullptr)
                     gLastAlsaValueLeft = _get_alsa_switch_value(gAlsaControlLeft);
 
                 snd_mixer_selem_id_set_index(sid, 0);
-                snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_RIGHT);
+                snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_RIGHT);
 
                 if ((gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid)) != nullptr)
                     gLastAlsaValueRight = _get_alsa_switch_value(gAlsaControlRight);
@@ -422,6 +419,36 @@ void reset_xruns(void)
 }
 
 // --------------------------------------------------------------------------------------------------------
+
+void init_bypass(void)
+{
+    if (gAlsaMixer == nullptr)
+        return;
+
+    if (gAlsaControlLeft != nullptr)
+    {
+        gLastAlsaValueLeft = false;
+        snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, false);
+    }
+
+    if (gAlsaControlRight != nullptr)
+    {
+        gLastAlsaValueRight = false;
+        snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, false);
+    }
+
+    snd_mixer_selem_id_t* sid;
+    if (snd_mixer_selem_id_malloc(&sid) == 0)
+    {
+        snd_mixer_selem_id_set_index(sid, 0);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK);
+
+        if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+            snd_mixer_selem_set_playback_switch_all(elem, false);
+
+        snd_mixer_selem_id_free(sid);
+    }
+}
 
 bool get_truebypass_value(bool right)
 {
