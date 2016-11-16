@@ -163,6 +163,7 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
+        self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
 
         self.statstimer = ioloop.PeriodicCallback(self.statstimer_callback, 1000)
@@ -870,11 +871,14 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
+        self.pedalboard_presets  = []
 
         save_last_bank_and_pedalboard(0, "")
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
+        self.pedalboard_presets = []
+
         instance_id = self.mapper.get_id(instance)
 
         def host_callback(resp):
@@ -936,6 +940,8 @@ class Host(object):
 
     @gen.coroutine
     def remove_plugin(self, instance, callback):
+        self.pedalboard_presets = []
+
         instance_id = self.mapper.get_id_without_creating(instance)
 
         try:
@@ -1179,6 +1185,8 @@ class Host(object):
         return "effect_%d:%s" % (instance_id, portsymbol)
 
     def connect(self, port_from, port_to, callback):
+        self.pedalboard_presets = []
+
         if (port_from, port_to) in self.connections:
             print("NOTE: Requested connection already exists")
             callback(True)
@@ -1197,6 +1205,8 @@ class Host(object):
                            host_callback, datatype='boolean')
 
     def disconnect(self, port_from, port_to, callback):
+        self.pedalboard_presets = []
+
         def host_callback(ok):
             # always return true. disconnect failures are not fatal, but still print error for debugging
             callback(True)
@@ -1314,6 +1324,11 @@ class Host(object):
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
+        def_pb_preset = {
+            "name": "Default",
+            "data": {},
+        }
+
         for p in pb['plugins']:
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
@@ -1361,6 +1376,12 @@ class Host(object):
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : p['preset'],
                 "mapPresets"  : []
+            }
+
+            def_pb_preset['data'][instance] = {
+                "bypassed": p['bypassed'],
+                "ports"   : valports,
+                "preset"  : p['preset'],
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -1448,6 +1469,14 @@ class Host(object):
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
 
+        self.pedalboard_presets = [def_pb_preset]
+
+        if os.path.exists(os.path.join(bundlepath, "presets.json")):
+            with open(os.path.join(bundlepath, "presets.json")) as fh:
+                more_pb_presets = json.loads(fh)
+            if isinstance(more_pb_presets, list) and len(more_pb_presets) != 0:
+                self.pedalboard_presets += more_pb_presets
+
         if self.hmi.initialized:
             self._load_addressings(bundlepath)
 
@@ -1520,6 +1549,7 @@ class Host(object):
     def save_state_to_ttl(self, bundlepath, title, titlesym):
         self.save_state_manifest(bundlepath, titlesym)
         self.save_state_addressings(bundlepath)
+        self.save_state_presets(bundlepath)
         self.save_state_mainfile(bundlepath, title, titlesym)
 
     def save_state_manifest(self, bundlepath, titlesym):
@@ -1545,6 +1575,17 @@ class Host(object):
 
         with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
             json.dump(addressings, fh)
+
+    def save_state_presets(self, bundlepath):
+        # Write presets.json
+        presets_path = os.path.join(bundlepath, "presets.json")
+
+        if len(self.pedalboard_presets) > 1:
+            with open(presets_path, 'w') as fh:
+                json.dump(self.pedalboard_presets[1:], fh)
+
+        elif os.path.exists(presets_path):
+            os.remove(presets_path)
 
     def save_state_mainfile(self, bundlepath, title, titlesym):
         # Create list of midi in/out ports
