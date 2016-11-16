@@ -91,6 +91,8 @@ $('document').ready(function() {
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
+        pedalboardPresetsEnabler: $('#pedalboard-info ul.js-pedalboard-presets-enabler li'),
+        pedalboardPresetsMenu: $('#pedalboard-info ul.js-pedalboard-presets-menu li'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
         cloudPluginBox: $('#cloud-plugins-library'),
@@ -407,26 +409,21 @@ $('document').ready(function() {
             <!-- PEDALBOARD-SETTINGS -->
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
-                <!-- <div class="favorite"></div> -->
                 <div class="actions">
-                    <button class="js-preset menu-trigger mod-hidden">Presets</button>
-                      <ul class="drop-menu">
-                        <li>Save</li>
-                        <li>Save as</li>
+                    <button class="js-preset menu-trigger" id="js-preset-enabler">Presets</button>
+                    <ul class="drop-menu clearfix js-pedalboard-presets-enabler" style="cursor:pointer;">
+                        <li>Enable</li>
+                    </ul>
+                    <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Presets</button>
+                    <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
+                        <li mod-role="save">Save</li>
+                        <li mod-role="save-as">Save as</li>
                         <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
                             <ul class="menu-preset-list sub-menu">
-                              <li>preset</li>
-                              <li>preset</li>
-                              <li>preset</li>
-                              <li>preset</li>
-                              <li>preset</li>
-                              <li>preset</li>
-                              <li>preset</li>
-                              <li>preset</li>
                             </ul>
                         </li>
-                        <li class="js-pedalboard-presets" >Manage / Assign</li>
-                      </ul>
+                        <li mod-role="manage">Manage / Assign</li>
+                    </ul>
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>

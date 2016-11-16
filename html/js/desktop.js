@@ -30,8 +30,8 @@ function Desktop(elements) {
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
-        bypassLeftButton: $('<div>'),
-        bypassRightButton: $('<div>'),
+        pedalboardPresetsEnabler: $('<div>'),
+        pedalboardPresetsMenu: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -643,6 +643,33 @@ function Desktop(elements) {
                 dataType: 'json'
             })
         })
+    })
+    elements.pedalboardPresetsEnabler.click(function () {
+        if (!confirm("Pedalboard will be locked now, you cannot add or remove plugins and connections. Continue?")) {
+            return
+        }
+        // TODO: call server to prepare for presets, lockup
+        $('#js-preset-enabler').hide()
+        $('#js-preset-menu').show()
+    })
+    elements.pedalboardPresetsMenu.click(function () {
+        var role = $(this).attr('mod-role')
+
+        if (! role) {
+            return;
+        }
+
+        if (role == "load") {
+            // TODO
+        } else if (role == "save") {
+            // TODO
+        } else if (role == "save-as") {
+            // TODO
+        } else if (role == "manage") {
+            // TODO
+        }
+
+        console.log("menu presets", role)
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
