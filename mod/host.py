@@ -1462,8 +1462,12 @@ class Host(object):
             port_to   = "/graph/%s" % c['target']
 
             if doConnectionNow:
-                self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
-                                                         self._fix_host_connection_port(port_to)))
+                try:
+                    port_from_2 = self._fix_host_connection_port(port_from)
+                    port_to_2   = self._fix_host_connection_port(port_to)
+                except:
+                    continue
+                self.send_notmodified("connect %s %s" % (port_from_2, port_to_2))
                 self.connections.append((port_from, port_to))
                 self.msg_callback("connect %s %s" % (port_from, port_to))
 
