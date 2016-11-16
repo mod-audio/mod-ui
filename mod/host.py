@@ -1285,10 +1285,14 @@ class Host(object):
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
         for p in pb['plugins']:
+            allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
+
+            if 'error' in allports.keys() and allports['error']:
+                continue
+
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
 
-            allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
             badports = []
             valports = {}
             ranges   = {}
@@ -2187,9 +2191,13 @@ _:b%i
 
         for actuator_uri in data:
             for addr in data[actuator_uri]:
-                instance_id = self.mapper.get_id_without_creating(addr['instance'])
-                plugin      = self.plugins[instance_id]
-                portsymbol  = addr['port']
+                try:
+                    instance_id = self.mapper.get_id_without_creating(addr['instance'])
+                except KeyError:
+                    continue
+
+                plugin     = self.plugins[instance_id]
+                portsymbol = addr['port']
 
                 if portsymbol == ":bypass":
                     curvalue = 1.0 if plugin['bypassed'] else 0.0
