@@ -876,6 +876,33 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
+class PedalboardPresetSave(JsonRequestHandler):
+    def post(self):
+        title = self.get_argument('title')
+        asNew = bool(int(self.get_argument('asNew')))
+
+        # TODO: separate save/saveas
+        idx = SESSION.host.pedalpreset_save(title, asNew)
+
+        self.write({
+            'ok': idx is not None,
+            'id': idx
+        })
+
+class PedalboardPresetLoad(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        idx = self.get_argument('id')
+        ok  = yield gen.Task(SESSION.pedalpreset_load, idx)
+        self.write(ok)
+
+class PedalboardPresetRemove(JsonRequestHandler):
+    def get(self):
+        idx = self.get_argument('id')
+        ok  = SESSION.host.pedalpreset_remove(idx)
+        self.write(ok)
+
 class DashboardClean(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1323,6 +1350,11 @@ application = web.Application(
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/wait", PedalboardImageWait),
+
+            # pedalboard stuff
+            (r"/pedalpreset/save", PedalboardPresetSave),
+            (r"/pedalpreset/load", PedalboardPresetLoad),
+            (r"/pedalpreset/remove/", PedalboardPresetRemove),
 
             # bank stuff
             (r"/banks/?", BankLoad),

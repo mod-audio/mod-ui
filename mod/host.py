@@ -1009,6 +1009,15 @@ class Host(object):
         self.plugins[instance_id]['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
+    def set_position(self, instance, x, y):
+        instance_id = self.mapper.get_id_without_creating(instance)
+
+        self.plugins[instance_id]['x'] = x
+        self.plugins[instance_id]['y'] = y
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Host stuff - plugin presets
+
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
@@ -1153,11 +1162,56 @@ class Host(object):
 
         self.remove_bundle(bundlepath, False, start)
 
-    def set_position(self, instance, x, y):
-        instance_id = self.mapper.get_id_without_creating(instance)
+    # -----------------------------------------------------------------------------------------------------------------
+    # Host stuff - pedalboard presets
 
-        self.plugins[instance_id]['x'] = x
-        self.plugins[instance_id]['y'] = y
+    def pedalpreset_make(self, name):
+        pedalpreset = {
+            "name": name,
+            "data": {},
+        }
+
+        # TODO
+        for instance in []:
+            pedalpreset['data'][instance] = {
+                "bypassed": False,
+                "ports"   : {},
+                "preset"  : "",
+            }
+
+        return pedalpreset
+
+    def pedalpreset_init(self):
+        preset = self.pedalpreset_make("Default")
+        self.pedalboard_presets = [preset]
+
+    def pedalpreset_save(self, idx):
+        if len(self.pedalboard_presets) == 0:
+            return False
+
+        name   = self.pedalboard_presets[idx]
+        preset = self.pedalpreset_make(name)
+        self.pedalboard_presets[idx] = preset
+        return True
+
+    def pedalpreset_saveas(self, name):
+        if len(self.pedalboard_presets) == 0:
+            self.pedalpreset_init()
+
+        preset = self.pedalpreset_make(name)
+        self.pedalboard_presets.append(preset)
+
+        return len(self.pedalboard_presets)-1
+
+    def pedalpreset_load(self, idx, callback):
+        # TODO
+        callback(True)
+
+    def pedalpreset_remove(self, idx):
+        if idx >= len(self.pedalboard_presets):
+            return False
+        self.pedalboard_presets[idx] = None
+        return True
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - connections
@@ -1324,11 +1378,6 @@ class Host(object):
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
-        def_pb_preset = {
-            "name": "Default",
-            "data": {},
-        }
-
         for p in pb['plugins']:
             allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
 
@@ -1380,12 +1429,6 @@ class Host(object):
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : p['preset'],
                 "mapPresets"  : []
-            }
-
-            def_pb_preset['data'][instance] = {
-                "bypassed": p['bypassed'],
-                "ports"   : valports,
-                "preset"  : p['preset'],
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -1477,13 +1520,13 @@ class Host(object):
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
 
-        self.pedalboard_presets = [def_pb_preset]
+        self.pedalboard_presets = []
 
         if os.path.exists(os.path.join(bundlepath, "presets.json")):
             with open(os.path.join(bundlepath, "presets.json")) as fh:
                 more_pb_presets = json.loads(fh)
             if isinstance(more_pb_presets, list) and len(more_pb_presets) != 0:
-                self.pedalboard_presets += more_pb_presets
+                self.pedalboard_presets = more_pb_presets
 
         if self.hmi.initialized:
             self._load_addressings(bundlepath)
@@ -1589,8 +1632,9 @@ class Host(object):
         presets_path = os.path.join(bundlepath, "presets.json")
 
         if len(self.pedalboard_presets) > 1:
+            presets = [p for p in self.pedalboard_presets if p is not None]
             with open(presets_path, 'w') as fh:
-                json.dump(self.pedalboard_presets[1:], fh)
+                json.dump(presets, fh)
 
         elif os.path.exists(presets_path):
             os.remove(presets_path)
