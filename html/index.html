@@ -91,7 +91,7 @@ $('document').ready(function() {
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
-        pedalboardPresetsEnabler: $('#pedalboard-info ul.js-pedalboard-presets-enabler li'),
+        pedalboardPresetsEnabler: $('#pedalboard-info #js-preset-enabler'),
         pedalboardPresetsMenu: $('#pedalboard-info ul.js-pedalboard-presets-menu li'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
@@ -410,10 +410,7 @@ $('document').ready(function() {
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
-                    <button class="js-preset menu-trigger" id="js-preset-enabler">Presets</button>
-                    <ul class="drop-menu clearfix js-pedalboard-presets-enabler" style="cursor:pointer;">
-                        <li>Enable</li>
-                    </ul>
+                    <button class="js-preset" id="js-preset-enabler">Presets</button>
                     <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Presets</button>
                     <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
                         <li mod-role="save">Save</li>
