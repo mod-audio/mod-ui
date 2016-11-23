@@ -881,6 +881,11 @@ class PedalboardPresetEnable(JsonRequestHandler):
         SESSION.host.pedalpreset_init()
         self.write(True)
 
+class PedalboardPresetDisable(JsonRequestHandler):
+    def post(self):
+        SESSION.host.pedalpreset_clear()
+        self.write(True)
+
 class PedalboardPresetSave(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))

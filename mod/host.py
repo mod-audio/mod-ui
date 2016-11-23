@@ -166,6 +166,10 @@ class Host(object):
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
 
+        # checked when saving pedal presets
+        self.plugins_added = []
+        self.plugins_removed = []
+
         self.statstimer = ioloop.PeriodicCallback(self.statstimer_callback, 1000)
 
         if os.path.exists("/proc/meminfo"):
@@ -865,20 +869,18 @@ class Host(object):
         self.connections = []
         self.mapper.clear()
         self._init_addressings()
+        self.pedalpreset_clear()
 
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
-        self.pedalboard_presets  = []
 
         save_last_bank_and_pedalboard(0, "")
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
-        self.pedalboard_presets = []
-
         instance_id = self.mapper.get_id(instance)
 
         def host_callback(resp):
@@ -933,6 +935,9 @@ class Host(object):
             for output in allports['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
+            if len(self.pedalboard_presets) > 0:
+                self.plugins_added.append(instance_id)
+
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
 
@@ -940,8 +945,6 @@ class Host(object):
 
     @gen.coroutine
     def remove_plugin(self, instance, callback):
-        self.pedalboard_presets = []
-
         instance_id = self.mapper.get_id_without_creating(instance)
 
         try:
@@ -949,6 +952,11 @@ class Host(object):
         except KeyError:
             callback(False)
             return
+
+        if len(self.pedalboard_presets) > 0:
+            self.plugins_removed.append(instance)
+            if instance_id in self.plugins_added:
+                self.plugins_added.remove(instance_id)
 
         used_actuators = []
         for symbol in [symbol for symbol in data['addressings'].keys()]:
@@ -1183,7 +1191,14 @@ class Host(object):
 
     def pedalpreset_init(self):
         preset = self.pedalpreset_make("Default")
+        self.plugins_added   = []
+        self.plugins_removed = []
         self.pedalboard_presets = [preset]
+
+    def pedalpreset_clear(self):
+        self.plugins_added   = []
+        self.plugins_removed = []
+        self.pedalboard_presets = []
 
     def pedalpreset_save(self, idx):
         if len(self.pedalboard_presets) == 0:
@@ -1242,8 +1257,6 @@ class Host(object):
         return "effect_%d:%s" % (instance_id, portsymbol)
 
     def connect(self, port_from, port_to, callback):
-        self.pedalboard_presets = []
-
         if (port_from, port_to) in self.connections:
             print("NOTE: Requested connection already exists")
             callback(True)
@@ -1262,8 +1275,6 @@ class Host(object):
                            host_callback, datatype='boolean')
 
     def disconnect(self, port_from, port_to, callback):
-        self.pedalboard_presets = []
-
         def host_callback(ok):
             # always return true. disconnect failures are not fatal, but still print error for debugging
             callback(True)
@@ -1523,7 +1534,7 @@ class Host(object):
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
 
-        self.pedalboard_presets = []
+        self.pedalpreset_clear()
 
         if os.path.exists(os.path.join(bundlepath, "presets.json")):
             with open(os.path.join(bundlepath, "presets.json")) as fh:
@@ -1633,6 +1644,14 @@ class Host(object):
     def save_state_presets(self, bundlepath):
         # Write presets.json
         presets_path = os.path.join(bundlepath, "presets.json")
+
+        for instance in self.plugins_removed:
+            # TODO
+            pass
+
+        for instance_id in self.plugins_added:
+            # TODO
+            pass
 
         if len(self.pedalboard_presets) > 1:
             presets = [p for p in self.pedalboard_presets if p is not None]

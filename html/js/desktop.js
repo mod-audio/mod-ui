@@ -164,7 +164,7 @@ function Desktop(elements) {
     this.title = ''
     this.cloudAccessToken = null
     this.pedalboardBundle = null
-    this.pedalboardEmpty = true
+    this.pedalboardEmpty  = true
     this.pedalboardModified = false
     this.pedalboardPresetId = -1
     this.loadingPeldaboardForFirstTime = true
@@ -1102,10 +1102,14 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
                     self.title = ''
                     self.pedalboardBundle = null
-                    self.pedalboardEmpty = true
+                    self.pedalboardEmpty  = true
                     self.pedalboardModified = false
+                    self.pedalboardPresetId = -1
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend");
+
+                    $('#js-preset-menu').hide()
+                    $('#js-preset-enabler').show()
 
                     callback(true)
                 },
@@ -1306,11 +1310,6 @@ Desktop.prototype.reset = function (callback) {
     }
 
     this.pedalboard.data('wait').start('Loading pedalboard...')
-
-    this.title = ''
-    this.pedalboardBundle = null
-    this.pedalboardEmpty = true
-    this.pedalboardModified = false
     this.pedalboard.pedalboard('reset', callback)
 }
 
@@ -1376,6 +1375,11 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardModified = false
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
+
+                // TODO: decide what to do with this
+                self.pedalboardPresetId = -1
+                $('#js-preset-menu').hide()
+                $('#js-preset-enabler').show()
 
                 callback(true)
             },
