@@ -31,7 +31,9 @@ function Desktop(elements) {
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
         pedalboardPresetsEnabler: $('<div>'),
-        pedalboardPresetsMenu: $('<div>'),
+        presetSaveButton: $('<div>'),
+        presetSaveAsButton: $('<div>'),
+        presetSaveManage: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -164,6 +166,7 @@ function Desktop(elements) {
     this.pedalboardBundle = null
     this.pedalboardEmpty = true
     this.pedalboardModified = false
+    this.pedalboardPresetId = -1
     this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
@@ -648,28 +651,66 @@ function Desktop(elements) {
         if (!confirm("Pedalboard will be locked now, you cannot add or remove plugins and connections. Continue?")) {
             return
         }
-        // TODO: call server to prepare for presets, lockup
-        $('#js-preset-enabler').hide()
-        $('#js-preset-menu').show()
+
+        $.ajax({
+            url: '/pedalpreset/enable',
+            method: 'POST',
+            success: function () {
+                $('#js-preset-enabler').hide()
+                $('#js-preset-menu').show()
+                self.pedalboardPresetId = 0
+            },
+            error: function () {
+                new Bug("Failed to activate pedalboard presets")
+            },
+            cache: false,
+        })
     })
-    elements.pedalboardPresetsMenu.click(function () {
-        var role = $(this).attr('mod-role')
-
-        if (! role) {
-            return;
+    elements.presetSaveButton.click(function () {
+        if (self.pedalboardPresetId < 0) {
+            return new Notification('warn', 'Nothing to save', 1500)
         }
 
-        if (role == "load") {
-            // TODO
-        } else if (role == "save") {
-            // TODO
-        } else if (role == "save-as") {
-            // TODO
-        } else if (role == "manage") {
-            // TODO
-        }
+        $.ajax({
+            url: '/pedalpreset/save',
+            data: {
+                id: self.pedalboardPresetId
+            },
+            success: function (resp) {
+                console.log(resp)
+            },
+            error: function () {
+                new Bug("Failed to save pedalboard preset")
+            },
+            cache: false,
+            dataType: 'json',
+        })
+    })
+    elements.presetSaveAsButton.click(function () {
+        // TODO: show save-as dialog for getting title
+        var title = "testing"
 
-        console.log("menu presets", role)
+        $.ajax({
+            url: '/pedalpreset/saveas',
+            data: {
+                title: title,
+            },
+            success: function (resp) {
+                if (! resp.ok) {
+                    return
+                }
+                self.pedalboardPresetId = resp.id
+                console.log(resp)
+            },
+            error: function () {
+                new Bug("Failed to save pedalboard preset")
+            },
+            cache: false,
+            dataType: 'json',
+        })
+    })
+    elements.presetSaveManage.click(function () {
+        console.log(this)
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))

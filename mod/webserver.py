@@ -876,31 +876,39 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
-class PedalboardPresetSave(JsonRequestHandler):
+class PedalboardPresetEnable(JsonRequestHandler):
     def post(self):
-        title = self.get_argument('title')
-        asNew = bool(int(self.get_argument('asNew')))
+        SESSION.host.pedalpreset_init()
+        self.write(True)
 
-        # TODO: separate save/saveas
-        idx = SESSION.host.pedalpreset_save(title, asNew)
+class PedalboardPresetSave(JsonRequestHandler):
+    def get(self):
+        idx = int(self.get_argument('id'))
+        ok  = SESSION.host.pedalpreset_save(idx)
+        self.write(ok)
+
+class PedalboardPresetSaveAs(JsonRequestHandler):
+    def get(self):
+        title = self.get_argument('title')
+        idx   = SESSION.host.pedalpreset_saveas(title)
 
         self.write({
             'ok': idx is not None,
             'id': idx
         })
 
+class PedalboardPresetRemove(JsonRequestHandler):
+    def get(self):
+        idx = int(self.get_argument('id'))
+        ok  = SESSION.host.pedalpreset_remove(idx)
+        self.write(ok)
+
 class PedalboardPresetLoad(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        idx = self.get_argument('id')
+        idx = int(self.get_argument('id'))
         ok  = yield gen.Task(SESSION.pedalpreset_load, idx)
-        self.write(ok)
-
-class PedalboardPresetRemove(JsonRequestHandler):
-    def get(self):
-        idx = self.get_argument('id')
-        ok  = SESSION.host.pedalpreset_remove(idx)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
@@ -1352,9 +1360,11 @@ application = web.Application(
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # pedalboard stuff
+            (r"/pedalpreset/enable", PedalboardPresetEnable),
             (r"/pedalpreset/save", PedalboardPresetSave),
+            (r"/pedalpreset/saveas", PedalboardPresetSaveAs),
+            (r"/pedalpreset/remove", PedalboardPresetRemove),
             (r"/pedalpreset/load", PedalboardPresetLoad),
-            (r"/pedalpreset/remove/", PedalboardPresetRemove),
 
             # bank stuff
             (r"/banks/?", BankLoad),

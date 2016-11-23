@@ -92,7 +92,9 @@ $('document').ready(function() {
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
         pedalboardPresetsEnabler: $('#pedalboard-info #js-preset-enabler'),
-        pedalboardPresetsMenu: $('#pedalboard-info ul.js-pedalboard-presets-menu li'),
+        presetSaveButton: $('#pedalboard-info .js-preset-save'),
+        presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
+        presetSaveManage: $('#pedalboard-info .js-preset-manage'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
         cloudPluginBox: $('#cloud-plugins-library'),
@@ -413,13 +415,13 @@ $('document').ready(function() {
                     <button class="js-preset" id="js-preset-enabler">Presets</button>
                     <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Presets</button>
                     <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
-                        <li mod-role="save">Save</li>
-                        <li mod-role="save-as">Save as</li>
+                        <li class="js-preset-save">Save</li>
+                        <li class="js-preset-save-as">Save as</li>
                         <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
                             <ul class="menu-preset-list sub-menu">
                             </ul>
                         </li>
-                        <li mod-role="manage">Manage / Assign</li>
+                        <li class="js-preset-manage">Manage / Assign</li>
                     </ul>
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>

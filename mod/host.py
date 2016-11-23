@@ -1188,6 +1188,8 @@ class Host(object):
     def pedalpreset_save(self, idx):
         if len(self.pedalboard_presets) == 0:
             return False
+        if idx >= len(self.pedalboard_presets):
+            return False
 
         name   = self.pedalboard_presets[idx]
         preset = self.pedalpreset_make(name)
@@ -1203,15 +1205,16 @@ class Host(object):
 
         return len(self.pedalboard_presets)-1
 
-    def pedalpreset_load(self, idx, callback):
-        # TODO
-        callback(True)
-
     def pedalpreset_remove(self, idx):
         if idx >= len(self.pedalboard_presets):
             return False
+
         self.pedalboard_presets[idx] = None
         return True
+
+    def pedalpreset_load(self, idx, callback):
+        # TODO
+        callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - connections
