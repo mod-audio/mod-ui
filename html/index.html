@@ -1,82 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>MOD</title>
+<meta charset="UTF-8">
+<title>MOD</title>
 
-    <link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
-    <link rel="manifest" href="img/favicon/manifest.json">
-    <meta name="msapplication-TileColor" content="#111111">
-    <meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
-    <meta name="theme-color" content="#111111">
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
 
-    <link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
-    <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
-    <link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
-    <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
-    <!-- PEDALS -->
-    <link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
-    <!-- DEFAULT -->
-    <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
+<!-- PEDALS -->
+<link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
+<!-- DEFAULT -->
+<link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 
-    <script type="text/javascript">
-      // for mod-app control
-      var desktop = null
-    </script>
+<script type="text/javascript">
+    // for mod-app control
+    var desktop = null
+</script>
 
-    <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/jquery.ba-resize.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/mustache.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/jquery.svg.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/sprintf-0.6.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/jquery.mousewheel.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
-    <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.ba-resize.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/mustache.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.svg.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/sprintf-0.6.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.mousewheel.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
 
-    <script type="text/javascript">
+<script type="text/javascript">
+    {% autoescape None %}
+    var TEMPLATES = {}
+    SITEURL = '{{cloud_url}}'
+    PEDALBOARDS_URL = '{{pedalboards_url}}'
+    LV2_PLUGIN_DIR  = '{{lv2_plugin_dir}}'
+    VERSION         = '{{version}}'
+    var BUFFERSIZE  = {{bufferSize}}
+    var SAMPLERATE  = {{sampleRate}}
+    var NOTIFICATIONS_ENABLED = true
+    var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
+    var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
+    var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
+    var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
+    var FAVORITES = {{favorites}}
+    var DEBUG = true;
+    if (!DEBUG) {
+        console = console || {}
+        console.log = function() {}
+    }
 
-      {% autoescape None %}
-      var TEMPLATES = {}
-      SITEURL = '{{cloud_url}}'
-      PEDALBOARDS_URL = '{{pedalboards_url}}'
-      LV2_PLUGIN_DIR  = '{{lv2_plugin_dir}}'
-      VERSION         = '{{version}}'
-      var BUFFERSIZE  = {{bufferSize}}
-      var SAMPLERATE  = {{sampleRate}}
-      var NOTIFICATIONS_ENABLED = true
-      var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
-      var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
-      var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
-      var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
-      var FAVORITES = {{favorites}}
-      var DEBUG = true;
-      if (!DEBUG) {
-          console = console || {}
-          console.log = function() {}
-      }
-
-      var INFO = {
-          "hardware": {},
-          "env": {},
-          "python": {},
-          "uname": {}
-      }
+    var INFO = {
+        "hardware": {},
+        "env": {},
+        "python": {},
+        "uname": {}
+    }
 
 $('document').ready(function() {
     desktop = new Desktop({
@@ -168,7 +167,6 @@ $('document').ready(function() {
 
     desktop.resetPedalboardStats();
 })
-
 </script>
 
 <script type="text/javascript" src="js/templates.js?v={{version}}"></script>
@@ -202,6 +200,7 @@ $('document').ready(function() {
     @keyframes loadingcircle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 </style>
 </head>
+
 <body class="mod-dark">
   <svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" id="loading" class="loadinganim" version="1.1">
    <g transform="translate(50, 50)"><g class="loadingcircle"><g transform="translate(-50,-50)">
