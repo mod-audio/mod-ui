@@ -1366,6 +1366,7 @@ application = web.Application(
 
             # pedalboard stuff
             (r"/pedalpreset/enable", PedalboardPresetEnable),
+            (r"/pedalpreset/disable", PedalboardPresetDisable),
             (r"/pedalpreset/save", PedalboardPresetSave),
             (r"/pedalpreset/saveas", PedalboardPresetSaveAs),
             (r"/pedalpreset/remove", PedalboardPresetRemove),

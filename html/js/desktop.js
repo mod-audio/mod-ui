@@ -33,7 +33,8 @@ function Desktop(elements) {
         pedalboardPresetsEnabler: $('<div>'),
         presetSaveButton: $('<div>'),
         presetSaveAsButton: $('<div>'),
-        presetSaveManage: $('<div>'),
+        presetManageButton: $('<div>'),
+        presetDisableButton: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -709,8 +710,27 @@ function Desktop(elements) {
             dataType: 'json',
         })
     })
-    elements.presetSaveManage.click(function () {
+    elements.presetManageButton.click(function () {
         console.log(this)
+    })
+    elements.presetDisableButton.click(function () {
+        if (!confirm("Pedalboard will be locked now, you cannot add or remove plugins and connections. Continue?")) {
+            return
+        }
+
+        $.ajax({
+            url: '/pedalpreset/disable',
+            method: 'POST',
+            success: function () {
+                self.pedalboardPresetId = -1
+                $('#js-preset-menu').hide()
+                $('#js-preset-enabler').show()
+            },
+            error: function () {
+                new Bug("Failed to disable pedalboard presets")
+            },
+            cache: false,
+        })
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))

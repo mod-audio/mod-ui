@@ -7053,6 +7053,16 @@ header#pedalboard-actions button.js-preset,
   background-image: url(../img/icons/36/presets.png);
   background-size: 30px 30px;
 }
+header#pedalboard-actions button#js-preset-enabler:hover,
+#bank-library header button#js-preset-enabler:hover,
+#cloud-plugins-library header button#js-preset-enabler:hover,
+#pedalboards-library header button#js-preset-enabler:hover,
+header#pedalboard-actions button#js-preset-enabler.selected,
+#bank-library header button#js-preset-enabler.selected,
+#cloud-plugins-library header button#js-preset-enabler.selected,
+#pedalboards-library header button#js-preset-enabler.selected {
+  background-color: #883996;
+}
 header#pedalboard-actions button.js-reset,
 #bank-library header button.js-reset,
 #cloud-plugins-library header button.js-reset,
