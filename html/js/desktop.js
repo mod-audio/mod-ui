@@ -688,26 +688,25 @@ function Desktop(elements) {
         })
     })
     elements.presetSaveAsButton.click(function () {
-        // TODO: show save-as dialog for getting title
-        var title = "testing"
-
-        $.ajax({
-            url: '/pedalpreset/saveas',
-            data: {
-                title: title,
-            },
-            success: function (resp) {
-                if (! resp.ok) {
-                    return
-                }
-                self.pedalboardPresetId = resp.id
-                console.log(resp)
-            },
-            error: function () {
-                new Bug("Failed to save pedalboard preset")
-            },
-            cache: false,
-            dataType: 'json',
+        desktop.openPresetSaveWindow("", function (newName) {
+            $.ajax({
+                url: '/pedalpreset/saveas',
+                data: {
+                    title: newName,
+                },
+                success: function (resp) {
+                    if (! resp.ok) {
+                        return
+                    }
+                    self.pedalboardPresetId = resp.id
+                    console.log(resp)
+                },
+                error: function () {
+                    new Bug("Failed to save pedalboard preset")
+                },
+                cache: false,
+                dataType: 'json',
+            })
         })
     })
     elements.presetManageButton.click(function () {
