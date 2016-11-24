@@ -34,7 +34,8 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, logging
 
-from mod import get_hardware, symbolify
+from mod import symbolify
+from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.utils import (charPtrToString,
@@ -49,41 +50,24 @@ from mod.settings import (DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
                           TUNER_URI, TUNER_INSTANCE, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
 
-ADDRESSING_CTYPE_LINEAR       = 0
-ADDRESSING_CTYPE_BYPASS       = 1
-ADDRESSING_CTYPE_TAP_TEMPO    = 2
-ADDRESSING_CTYPE_ENUMERATION  = 4 # implies scalepoints
-ADDRESSING_CTYPE_SCALE_POINTS = 8
-ADDRESSING_CTYPE_TRIGGER      = 16
-ADDRESSING_CTYPE_TOGGLED      = 32
-ADDRESSING_CTYPE_LOGARITHMIC  = 64
-ADDRESSING_CTYPE_INTEGER      = 128
-
-ACTUATOR_TYPE_FOOTSWITCH = 1
-ACTUATOR_TYPE_KNOB       = 2
-ACTUATOR_TYPE_POT        = 3
-
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
 BANK_CONFIG_PEDALBOARD_UP   = 2
 BANK_CONFIG_PEDALBOARD_DOWN = 3
-
-HARDWARE_TYPE_MOD    = 0
-HARDWARE_TYPE_PEDAL  = 1
-HARDWARE_TYPE_TOUCH  = 2
-HARDWARE_TYPE_ACCEL  = 3
-HARDWARE_TYPE_CUSTOM = 4
 
 # Special URI for non-addressed controls
 kNullAddressURI = "null"
 
 # Special URIs for midi-learn
 kMidiLearnURI = "/midi-learn"
-kMidiUnmapURI = "/midi-unmap"
-kMidiCustomPrefixURI = "/midi-custom_" # to show current one
+kMidiUnlearnURI = "/midi-unlearn"
+#kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
 # Limits
 kMaxAddressableScalepoints = 50
+
+# TODO: check pluginData['designations'] when doing addressing
+# TODO: hmi_save_current_pedalboard does not send browser msgs, needed?
 
 def get_all_good_pedalboards():
     allpedals  = get_all_pedalboards()
@@ -147,6 +131,7 @@ class Host(object):
         self.current_tuner_port = 1
         self._queue = []
         self._idle = True
+        self.addressings = Addressings()
         self.mapper = InstanceIdMapper()
         self.banks = list_banks()
         self.allpedalboards = None
@@ -206,8 +191,14 @@ class Host(object):
 
         set_util_callbacks(self.midi_port_appeared, self.midi_port_deleted, self.true_bypass_changed)
 
+        # Setup addressing callbacks
+        self.addressings._task_addressing = self.addr_task_addressing
+        self.addressings._task_unaddressing = self.addr_task_unaddressing
+        self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
+        self.addressings._task_get_port_value = self.addr_task_get_port_value
+        self.addressings._task_store_address_data = self.addr_task_store_address_data
+
         # Register HMI protocol callbacks
-        self._init_addressings()
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
         Protocol.register_cmd_callback("banks", self.hmi_list_banks)
@@ -311,6 +302,89 @@ class Host(object):
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Addressing callbacks
+
+    def addr_task_addressing(self, atype, actuator, data, callback):
+        if atype == Addressings.ADDRESSING_TYPE_HMI:
+            self.pedalboard_modified = True
+            return self.hmi.control_add(data['instance_id'],
+                                        data['port'],
+                                        data['label'],
+                                        data['hmitype'],
+                                        data['hmiunit'],
+                                        data['value'],
+                                        data['minimum'],
+                                        data['maximum'],
+                                        data['steps'],
+                                        actuator[0], actuator[1], actuator[2], actuator[3],
+                                        data['addrs_max'], # num controllers
+                                        data['addrs_idx'], # index
+                                        data['options'],
+                                        callback)
+
+        if atype == Addressings.ADDRESSING_TYPE_CC:
+            print("cc_map %d %s %d %d" % (data['instance_id'], data['port'], actuator[0], actuator[1]))
+            return self.send_modified("cc_map %d %s %d %d" % (data['instance_id'],
+                                                              data['port'],
+                                                              #data['label'], # TODO
+                                                              #data['value'],
+                                                              #data['minimum'],
+                                                              #data['maximum'],
+                                                              #data['steps'],
+                                                              actuator[0], actuator[1],
+                                                              #data['options'],
+                                                              ), callback, datatype='boolean')
+
+        if atype == Addressings.ADDRESSING_TYPE_MIDI:
+            return self.send_modified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
+                                                                      data['port'],
+                                                                      data['midichannel'],
+                                                                      data['midicontrol'],
+                                                                      data['minimum'],
+                                                                      data['maximum'],
+                                                                      ), callback, datatype='boolean')
+
+        print("ERROR: Invalid addressing requested for", actuator)
+        callback(False)
+        return
+
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback):
+        if atype == Addressings.ADDRESSING_TYPE_HMI:
+            self.pedalboard_modified = True
+            return self.hmi.control_rm(instance_id, portsymbol, callback)
+
+        if atype == Addressings.ADDRESSING_TYPE_CC:
+            print("cc_unmap %d %s" % (instance_id, portsymbol))
+            return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+
+        if atype == Addressings.ADDRESSING_TYPE_MIDI:
+            return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+
+        print("ERROR: Invalid unaddressing requested")
+        callback(False)
+        return
+
+    def addr_task_get_plugin_data(self, instance_id):
+        return self.plugins[instance_id]
+
+    def addr_task_get_port_value(self, instance_id, portsymbol):
+        plugin = self.plugins[instance_id]
+
+        if portsymbol == ":bypass":
+            return 1.0 if plugin['bypassed'] else 0.0
+
+        if portsymbol == ":presets":
+            if len(plugin['mapPresets']) == 0 or not plugin['preset']:
+                return 0.0
+            return float(plugin['mapPresets'].index(plugin['preset']))
+
+        return plugin['ports'][portsymbol]
+
+    def addr_task_store_address_data(self, instance_id, portsymbol, data):
+        plugin = self.plugins[instance_id]
+        plugin['addressings'][portsymbol] = data
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
@@ -420,11 +494,11 @@ class Host(object):
 
     def setNavigateWithFootswitches(self, enabled, callback):
         def foot2_callback(ok):
-            acthw  = self._uri2hw_map["/hmi/footswitch2"]
+            acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch2"]
             cfgact = BANK_CONFIG_PEDALBOARD_UP if enabled else BANK_CONFIG_NOTHING
             self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, callback)
 
-        acthw  = self._uri2hw_map["/hmi/footswitch1"]
+        acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch1"]
         cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
         self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
 
@@ -486,12 +560,10 @@ class Host(object):
             return
 
         def footswitch_addr2_callback(ok):
-            acthw = self._uri2hw_map["/hmi/footswitch2"]
-            self._address_next(acthw, callback)
+            self.addressings.hmi_load_first("/hmi/footswitch2", callback)
 
         def footswitch_addr1_callback(ok):
-            acthw = self._uri2hw_map["/hmi/footswitch1"]
-            self._address_next(acthw, footswitch_addr2_callback)
+            self.addressings.hmi_load_first("/hmi/footswitch1", footswitch_addr2_callback)
 
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
@@ -580,6 +652,8 @@ class Host(object):
                     self.plugins[instance_id]['ports'][portsymbol] = value
 
                 self.pedalboard_modified = True
+                self.addressings.add_midi(instance_id, portsymbol, channel, controller, minimum, maximum)
+
                 self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, portsymbol,
                                                                   channel, controller,
                                                                   minimum, maximum))
@@ -760,7 +834,11 @@ class Host(object):
                 title = name.split(":",1)[-1].title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
+        instances = {}
+
         for instance_id, plugin in self.plugins.items():
+            instances[instance_id] = plugin['instance']
+
             websocket.write_message("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'],
                                                                 plugin['x'], plugin['y'], int(plugin['bypassed'])))
 
@@ -819,6 +897,8 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
+        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), instances)
+
         websocket.write_message("loading_end")
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -867,8 +947,8 @@ class Host(object):
         self.bank_id = 0
         self.plugins = {}
         self.connections = []
+        self.addressings.init()
         self.mapper.clear()
-        self._init_addressings()
         self.pedalpreset_clear()
 
         self.pedalboard_empty    = True
@@ -958,16 +1038,27 @@ class Host(object):
             if instance_id in self.plugins_added:
                 self.plugins_added.remove(instance_id)
 
-        used_actuators = []
+        used_hmi_actuators = []
+
         for symbol in [symbol for symbol in data['addressings'].keys()]:
-            actuator_uri = self._unaddress(data, symbol)
+            print("remove_plugin address", symbol)
+            addressing    = data['addressings'].pop(symbol)
+            actuator_uri  = addressing['actuator_uri']
+            actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
-            if actuator_uri is not None and actuator_uri not in used_actuators:
-                used_actuators.append(actuator_uri)
+            self.addressings.remove(addressing)
 
-        for actuator_uri in used_actuators:
-            actuator_hw = self._uri2hw_map[actuator_uri]
-            yield gen.Task(self._address_next, actuator_hw)
+            if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                if actuator_uri not in used_hmi_actuators:
+                    used_hmi_actuators.append(actuator_uri)
+
+            elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
+                yield gen.Task(self.addr_task_unaddressing, actuator_type,
+                                                            addressing['instance_id'],
+                                                            addressing['port'])
+
+        for actuator_uri in used_hmi_actuators:
+            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
         def host_callback(ok):
             callback(ok)
@@ -1392,6 +1483,9 @@ class Host(object):
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
+        instances = {}
+        rinstances = {}
+
         for p in pb['plugins']:
             allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
 
@@ -1400,6 +1494,9 @@ class Host(object):
 
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
+
+            instances[instance] = (instance_id, p['uri'])
+            rinstances[instance_id] = instance
 
             badports = []
             valports = {}
@@ -1453,10 +1550,9 @@ class Host(object):
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
-                self.send_notmodified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, p['bypassCC']['channel'],
-                                                                                          p['bypassCC']['control']))
-                self.msg_callback("midi_map %s :bypass %i %i 0.0 1.0" % (instance, p['bypassCC']['channel'],
-                                                                                   p['bypassCC']['control']))
+                self.addressings.add_midi(instance_id, ":bypass", p['bypassCC']['channel'],
+                                                                  p['bypassCC']['control'],
+                                                                  0.0, 1.0)
 
             if p['preset']:
                 self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
@@ -1475,7 +1571,6 @@ class Host(object):
                     minimum, maximum = ranges[symbol]
 
                 self.plugins[instance_id]['ports'][symbol] = value
-
                 self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
@@ -1485,10 +1580,7 @@ class Host(object):
 
                 if mchnnl >= 0 and mctrl >= 0:
                     self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
-                    self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
-                                                                          mchnnl, mctrl, minimum, maximum))
-                    self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, symbol,
-                                                                      mchnnl, mctrl, minimum, maximum))
+                    self.addressings.add_midi(instance_id, symbol, mchnnl, mctrl, minimum, maximum)
 
             for output in allports['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
@@ -1542,8 +1634,8 @@ class Host(object):
             if isinstance(more_pb_presets, list) and len(more_pb_presets) != 0:
                 self.pedalboard_presets = more_pb_presets
 
-        if self.hmi.initialized:
-            self._load_addressings(bundlepath)
+        self.addressings.load(bundlepath, instances)
+        self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end")
 
@@ -1635,11 +1727,12 @@ class Host(object):
 """ % (titlesym, titlesym))
 
     def save_state_addressings(self, bundlepath):
-        # Write addressings.json
-        addressings = self.get_addressings()
+        instances = {}
+        for instance_id, plugin in self.plugins.items():
+            instance = plugin['instance']
+            instances[instance_id] = instance
 
-        with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
-            json.dump(addressings, fh)
+        self.addressings.save(bundlepath, instances)
 
     def save_state_presets(self, bundlepath):
         # Write presets.json
@@ -1790,7 +1883,7 @@ _:b%i
         lv2:minimum %f ;
         lv2:maximum %f ;
         a midi:Controller ;
-    ] ;""" % plugin['midiCCs'][symbol]) if -1 not in plugin['midiCCs'][symbol] else "")
+    ] ;""" % plugin['midiCCs'][symbol]) if -1 not in plugin['midiCCs'][symbol] else "") # FIXME -1 vs min/max
 
             # control output
             for port in info['ports']['control']['output']:
@@ -2022,351 +2115,57 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (public stuff)
 
-    def address(self, instance, port, actuator_uri, label, minimum, maximum, value, steps, callback, skipLoad=False):
+    @gen.coroutine
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, callback):
         instance_id = self.mapper.get_id(instance)
-
-        pluginData = self.plugins.get(instance_id, None)
+        pluginData  = self.plugins.get(instance_id, None)
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
             return
 
-        old_actuator_uri = self._unaddress(pluginData, port)
+        # MIDI learn is not saved on disk until a MIDI controller is moved.
+        # So we need special casing for unlearn.
+        if actuator_uri == kMidiUnlearnURI:
+            print("MIDI learn canceled")
+            return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
-        # we're addressing to HMI
-        if actuator_uri and actuator_uri not in (kNullAddressURI, kMidiLearnURI, kMidiUnmapURI) and port not in pluginData['designations']:
-            options = []
-            spreset = ""
+        old_addressing = pluginData['addressings'].pop(portsymbol, None)
+        if old_addressing is not None:
+            print("unaddressed", old_addressing)
+            old_actuator_uri  = old_addressing['actuator_uri']
+            old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
+            self.addressings.remove(old_addressing)
+            yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                        old_addressing['instance_id'],
+                                                        old_addressing['port'])
 
-            if port == ":bypass":
-                ctype = ADDRESSING_CTYPE_BYPASS
-                unit  = "none"
-
-            elif port == ":presets":
-                ctype = ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION|ADDRESSING_CTYPE_INTEGER
-                unit  = "none"
-
-                presets = get_plugin_info(pluginData["uri"])['presets']
-                minimum = 0
-                maximum = min(len(presets), kMaxAddressableScalepoints)
-
-                # save preset mapping index
-                pluginData['mapPresets'] = []
-
-                # safety check
-                if len(presets) == 0:
-                    pluginData['preset'] = ""
-                    if not skipLoad:
-                        callback(False)
-                    return
-
-                handled = False
-
-                # if no preset selected yet, we need to force one
-                if not pluginData['preset']:
-                    pluginData['preset'] = presets[0]["uri"]
-                    handled = True
-                    value = 0
-                    # TODO: load preset?
-
-                # save preset list, within a limit
-                for i in range(maximum):
-                    uri = presets[i]["uri"]
-                    pluginData['mapPresets'].append(uri)
-                    options.append((str(i), presets[i]["label"]))
-                    if handled:
-                        continue
-                    if pluginData['preset'] == uri:
-                        value = i
-                        handled = True
-
-                # check if selected preset is non-existent
-                if not handled and len(presets) == maximum:
-                    pluginData['mapPresets'] = []
-                    pluginData['preset'] = ""
-                    if not skipLoad:
-                        callback(False)
-                    return
-
-                # handle case of current preset out of limits (>100)
-                if pluginData['preset'] not in pluginData['mapPresets']:
-                    i = value = maximum
-                    maximum += 1
-                    pluginData['mapPresets'].append(presets[i]["uri"])
-                    options.append((str(i), presets[i]["label"]))
-
-                spreset = pluginData['preset']
-                del presets
-
-            else:
-                for port_info in get_plugin_control_inputs_and_monitored_outputs(pluginData["uri"])['inputs']:
-                    if port_info["symbol"] == port:
-                        break
-                else:
-                    print("ERROR: Trying to address non-existing control port '%s'" % (port))
-                    callback(False)
-                    return
-
-                pprops = port_info["properties"]
-                unit   = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
-
-                if "toggled" in pprops:
-                    ctype = ADDRESSING_CTYPE_TOGGLED
-                elif "integer" in pprops:
-                    ctype = ADDRESSING_CTYPE_INTEGER
-                else:
-                    ctype = ADDRESSING_CTYPE_LINEAR
-
-                if "logarithmic" in pprops:
-                    ctype |= ADDRESSING_CTYPE_LOGARITHMIC
-                if "trigger" in pprops:
-                    ctype |= ADDRESSING_CTYPE_TRIGGER
-
-                if "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
-                    ctype |= ADDRESSING_CTYPE_TAP_TEMPO
-
-                # FIXME: make fw accept scalepoints without enumeration
-                if len(port_info["scalePoints"]) > 0 and "enumeration" in pprops:
-                    ctype |= ADDRESSING_CTYPE_SCALE_POINTS|ADDRESSING_CTYPE_ENUMERATION
-
-                    #if len(port_info["scalePoints"]) > 1 and "enumeration" in pprops:
-                        #ctype |= ADDRESSING_CTYPE_ENUMERATION
-
-                    for scalePoint in port_info["scalePoints"]:
-                        options.append((scalePoint["value"], scalePoint["label"]))
-
-                del port_info, pprops
-
-            addressing = {
-                'actuator_uri': actuator_uri,
-                'instance_id': instance_id,
-                'port': port,
-                'label': label,
-                'type': ctype,
-                'unit': unit,
-                'minimum': minimum,
-                'maximum': maximum,
-                'steps': steps,
-                'options': options,
-            }
-            pluginData['addressings'][port] = addressing
-            self.addressings[actuator_uri]['addrs'].append(addressing)
-            self.addressings[actuator_uri]['idx'] = len(self.addressings[actuator_uri]['addrs']) - 1
-
-            if skipLoad:
-                return
-
-            def nextStepAddressing2(ok):
-                self._addressing_load(actuator_uri, callback)
-
-            def nextStepAddressing(ok):
-                if spreset:
-                    self.preset_load(instance, spreset, nextStepAddressing2)
-                else:
-                    self._addressing_load(actuator_uri, callback)
-
-            def nextStepUnaddressing(ok):
-                old_actuator_hw = self._uri2hw_map[old_actuator_uri]
-                self._address_next(old_actuator_hw, nextStepAddressing)
-
-            if old_actuator_uri is not None:
-                self.hmi.control_rm(instance_id, port, nextStepUnaddressing)
-            else:
-                nextStepAddressing(True)
-            return
-
-        if skipLoad:
-            return
-
-        def unaddressingStep2(ok):
-            # we're trying to midi-learn
-            if actuator_uri == kMidiLearnURI:
-                self.send_notmodified("midi_learn %i %s %f %f" % (instance_id, port,
-                                                                  minimum, maximum), callback, datatype='boolean')
-                return
-
-            # we're unmapping a midi control
-            if actuator_uri == kMidiUnmapURI:
-                if port == ":bypass":
-                    pluginData['bypassCC'] = (-1,-1)
-                else:
-                    pluginData['midiCCs'][port] = (-1,-1,0.0,1.0)
-                self.send_modified("midi_unmap %i %s" % (instance_id, port), callback, datatype='boolean')
-                return
-
-            # nothing
+        if not actuator_uri or actuator_uri == kNullAddressURI:
+            print("New addressing is empty, doing nothing")
             callback(True)
-
-        def unaddressingStep1(ok):
-            old_actuator_hw = self._uri2hw_map[old_actuator_uri]
-            self._address_next(old_actuator_hw, unaddressingStep2)
-
-        if old_actuator_uri is not None:
-            self.hmi.control_rm(instance_id, port, unaddressingStep1)
-        else:
-            unaddressingStep2(True)
-
-    def get_addressings(self):
-        if len(self.addressings) == 0:
-            return {}
-        addressings = {}
-        for uri, addressing in self.addressings.items():
-            addrs = []
-            for addr in addressing['addrs']:
-                addrs.append({
-                    'instance': self.mapper.get_instance(addr['instance_id']),
-                    'port'    : addr['port'],
-                    'label'   : addr['label'],
-                    'minimum' : addr['minimum'],
-                    'maximum' : addr['maximum'],
-                    'steps'   : addr['steps'],
-                })
-            addressings[uri] = addrs
-        return addressings
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Addressing (private stuff)
-
-    def _init_addressings(self):
-        # 'self.addressings' uses a structure like this:
-        # "/hmi/knob1": {'addrs': [], 'idx': 0}
-        hw = get_hardware()
-
-        if "actuators" not in hw.keys():
-            self.addressings = {}
-            self._hw2uri_map = {}
-            self._uri2hw_map = {}
             return
 
-        self.addressings = dict((act["uri"], {'idx': 0, 'addrs': []}) for act in hw["actuators"])
-
-        # Store all possible hardcoded values
-        self._hw2uri_map = {}
-        self._uri2hw_map = {}
-
-        for i in range(0, 4):
-            knob_hw  = (HARDWARE_TYPE_MOD, 0, ACTUATOR_TYPE_KNOB,       i)
-            foot_hw  = (HARDWARE_TYPE_MOD, 0, ACTUATOR_TYPE_FOOTSWITCH, i)
-            knob_uri = "/hmi/knob%i"       % (i+1)
-            foot_uri = "/hmi/footswitch%i" % (i+1)
-
-            self._hw2uri_map[knob_hw]  = knob_uri
-            self._hw2uri_map[foot_hw]  = foot_uri
-            self._uri2hw_map[knob_uri] = knob_hw
-            self._uri2hw_map[foot_uri] = foot_hw
-
-    # -----------------------------------------------------------------------------------------------------------------
-
-    def _addressing_load(self, actuator_uri, callback, value=None, skipPresets=False):
-        addressings       = self.addressings[actuator_uri]
-        addressings_addrs = addressings['addrs']
-        addressings_idx   = addressings['idx']
-
-        try:
-            addressing = addressings_addrs[addressings_idx]
-        except IndexError:
-            print("Failed to get addressing for", actuator_uri)
+        if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
+            print("Cannot address to HMI at this point")
             callback(False)
             return
 
-        actuator_hw = self._uri2hw_map[actuator_uri]
-        plugin      = self.plugins[addressing['instance_id']]
-        portsymbol  = addressing['port']
+        print("address to", actuator_uri)
 
-        if value is not None:
-            curvalue = value
-        elif portsymbol == ":bypass":
-            curvalue = 1.0 if plugin['bypassed'] else 0.0
-        elif portsymbol == ":presets":
-            if skipPresets:
-                print("NOTE: skipping re-address of presets")
-                callback(True)
-                return
-            curvalue = plugin['mapPresets'].index(plugin['preset'])
-        else:
-            curvalue = plugin['ports'][portsymbol]
+        # MIDI learn is not an actual addressing
+        if actuator_uri == kMidiLearnURI:
+            print("Starting MIDI learn")
+            return self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
+                                                                     portsymbol,
+                                                                     minimum,
+                                                                     maximum), callback, datatype='boolean')
 
-        self.hmi.control_add(addressing['instance_id'], portsymbol,
-                             addressing['label'], addressing['type'], addressing['unit'],
-                             curvalue, addressing['minimum'], addressing['maximum'], addressing['steps'],
-                             actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3],
-                             len(addressings_addrs), # num controllers
-                             addressings_idx+1,      # index
-                             addressing['options'], callback)
+        addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
+                                          label, minimum, maximum, steps, value)
+        pluginData['addressings'][portsymbol] = addressing
+        print("addressed as", addressing)
 
-    def _address_next(self, actuator_hw, callback):
-        actuator_uri = self._hw2uri_map[actuator_hw]
-
-        addressings       = self.addressings[actuator_uri]
-        addressings_addrs = addressings['addrs']
-        addressings_idx   = addressings['idx']
-
-        if len(addressings_addrs) > 0:
-            addressings['idx'] = (addressings_idx + 1) % len(addressings_addrs)
-            self._addressing_load(actuator_uri, callback)
-        else:
-            self.hmi.control_clean(actuator_hw[0], actuator_hw[1], actuator_hw[2], actuator_hw[3], callback)
-
-    def _unaddress(self, pluginData, port):
-        addressing = pluginData['addressings'].pop(port, None)
-        if addressing is None:
-            return None
-
-        actuator_uri      = addressing['actuator_uri']
-        addressings       = self.addressings[actuator_uri]
-        addressings_addrs = addressings['addrs']
-        addressings_idx   = addressings['idx']
-
-        index = addressings_addrs.index(addressing)
-        addressings_addrs.pop(index)
-
-        # FIXME ?
-        if addressings_idx >= index:
-            addressings['idx'] -= 1
-        #if index <= addressings_idx:
-            #addressings['idx'] = addressings_idx - 1
-
-        return actuator_uri
-
-    @gen.coroutine
-    def _load_addressings(self, bundlepath):
-        datafile = os.path.join(bundlepath, "addressings.json")
-        if not os.path.exists(datafile):
-            return
-
-        with open(datafile, 'r') as fh:
-            data = fh.read()
-        data = json.loads(data)
-
-        used_actuators = []
-
-        for actuator_uri in data:
-            for addr in data[actuator_uri]:
-                try:
-                    instance_id = self.mapper.get_id_without_creating(addr['instance'])
-                except KeyError:
-                    continue
-
-                plugin     = self.plugins[instance_id]
-                portsymbol = addr['port']
-
-                if portsymbol == ":bypass":
-                    curvalue = 1.0 if plugin['bypassed'] else 0.0
-                elif portsymbol == ":presets":
-                    # this value is changed during addressing, don't bother setting it now
-                    curvalue = 0
-                else:
-                    curvalue = plugin['ports'][portsymbol]
-
-                self.address(addr["instance"], portsymbol, actuator_uri, addr["label"],
-                             addr["minimum"], addr["maximum"], curvalue, addr["steps"], lambda r:None, True)
-
-                if actuator_uri not in used_actuators:
-                    used_actuators.append(actuator_uri)
-
-        for actuator_uri in used_actuators:
-            actuator_hw = self._uri2hw_map[actuator_uri]
-            yield gen.Task(self._address_next, actuator_hw)
+        self.addressings.load_addr(actuator_uri, addressing, callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
@@ -2518,7 +2317,7 @@ _:b%i
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
         logging.info("hmi parameter get")
-        callback(self.plugins[instance_id]['ports'][portsymbol])
+        callback(self.addr_task_get_port_value(instance_id, portsymbol))
 
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
@@ -2528,6 +2327,7 @@ _:b%i
         if portsymbol == ":bypass":
             bypassed = bool(value)
             plugin['bypassed'] = bypassed
+
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
@@ -2554,7 +2354,7 @@ _:b%i
     def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
         logging.info("hmi parameter addressing next")
         actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
-        self._address_next(actuator_hw, callback)
+        self.addressings.hmi_load_next_hw(actuator_hw, callback)
 
     def hmi_save_current_pedalboard(self, callback):
         logging.info("hmi save current pedalboard")
@@ -2577,6 +2377,7 @@ _:b%i
             pluginData['bypassed'] = bypassed
 
             self.send_notmodified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
+            #self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             addressing = pluginData['addressings'].get(":bypass", None)
             if addressing is not None and addressing['actuator_uri'] not in used_actuators:
@@ -2590,6 +2391,7 @@ _:b%i
                 preset = p['preset']
                 pluginData['preset'] = preset
                 self.send_notmodified("preset_load %d %s" % (instance_id, preset))
+                #self.msg_callback("preset %s %s" % (instance, preset))
 
             for port in p['ports']:
                 symbol = port['symbol']
@@ -2597,6 +2399,7 @@ _:b%i
 
                 pluginData['ports'][symbol] = value
                 self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
+                #self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None and addressing['actuator_uri'] not in used_actuators:
@@ -2606,7 +2409,8 @@ _:b%i
         callback(True)
 
         for actuator_uri in used_actuators:
-            yield gen.Task(self._addressing_load, actuator_uri)
+            # FIXME: adjust for CC too
+            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
     def hmi_tuner(self, status, callback):
         if status == "on":

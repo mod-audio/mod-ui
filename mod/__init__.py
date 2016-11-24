@@ -108,11 +108,11 @@ def symbolify(name):
         name = "_" + name
     return name
 
-def get_hardware():
-    if not os.path.exists("/etc/mod-hardware-descriptor.json"):
-        return {}
+def get_hardware_actuators():
+    if os.path.exists("/etc/mod-hardware-descriptor.json"):
+        with open("/etc/mod-hardware-descriptor.json") as fh:
+            mod_hw = json.load(fh)
+    else:
+        mod_hw = {}
 
-    with open("/etc/mod-hardware-descriptor.json") as fh:
-        hw = fh.read()
-
-    return json.loads(hw)
+    return mod_hw.get('actuators', [])

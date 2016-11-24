@@ -1023,7 +1023,7 @@ class TemplateHandler(web.RequestHandler):
             'default_pedalboard': DEFAULT_PEDALBOARD,
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
-            'hardware_profile': b64encode(json.dumps(SESSION.get_hardware()).encode("utf-8")),
+            'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
@@ -1374,8 +1374,6 @@ application = web.Application(
             # bank stuff
             (r"/banks/?", BankLoad),
             (r"/banks/save/?", BankSave),
-
-            (r"/hardware", HardwareLoad),
 
             (r"/auth/nonce/?$", AuthNonce),
             (r"/auth/token/?$", AuthToken),

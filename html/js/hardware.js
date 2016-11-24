@@ -20,8 +20,12 @@ var kNullAddressURI = "null"
 
 // Special URIs for midi-learn
 var kMidiLearnURI = "/midi-learn"
-var kMidiUnmapURI = "/midi-unmap"
+var kMidiUnlearnURI = "/midi-unlearn"
 var kMidiCustomPrefixURI = "/midi-custom_" // to show current one, ignored on save
+
+function create_midi_cc_uri (channel, controller) {
+    return sprintf("%sCh.%d_CC#%d", kMidiCustomPrefixURI, channel+1, controller)
+}
 
 // Units supported for tap tempo (lowercase)
 var kTapTempoUnits = ['ms','s','hz','bpm']
@@ -60,10 +64,10 @@ function HardwareManager(options) {
         self.addressingsData = {}
 
         // Initializes actuators
-        if (HARDWARE_PROFILE.actuators) {
+        if (HARDWARE_PROFILE) {
             var uri
-            for (var i in HARDWARE_PROFILE.actuators) {
-                uri = HARDWARE_PROFILE.actuators[i].uri
+            for (var i in HARDWARE_PROFILE) {
+                uri = HARDWARE_PROFILE[i].uri
                 self.addressingsByActuator[uri] = []
             }
         }
@@ -110,10 +114,10 @@ function HardwareManager(options) {
 
         var available = {}
 
-        if (HARDWARE_PROFILE.actuators) {
+        if (HARDWARE_PROFILE) {
             var actuator, modes, usedAddressings
-            for (var i in HARDWARE_PROFILE.actuators) {
-                actuator = HARDWARE_PROFILE.actuators[i]
+            for (var i in HARDWARE_PROFILE) {
+                actuator = HARDWARE_PROFILE[i]
                 modes    = actuator.modes
 
                 usedAddressings = self.addressingsByActuator[actuator.uri]
@@ -365,10 +369,10 @@ function HardwareManager(options) {
                 return
             }
 
-            // if changing from midi-learn, unmap first
-            if (currentAddressing.uri && (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0)) {
+            // if changing from midi-learn, unlearn first
+            if (currentAddressing.uri && (currentAddressing.uri == kMidiLearnURI /*|| currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0*/)) {
                 var addressing = {
-                    uri    : kMidiUnmapURI,
+                    uri    : kMidiUnlearnURI,
                     label  : label.val() || pname,
                     minimum: minv,
                     maximum: maxv,
@@ -422,9 +426,26 @@ function HardwareManager(options) {
         actuatorSelect.focus()
     }
 
+    this.addHardwareMapping = function (instance, portSymbol, actuator_uri, label, minimum, maximum, steps) {
+        var instanceAndSymbol = instance+"/"+portSymbol
+
+        self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
+        self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
+        self.addressingsData        [instanceAndSymbol] = {
+            uri    : actuator_uri,
+            label  : label,
+            minimum: minimum,
+            maximum: maximum,
+            steps  : steps,
+        }
+
+        // disable this control
+        options.setEnabled(instance, portSymbol, false)
+    }
+
     this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
         var instanceAndSymbol = instance+"/"+portSymbol
-        var actuator_uri = kMidiCustomPrefixURI + "Ch." + (channel+1).toString() + "_CC#" + control.toString()
+        var actuator_uri = create_midi_cc_uri(channel, control)
 
         self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -460,13 +481,14 @@ function HardwareManager(options) {
             delete self.addressingsByPortSymbol[instanceAndSymbol]
             delete self.addressingsData        [instanceAndSymbol]
 
-            for (j in HARDWARE_PROFILE.actuators) {
-                actuator = HARDWARE_PROFILE.actuators[j]
+            for (j in HARDWARE_PROFILE) {
+                actuator = HARDWARE_PROFILE[j]
                 remove_from_array(self.addressingsByActuator[actuator.uri], instanceAndSymbol)
             }
         }
     }
 
+    /*
     // Callback from pedalboard.js for when a plugin instance is added
     this.instanceAdded = function (instance) {
         if (HARDWARE_PROFILE.addressings) {
@@ -531,4 +553,6 @@ function HardwareManager(options) {
             }
         }
     }
+    */
+
 }

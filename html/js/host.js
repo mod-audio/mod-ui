@@ -105,6 +105,19 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "hw_map") {
+            var instance = data[1]
+            var symbol   = data[2]
+            var actuator = data[3]
+            var label    = data[4]
+            var minimum  = parseFloat(data[5])
+            var maximum  = parseFloat(data[6])
+            var steps    = parseInt(data[7])
+
+            desktop.hardwareManager.addHardwareMapping(instance, symbol, actuator, label, minimum, maximum, steps)
+            return
+        }
+
         if (cmd == "midi_map") {
             var instance = data[1]
             var symbol   = data[2]
@@ -271,6 +284,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_end") {
+            /*
             // load new possible addressings
             $.ajax({
                 url: '/hardware',
@@ -278,14 +292,16 @@ $('document').ready(function() {
                     loading = false
                     HARDWARE_PROFILE = data
                     desktop.hardwareManager.registerAllAddressings()
+                    */
                     desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
                     desktop.pedalboardModified = modified
                     desktop.init();
+                    /*
                 },
                 cache: false,
                 dataType: 'json'
-            })
+            })*/
             return
         }
 

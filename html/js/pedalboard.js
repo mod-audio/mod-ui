@@ -1284,14 +1284,17 @@ JqueryClass('pedalboard', {
             icon.data('instance', instance)
 
             var address, symbol, port
+            /*
             var hardware = self.data('hardwareManager')
             hardware.instanceAdded(instance)
+            */
 
             var addressFactory = function (port) {
                 return function () {
                     if ($(this).hasClass("disabled")) {
                         return
                     }
+                    var hardware = self.data('hardwareManager')
                     hardware.open(instance, port, pluginData.label)
                 }
             }
@@ -1664,7 +1667,6 @@ JqueryClass('pedalboard', {
     resetData: function () {
         var self = $(this)
 
-        HARDWARE_PROFILE.addressings = []
         self.data('hardwareManager').reset()
 
         var connMgr = self.data('connectionManager')
