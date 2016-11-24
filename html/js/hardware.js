@@ -337,8 +337,8 @@ function HardwareManager(options) {
             })
         }
 
-        form.find('.js-save').click(function () {
-            actuator = actuators[actuatorSelect.val()] || {}
+        var saveAddressing = function () {
+            var actuator = actuators[actuatorSelect.val()] || {}
 
             // no actuator selected or old one exists, do nothing
             if (actuator.uri == null && currentAddressing.uri == null) {
@@ -407,6 +407,10 @@ function HardwareManager(options) {
             else {
                 addressNow(actuator)
             }
+        }
+
+        form.find('.js-save').click(function () {
+            saveAddressing()
         })
 
         form.find('.js-close').click(function () {
@@ -416,6 +420,10 @@ function HardwareManager(options) {
         form.keydown(function (e) {
             if (e.keyCode == 27) {
                 form.remove()
+                return false
+            }
+            if (e.keyCode == 13) {
+                saveAddressing()
                 return false
             }
         })

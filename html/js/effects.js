@@ -240,7 +240,7 @@ JqueryClass('effectBox', {
         // count plugins first
         var pluginCount = plugins.length
         var categories = {
-            'Favorites': FAVORITES.length,
+            'Favorites': 0,
             'All': 0,
             'Delay': 0,
             'Distortion': 0,
@@ -262,6 +262,9 @@ JqueryClass('effectBox', {
                     categories[category] = 1
                 else
                     categories[category] += 1
+            }
+            if (FAVORITES.indexOf(plugins[i].uri) >= 0) {
+                categories.Favorites += 1
             }
             categories.All += 1
         }
