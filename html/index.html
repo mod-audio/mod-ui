@@ -76,6 +76,8 @@ $('document').ready(function() {
         addMidiButton: $('#mod-show-midi-port'),
         midiPortsWindow: $('#midi-ports-window'),
         midiPortsList: $("#midi-ports-list"),
+        pedalPresetsWindow: $('#pedal-presets-window'),
+        pedalPresetsList: $("#pedal-presets-list"),
         saveBox: $('#save-pedalboard'),
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
@@ -175,6 +177,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cloudplugin.js?v={{version}}"></script>
 <script type="text/javascript" src="js/mididevices.js?v={{version}}"></script>
+<script type="text/javascript" src="js/pedalpresetsmanage.js?v={{version}}"></script>
 <script type="text/javascript" src="js/hardware.js?v={{version}}"></script>
 <script type="text/javascript" src="js/share.js?v={{version}}"></script>
 <script type="text/javascript" src="js/networkstatus.js?v={{version}}"></script>
@@ -249,27 +252,6 @@ $('document').ready(function() {
 
 <!-- WRAPPER -->
 <div id="wrapper" class="mod-init-hidden">
-
-    <!-- MANAGE PRESETS -->
-    <div id="pedalboard-presets" class="save-popup mod-hidden">
-        <div class="mod-box" style="width: 400px">
-            <h1 class="pull-left">Manage presets</h1><span class="close">&times;</span>
-            <form class="bottom">
-                <div class="controls clearfix">
-                    <select class="preset-list" size="9">
-                        <option>Preset name</option>
-                    </select>
-                </div>
-                <div class="controls actions">
-                    <button class="btn btn-default">Rename</button>
-                    <button class="btn btn-danger">Delete</button>
-                    <button class="btn btn-success">Assign selected&nbsp;</button>
-                    <button class="btn btn-warning">Assign all&nbsp;</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <!-- END MANAGE PRESETS -->
 
     <!-- PEDALBOARD-SETTINGS-WINDOW -->
     <div id="pedalboard-settings" class="mod-hidden">
@@ -467,6 +449,25 @@ $('document').ready(function() {
             </div>
         </div>
         <!-- MIDI DEVICE LIST WINDOW -->
+
+        <!-- PEDALBOARD PRESETS -->
+        <div id="pedal-presets-window" class="save-popup mod-hidden">
+            <div class="mod-box" style="width: 400px">
+                <h1 class="pull-left">Manage presets</h1><span class="js-cancel close">&times;</span>
+                <form class="bottom">
+                    <div class="controls clearfix">
+                        <select class="preset-list" id="pedal-presets-list"></select>
+                    </div>
+                    <div class="controls actions">
+                        <button class="js-rename btn btn-default">Rename</button>
+                        <button class="js-delete btn btn-danger">Delete</button>
+                        <!--<button class="js-assign btn btn-success">Assign selected&nbsp;</button>-->
+                        <button class="js-assign-all btn btn-warning">Assign all&nbsp;</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END PEDALBOARD PRESETS -->
 
     </div>
     <!-- END PEDALBOARD -->

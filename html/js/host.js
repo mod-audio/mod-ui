@@ -284,24 +284,19 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_end") {
-            /*
-            // load new possible addressings
-            $.ajax({
-                url: '/hardware',
-                success: function (data) {
-                    loading = false
-                    HARDWARE_PROFILE = data
-                    desktop.hardwareManager.registerAllAddressings()
-                    */
-                    desktop.pedalboard.pedalboard('scheduleAdapt', true)
-                    desktop.pedalboardEmpty    = empty && !modified
-                    desktop.pedalboardModified = modified
-                    desktop.init();
-                    /*
-                },
-                cache: false,
-                dataType: 'json'
-            })*/
+            var presetId = parseInt(data[1])
+
+            desktop.pedalboard.pedalboard('scheduleAdapt', true)
+            desktop.pedalboardEmpty    = empty && !modified
+            desktop.pedalboardModified = modified
+            desktop.pedalboardPresetId = presetId
+
+            if (presetId >= 0) {
+                $('#js-preset-enabler').hide()
+                $('#js-preset-menu').show()
+            }
+
+            desktop.init();
             return
         }
 

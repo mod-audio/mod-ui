@@ -148,6 +148,7 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
+        self.pedalboard_preset   = -1
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
 
@@ -899,7 +900,7 @@ class Host(object):
 
         self.addressings.registerMappings(lambda msg: websocket.write_message(msg), instances)
 
-        websocket.write_message("loading_end")
+        websocket.write_message("loading_end %d" % self.pedalboard_preset)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
@@ -1280,26 +1281,31 @@ class Host(object):
 
         return pedalpreset
 
+    def pedalpreset_name(self):
+        if self.pedalboard_preset < 0 or self.pedalboard_preset >= len(self.pedalboard_presets):
+            return None
+        return self.pedalboard_presets[self.pedalboard_preset]['name']
+
     def pedalpreset_init(self):
         preset = self.pedalpreset_make("Default")
         self.plugins_added   = []
         self.plugins_removed = []
+        self.pedalboard_preset = 0
         self.pedalboard_presets = [preset]
 
     def pedalpreset_clear(self):
         self.plugins_added   = []
         self.plugins_removed = []
+        self.pedalboard_preset = -1
         self.pedalboard_presets = []
 
-    def pedalpreset_save(self, idx):
-        if len(self.pedalboard_presets) == 0:
-            return False
-        if idx >= len(self.pedalboard_presets):
+    def pedalpreset_save(self):
+        if self.pedalboard_preset < 0 or self.pedalboard_preset >= len(self.pedalboard_presets):
             return False
 
-        name   = self.pedalboard_presets[idx]
+        name   = self.pedalboard_presets[self.pedalboard_preset]['name']
         preset = self.pedalpreset_make(name)
-        self.pedalboard_presets[idx] = preset
+        self.pedalboard_presets[self.pedalboard_preset] = preset
         return True
 
     def pedalpreset_saveas(self, name):
@@ -1309,7 +1315,8 @@ class Host(object):
         preset = self.pedalpreset_make(name)
         self.pedalboard_presets.append(preset)
 
-        return len(self.pedalboard_presets)-1
+        self.pedalboard_preset = len(self.pedalboard_presets)-1
+        return self.pedalboard_preset
 
     def pedalpreset_remove(self, idx):
         if idx >= len(self.pedalboard_presets):
@@ -1632,12 +1639,13 @@ class Host(object):
             with open(os.path.join(bundlepath, "presets.json")) as fh:
                 more_pb_presets = json.loads(fh)
             if isinstance(more_pb_presets, list) and len(more_pb_presets) != 0:
+                self.pedalboard_preset  = 0 # FIXME?
                 self.pedalboard_presets = more_pb_presets
 
         self.addressings.load(bundlepath, instances)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
-        self.msg_callback("loading_end")
+        self.msg_callback("loading_end %d" % self.pedalboard_preset)
 
         if isDefault:
             self.pedalboard_empty    = True

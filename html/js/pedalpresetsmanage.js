@@ -19,40 +19,52 @@ function PedalboardPresetsManager(options) {
     var self = this;
 
     options = $.extend({
-        presetsWindow: $('<div>'),
-        presetsList: $('<div>'),
+        pedalPresetsWindow: $('<div>'),
+        pedalPresetsList: $('<div>'),
     }, options)
 
-    options.presetsWindow.find('.js-cancel').click(function () {
-        options.presetsWindow.hide()
+    options.pedalPresetsWindow.find('.js-cancel').click(function () {
+        options.pedalPresetsWindow.hide()
         return false
     })
 
-    options.presetsWindow.find('.js-submit').click(function () {
-        var presets = []
+    options.pedalPresetsWindow.find('.js-rename').click(function () {
+        console.log(this)
+        // TODO
+        return false
+    })
 
-        /*
-        $.each(options.presetsList.find('input'), function (index, input) {
-            var input = $(input)
-            if (input.is(':checked'))
-                devs.push(input.val())
-        })
-        */
+    options.pedalPresetsWindow.find('.js-delete').click(function () {
+        console.log(this)
+        // TODO
+        return false
+    })
 
-        self.savePresets(presets)
-        options.presetsWindow.hide()
+    options.pedalPresetsWindow.find('.js-assign').click(function () {
+        console.log(this)
+        // TODO
+        return false
+    })
+
+    options.pedalPresetsWindow.find('.js-assign-all').click(function () {
+        console.log(this)
+        // TODO
         return false
     })
 
     this.start = function () {
         // clear old entries
-        options.presetsList.find('input').remove()
-        options.presetsList.find('span').remove()
+        //options.pedalPresetsList.find('input').remove()
+        //options.pedalPresetsList.find('span').remove()
+
+        console.log("here 001")
 
         var presets = []
 
+        /*
         if (presets.length == 0)
             return new Notification("info", "No pedalboard presets available")
+        */
 
         // add new ones
         for (var i in presets) {
@@ -60,10 +72,11 @@ function PedalboardPresetsManager(options) {
             var elem   = $('<input type="checkbox" name="' + name + '" value="' + dev + '" '
                        + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + name + '<br/></span>')
 
-            elem.appendTo(options.presetsList)
+            elem.appendTo(options.pedalPresetsList)
         }
 
-        options.presetsWindow.show()
+        options.pedalPresetsWindow.show()
+        console.log(options.pedalPresetsWindow[0])
     }
 
     this.savePresets = function (presets) {

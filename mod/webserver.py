@@ -887,9 +887,8 @@ class PedalboardPresetDisable(JsonRequestHandler):
         self.write(True)
 
 class PedalboardPresetSave(JsonRequestHandler):
-    def get(self):
-        idx = int(self.get_argument('id'))
-        ok  = SESSION.host.pedalpreset_save(idx)
+    def post(self):
+        ok = SESSION.host.pedalpreset_save()
         self.write(ok)
 
 class PedalboardPresetSaveAs(JsonRequestHandler):
@@ -1016,6 +1015,11 @@ class TemplateHandler(web.RequestHandler):
             default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
         pbname = tornado.escape.xhtml_escape(SESSION.host.pedalboard_name)
+        prname = SESSION.host.pedalpreset_name()
+
+        fullpbname = pbname or "Untitled"
+        if prname:
+            fullpbname += " - " + prname
 
         context = {
             'default_icon_template': default_icon_template,
@@ -1029,7 +1033,7 @@ class TemplateHandler(web.RequestHandler):
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  pbname,
             'size': json.dumps(SESSION.host.pedalboard_size),
-            'fulltitle':  pbname or "Untitled",
+            'fulltitle':  fullpbname,
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY else 'false',

@@ -26,6 +26,8 @@ function Desktop(elements) {
         addMidiButton: $('<div>'),
         midiPortsWindow: $('<div>'),
         midiPortsList: $('<div>'),
+        pedalPresetsWindow: $('<div>'),
+        pedalPresetsList: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
@@ -120,6 +122,11 @@ function Desktop(elements) {
     this.midiDevices = new MidiPortsWindow({
         midiPortsWindow: elements.midiPortsWindow,
         midiPortsList: elements.midiPortsList,
+    })
+
+    this.pedalPresets = new PedalboardPresetsManager({
+        pedalPresetsWindow: elements.pedalPresetsWindow,
+        pedalPresetsList: elements.pedalPresetsList,
     })
 
     this.hardwareManager = new HardwareManager({
@@ -659,10 +666,31 @@ function Desktop(elements) {
             success: function () {
                 $('#js-preset-enabler').hide()
                 $('#js-preset-menu').show()
+                self.titleBox.text((self.title || 'Untitled') + " - Default")
                 self.pedalboardPresetId = 0
             },
             error: function () {
                 new Bug("Failed to activate pedalboard presets")
+            },
+            cache: false,
+        })
+    })
+    elements.presetDisableButton.click(function () {
+        if (!confirm("This action will remove all pedalboard presets. Continue?")) {
+            return
+        }
+
+        $.ajax({
+            url: '/pedalpreset/disable',
+            method: 'POST',
+            success: function () {
+                self.pedalboardPresetId = -1
+                self.titleBox.text(self.title || 'Untitled')
+                $('#js-preset-menu').hide()
+                $('#js-preset-enabler').show()
+            },
+            error: function () {
+                new Bug("Failed to disable pedalboard presets")
             },
             cache: false,
         })
@@ -674,11 +702,9 @@ function Desktop(elements) {
 
         $.ajax({
             url: '/pedalpreset/save',
-            data: {
-                id: self.pedalboardPresetId
-            },
-            success: function (resp) {
-                console.log(resp)
+            method: 'POST',
+            success: function () {
+                new Notification('info', 'Pedalboard preset saved', 2000)
             },
             error: function () {
                 new Bug("Failed to save pedalboard preset")
@@ -699,7 +725,7 @@ function Desktop(elements) {
                         return
                     }
                     self.pedalboardPresetId = resp.id
-                    console.log(resp)
+                    new Notification('info', 'Pedalboard preset saved', 2000)
                 },
                 error: function () {
                     new Bug("Failed to save pedalboard preset")
@@ -710,26 +736,11 @@ function Desktop(elements) {
         })
     })
     elements.presetManageButton.click(function () {
-        console.log(this)
-    })
-    elements.presetDisableButton.click(function () {
-        if (!confirm("Pedalboard will be locked now, you cannot add or remove plugins and connections. Continue?")) {
-            return
+        if (self.pedalboardPresetId < 0) {
+            return new Notification('warn', 'Pedalboard presets are not enabled', 1500)
         }
 
-        $.ajax({
-            url: '/pedalpreset/disable',
-            method: 'POST',
-            success: function () {
-                self.pedalboardPresetId = -1
-                $('#js-preset-menu').hide()
-                $('#js-preset-enabler').show()
-            },
-            error: function () {
-                new Bug("Failed to disable pedalboard presets")
-            },
-            cache: false,
-        })
+        self.pedalPresets.start()
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
