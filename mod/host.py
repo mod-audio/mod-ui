@@ -46,7 +46,7 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+from mod.settings import (DEFAULT_PEDALBOARD, PEDALBOARD_INSTANCE, LV2_PEDALBOARDS_DIR,
                           TUNER_URI, TUNER_INSTANCE, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
 
@@ -152,6 +152,14 @@ class Host(object):
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
 
+        # pluginData-like pedalboard
+        self.pedalboard_pdata = {
+            "uri"        : "urn:mod:pedalboard", # TODO: define
+            "addressings": {}, # symbol: addressing
+            "preset"     : "",
+            "mapPresets" : []
+        }
+
         # checked when saving pedal presets
         self.plugins_added = []
         self.plugins_removed = []
@@ -196,6 +204,7 @@ class Host(object):
         self.addressings._task_addressing = self.addr_task_addressing
         self.addressings._task_unaddressing = self.addr_task_unaddressing
         self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
+        self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
         self.addressings._task_store_address_data = self.addr_task_store_address_data
 
@@ -368,7 +377,17 @@ class Host(object):
         return
 
     def addr_task_get_plugin_data(self, instance_id):
+        if instance_id == PEDALBOARD_INSTANCE:
+            return self.pedalboard_pdata
         return self.plugins[instance_id]
+
+    def addr_task_get_plugin_presets(self, uri):
+        if uri == "urn:mod:pedalboard":
+            self.pedalboard_pdata['preset'] = "file:///%i" % self.pedalboard_preset
+            presets = self.pedalboard_presets
+            presets = [{'uri':'file:///%i'%i, 'label':presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
+            return presets
+        return get_plugin_info(uri)['presets']
 
     def addr_task_get_port_value(self, instance_id, portsymbol):
         plugin = self.plugins[instance_id]
@@ -1281,10 +1300,12 @@ class Host(object):
 
         return pedalpreset
 
-    def pedalpreset_name(self):
-        if self.pedalboard_preset < 0 or self.pedalboard_preset >= len(self.pedalboard_presets):
+    def pedalpreset_name(self, idx=None):
+        if idx is None:
+            idx = self.pedalboard_preset
+        if idx < 0 or idx >= len(self.pedalboard_presets):
             return None
-        return self.pedalboard_presets[self.pedalboard_preset]['name']
+        return self.pedalboard_presets[idx]['name']
 
     def pedalpreset_init(self):
         preset = self.pedalpreset_make("Default")
@@ -1327,6 +1348,8 @@ class Host(object):
 
     def pedalpreset_load(self, idx, callback):
         # TODO
+        self.pedalboard_preset = idx
+        self.msg_callback("pedal_preset %d" % idx)
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1637,7 +1660,7 @@ class Host(object):
 
         if os.path.exists(os.path.join(bundlepath, "presets.json")):
             with open(os.path.join(bundlepath, "presets.json")) as fh:
-                more_pb_presets = json.loads(fh)
+                more_pb_presets = json.load(fh)
             if isinstance(more_pb_presets, list) and len(more_pb_presets) != 0:
                 self.pedalboard_preset  = 0 # FIXME?
                 self.pedalboard_presets = more_pb_presets
@@ -1735,7 +1758,9 @@ class Host(object):
 """ % (titlesym, titlesym))
 
     def save_state_addressings(self, bundlepath):
-        instances = {}
+        instances = {
+            PEDALBOARD_INSTANCE: self.pedalboard_pdata
+        }
         for instance_id, plugin in self.plugins.items():
             instance = plugin['instance']
             instances[instance_id] = instance
@@ -2125,8 +2150,14 @@ _:b%i
 
     @gen.coroutine
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, callback):
-        instance_id = self.mapper.get_id(instance)
-        pluginData  = self.plugins.get(instance_id, None)
+        if instance == "/pedalboard":
+            # TODO
+            instance_id = PEDALBOARD_INSTANCE
+            pluginData  = self.pedalboard_pdata
+        else:
+            instance_id = self.mapper.get_id(instance)
+            pluginData  = self.plugins.get(instance_id, None)
+
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -2329,8 +2360,13 @@ _:b%i
 
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
-        instance = self.mapper.get_instance(instance_id)
-        plugin   = self.plugins[instance_id]
+
+        if instance_id == PEDALBOARD_INSTANCE:
+            instance = "/pedalboard"
+            plugin   = self.pedalboard_pdata
+        else:
+            instance = self.mapper.get_instance(instance_id)
+            plugin   = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -2352,7 +2388,10 @@ _:b%i
             if value < 0 or value >= len(plugin['mapPresets']):
                 callback(False)
                 return
-            self.preset_load(instance, plugin['mapPresets'][value], callback)
+            if instance_id == PEDALBOARD_INSTANCE:
+                self.pedalpreset_load(value, callback)
+            else:
+                self.preset_load(instance, plugin['mapPresets'][value], callback)
 
         else:
             plugin['ports'][portsymbol] = value

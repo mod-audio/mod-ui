@@ -105,6 +105,28 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "pedal_preset") {
+            var index = parseInt(data[1])
+
+            $.ajax({
+                url: '/pedalpreset/name',
+                type: 'GET',
+                data: {
+                    id: index,
+                },
+                success: function (resp) {
+                    if (! resp.ok) {
+                        return
+                    }
+                    desktop.pedalboardPresetId = index
+                    desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+            return
+        }
+
         if (cmd == "hw_map") {
             var instance = data[1]
             var symbol   = data[2]

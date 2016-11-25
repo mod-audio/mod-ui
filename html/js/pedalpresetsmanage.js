@@ -21,6 +21,7 @@ function PedalboardPresetsManager(options) {
     options = $.extend({
         pedalPresetsWindow: $('<div>'),
         pedalPresetsList: $('<div>'),
+        hardwareManager: null,
     }, options)
 
     options.pedalPresetsWindow.find('.js-cancel').click(function () {
@@ -48,35 +49,81 @@ function PedalboardPresetsManager(options) {
 
     options.pedalPresetsWindow.find('.js-assign-all').click(function () {
         console.log(this)
-        // TODO
+        var port = {
+            name: 'Presets',
+            symbol: ':presets',
+            ranges: {
+                minimum: -1,
+                maximum: 0,
+                default: -1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["enumeration", "integer"],
+            value: -1,
+            format: null,
+            scalePoints: [],
+        }
+        options.hardwareManager.open("/pedalboard", port, "Pedalboard")
+        options.pedalPresetsWindow.hide()
         return false
     })
 
-    this.start = function () {
+    this.start = function (current) {
         // clear old entries
-        //options.pedalPresetsList.find('input').remove()
-        //options.pedalPresetsList.find('span').remove()
+        options.pedalPresetsList.find('option').remove()
 
-        console.log("here 001")
+        self.getPedalPresetList(function (presets) {
+            if (presets.length == 0) {
+                return new Notification("info", "No pedalboard presets available")
+            }
 
-        var presets = []
+            // add new ones
+            for (var i in presets) {
+                var elem = $('<option value="'+i+'">'+presets[i]+'</option>')
 
-        /*
-        if (presets.length == 0)
-            return new Notification("info", "No pedalboard presets available")
-        */
+                if (current == i) {
+                    elem.prop('selected','selected')
+                }
 
-        // add new ones
-        for (var i in presets) {
-            var preset = presets[i]
-            var elem   = $('<input type="checkbox" name="' + name + '" value="' + dev + '" '
-                       + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + name + '<br/></span>')
+                elem.click(self.optionClicked)
+                elem.appendTo(options.pedalPresetsList)
+            }
 
-            elem.appendTo(options.pedalPresetsList)
-        }
+            options.pedalPresetsWindow.show()
+        })
+    }
 
-        options.pedalPresetsWindow.show()
-        console.log(options.pedalPresetsWindow[0])
+    this.optionClicked = function () {
+        var pid = $(this).val()
+
+        $.ajax({
+            url: '/pedalpreset/load',
+            type: 'GET',
+            data: {
+                id: pid,
+            },
+            success: function () {
+                console.log("loaded preset", pid)
+            },
+            error: function () {},
+            cache: false,
+        })
+    }
+
+    this.getPedalPresetList = function (callback) {
+        $.ajax({
+            url: '/pedalpreset/list',
+            type: 'GET',
+            success: function (resp) {
+                callback(resp)
+            },
+            error: function () {
+                new Bug("Failed to get pedalboard preset list")
+            },
+            cache: false,
+            dataType: 'json'
+        })
     }
 
     this.savePresets = function (presets) {

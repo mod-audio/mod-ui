@@ -907,12 +907,27 @@ class PedalboardPresetRemove(JsonRequestHandler):
         ok  = SESSION.host.pedalpreset_remove(idx)
         self.write(ok)
 
+class PedalboardPresetList(JsonRequestHandler):
+    def get(self):
+        presets = SESSION.host.pedalboard_presets
+        presets = dict((i, presets[i]['name']) for i in range(len(presets)) if presets[i] is not None)
+        self.write(presets)
+
+class PedalboardPresetName(JsonRequestHandler):
+    def get(self):
+        idx  = int(self.get_argument('id'))
+        name = SESSION.host.pedalpreset_name(idx)
+        self.write({
+            'ok'  : True,
+            'name': name
+        })
+
 class PedalboardPresetLoad(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
         idx = int(self.get_argument('id'))
-        ok  = yield gen.Task(SESSION.pedalpreset_load, idx)
+        ok  = yield gen.Task(SESSION.host.pedalpreset_load, idx)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
@@ -1374,6 +1389,8 @@ application = web.Application(
             (r"/pedalpreset/save", PedalboardPresetSave),
             (r"/pedalpreset/saveas", PedalboardPresetSaveAs),
             (r"/pedalpreset/remove", PedalboardPresetRemove),
+            (r"/pedalpreset/list", PedalboardPresetList),
+            (r"/pedalpreset/name", PedalboardPresetName),
             (r"/pedalpreset/load", PedalboardPresetLoad),
 
             # bank stuff

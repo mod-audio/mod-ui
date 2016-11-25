@@ -43,6 +43,7 @@ class Addressings(object):
         self._task_addressing = None
         self._task_unaddressing = None
         self._task_get_plugin_data = None
+        self._task_get_plugin_presets = None
         self._task_get_port_value = None
         self._task_store_address_data = None
 
@@ -536,7 +537,9 @@ class Addressings(object):
 
     def get_presets_as_options(self, instance_id):
         pluginData = self._task_get_plugin_data(instance_id)
-        presets    = get_plugin_info(pluginData["uri"])['presets']
+        presets    = self._task_get_plugin_presets(pluginData["uri"])
+
+        print(pluginData)
 
         value   = 0
         maximum = min(len(presets), kMaxAddressableScalepoints)

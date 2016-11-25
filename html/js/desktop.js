@@ -124,11 +124,6 @@ function Desktop(elements) {
         midiPortsList: elements.midiPortsList,
     })
 
-    this.pedalPresets = new PedalboardPresetsManager({
-        pedalPresetsWindow: elements.pedalPresetsWindow,
-        pedalPresetsList: elements.pedalPresetsList,
-    })
-
     this.hardwareManager = new HardwareManager({
         address: function (instanceAndSymbol, addressing, callback) {
             $.ajax({
@@ -150,22 +145,35 @@ function Desktop(elements) {
             self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
         },
         renderForm: function (instance, port) {
-            var plugin = self.pedalboard.pedalboard('getGui', instance).effect
+            var label
+
+            if (instance == "/pedalboard") {
+                label = "Pedalboard"
+            } else {
+                var plugin = self.pedalboard.pedalboard('getGui', instance).effect
+                label = plugin.label
+            }
 
             if (port.symbol == ':bypass' || port.symbol == ':presets') {
                 context = {
-                    label: plugin.label,
-                    name:  port.symbol == ':bypass' ? "Bypass" : "Presets"
+                    label: label,
+                    name: port.symbol == ':bypass' ? "Bypass" : "Presets"
                 }
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
 
             context = {
-                label: plugin.label,
-                name:  port.shortName
+                label: label,
+                name: port.shortName
             }
             return Mustache.render(TEMPLATES.addressing, context)
         }
+    })
+
+    this.pedalPresets = new PedalboardPresetsManager({
+        pedalPresetsWindow: elements.pedalPresetsWindow,
+        pedalPresetsList: elements.pedalPresetsList,
+        hardwareManager: self.hardwareManager,
     })
 
     this.isApp = false
@@ -725,6 +733,7 @@ function Desktop(elements) {
                         return
                     }
                     self.pedalboardPresetId = resp.id
+                    self.titleBox.text((self.title || 'Untitled') + " - " + newName)
                     new Notification('info', 'Pedalboard preset saved', 2000)
                 },
                 error: function () {
@@ -740,7 +749,7 @@ function Desktop(elements) {
             return new Notification('warn', 'Pedalboard presets are not enabled', 1500)
         }
 
-        self.pedalPresets.start()
+        self.pedalPresets.start(self.pedalboardPresetId)
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
