@@ -24,31 +24,62 @@ function PedalboardPresetsManager(options) {
         hardwareManager: null,
     }, options)
 
+    options.pedalPresetsWindow.keydown(function (e) {
+        if (e.keyCode == 27) { // esc
+            options.pedalPresetsWindow.hide()
+            return false
+        }
+    })
+
+    options.pedalPresetsWindow.keyup(function (e) {
+        if (e.keyCode == 38 || e.keyCode == 40) { // up and down the list
+            options.pedalPresetsList.find('option:selected').click()
+            return false
+        }
+    })
+
     options.pedalPresetsWindow.find('.js-cancel').click(function () {
         options.pedalPresetsWindow.hide()
         return false
     })
 
     options.pedalPresetsWindow.find('.js-rename').click(function () {
-        console.log(this)
-        // TODO
+        var selected = options.pedalPresetsList.find('option:selected')
+        console.log(selected.text())
         return false
     })
 
     options.pedalPresetsWindow.find('.js-delete').click(function () {
+        var selected = options.pedalPresetsList.find('option:selected')
+
+        // TODO - show prevent icon for index 0
+
+        $.ajax({
+            url: '/pedalpreset/remove',
+            type: 'GET',
+            data: {
+                id: selected.val(),
+            },
+            success: function () {
+                console.log("deleted preset")
+                selected.remove()
+                options.pedalPresetsList.find('option')[0].click()
+            },
+            error: function () {},
+            cache: false,
+        })
         console.log(this)
         // TODO
         return false
     })
 
     options.pedalPresetsWindow.find('.js-assign').click(function () {
-        console.log(this)
         // TODO
+        console.log(this)
         return false
     })
 
     options.pedalPresetsWindow.find('.js-assign-all').click(function () {
-        console.log(this)
         var port = {
             name: 'Presets',
             symbol: ':presets',
@@ -91,20 +122,21 @@ function PedalboardPresetsManager(options) {
             }
 
             options.pedalPresetsWindow.show()
+
+            options.pedalPresetsWindow.focus()
+            options.pedalPresetsWindow.find('.preset-list').focus()
         })
     }
 
     this.optionClicked = function () {
-        var pid = $(this).val()
-
         $.ajax({
             url: '/pedalpreset/load',
             type: 'GET',
             data: {
-                id: pid,
+                id: $(this).val(),
             },
             success: function () {
-                console.log("loaded preset", pid)
+                console.log("loaded preset")
             },
             error: function () {},
             cache: false,
@@ -124,20 +156,5 @@ function PedalboardPresetsManager(options) {
             cache: false,
             dataType: 'json'
         })
-    }
-
-    this.savePresets = function (presets) {
-        /*
-        $.ajax({
-            url: '/jack/set_midi_devices',
-            type: 'POST',
-            data: JSON.stringify(presets),
-            error: function () {
-                new Bug("Failed to save pedalboard presets")
-            },
-            cache: false,
-            dataType: 'json'
-        })
-        */
     }
 }

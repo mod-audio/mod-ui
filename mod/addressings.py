@@ -544,7 +544,7 @@ class Addressings(object):
         options = []
         handled = False
 
-        # save preset mapping index
+        # save preset mapping
         pluginData['mapPresets'] = []
 
         # safety check
