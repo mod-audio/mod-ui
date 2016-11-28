@@ -83,7 +83,7 @@ CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.mo
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.moddevices.com")
 
 TUNER = os.environ.get('MOD_TUNER_PLUGIN', "gxtuner")
-TUNER_INSTANCE = 9994
+TUNER_INSTANCE_ID = 9994
 
 if TUNER == "tuna":
     TUNER_URI = "urn:mod:tuna"
@@ -94,7 +94,9 @@ else:
     TUNER_INPUT_PORT = "in"
     TUNER_MONITOR_PORT = "FREQ"
 
-PEDALBOARD_INSTANCE = 9995
+PEDALBOARD_INSTANCE = "/pedalboard"
+PEDALBOARD_INSTANCE_ID = 9995
+PEDALBOARD_URI = "urn:mod:pedalboard"
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'

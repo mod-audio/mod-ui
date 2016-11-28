@@ -46,8 +46,9 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (DEFAULT_PEDALBOARD, PEDALBOARD_INSTANCE, LV2_PEDALBOARDS_DIR,
-                          TUNER_URI, TUNER_INSTANCE, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
+from mod.settings import (DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+                          PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
+                          TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
 
 BANK_CONFIG_NOTHING         = 0
@@ -91,6 +92,9 @@ class InstanceIdMapper(object):
         self.id_map = {}
         # map instances <-> ids
         self.instance_map = {}
+
+        self.id_map[PEDALBOARD_INSTANCE_ID] = PEDALBOARD_INSTANCE
+        self.instance_map[PEDALBOARD_INSTANCE] = PEDALBOARD_INSTANCE_ID
 
     # get a numeric id from a string instance
     def get_id(self, instance):
@@ -154,7 +158,7 @@ class Host(object):
 
         # pluginData-like pedalboard
         self.pedalboard_pdata = {
-            "uri"        : "urn:mod:pedalboard", # TODO: define
+            "uri"        : PEDALBOARD_URI,
             "addressings": {}, # symbol: addressing
             "preset"     : "",
             "mapPresets" : []
@@ -377,12 +381,12 @@ class Host(object):
         return
 
     def addr_task_get_plugin_data(self, instance_id):
-        if instance_id == PEDALBOARD_INSTANCE:
+        if instance_id == PEDALBOARD_INSTANCE_ID:
             return self.pedalboard_pdata
         return self.plugins[instance_id]
 
     def addr_task_get_plugin_presets(self, uri):
-        if uri == "urn:mod:pedalboard":
+        if uri == PEDALBOARD_URI:
             self.pedalboard_pdata['preset'] = "file:///%i" % self.pedalboard_preset
             presets = self.pedalboard_presets
             presets = [{'uri':'file:///%i'%i, 'label':presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
@@ -390,21 +394,28 @@ class Host(object):
         return get_plugin_info(uri)['presets']
 
     def addr_task_get_port_value(self, instance_id, portsymbol):
-        plugin = self.plugins[instance_id]
+        if instance_id == PEDALBOARD_INSTANCE_ID:
+            pluginData = self.pedalboard_pdata
+        else:
+            pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
-            return 1.0 if plugin['bypassed'] else 0.0
+            return 1.0 if pluginData['bypassed'] else 0.0
 
         if portsymbol == ":presets":
-            if len(plugin['mapPresets']) == 0 or not plugin['preset']:
+            if len(pluginData['mapPresets']) == 0 or not pluginData['preset']:
                 return 0.0
-            return float(plugin['mapPresets'].index(plugin['preset']))
+            return float(pluginData['mapPresets'].index(pluginData['preset']))
 
-        return plugin['ports'][portsymbol]
+        return pluginData['ports'][portsymbol]
 
     def addr_task_store_address_data(self, instance_id, portsymbol, data):
-        plugin = self.plugins[instance_id]
-        plugin['addressings'][portsymbol] = data
+        if instance_id == PEDALBOARD_INSTANCE_ID:
+            pluginData = self.pedalboard_pdata
+        else:
+            pluginData = self.plugins[instance_id]
+
+        pluginData['addressings'][portsymbol] = data
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
@@ -640,7 +651,7 @@ class Host(object):
                 portsymbol  = msg[2]
                 value       = float(msg[3])
 
-                if instance_id == TUNER_INSTANCE:
+                if instance_id == TUNER_INSTANCE_ID:
                     self.set_tuner_value(value)
 
                 else:
@@ -854,7 +865,9 @@ class Host(object):
                 title = name.split(":",1)[-1].title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
-        instances = {}
+        instances = {
+            PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
+        }
 
         for instance_id, plugin in self.plugins.items():
             instances[instance_id] = plugin['instance']
@@ -1513,8 +1526,12 @@ class Host(object):
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
-        instances = {}
-        rinstances = {}
+        instances = {
+            PEDALBOARD_INSTANCE: (PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI)
+        }
+        rinstances = {
+            PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
+        }
 
         for p in pb['plugins']:
             allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
@@ -1759,11 +1776,11 @@ class Host(object):
 
     def save_state_addressings(self, bundlepath):
         instances = {
-            PEDALBOARD_INSTANCE: self.pedalboard_pdata
+            PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
+
         for instance_id, plugin in self.plugins.items():
-            instance = plugin['instance']
-            instances[instance_id] = instance
+            instances[instance_id] = plugin['instance']
 
         self.addressings.save(bundlepath, instances)
 
@@ -2150,13 +2167,12 @@ _:b%i
 
     @gen.coroutine
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, callback):
-        if instance == "/pedalboard":
-            # TODO
-            instance_id = PEDALBOARD_INSTANCE
-            pluginData  = self.pedalboard_pdata
+        instance_id = self.mapper.get_id(instance)
+
+        if instance_id == PEDALBOARD_INSTANCE_ID:
+            pluginData = self.pedalboard_pdata
         else:
-            instance_id = self.mapper.get_id(instance)
-            pluginData  = self.plugins.get(instance_id, None)
+            pluginData = self.plugins.get(instance_id, None)
 
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
@@ -2360,13 +2376,12 @@ _:b%i
 
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
+        instance = self.mapper.get_instance(instance_id)
 
-        if instance_id == PEDALBOARD_INSTANCE:
-            instance = "/pedalboard"
-            plugin   = self.pedalboard_pdata
+        if instance_id == PEDALBOARD_INSTANCE_ID:
+            plugin = self.pedalboard_pdata
         else:
-            instance = self.mapper.get_instance(instance_id)
-            plugin   = self.plugins[instance_id]
+            plugin = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -2388,7 +2403,7 @@ _:b%i
             if value < 0 or value >= len(plugin['mapPresets']):
                 callback(False)
                 return
-            if instance_id == PEDALBOARD_INSTANCE:
+            if instance_id == PEDALBOARD_INSTANCE_ID:
                 self.pedalpreset_load(value, callback)
             else:
                 self.preset_load(instance, plugin['mapPresets'][value], callback)
@@ -2470,8 +2485,8 @@ _:b%i
 
         def monitor_added(ok):
             if not ok or not connect_jack_ports("system:capture_%d" % self.current_tuner_port,
-                                                "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT)):
-                self.send_notmodified("remove %d" % TUNER_INSTANCE)
+                                                "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT)):
+                self.send_notmodified("remove %d" % TUNER_INSTANCE_ID)
                 callback(False)
                 return
 
@@ -2482,9 +2497,9 @@ _:b%i
             if not ok:
                 callback(False)
                 return
-            self.send_notmodified("monitor_output %d %s" % (TUNER_INSTANCE, TUNER_MONITOR_PORT), monitor_added)
+            self.send_notmodified("monitor_output %d %s" % (TUNER_INSTANCE_ID, TUNER_MONITOR_PORT), monitor_added)
 
-        self.send_notmodified("add %s %d" % (TUNER_URI, TUNER_INSTANCE), tuner_added)
+        self.send_notmodified("add %s %d" % (TUNER_URI, TUNER_INSTANCE_ID), tuner_added)
 
     def hmi_tuner_off(self, callback):
         logging.info("hmi tuner off")
@@ -2493,7 +2508,7 @@ _:b%i
             self.unmute()
             callback(True)
 
-        self.send_notmodified("remove %d" % TUNER_INSTANCE, tuner_removed)
+        self.send_notmodified("remove %d" % TUNER_INSTANCE_ID, tuner_removed)
 
     def hmi_tuner_input(self, input_port, callback):
         logging.info("hmi tuner input")
@@ -2503,10 +2518,10 @@ _:b%i
             return
 
         disconnect_jack_ports("system:capture_%s" % self.current_tuner_port,
-                              "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT))
+                              "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
 
         connect_jack_ports("system:capture_%s" % input_port,
-                           "effect_%d:%s" % (TUNER_INSTANCE, TUNER_INPUT_PORT))
+                           "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
 
         self.current_tuner_port = input_port
         callback(True)
