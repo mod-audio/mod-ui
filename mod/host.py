@@ -69,6 +69,7 @@ kMaxAddressableScalepoints = 50
 
 # TODO: check pluginData['designations'] when doing addressing
 # TODO: hmi_save_current_pedalboard does not send browser msgs, needed?
+# TODO: finish presets, testing
 
 def get_all_good_pedalboards():
     allpedals  = get_all_pedalboards()
@@ -990,6 +991,13 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
 
+        self.pedalboard_pdata = {
+            "uri"        : PEDALBOARD_URI,
+            "addressings": {},
+            "preset"     : "",
+            "mapPresets" : []
+        }
+
         save_last_bank_and_pedalboard(0, "")
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
@@ -1303,12 +1311,12 @@ class Host(object):
             "data": {},
         }
 
-        # TODO
-        for instance in []:
+        for instance_id, pluginData in self.plugins.items():
+            instance = pluginData['instance']
             pedalpreset['data'][instance] = {
-                "bypassed": False,
-                "ports"   : {},
-                "preset"  : "",
+                "bypassed": pluginData['bypassed'],
+                "ports"   : pluginData['ports'].copy(),
+                "preset"  : pluginData['preset'],
             }
 
         return pedalpreset
@@ -1359,11 +1367,40 @@ class Host(object):
         self.pedalboard_presets[idx] = None
         return True
 
+    @gen.coroutine
     def pedalpreset_load(self, idx, callback):
-        # TODO
+        if idx < 0 or idx >= len(self.pedalboard_presets):
+            callback(False)
+            return
+
+        pedalpreset = self.pedalboard_presets[idx]
         self.pedalboard_preset = idx
-        self.msg_callback("pedal_preset %d" % idx)
+
+        for instance, data in pedalpreset['data'].items():
+            instance_id = self.mapper.get_id_without_creating(instance)
+            pluginData  = self.plugins[instance_id]
+            diffBypass  = pluginData['bypassed'] != data['bypassed']
+
+            # if bypassed, do it now
+            if diffBypass and data['bypassed']:
+                self.msg_callback("param_set %s :bypass 1.0" % (instance,))
+                yield gen.Task(self.bypass, instance, True)
+
+            if data['preset']:
+                self.msg_callback("preset %s %s" % (instance, data['preset']))
+                yield gen.Task(self.preset_load, instance, data['preset'])
+
+            for symbol, value in data['ports'].items():
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)
+
+            # if not bypassed (enabled), do it at the end
+            if diffBypass and not data['bypassed']:
+                self.msg_callback("param_set %s :bypass 0.0" % (instance,))
+                yield gen.Task(self.bypass, instance, False)
+
         callback(True)
+        self.msg_callback("pedal_preset %d" % idx)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - connections
