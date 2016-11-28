@@ -927,6 +927,7 @@ class PedalboardPresetLoad(JsonRequestHandler):
     @gen.engine
     def get(self):
         idx = int(self.get_argument('id'))
+        # FIXME: callback invalid?
         ok  = yield gen.Task(SESSION.host.pedalpreset_load, idx)
         self.write(ok)
 

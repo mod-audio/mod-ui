@@ -539,8 +539,6 @@ class Addressings(object):
         pluginData = self._task_get_plugin_data(instance_id)
         presets    = self._task_get_plugin_presets(pluginData["uri"])
 
-        print(pluginData)
-
         value   = 0
         maximum = min(len(presets), kMaxAddressableScalepoints)
         options = []

@@ -1368,7 +1368,7 @@ class Host(object):
         return True
 
     @gen.coroutine
-    def pedalpreset_load(self, idx, callback):
+    def pedalpreset_load(self, idx, callback=lambda r:None):
         if idx < 0 or idx >= len(self.pedalboard_presets):
             callback(False)
             return
@@ -1384,7 +1384,7 @@ class Host(object):
             # if bypassed, do it now
             if diffBypass and data['bypassed']:
                 self.msg_callback("param_set %s :bypass 1.0" % (instance,))
-                yield gen.Task(self.bypass, instance, True)
+                self.bypass(instance, True, None)
 
             if data['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
@@ -1392,12 +1392,12 @@ class Host(object):
 
             for symbol, value in data['ports'].items():
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
-                yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)
+                self.param_set("%s/%s" % (instance, symbol), value, None)
 
             # if not bypassed (enabled), do it at the end
             if diffBypass and not data['bypassed']:
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
-                yield gen.Task(self.bypass, instance, False)
+                self.bypass(instance, False, None)
 
         callback(True)
         self.msg_callback("pedal_preset %d" % idx)
