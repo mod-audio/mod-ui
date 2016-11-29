@@ -308,17 +308,19 @@ $('document').ready(function() {
         if (cmd == "loading_end") {
             var presetId = parseInt(data[1])
 
-            desktop.pedalboard.pedalboard('scheduleAdapt', true)
-            desktop.pedalboardEmpty    = empty && !modified
-            desktop.pedalboardModified = modified
-            desktop.pedalboardPresetId = presetId
+            setTimeout(function () {
+                desktop.pedalboard.pedalboard('scheduleAdapt', true)
+                desktop.pedalboardEmpty    = empty && !modified
+                desktop.pedalboardModified = modified
+                desktop.pedalboardPresetId = presetId
 
-            if (presetId >= 0) {
-                $('#js-preset-enabler').hide()
-                $('#js-preset-menu').show()
-            }
+                if (presetId >= 0) {
+                    $('#js-preset-enabler').hide()
+                    $('#js-preset-menu').show()
+                }
 
-            desktop.init();
+                desktop.init();
+            }, 200)
             return
         }
 
