@@ -55,8 +55,8 @@ function MidiPortsWindow(options) {
             for (var i in devList) {
                 var dev  = devList[i]
                 var name = names[dev]
-                var elem = $('<input type="checkbox" name="' + name + '" value="' + dev + '" '
-                         + (devsInUse.indexOf(dev) >= 0 ? "checked" : "") + '/><span>' + name + '<br/></span>')
+                var elem = $('<input type="checkbox" name="' + name + '" value="' + dev + '" autocomplete="off"'
+                         + (devsInUse.indexOf(dev) >= 0 ? 'checked="checked"' : '') + '/><span>' + name + '<br/></span>')
 
                 elem.appendTo(options.midiPortsList)
             }
