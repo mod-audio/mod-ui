@@ -22,6 +22,7 @@ function PedalboardPresetsManager(options) {
         pedalPresetsWindow: $('<div>'),
         pedalPresetsList: $('<div>'),
         hardwareManager: null,
+        currentlyAddressed: false,
     }, options)
 
     options.pedalPresetsWindow.keydown(function (e) {
@@ -43,11 +44,18 @@ function PedalboardPresetsManager(options) {
         return false
     })
 
-    options.pedalPresetsWindow.find('.js-rename').click(function () {
-        // TODO
+    options.pedalPresetsWindow.find('.js-rename').click(function (e) {
         var selected = options.pedalPresetsList.find('option:selected')
+        var selectId = selected.val()
+
+        if (options.currentlyAddressed) {
+            return self.prevent(e)
+        }
+
+        // TODO
         console.log(selected.text())
         alert("Not implemented yet")
+
         return false
     })
 
@@ -55,39 +63,23 @@ function PedalboardPresetsManager(options) {
         var selected = options.pedalPresetsList.find('option:selected')
         var selectId = selected.val()
 
-        if (selectId == 0) {
-            var img = $('<img>').attr('src', 'img/icn-blocked.png')
-            $('body').append(img)
-            img.css({
-                position: 'absolute',
-                top: e.pageY - img.height() / 2,
-                left: e.pageX - img.width() / 2,
-                zIndex: 99999
-            })
-            setTimeout(function () {
-                img.remove()
-            }, 500)
-            return false
+        if (selectId == 0 || options.currentlyAddressed) {
+            return self.prevent(e)
         }
-
-        // TODO - show prevent icon for index 0
 
         $.ajax({
             url: '/pedalpreset/remove',
             type: 'GET',
             data: {
-                id: selected.val(),
+                id: selectId,
             },
             success: function () {
-                console.log("deleted preset")
                 selected.remove()
-                options.pedalPresetsList.find('option')[0].click()
+                options.pedalPresetsList.find('option:first').prop('selected','selected').click()
             },
             error: function () {},
             cache: false,
         })
-        console.log(this)
-        // TODO
         return false
     })
 
@@ -118,9 +110,12 @@ function PedalboardPresetsManager(options) {
         return false
     })
 
-    this.start = function (current) {
+    this.start = function (currentId, currentlyAddressed) {
         // clear old entries
         options.pedalPresetsList.find('option').remove()
+
+        // save state
+        options.currentlyAddressed = currentlyAddressed
 
         self.getPedalPresetList(function (presets) {
             if (presets.length == 0) {
@@ -131,7 +126,7 @@ function PedalboardPresetsManager(options) {
             for (var i in presets) {
                 var elem = $('<option value="'+i+'">'+presets[i]+'</option>')
 
-                if (current == i) {
+                if (currentId == i) {
                     elem.prop('selected','selected')
                     if (i == 0) {
                         options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
@@ -147,6 +142,21 @@ function PedalboardPresetsManager(options) {
             options.pedalPresetsWindow.focus()
             options.pedalPresetsWindow.find('.preset-list').focus()
         })
+    }
+
+    this.prevent = function (e) {
+        var img = $('<img>').attr('src', 'img/icn-blocked.png')
+        $('body').append(img)
+        img.css({
+            position: 'absolute',
+            top: e.pageY - img.height() / 2,
+            left: e.pageX - img.width() / 2,
+            zIndex: 99999
+        })
+        setTimeout(function () {
+            img.remove()
+        }, 500)
+        return false
     }
 
     this.optionClicked = function () {

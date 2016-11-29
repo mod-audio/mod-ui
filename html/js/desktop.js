@@ -749,7 +749,8 @@ function Desktop(elements) {
             return new Notification('warn', 'Pedalboard presets are not enabled', 1500)
         }
 
-        self.pedalPresets.start(self.pedalboardPresetId)
+        var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
+        self.pedalPresets.start(self.pedalboardPresetId, addressed)
     })
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
