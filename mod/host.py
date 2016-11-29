@@ -1189,11 +1189,14 @@ class Host(object):
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = plugin['addressings'].get(symbol, None)
-                if addressing is not None and addressing['actuator_uri'] not in used_actuators:
-                    used_actuators.append(addressing['actuator_uri'])
+                if addressing is not None:
+                    addressing['value'] = value
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
             for actuator_uri in used_actuators:
-                yield gen.Task(self._addressing_load, actuator_uri, skipPresets=True)
+                # FIXME: adjust for CC too
+                yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
             callback(True)
 
@@ -1376,6 +1379,8 @@ class Host(object):
         pedalpreset = self.pedalboard_presets[idx]
         self.pedalboard_preset = idx
 
+        used_actuators = []
+
         for instance, data in pedalpreset['data'].items():
             instance_id = self.mapper.get_id_without_creating(instance)
             pluginData  = self.plugins[instance_id]
@@ -1394,10 +1399,20 @@ class Host(object):
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
                 self.param_set("%s/%s" % (instance, symbol), value, None)
 
+                addressing = pluginData['addressings'].get(symbol, None)
+                if addressing is not None:
+                    addressing['value'] = value
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
+
             # if not bypassed (enabled), do it at the end
             if diffBypass and not data['bypassed']:
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
+
+        for actuator_uri in used_actuators:
+            # FIXME: adjust for CC too
+            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
         callback(True)
         self.msg_callback("pedal_preset %d" % idx)
@@ -2479,12 +2494,17 @@ _:b%i
             #self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
             addressing = pluginData['addressings'].get(":bypass", None)
-            if addressing is not None and addressing['actuator_uri'] not in used_actuators:
-                used_actuators.append(addressing['actuator_uri'])
+            if addressing is not None:
+                addressing['value'] = 1.0 if bypassed else 0.0
+                if addressing['actuator_uri'] not in used_actuators:
+                    used_actuators.append(addressing['actuator_uri'])
 
             addressing = pluginData['addressings'].get(":presets", None)
-            if addressing is not None and addressing['actuator_uri'] not in used_actuators:
-                used_actuators.append(addressing['actuator_uri'])
+            if addressing is not None:
+                if p['preset']:
+                    addressing['value'] = pluginData['mapPresets'].index(p['preset'])
+                if addressing['actuator_uri'] not in used_actuators:
+                    used_actuators.append(addressing['actuator_uri'])
 
             if p['preset']:
                 preset = p['preset']
@@ -2501,8 +2521,10 @@ _:b%i
                 #self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 addressing = pluginData['addressings'].get(symbol, None)
-                if addressing is not None and addressing['actuator_uri'] not in used_actuators:
-                    used_actuators.append(addressing['actuator_uri'])
+                if addressing is not None:
+                    addressing['value'] = value
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
         self.pedalboard_modified = False
         callback(True)

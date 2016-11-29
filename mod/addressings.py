@@ -420,6 +420,7 @@ class Addressings(object):
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
+            print("ERROR: hmi_load_current failed, empty list")
             callback(False)
             return
 
