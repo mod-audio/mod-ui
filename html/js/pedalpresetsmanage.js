@@ -156,6 +156,7 @@ function PedalboardPresetsManager(options) {
         setTimeout(function () {
             img.remove()
         }, 500)
+        new Notification("warn", "Cannot change presets while addressed to hardware", 3000)
         return false
     }
 

@@ -1296,6 +1296,7 @@ var baseWidget = {
             img.remove()
             self.data('prevent', false)
         }, 500)
+        new Notification("warn", "Cannot change a parameter addressed to hardware", 3000)
     }
 }
 
