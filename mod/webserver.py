@@ -916,9 +916,9 @@ class PedalboardPresetList(JsonRequestHandler):
 class PedalboardPresetName(JsonRequestHandler):
     def get(self):
         idx  = int(self.get_argument('id'))
-        name = SESSION.host.pedalpreset_name(idx)
+        name = SESSION.host.pedalpreset_name(idx) or ""
         self.write({
-            'ok'  : True,
+            'ok'  : bool(name),
             'name': name
         })
 

@@ -1324,7 +1324,7 @@ class Host(object):
     def pedalpreset_name(self, idx=None):
         if idx is None:
             idx = self.pedalboard_preset
-        if idx < 0 or idx >= len(self.pedalboard_presets):
+        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return None
         return self.pedalboard_presets[idx]['name']
 

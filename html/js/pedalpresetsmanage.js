@@ -44,13 +44,31 @@ function PedalboardPresetsManager(options) {
     })
 
     options.pedalPresetsWindow.find('.js-rename').click(function () {
+        // TODO
         var selected = options.pedalPresetsList.find('option:selected')
         console.log(selected.text())
+        alert("Not implemented yet")
         return false
     })
 
-    options.pedalPresetsWindow.find('.js-delete').click(function () {
+    options.pedalPresetsWindow.find('.js-delete').click(function (e) {
         var selected = options.pedalPresetsList.find('option:selected')
+        var selectId = selected.val()
+
+        if (selectId == 0) {
+            var img = $('<img>').attr('src', 'img/icn-blocked.png')
+            $('body').append(img)
+            img.css({
+                position: 'absolute',
+                top: e.pageY - img.height() / 2,
+                left: e.pageX - img.width() / 2,
+                zIndex: 99999
+            })
+            setTimeout(function () {
+                img.remove()
+            }, 500)
+            return false
+        }
 
         // TODO - show prevent icon for index 0
 
@@ -115,6 +133,9 @@ function PedalboardPresetsManager(options) {
 
                 if (current == i) {
                     elem.prop('selected','selected')
+                    if (i == 0) {
+                        options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
+                    }
                 }
 
                 elem.click(self.optionClicked)
@@ -129,11 +150,19 @@ function PedalboardPresetsManager(options) {
     }
 
     this.optionClicked = function () {
+        var selectId = $(this).val()
+
+        if (selectId == 0) {
+            options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
+        } else {
+            options.pedalPresetsWindow.find('.js-delete').removeClass('disabled')
+        }
+
         $.ajax({
             url: '/pedalpreset/load',
             type: 'GET',
             data: {
-                id: $(this).val(),
+                id: selectId,
             },
             success: function () {
                 console.log("loaded preset")
