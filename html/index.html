@@ -24,6 +24,23 @@
 <meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
 <meta name="theme-color" content="#111111">
 
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
+
+<style type="text/css">
+    /* STYLE FOR LOADING ANIMATION */
+    body.initialized #loading { display: none; }
+    .loadinganim { width:100px; height:100px; position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); z-index:-1; }
+    .loadinganim path { stroke:#883996; stroke-width:4; stroke-linecap:butt; }
+    .loadingcircle { animation: loadingcircle 0.5s linear infinite; }
+    @keyframes loadingcircle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
+</style>
+
 <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
@@ -184,23 +201,6 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/host.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
-
-<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
-
-<style type="text/css">
-    /* STYLE FOR LOADING ANIMATION */
-    body.initialized #loading { display: none; }
-    .loadinganim { width:100px; height:100px; position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); z-index:-1; }
-    .loadinganim path { stroke:#883996; stroke-width:4; stroke-linecap:butt; }
-    .loadingcircle { animation: loadingcircle 0.5s linear infinite; }
-    @keyframes loadingcircle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
-</style>
 
 </head>
 <!-- END HEAD -->
