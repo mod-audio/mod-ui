@@ -222,6 +222,8 @@ class JsonRequestHandler(web.RequestHandler):
 
 class RemoteRequestHandler(JsonRequestHandler):
     def set_default_headers(self):
+        if 'Origin' not in self.request.headers.keys():
+            return
         origin = self.request.headers['Origin']
         match  = re.match(r'^(\w+)://([^/]*)/?', origin)
         if match is None:
