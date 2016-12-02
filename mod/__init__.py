@@ -54,7 +54,7 @@ def _json_or_remove(path):
 def check_environment():
     from mod.settings import (LV2_PEDALBOARDS_DIR,
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
-                              DATA_DIR, DOWNLOAD_TMP_DIR,
+                              DATA_DIR, DOWNLOAD_TMP_DIR, KEYS_PATH,
                               BANKS_JSON_FILE, FAVORITES_JSON_FILE, UPDATE_FILE,
                               CAPTURE_PATH, PLAYBACK_PATH)
 
@@ -80,6 +80,9 @@ def check_environment():
             return False
 
     # create needed dirs and files
+    if not os.path.exists(KEYS_PATH):
+        os.makedirs(KEYS_PATH)
+
     if not os.path.exists(LV2_PEDALBOARDS_DIR):
         os.makedirs(LV2_PEDALBOARDS_DIR)
 
