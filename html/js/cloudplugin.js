@@ -511,7 +511,7 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            demo: !!plugin.demo
+            demo: !!plugin.demo // FIXME
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
@@ -682,7 +682,7 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                demo  : !!plugin.demo,
+                demo  : !!plugin.demo, // FIXME
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
 

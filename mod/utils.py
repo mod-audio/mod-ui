@@ -249,7 +249,7 @@ class PluginInfo(Structure):
         ("minorVersion", c_int),
         ("release", c_int),
         ("builder", c_int),
-        ("demo", c_bool),
+        ("licensed", c_int),
         ("version", c_char_p),
         ("stability", c_char_p),
         ("author", PluginAuthor),
@@ -272,7 +272,7 @@ class PluginInfo_Mini(Structure):
         ("minorVersion", c_int),
         ("release", c_int),
         ("builder", c_int),
-        ("demo", c_bool),
+        ("licensed", c_int),
         ("gui", PluginGUI_Mini),
     ]
 

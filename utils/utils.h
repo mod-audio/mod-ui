@@ -131,7 +131,7 @@ typedef struct {
     int minorVersion;
     int release;
     int builder;
-    bool demo;
+    int licensed;
     const char* version;
     const char* stability;
     PluginAuthor author;
@@ -153,7 +153,7 @@ typedef struct {
     int minorVersion;
     int release;
     int builder;
-    bool demo;
+    int licensed;
     PluginGUI_Mini gui;
 } PluginInfo_Mini;
 
