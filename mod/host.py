@@ -2139,6 +2139,11 @@ _:b%i
         else:
             curvalue = plugin['ports'][portsymbol]
 
+            if addressing['type'] & ADDRESSING_CTYPE_SCALE_POINTS:
+                if curvalue not in [o[0] for o in addressing['options']]:
+                    print("ERROR: current value '%f' for '%s' is not a valid scalepoint" % (curvalue, portsymbol))
+                    curvalue = float(addressing['options'][0][0])
+
         self.hmi.control_add(addressing['instance_id'], portsymbol,
                              addressing['label'], addressing['type'], addressing['unit'],
                              curvalue, addressing['minimum'], addressing['maximum'], addressing['steps'],
