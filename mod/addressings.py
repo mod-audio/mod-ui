@@ -330,6 +330,11 @@ class Addressings(object):
 
                 hmiunit = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
 
+            if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
+                if value not in [o[0] for o in options]:
+                    print("ERROR: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
+                    addressing_data['value'] = float(options[0][0])
+
             # hmi specific
             addressing_data['hmitype'] = hmitype
             addressing_data['hmiunit'] = hmiunit
