@@ -431,6 +431,22 @@ function Desktop(elements) {
         })
     }
 
+    this.saveConfigValue = function (key, value) {
+        $.ajax({
+            url: '/config/set',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                key  : key,
+                value: value,
+            }),
+            success: function () {},
+            error: function () {},
+            cache: false,
+            dataType: 'json'
+        })
+    }
+
     this.setupApp = function () {
         self.isApp = true
         $('#mod-bypassLeft').hide()

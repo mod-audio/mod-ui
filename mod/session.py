@@ -23,7 +23,7 @@ from copy import deepcopy
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
-from mod.settings import (MANAGER_PORT, DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
+from mod.settings import (DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA)
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI

@@ -38,7 +38,7 @@ from mod.settings import (APP, LOG,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DATA_DIR, USER_ID_JSON_FILE, FAVORITES_JSON_FILE, BLUETOOTH_PIN)
+                          DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE)
 
 from mod import check_environment, jsoncall, json_handler
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -270,19 +270,6 @@ class SimpleFileReceiver(JsonRequestHandler):
 
     def process_file(self, data, callback=lambda:None):
         """to be overriden"""
-
-class BluetoothSetPin(JsonRequestHandler):
-    def post(self):
-        pin = self.get_argument("pin", None)
-
-        if pin is None:
-            self.write(False)
-            return
-
-        with open(BLUETOOTH_PIN, 'w') as fh:
-            fh.write(pin)
-
-        self.write(True)
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
@@ -1026,6 +1013,12 @@ class TemplateHandler(web.RequestHandler):
         except:
             pass
 
+        if os.path.exists(PREFERENCES_JSON_FILE):
+            with open(PREFERENCES_JSON_FILE, 'r') as fh:
+                prefs = json.load(fh)
+        else:
+            prefs = {}
+
         with open(DEFAULT_ICON_TEMPLATE, 'r') as fd:
             default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
 
@@ -1058,6 +1051,7 @@ class TemplateHandler(web.RequestHandler):
             'user_name': tornado.escape.xhtml_escape(user_id.get("name", "")),
             'user_email': tornado.escape.xhtml_escape(user_id.get("email", "")),
             'favorites': json.dumps(gState.favorites),
+            'preferences': json.dumps(prefs),
         }
         return context
 
@@ -1162,6 +1156,24 @@ class SetBufferSize(JsonRequestHandler):
 class ResetXruns(JsonRequestHandler):
     def post(self):
         reset_xruns()
+        self.write(True)
+
+class SaveSingleConfigValue(JsonRequestHandler):
+    def post(self):
+        key   = self.get_argument("key")
+        value = self.get_argument("value")
+
+        if os.path.exists(PREFERENCES_JSON_FILE):
+            with open(PREFERENCES_JSON_FILE, 'r') as fh:
+                data = json.load(fh)
+        else:
+            data = {}
+
+        data[key] = value
+
+        with open(PREFERENCES_JSON_FILE, 'w') as fh:
+            json.dump(data, fh)
+
         self.write(True)
 
 class SaveUserId(JsonRequestHandler):
@@ -1339,7 +1351,6 @@ settings = {'log_function': lambda handler: None} if not LOG else {}
 application = web.Application(
         EffectInstaller.urls('effect/install') +
         [
-            (r"/system/bluetooth/set", BluetoothSetPin),
             (r"/system/info", SystemInfo),
 
             (r"/update/download/", UpdateDownload),
@@ -1422,6 +1433,8 @@ application = web.Application(
 
             (r"/favorites/add", FavoritesAdd),
             (r"/favorites/remove", FavoritesRemove),
+
+            (r"/config/set", SaveSingleConfigValue),
 
             (r"/ping/?", Ping),
             (r"/hello/?", Hello),

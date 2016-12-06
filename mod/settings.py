@@ -45,6 +45,7 @@ KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys') + os.sep)
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 FAVORITES_JSON_FILE = os.environ.get('MOD_FAVORITES_JSON', join(DATA_DIR, 'favorites.json'))
 LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'last.json'))
+PREFERENCES_JSON_FILE = os.environ.get('MOD_PREFERENCES_JSON', join(DATA_DIR, 'prefs.json'))
 USER_ID_JSON_FILE = os.environ.get('MOD_USER_ID_JSON', join(DATA_DIR, 'user-id.json'))
 
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', '/tmp/mod-ui')
@@ -54,8 +55,6 @@ LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT')
-
-MANAGER_PORT = 5555
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
@@ -69,8 +68,6 @@ DEFAULT_ICON_IMAGE = {
     'thumbnail': join(HTML_DIR, 'resources/pedals/default-thumbnail.png'),
     'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
 }
-
-BLUETOOTH_PIN = os.environ.pop('MOD_BLUETOOTH_PIN', join(DATA_DIR, 'bluetooth.pin'))
 
 PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
 
