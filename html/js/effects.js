@@ -348,7 +348,7 @@ JqueryClass('effectBox', {
 
         var plugin_data = {
             uri   : uri,
-            brand : plugin.brand,
+            brand : plugin.brand || "&nbsp;",
             label : plugin.label,
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
