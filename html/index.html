@@ -68,6 +68,7 @@
     var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
     var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
     var FAVORITES = {{favorites}}
+    var PREFERENCES = {{preferences}}
     var DEBUG = true;
     if (!DEBUG) {
         console = console || {}
@@ -148,6 +149,10 @@ $('document').ready(function() {
     } else {
         console.log("MOD is not authenticated")
         desktop.upgradeWindow.upgradeWindow('setErrored')
+    }
+
+    if (PREFERENCES['dev-mode'] == "on") {
+        enable_dev_mode(true)
     }
 
     // start code for ajax loading bar

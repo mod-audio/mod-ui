@@ -434,12 +434,11 @@ function Desktop(elements) {
     this.saveConfigValue = function (key, value) {
         $.ajax({
             url: '/config/set',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
+            type: 'POST',
+            data: {
                 key  : key,
                 value: value,
-            }),
+            },
             success: function () {},
             error: function () {},
             cache: false,
@@ -1637,26 +1636,46 @@ JqueryClass('statusTooltip', {
     }
 })
 
-function enable_dev_mode() {
-    // TODO: pedalboard presets
-    //$("#pedalboard-actions").find(".js-preset").show()
-
-    // enable non-stable plugins, NOT!
-    //$("#cloud-plugins-stable").parent().show()
-
-    // show install/update all plugins
+function enable_dev_mode(skipSaveConfig) {
+    // install/update all plugins
     $('#cloud_install_all').show()
     $('#cloud_update_all').show()
 
-    // show network and controller ping times
+    // network and controller ping times
     $('#mod-status').show().statusTooltip('updatePosition')
 
-    // show xrun counter
+    // xrun counter
     $('#mod-xruns').show()
 
-    // show buffer size button
+    // buffer size button
     $('#mod-buffersize').show()
+
+    if (!skipSaveConfig) {
+        // save settings
+        desktop.saveConfigValue("dev-mode", "on")
+    }
 
     // echo to you
     return "Dev mode enabled!"
+}
+
+function disable_dev_mode() {
+    // install/update all plugins
+    $('#cloud_install_all').hide()
+    $('#cloud_update_all').hide()
+
+    // network and controller ping times
+    $('#mod-status').hide()
+
+    // xrun counter
+    $('#mod-xruns').hide()
+
+    // buffer size button
+    $('#mod-buffersize').hide()
+
+    // save settings
+    desktop.saveConfigValue("dev-mode", "off")
+
+    // echo to you
+    return "Dev mode disabled!"
 }
