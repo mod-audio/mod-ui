@@ -35,6 +35,7 @@ JqueryClass('effectBox', {
         options = $.extend({
             pedalboard: $('<div>'),
             windowManager: null,
+            saveConfigValue: function (key, value) {},
         }, options)
 
         self.data(options)
@@ -106,6 +107,7 @@ JqueryClass('effectBox', {
 
         self.find('.js-effects-fold').click(function () {
             self.effectBox('toggle')
+            options.saveConfigValue("plugins-folded", self.hasClass('folded') ? "true" : "false")
         })
 
         self.find('.nav-left').click(function () {

@@ -154,6 +154,9 @@ $('document').ready(function() {
     if (PREFERENCES['dev-mode'] == "on") {
         enable_dev_mode(true)
     }
+    if (PREFERENCES['plugins-folded'] == "true") {
+        desktop.effectBox.effectBox('toggle')
+    }
 
     // start code for ajax loading bar
 

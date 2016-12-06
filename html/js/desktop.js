@@ -1287,6 +1287,7 @@ Desktop.prototype.makeEffectBox = function (el, trigger) {
         trigger: trigger,
         windowManager: this.windowManager,
         pedalboard: this.pedalboard,
+        saveConfigValue: this.saveConfigValue,
     })
 }
 
