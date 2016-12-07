@@ -449,6 +449,7 @@ function Desktop(elements) {
     this.setupApp = function () {
         self.isApp = true
         $('#mod-bank').hide()
+        $('#pedalboards-library').find('a').hide()
     }
 
     this.effectBox = self.makeEffectBox(elements.effectBox,
@@ -472,6 +473,12 @@ function Desktop(elements) {
         })
     }
     this.installMissingPlugins = function (plugins, callback) {
+        if (self.isApp) {
+            new Notification('warn', "Cannot load this pedalboard, some plugins are missing", 4000)
+            callback(false)
+            return
+        }
+
         var missingCount = 0
         var versions = {}
         var uris = []
