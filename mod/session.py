@@ -15,11 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, logging, copy, json
+import os, time, logging, json
 
-from os import path
-
-from copy import deepcopy
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
@@ -177,7 +174,7 @@ class Session(object):
     def websocket_closed(self, ws, callback):
         try:
             self.websockets.remove(ws)
-        except ValueError as e:
+        except ValueError:
             pass
 
         # if this is the last socket, end ui session

@@ -19,16 +19,15 @@ import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
-import tornado.ioloop
-import tornado.options
-import tornado.escape
 import time
 from base64 import b64decode, b64encode
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
+from tornado.escape import squeeze, url_escape, xhtml_escape
+from tornado.ioloop import IOLoop
+from tornado.template import Loader
 from tornado.util import unicode_type
 from uuid import uuid4
 
@@ -172,7 +171,7 @@ def install_package(bundlename, callback):
         os.remove(filename)
         install_bundles_in_tmp_dir(callback)
 
-    ioloop = tornado.ioloop.IOLoop.instance()
+    ioloop = IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
 
 def move_file(src, dst, callback):
@@ -185,7 +184,7 @@ def move_file(src, dst, callback):
         ioloop.remove_handler(fileno)
         callback()
 
-    ioloop = tornado.ioloop.IOLoop.instance()
+    ioloop = IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_move, 16)
 
 class JsonRequestHandler(web.RequestHandler):
@@ -703,7 +702,7 @@ class PedalboardPackBundle(web.RequestHandler):
         tmpstep2 = os.path.join(tmpdir, "pedalboard+audio.tar.gz")
 
         # local usage
-        ioloop = tornado.ioloop.IOLoop.instance()
+        ioloop = IOLoop.instance()
 
         # save variable locally, used across callbacks
         self.proc = None
@@ -965,7 +964,7 @@ class TemplateHandler(web.RequestHandler):
         # 1. If we don't have a version parameter, redirect
         curVersion = self.get_version()
         try:
-            version = tornado.escape.url_escape(self.get_argument('v'))
+            version = url_escape(self.get_argument('v'))
         except web.MissingArgumentError:
             uri  = self.request.uri
             uri += '&' if self.request.query else '?'
@@ -981,7 +980,7 @@ class TemplateHandler(web.RequestHandler):
         if not path:
             path = 'index.html'
 
-        loader = tornado.template.Loader(HTML_DIR)
+        loader = Loader(HTML_DIR)
         section = path.split('.')[0]
         try:
             context = getattr(self, section)()
@@ -996,7 +995,7 @@ class TemplateHandler(web.RequestHandler):
         if IMAGE_VERSION is not None and len(IMAGE_VERSION) > 1:
             # strip initial 'v' from version if present
             version = IMAGE_VERSION[1:] if IMAGE_VERSION[0] == "v" else IMAGE_VERSION
-            return tornado.escape.url_escape(version)
+            return url_escape(version)
         return str(int(time.time()))
 
     def index(self):
@@ -1006,12 +1005,12 @@ class TemplateHandler(web.RequestHandler):
         prefs   = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
         with open(DEFAULT_ICON_TEMPLATE, 'r') as fh:
-            default_icon_template = tornado.escape.squeeze(fh.read().replace("'", "\\'"))
+            default_icon_template = squeeze(fh.read().replace("'", "\\'"))
 
         with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fh:
-            default_settings_template = tornado.escape.squeeze(fh.read().replace("'", "\\'"))
+            default_settings_template = squeeze(fh.read().replace("'", "\\'"))
 
-        pbname = tornado.escape.xhtml_escape(SESSION.host.pedalboard_name)
+        pbname = xhtml_escape(SESSION.host.pedalboard_name)
         prname = SESSION.host.pedalpreset_name()
 
         fullpbname = pbname or "Untitled"
@@ -1034,8 +1033,8 @@ class TemplateHandler(web.RequestHandler):
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY else 'false',
-            'user_name': tornado.escape.xhtml_escape(user_id.get("name", "")),
-            'user_email': tornado.escape.xhtml_escape(user_id.get("email", "")),
+            'user_name': xhtml_escape(user_id.get("name", "")),
+            'user_email': xhtml_escape(user_id.get("email", "")),
             'favorites': json.dumps(gState.favorites),
             'preferences': json.dumps(prefs),
         }
@@ -1082,7 +1081,7 @@ class BulkTemplateLoader(web.RequestHandler):
                 contents = fh.read()
             self.write("TEMPLATES['%s'] = '%s';\n\n"
                        % (template[:-5],
-                          tornado.escape.squeeze(contents.replace("'", "\\'"))
+                          squeeze(contents.replace("'", "\\'"))
                           )
                        )
         self.finish()
@@ -1460,7 +1459,7 @@ def signal_recv(sig, frame=0):
     else:
         return
 
-    tornado.ioloop.IOLoop.instance().add_callback_from_signal(func)
+    IOLoop.instance().add_callback_from_signal(func)
 
 def prepare(isModApp = False):
     check_environment()
@@ -1486,7 +1485,8 @@ def prepare(isModApp = False):
 
     application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
     if LOG:
-        tornado.log.enable_pretty_logging()
+        from tornado.log import enable_pretty_logging
+        enable_pretty_logging()
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:
@@ -1497,14 +1497,14 @@ def prepare(isModApp = False):
         elif not SESSION.host.connected:
             ioinstance.call_later(0.2, checkhost)
 
-    ioinstance = tornado.ioloop.IOLoop.instance()
+    ioinstance = IOLoop.instance()
     ioinstance.add_callback(checkhost)
 
 def start():
-    tornado.ioloop.IOLoop.instance().start()
+    IOLoop.instance().start()
 
 def stop():
-    tornado.ioloop.IOLoop.instance().stop()
+    IOLoop.instance().stop()
 
 def run():
     prepare()

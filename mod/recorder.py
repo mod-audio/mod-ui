@@ -1,4 +1,4 @@
-import time, subprocess, os, copy, json
+import os, subprocess, time
 from signal import SIGINT
 from tornado import ioloop
 from mod.settings import CAPTURE_PATH, PLAYBACK_PATH, DEVICE_KEY

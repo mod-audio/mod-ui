@@ -202,6 +202,8 @@ class HMI(object):
         unit = '"%s"' % unit.replace('"', '')
         optionsData = []
 
+        rmax = max
+
         if options:
             currentNum = 0
             numBytesFree = 1024-128
@@ -210,7 +212,7 @@ class HMI(object):
                 if currentNum > 50:
                     if value >= currentNum:
                         value = 0
-                    max = currentNum
+                    rmax = currentNum
                     break
 
                 data    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
@@ -220,7 +222,7 @@ class HMI(object):
                     print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
                     if value >= currentNum:
                         value = 0.0
-                    max = currentNum
+                    rmax = currentNum
                     break
 
                 currentNum += 1
@@ -237,7 +239,7 @@ class HMI(object):
                     var_type,
                     unit,
                     value,
-                    max,
+                    rmax,
                     min,
                     steps,
                     hw_type,

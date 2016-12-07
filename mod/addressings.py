@@ -395,7 +395,6 @@ class Addressings(object):
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             addressings       = self.hmi_addressings[actuator_uri]
             addressings_addrs = addressings['addrs']
-            addressings_idx   = addressings['idx']
 
             index = addressings_addrs.index(addressing_data)
             addressings_addrs.pop(index)
