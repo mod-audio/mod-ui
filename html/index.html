@@ -75,12 +75,14 @@
         console.log = function() {}
     }
 
+    /*
     var INFO = {
         "hardware": {},
         "env": {},
         "python": {},
         "uname": {}
     }
+    */
 
     // for mod-app control
     var desktop = null
@@ -174,6 +176,7 @@ $('document').ready(function() {
 
     // end code for ajax loading bar
 
+    /*
     $.ajax({
         url: '/system/info',
         method: 'GET',
@@ -182,6 +185,7 @@ $('document').ready(function() {
         },
         dataType: 'json'
     });
+    */
 
     desktop.resetPedalboardStats();
 })
