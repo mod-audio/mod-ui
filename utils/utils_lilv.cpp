@@ -3313,6 +3313,10 @@ const PluginInfo_Mini* const* get_all_plugins(void)
         // check if it's already cached
         if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
         {
+#if SHOW_ONLY_PLUGINS_WITH_MODGUI
+            if (PLUGNFO_Mini[uri].gui.resourcesDirectory == nc)
+                continue;
+#endif
             _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
             continue;
         }
@@ -3324,6 +3328,10 @@ const PluginInfo_Mini* const* get_all_plugins(void)
             continue;
 
         PLUGNFO_Mini[uri] = info;
+#if SHOW_ONLY_PLUGINS_WITH_MODGUI
+        if (info.gui.resourcesDirectory == nc)
+            continue;
+#endif
         _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
     }
 
