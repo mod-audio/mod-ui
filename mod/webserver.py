@@ -1097,7 +1097,7 @@ class Ping(JsonRequestHandler):
             end  = time.time()
             resp = {
                 'ihm_online': online,
-                'ihm_time'  : int((end - start) * 1000),
+                'ihm_time'  : int((end - start) * 1000) or 1,
             }
         else:
             resp = {

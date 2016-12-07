@@ -44,8 +44,11 @@ function NetworkStatus(options) {
                     timedOutPhase = 0
                 }
 
-                var time = Date.now() - start - resp.ihm_time
-                self.status(true, time, resp.ihm_time)
+                if (icon.is(':visible')) {
+                    var time = Date.now() - start - resp.ihm_time
+                    self.status(true, time, resp.ihm_time)
+                }
+
                 setTimeout(self.ping, frequency)
             },
             error: function (resp, error) {
@@ -85,7 +88,11 @@ function NetworkStatus(options) {
     this.status = function (online, network_time, ihm_time) {
         var msg
         if (online) {
-            msg = sprintf('Network: %dms | Controller: %dms', network_time, ihm_time)
+            if (ihm_time == 0) {
+                msg = sprintf('Network: %dms', network_time)
+            } else {
+                msg = sprintf('Network: %dms | Controller: %dms', network_time, ihm_time)
+            }
         } else {
             msg = 'OFFLINE'
         }

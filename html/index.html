@@ -149,8 +149,17 @@ $('document').ready(function() {
             }
         })
     } else {
-        console.log("MOD is not authenticated")
         desktop.upgradeWindow.upgradeWindow('setErrored')
+
+        // hide stuff that is only relevant to MOD Devices
+        $('#mod-bypassLeft').hide()
+        $('#mod-bypassRight').hide()
+        $('#mod-cloud-plugins').hide()
+        $('#mod-update').hide()
+
+        // show other stuff to make it less empty
+        $('#mod-xruns').show()
+        $('#mod-status').show().statusTooltip('updatePosition')
     }
 
     if (PREFERENCES['dev-mode'] == "on") {

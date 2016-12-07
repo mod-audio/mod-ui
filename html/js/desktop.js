@@ -448,9 +448,6 @@ function Desktop(elements) {
 
     this.setupApp = function () {
         self.isApp = true
-        $('#mod-bypassLeft').hide()
-        $('#mod-bypassRight').hide()
-        $('#mod-cloud-plugins').hide()
         $('#mod-bank').hide()
     }
 

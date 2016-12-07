@@ -54,7 +54,7 @@ LV2_PLUGIN_DIR = os.path.expanduser("~/.lv2/")
 LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
-HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', "/dev/ttyACM0")
+HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', "/dev/ttyUSB0")
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 

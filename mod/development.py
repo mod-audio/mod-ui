@@ -38,6 +38,13 @@ class FakeCommunicator(object):
 class FakeHMI(FakeCommunicator, HMI):
     pass
 
+class FakeSocket(object):
+    def write(self, data):
+        return
+
+    def read_until(self, msg, callback):
+        return
+
 class FakeHost(FakeCommunicator, Host):
     def __del__(self):
         self.readsock = None
@@ -49,9 +56,9 @@ class FakeHost(FakeCommunicator, Host):
             return
 
         if self.readsock is None:
-            self.readsock = True
+            self.readsock = FakeSocket()
         if self.writesock is None:
-            self.writesock = True
+            self.writesock = FakeSocket()
 
         self.connected = True
         self.report_current_state(websocket)
@@ -61,41 +68,13 @@ class FakeHost(FakeCommunicator, Host):
             self.memtimer_callback()
             self.memtimer.start()
 
-    def _send(self, msg, callback=lambda r:r, datatype='int'):
-        callback(True)
-        return
+    # send data to host, set modified flag to true
+    def send_modified(self, msg, callback=None, datatype='int'):
+        self.pedalboard_modified = True
+        if callback is not None:
+            callback(True)
 
-        msg = msg.replace("[]","",1).strip()
-        msg = [line.strip() for line in msg.split("\n")]
-        #print("_send", msg)
-
-        method = msg[0]
-
-        if method == "a patch:Get ;":
-            pass
-        elif method == "a patch:Set ;":
-            pass
-        elif method == "a patch:Put ;":
-            pass
-
-        #a patch:Get ;
-        #patch:subject </engine> .
-
-        #a patch:Get ;
-        #patch:subject </graph> .
-
-        #a patch:Put ;
-        #patch:subject </graph/autopan> ;
-        #patch:body [
-        #a ingen:Block ;
-        #<http://lv2plug.in/ns/lv2core#prototype> <http://moddevices.com/plugins/tap/autopan> ;
-        #ingen:enabled true ;
-        #ingen:canvasX 1589.718750 ;
-        #ingen:canvasY 404.000000 ;
- #] .
-
-    #def param_get(self, instance_id, symbol, callback=lambda result: None):
-        #callback({'ok': True, 'value': 17})
-
-    #def cpu_load(self, callback=lambda result: None):
-        #callback({'ok': True, 'value': random.random()*100})
+    # send data to host, don't change modified flag
+    def send_notmodified(self, msg, callback=None, datatype='int'):
+        if callback is not None:
+            callback(True)
