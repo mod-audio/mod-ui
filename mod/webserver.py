@@ -40,7 +40,7 @@ from mod.settings import (APP, LOG,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE)
 
-from mod import check_environment, jsoncall, json_handler
+from mod import check_environment, jsoncall, safe_json_load
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.utils import (init as lv2_init,
@@ -275,7 +275,7 @@ class SystemInfo(JsonRequestHandler):
     def get(self):
         uname = os.uname()
         info = {
-            "hardware": {},
+            "hardware": safe_json_load("/etc/mod-hardware-descriptor.json", dict),
             "env": dict((k, os.environ[k]) for k in [k for k in os.environ.keys() if k.startswith("MOD")]),
             "python": {
                 "argv"    : sys.argv,
@@ -290,10 +290,6 @@ class SystemInfo(JsonRequestHandler):
                 "version": uname.version
             }
         }
-
-        if os.path.exists("/etc/mod-hardware-descriptor.json"):
-            with open("/etc/mod-hardware-descriptor.json", 'r') as fd:
-                info["hardware"] = json.loads(fd.read())
 
         self.write(info)
 
@@ -1005,25 +1001,15 @@ class TemplateHandler(web.RequestHandler):
 
     def index(self):
         context = {}
-        user_id = {}
 
-        try:
-            with open(USER_ID_JSON_FILE, 'r') as fd:
-                user_id = json.load(fd)
-        except:
-            pass
+        user_id = safe_json_load(USER_ID_JSON_FILE, dict)
+        prefs   = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
-        if os.path.exists(PREFERENCES_JSON_FILE):
-            with open(PREFERENCES_JSON_FILE, 'r') as fh:
-                prefs = json.load(fh)
-        else:
-            prefs = {}
+        with open(DEFAULT_ICON_TEMPLATE, 'r') as fh:
+            default_icon_template = tornado.escape.squeeze(fh.read().replace("'", "\\'"))
 
-        with open(DEFAULT_ICON_TEMPLATE, 'r') as fd:
-            default_icon_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
-
-        with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fd:
-            default_settings_template = tornado.escape.squeeze(fd.read().replace("'", "\\'"))
+        with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fh:
+            default_settings_template = tornado.escape.squeeze(fh.read().replace("'", "\\'"))
 
         pbname = tornado.escape.xhtml_escape(SESSION.host.pedalboard_name)
         prname = SESSION.host.pedalpreset_name()
@@ -1163,12 +1149,7 @@ class SaveSingleConfigValue(JsonRequestHandler):
         key   = self.get_argument("key")
         value = self.get_argument("value")
 
-        if os.path.exists(PREFERENCES_JSON_FILE):
-            with open(PREFERENCES_JSON_FILE, 'r') as fh:
-                data = json.load(fh)
-        else:
-            data = {}
-
+        data = safe_json_load(PREFERENCES_JSON_FILE, dict)
         data[key] = value
 
         with open(PREFERENCES_JSON_FILE, 'w') as fh:
@@ -1321,17 +1302,18 @@ class TokensGet(JsonRequestHandler):
     def get(self):
         tokensConf = os.path.join(DATA_DIR, "tokens.conf")
 
-        if os.path.exists(tokensConf):
-            with open(tokensConf, 'r') as fd:
-                data = json.load(fd)
-                keys = data.keys()
-                data['ok'] = bool("user_id"       in keys and
-                                  "access_token"  in keys and
-                                  "refresh_token" in keys)
-                self.write(data)
-                return
+        if not os.path.exists(tokensConf):
+            self.write({ 'ok': False })
+            return
 
-        self.write({ 'ok': False })
+        with open(tokensConf, 'r') as fh:
+            data = json.load(fh)
+            keys = data.keys()
+
+        data['ok'] = bool("user_id"       in keys and
+                          "access_token"  in keys and
+                          "refresh_token" in keys)
+        self.write(data)
 
 class TokensSave(JsonRequestHandler):
     @jsoncall
@@ -1484,17 +1466,13 @@ def prepare(isModApp = False):
     check_environment()
     lv2_init()
 
-    if os.path.exists(FAVORITES_JSON_FILE):
-        with open(FAVORITES_JSON_FILE, 'r') as fd:
-            gState.favorites = json.load(fd)
+    gState.favorites = safe_json_load(FAVORITES_JSON_FILE, list)
 
-        if isinstance(gState.favorites, list):
-            uris = get_plugin_list()
-            for uri in gState.favorites:
-                if uri not in uris:
-                    gState.favorites.remove(uri)
-        else:
-            gState.favorites = []
+    if len(gState.favorites) > 0:
+        uris = get_plugin_list()
+        for uri in gState.favorites:
+            if uri not in uris:
+                gState.favorites.remove(uri)
 
     if False:
         print("Scanning plugins, this may take a little...")

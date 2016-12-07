@@ -34,7 +34,7 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, logging
 
-from mod import symbolify
+from mod import safe_json_load, symbolify
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
@@ -1727,12 +1727,11 @@ class Host(object):
 
         self.pedalpreset_clear()
 
-        if os.path.exists(os.path.join(bundlepath, "presets.json")):
-            with open(os.path.join(bundlepath, "presets.json")) as fh:
-                more_pb_presets = json.load(fh)
-            if isinstance(more_pb_presets, list) and len(more_pb_presets) != 0:
-                self.pedalboard_preset  = 0 # FIXME?
-                self.pedalboard_presets = more_pb_presets
+        more_pb_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
+
+        if len(more_pb_presets) > 0:
+            self.pedalboard_preset  = 0 # FIXME?
+            self.pedalboard_presets = more_pb_presets
 
         self.addressings.load(bundlepath, instances)
         self.addressings.registerMappings(self.msg_callback, rinstances)

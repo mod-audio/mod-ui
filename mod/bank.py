@@ -16,21 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, json
+from mod import safe_json_load
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
 def list_banks(brokenpedals = []):
-    if not os.path.exists(BANKS_JSON_FILE):
-        print("banks file does not exist")
-        return []
+    banks = safe_json_load(BANKS_JSON_FILE, list)
 
-    with open(BANKS_JSON_FILE, 'r') as fh:
-        banks = fh.read()
-
-    try:
-        banks = json.loads(banks)
-    except:
-        print("ERROR in banks.py: failed to load banks file")
+    if len(banks) == 0:
         return []
 
     changed     = False
@@ -94,33 +87,19 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
 
 # get last bank id and pedalboard path
 def get_last_bank_and_pedalboard():
-    if not os.path.exists(LAST_STATE_JSON_FILE):
-        print("last state file does not exist")
+    data = safe_json_load(LAST_STATE_JSON_FILE, dict)
+    keys = data.keys()
+
+    if "bank" not in keys or "pedalboard" not in keys or not isinstance(data['bank'], int):
+        print("last state file does not exist or is corrupt")
         return (-1, None)
 
-    with open(LAST_STATE_JSON_FILE, 'r') as fh:
-        state = fh.read()
-
-    try:
-        state = json.loads(state)
-    except:
-        print("ERROR in banks.py: failed to load last state file")
-        return (-1, None)
-
-    return (state['bank']+1, state['pedalboard'])
+    return (data['bank']+1, data['pedalboard'])
 
 # Remove a pedalboard from banks, and banks that are or will become empty
 def remove_pedalboard_from_banks(pedalboard):
     newbanks = []
-
-    with open(BANKS_JSON_FILE, 'r') as fh:
-        banks = fh.read()
-
-    try:
-        banks = json.loads(banks)
-    except:
-        print("ERROR in banks.py: failed to load banks file")
-        return
+    banks = safe_json_load(BANKS_JSON_FILE, list)
 
     for bank in banks:
         newpedalboards = []

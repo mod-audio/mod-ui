@@ -5,7 +5,7 @@ import json
 import os
 
 from tornado import gen
-from mod import get_hardware_actuators
+from mod import get_hardware_actuators, safe_json_load
 from mod.utils import get_plugin_info, get_plugin_control_inputs_and_monitored_outputs
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0
@@ -152,9 +152,7 @@ class Addressings(object):
         if not os.path.exists(datafile):
             return
 
-        with open(datafile, 'r') as fh:
-            data = fh.read()
-        data = json.loads(data)
+        data = safe_json_load(datafile, list)
 
         used_actuators = []
 
