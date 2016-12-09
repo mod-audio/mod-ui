@@ -46,7 +46,7 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+from mod.settings import (APP, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
                           PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
                           TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
@@ -156,6 +156,13 @@ class Host(object):
         self.pedalboard_preset   = -1
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
+
+        if APP and os.getenv("MOD_LIVE_ISO") is not None:
+            self.jack_hwin_prefix  = "system:playback_"
+            self.jack_hwout_prefix = "system:capture_"
+        else:
+            self.jack_hwin_prefix  = "mod-monitor:in_"
+            self.jack_hwout_prefix = "mod-monitor:out_"
 
         # pluginData-like pedalboard
         self.pedalboard_pdata = {
@@ -782,16 +789,16 @@ class Host(object):
     # Host stuff
 
     def mute(self):
-        disconnect_jack_ports("mod-host:monitor-out_1", "system:playback_1")
-        disconnect_jack_ports("mod-host:monitor-out_2", "system:playback_2")
-        disconnect_jack_ports("mod-host:monitor-out_1", "mod-peakmeter:in_3")
-        disconnect_jack_ports("mod-host:monitor-out_2", "mod-peakmeter:in_4")
+        disconnect_jack_ports(self.jack_hwout_prefix + "1", "system:playback_1")
+        disconnect_jack_ports(self.jack_hwout_prefix + "2", "system:playback_2")
+        disconnect_jack_ports(self.jack_hwout_prefix + "1", "mod-peakmeter:in_3")
+        disconnect_jack_ports(self.jack_hwout_prefix + "2", "mod-peakmeter:in_4")
 
     def unmute(self):
-        connect_jack_ports("mod-host:monitor-out_1", "system:playback_1")
-        connect_jack_ports("mod-host:monitor-out_2", "system:playback_2")
-        connect_jack_ports("mod-host:monitor-out_1", "mod-peakmeter:in_3")
-        connect_jack_ports("mod-host:monitor-out_2", "mod-peakmeter:in_4")
+        connect_jack_ports(self.jack_hwout_prefix + "1", "system:playback_1")
+        connect_jack_ports(self.jack_hwout_prefix + "2", "system:playback_2")
+        connect_jack_ports(self.jack_hwout_prefix + "1", "mod-peakmeter:in_3")
+        connect_jack_ports(self.jack_hwout_prefix + "2", "mod-peakmeter:in_4")
 
     def report_current_state(self, websocket):
         if websocket is None:
@@ -1431,7 +1438,7 @@ class Host(object):
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
-                    return "mod-host:monitor-in_" + num
+                    return self.jack_hwin_prefix + num
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
