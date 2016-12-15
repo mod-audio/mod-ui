@@ -321,6 +321,7 @@ $('document').ready(function() {
                         $('#js-preset-menu').show()
                     }
 
+                    loading = false
                     desktop.init();
                 },
                 cache: false,
