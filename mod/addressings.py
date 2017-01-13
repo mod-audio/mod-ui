@@ -152,12 +152,12 @@ class Addressings(object):
         if not os.path.exists(datafile):
             return
 
-        data = safe_json_load(datafile, list)
+        data = safe_json_load(datafile, dict)
 
         used_actuators = []
 
-        for actuator_uri in data:
-            for addr in data[actuator_uri]:
+        for actuator_uri, addrs in data.items():
+            for addr in addrs:
                 instance   = addr['instance']
                 instance_id,\
                 plugin_uri = instances[instance]
@@ -342,6 +342,10 @@ class Addressings(object):
             addressings['addrs'].append(addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
+            if actuator_uri not in self.cc_addressings.keys():
+                print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
+                return None
+
             addressings = self.cc_addressings[actuator_uri]
             addressings.append(addressing_data)
 
