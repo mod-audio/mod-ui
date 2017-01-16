@@ -168,6 +168,7 @@ class Host(object):
         self.pedalboard_pdata = {
             "uri"        : PEDALBOARD_URI,
             "addressings": {}, # symbol: addressing
+            "ports"      : {},
             "preset"     : "",
             "mapPresets" : []
         }
@@ -1846,15 +1847,24 @@ class Host(object):
         # Write presets.json
         presets_path = os.path.join(bundlepath, "presets.json")
 
-        for instance in self.plugins_removed:
-            # TODO
-            pass
-
-        for instance_id in self.plugins_added:
-            # TODO
-            pass
-
         if len(self.pedalboard_presets) > 1:
+            for instance in self.plugins_removed:
+                for pedalpreset in self.pedalboard_presets:
+                    if pedalpreset is None:
+                        continue
+                    pedalpreset['data'].pop(instance)
+
+            for instance_id in self.plugins_added:
+                for pedalpreset in self.pedalboard_presets:
+                    if pedalpreset is None:
+                        continue
+                    pluginData = self.plugins[instance_id]
+                    pedalpreset['data'][instance] = {
+                        "bypassed": pluginData['bypassed'],
+                        "ports"   : pluginData['ports'].copy(),
+                        "preset"  : pluginData['preset'],
+                    }
+
             presets = [p for p in self.pedalboard_presets if p is not None]
             with open(presets_path, 'w') as fh:
                 json.dump(presets, fh)
