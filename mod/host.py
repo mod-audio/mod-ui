@@ -849,6 +849,7 @@ class Host(object):
         if self.hasSerialMidiIn:
             websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
+
         ports = get_jack_hardware_ports(False, False)
         for i in range(len(ports)):
             name = ports[i]
@@ -860,6 +861,9 @@ class Host(object):
             else:
                 title = name.split(":",1)[-1].title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
+
+        #add modulation port so plugins can manipulate or generate midi learn
+        websocket.write_message("add_hw_port /graph/mod-host midi 0 midi_in %i",i+1)
 
         # MIDI Out
         if self.hasSerialMidiOut:
