@@ -1872,13 +1872,14 @@ class Host(object):
                 for pedalpreset in self.pedalboard_presets:
                     if pedalpreset is None:
                         continue
-                    pedalpreset['data'].pop(instance)
+                    pedalpreset['data'].pop(instance.replace("/graph/","",1))
 
             for instance_id in self.plugins_added:
                 for pedalpreset in self.pedalboard_presets:
                     if pedalpreset is None:
                         continue
                     pluginData = self.plugins[instance_id]
+                    instance   = pluginData['instance'].replace("/graph/","",1)
                     pedalpreset['data'][instance] = {
                         "bypassed": pluginData['bypassed'],
                         "ports"   : pluginData['ports'].copy(),
@@ -1891,6 +1892,9 @@ class Host(object):
 
         elif os.path.exists(presets_path):
             os.remove(presets_path)
+
+        self.plugins_added   = []
+        self.plugins_removed = []
 
     def save_state_mainfile(self, bundlepath, title, titlesym):
         # Create list of midi in/out ports
