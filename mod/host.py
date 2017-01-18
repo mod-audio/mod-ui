@@ -396,9 +396,12 @@ class Host(object):
 
     def addr_task_get_plugin_presets(self, uri):
         if uri == PEDALBOARD_URI:
+            if self.pedalboard_preset < 0 or len(self.pedalboard_presets) == 0:
+                return []
             self.pedalboard_pdata['preset'] = "file:///%i" % self.pedalboard_preset
             presets = self.pedalboard_presets
-            presets = [{'uri':'file:///%i'%i, 'label':presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
+            presets = [{'uri': 'file:///%i'%i,
+                        'label': presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
             return presets
         return get_plugin_info(uri)['presets']
 
@@ -1323,7 +1326,7 @@ class Host(object):
         }
 
         for instance_id, pluginData in self.plugins.items():
-            instance = pluginData['instance']
+            instance = pluginData['instance'].replace("/graph/","",1)
             pedalpreset['data'][instance] = {
                 "bypassed": pluginData['bypassed'],
                 "ports"   : pluginData['ports'].copy(),
@@ -1390,6 +1393,7 @@ class Host(object):
         used_actuators = []
 
         for instance, data in pedalpreset['data'].items():
+            instance    = "/graph/%s" % instance
             instance_id = self.mapper.get_id_without_creating(instance)
             pluginData  = self.plugins[instance_id]
             diffBypass  = pluginData['bypassed'] != data['bypassed']
@@ -1586,6 +1590,30 @@ class Host(object):
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
+        self.pedalpreset_clear()
+
+        pedal_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
+
+        if len(pedal_presets) > 0:
+            self.pedalboard_preset  = 0
+            self.pedalboard_presets = pedal_presets
+
+            init_pedal_preset = pedal_presets[0]['data']
+
+            for p in pb['plugins']:
+                pdata = init_pedal_preset.get(p['instance'], None)
+
+                if pdata is None:
+                    print("WARNING: Pedalboard preset missing data for instance name '%s'" % p['instance'])
+                    continue
+
+                p['bypassed'] = pdata['bypassed']
+
+                for port in p['ports']:
+                    port['value'] = pdata['ports'].get(port['symbol'], port['value'])
+
+                p['preset'] = pdata['preset']
+
         instances = {
             PEDALBOARD_INSTANCE: (PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI)
         }
@@ -1732,14 +1760,6 @@ class Host(object):
                     port_alias = port_alias.split(";",1) if ";" in port_alias else [port_alias]
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
-
-        self.pedalpreset_clear()
-
-        more_pb_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
-
-        if len(more_pb_presets) > 0:
-            self.pedalboard_preset  = 0 # FIXME?
-            self.pedalboard_presets = more_pb_presets
 
         self.addressings.load(bundlepath, instances)
         self.addressings.registerMappings(self.msg_callback, rinstances)
