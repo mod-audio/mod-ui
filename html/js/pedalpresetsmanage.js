@@ -63,7 +63,9 @@ function PedalboardPresetsManager(options) {
         var selected = options.pedalPresetsList.find('option:selected')
         var selectId = selected.val()
 
-        if (selectId == 0 || options.currentlyAddressed) {
+        if (selectId == 0) {
+            return self.prevent(e, "Cannot delete initial preset")
+        } else if (options.currentlyAddressed) {
             return self.prevent(e)
         }
 
@@ -144,7 +146,7 @@ function PedalboardPresetsManager(options) {
         })
     }
 
-    this.prevent = function (e) {
+    this.prevent = function (e, customMessage) {
         var img = $('<img>').attr('src', 'img/icn-blocked.png')
         $('body').append(img)
         img.css({
@@ -156,7 +158,7 @@ function PedalboardPresetsManager(options) {
         setTimeout(function () {
             img.remove()
         }, 500)
-        new Notification("warn", "Cannot change presets while addressed to hardware", 3000)
+        new Notification("warn", customMessage || "Cannot change presets while addressed to hardware", 3000)
         return false
     }
 
@@ -167,6 +169,10 @@ function PedalboardPresetsManager(options) {
             options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
         } else {
             options.pedalPresetsWindow.find('.js-delete').removeClass('disabled')
+        }
+
+        if (options.currentlyAddressed) {
+            return self.prevent(e)
         }
 
         $.ajax({

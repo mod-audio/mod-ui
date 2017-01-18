@@ -683,9 +683,7 @@ function Desktop(elements) {
         })
     })
     elements.pedalboardPresetsEnabler.click(function () {
-        if (!confirm("Pedalboard will be locked now, you cannot add or remove plugins and connections. Continue?")) {
-            return
-        }
+        new Notification('info', 'Pedalboard presets have been activated', 8000)
 
         $.ajax({
             url: '/pedalpreset/enable',
@@ -703,7 +701,7 @@ function Desktop(elements) {
         })
     })
     elements.presetDisableButton.click(function () {
-        if (!confirm("This action will remove all pedalboard presets. Continue?")) {
+        if (!confirm("This action will delete all this pedalboard presets. Continue?")) {
             return
         }
 
