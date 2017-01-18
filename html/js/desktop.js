@@ -845,7 +845,7 @@ function Desktop(elements) {
     })
 
     elements.statusIcon.statusTooltip()
-    new NetworkStatus({
+    this.networkStatus = new NetworkStatus({
         icon: elements.statusIcon,
         notify: function (msg) {
             elements.statusIcon.statusTooltip('message', msg, true)

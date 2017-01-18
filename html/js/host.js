@@ -40,11 +40,6 @@ $('document').ready(function() {
 
         var cmd = data[0]
 
-        if (cmd == "ping") {
-            ws.send("pong")
-            return
-        }
-
         if (cmd == "stats") {
             var cpuLoad = parseFloat(data[1])
             var xruns   = parseInt(data[2])
@@ -69,6 +64,13 @@ $('document').ready(function() {
                     timeout_xruns = null
                 }, 500)
             }
+
+            desktop.networkStatus.timedOutPhase = 0
+            return
+        }
+
+        if (cmd == "ping") {
+            ws.send("pong")
             return
         }
 
