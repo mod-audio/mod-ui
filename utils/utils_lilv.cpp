@@ -3022,24 +3022,37 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
     // fill in for any new plugins that appeared
     std::vector<std::string> addedPlugins;
 
-    LILV_FOREACH(plugins, itpls, PLUGINS)
+    // check plugins provided by this bundle
+    if (LilvWorld* const w = lilv_world_new())
     {
-        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
+#ifdef HAVE_NEW_LILV
+        lilv_world_load_specifications(w);
+        lilv_world_load_plugin_classes(w);
+#endif
 
-        std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+        LilvNode* const b = lilv_new_file_uri(w, nullptr, cbundlepath);
+        lilv_world_load_bundle(w, b);
+        lilv_node_free(b);
 
-        if (std::find(BLACKLIST.begin(), BLACKLIST.end(), uri) != BLACKLIST.end())
-            continue;
+        const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
 
-        // check if it's already cached
-        if (PLUGNFO_Mini.count(uri) > 0)
-            continue;
+        LILV_FOREACH(plugins, itpls, plugins)
+        {
+            const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
-        // store new empty data
-        PLUGNFO[uri] = PluginInfo_Init;
-        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+            const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
-        addedPlugins.push_back(uri);
+            if (std::find(BLACKLIST.begin(), BLACKLIST.end(), uri) != BLACKLIST.end())
+                continue;
+
+            // store new empty data
+            PLUGNFO[uri] = PluginInfo_Init;
+            PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+
+            addedPlugins.push_back(uri);
+        }
+
+        lilv_world_free(w);
     }
 
     if (size_t plugCount = addedPlugins.size())
@@ -3112,7 +3125,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
 
         const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
 
-        std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+        const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
         if (PLUGNFO.count(uri) == 0)
             continue;
@@ -3305,7 +3318,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
 
         const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
 
-        std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+        const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
         if (std::find(BLACKLIST.begin(), BLACKLIST.end(), uri) != BLACKLIST.end())
             continue;
