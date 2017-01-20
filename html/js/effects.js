@@ -257,6 +257,7 @@ JqueryClass('effectBox', {
             'Dynamics': 0,
             'Filter': 0,
             'Generator': 0,
+            'MIDI-Filter': 0,
             'Modulator': 0,
             'Reverb': 0,
             'Simulator': 0,
