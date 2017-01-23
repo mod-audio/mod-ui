@@ -257,7 +257,7 @@ JqueryClass('effectBox', {
             'Dynamics': 0,
             'Filter': 0,
             'Generator': 0,
-            'MIDI-Filter': 0,
+            'MIDI': 0,
             'Modulator': 0,
             'Reverb': 0,
             'Simulator': 0,
@@ -516,7 +516,12 @@ JqueryClass('effectBox', {
         var self = $(this)
         self.find('.plugins-wrapper').html('')
         self.find('ul.js-category-tabs li').each(function () {
-            $(this).html($(this).html().split(/\s/)[0])
+            var content = $(this).html().split(/\s/)
+            if (content.length >= 2 && content[1] == "Utility") {
+                $(this).html(content[0] + " Utility")
+            } else {
+                $(this).html(content[0])
+            }
         });
         self.effectBox('resetShift')
             //$('#js-effect-info').hide()

@@ -410,7 +410,7 @@ static const char* const kCategoryAnalyserPlugin[] = { "Utility", "Analyser", nu
 static const char* const kCategoryConverterPlugin[] = { "Utility", "Converter", nullptr };
 static const char* const kCategoryFunctionPlugin[] = { "Utility", "Function", nullptr };
 static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
-static const char* const kCategoryMIDIFilterPlugin[] = { "MIDI-Filter", "Filter", nullptr };
+static const char* const kCategoryMIDIPlugin[] = { "MIDI", "Utility", nullptr };
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -881,17 +881,19 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                     info.category = kCategoryFunctionPlugin;
                 else if (strcmp(cat, "MixerPlugin") == 0)
                     info.category = kCategoryMixerPlugin;
+                else if (strcmp(cat, "MIDIPlugin") == 0)
+                    info.category = kCategoryMIDIPlugin;
             }
-            else if (const char* cat = strstr(nodestr, LILV_NS_MOD))
+            else if (const char* cat2 = strstr(nodestr, LILV_NS_MOD))
             {
-                cat += 29; // strlen("http://moddevices.com/ns/mod#")
+                cat2 += 29; // strlen("http://moddevices.com/ns/mod#")
 
-                if (cat[0] == '\0')
+                if (cat2[0] == '\0')
                     continue;
 
-                if (strcmp(cat, "MIDIFilterPlugin") == 0)
+                if (strcmp(cat2, "MIDIPlugin") == 0)
                 {
-                    info.category = kCategoryMIDIFilterPlugin;
+                    info.category = kCategoryMIDIPlugin;
                     break;
                 }
             }
