@@ -480,12 +480,10 @@ JqueryClass('cloudPluginBox', {
 
             pluginsDict[plugin.uri] = plugin
 
-            if (category && category != 'All') {
-                if (categories[category] == null) {
-                    categories[category] = 1
+            if (category && category != 'All' && categories[category] != null) {
+                categories[category] += 1
+                if (cachedContentCanvas[category] == null) {
                     cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
-                } else {
-                    categories[category] += 1
                 }
                 render.clone(true).appendTo(cachedContentCanvas[category])
             }
@@ -503,10 +501,16 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         self.data('categoryCount', categories)
 
-        var tab
         for (var category in categories) {
-            tab = self.find('#cloud-plugin-tab-' + category)
-            tab.html(tab.html().split(/\s/)[0] + ' <span class="plugin_count">(' + categories[category] + ')</span>')
+            var tab     = self.find('#cloud-plugin-tab-' + category)
+            var content = tab.html().split(/\s/)
+
+            if (content.length >= 2 && content[1] == "Utility") {
+                content = content[0] + " Utility"
+            } else {
+                content = content[0]
+            }
+            tab.html(content + ' <span class="plugin_count">(' + categories[category] + ')</span>')
         }
     },
 
