@@ -311,7 +311,11 @@ $('document').ready(function() {
             var presetId = parseInt(data[1])
 
             $.ajax({
-                url: '/hello',
+                url: '/pedalpreset/name',
+                type: 'GET',
+                data: {
+                    id: presetId,
+                },
                 success: function (resp) {
                     desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
@@ -321,6 +325,10 @@ $('document').ready(function() {
                     if (presetId >= 0) {
                         $('#js-preset-enabler').hide()
                         $('#js-preset-menu').show()
+
+                        if (resp.ok) {
+                            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
+                        }
                     }
 
                     loading = false
