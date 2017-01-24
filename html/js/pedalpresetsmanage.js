@@ -124,12 +124,20 @@ function PedalboardPresetsManager(options) {
                 return new Notification("info", "No pedalboard presets available")
             }
 
+            if (options.currentlyAddressed) {
+                options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
+                options.pedalPresetsWindow.find('.js-rename').addClass('disabled')
+            } else {
+                options.pedalPresetsWindow.find('.js-delete').removeClass('disabled')
+                options.pedalPresetsWindow.find('.js-rename').removeClass('disabled')
+            }
+
             // add new ones
             for (var i in presets) {
                 var elem = $('<option value="'+i+'">'+presets[i]+'</option>')
 
-                if (currentId == i) {
-                    elem.prop('selected','selected')
+                if (currentId == i && ! options.currentlyAddressed) {
+                    elem.prop('selected', 'selected')
                     if (i == 0) {
                         options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
                     }
@@ -162,17 +170,18 @@ function PedalboardPresetsManager(options) {
         return false
     }
 
-    this.optionClicked = function () {
+    this.optionClicked = function (e) {
         var selectId = $(this).val()
+
+        if (options.currentlyAddressed) {
+            options.pedalPresetsList.find('option:selected').removeProp('selected')
+            return self.prevent(e)
+        }
 
         if (selectId == 0) {
             options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
         } else {
             options.pedalPresetsWindow.find('.js-delete').removeClass('disabled')
-        }
-
-        if (options.currentlyAddressed) {
-            return self.prevent(e)
         }
 
         $.ajax({
