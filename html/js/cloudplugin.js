@@ -137,7 +137,12 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         self.find('.plugins-wrapper').html('')
         self.find('ul.categories li').each(function () {
-            $(this).html($(this).html().split(/\s/)[0])
+            var content = $(this).html().split(/\s/)
+            if (content.length >= 2 && content[1] == "Utility") {
+                $(this).html(content[0] + " Utility")
+            } else {
+                $(this).html(content[0])
+            }
         });
     },
     checkLocalScreenshot: function (plugin) {
@@ -448,7 +453,19 @@ JqueryClass('cloudPluginBox', {
 
         var category   = {}
         var categories = {
-            'All': plugins.length
+            'All': plugins.length,
+            'Delay': 0,
+            'Distortion': 0,
+            'Dynamics': 0,
+            'Filter': 0,
+            'Generator': 0,
+            'MIDI': 0,
+            'Modulator': 0,
+            'Reverb': 0,
+            'Simulator': 0,
+            'Spatial': 0,
+            'Spectral': 0,
+            'Utility': 0,
         }
         var cachedContentCanvas = {
             'All': self.find('#cloud-plugin-content-All')
