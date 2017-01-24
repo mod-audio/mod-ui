@@ -1403,11 +1403,14 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 1.0" % (instance,))
                 self.bypass(instance, True, None)
 
-            if data['preset']:
+            if data['preset'] and data['preset'] != pluginData['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
                 yield gen.Task(self.preset_load, instance, data['preset'])
 
             for symbol, value in data['ports'].items():
+                if value == pluginData['ports'][symbol]:
+                    continue
+
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
                 self.param_set("%s/%s" % (instance, symbol), value, None)
 
