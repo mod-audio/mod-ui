@@ -142,6 +142,9 @@ function Desktop(elements) {
             })
         },
         setEnabled: function (instance, portSymbol, enabled) {
+            if (instance == "/pedalboard") {
+                return
+            }
             self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
         },
         renderForm: function (instance, port) {
@@ -701,9 +704,11 @@ function Desktop(elements) {
         })
     })
     elements.presetDisableButton.click(function () {
-        if (!confirm("This action will delete all this pedalboard presets. Continue?")) {
+        if (!confirm("This action will delete all current pedalboard presets. Continue?")) {
             return
         }
+
+        self.hardwareManager.removeHardwareMappping("/pedalboard/:presets")
 
         $.ajax({
             url: '/pedalpreset/disable',

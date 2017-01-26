@@ -1355,6 +1355,10 @@ class Host(object):
         self.pedalboard_preset = -1
         self.pedalboard_presets = []
 
+    def pedalpreset_disable(self, callback):
+        self.pedalpreset_clear()
+        self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, callback)
+
     def pedalpreset_save(self):
         if self.pedalboard_preset < 0 or self.pedalboard_preset >= len(self.pedalboard_presets):
             return False

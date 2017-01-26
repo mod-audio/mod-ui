@@ -866,8 +866,10 @@ class PedalboardPresetEnable(JsonRequestHandler):
         self.write(True)
 
 class PedalboardPresetDisable(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
-        SESSION.host.pedalpreset_clear()
+        yield gen.Task(SESSION.host.pedalpreset_disable)
         self.write(True)
 
 class PedalboardPresetSave(JsonRequestHandler):

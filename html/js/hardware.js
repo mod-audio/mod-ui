@@ -496,6 +496,16 @@ function HardwareManager(options) {
         }
     }
 
+    // used only for global pedalboard addressings
+    // don't use it for normal operations, as it skips setEnabled()
+    this.removeHardwareMappping = function (instanceAndSymbol) {
+        var actuator_uri = self.addressingsByPortSymbol[instanceAndSymbol]
+        remove_from_array(self.addressingsByActuator[actuator_uri], instanceAndSymbol)
+
+        delete self.addressingsByPortSymbol[instanceAndSymbol]
+        delete self.addressingsData        [instanceAndSymbol]
+    }
+
     /*
     // Callback from pedalboard.js for when a plugin instance is added
     this.instanceAdded = function (instance) {
