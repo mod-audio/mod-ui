@@ -583,14 +583,14 @@ JqueryClass('cloudPluginBox', {
             var count = 0
             var finished = function (resp, bundlename) {
                 self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
-                if (resp.ok) {
-                    count += 1
-                    if (count == bundle_ids.length) {
-                        $('#cloud_install_all').removeClass("disabled").css({color:'white'})
-                        $('#cloud_update_all').removeClass("disabled") //.css({color:'white'})
-                    }
+                count += 1
+                if (count == bundle_ids.length) {
+                    $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                    $('#cloud_update_all').removeClass("disabled").css({color:'white'})
                 }
-                self.cloudPluginBox('search')
+                if (resp.ok) {
+                    self.cloudPluginBox('search')
+                }
             }
 
             for (var i in bundle_ids) {

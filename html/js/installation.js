@@ -174,52 +174,40 @@ function InstallationQueue() {
             var localcallbacks = [callback],
                 result = resp.result
 
-            if (result.ok)
-            {
-                queue.shift()
-                callbacks.shift()
+            queue.shift()
+            callbacks.shift()
 
+            if (result.ok) {
                 notification.html(installationMsg + ' - OK!')
                 notification.bar(0)
                 notification.type('success')
-
-                // check for duplicates
-                var duplicated = []
-                for (var i in queue) {
-                    if (JSON.stringify(queue[i]) === JSON.stringify(bundle)) {
-                        duplicated.push(i)
-                    }
-                }
-                // reverse order so we can pop from queue
-                duplicated.reverse()
-                for (var i in duplicated) {
-                    queue.pop(i)
-                    localcallbacks.push(callbacks.pop(i))
-                }
-
-                if (queue.length > 0) {
-                    self.installNext()
-                } else {
-                    notification.closeAfter(3000)
-                    desktop.updateAllPlugins()
-                }
-
-                // TODO
-                //desktop.updatePluginList(result.installed, result.removed)
-            }
-            else
-            {
-                queue = []
-                callbacks = []
-
-                notification.close()
+            } else {
                 new Notification('error', "Could not install plugin: " + result.error, 5000)
+            }
 
-                // TODO
-                //desktop.updatePluginList([], result.removed)
+            // check for duplicates
+            var duplicated = []
+            for (var i in queue) {
+                if (JSON.stringify(queue[i]) === JSON.stringify(bundle)) {
+                    duplicated.push(i)
+                }
+            }
+            // reverse order so we can pop from queue
+            duplicated.reverse()
+            for (var i in duplicated) {
+                queue.pop(i)
+                localcallbacks.push(callbacks.pop(i))
+            }
 
+            if (queue.length > 0) {
+                self.installNext()
+            } else {
+                notification.closeAfter(3000)
                 desktop.updateAllPlugins()
             }
+
+            // TODO
+            //desktop.updatePluginList(result.installed, result.removed)
 
             for (var i in localcallbacks) {
                 localcallbacks[i](result, bundle.name)
