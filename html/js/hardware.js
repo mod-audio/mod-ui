@@ -500,7 +500,9 @@ function HardwareManager(options) {
     // don't use it for normal operations, as it skips setEnabled()
     this.removeHardwareMappping = function (instanceAndSymbol) {
         var actuator_uri = self.addressingsByPortSymbol[instanceAndSymbol]
-        remove_from_array(self.addressingsByActuator[actuator_uri], instanceAndSymbol)
+        if (actuator_uri && actuator_uri != kNullAddressURI) {
+            remove_from_array(self.addressingsByActuator[actuator_uri], instanceAndSymbol)
+        }
 
         delete self.addressingsByPortSymbol[instanceAndSymbol]
         delete self.addressingsData        [instanceAndSymbol]
