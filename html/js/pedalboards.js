@@ -216,7 +216,8 @@ JqueryClass('pedalboardBox', {
             success: function (resp) {
                 if (resp.ok)
                 {
-                    img.css({backgroundImage: "url(/pedalboard/image/screenshot.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime + ")"});
+                    img.css({backgroundImage: "url(/pedalboard/image/thumbnail.png?bundlepath="+
+                                                escape(pedalboard.bundle)+"&tstamp="+resp.ctime+")"});
                     img.addClass("loaded");
                 }
                 else
