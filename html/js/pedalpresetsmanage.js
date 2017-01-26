@@ -91,7 +91,11 @@ function PedalboardPresetsManager(options) {
         return false
     })
 
-    options.pedalPresetsWindow.find('.js-assign-all').click(function () {
+    options.pedalPresetsWindow.find('.js-assign-all').click(function (e) {
+        if ($(this).hasClass("disabled")) {
+            return self.prevent(e, "Cannot assign list with only 1 preset")
+        }
+
         var port = {
             name: 'Presets',
             symbol: ':presets',
@@ -120,8 +124,14 @@ function PedalboardPresetsManager(options) {
         options.currentlyAddressed = currentlyAddressed
 
         self.getPedalPresetList(function (presets) {
-            if (presets.length == 0) {
+            var presetCount = Object.keys(presets).length
+
+            if (presetCount == 0) {
                 return new Notification("info", "No pedalboard presets available")
+            }
+
+            if (presetCount == 1) {
+                options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
             }
 
             if (options.currentlyAddressed) {
