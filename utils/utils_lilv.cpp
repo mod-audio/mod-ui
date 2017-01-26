@@ -411,6 +411,7 @@ static const char* const kCategoryConverterPlugin[] = { "Utility", "Converter", 
 static const char* const kCategoryFunctionPlugin[] = { "Utility", "Function", nullptr };
 static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
 static const char* const kCategoryMIDIPlugin[] = { "MIDI", "Utility", nullptr };
+static const char* const kCategoryMIDIPluginMOD[] = { "MIDI", nullptr };
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -881,8 +882,10 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                     info.category = kCategoryFunctionPlugin;
                 else if (strcmp(cat, "MixerPlugin") == 0)
                     info.category = kCategoryMixerPlugin;
+                /*
                 else if (strcmp(cat, "MIDIPlugin") == 0)
                     info.category = kCategoryMIDIPlugin;
+                */
             }
             else if (const char* cat2 = strstr(nodestr, LILV_NS_MOD))
             {
@@ -891,13 +894,37 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                 if (cat2[0] == '\0')
                     continue;
 
-                if (strcmp(cat2, "MIDIPlugin") == 0)
-                {
-                    info.category = kCategoryMIDIPlugin;
-                    break;
-                }
-            }
+                else if (strcmp(cat, "DelayPlugin") == 0)
+                    info.category = kCategoryDelayPlugin;
+                else if (strcmp(cat, "DistortionPlugin") == 0)
+                    info.category = kCategoryDistortionPlugin;
+                else if (strcmp(cat, "DynamicsPlugin") == 0)
+                    info.category = kCategoryDynamicsPlugin;
+                else if (strcmp(cat, "FilterPlugin") == 0)
+                    info.category = kCategoryFilterPlugin;
+                else if (strcmp(cat, "GeneratorPlugin") == 0)
+                    info.category = kCategoryGeneratorPlugin;
+                else if (strcmp(cat, "ModulatorPlugin") == 0)
+                    info.category = kCategoryModulatorPlugin;
+                else if (strcmp(cat, "ReverbPlugin") == 0)
+                    info.category = kCategoryReverbPlugin;
+                else if (strcmp(cat, "SimulatorPlugin") == 0)
+                    info.category = kCategorySimulatorPlugin;
+                else if (strcmp(cat, "SpatialPlugin") == 0)
+                    info.category = kCategorySpatialPlugin;
+                else if (strcmp(cat, "SpectralPlugin") == 0)
+                    info.category = kCategorySpectralPlugin;
+                else if (strcmp(cat, "UtilityPlugin") == 0)
+                    info.category = kCategoryUtilityPlugin;
+                else if (strcmp(cat2, "MIDIPlugin") == 0)
+                    info.category = kCategoryMIDIPluginMOD;
+                else
+                    continue; // invalid mod category
 
+                // if we reach this point we found a mod category.
+                // we need to stop now, as only 1 mod category is allowed per plugin.
+                break;
+            }
         }
         lilv_nodes_free(nodes);
     }
