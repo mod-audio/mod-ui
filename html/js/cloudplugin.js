@@ -580,6 +580,13 @@ JqueryClass('cloudPluginBox', {
                 }
             }
 
+            if (bundle_ids.length == 0) {
+                $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                $('#cloud_update_all').removeClass("disabled").css({color:'white'})
+                new Notification('warn', 'All plugins are '+(updateOnly?'updated':'installed')+', nothing to do', 8000)
+                return
+            }
+
             var count = 0
             var finished = function (resp, bundlename) {
                 self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
@@ -587,6 +594,7 @@ JqueryClass('cloudPluginBox', {
                 if (count == bundle_ids.length) {
                     $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                     $('#cloud_update_all').removeClass("disabled").css({color:'white'})
+                    new Notification('warn', 'All plugins are now '+(updateOnly?'updated':'installed'), 8000)
                 }
                 if (resp.ok) {
                     self.cloudPluginBox('search')
