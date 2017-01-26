@@ -1663,7 +1663,7 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
-            self.plugins[instance_id] = {
+            self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,
                 "uri"         : p['uri'],
                 "bypassed"    : p['bypassed'],
@@ -1699,25 +1699,27 @@ class Host(object):
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
-                mchnnl = port['midiCC']['channel']
-                mctrl  = port['midiCC']['control']
 
-                if port['midiCC']['hasRanges']:
-                    minimum = port['midiCC']['minimum']
-                    maximum = port['midiCC']['maximum']
-                else:
-                    minimum, maximum = ranges[symbol]
-
-                self.plugins[instance_id]['ports'][symbol] = value
-                self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                if pluginData['ports'][symbol] != value:
+                    pluginData['ports'][symbol] = value
+                    self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
+                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
                 # don't address "bad" ports
                 if symbol in badports:
                     continue
 
+                mchnnl = port['midiCC']['channel']
+                mctrl  = port['midiCC']['control']
+
                 if mchnnl >= 0 and mctrl >= 0:
-                    self.plugins[instance_id]['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
+                    if port['midiCC']['hasRanges']:
+                        minimum = port['midiCC']['minimum']
+                        maximum = port['midiCC']['maximum']
+                    else:
+                        minimum, maximum = ranges[symbol]
+
+                    pluginData['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
                     self.addressings.add_midi(instance_id, symbol, mchnnl, mctrl, minimum, maximum)
 
             for output in allports['monitoredOutputs']:
