@@ -894,27 +894,27 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                 if (cat2[0] == '\0')
                     continue;
 
-                else if (strcmp(cat, "DelayPlugin") == 0)
+                else if (strcmp(cat2, "DelayPlugin") == 0)
                     info.category = kCategoryDelayPlugin;
-                else if (strcmp(cat, "DistortionPlugin") == 0)
+                else if (strcmp(cat2, "DistortionPlugin") == 0)
                     info.category = kCategoryDistortionPlugin;
-                else if (strcmp(cat, "DynamicsPlugin") == 0)
+                else if (strcmp(cat2, "DynamicsPlugin") == 0)
                     info.category = kCategoryDynamicsPlugin;
-                else if (strcmp(cat, "FilterPlugin") == 0)
+                else if (strcmp(cat2, "FilterPlugin") == 0)
                     info.category = kCategoryFilterPlugin;
-                else if (strcmp(cat, "GeneratorPlugin") == 0)
+                else if (strcmp(cat2, "GeneratorPlugin") == 0)
                     info.category = kCategoryGeneratorPlugin;
-                else if (strcmp(cat, "ModulatorPlugin") == 0)
+                else if (strcmp(cat2, "ModulatorPlugin") == 0)
                     info.category = kCategoryModulatorPlugin;
-                else if (strcmp(cat, "ReverbPlugin") == 0)
+                else if (strcmp(cat2, "ReverbPlugin") == 0)
                     info.category = kCategoryReverbPlugin;
-                else if (strcmp(cat, "SimulatorPlugin") == 0)
+                else if (strcmp(cat2, "SimulatorPlugin") == 0)
                     info.category = kCategorySimulatorPlugin;
-                else if (strcmp(cat, "SpatialPlugin") == 0)
+                else if (strcmp(cat2, "SpatialPlugin") == 0)
                     info.category = kCategorySpatialPlugin;
-                else if (strcmp(cat, "SpectralPlugin") == 0)
+                else if (strcmp(cat2, "SpectralPlugin") == 0)
                     info.category = kCategorySpectralPlugin;
-                else if (strcmp(cat, "UtilityPlugin") == 0)
+                else if (strcmp(cat2, "UtilityPlugin") == 0)
                     info.category = kCategoryUtilityPlugin;
                 else if (strcmp(cat2, "MIDIPlugin") == 0)
                     info.category = kCategoryMIDIPluginMOD;
