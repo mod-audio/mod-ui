@@ -16,6 +16,7 @@ JqueryClass('bankBox', {
             bankNavigateMIDI: self.find("#js-navigate-midi"),
             bankNavigateChannel: self.find("#js-navigate-midi-channel"),
             saving: $('#banks-saving'),
+            previousBankTitle: null,
             list: function (callback) {
                 callback([])
             },
@@ -162,10 +163,10 @@ JqueryClass('bankBox', {
 
     load: function () {
         var self = $(this)
+        self.data('loading', true)
 
         if (self.data('loaded')) {
             self.data('currentBank', null)
-            /*self.data('currentBankTitle', null)*/
             self.data('pedalboardCanvas').html('').hide()
             self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
@@ -179,25 +180,21 @@ JqueryClass('bankBox', {
         self.data('load')(function (banks) {
             self.data('bankCanvas').html('')
             if (banks.length > 0) {
-                /*
-                var bank, curBankTitle = self.data('currentBankTitle')
+                var bank, previousBankTitle = self.data('previousBankTitle')
                 self.data('currentBank', null)
-                self.data('currentBankTitle', null)
-                */
+                self.data('previousBankTitle', null)
 
                 for (var i = 0; i < banks.length; i++) {
-                    /*
-                    bank = self.bankBox('renderBank', banks[i], i)
-                    if (curBankTitle == banks[i].title) {
-                        self.bankBox('selectBank', bank)
-                    }
-                    */
                     if (banks[i].navigateChannel == null) {
                         banks[i].navigateChannel = 16
                     }
-                    self.bankBox('renderBank', banks[i], i)
+                    bank = self.bankBox('renderBank', banks[i], i)
+                    if (previousBankTitle == banks[i].title) {
+                        self.bankBox('selectBank', bank)
+                    }
                 }
             }
+            self.data('loading', false)
         })
     },
 
@@ -280,12 +277,11 @@ JqueryClass('bankBox', {
             rendered.appendTo(bank.data('pedalboards'))
         }
 
-        /*
-        for (i = 0; i < 4; i++)
-            self.find('select[name=foot-' + i + ']').val(addressing[i])
-        */
-
         bank.click(function () {
+            if (self.data('loading')) {
+                self.data('previousBankTitle', bankData.title)
+                return
+            }
             if (bank.hasClass('selected'))
                 self.bankBox('editBank', bank)
             else
@@ -333,7 +329,7 @@ JqueryClass('bankBox', {
 
         // Mark this bank as selected
         self.data('currentBank', bank)
-        /*self.data('currentBankTitle', bank.data('title'))*/
+        self.data('previousBankTitle', bank.data('title'))
         bank.data('selected', true)
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
@@ -365,11 +361,11 @@ JqueryClass('bankBox', {
             titleBox.data('editing', false)
             titleBox.html(title)
             bank.data('title', title)
-            self.data('bankAddressing').find('h1').text(bank.data('title'))
+            self.data('bankAddressing').find('h1').text(title)
+            self.data('previousBankTitle', title)
             self.bankBox('save')
             /*
             self.data('currentBank').data('title', title)
-            self.data('currentBankTitle', title)
             */
         }
         editBox.keydown(function (e) {
@@ -392,7 +388,7 @@ JqueryClass('bankBox', {
             return
         if (bank.data('selected')) {
             self.data('currentBank', null)
-            /*self.data('currentBankTitle', null)*/
+            self.data('previousBankTitle', null)
             self.data('pedalboardCanvas').html('').hide()
             self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
