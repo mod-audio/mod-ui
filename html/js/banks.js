@@ -453,6 +453,7 @@ JqueryClass('bankBox', {
                 img.attr("src", "/img/icons/broken_image.svg")
                 img.css({'width': '100px'})
             },
+            cache: false,
             dataType: 'json'
         })
 

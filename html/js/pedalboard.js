@@ -652,6 +652,7 @@ JqueryClass('pedalboard', {
                             dummy.append(children);
                         })
                     },
+                    cache: false,
                     dataType: 'json'
                 })
                 $('body').append(dummy)

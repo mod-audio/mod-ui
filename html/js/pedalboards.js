@@ -230,6 +230,7 @@ JqueryClass('pedalboardBox', {
             error: function () {
                 img.addClass("broken");
             },
+            cache: false,
             dataType: 'json'
         })
 

@@ -51,6 +51,7 @@
                           error: function() {
                               // ignored
                           },
+                          cache: false,
                           dataType: 'json'
                       })
                   }
@@ -58,6 +59,7 @@
               error: function(resp) {
                   alert("Error: Can't get plugin list.")
               },
+              cache: false,
               dataType: 'json'
           })
           $("html").css({overflow: "visible"})

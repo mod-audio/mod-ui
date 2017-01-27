@@ -265,7 +265,8 @@ JqueryClass('cloudPluginBox', {
                     renderResults()
                 }
             },
-            dataType: 'json',
+            cache: false,
+            dataType: 'json'
         })
 
         // local search
@@ -306,7 +307,8 @@ JqueryClass('cloudPluginBox', {
                     if (results.cloud != null)
                         renderResults()
                 },
-                dataType: 'json',
+                cache: false,
+                dataType: 'json'
             })
         }
     },
@@ -388,7 +390,8 @@ JqueryClass('cloudPluginBox', {
                 if (results.local != null)
                     renderResults()
             },
-            dataType: 'json',
+            cache: false,
+            dataType: 'json'
         })
 
         // local search
@@ -429,7 +432,8 @@ JqueryClass('cloudPluginBox', {
                     if (results.cloud != null)
                         renderResults()
                 },
-                dataType: 'json',
+                cache: false,
+                dataType: 'json'
             })
         }
     },
@@ -802,6 +806,7 @@ JqueryClass('cloudPluginBox', {
                     localChecked = true
                     showInfo()
                 },
+                cache: false,
                 dataType: 'json'
             })
         }
@@ -835,6 +840,7 @@ JqueryClass('cloudPluginBox', {
                 cloudChecked = true
                 showInfo()
             },
+            cache: false,
             dataType: 'json'
         })
     },

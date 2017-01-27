@@ -73,6 +73,7 @@ function InstallationQueue() {
                 }
                 callback({ok:false})
             },
+            cache: false,
             dataType: 'json',
         })
     }
@@ -106,6 +107,7 @@ function InstallationQueue() {
                 }
                 callback({ok:false})
             },
+            cache: false,
             dataType: 'json',
         })
     }
