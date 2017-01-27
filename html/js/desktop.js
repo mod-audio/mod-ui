@@ -78,6 +78,7 @@ function Desktop(elements) {
 
     this.pluginIndexerData = {}
     this.pedalboardIndexerData = {}
+    this.previousPedalboardList = null
 
     this.resetPluginIndexer = function (plugins) {
         self.pluginIndexer = lunr(function () {
@@ -107,7 +108,8 @@ function Desktop(elements) {
             success: function(stats) {
                 self.pedalboardStatsSuccess = true;
                 self.pedalboardStats = stats;
-            }
+            },
+            cache: false
         })
     };
     this.getPedalboardHref = function(uri) {
@@ -238,6 +240,10 @@ function Desktop(elements) {
     }
 
     this.pedalboardListFunction = function (callback) {
+        if (self.previousPedalboardList != null && callback) {
+            callback(self.previousPedalboardList)
+        }
+
         $.ajax({
             method: 'GET',
             url: '/pedalboard/list',
@@ -252,9 +258,11 @@ function Desktop(elements) {
                     })
                 }
                 self.pedalboardIndexerData = allpedals
+                self.previousPedalboardList = pedals
 
-                if (callback)
+                if (callback) {
                     callback(pedals)
+                }
             },
             cache: false,
             dataType: 'json'
@@ -497,6 +505,7 @@ function Desktop(elements) {
         }
 
         var finalCallback = function () {
+            self.previousPedalboardList = null
             if (error && !confirm("Failed to install some required plugins, do you want to load the pedalboard anyway?")) {
                 callback(false)
                 return
@@ -1250,6 +1259,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 },
                 success: function () {
                     new Notification("info", sprintf('Pedalboard "%s" removed', pedalboard.title), 1000)
+                    self.previousPedalboardList = null
                     callback()
                 },
                 error: function () {
@@ -1307,6 +1317,7 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
         removePluginBundles: function (bundles, callback) {
             if (!confirm('You are about to remove this plugin and any other in the same bundle. This may break pedalboards that depend on them.'))
                 return
+            self.previousPedalboardList = null
             $.ajax({
                 url: '/package/uninstall',
                 data: JSON.stringify(bundles),
@@ -1326,9 +1337,11 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
             })
         },
         upgradePluginURI: function (uri, callback) {
+            self.previousPedalboardList = null
             self.installationQueue.installUsingURI(uri, callback)
         },
         installPluginURI: function (uri, callback) {
+            self.previousPedalboardList = null
             self.installationQueue.installUsingURI(uri, callback)
         }
     })
@@ -1478,6 +1491,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             if (asNew) {
                 self.titleBox.text(title)
                 self.titleBox.removeClass("blend");
+                self.previousPedalboardList = null
             }
 
             new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
