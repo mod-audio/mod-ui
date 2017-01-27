@@ -248,6 +248,9 @@ JqueryClass('bankBox', {
             new Notification('error', 'Before creating banks you must save a pedalboard first.')
             return;
         }
+        if (self.data('loading')) {
+            return
+        }
 
         var bankData = {
             'title': '',
@@ -289,6 +292,9 @@ JqueryClass('bankBox', {
         })
 
         bank.find('.js-remove').click(function () {
+            if (self.data('loading')) {
+                return false
+            }
             self.bankBox('removeBank', bank)
             return false
         })
