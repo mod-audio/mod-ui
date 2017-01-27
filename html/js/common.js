@@ -140,3 +140,33 @@ function remove_from_array(array, element) {
     if (index > -1)
         array.splice(index, 1)
 }
+
+function wait_for_pedalboard_screenshot(bundlepath, callback) {
+    $.ajax({
+        url: "/pedalboard/image/check?bundlepath="+escape(bundlepath),
+        success: function (resp) {
+            if (resp.status == 1) {
+                // success
+                callback({'ok':true,'ctime':resp.ctime})
+                return
+            }
+
+            if (resp.status == 0) {
+                // pending
+                setTimeout(function() {
+                    wait_for_pedalboard_screenshot(bundlepath, callback)
+                }, 1000)
+                return
+            }
+
+            // error
+            callback({'ok':false})
+
+        },
+        error: function () {
+            callback({'ok':false})
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}

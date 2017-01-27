@@ -212,26 +212,20 @@ JqueryClass('pedalboardBox', {
         }
 
         canvas.append(rendered)
-        var img = rendered.find('.img');
-        $.ajax({
-            url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),
-            success: function (resp) {
-                if (resp.ok)
-                {
-                    img.css({backgroundImage: "url(/pedalboard/image/thumbnail.png?bundlepath="+
-                                                escape(pedalboard.bundle)+"&tstamp="+resp.ctime+")"});
-                    img.addClass("loaded");
-                }
-                else
-                {
-                    img.addClass("broken");
-                }
-            },
-            error: function () {
+
+        wait_for_pedalboard_screenshot(pedalboard.bundle, function (resp) {
+            var img = rendered.find('.img');
+
+            if (resp.ok)
+            {
+                img.css({backgroundImage: "url(/pedalboard/image/thumbnail.png?bundlepath="+
+                                            escape(pedalboard.bundle)+"&tstamp="+resp.ctime+")"});
+                img.addClass("loaded");
+            }
+            else
+            {
                 img.addClass("broken");
-            },
-            cache: false,
-            dataType: 'json'
+            }
         })
 
         return rendered

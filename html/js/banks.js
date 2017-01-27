@@ -436,25 +436,16 @@ JqueryClass('bankBox', {
 
         rendered.data('pedalboardBundle', pedalboard.bundle)
 
-        var img = rendered.find('.img img');
-        $.ajax({
-            url: "/pedalboard/image/wait?bundlepath="+escape(pedalboard.bundle),
-            success: function (resp) {
-                if (resp.ok) {
-                    img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime)
-                    img.css({ top: (img.parent().height() - img.height()) / 2 })
-                } else {
-                    img.attr("src", "/img/icons/broken_image.svg")
-                    img.css({'width': '100px'})
-                }
-            },
-            error: function () {
-                console.log("Pedalboard image wait error")
+        wait_for_pedalboard_screenshot(pedalboard.bundle, function (resp) {
+            var img = rendered.find('.img img');
+
+            if (resp.ok) {
+                img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime)
+                img.css({ top: (img.parent().height() - img.height()) / 2 })
+            } else {
                 img.attr("src", "/img/icons/broken_image.svg")
                 img.css({'width': '100px'})
-            },
-            cache: false,
-            dataType: 'json'
+            }
         })
 
         return rendered

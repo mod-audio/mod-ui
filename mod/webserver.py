@@ -849,6 +849,15 @@ class PedalboardImageGenerate(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
+class PedalboardImageCheck(JsonRequestHandler):
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        ret, ctime = SESSION.screenshot_generator.check_screenshot(bundlepath)
+        self.write({
+            'status': ret,
+            'ctime' : "%.1f" % ctime,
+        })
+
 class PedalboardImageWait(JsonRequestHandler):
     @web.asynchronous
     @gen.coroutine
@@ -1378,6 +1387,7 @@ application = web.Application(
             (r"/pedalboard/remove/", PedalboardRemove),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
             (r"/pedalboard/image/generate", PedalboardImageGenerate),
+            (r"/pedalboard/image/check", PedalboardImageCheck),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # pedalboard stuff

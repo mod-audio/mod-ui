@@ -121,6 +121,19 @@ class ScreenshotGenerator(object):
 
         generate_screenshot(self.processing, img_callback)
 
+    def check_screenshot(self, bundlepath):
+        bundlepath = os.path.abspath(bundlepath)
+
+        if bundlepath in self.queue or self.processing == bundlepath:
+            return (0, 0.0)
+
+        thumbnail = os.path.join(bundlepath, "thumbnail.png")
+        if not os.path.exists(thumbnail):
+            return (-1, 0.0)
+
+        ctime = os.path.getctime(thumbnail)
+        return (1, ctime)
+
     def wait_for_pending_jobs(self, bundlepath, callback):
         bundlepath = os.path.abspath(bundlepath)
 
