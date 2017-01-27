@@ -40,7 +40,10 @@ function PedalboardSearcher(opt) {
     }
     this.lastKeyUp = null
     this.search = function () {
-        clearTimeout(self.lastKeyUp)
+        if (self.lastKeyUp != null) {
+            clearTimeout(self.lastKeyUp)
+            self.lastKeyUp = null
+        }
         var query = self.searchbox.val()
         var local = self.mode == 'installed'
 
@@ -72,17 +75,16 @@ function PedalboardSearcher(opt) {
             }, 400);
         }
     })
-    var lastKeyUp = null
     this.searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
         if (e.which == 13)
             return
-        if (lastKeyUp != null) {
-            clearTimeout(lastKeyUp)
-            lastKeyUp = null
+        if (self.lastKeyUp != null) {
+            clearTimeout(self.lastKeyUp)
+            self.lastKeyUp = null
         }
         if (e.which == 13)
             return
-        lastKeyUp = setTimeout(function () {
+        self.lastKeyUp = setTimeout(function () {
             self.search()
         }, 400);
     })
