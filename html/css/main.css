@@ -7260,6 +7260,10 @@ header#pedalboard-actions {
   padding: 10px 0 0 0;
   position: relative;
   width: 100%;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
 }
 #plugins-library ul li {
   background: rgba(17, 17, 17, 0.66);
