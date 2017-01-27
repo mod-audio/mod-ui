@@ -23,6 +23,7 @@ function PedalboardPresetsManager(options) {
         pedalPresetsList: $('<div>'),
         hardwareManager: null,
         currentlyAddressed: false,
+        presetCount: 0,
     }, options)
 
     options.pedalPresetsWindow.keydown(function (e) {
@@ -78,6 +79,11 @@ function PedalboardPresetsManager(options) {
             success: function () {
                 selected.remove()
                 options.pedalPresetsList.find('option:first').prop('selected','selected').click()
+
+                options.presetCount -= 1
+                if (options.presetCount <= 1) {
+                    options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
+                }
             },
             error: function () {},
             cache: false,
@@ -124,14 +130,16 @@ function PedalboardPresetsManager(options) {
         options.currentlyAddressed = currentlyAddressed
 
         self.getPedalPresetList(function (presets) {
-            var presetCount = Object.keys(presets).length
+            options.presetCount = Object.keys(presets).length
 
-            if (presetCount == 0) {
+            if (options.presetCount == 0) {
                 return new Notification("info", "No pedalboard presets available")
             }
 
-            if (presetCount == 1) {
+            if (options.presetCount == 1) {
                 options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
+            } else {
+                options.pedalPresetsWindow.find('.js-assign-all').removeClass('disabled')
             }
 
             if (options.currentlyAddressed) {
