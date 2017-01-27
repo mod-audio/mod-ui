@@ -478,6 +478,10 @@ JqueryClass('cloudPluginBox', {
             category = plugin.category[0]
             render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached)
 
+            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                category = 'MIDI'
+            }
+
             pluginsDict[plugin.uri] = plugin
 
             if (category && category != 'All' && categories[category] != null) {
