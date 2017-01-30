@@ -242,6 +242,7 @@ function Desktop(elements) {
     this.pedalboardListFunction = function (callback) {
         if (self.previousPedalboardList != null && callback) {
             callback(self.previousPedalboardList)
+            return
         }
 
         $.ajax({
