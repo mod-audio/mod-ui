@@ -685,17 +685,21 @@ class Host(object):
                 minimum     = float(msg[6])
                 maximum     = float(msg[7])
 
-                instance = self.mapper.get_instance(instance_id)
+                instance   = self.mapper.get_instance(instance_id)
+                pluginData = self.plugins[instance_id]
 
                 if portsymbol == ":bypass":
-                    self.plugins[instance_id]['bypassCC'] = (channel, controller)
-                    self.plugins[instance_id]['bypassed'] = bool(value)
+                    pluginData['bypassCC'] = (channel, controller)
+                    pluginData['bypassed'] = bool(value)
                 else:
-                    self.plugins[instance_id]['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
-                    self.plugins[instance_id]['ports'][portsymbol] = value
+                    pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
+                    pluginData['ports'][portsymbol] = value
 
                 self.pedalboard_modified = True
-                self.addressings.add_midi(instance_id, portsymbol, channel, controller, minimum, maximum)
+                pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
+                                                                                  portsymbol,
+                                                                                  channel, controller,
+                                                                                  minimum, maximum)
 
                 self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, portsymbol,
                                                                   channel, controller,
@@ -2280,7 +2284,7 @@ _:b%i
             callback(False)
             return
 
-        # MIDI learn is not saved on disk until a MIDI controller is moved.
+        # MIDI learn is not saved until a MIDI controller is moved.
         # So we need special casing for unlearn.
         if actuator_uri == kMidiUnlearnURI:
             print("MIDI learn canceled")
