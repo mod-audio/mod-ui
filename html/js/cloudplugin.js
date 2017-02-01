@@ -632,7 +632,11 @@ JqueryClass('cloudPluginBox', {
             uri    = installed[i]
             plugin = self.data('pluginsDict')[uri]
 
-            plugin.status = 'installed'
+            if (! plugin) {
+                continue
+            }
+
+            plugin.status  = 'installed'
             plugin.bundles = [bundle]
             plugin.installedVersion = plugin.latestVersion
 
