@@ -583,7 +583,14 @@ JqueryClass('cloudPluginBox', {
                 } else if (updateOnly) {
                     continue
                 }
-                if (bundle_ids.indexOf(plugin.bundle_id) < 0 && (currentCategory == "All" || currentCategory == plugin.category[0])) {
+
+                var category = plugin.category[0]
+                if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                    category = 'MIDI'
+                }
+
+                // FIXME for midi
+                if (bundle_ids.indexOf(plugin.bundle_id) < 0 && (currentCategory == "All" || currentCategory == category)) {
                     bundle_ids.push(plugin.bundle_id)
                 }
             }
@@ -666,6 +673,9 @@ JqueryClass('cloudPluginBox', {
                 category = plugin.category[0]
 
                 if (category && category != 'All') {
+                    if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                        category = 'MIDI'
+                    }
                     categories[category] -= 1
                 }
                 categories['All'] -= 1
@@ -705,12 +715,17 @@ JqueryClass('cloudPluginBox', {
                 }
             }
 
+            var category = plugin.category[0]
+            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                category = 'MIDI'
+            }
+
             var metadata = {
                 author: plugin.author,
                 uri: plugin.uri,
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
-                category: plugin.category[0] || "None",
+                category: category || "None",
                 installed_version: version(plugin.installedVersion),
                 latest_version: version(plugin.latestVersion),
                 package_name: (plugin.bundle_name || plugin.bundles[0]).replace(/\.lv2$/, ''),
