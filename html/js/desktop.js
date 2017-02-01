@@ -1486,16 +1486,16 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
                 return
             }
 
-            self.title = title
-            self.pedalboardBundle = errorOrPath
-            self.pedalboardEmpty = false
-            self.pedalboardModified = false
-
-            if (asNew) {
+            if (asNew || ! self.title) {
                 self.titleBox.text(title)
                 self.titleBox.removeClass("blend");
                 self.previousPedalboardList = null
             }
+
+            self.title = title
+            self.pedalboardBundle = errorOrPath
+            self.pedalboardEmpty = false
+            self.pedalboardModified = false
 
             new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
 
