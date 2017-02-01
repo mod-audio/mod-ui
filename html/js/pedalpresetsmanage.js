@@ -21,13 +21,22 @@ function PedalboardPresetsManager(options) {
     options = $.extend({
         pedalPresetsWindow: $('<div>'),
         pedalPresetsList: $('<div>'),
+        pedalPresetsOverlay: $('<div>'),
         hardwareManager: null,
         currentlyAddressed: false,
+        editingElem: null,
         presetCount: 0,
     }, options)
 
+    options.pedalPresetsOverlay.hide().blur(self.pedalPresetRenamed).keydown(function (e) {
+        if (e.keyCode == 13) { // enter
+            return self.pedalPresetRenamed()
+        }
+    })
+
     options.pedalPresetsWindow.keydown(function (e) {
         if (e.keyCode == 27) { // esc
+            self.hideRenameOverlay()
             options.pedalPresetsWindow.hide()
             return false
         }
@@ -41,26 +50,36 @@ function PedalboardPresetsManager(options) {
     })
 
     options.pedalPresetsWindow.find('.js-cancel').click(function () {
+        self.hideRenameOverlay()
         options.pedalPresetsWindow.hide()
         return false
     })
 
     options.pedalPresetsWindow.find('.js-rename').click(function (e) {
-        var selected = options.pedalPresetsList.find('option:selected')
-        var selectId = selected.val()
-
         if (options.currentlyAddressed) {
             return self.prevent(e)
         }
+        if (options.editingElem != null) {
+            console.log("Note: rename click ignored")
+            return false
+        }
 
-        // TODO
-        console.log(selected.text())
-        alert("Not implemented yet")
+        var selected = options.editingElem = options.pedalPresetsList.find('option:selected')
+
+        options.pedalPresetsOverlay.css({
+            position: "absolute",
+            width: selected.width()+2,
+            height: selected.height()+2,
+            top: selected.position().top,
+            left: selected.position().left
+        }).prop("value", selected.html()).show().focus()
 
         return false
     })
 
     options.pedalPresetsWindow.find('.js-delete').click(function (e) {
+        self.hideRenameOverlay()
+
         var selected = options.pedalPresetsList.find('option:selected')
         var selectId = selected.val()
 
@@ -88,16 +107,21 @@ function PedalboardPresetsManager(options) {
             error: function () {},
             cache: false,
         })
+
         return false
     })
 
     options.pedalPresetsWindow.find('.js-assign').click(function () {
+        self.hideRenameOverlay()
+
         // TODO
         console.log(this)
         return false
     })
 
     options.pedalPresetsWindow.find('.js-assign-all').click(function (e) {
+        self.hideRenameOverlay()
+
         if ($(this).hasClass("disabled")) {
             return self.prevent(e, "Cannot assign list with only 1 preset")
         }
@@ -133,7 +157,7 @@ function PedalboardPresetsManager(options) {
             options.presetCount = Object.keys(presets).length
 
             if (options.presetCount == 0) {
-                return new Notification("info", "No pedalboard presets available")
+                return new Notification("error", "No pedalboard presets available")
             }
 
             if (options.presetCount == 1) {
@@ -189,7 +213,10 @@ function PedalboardPresetsManager(options) {
     }
 
     this.optionClicked = function (e) {
+        self.hideRenameOverlay()
+
         var selectId = $(this).val()
+        var prtitle  = $(this).html()
 
         if (options.currentlyAddressed) {
             options.pedalPresetsList.find('option:selected').removeProp('selected')
@@ -209,11 +236,49 @@ function PedalboardPresetsManager(options) {
                 id: selectId,
             },
             success: function () {
-                console.log("loaded preset")
+                new Notification("info", "Preset " + prtitle + " loaded", 2000)
             },
             error: function () {},
             cache: false,
         })
+    }
+
+    this.hideRenameOverlay = function () {
+        options.editingElem = null
+        options.pedalPresetsOverlay.prop("value","").hide()
+    }
+
+    this.pedalPresetRenamed = function () {
+        if (options.editingElem == null) {
+            console.log("FIXME: bad state reached")
+            return false
+        }
+
+        var text = options.pedalPresetsOverlay.hide().val()
+        var elem = options.editingElem
+        var prId = elem.val()
+
+        options.editingElem = null
+
+        if (text == "") {
+            return false
+        }
+
+        $.ajax({
+            url: '/pedalpreset/rename',
+            type: 'GET',
+            data: {
+                id   : prId,
+                title: text,
+            },
+            success: function () {
+                elem.html(text)
+            },
+            error: function () {},
+            cache: false,
+        })
+
+        return false
     }
 
     this.getPedalPresetList = function (callback) {

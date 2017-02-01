@@ -1382,6 +1382,13 @@ class Host(object):
         self.pedalboard_preset = len(self.pedalboard_presets)-1
         return self.pedalboard_preset
 
+    def pedalpreset_rename(self, idx, title):
+        if idx >= len(self.pedalboard_presets):
+            return False
+
+        self.pedalboard_presets[idx]['name'] = title
+        return True
+
     def pedalpreset_remove(self, idx):
         if idx >= len(self.pedalboard_presets):
             return False

@@ -28,6 +28,7 @@ function Desktop(elements) {
         midiPortsList: $('<div>'),
         pedalPresetsWindow: $('<div>'),
         pedalPresetsList: $('<div>'),
+        pedalPresetsOverlay: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
@@ -178,6 +179,7 @@ function Desktop(elements) {
     this.pedalPresets = new PedalboardPresetsManager({
         pedalPresetsWindow: elements.pedalPresetsWindow,
         pedalPresetsList: elements.pedalPresetsList,
+        pedalPresetsOverlay: elements.pedalPresetsOverlay,
         hardwareManager: self.hardwareManager,
     })
 

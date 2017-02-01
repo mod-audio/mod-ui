@@ -98,6 +98,7 @@ $('document').ready(function() {
         midiPortsList: $("#midi-ports-list"),
         pedalPresetsWindow: $('#pedal-presets-window'),
         pedalPresetsList: $("#pedal-presets-list"),
+        pedalPresetsOverlay: $("#pedal-presets-list-input"),
         saveBox: $('#save-pedalboard'),
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
@@ -479,6 +480,7 @@ $('document').ready(function() {
                 <h1 class="pull-left">Load / Manage presets</h1><span class="js-cancel close">&times;</span>
                 <form class="bottom">
                     <div class="controls clearfix">
+                        <input type="text" name="pedal-presets-list" value="" id="pedal-presets-list-input"/>
                         <select class="preset-list" size="9" id="pedal-presets-list" style="background-color:inherit;"></select>
                     </div>
                     <div class="controls actions">

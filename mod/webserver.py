@@ -896,6 +896,13 @@ class PedalboardPresetSaveAs(JsonRequestHandler):
             'id': idx
         })
 
+class PedalboardPresetRename(JsonRequestHandler):
+    def get(self):
+        idx   = int(self.get_argument('id'))
+        title = self.get_argument('title')
+        ok    = SESSION.host.pedalpreset_rename(idx, title)
+        self.write(ok)
+
 class PedalboardPresetRemove(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
@@ -1395,6 +1402,7 @@ application = web.Application(
             (r"/pedalpreset/disable", PedalboardPresetDisable),
             (r"/pedalpreset/save", PedalboardPresetSave),
             (r"/pedalpreset/saveas", PedalboardPresetSaveAs),
+            (r"/pedalpreset/rename", PedalboardPresetRename),
             (r"/pedalpreset/remove", PedalboardPresetRemove),
             (r"/pedalpreset/list", PedalboardPresetList),
             (r"/pedalpreset/name", PedalboardPresetName),
