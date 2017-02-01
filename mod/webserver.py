@@ -1028,7 +1028,7 @@ class TemplateHandler(web.RequestHandler):
         with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fh:
             default_settings_template = squeeze(fh.read().replace("'", "\\'"))
 
-        pbname = xhtml_escape(SESSION.host.pedalboard_name)
+        pbname = SESSION.host.pedalboard_name
         prname = SESSION.host.pedalpreset_name()
 
         fullpbname = pbname or "Untitled"
@@ -1045,14 +1045,14 @@ class TemplateHandler(web.RequestHandler):
             'version': self.get_argument('v'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
-            'title':  pbname,
+            'title':  squeeze(pbname.replace("'", "\\'")),
             'size': json.dumps(SESSION.host.pedalboard_size),
-            'fulltitle':  fullpbname,
+            'fulltitle':  xhtml_escape(fullpbname),
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY else 'false',
-            'user_name': xhtml_escape(user_id.get("name", "")),
-            'user_email': xhtml_escape(user_id.get("email", "")),
+            'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),
+            'user_email': squeeze(user_id.get("email", "").replace("'", "\\'")),
             'favorites': json.dumps(gState.favorites),
             'preferences': json.dumps(prefs),
         }
