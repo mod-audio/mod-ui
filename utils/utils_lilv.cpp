@@ -2378,12 +2378,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // uri
-
-    info.uri = strdup(lilv_node_as_uri(lilv_plugin_get_uri(p)));
-
-    // --------------------------------------------------------------------------------------------------------
-    // title
+    // title (required)
 
     if (LilvNode* const node = lilv_plugin_get_name(p))
     {
@@ -2396,8 +2391,13 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
     }
     else
     {
-        info.title = kUntitled;
+        return info;
     }
+
+    // --------------------------------------------------------------------------------------------------------
+    // uri
+
+    info.uri = strdup(lilv_node_as_uri(lilv_plugin_get_uri(p)));
 
     // --------------------------------------------------------------------------------------------------------
     // check if all plugins in the pedalboard exist in our world
