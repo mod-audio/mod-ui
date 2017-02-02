@@ -22,6 +22,7 @@ function PedalboardPresetsManager(options) {
         pedalPresetsWindow: $('<div>'),
         pedalPresetsList: $('<div>'),
         pedalPresetsOverlay: $('<div>'),
+        renamedCallback: function (name) {},
         hardwareManager: null,
         currentlyAddressed: false,
         editingElem: null,
@@ -273,6 +274,7 @@ function PedalboardPresetsManager(options) {
             },
             success: function () {
                 elem.html(text)
+                options.renamedCallback(text)
             },
             error: function () {},
             cache: false,

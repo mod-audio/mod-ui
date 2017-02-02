@@ -181,6 +181,9 @@ function Desktop(elements) {
         pedalPresetsList: elements.pedalPresetsList,
         pedalPresetsOverlay: elements.pedalPresetsOverlay,
         hardwareManager: self.hardwareManager,
+        renamedCallback: function (name) {
+            self.titleBox.text((self.title || 'Untitled') + " - " + name)
+        }
     })
 
     this.isApp = false
