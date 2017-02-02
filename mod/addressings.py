@@ -159,11 +159,15 @@ class Addressings(object):
         for actuator_uri, addrs in data.items():
             for addr in addrs:
                 instance   = addr['instance']
-                instance_id,\
-                plugin_uri = instances[instance]
                 portsymbol = addr['port']
-                curvalue   = self._task_get_port_value(instance_id, portsymbol)
 
+                try:
+                    instance_id, plugin_uri = instances[instance]
+                except KeyError:
+                    print("ERROR: An instance specified in addressings file is invalid")
+                    continue
+
+                curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
 
