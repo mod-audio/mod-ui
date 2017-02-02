@@ -862,7 +862,8 @@ class Host(object):
             if alias:
                 title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
             else:
-                title = name.split(":",1)[-1].title().replace(" ","_")
+                title = name.split(":",1)[-1].title()
+            title = title.replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         # MIDI Out
@@ -878,7 +879,8 @@ class Host(object):
             if alias:
                 title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
             else:
-                title = name.split(":",1)[-1].title().replace(" ","_")
+                title = name.split(":",1)[-1].title()
+            title = title.replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         instances = {
@@ -2720,6 +2722,7 @@ _:b%i
     def set_midi_devices(self, newDevs):
         def add_port(name, title, isOutput):
             index = int(name[-1])
+            title = title.replace("-","_").replace(" ","_")
 
             if name.startswith("nooice"):
                 index += 100

@@ -279,6 +279,10 @@ $('document').ready(function() {
             var name     = data[4].replace(/_/g," ")
             var index    = parseInt(data[5])
 
+            if (data.length > 6) {
+                console.log("FIXME: received add_hw_port with spaces:", data)
+            }
+
             if (isOutput) {
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
