@@ -2428,57 +2428,10 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
 
 bool _is_pedalboard_broken(const LilvPlugin* const p,
                            LilvWorld* const w,
-                           const LilvNode* const rdftypenode,
                            const LilvNode* const ingenblocknode,
                            const LilvNode* const lv2protonode)
 {
-    // --------------------------------------------------------------------------------------------------------
-    // check if plugin is pedalboard
-
-    bool isPedalboard = false;
-
-    if (LilvNodes* const nodes = lilv_plugin_get_value(p, rdftypenode))
-    {
-        LILV_FOREACH(nodes, it, nodes)
-        {
-            const LilvNode* const node = lilv_nodes_get(nodes, it);
-
-            if (const char* const nodestr = lilv_node_as_string(node))
-            {
-                if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
-                {
-                    isPedalboard = true;
-                    break;
-                }
-            }
-        }
-
-        lilv_nodes_free(nodes);
-    }
-
-    if (! isPedalboard)
-        return true;
-
-    // --------------------------------------------------------------------------------------------------------
-    // bundle (required)
-
     bool broken = false;
-
-    if (const LilvNode* const node = lilv_plugin_get_bundle_uri(p))
-    {
-        if (lilv_node_as_string(node) == nullptr)
-            broken = true;
-    }
-    else
-    {
-        broken = true;
-    }
-
-    if (broken)
-        return true;
-
-    // --------------------------------------------------------------------------------------------------------
-    // check if all plugins in the pedalboard exist in our world
 
     if (LilvNodes* const blocks = lilv_plugin_get_value(p, ingenblocknode))
     {
@@ -2489,11 +2442,13 @@ bool _is_pedalboard_broken(const LilvPlugin* const p,
             if (LilvNode* const proto = lilv_world_get(w, block, lv2protonode, nullptr))
             {
                 const std::string uri = lilv_node_as_uri(proto);
-
-                if (! broken && PLUGNFO.count(uri) == 0)
-                    broken = true;
-
                 lilv_node_free(proto);
+
+                if (PLUGNFO.count(uri) == 0)
+                {
+                    broken = true;
+                    break;
+                }
             }
         }
 
@@ -3623,7 +3578,6 @@ const char* const* get_broken_pedalboards(void)
     else
         unsetenv("LV2_PATH");
 
-    LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
     LilvNode* const ingenblocknode = lilv_new_uri(w, LILV_NS_INGEN "block");
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
     const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
@@ -3633,14 +3587,13 @@ const char* const* get_broken_pedalboards(void)
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
         // get new info
-        if (_is_pedalboard_broken(p, w, rdftypenode, ingenblocknode, lv2protonode))
+        if (_is_pedalboard_broken(p, w, ingenblocknode, lv2protonode))
         {
             const std::string pedalboard(lilv_node_as_uri(lilv_plugin_get_uri(p)));
             brokenpedals.push_back(pedalboard);
         }
     }
 
-    lilv_free(rdftypenode);
     lilv_free(ingenblocknode);
     lilv_free(lv2protonode);
     lilv_world_free(w);
