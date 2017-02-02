@@ -960,7 +960,15 @@ class BankLoad(JsonRequestHandler):
 
         # Put the full pedalboard info into banks
         for bank in banks:
-            bank['pedalboards'] = [pedalboards_data[os.path.abspath(pb['bundle'])] for pb in bank['pedalboards']]
+            bank_pedalboards = []
+            for pb in bank['pedalboards']:
+                bundle = os.path.abspath(pb['bundle'])
+                try:
+                    pbdata = pedalboards_data[bundle]
+                except KeyError:
+                    continue
+                bank_pedalboards.append(pbdata)
+            bank['pedalboards'] = bank_pedalboards
 
         # All set
         self.write(banks)
