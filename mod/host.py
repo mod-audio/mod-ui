@@ -331,7 +331,6 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            self.pedalboard_modified = True
             return self.hmi.control_add(data['instance_id'],
                                         data['port'],
                                         data['label'],
@@ -349,25 +348,25 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             print("cc_map %d %s %d %d" % (data['instance_id'], data['port'], actuator[0], actuator[1]))
-            return self.send_modified("cc_map %d %s %d %d" % (data['instance_id'],
-                                                              data['port'],
-                                                              #data['label'], # TODO
-                                                              #data['value'],
-                                                              #data['minimum'],
-                                                              #data['maximum'],
-                                                              #data['steps'],
-                                                              actuator[0], actuator[1],
-                                                              #data['options'],
-                                                              ), callback, datatype='boolean')
+            return self.send_notmodified("cc_map %d %s %d %d" % (data['instance_id'],
+                                                                 data['port'],
+                                                                 #data['label'], # TODO
+                                                                 #data['value'],
+                                                                 #data['minimum'],
+                                                                 #data['maximum'],
+                                                                 #data['steps'],
+                                                                 actuator[0], actuator[1],
+                                                                 #data['options'],
+                                                                 ), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
-            return self.send_modified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
-                                                                      data['port'],
-                                                                      data['midichannel'],
-                                                                      data['midicontrol'],
-                                                                      data['minimum'],
-                                                                      data['maximum'],
-                                                                      ), callback, datatype='boolean')
+            return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
+                                                                         data['port'],
+                                                                         data['midichannel'],
+                                                                         data['midicontrol'],
+                                                                         data['minimum'],
+                                                                         data['maximum'],
+                                                                         ), callback, datatype='boolean')
 
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)
@@ -2334,6 +2333,7 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
         print("addressed as", addressing)
 
+        self.pedalboard_modified = True
         self.addressings.load_addr(actuator_uri, addressing, callback)
 
     # -----------------------------------------------------------------------------------------------------------------
