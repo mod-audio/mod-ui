@@ -1414,6 +1414,13 @@ class Host(object):
             pluginData  = self.plugins[instance_id]
             diffBypass  = pluginData['bypassed'] != data['bypassed']
 
+            if diffBypass:
+                addressing = pluginData['addressings'].get(":bypass", None)
+                if addressing is not None:
+                    addressing['value'] = 1.0 if data['bypassed'] else 0.0
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
+
             # if bypassed, do it now
             if diffBypass and data['bypassed']:
                 self.msg_callback("param_set %s :bypass 1.0" % (instance,))
@@ -1422,6 +1429,12 @@ class Host(object):
             if data['preset'] and data['preset'] != pluginData['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
                 yield gen.Task(self.preset_load, instance, data['preset'])
+
+                addressing = pluginData['addressings'].get(":presets", None)
+                if addressing is not None:
+                    addressing['value'] = pluginData['mapPresets'].index(data['preset'])
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
             for symbol, value in data['ports'].items():
                 if value == pluginData['ports'][symbol]:
