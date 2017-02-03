@@ -469,6 +469,23 @@ function HardwareManager(options) {
         options.setEnabled(instance, portSymbol, false)
     }
 
+    this.addActuator = function (actuator) {
+        HARDWARE_PROFILE.push(actuator)
+    }
+
+    this.removeActuator = function (actuator_uri) {
+        var addressings = self.addressingsByActuator[actuator_uri]
+
+        for (var i in addressings) {
+            var instanceAndSymbol = addressings[i]
+            delete self.addressingsByPortSymbol[instanceAndSymbol]
+            delete self.addressingsData        [instanceAndSymbol]
+        }
+
+        delete self.addressingsByActuator[actuator_uri]
+        remove_from_array(HARDWARE_PROFILE, actuator_uri)
+    }
+
     // Removes an instance
     this.removeInstance = function (instance) {
         var i, j, index, actuator, instanceAndSymbol, instanceAndSymbols = []

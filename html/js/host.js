@@ -303,6 +303,18 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "hw_add") {
+            var metadata = JSON.parse(atob(data[1]))
+            desktop.hardwareManager.addActuator(metadata)
+            return
+        }
+
+        if (cmd == "hw_remove") {
+            var uri = data[1]
+            desktop.hardwareManager.removeActuator(uri)
+            return
+        }
+
         if (cmd == "loading_start") {
             loading  = true
             empty    = parseInt(data[1]) != 0
