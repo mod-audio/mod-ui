@@ -841,6 +841,7 @@ class Host(object):
 
         if crashed:
             self.init_jack()
+            self.addressings.cchain.restart_if_crashed()
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:

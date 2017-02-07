@@ -1,177 +1,164 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ctypes import *
+import json
+import os
+import socket
+from tornado import iostream
+from mod import symbolify
 
-class String(Structure):
-    _fields_ = [
-        ("size", c_uint8),
-        ("text", c_char_p),
-    ]
+# ---------------------------------------------------------------------------------------------------------------------
 
-class Data(Structure):
-    _fields_ = [
-        ("assigment_id", c_uint8),
-        ("value", c_float),
-    ]
+class ControlChainDeviceListener(object):
+    socket_path = "/tmp/control-chain.sock"
 
-class DataUpdate(Structure):
-    _fields_ = [
-        ("count", c_uint8),
-        ("updates_list", POINTER(Data)),
-    ]
+    def __init__(self, hw_added_cb, hw_removed_cb):
+        self.crashed       = False
+        self.idle          = False
+        self.hw_added_cb   = hw_added_cb
+        self.hw_removed_cb = hw_removed_cb
+        self.pending_devs  = 0
+        self.queue         = []
 
-class Actuator(Structure):
-    _fields_ = [
-        ("idx", c_uint8),
-    ]
+        self.start()
 
-class DevDescriptor(Structure):
-    _fields_ = [
-        ("idx", c_uint8),
-        ("label", POINTER(String)),
-        ("actuators_count", c_uint8),
-        ("actuators", POINTER(POINTER(Actuator))),
-    ]
+    # -----------------------------------------------------------------------------------------------------------------
 
-class Assignment(Structure):
-    _fields_ = [
-        ("device_id", c_int),
-        ("actuator_id", c_int),
-        ("value", c_float),
-        ("min", c_float),
-        ("max", c_float),
-        ("def", c_float),
-        ("mode", c_uint32),
-    ]
-
-DATA_CB = CFUNCTYPE(None, POINTER(DataUpdate))
-DEVDESC_CB = CFUNCTYPE(None, POINTER(DevDescriptor))
-
-class ControlChain(object):
-    def __init__(self, serial_port, baudrate):
-        self.obj = None
-        self.lib = cdll.LoadLibrary("libcontrol_chain.so")
-
-        # cc_handle_t* cc_init(const char *port_name, int baudrate);
-        self.lib.cc_init.argtypes = [c_char_p, c_int]
-        self.lib.cc_init.restype = c_void_p
-
-        # void cc_finish(cc_handle_t *handle);
-        self.lib.cc_finish.argtypes = [c_void_p]
-        self.lib.cc_finish.restype = None
-
-        #int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
-        self.lib.cc_assignment.argtypes = [c_void_p, POINTER(Assignment)]
-        self.lib.cc_assignment.restype = int
-
-        #void cc_unassignment(cc_handle_t *handle, int assignment_id);
-        self.lib.cc_unassignment.argtypes = [c_void_p, c_int]
-        self.lib.cc_unassignment.restype = None
-
-        #void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
-        self.lib.cc_data_update_cb.argtypes = [c_void_p, DATA_CB]
-        self.lib.cc_data_update_cb.restype = None
-
-        #void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg));
-        self.lib.cc_dev_descriptor_cb.argtypes = [c_void_p, DEVDESC_CB]
-        self.lib.cc_dev_descriptor_cb.restype = None
-
-        self.obj = self.lib.cc_init(serial_port.encode('utf-8'), baudrate)
-
-        print("obj =>", self.obj, type(self.obj))
-
-        if self.obj is None:
-            raise NameError('Cannot create ControlChain object, check serial port')
-
-        # define data update callback
-        self._data_update_cb = DATA_CB(self._data_update)
-
-        # define device descriptor callback
-        self._dev_descriptor_cb = DEVDESC_CB(self._dev_descriptor)
-
-    def __del__(self):
-        if self.obj is None:
+    def start(self):
+        if not os.path.exists(self.socket_path):
             return
+
+        self.socket = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
+        self.socket.set_close_callback(self.connection_closed)
+        self.socket.set_nodelay(True)
+
+        # put device_list message in queue, so it's handled asap
+        self.send_request("device_list", None, self.device_list_init)
+
+        # ready to roll
+        self.socket.connect(self.socket_path, self.connection_started)
+
+    def restart_if_crashed(self):
+        if not self.crashed:
+            return
+
+        self.crashed = False
+        self.start()
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def connection_started(self):
+        if len(self.queue):
+            self.process_write_queue()
+        else:
+            self.idle = True
+
+    def connection_closed(self):
+        self.socket  = None
+        self.crashed = True
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def process_read_queue(self, ignored=None):
+        def check_response(resp):
+            try:
+                data = json.loads(resp[:-1].decode("utf-8", errors="ignore"))
+            except:
+                print("ERROR: control-chain read response failed")
+            else:
+                if data['event'] == "device_status":
+                    data   = data['data']
+                    dev_id = data['device_id']
+
+                    if data['status']:
+                        self.send_device_descriptor(dev_id)
+
+                    else:
+                        self.hw_removed_cb(dev_id)
+
+            self.process_read_queue()
+
+        self.socket.read_until(b"\0", check_response)
+
+    def process_write_queue(self):
         try:
-            self.lib.cc_finish(self.obj)
-        except NameError:
-            pass
+            to_send, request_name, callback = self.queue.pop(0)
+        except IndexError:
+            self.idle = True
+            return
 
-    def assignment(self, assignment):
-        if isinstance(assignment, (list, tuple)):
-            assignment = Assignment(*assignment)
-        return self.lib.cc_assignment(self.obj, pointer(assignment))
+        if self.socket is None:
+            self.process_write_queue()
+            return
 
-    def unassignment(self, assignment_id):
-        self.lib.cc_unassignment(self.obj, assignment_id)
+        def check_response(resp):
+            if callback is not None:
+                try:
+                    data = json.loads(resp[:-1].decode("utf-8", errors="ignore"))
+                except:
+                    data = None
+                    print("ERROR: control-chain write response failed")
+                else:
+                    if data is not None and data['reply'] != request_name:
+                        print("ERROR: control-chain reply name mismatch")
+                        data = None
 
-    def dev_descriptor_cb(self, callback):
-        self.user_dev_descriptor_cb = callback
-        self.lib.cc_dev_descriptor_cb(self.obj, self._dev_descriptor_cb)
+                if data is not None:
+                    callback(data['data'])
 
-    def data_update_cb(self, callback):
-        self.user_data_update_cb = callback
-        self.lib.cc_data_update_cb(self.obj, self._data_update_cb)
+            self.process_write_queue()
 
-    # internal, parses data for data_update_cb
-    def _data_update(self, arg):
-        data = arg.contents
+        self.idle = False
+        self.socket.write(to_send)
+        self.socket.read_until(b"\0", check_response)
 
-        updates = []
-        for i in range(data.count):
-            update = {}
-            updates.append({
-                'assigment_id': int(data.updates_list[i].assigment_id),
-                'value'       : float(data.updates_list[i].value)
-            })
+    # -----------------------------------------------------------------------------------------------------------------
 
-        self.user_data_update_cb(updates)
-
-    # internal, parses data for dev_descriptor_cb
-    def _dev_descriptor(self, arg):
-        desc = arg.contents
-
-        actuators = []
-        for i in range(desc.actuators_count):
-            actuators.append({
-                'id': int(desc.actuators[i].contents.idx)
-            })
-
-        dev_descriptor = {
-            'id'       : int(desc.idx),
-            'label'    : desc.label.contents.text.decode('utf-8', errors='ignore'),
-            'actuators': actuators,
+    def send_request(self, request_name, request_data, callback=None):
+        request = {
+            'request': request_name,
+            'data'   : request_data
         }
 
-        self.user_dev_descriptor_cb(dev_descriptor)
+        to_send = bytes(json.dumps(request).encode('utf-8')) + b'\x00'
+        self.queue.append((to_send, request_name, callback))
 
-### test
-if __name__ == "__main__":
-    def data_update(updates):
-        print("data_update", updates)
+        if self.idle:
+            self.process_write_queue()
 
-    def dev_descriptor(dev_desc):
-        print("dev_descriptor", dev_desc)
+    # -----------------------------------------------------------------------------------------------------------------
 
-    cc1 = ControlChain('/dev/ttyS3', 115200)
-    cc1.data_update_cb(data_update)
-    cc1.dev_descriptor_cb(dev_descriptor)
+    def device_list_init(self, dev_list):
+        self.pending_devs = len(dev_list)
 
-    cc2 = ControlChain('/dev/ttyS3', 115200)
-    cc2.data_update_cb(data_update)
-    cc2.dev_descriptor_cb(dev_descriptor)
+        if self.pending_devs == 0:
+            return self.device_list_finished()
 
-    import time
-    time.sleep(1)
+        for dev_id in dev_list:
+            self.send_device_descriptor(dev_id)
 
-    assignment_id1 = cc1.assignment((1, 0, 1.0, 0.0, 1.0, 0.0, 1))
-    print('assignment_id1', assignment_id1)
+    def device_list_finished(self):
+        self.send_request('device_status', {'enable':1}, self.process_read_queue)
 
-    assignment_id2 = cc2.assignment((1, 0, 1.0, 0.0, 1.0, 0.0, 1))
-    print('assignment_id2', assignment_id2)
+    # -----------------------------------------------------------------------------------------------------------------
 
-    time.sleep(1)
+    def send_device_descriptor(self, dev_id):
+        def dev_desc_cb(dev):
+            self.pending_devs -= 1
 
-    if assignment_id1 >= 0: cc1.unassignment(assignment_id1)
-    if assignment_id2 >= 0: cc2.unassignment(assignment_id2)
+            for actuator in dev['actuators']:
+                uri = "/cc/%s-%i/%i" % (symbolify(dev['label']), dev_id, actuator['id'])
+                metadata = {
+                    'uri'  : uri,
+                    # FIXME
+                    'name' : dev['label'] + " " + str(actuator['id']+1),
+                    'modes': ":bypass:trigger:toggled:",
+                    'steps': [],
+                    'max_assigns': 1,
+                }
+                self.hw_added_cb(dev_id, actuator['id'], metadata)
+
+            if self.pending_devs == 0:
+                self.device_list_finished()
+
+        self.send_request('device_descriptor', {'device_id':dev_id}, dev_desc_cb)

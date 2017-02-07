@@ -6,6 +6,7 @@ import os
 
 from tornado import gen
 from mod import get_hardware_actuators, safe_json_load
+from mod.control_chain import ControlChainDeviceListener
 from mod.utils import get_plugin_info, get_plugin_control_inputs_and_monitored_outputs
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0
@@ -48,6 +49,8 @@ class Addressings(object):
         self._task_store_address_data = None
         self._task_hw_added = None
         self._task_hw_removed = None
+
+        self.cchain = ControlChainDeviceListener(self.cc_hw_added, self.cc_hw_removed)
 
     # -----------------------------------------------------------------------------------------------------------------
 
