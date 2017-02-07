@@ -353,11 +353,12 @@ class Host(object):
             return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f" % (data['instance_id'],
                                                                              data['port'],
                                                                              actuator[0], actuator[1],
-                                                                             data['label'],
+                                                                             '"%s"' % data['label'].replace('"', ''),
                                                                              data['value'],
                                                                              data['minimum'],
                                                                              data['maximum'],
                                                                              #data['steps'], # TODO
+                                                                             #data['unit'], # TODO
                                                                              #data['options'],
                                                                              ), callback, datatype='boolean')
 
