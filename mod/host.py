@@ -350,17 +350,16 @@ class Host(object):
                                         callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            print("cc_map %d %s %d %d" % (data['instance_id'], data['port'], actuator[0], actuator[1]))
-            return self.send_notmodified("cc_map %d %s %d %d" % (data['instance_id'],
-                                                                 data['port'],
-                                                                 #data['label'], # TODO
-                                                                 #data['value'],
-                                                                 #data['minimum'],
-                                                                 #data['maximum'],
-                                                                 #data['steps'],
-                                                                 actuator[0], actuator[1],
-                                                                 #data['options'],
-                                                                 ), callback, datatype='boolean')
+            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f" % (data['instance_id'],
+                                                                             data['port'],
+                                                                             actuator[0], actuator[1],
+                                                                             data['label'],
+                                                                             data['value'],
+                                                                             data['minimum'],
+                                                                             data['maximum'],
+                                                                             #data['steps'], # TODO
+                                                                             #data['options'],
+                                                                             ), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
             return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
