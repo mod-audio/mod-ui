@@ -942,22 +942,12 @@ class Host(object):
                 if crashed:
                     self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))
 
-            for symbol, data in plugin['midiCCs'].items():
-                mchnnl, mctrl, minimum, maximum = data
-
-                if -1 in (mchnnl, mctrl):
-                    continue
-                # don't address "bad" ports
-                if symbol in plugin['badports']:
-                    continue
-
-                websocket.write_message("midi_map %s %s %i %i %f %f" % (plugin['instance'], symbol,
-                                                                        mchnnl, mctrl,
-                                                                        minimum, maximum))
-
-                if crashed:
-                    self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
-                                                                          mchnnl, mctrl, minimum, maximum))
+            if crashed:
+                for symbol, data in plugin['midiCCs'].items():
+                    mchnnl, mctrl, minimum, maximum = data
+                    if -1 not in (mchnnl, mctrl):
+                        self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
+                                                                              mchnnl, mctrl, minimum, maximum))
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
