@@ -46,24 +46,8 @@ class Addressings(object):
         self._task_get_plugin_presets = None
         self._task_get_port_value = None
         self._task_store_address_data = None
-
-        # TODO: remove this
-        if os.getenv("CONTROL_CHAIN_TEST"):
-            dev_label = "footex"
-            dev_id    = 1
-
-            for actuator_id in range(4):
-                actuator_uri  = "/cc/%d/%d" % (dev_id, actuator_id)
-                actuator_name = "Footex %d:%d" % (dev_id, actuator_id+1),
-
-                self.cc_addressings[actuator_uri] = []
-                self.cc_metadata[actuator_uri] = {
-                    'hw_id': (dev_id, actuator_id),
-                    'name' : actuator_name,
-                    'modes': ":trigger:toggled:",
-                    'steps': [],
-                    'max_assigns': 1,
-                }
+        self._task_hw_added = None
+        self._task_hw_removed = None
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -492,6 +476,25 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions
+
+    def cc_hw_added(self, dev_id, actuator_id, metadata):
+        actuator_uri = metadata['uri']
+        self.cc_metadata[actuator_uri] = metadata.copy()
+        self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
+        self.cc_addressings[actuator_uri] = []
+        self._task_hw_added(metadata)
+
+    def cc_hw_removed(self, dev_id):
+        removed_actuators = []
+
+        for actuator in self.cc_metadata.values():
+            if actuator['hw_id'][0] == dev_id:
+                removed_actuators.append(actuator['uri'])
+
+        for actuator_uri in removed_actuators:
+            self.cc_metadata.pop(actuator_uri)
+            self.cc_addressings.pop(actuator_uri)
+            self._task_hw_removed(actuator_uri)
 
     @gen.coroutine
     def cc_load_all(self, actuator_uri):

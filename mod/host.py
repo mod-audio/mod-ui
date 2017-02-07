@@ -28,6 +28,7 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
+from base64 import b64encode
 from collections import OrderedDict
 from random import randint
 from shutil import rmtree
@@ -220,6 +221,8 @@ class Host(object):
         self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
         self.addressings._task_store_address_data = self.addr_task_store_address_data
+        self.addressings._task_hw_added = self.addr_task_hw_added
+        self.addressings._task_hw_removed = self.addr_task_hw_removed
 
         # Register HMI protocol callbacks
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
@@ -427,6 +430,22 @@ class Host(object):
             pluginData = self.plugins[instance_id]
 
         pluginData['addressings'][portsymbol] = data
+
+    def addr_task_hw_added(self, metadata):
+        self.msg_callback("hw_add %s" % b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))
+
+    def addr_task_hw_removed(self, uri):
+        for instance_id, pluginData in self.plugins.items():
+            relevant_ports = []
+            for portsymbol, addressing in pluginData['addressings'].items():
+                if addressing['actuator_uri'] == uri:
+                    self.pedalboard_modified = True
+                    relevant_ports.append(portsymbol)
+
+            for portsymbol in relevant_ports:
+                pluginData['addressings'].pop(portsymbol)
+
+        self.msg_callback("hw_remove %s" % uri)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
@@ -948,6 +967,8 @@ class Host(object):
                                                          self._fix_host_connection_port(port_to)))
 
         self.addressings.registerMappings(lambda msg: websocket.write_message(msg), instances)
+
+        # TODO: restore HMI and CC addressings if crashed
 
         websocket.write_message("loading_end %d" % self.pedalboard_preset)
 
