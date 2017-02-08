@@ -381,7 +381,6 @@ class Host(object):
             return self.hmi.control_rm(instance_id, portsymbol, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            print("cc_unmap %d %s" % (instance_id, portsymbol))
             return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
@@ -968,7 +967,7 @@ class Host(object):
 
     def add_bundle(self, bundlepath, callback):
         if is_bundle_loaded(bundlepath):
-            print("SKIPPED add_bundle, already in world")
+            print("NOTE: Skipped add_bundle, already in world")
             callback((False, "Bundle already loaded"))
             return
 
@@ -980,7 +979,7 @@ class Host(object):
 
     def remove_bundle(self, bundlepath, isPluginBundle, callback):
         if not is_bundle_loaded(bundlepath):
-            print("SKIPPED remove_bundle, not in world")
+            print("NOTE: Skipped remove_bundle, not in world")
             callback((False, "Bundle not loaded"))
             return
 
@@ -1110,7 +1109,6 @@ class Host(object):
         used_hmi_actuators = []
 
         for symbol in [symbol for symbol in data['addressings'].keys()]:
-            print("remove_plugin address", symbol)
             addressing    = data['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
@@ -1260,7 +1258,6 @@ class Host(object):
                 'bundle': presetbundle,
                 'uri'   : preseturi
             })
-            print("uri saved as '%s'" % preseturi)
 
         def host_callback(ok):
             if not ok:
@@ -1295,7 +1292,6 @@ class Host(object):
                 'bundle': bundlepath,
                 'uri'   : preseturi
             })
-            print("uri saved as '%s'" % preseturi)
 
         def host_callback(ok):
             if not ok:
@@ -1531,7 +1527,7 @@ class Host(object):
             try:
                 self.connections.remove((port_from, port_to))
             except:
-                print("Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
+                print("NOTE: Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
 
         if len(self.connections) == 0:
             return host_callback(False)
@@ -1540,13 +1536,13 @@ class Host(object):
         try:
             port_from_2 = self._fix_host_connection_port(port_from)
         except:
-            print("Requested '%s' source port doesn't exist, assume disconnected" % port_from)
+            print("NOTE: Requested '%s' source port doesn't exist, assume disconnected" % port_from)
             return host_callback(True)
 
         try:
             port_to_2 = self._fix_host_connection_port(port_to)
         except:
-            print("Requested '%s' target port doesn't exist, assume disconnected" % port_to)
+            print("NOTE: Requested '%s' target port doesn't exist, assume disconnected" % port_to)
             return host_callback(True)
 
         host_callback(disconnect_jack_ports(port_from_2, port_to_2))
@@ -2320,12 +2316,10 @@ _:b%i
         # MIDI learn is not saved until a MIDI controller is moved.
         # So we need special casing for unlearn.
         if actuator_uri == kMidiUnlearnURI:
-            print("MIDI learn canceled")
             return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
         if old_addressing is not None:
-            print("unaddressed", old_addressing)
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
             self.addressings.remove(old_addressing)
@@ -2334,20 +2328,16 @@ _:b%i
                                                         old_addressing['port'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
-            print("New addressing is empty, doing nothing")
             callback(True)
             return
 
         if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
-            print("Cannot address to HMI at this point")
+            print("ERROR: Cannot address to HMI at this point")
             callback(False)
             return
 
-        print("address to", actuator_uri)
-
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
-            print("Starting MIDI learn")
             return self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
                                                                      portsymbol,
                                                                      minimum,
@@ -2356,7 +2346,6 @@ _:b%i
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value)
         pluginData['addressings'][portsymbol] = addressing
-        print("addressed as", addressing)
 
         self.pedalboard_modified = True
         self.addressings.load_addr(actuator_uri, addressing, callback)
