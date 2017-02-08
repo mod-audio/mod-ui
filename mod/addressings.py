@@ -143,6 +143,8 @@ class Addressings(object):
 
         used_actuators = []
 
+        yield gen.Task(self.cchain.wait_initialized)
+
         for actuator_uri, addrs in data.items():
             for addr in addrs:
                 instance   = addr['instance']

@@ -15,6 +15,8 @@ class ControlChainDeviceListener(object):
     def __init__(self, hw_added_cb, hw_removed_cb):
         self.crashed       = False
         self.idle          = False
+        self.initialized   = False
+        self.initialize_cb = None
         self.hw_added_cb   = hw_added_cb
         self.hw_removed_cb = hw_removed_cb
         self.pending_devs  = 0
@@ -26,7 +28,10 @@ class ControlChainDeviceListener(object):
 
     def start(self):
         if not os.path.exists(self.socket_path):
+            self.initialized = True
             return
+
+        self.initialized = False
 
         self.socket = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
         self.socket.set_close_callback(self.connection_closed)
@@ -45,6 +50,13 @@ class ControlChainDeviceListener(object):
         self.crashed = False
         self.start()
 
+    def wait_initialized(self, callback):
+        if self.initialized:
+            callback()
+            return
+
+        self.initialize_cb = callback
+
     # -----------------------------------------------------------------------------------------------------------------
 
     def connection_started(self):
@@ -56,6 +68,15 @@ class ControlChainDeviceListener(object):
     def connection_closed(self):
         self.socket  = None
         self.crashed = True
+        self.set_initialized()
+
+    def set_initialized(self):
+        self.initialized = True
+
+        if self.initialize_cb is not None:
+            cb = self.initialize_cb
+            self.initialize_cb = None
+            cb()
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -138,6 +159,7 @@ class ControlChainDeviceListener(object):
             self.send_device_descriptor(dev_id)
 
     def device_list_finished(self):
+        self.set_initialized()
         self.send_request('device_status', {'enable':1}, self.process_read_queue)
 
     # -----------------------------------------------------------------------------------------------------------------
