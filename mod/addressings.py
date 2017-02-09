@@ -147,7 +147,7 @@ class Addressings(object):
 
         for actuator_uri, addrs in data.items():
             for addr in addrs:
-                instance   = addr['instance']
+                instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
 
                 try:
@@ -187,7 +187,7 @@ class Addressings(object):
             addrs2 = []
             for addr in addrs['addrs']:
                 addrs2.append({
-                    'instance': instances[addr['instance_id']],
+                    'instance': instances[addr['instance_id']].replace("/graph/","",1),
                     'port'    : addr['port'],
                     'label'   : addr['label'],
                     'minimum' : addr['minimum'],

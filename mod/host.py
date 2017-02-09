@@ -333,6 +333,10 @@ class Host(object):
     # Addressing callbacks
 
     def addr_task_addressing(self, atype, actuator, data, callback):
+        def callback_report(ret):
+            print("addr_task_addressing returned", ret, "|", actuator)
+            callback(ret)
+
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             return self.hmi.control_add(data['instance_id'],
                                         data['port'],
@@ -347,20 +351,20 @@ class Host(object):
                                         data['addrs_max'], # num controllers
                                         data['addrs_idx'], # index
                                         data['options'],
-                                        callback)
+                                        callback_report)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f" % (data['instance_id'],
-                                                                             data['port'],
-                                                                             actuator[0], actuator[1],
-                                                                             '"%s"' % data['label'].replace('"', ''),
-                                                                             data['value'],
-                                                                             data['minimum'],
-                                                                             data['maximum'],
-                                                                             #data['steps'], # TODO
-                                                                             #data['unit'], # TODO
-                                                                             #data['options'],
-                                                                             ), callback, datatype='boolean')
+            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i" % (data['instance_id'],
+                                                                                data['port'],
+                                                                                actuator[0], actuator[1],
+                                                                                '"%s"' % data['label'].replace('"', ''),
+                                                                                data['value'],
+                                                                                data['minimum'],
+                                                                                data['maximum'],
+                                                                                data['steps'],
+                                                                                #data['unit'], # TODO
+                                                                                #data['options'],
+                                                                                ), callback_report, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
             return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
@@ -369,7 +373,7 @@ class Host(object):
                                                                          data['midicontrol'],
                                                                          data['minimum'],
                                                                          data['maximum'],
-                                                                         ), callback, datatype='boolean')
+                                                                         ), callback_report, datatype='boolean')
 
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)
@@ -1670,8 +1674,8 @@ class Host(object):
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
 
-            instances[instance] = (instance_id, p['uri'])
-            rinstances[instance_id] = instance
+            instances[p['instance']] = (instance_id, p['uri'])
+            rinstances[instance_id]  = p['instance']
 
             badports = []
             valports = {}
