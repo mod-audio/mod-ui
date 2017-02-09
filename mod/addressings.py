@@ -342,6 +342,7 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             if actuator_uri not in self.cc_addressings.keys():
                 print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
+                print(self.cc_addressings.keys())
                 return None
 
             addressings = self.cc_addressings[actuator_uri]
@@ -487,6 +488,7 @@ class Addressings(object):
         self.cc_metadata[actuator_uri] = metadata.copy()
         self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
         self.cc_addressings[actuator_uri] = []
+        print(self.cc_addressings.keys())
         self._task_hw_added(metadata)
 
     def cc_hw_removed(self, dev_id):
