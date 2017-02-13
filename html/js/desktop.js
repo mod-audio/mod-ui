@@ -189,6 +189,7 @@ function Desktop(elements) {
     this.isApp = false
     this.title = ''
     this.cloudAccessToken = null
+    this.cloudHardwareDeviceVersions = null
     this.pedalboardBundle = null
     this.pedalboardEmpty  = true
     this.pedalboardModified = false
@@ -423,6 +424,41 @@ function Desktop(elements) {
                 callback(false)
             },
         })
+    }
+
+    this.checkHardwareDeviceVersion = function (dev_uri, version) {
+        if (self.cloudAccessToken == null) {
+            self.authenticateDevice(function (ok) {
+                if (ok && self.cloudAccessToken != null) {
+                    self.checkHardwareDeviceVersion(dev_uri, version)
+                } else {
+                    console.log("Notice: failed to check device version")
+                }
+            })
+            return
+        }
+
+        /*
+        if (self.cloudHardwareDeviceVersions == null) {
+            $.ajax({
+                method: 'GET',
+                url: SITEURL + '/devices/nonce',
+                cache: false,
+                success: function (resp) {
+                    if (!resp || !resp.nonce) {
+                        callback(false)
+                        return
+                    }
+                },
+                error: function (resp) {
+                    console.log("Notice: failed to get latest device version")
+                },
+                cache: false,
+                dataType: 'json'
+            })
+            return
+        }
+        */
     }
 
     this.validatePlugins = function (uris, callback) {

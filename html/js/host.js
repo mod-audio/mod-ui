@@ -318,6 +318,7 @@ $('document').ready(function() {
         if (cmd == "hw_add") {
             var dev_uri = data[1]
             var version = data[2]
+            desktop.checkHardwareDeviceVersion(dev_uri, version)
             console.log("hw added", dev_uri, version)
             return
         }

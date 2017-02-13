@@ -189,18 +189,32 @@ class ControlChainDeviceListener(object):
             self.hw_added_cb(dev_uri, dev['version'])
 
             for actuator in dev['actuators']:
+                modes_int = actuator['supported_modes']
+                modes_str = ""
+
+                # FIXME use real values
+                if modes_int & 1:
+                    modes_str += ":bypass:toggled"
+                if modes_int & 2:
+                    modes_str += ":trigger"
+
+                if not modes_str:
+                    continue
+
+                modes_str += ":"
+
+                # FIXME proper URI
                 uri = "/cc/%s-%i/%i" % (symbolify(dev['label']), dev_id, actuator['id'])
+
                 metadata = {
                     'uri'  : uri,
-                    # FIXME
-                    'name' : dev['label'] + " " + str(actuator['id']+1),
-                    'modes': ":bypass:trigger:toggled:",
+                    'name' : actuator['name'],
+                    'modes': modes_str,
                     'steps': [],
-                    'max_assigns': 1,
-                    'version': dev['version']
+                    'max_assigns': actuator['max_assignments']
                 }
-                print("cc added", metadata)
                 self.act_added_cb(dev_id, actuator['id'], metadata)
+                print("cc added", metadata)
 
             callback()
 

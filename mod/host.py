@@ -1016,7 +1016,7 @@ class Host(object):
         self.bank_id = 0
         self.plugins = {}
         self.connections = []
-        self.addressings.init()
+        self.addressings.clear()
         self.mapper.clear()
         self.pedalpreset_clear()
 
@@ -2353,6 +2353,10 @@ _:b%i
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value)
+        if addressing is None:
+            callback(False)
+            return
+
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True

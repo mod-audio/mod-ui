@@ -58,12 +58,14 @@ class Addressings(object):
 
     # initialize (clear) all addressings
     def init(self):
+        self.hw_actuators = get_hardware_actuators()
+
         # 'hmi_addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [...], 'idx': 0}
         # so per actuator we get:
         #  - 'addrs': list of addressings
         #  - 'idx'  : currently selected addressing (index)
-        self.hmi_addressings = dict((act['uri'], {'addrs': [], 'idx': -1}) for act in get_hardware_actuators())
+        self.hmi_addressings = dict((act['uri'], {'addrs': [], 'idx': -1}) for act in self.hw_actuators)
 
         self.cc_addressings = {}
         self.cc_metadata = {}
@@ -84,10 +86,16 @@ class Addressings(object):
             self.hmi_uri2hw_map[knob_uri] = knob_hw
             self.hmi_uri2hw_map[foot_uri] = foot_hw
 
+    # clear all addressings, leaving metadata intact
+    def clear(self):
+        self.hmi_addressings  = dict((key, {'addrs': [], 'idx': -1}) for key in self.hmi_addressings.keys())
+        self.cc_addressings   = dict((key, []) for key in self.cc_addressings.keys())
+        self.midi_addressings = {}
+
     # -----------------------------------------------------------------------------------------------------------------
 
     def get_actuators(self):
-        actuators = get_hardware_actuators()
+        actuators = self.hw_actuators.copy()
 
         for uri, data in self.cc_metadata.items():
             actuators.append({
