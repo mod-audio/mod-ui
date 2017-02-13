@@ -222,7 +222,8 @@ class Host(object):
         self.addressings._task_get_port_value = self.addr_task_get_port_value
         self.addressings._task_store_address_data = self.addr_task_store_address_data
         self.addressings._task_hw_added = self.addr_task_hw_added
-        self.addressings._task_hw_removed = self.addr_task_hw_removed
+        self.addressings._task_act_added = self.addr_task_act_added
+        self.addressings._task_act_removed = self.addr_task_act_removed
 
         # Register HMI protocol callbacks
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
@@ -434,10 +435,13 @@ class Host(object):
 
         pluginData['addressings'][portsymbol] = data
 
-    def addr_task_hw_added(self, metadata):
-        self.msg_callback("hw_add %s" % b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))
+    def addr_task_hw_added(self, dev_uri, version):
+        self.msg_callback("hw_add %s %s" % (dev_uri, version))
 
-    def addr_task_hw_removed(self, uri):
+    def addr_task_act_added(self, metadata):
+        self.msg_callback("act_add " + b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))
+
+    def addr_task_act_removed(self, uri):
         for instance_id, pluginData in self.plugins.items():
             relevant_ports = []
             for portsymbol, addressing in pluginData['addressings'].items():
@@ -448,7 +452,7 @@ class Host(object):
             for portsymbol in relevant_ports:
                 pluginData['addressings'].pop(portsymbol)
 
-        self.msg_callback("hw_remove %s" % uri)
+        self.msg_callback("act_del %s" % uri)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization

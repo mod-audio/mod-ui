@@ -12,14 +12,15 @@ from mod import symbolify
 class ControlChainDeviceListener(object):
     socket_path = "/tmp/control-chain.sock"
 
-    def __init__(self, hw_added_cb, hw_removed_cb):
-        self.crashed       = False
-        self.idle          = False
-        self.initialized   = False
-        self.initialize_cb = None
-        self.hw_added_cb   = hw_added_cb
-        self.hw_removed_cb = hw_removed_cb
-        self.write_queue   = []
+    def __init__(self, hw_added_cb, act_added_cb, act_removed_cb):
+        self.crashed        = False
+        self.idle           = False
+        self.initialized    = False
+        self.initialized_cb = None
+        self.hw_added_cb    = hw_added_cb
+        self.act_added_cb   = act_added_cb
+        self.act_removed_cb = act_removed_cb
+        self.write_queue    = []
 
         self.start()
 
@@ -56,7 +57,7 @@ class ControlChainDeviceListener(object):
             callback()
             return
 
-        self.initialize_cb = callback
+        self.initialized_cb = callback
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -77,9 +78,9 @@ class ControlChainDeviceListener(object):
         print("cc initialized")
         self.initialized = True
 
-        if self.initialize_cb is not None:
-            cb = self.initialize_cb
-            self.initialize_cb = None
+        if self.initialized_cb is not None:
+            cb = self.initialized_cb
+            self.initialized_cb = None
             cb()
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -105,7 +106,7 @@ class ControlChainDeviceListener(object):
                         print("process_read_queue resp 4")
 
                     else:
-                        self.hw_removed_cb(dev_id)
+                        self.act_removed_cb(dev_id)
 
             print("process_read_queue resp 4")
             self.process_read_queue()
@@ -183,6 +184,10 @@ class ControlChainDeviceListener(object):
         def dev_desc_cb(dev):
             print("cc send_device_descriptor RESP", dev_id, dev)
 
+            # FIXME
+            dev_uri = "/cc/%s-%i" % (symbolify(dev['label']), dev_id)
+            self.hw_added_cb(dev_uri, dev['version'])
+
             for actuator in dev['actuators']:
                 uri = "/cc/%s-%i/%i" % (symbolify(dev['label']), dev_id, actuator['id'])
                 metadata = {
@@ -192,9 +197,10 @@ class ControlChainDeviceListener(object):
                     'modes': ":bypass:trigger:toggled:",
                     'steps': [],
                     'max_assigns': 1,
+                    'version': dev['version']
                 }
                 print("cc added", metadata)
-                self.hw_added_cb(dev_id, actuator['id'], metadata)
+                self.act_added_cb(dev_id, actuator['id'], metadata)
 
             callback()
 

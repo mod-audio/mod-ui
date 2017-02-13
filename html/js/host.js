@@ -303,15 +303,22 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "hw_add") {
+        if (cmd == "act_add") {
             var metadata = JSON.parse(atob(data[1]))
             desktop.hardwareManager.addActuator(metadata)
             return
         }
 
-        if (cmd == "hw_remove") {
+        if (cmd == "act_del") {
             var uri = data[1]
             desktop.hardwareManager.removeActuator(uri)
+            return
+        }
+
+        if (cmd == "hw_add") {
+            var dev_uri = data[1]
+            var version = data[2]
+            console.log("hw added", dev_uri, version)
             return
         }
 

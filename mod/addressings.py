@@ -48,9 +48,11 @@ class Addressings(object):
         self._task_get_port_value = None
         self._task_store_address_data = None
         self._task_hw_added = None
-        self._task_hw_removed = None
+        self._task_act_added = None
+        self._task_act_removed = None
 
-        self.cchain = ControlChainDeviceListener(self.cc_hw_added, self.cc_hw_removed)
+        self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
+                                                 self.cc_actuator_added, self.cc_actuator_removed)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -483,15 +485,18 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions
 
-    def cc_hw_added(self, dev_id, actuator_id, metadata):
+    def cc_hardware_added(self, dev_uri, version):
+        self._task_hw_added(dev_uri, version)
+
+    def cc_actuator_added(self, dev_id, actuator_id, metadata):
         actuator_uri = metadata['uri']
         self.cc_metadata[actuator_uri] = metadata.copy()
         self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
         self.cc_addressings[actuator_uri] = []
         print(self.cc_addressings.keys())
-        self._task_hw_added(metadata)
+        self._task_act_added(metadata)
 
-    def cc_hw_removed(self, dev_id):
+    def cc_actuator_removed(self, dev_id):
         removed_actuators = []
 
         for actuator in self.cc_metadata.values():
@@ -501,7 +506,7 @@ class Addressings(object):
         for actuator_uri in removed_actuators:
             self.cc_metadata.pop(actuator_uri)
             self.cc_addressings.pop(actuator_uri)
-            self._task_hw_removed(actuator_uri)
+            self._task_act_removed(actuator_uri)
 
     @gen.coroutine
     def cc_load_all(self, actuator_uri):
