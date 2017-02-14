@@ -114,6 +114,30 @@ function getCookie(c_name, defaultValue) {
     return "";
 }
 
+function compareVersions(a, b, len) {
+    if (!a && !b) {
+        return 0
+    }
+    if (!b) {
+        return 1
+    }
+    if (!a) {
+        return -1
+    }
+    if (! len) {
+        len = 4
+    }
+    for (var i = 0; i < len; i++) {
+        if (a[i] > b[i]) {
+            return 1
+        }
+        if (a[i] < b[i]) {
+            return -1
+        }
+    }
+    return 0
+}
+
 function renderTime(time) {
     var months = ['Jan',
         'Feb',

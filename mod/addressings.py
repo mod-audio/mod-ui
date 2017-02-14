@@ -493,8 +493,8 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions
 
-    def cc_hardware_added(self, dev_uri, version):
-        self._task_hw_added(dev_uri, version)
+    def cc_hardware_added(self, dev_uri, label, version):
+        self._task_hw_added(dev_uri, label, version)
 
     def cc_actuator_added(self, dev_id, actuator_id, metadata):
         actuator_uri = metadata['uri']

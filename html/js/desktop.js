@@ -426,11 +426,11 @@ function Desktop(elements) {
         })
     }
 
-    this.checkHardwareDeviceVersion = function (dev_uri, version) {
+    this.checkHardwareDeviceVersion = function (dev_uri, label, version) {
         if (self.cloudAccessToken == null) {
             self.authenticateDevice(function (ok) {
                 if (ok && self.cloudAccessToken != null) {
-                    self.checkHardwareDeviceVersion(dev_uri, version)
+                    self.checkHardwareDeviceVersion(dev_uri, label, version)
                 } else {
                     console.log("Notice: failed to check device version")
                 }
@@ -438,17 +438,22 @@ function Desktop(elements) {
             return
         }
 
-        /*
         if (self.cloudHardwareDeviceVersions == null) {
             $.ajax({
                 method: 'GET',
-                url: SITEURL + '/devices/nonce',
-                cache: false,
+                // FIXME, proper URL, versioned as well
+                url: 'http://download.moddevices.com/releases/modduo/control-chain-versions.json',
                 success: function (resp) {
-                    if (!resp || !resp.nonce) {
-                        callback(false)
+                    if (!resp) {
+                        console.log("Notice: failed to get latest device version")
                         return
                     }
+                    if (resp.api_version != 0) {
+                        return
+                    }
+
+                    self.cloudHardwareDeviceVersions = resp
+                    self.checkHardwareDeviceVersion(dev_uri, label, version)
                 },
                 error: function (resp) {
                     console.log("Notice: failed to get latest device version")
@@ -458,7 +463,34 @@ function Desktop(elements) {
             })
             return
         }
-        */
+
+        var devs = self.cloudHardwareDeviceVersions.devices
+        if (! devs || Object.keys(devs).length == 0) {
+            return
+        }
+        var dev = devs[dev_uri]
+        if (! dev) {
+            return
+        }
+
+        var majminor = VERSION.split(".").slice(0, 2).join(".")
+        var cloudversion = dev[majminor]
+
+        if (! cloudversion) {
+            cloudversion = dev["latest"]
+            if (! cloudversion) {
+                return
+            }
+        }
+
+        if (compareVersions(version.split("."), cloudversion.split("."), 3) < 0) {
+            data = {
+                'label': label,
+                'download-url': "http://download.moddevices.com/releases/cc-firmware/" + label + cloudversion + ".bin",
+                'release-url': "http://wiki.moddevices.com/wiki/ControlChainReleases#" + label + "," + cloudversion
+            }
+            elements.upgradeWindow.upgradeWindow('setupDevice', data)
+        }
     }
 
     this.validatePlugins = function (uris, callback) {

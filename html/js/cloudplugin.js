@@ -864,19 +864,3 @@ JqueryClass('cloudPluginBox', {
         })
     },
 })
-
-function compareVersions(a, b) {
-    if (!a && !b)
-        return 0
-    if (!b)
-        return 1
-    if (!a)
-        return -1
-    for (var i = 0; i < 4; i++) {
-        if (a[i] > b[i])
-            return 1
-        if (a[i] < b[i])
-            return -1
-    }
-    return 0
-}

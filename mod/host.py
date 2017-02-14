@@ -435,8 +435,8 @@ class Host(object):
 
         pluginData['addressings'][portsymbol] = data
 
-    def addr_task_hw_added(self, dev_uri, version):
-        self.msg_callback("hw_add %s %s" % (dev_uri, version))
+    def addr_task_hw_added(self, dev_uri, label, version):
+        self.msg_callback("hw_add %s %s %s" % (dev_uri, label, version))
 
     def addr_task_act_added(self, metadata):
         self.msg_callback("act_add " + b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))
@@ -843,6 +843,9 @@ class Host(object):
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
+
+        for dev_uri, label, version in self.addressings.cchain.hw_versions.values():
+            websocket.write_message("hw_add %s %s %s" % (dev_uri, label, version))
 
         crashed = self.crashed
         self.crashed = False

@@ -30,6 +30,7 @@ JqueryClass('upgradeWindow', {
         self.data(options)
         self.data('updatedata', null)
         self.data('updaterequired', false)
+        self.data('updatesystem', false)
 
         options.icon.statusTooltip()
         options.icon.statusTooltip('message', 'Checking for updates...', true)
@@ -71,18 +72,25 @@ JqueryClass('upgradeWindow', {
             return
         }
 
-        var html = "Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
+        var html
+
+        if (self.data('updatesystem')) {
+            html = "Update version <b>" + data['version'].replace("v","") + "</b>.<br/>" +
                    "Released on " + data['release-date'].split('T')[0] + ".";
 
-        if (window.location.host == "192.168.50.1") {
-            html += "<br/><br/>" +
-                    "Sorry, cannot update via bluetooth.<br/>" +
-                    "Please connect the MOD via USB and try again.";
-            self.find('button.js-upgrade').addClass('disabled')
+            if (window.location.host == "192.168.50.1") {
+                html += "<br/><br/>" +
+                        "Sorry, cannot update via bluetooth.<br/>" +
+                        "Please connect the MOD via USB and try again.";
+                self.find('button.js-upgrade').addClass('disabled')
 
-        } else if (self.data('updaterequired')) {
-            html += "<br/><br/>" +
-                    "<b>This update is required!</b>";
+            } else if (self.data('updaterequired')) {
+                html += "<br/><br/>" +
+                        "<b>This update is required!</b>";
+            }
+        } else {
+            html = "One of your connected Control Chain devices is using outdated firmware, please update.<br/>"
+                   "Just follow the instructions on <a href='#' target='_blank'>this link</a>.";
         }
 
         var p = self.find('.mod-upgrade-details').find('p')
@@ -94,9 +102,15 @@ JqueryClass('upgradeWindow', {
     },
 
     close: function () {
-        $(this).hide()
+        var self = $(this)
 
-        setCookie("auto-updated-canceled_" + VERSION, "true", 15)
+        self.hide()
+
+        if (self.data('updatesystem')) {
+            setCookie("auto-updated-canceled_" + VERSION, "true", 15)
+        } else {
+            setCookie("device-update-canceled_" + VERSION, "true", 15)
+        }
     },
 
     setup: function (required, data) {
@@ -106,7 +120,8 @@ JqueryClass('upgradeWindow', {
         var ignoreUpdate = (getCookie("auto-updated-canceled_" + VERSION, "false") == "true")
 
         self.data('updatedata', data)
-        self.data('updaterequired', required)
+        self.data('updaterequired', false)
+        self.data('updatesystem', true)
         icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate || required, 8000)
         icon.statusTooltip('status', 'update-available')
 
@@ -114,6 +129,23 @@ JqueryClass('upgradeWindow', {
             self.upgradeWindow('open')
             new Notification('warn', 'A required update is available.<br/>Please update.', 8000)
         }
+    },
+
+    setupDevice: function (data) {
+        var self = $(this)
+
+        if (self.data('updatesystem')) {
+            return
+        }
+
+        var icon = self.data('icon')
+        var ignoreUpdate = (getCookie("device-update-canceled_" + VERSION, "false") == "true")
+
+        self.data('updatedata', data)
+        self.data('updaterequired', false)
+        self.data('updatesystem', false)
+        icon.statusTooltip('message', "A device update is available, click to know details", ignoreUpdate, 8000)
+        icon.statusTooltip('status', 'update-available')
     },
 
     setErrored: function () {

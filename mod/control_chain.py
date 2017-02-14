@@ -20,6 +20,7 @@ class ControlChainDeviceListener(object):
         self.hw_added_cb    = hw_added_cb
         self.act_added_cb   = act_added_cb
         self.act_removed_cb = act_removed_cb
+        self.hw_versions    = {}
         self.write_queue    = []
 
         self.start()
@@ -107,6 +108,10 @@ class ControlChainDeviceListener(object):
 
                     else:
                         self.act_removed_cb(dev_id)
+                        try:
+                            self.hw_versions.pop(dev_id)
+                        except KeyError:
+                            pass
 
             print("process_read_queue resp 4")
             self.process_read_queue()
@@ -185,8 +190,10 @@ class ControlChainDeviceListener(object):
             print("cc send_device_descriptor RESP", dev_id, dev)
 
             # FIXME
-            dev_uri = "/cc/%s-%i" % (symbolify(dev['label']), dev_id)
-            self.hw_added_cb(dev_uri, dev['version'])
+            slabel  = symbolify(dev['label'])
+            dev_uri = "/cc/" + slabel
+            self.hw_added_cb(dev_uri, slabel, dev['version'])
+            self.hw_versions[dev_id] = (dev_uri, slabel, dev['version'])
 
             for actuator in dev['actuators']:
                 modes_int = actuator['supported_modes']
@@ -204,7 +211,7 @@ class ControlChainDeviceListener(object):
                 modes_str += ":"
 
                 # FIXME proper URI
-                uri = "/cc/%s-%i/%i" % (symbolify(dev['label']), dev_id, actuator['id'])
+                uri = "%s-%i/%i" % (dev_uri, dev_id, actuator['id'])
 
                 metadata = {
                     'uri'  : uri,
