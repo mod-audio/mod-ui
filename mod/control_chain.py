@@ -86,38 +86,34 @@ class ControlChainDeviceListener(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    @gen.coroutine
     def process_read_queue(self, ignored=None):
-        print("process_read_queue 1")
+        self.socket.read_until(b"\0", self.check_read_response)
 
-        def check_read_response(resp):
-            print("process_read_queue resp 2")
-            try:
-                data = json.loads(resp[:-1].decode("utf-8", errors="ignore"))
-            except:
-                print("ERROR: control-chain read response failed")
-            else:
-                if data['event'] == "device_status":
-                    data   = data['data']
-                    dev_id = data['device_id']
+    @gen.coroutine
+    def check_read_response(self, resp):
+        try:
+            data = json.loads(resp[:-1].decode("utf-8", errors="ignore"))
+        except:
+            print("ERROR: control-chain read response failed")
+        else:
+            if data['event'] == "device_status":
+                data   = data['data']
+                dev_id = data['device_id']
 
-                    if data['status']:
-                        print("process_read_queue resp 3")
-                        yield gen.Task(self.send_device_descriptor, dev_id)
-                        print("process_read_queue resp 4")
+                if data['status']:
+                    yield gen.Task(self.send_device_descriptor, dev_id)
 
-                    else:
-                        self.act_removed_cb(dev_id)
-                        try:
-                            self.hw_versions.pop(dev_id)
-                        except KeyError:
-                            pass
+                else:
+                    self.act_removed_cb(dev_id)
+                    try:
+                        self.hw_versions.pop(dev_id)
+                    except KeyError:
+                        pass
 
-            print("process_read_queue resp 4")
+        finally:
             self.process_read_queue()
 
-        print("process_read_queue resp 1.1")
-        self.socket.read_until(b"\0", check_read_response)
+    # -----------------------------------------------------------------------------------------------------------------
 
     def process_write_queue(self):
         try:
@@ -176,9 +172,9 @@ class ControlChainDeviceListener(object):
         for dev_id in dev_list:
             yield gen.Task(self.send_device_descriptor, dev_id)
 
-        print("cc device_list_finished")
         if not self.initialized:
             self.send_request('device_status', {'enable':1}, self.process_read_queue)
+
         self.set_initialized()
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -226,3 +222,22 @@ class ControlChainDeviceListener(object):
             callback()
 
         self.send_request('device_descriptor', {'device_id':dev_id}, dev_desc_cb)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    from tornado.web import Application
+    from tornado.ioloop import IOLoop
+
+    def hw_added_cb(dev_uri, label, version):
+        print("hw_added_cb", dev_uri, label, version)
+
+    def act_added_cb(dev_id, actuator_id, metadata):
+        print("act_added_cb", dev_id, actuator_id, metadata)
+
+    def act_removed_cb(dev_id):
+        print("act_removed_cb", dev_id)
+
+    application = Application()
+    cc = ControlChainDeviceListener(hw_added_cb, act_added_cb, act_removed_cb)
+    IOLoop.instance().start()
