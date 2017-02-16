@@ -441,8 +441,7 @@ function Desktop(elements) {
         if (self.cloudHardwareDeviceVersions == null) {
             $.ajax({
                 method: 'GET',
-                // FIXME, proper URL, versioned as well
-                url: 'http://download.moddevices.com/releases/modduo/control-chain-versions.json',
+                url: CONTROLCHAIN_URL + '/versions',
                 success: function (resp) {
                     if (!resp) {
                         console.log("Notice: failed to get latest device version")
@@ -486,7 +485,7 @@ function Desktop(elements) {
         if (compareVersions(version.split("."), cloudversion.split("."), 3) < 0) {
             data = {
                 'label': label,
-                'download-url': "http://download.moddevices.com/releases/cc-firmware/" + label + cloudversion + ".bin",
+                'download-url': CONTROLCHAIN_URL + "/file/" + label + cloudversion + ".bin",
                 'release-url': "http://wiki.moddevices.com/wiki/ControlChainReleases#" + label + "," + cloudversion
             }
             elements.upgradeWindow.upgradeWindow('setupDevice', data)
