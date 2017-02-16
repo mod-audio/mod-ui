@@ -363,8 +363,8 @@ class Host(object):
                                                                                 data['minimum'],
                                                                                 data['maximum'],
                                                                                 data['steps'],
-                                                                                #data['unit'], # TODO
-                                                                                #data['options'],
+                                                                                data['unit'],
+                                                                                #data['options'], # TODO
                                                                                 ), callback_report, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
