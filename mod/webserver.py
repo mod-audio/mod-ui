@@ -1012,7 +1012,7 @@ class TemplateHandler(web.RequestHandler):
             context = getattr(self, section)()
         except AttributeError:
             context = {}
-        context['cloud_url'] = CLOUD_HTTP_ADDRESS
+        context['cloud_url']  = CLOUD_HTTP_ADDRESS
         context['bufferSize'] = get_jack_buffer_size()
         context['sampleRate'] = get_jack_sample_rate()
         self.write(loader.load(path).generate(**context))
