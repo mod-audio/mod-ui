@@ -306,9 +306,13 @@ function HardwareManager(options) {
                 // We're addressing
                 if (actuator.uri && actuator.uri != kNullAddressURI)
                 {
+                    var actuator_uri = actuator.uri
+                    if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                        actuator_uri = kMidiLearnURI
+                    }
                     // add new one, print and error if already there
-                    if (self.addressingsByActuator[actuator.uri].indexOf(instanceAndSymbol) < 0) {
-                        self.addressingsByActuator[actuator.uri].push(instanceAndSymbol)
+                    if (self.addressingsByActuator[actuator_uri].indexOf(instanceAndSymbol) < 0) {
+                        self.addressingsByActuator[actuator_uri].push(instanceAndSymbol)
                     } else {
                         console.log("ERROR HERE, please fix!")
                     }
@@ -347,14 +351,6 @@ function HardwareManager(options) {
                 return
             }
 
-            // if selected actuator is the same and it's a MIDI CC, do nothing.
-            // otherwise we'd have to re-learn
-            if (actuator.uri == currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                console.log("Doing nothing")
-                form.remove()
-                return
-            }
-
             // Check values
             minv = min.val()
             if (minv == undefined || minv == "")
@@ -370,7 +366,7 @@ function HardwareManager(options) {
             }
 
             // if changing from midi-learn, unlearn first
-            if (currentAddressing.uri && (currentAddressing.uri == kMidiLearnURI /*|| currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0*/)) {
+            if (currentAddressing.uri == kMidiLearnURI) {
                 var addressing = {
                     uri    : kMidiUnlearnURI,
                     label  : label.val() || pname,

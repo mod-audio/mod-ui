@@ -559,6 +559,13 @@ class Addressings(object):
     def create_midi_cc_uri(self, channel, controller):
         return "%sCh.%i_CC#%i" % (kMidiCustomPrefixURI, channel+1, controller)
 
+    def get_midi_cc_from_uri(self, uri):
+        data = uri.replace(kMidiCustomPrefixURI+"Ch.","",1).split("_CC#",1)
+        if len(data) == 2:
+            return (int(data[0])-1, int(data[1]))
+        print("ERROR: get_midi_cc_from_uri() called with invalid uri:", uri)
+        return (-1,-1)
+
     def is_hmi_actuator(self, actuator_uri):
         return actuator_uri.startswith("/hmi/")
 

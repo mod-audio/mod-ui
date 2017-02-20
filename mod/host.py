@@ -63,7 +63,7 @@ kNullAddressURI = "null"
 # Special URIs for midi-learn
 kMidiLearnURI = "/midi-learn"
 kMidiUnlearnURI = "/midi-unlearn"
-#kMidiCustomPrefixURI = "/midi-custom_" # to show current one
+kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
 # Limits
 kMaxAddressableScalepoints = 50
@@ -1736,9 +1736,10 @@ class Host(object):
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
-                self.addressings.add_midi(instance_id, ":bypass", p['bypassCC']['channel'],
-                                                                  p['bypassCC']['control'],
-                                                                  0.0, 1.0)
+                pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
+                                                                                 p['bypassCC']['channel'],
+                                                                                 p['bypassCC']['control'],
+                                                                                 0.0, 1.0)
 
             if p['preset']:
                 self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
@@ -1768,7 +1769,8 @@ class Host(object):
                         minimum, maximum = ranges[symbol]
 
                     pluginData['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
-                    self.addressings.add_midi(instance_id, symbol, mchnnl, mctrl, minimum, maximum)
+                    pluginData['addressings'][symbol] = self.addressings.add_midi(instance_id, symbol,
+                                                                                  mchnnl, mctrl, minimum, maximum)
 
             for output in allports['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
@@ -2330,9 +2332,37 @@ _:b%i
             return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
+
         if old_addressing is not None:
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
+
+            # Changing ranges without changing MIDI CC
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_MIDI and actuator_uri == old_actuator_uri:
+                channel, controller = self.addressings.get_midi_cc_from_uri(actuator_uri)
+
+                if -1 in (channel, controller):
+                    # error
+                    actuator_uri = None
+
+                else:
+                    if portsymbol == ":bypass":
+                        pluginData['bypassCC'] = (channel, controller)
+                    else:
+                        pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
+
+                    pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
+                                                                                      portsymbol,
+                                                                                      channel, controller,
+                                                                                      minimum, maximum)
+
+                    return self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
+                                                                              portsymbol,
+                                                                              channel,
+                                                                              controller,
+                                                                              minimum,
+                                                                              maximum), callback, datatype='boolean')
+
             self.addressings.remove(old_addressing)
             yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                         old_addressing['instance_id'],
