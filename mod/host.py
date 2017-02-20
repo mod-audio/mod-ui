@@ -1717,9 +1717,10 @@ class Host(object):
             self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
-                self.addressings.add_midi(instance_id, ":bypass", p['bypassCC']['channel'],
-                                                                  p['bypassCC']['control'],
-                                                                  0.0, 1.0)
+                pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
+                                                                                 p['bypassCC']['channel'],
+                                                                                 p['bypassCC']['control'],
+                                                                                 0.0, 1.0)
 
             if p['preset']:
                 self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
@@ -1749,7 +1750,8 @@ class Host(object):
                         minimum, maximum = ranges[symbol]
 
                     pluginData['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
-                    self.addressings.add_midi(instance_id, symbol, mchnnl, mctrl, minimum, maximum)
+                    pluginData['addressings'][symbol] = self.addressings.add_midi(instance_id, symbol,
+                                                                                  mchnnl, mctrl, minimum, maximum)
 
             for output in allports['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
