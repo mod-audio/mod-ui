@@ -343,7 +343,7 @@ class Host(object):
                                         data['port'],
                                         data['label'],
                                         data['hmitype'],
-                                        data['hmiunit'],
+                                        data['unit'],
                                         data['value'],
                                         data['minimum'],
                                         data['maximum'],

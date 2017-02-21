@@ -266,6 +266,7 @@ class Addressings(object):
             print("ERROR: Trying to address the wrong way, stop!")
             return None
 
+        unit = "(none)"
         options = []
 
         if portsymbol == ":presets":
@@ -287,6 +288,8 @@ class Addressings(object):
             # useful info about this port
             pprops = port_info["properties"]
 
+            unit = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
+
             if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
@@ -301,6 +304,7 @@ class Addressings(object):
             'minimum'     : minimum,
             'maximum'     : maximum,
             'steps'       : steps,
+            'unit'        : unit,
             'options'     : options,
         }
 
@@ -309,11 +313,9 @@ class Addressings(object):
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             if portsymbol == ":bypass":
                 hmitype = HMI_ADDRESSING_TYPE_BYPASS
-                hmiunit = "(none)"
 
             elif portsymbol == ":presets":
                 hmitype = HMI_ADDRESSING_TYPE_ENUMERATION|HMI_ADDRESSING_TYPE_INTEGER
-                hmiunit = "(none)"
 
             else:
                 if "toggled" in pprops:
@@ -334,8 +336,6 @@ class Addressings(object):
                 if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                     hmitype |= HMI_ADDRESSING_TYPE_ENUMERATION
 
-                hmiunit = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
-
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
                 if value not in [o[0] for o in options]:
                     print("ERROR: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
@@ -343,7 +343,6 @@ class Addressings(object):
 
             # hmi specific
             addressing_data['hmitype'] = hmitype
-            addressing_data['hmiunit'] = hmiunit
 
             addressings = self.hmi_addressings[actuator_uri]
             addressings['idx'] = len(addressings['addrs'])
@@ -530,6 +529,7 @@ class Addressings(object):
                 'minimum'    : addressing['minimum'],
                 'maximum'    : addressing['maximum'],
                 'steps'      : addressing['steps'],
+                'unit'       : addressing['unit'],
                 'options'    : addressing['options'],
             }
             yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
