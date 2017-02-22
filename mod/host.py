@@ -331,6 +331,10 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
+            if data is None:
+                return self.hmi.control_clean(actuator[0], actuator[1], actuator[2], actuator[3],
+                                              callback, datatype='boolean')
+
             return self.hmi.control_add(data['instance_id'],
                                         data['port'],
                                         data['label'],

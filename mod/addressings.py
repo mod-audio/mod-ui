@@ -435,8 +435,7 @@ class Addressings(object):
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
-            print("ERROR: hmi_load_current failed, empty list")
-            callback(False)
+            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, None, callback)
             return
 
         # current addressing data
@@ -473,15 +472,15 @@ class Addressings(object):
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
 
-    def hmi_load_next_hw(self, actuator_hw, callback):
-        actuator_uri      = self.hmi_hw2uri_map[actuator_hw]
+    def hmi_load_next_hw(self, actuator_hmi, callback):
+        actuator_uri      = self.hmi_hw2uri_map[actuator_hmi]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
-            #self.hmi.control_clean(actuator_hmi[0], actuator_hmi[1], actuator_hmi[2], actuator_hmi[3], callback)
-            callback(False)
+            print("ERROR: hmi_load_next_hw failed, empty list")
+            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, None, callback)
             return
 
         # jump to next available addressing
