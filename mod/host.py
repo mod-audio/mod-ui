@@ -1107,7 +1107,7 @@ class Host(object):
         instance_id = self.mapper.get_id_without_creating(instance)
 
         try:
-            data = self.plugins.pop(instance_id)
+            pluginData = self.plugins.pop(instance_id)
         except KeyError:
             callback(False)
             return
@@ -1119,8 +1119,8 @@ class Host(object):
 
         used_hmi_actuators = []
 
-        for symbol in [symbol for symbol in data['addressings'].keys()]:
-            addressing    = data['addressings'].pop(symbol)
+        for symbol in [symbol for symbol in pluginData['addressings'].keys()]:
+            addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
