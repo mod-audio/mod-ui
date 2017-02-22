@@ -334,10 +334,6 @@ class Host(object):
     # Addressing callbacks
 
     def addr_task_addressing(self, atype, actuator, data, callback):
-        def callback_report(ret):
-            print("addr_task_addressing returned", ret, "|", actuator)
-            callback(ret)
-
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             return self.hmi.control_add(data['instance_id'],
                                         data['port'],
@@ -352,20 +348,21 @@ class Host(object):
                                         data['addrs_max'], # num controllers
                                         data['addrs_idx'], # index
                                         data['options'],
-                                        callback_report)
+                                        callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i" % (data['instance_id'],
-                                                                                data['port'],
-                                                                                actuator[0], actuator[1],
-                                                                                '"%s"' % data['label'].replace('"', ''),
-                                                                                data['value'],
-                                                                                data['minimum'],
-                                                                                data['maximum'],
-                                                                                data['steps'],
-                                                                                data['unit'],
-                                                                                #data['options'], # TODO
-                                                                                ), callback_report, datatype='boolean')
+            label = '"%s"' % data['label'].replace('"', '')
+            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s" % (data['instance_id'],
+                                                                                   data['port'],
+                                                                                   actuator[0], actuator[1],
+                                                                                   label,
+                                                                                   data['value'],
+                                                                                   data['minimum'],
+                                                                                   data['maximum'],
+                                                                                   data['steps'],
+                                                                                   data['unit'],
+                                                                                   #data['options'], # TODO
+                                                                                   ), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
             return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
@@ -374,7 +371,7 @@ class Host(object):
                                                                          data['midicontrol'],
                                                                          data['minimum'],
                                                                          data['maximum'],
-                                                                         ), callback_report, datatype='boolean')
+                                                                         ), callback, datatype='boolean')
 
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)
