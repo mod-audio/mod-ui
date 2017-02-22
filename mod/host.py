@@ -352,6 +352,7 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
+            unit  = '"%s"' % data['unit'].replace('"', '')
             return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s" % (data['instance_id'],
                                                                                    data['port'],
                                                                                    actuator[0], actuator[1],
@@ -360,7 +361,7 @@ class Host(object):
                                                                                    data['minimum'],
                                                                                    data['maximum'],
                                                                                    data['steps'],
-                                                                                   data['unit'],
+                                                                                   unit,
                                                                                    #data['options'], # TODO
                                                                                    ), callback, datatype='boolean')
 
