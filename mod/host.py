@@ -2337,6 +2337,11 @@ _:b%i
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value)
+
+        if addressing is None:
+            callback(False)
+            return
+
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
