@@ -350,7 +350,6 @@ class Host(object):
                                         callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            print("cc_map %d %s %d %d" % (data['instance_id'], data['port'], actuator[0], actuator[1]))
             return self.send_notmodified("cc_map %d %s %d %d" % (data['instance_id'],
                                                                  data['port'],
                                                                  #data['label'], # TODO
@@ -381,7 +380,6 @@ class Host(object):
             return self.hmi.control_rm(instance_id, portsymbol, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            print("cc_unmap %d %s" % (instance_id, portsymbol))
             return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
@@ -1101,7 +1099,6 @@ class Host(object):
         used_hmi_actuators = []
 
         for symbol in [symbol for symbol in data['addressings'].keys()]:
-            print("remove_plugin address", symbol)
             addressing    = data['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
@@ -1251,7 +1248,6 @@ class Host(object):
                 'bundle': presetbundle,
                 'uri'   : preseturi
             })
-            print("uri saved as '%s'" % preseturi)
 
         def host_callback(ok):
             if not ok:
@@ -1286,7 +1282,6 @@ class Host(object):
                 'bundle': bundlepath,
                 'uri'   : preseturi
             })
-            print("uri saved as '%s'" % preseturi)
 
         def host_callback(ok):
             if not ok:
@@ -2313,12 +2308,10 @@ _:b%i
         # MIDI learn is not saved until a MIDI controller is moved.
         # So we need special casing for unlearn.
         if actuator_uri == kMidiUnlearnURI:
-            print("MIDI learn canceled")
             return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
         if old_addressing is not None:
-            print("unaddressed", old_addressing)
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
             self.addressings.remove(old_addressing)
@@ -2327,20 +2320,16 @@ _:b%i
                                                         old_addressing['port'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
-            print("New addressing is empty, doing nothing")
             callback(True)
             return
 
         if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
-            print("Cannot address to HMI at this point")
+            print("WARNING: Cannot address to HMI at this point")
             callback(False)
             return
 
-        print("address to", actuator_uri)
-
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
-            print("Starting MIDI learn")
             return self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
                                                                      portsymbol,
                                                                      minimum,
@@ -2349,7 +2338,6 @@ _:b%i
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value)
         pluginData['addressings'][portsymbol] = addressing
-        print("addressed as", addressing)
 
         self.pedalboard_modified = True
         self.addressings.load_addr(actuator_uri, addressing, callback)
