@@ -2374,7 +2374,7 @@ _:b%i
             return
 
         if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
-            print("ERROR: Cannot address to HMI at this point")
+            print("WARNING: Cannot address to HMI at this point")
             callback(False)
             return
 
