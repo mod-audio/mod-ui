@@ -25,6 +25,7 @@ JqueryClass('upgradeWindow', {
             startUpgrade: function (callback) {
                 callback(true)
             },
+            startDeviceUpgrade: function () {},
         }, options)
 
         self.data(options)
@@ -53,7 +54,11 @@ JqueryClass('upgradeWindow', {
                 return
             }
             if ($(this).text() == "Upgrade Now") {
-                self.upgradeWindow('startUpgrade')
+                if (self.data('updatesystem')) {
+                    self.upgradeWindow('startUpgrade')
+                } else {
+                    self.upgradeWindow('startDeviceUpgrade')
+                }
             } else {
                 self.upgradeWindow('downloadStart')
             }
@@ -183,7 +188,8 @@ JqueryClass('upgradeWindow', {
         self.find('.download-start').show().text("Downloading...")
         self.find('.download-complete').hide()
 
-        var transfer = new SimpleTransference(self.data('updatedata')['download-url'], '/update/download')
+        var transfer = new SimpleTransference(self.data('updatedata')['download-url'],
+                                              self.data('updatesystem') ? '/update/download' : '/controlchain/download')
 
         transfer.reportPercentageStatus = function (percentage) {
             self.find('.progressbar').width(self.find('.progressbar-wrapper').width() * percentage)
@@ -201,10 +207,15 @@ JqueryClass('upgradeWindow', {
             self.find('.download-start').hide()
             self.find('.download-complete').show()
 
-            if (!confirm("The MOD will now be updated. Any unsaved work will be lost. The upgrade can take several minutes, in which you may not be able to play or do anything else. Continue?"))
-                return
-
-            self.upgradeWindow('startUpgrade')
+            if (self.data('updatesystem')) {
+                if (confirm("The MOD will now be updated. Any unsaved work will be lost. "+
+                            "The upgrade can take several minutes, "+
+                            "in which you may not be able to play or do anything else. Continue?")) {
+                    self.upgradeWindow('startUpgrade')
+                }
+            } else {
+                self.upgradeWindow('startDeviceUpgrade')
+            }
         }
 
         transfer.reportError = function (error) {
@@ -228,5 +239,10 @@ JqueryClass('upgradeWindow', {
                 new Bug("Failed to start upgrade")
             }
         })
+    },
+
+    startDeviceUpgrade: function () {
+        var self = $(this)
+        self.data('startDeviceUpgrade')()
     },
 })

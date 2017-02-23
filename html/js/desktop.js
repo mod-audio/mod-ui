@@ -1081,6 +1081,10 @@ function Desktop(elements) {
                 dataType: 'json',
             })
         },
+        startDeviceUpgrade: function () {
+            // TODO: create a wizard with an explanation
+            console.log("Device upgrade started")
+        },
     })
 
     var prevent = function (ev) {

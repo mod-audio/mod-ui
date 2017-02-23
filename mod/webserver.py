@@ -295,8 +295,6 @@ class SystemInfo(JsonRequestHandler):
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp/update"
 
-    @web.asynchronous
-    @gen.engine
     def process_file(self, data, callback=lambda:None):
         self.sfr_callback = callback
 
@@ -321,6 +319,19 @@ class UpdateBegin(JsonRequestHandler):
         # send message asap, but not quite right now
         yield gen.Task(self.flush, False)
         yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
+
+class ControlChainDownload(SimpleFileReceiver):
+    destination_dir = "/tmp/update"
+
+    def process_file(self, data, callback=lambda:None):
+        self.sfr_callback = callback
+
+        # TODO: verify checksum?
+        move_file(os.path.join(self.destination_dir, data['filename']), "cc-firmware.bin", self.move_file_finished)
+
+    def move_file_finished(self):
+        self.result = True
+        self.sfr_callback()
 
 class EffectInstaller(SimpleFileReceiver):
     destination_dir = DOWNLOAD_TMP_DIR
@@ -1363,6 +1374,8 @@ application = web.Application(
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),
+
+            (r"/controlchain/download/", ControlChainDownload),
 
             (r"/resources/(.*)", EffectResource),
 
