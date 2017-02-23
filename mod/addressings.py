@@ -47,24 +47,6 @@ class Addressings(object):
         self._task_get_port_value = None
         self._task_store_address_data = None
 
-        # TODO: remove this
-        if os.getenv("CONTROL_CHAIN_TEST"):
-            dev_label = "footex"
-            dev_id    = 1
-
-            for actuator_id in range(4):
-                actuator_uri  = "/cc/%d/%d" % (dev_id, actuator_id)
-                actuator_name = "Footex %d:%d" % (dev_id, actuator_id+1),
-
-                self.cc_addressings[actuator_uri] = []
-                self.cc_metadata[actuator_uri] = {
-                    'hw_id': (dev_id, actuator_id),
-                    'name' : actuator_name,
-                    'modes': ":trigger:toggled:",
-                    'steps': [],
-                    'max_assigns': 1,
-                }
-
     # -----------------------------------------------------------------------------------------------------------------
 
     # initialize (clear) all addressings
