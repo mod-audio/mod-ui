@@ -35,7 +35,7 @@ from mod.settings import (APP, LOG,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
-                          UPDATE_FILE, USING_256_FRAMES_FILE,
+                          UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE)
 
@@ -293,13 +293,13 @@ class SystemInfo(JsonRequestHandler):
         self.write(info)
 
 class UpdateDownload(SimpleFileReceiver):
-    destination_dir = "/tmp/update"
+    destination_dir = "/tmp/os-update"
 
     def process_file(self, data, callback=lambda:None):
         self.sfr_callback = callback
 
         # TODO: verify checksum?
-        move_file(os.path.join(self.destination_dir, data['filename']), UPDATE_FILE, self.move_file_finished)
+        move_file(os.path.join(self.destination_dir, data['filename']), UPDATE_MOD_OS_FILE, self.move_file_finished)
 
     def move_file_finished(self):
         self.result = True
@@ -309,7 +309,7 @@ class UpdateBegin(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        if not os.path.exists(UPDATE_FILE):
+        if not os.path.exists(UPDATE_MOD_OS_FILE):
             self.write(False)
             return
 
@@ -321,13 +321,13 @@ class UpdateBegin(JsonRequestHandler):
         yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
 
 class ControlChainDownload(SimpleFileReceiver):
-    destination_dir = "/tmp/update"
+    destination_dir = "/tmp/cc-update"
 
     def process_file(self, data, callback=lambda:None):
         self.sfr_callback = callback
 
         # TODO: verify checksum?
-        move_file(os.path.join(self.destination_dir, data['filename']), "cc-firmware.bin", self.move_file_finished)
+        move_file(os.path.join(self.destination_dir, data['filename']), UPDATE_CC_FIRMWARE_FILE, self.move_file_finished)
 
     def move_file_finished(self):
         self.result = True
