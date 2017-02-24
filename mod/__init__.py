@@ -29,10 +29,10 @@ def jsoncall(method):
                 self.request.body = json.loads(decoded)
         result = method(self, *args, **kwargs)
         if not result is None:
-            self.set_header('Content-Type', 'application/json')
+            self.set_header('Content-Type', 'application/json; charset=UTF-8')
             self.write(json.dumps(result, default=json_handler))
         else:
-            self.set_header('Content-Type', 'text/plain')
+            self.set_header('Content-Type', 'text/plain; charset=UTF-8')
             self.set_status(204)
     return wrapper
 
