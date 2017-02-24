@@ -99,6 +99,7 @@ $('document').ready(function() {
         pedalPresetsWindow: $('#pedal-presets-window'),
         pedalPresetsList: $("#pedal-presets-list"),
         pedalPresetsOverlay: $("#pedal-presets-list-input"),
+        updateDeviceWindow: $('#cc-device-update-window'),
         saveBox: $('#save-pedalboard'),
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
@@ -224,6 +225,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/networkstatus.js?v={{version}}"></script>
 <script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/host.js?v={{version}}"></script>
+<script type="text/javascript" src="js/cc-update.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 
 </head>
@@ -493,6 +495,36 @@ $('document').ready(function() {
             </div>
         </div>
         <!-- END PEDALBOARD PRESETS -->
+
+        <!-- CC DEVICE UPDATE WINDOW -->
+        <div id="cc-device-update-window" class="save-popup mod-hidden">
+            <div class="mod-box" style="width: 600px; margin:-150px -280px">
+                <h1 class="pull-left">Control-Chain Device Update</h1><span class="js-cancel close">&times;</span>
+                <form class="bottom">
+                    <div class="clearfix"></div>
+                    <div id="cc-device-update-text">
+                        <p>
+                            Your Control-Chain device firmware is ready to be updated.
+                        </p>
+                        <p>
+                            To begin, follow these steps:
+                        </p>
+                        <ul>
+                            <li>Disconnect the device from the control-chain/ethernet port</li>
+                            <li>Hold down the first footswitch on the control-chain device</li>
+                            <li>While the first footswitch is down, connect the device to the MOD via USB<br/>
+                                (You can stop holding down the first footswitch after connecting)
+                            </li>
+                            <li>Wait for the "update completed" message</li>
+                        </ul>
+                        <p>
+                            Note: The update should only take a few seconds.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END CC DEVICE UPDATE WINDOW -->
 
     </div>
     <!-- END PEDALBOARD -->

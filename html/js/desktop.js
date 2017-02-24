@@ -29,6 +29,7 @@ function Desktop(elements) {
         pedalPresetsWindow: $('<div>'),
         pedalPresetsList: $('<div>'),
         pedalPresetsOverlay: $('<div>'),
+        updateDeviceWindow: $('<div>'),
         saveBox: $('<div>'),
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
@@ -185,6 +186,17 @@ function Desktop(elements) {
             self.titleBox.text((self.title || 'Untitled') + " - " + name)
         }
     })
+
+    this.ccDeviceUpdateWindow = new ControlChainDeviceUpdateWindow({
+        updateInfoWindow: elements.updateDeviceWindow,
+    })
+
+    this.ccDeviceUpdateFinished = function () {
+        elements.upgradeWindow.upgradeWindow('setUpdated')
+        elements.upgradeWindow.hide()
+        self.ccDeviceUpdateWindow.hide()
+        new Notification("info", "Control-Chain device firmware is now updated!")
+    }
 
     this.isApp = false
     this.title = ''
@@ -1082,8 +1094,7 @@ function Desktop(elements) {
             })
         },
         startDeviceUpgrade: function () {
-            // TODO: create a wizard with an explanation
-            console.log("Device upgrade started")
+            self.ccDeviceUpdateWindow.show()
         },
     })
 

@@ -392,7 +392,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "cc-device-updated") {
-            console.log("CC device firmware is now updated")
+            desktop.ccDeviceUpdateFinished()
             return
         }
 
