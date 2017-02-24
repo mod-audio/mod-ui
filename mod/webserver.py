@@ -477,7 +477,7 @@ class EffectFile(web.StaticFileHandler):
             raise web.HTTPError(404)
 
         if prop in ("iconTemplate", "settingsTemplate", "stylesheet", "javascript"):
-            self.custom_type = "text/plain"
+            self.custom_type = "text/plain; charset=UTF-8"
 
         return path
 
