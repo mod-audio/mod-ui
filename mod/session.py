@@ -68,6 +68,9 @@ class Session(object):
         # reuse HMI function
         self.host.hmi_save_current_pedalboard(lambda r:None)
 
+    def signal_device_updated(self):
+        self.msg_callback("cc-device-updated")
+
     def signal_disconnect(self):
         sockets = self.websockets
         self.websockets = []

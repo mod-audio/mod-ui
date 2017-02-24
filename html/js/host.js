@@ -391,6 +391,11 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "cc-device-updated") {
+            console.log("CC device firmware is now updated")
+            return
+        }
+
         if (cmd == "load-pb-remote") {
             var pedalboard_id = data[1]
             desktop.loadRemotePedalboard(pedalboard_id)

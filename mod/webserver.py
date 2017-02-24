@@ -1479,6 +1479,10 @@ application = web.Application(
         ],
         debug=LOG and False, **settings)
 
+def signal_device_firmware_updated():
+    os.remove(UPDATE_CC_FIRMWARE_FILE)
+    SESSION.signal_device_updated()
+
 def signal_upgrade_check():
     with open("/root/check-upgrade-system", 'r') as fh:
         countRead = fh.read().strip()
@@ -1491,7 +1495,10 @@ def signal_upgrade_check():
 
 def signal_recv(sig, frame=0):
     if sig == SIGUSR1:
-        func = SESSION.signal_save
+        if os.path.exists(UPDATE_CC_FIRMWARE_FILE):
+            func = signal_device_firmware_updated
+        else:
+            func = SESSION.signal_save
     elif sig == SIGUSR2:
         if os.path.exists("/root/check-upgrade-system") and \
            os.path.exists("/etc/systemd/system/upgrade-system-check.service"):
