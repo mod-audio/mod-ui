@@ -46,7 +46,8 @@ def check_environment():
     from mod.settings import (LV2_PEDALBOARDS_DIR,
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
                               DATA_DIR, DOWNLOAD_TMP_DIR, KEYS_PATH,
-                              BANKS_JSON_FILE, FAVORITES_JSON_FILE, UPDATE_MOD_OS_FILE,
+                              BANKS_JSON_FILE, FAVORITES_JSON_FILE,
+                              UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE,
                               CAPTURE_PATH, PLAYBACK_PATH)
 
     # create temp dirs
@@ -54,7 +55,7 @@ def check_environment():
         os.makedirs(DOWNLOAD_TMP_DIR)
 
     # remove temp files
-    for path in (CAPTURE_PATH, PLAYBACK_PATH):
+    for path in (CAPTURE_PATH, PLAYBACK_PATH, UPDATE_CC_FIRMWARE_FILE):
         if os.path.exists(path):
             os.remove(path)
 
