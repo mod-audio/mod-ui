@@ -197,7 +197,7 @@ class Addressings(object):
             addrs2 = []
             for addr in addrs['addrs']:
                 addrs2.append({
-                    'instance': instances[addr['instance_id']].replace("/graph/","",1),
+                    'instance': instances[addr['instance_id']],
                     'port'    : addr['port'],
                     'label'   : addr['label'],
                     'minimum' : addr['minimum'],
