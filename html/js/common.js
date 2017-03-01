@@ -191,6 +191,7 @@ function wait_for_pedalboard_screenshot(bundlepath, callback) {
             callback({'ok':false})
         },
         cache: false,
+        global: false,
         dataType: 'json'
     })
 }
