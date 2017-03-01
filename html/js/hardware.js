@@ -23,7 +23,13 @@ var kMidiLearnURI = "/midi-learn"
 var kMidiUnlearnURI = "/midi-unlearn"
 var kMidiCustomPrefixURI = "/midi-custom_" // to show current one, ignored on save
 
+// use pitchbend as midi cc, with an invalid MIDI controller number
+var MIDI_PITCHBEND_AS_CC = 131
+
 function create_midi_cc_uri (channel, controller) {
+    if (controller == MIDI_PITCHBEND_AS_CC) {
+        return sprintf("%sCh.%d_Pbend", kMidiCustomPrefixURI, channel+1)
+    }
     return sprintf("%sCh.%d_CC#%d", kMidiCustomPrefixURI, channel+1, controller)
 }
 

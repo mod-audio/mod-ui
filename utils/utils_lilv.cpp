@@ -3788,7 +3788,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     LilvNode* const y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
                     LilvNode* const preset  = lilv_world_get(w, block, modpedal_preset, nullptr);
 
-                    PedalboardMidiControl bypassCC = { -1, -1, false, 0.0f, 1.0f };
+                    PedalboardMidiControl bypassCC = { -1, 0, false, 0.0f, 1.0f };
                     PedalboardPluginPort* ports = nullptr;
 
                     if (LilvNodes* const portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
@@ -3810,7 +3810,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               if (portvalue == nullptr)
                                   continue;
 
-                              int8_t mchan = -1, mctrl = -1;
+                              int8_t mchan = -1;
+                              uint8_t mctrl = 0;
                               float minimum = 0.0f, maximum = 1.0f;
                               bool hasRanges = false;
 
@@ -3824,10 +3825,10 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                       const int mchantest = lilv_node_as_int(bindChan);
                                       const int mctrltest = lilv_node_as_int(bindCtrl);
 
-                                      if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 128)
+                                      if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 255)
                                       {
                                           mchan = (int8_t)mchantest;
-                                          mctrl = (int8_t)mctrltest;
+                                          mctrl = (uint8_t)mctrltest;
 
                                           LilvNode* const bindMin = lilv_world_get(w, bind, lv2_minimum, nullptr);
                                           LilvNode* const bindMax = lilv_world_get(w, bind, lv2_maximum, nullptr);

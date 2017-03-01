@@ -164,7 +164,7 @@ typedef struct {
 
 typedef struct {
     int8_t channel;
-    int8_t control;
+    uint8_t control;
     // ranges added in v1.2, flag needed for old format compatibility
     bool hasRanges;
     float minimum;

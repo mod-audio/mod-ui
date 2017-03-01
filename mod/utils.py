@@ -285,7 +285,7 @@ class PluginInfo_Controls(Structure):
 class PedalboardMidiControl(Structure):
     _fields_ = [
         ("channel", c_int8),
-        ("control", c_int8),
+        ("control", c_uint8),
         # ranges added in v1.2, flag needed for old format compatibility
         ("hasRanges", c_bool),
         ("minimum", c_float),

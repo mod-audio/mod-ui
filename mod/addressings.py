@@ -22,6 +22,9 @@ HMI_ADDRESSING_TYPE_INTEGER      = 128
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
 
+# use pitchbend as midi cc, with an invalid MIDI controller number
+MIDI_PITCHBEND_AS_CC = 131
+
 # Special URI for non-addressed controls
 kNullAddressURI = "null"
 
@@ -556,12 +559,20 @@ class Addressings(object):
     # Utilities
 
     def create_midi_cc_uri(self, channel, controller):
+        if controller == MIDI_PITCHBEND_AS_CC:
+            return "%sCh.%d_Pbend" % (kMidiCustomPrefixURI, channel+1)
         return "%sCh.%i_CC#%i" % (kMidiCustomPrefixURI, channel+1, controller)
 
     def get_midi_cc_from_uri(self, uri):
         data = uri.replace(kMidiCustomPrefixURI+"Ch.","",1).split("_CC#",1)
         if len(data) == 2:
-            return (int(data[0])-1, int(data[1]))
+            channel = int(data[0])-1
+            if data[1].endswith("_Pbend"):
+                controller = MIDI_PITCHBEND_AS_CC
+            else:
+                controller = int(data[1])
+            return (channel, controller)
+
         print("ERROR: get_midi_cc_from_uri() called with invalid uri:", uri)
         return (-1,-1)
 
