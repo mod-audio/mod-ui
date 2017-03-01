@@ -20,7 +20,7 @@ from tornado import ioloop
 from mod.hmi import HMI
 from mod.host import Host
 
-class FakeCommunicator(object):
+class FakeHMI(HMI):
     def init(self, callback):
         pass
 
@@ -35,9 +35,6 @@ class FakeCommunicator(object):
         else:
             callback(0)
 
-class FakeHMI(FakeCommunicator, HMI):
-    pass
-
 class FakeSocket(object):
     def write(self, data):
         return
@@ -45,7 +42,7 @@ class FakeSocket(object):
     def read_until(self, msg, callback):
         return
 
-class FakeHost(FakeCommunicator, Host):
+class FakeHost(Host):
     def __del__(self):
         self.readsock = None
         self.writesock = None

@@ -28,12 +28,23 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
+import logging
 from carla_utils import *
 from tornado import ioloop
-import logging
+from mod.host import Host
+from mod.protocol import process_resp
 
-class Host(object):
-    def __init__(self, uri):
+class FakeSocket(object):
+    def write(self, data):
+        return
+
+    def read_until(self, msg, callback):
+        return
+
+class CarlaHost(Host):
+    def __init__(self, hmi, msg_callback):
+        Host.__init__(self, hmi, msg_callback)
+
         self.carla = CarlaHostDLL("/usr/lib/carla/libcarla_standalone2.so")
         self.carla.set_engine_callback(self.carla_callback)
         self.carla.set_engine_option(ENGINE_OPTION_PREFER_PLUGIN_BRIDGES, 0, "")
@@ -42,26 +53,86 @@ class Host(object):
         self.carla.set_engine_option(ENGINE_OPTION_TRANSPORT_MODE, ENGINE_TRANSPORT_MODE_JACK, "")
         self.carla.set_engine_option(ENGINE_OPTION_PATH_BINARIES, 0, "/usr/lib/carla/")
         self.carla.set_engine_option(ENGINE_OPTION_PATH_RESOURCES, 0, "/usr/share/carla/resources/")
-        self.sock  = None
-        self.timer = ioloop.PeriodicCallback(self.timer_callback, 300)
-        self.connected = False
-
-        self.msg_callback = lambda msg:None
+        self.carlatimer = ioloop.PeriodicCallback(self.carlatimer_callback, 300)
 
         self._client_id_system = -1
         self._plugins_info = []
 
-        ioloop.IOLoop.instance().add_callback(self.init_connection)
-
     def __del__(self):
-        if self.sock is None:
-            return
-
         if self.carla.is_engine_running():
-            self.timer.stop()
+            self.carlatimer.stop()
             self.carla.engine_close()
 
-        self.sock = None
+        #Host.__del__(self)
+
+    def open_connection_if_needed(self, websocket):
+        if self.readsock is not None and self.writesock is not None:
+            self.report_current_state(websocket)
+            return
+
+        if not self.carla.engine_init("JACK", "MOD"):
+            return
+
+        if self.readsock is None:
+            self.readsock = FakeSocket()
+        if self.writesock is None:
+            self.writesock = FakeSocket()
+
+        self.connected = True
+        self.report_current_state(websocket)
+        self.statstimer.start()
+        self.carlatimer.start()
+
+        if self.memtimer is not None:
+            self.memtimer_callback()
+            self.memtimer.start()
+
+        if len(self._queue):
+            self.process_write_queue()
+        else:
+            self._idle = True
+
+    def process_write_queue(self):
+        try:
+            msg, callback, datatype = self._queue.pop(0)
+            logging.info("[host] popped from queue: %s" % msg)
+        except IndexError:
+            self._idle = True
+            return
+
+        if self.writesock is None:
+            self.process_write_queue()
+            return
+
+        self._idle = False
+        logging.info("[host] sending -> %s" % msg)
+
+        print(msg)
+        ret = self.send_carla_msg(msg)
+
+        if callback is not None:
+            callback(process_resp(ret, datatype))
+
+        self.process_write_queue()
+
+    def send_carla_msg(self, msg):
+        if msg == "remove -1":
+            self.carla.remove_all_plugins()
+            return True
+
+        data = msg.split(" ",1)
+        cmd  = data[0]
+
+        if len(data) == 2:
+            data = data[1]
+        else:
+            data = None
+
+        if cmd == "add":
+            uri, ret = data.split(" ",1)
+            if not self.carla.add_plugin(BINARY_NATIVE, PLUGIN_LV2, None, "effect_"+ret, uri, 0, None, 0x0):
+                return -1
+            return int(ret)
 
     def _getPluginId(self, instance):
         for i in range(len(self._plugins_info)):
@@ -69,30 +140,14 @@ class Host(object):
                 return i
         return -1
 
-    def init_connection(self):
-        self.open_connection_if_needed(None, lambda ws:None)
-
-    def open_connection_if_needed(self, websocket, callback):
-        if self.sock is not None:
-            callback(websocket)
-            return
-
-        if self.carla.engine_init("JACK", "MOD"):
-            self.timer.start()
-            self.sock = True
-            self.connected = True
-
     # host stuff
-    def initial_setup(self, callback):
-        callback(True)
-
-    def get(self, subject):
+    def _get(self, subject):
         if subject == "/graph":
             self._client_id_system = -1
             self.carla.patchbay_refresh(True)
             return
 
-    def add_plugin(self, instance, uri, enabled, x, y, callback):
+    def _add_plugin(self, instance, uri, enabled, x, y, callback):
         if self.carla.add_plugin(BINARY_NATIVE, PLUGIN_LV2, "", instance, uri, 0, None, 0x0):
             if enabled:
                 self.carla.set_active(self.carla.get_current_plugin_count()-1, True)
@@ -100,7 +155,7 @@ class Host(object):
         else:
             callback(False)
 
-    def remove_plugin(self, instance, callback):
+    def _remove_plugin(self, instance, callback):
         pluginId = self._getPluginId(instance)
         if pluginId >= 0:
             self.carla.remove_plugin(pluginId)
@@ -108,7 +163,7 @@ class Host(object):
         else:
             callback(False)
 
-    def enable(self, instance, enabled, callback):
+    def _enable(self, instance, enabled, callback):
         pluginId = self._getPluginId(instance)
         if pluginId >= 0:
             self.carla.set_active(pluginId, enabled)
@@ -116,7 +171,7 @@ class Host(object):
         else:
             callback(False)
 
-    def param_set(self, port, value, callback):
+    def _param_set(self, port, value, callback):
         instance, port = port.rsplit("/", 1)
         pluginId = self._getPluginId(instance)
         if pluginId >= 0:
@@ -126,11 +181,7 @@ class Host(object):
         else:
             callback(False)
 
-    def set_position(self, instance, x, y, callback):
-        # TODO
-        callback(True)
-
-    def connect(self, port_from, port_to, callback):
+    def _connect(self, port_from, port_to, callback):
         # TODO
         #split_from = port_from.split("/")
         #if len(split_from) != 3:
@@ -146,29 +197,10 @@ class Host(object):
         #self.carla.patchbay_connect()
         callback(True)
 
-    def disconnect(self, port_from, port_to, callback):
-        # TODO
-        callback(True)
-
-    def set_pedalboard_name(self, title, callback):
-        # TODO
-        callback(True)
-
-    def set_pedalboard_size(self, width, height, callback):
-        # TODO
-        callback(True)
-
-    def add_external_port(self, name, mode, typ, callback):
-        # ignored
-        callback(True)
-
-    def remove_external_port(self, name, callback):
-        # ignored
-        callback(True)
-
     def carla_callback(self, host, action, pluginId, value1, value2, value3, valueStr):
         valueStr = charPtrToString(valueStr)
         print("carla callback", host, action, pluginId, value1, value2, value3, valueStr)
+        return
 
         # Debug.
         # This opcode is undefined and used only for testing purposes.
@@ -477,99 +509,5 @@ class Host(object):
         if action == ENGINE_CALLBACK_QUIT:
             return
 
-    def timer_callback(self):
+    def carlatimer_callback(self):
         self.carla.engine_idle()
-
-    #def open_connection(self, callback=None):
-        #self.socket_idle = False
-
-        #if (self.latest_callback):
-            ## There's a connection waiting, let's just send an error
-            ## for it to finish properly
-            #try:
-                #self.latest_callback("finish\0".encode("utf-8"))
-            #except Exception as e:
-                #logging.warn("[host] latest callback failed: %s" % str(e))
-
-        #self.latest_callback = None
-
-        #def check_response():
-            #if callback is not None:
-                #callback()
-            #if len(self.queue):
-                #self.process_queue()
-            #else:
-                #self.socket_idle = True
-            ##self.setup_monitor()
-
-        #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.s = iostream.IOStream(s)
-        #self.s.set_close_callback(self.open_connection)
-
-        #ioloop.IOLoop.instance().add_callback(lambda: self.s.connect((self.address, self.port), check_response))
-
-    #def send(self, msg, callback, datatype='int'):
-        #self.queue.append((msg, callback, datatype))
-        #if self.socket_idle:
-            #self.process_queue()
-
-    #def process_queue(self):
-        #try:
-            #msg, callback, datatype = self.queue.pop(0)
-            #logging.info("[host] popped from queue: %s" % msg)
-        #except IndexError:
-            #self.socket_idle = True
-            #return
-
-        #def check_response(resp):
-            #resp = resp.decode("utf-8", errors="ignore")
-
-            #logging.info("[host] received <- %s" % repr(resp))
-            #if not resp.startswith("resp"):
-                #logging.error("[host] protocol error: %s" % ProtocolError(resp)) # TODO: proper error handling
-
-            #r = resp.replace("resp ", "").replace("\0", "").strip()
-            #callback(process_resp(r, datatype))
-            #self.process_queue()
-
-        #self.socket_idle = False
-        #logging.info("[host] sending -> %s" % msg)
-
-        #encmsg = "%s\0" % str(msg)
-        #self.s.write(encmsg.encode("utf-8"))
-        #self.s.read_until("\0".encode("utf-8"), check_response)
-
-        #self.latest_callback = check_response
-
-    #def add(self, uri, instance_id, callback=lambda result: None):
-        #self.send("add %s %d" % (uri, instance_id), callback)
-
-    #def remove(self, instance_id, callback=lambda result: None):
-        #self.send("remove %d" % instance_id, callback, datatype='boolean')
-
-    #def connect(self, origin_port, destination_port, callback=lambda result: None):
-        #self.send("connect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
-
-    #def disconnect(self, origin_port, destination_port, callback=lambda result: None):
-        #self.send("disconnect %s %s" % (origin_port, destination_port), callback, datatype='boolean')
-
-    #def param_set(self, instance_id, symbol, value, callback=lambda result: None):
-        #self.send("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
-
-    #def param_get(self, instance_id, symbol, callback=lambda result: None):
-        #self.send("param_get %d %s" % (instance_id, symbol), callback, datatype='float_structure')
-
-    #def preset_load(self, instance_id, label, callback=lambda result: None):
-        #self.send('preset %d "%s"' % (instance_id, label), callback, datatype='boolean')
-
-    #def param_monitor(self, instance_id, symbol, op, value, callback=lambda result: None):
-        #self.send("param_monitor %d %s %s %f" % (instance_id, symbol, op, value), callback, datatype='boolean')
-
-    #def monitor(self, addr, port, status, callback=lambda result: None):
-        #self.send("monitor %s %d %d" % (addr, port, status), callback, datatype='boolean')
-
-    #def bypass(self, instance_id, value, callback=lambda result: None):
-        #self.send("bypass %d %d" % (instance_id, value), callback, datatype='boolean')
-
-    #def cpu_load(self, callback=lambda result: None):
-        #self.send("cpu_load", callback, datatype='float_structure')
