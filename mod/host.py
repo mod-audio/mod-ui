@@ -1640,30 +1640,6 @@ class Host(object):
                 continue
             self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (symbol, name.replace(" ","_"), index))
 
-        self.pedalpreset_clear()
-
-        pedal_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
-
-        if len(pedal_presets) > 0:
-            self.pedalboard_preset  = 0
-            self.pedalboard_presets = pedal_presets
-
-            init_pedal_preset = pedal_presets[0]['data']
-
-            for p in pb['plugins']:
-                pdata = init_pedal_preset.get(p['instance'], None)
-
-                if pdata is None:
-                    print("WARNING: Pedalboard preset missing data for instance name '%s'" % p['instance'])
-                    continue
-
-                p['bypassed'] = pdata['bypassed']
-
-                for port in p['ports']:
-                    port['value'] = pdata['ports'].get(port['symbol'], port['value'])
-
-                p['preset'] = pdata['preset']
-
         instances = {
             PEDALBOARD_INSTANCE: (PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI)
         }
@@ -1671,7 +1647,66 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
-        for p in pb['plugins']:
+        self.load_pb_presets(pb['plugins'], bundlepath)
+        self.load_pb_plugins(pb['plugins'], instances, rinstances)
+        self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
+                                                    mappedNewMidiIns, mappedNewMidiOuts)
+
+        self.addressings.load(bundlepath, instances)
+        self.addressings.registerMappings(self.msg_callback, rinstances)
+
+        self.msg_callback("loading_end %d" % self.pedalboard_preset)
+
+        if isDefault:
+            self.pedalboard_empty    = True
+            self.pedalboard_modified = False
+            self.pedalboard_name     = ""
+            self.pedalboard_path     = ""
+            self.pedalboard_size     = [0,0]
+            #save_last_bank_and_pedalboard(0, "")
+        else:
+            self.pedalboard_empty    = False
+            self.pedalboard_modified = False
+            self.pedalboard_name     = pb['title']
+            self.pedalboard_path     = bundlepath
+            self.pedalboard_size     = [pb['width'],pb['height']]
+
+            if bundlepath.startswith(LV2_PEDALBOARDS_DIR):
+                save_last_bank_and_pedalboard(self.bank_id, bundlepath)
+            else:
+                save_last_bank_and_pedalboard(0, "")
+
+        return self.pedalboard_name
+
+    def load_pb_presets(self, plugins, bundlepath):
+        self.pedalpreset_clear()
+
+        pedal_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
+
+        if len(pedal_presets) == 0:
+            return
+
+        self.pedalboard_preset  = 0
+        self.pedalboard_presets = pedal_presets
+
+        init_pedal_preset = pedal_presets[0]['data']
+
+        for p in plugins:
+            pdata = init_pedal_preset.get(p['instance'], None)
+
+            if pdata is None:
+                print("WARNING: Pedalboard preset missing data for instance name '%s'" % p['instance'])
+                continue
+
+            p['bypassed'] = pdata['bypassed']
+
+            for port in p['ports']:
+                port['value'] = pdata['ports'].get(port['symbol'], port['value'])
+
+            p['preset'] = pdata['preset']
+
+    def load_pb_plugins(self, plugins, instances, rinstances):
+        for p in plugins:
             allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
 
             if 'error' in allports.keys() and allports['error']:
@@ -1774,7 +1809,9 @@ class Host(object):
             for output in allports['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
-        for c in pb['connections']:
+    def load_pb_connections(self, connections, mappedOldMidiIns, mappedOldMidiOuts,
+                                               mappedNewMidiIns, mappedNewMidiOuts):
+        for c in connections:
             doConnectionNow = True
             aliasname1 = aliasname2 = None
 
@@ -1814,32 +1851,6 @@ class Host(object):
                     port_alias = port_alias.split(";",1) if ";" in port_alias else [port_alias]
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
-
-        self.addressings.load(bundlepath, instances)
-        self.addressings.registerMappings(self.msg_callback, rinstances)
-
-        self.msg_callback("loading_end %d" % self.pedalboard_preset)
-
-        if isDefault:
-            self.pedalboard_empty    = True
-            self.pedalboard_modified = False
-            self.pedalboard_name     = ""
-            self.pedalboard_path     = ""
-            self.pedalboard_size     = [0,0]
-            #save_last_bank_and_pedalboard(0, "")
-        else:
-            self.pedalboard_empty    = False
-            self.pedalboard_modified = False
-            self.pedalboard_name     = pb['title']
-            self.pedalboard_path     = bundlepath
-            self.pedalboard_size     = [pb['width'],pb['height']]
-
-            if bundlepath.startswith(LV2_PEDALBOARDS_DIR):
-                save_last_bank_and_pedalboard(self.bank_id, bundlepath)
-            else:
-                save_last_bank_and_pedalboard(0, "")
-
-        return self.pedalboard_name
 
     def save(self, title, asNew):
         titlesym = symbolify(title)[:16]
