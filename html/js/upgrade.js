@@ -163,8 +163,9 @@ JqueryClass('upgradeWindow', {
 
     setUpdated: function () {
         var self = $(this)
-        var icon = self.data('icon')
+        self.data('updatedata', null)
 
+        var icon = self.data('icon')
         icon.statusTooltip('message', "System is up-to-date", true)
         icon.statusTooltip('status', 'uptodate')
 
