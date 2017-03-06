@@ -1199,7 +1199,6 @@ class Host(object):
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        @gen.coroutine
         def preset_callback(state):
             if not state:
                 callback(False)
@@ -1232,10 +1231,7 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            for actuator_uri in used_actuators:
-                # FIXME: adjust for CC too
-                yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
-
+            self.addressings.load_current(used_actuators)
             callback(True)
 
         def host_callback(ok):
@@ -1474,11 +1470,9 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
-        for actuator_uri in used_actuators:
-            # FIXME: adjust for CC too
-            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
-
+        self.addressings.load_current(used_actuators)
         callback(True)
+
         self.msg_callback("pedal_preset %d" % idx)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -2598,10 +2592,11 @@ _:b%i
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
         callback(True)
 
-    @gen.coroutine
     def hmi_reset_current_pedalboard(self, callback):
         logging.info("hmi reset current pedalboard")
         pb_values = get_pedalboard_plugin_values(self.pedalboard_path)
+        callback(True)
+
         used_actuators = []
 
         for p in pb_values:
@@ -2649,11 +2644,7 @@ _:b%i
                         used_actuators.append(addressing['actuator_uri'])
 
         self.pedalboard_modified = False
-        callback(True)
-
-        for actuator_uri in used_actuators:
-            # FIXME: adjust for CC too
-            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
+        self.addressings.load_current(used_actuators)
 
     def hmi_tuner(self, status, callback):
         if status == "on":

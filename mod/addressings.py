@@ -403,6 +403,35 @@ class Addressings(object):
 
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback)
 
+    @gen.coroutine
+    def load_current(self, actuator_uris):
+        for actuator_uri in actuator_uris:
+            actuator_type = self.get_actuator_type(actuator_uri)
+
+            if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                yield gen.Task(self.hmi_load_current, actuator_uri)
+
+            elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
+                # FIXME: we need a way to change CC value, without re-addressing
+                actuator_cc = self.cc_metadata[actuator_uri]['hw_id']
+                addressings = self.cc_addressings[actuator_uri]
+
+                for addressing in addressings:
+                    data = {
+                        'instance_id': addressing['instance_id'],
+                        'port'       : addressing['port'],
+                        'label'      : addressing['label'],
+                        'value'      : addressing['value'],
+                        'minimum'    : addressing['minimum'],
+                        'maximum'    : addressing['maximum'],
+                        'steps'      : addressing['steps'],
+                        'unit'       : addressing['unit'],
+                        'options'    : addressing['options'],
+                    }
+                    yield gen.Task(self._task_unaddressing, self.ADDRESSING_TYPE_CC, data['instance_id'], data['port'])
+                    yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
+
+    # NOTE: make sure to call hmi_load_current() afterwards if removing HMI addressings
     def remove(self, addressing_data):
         actuator_uri  = addressing_data['actuator_uri']
         actuator_type = self.get_actuator_type(actuator_uri)
@@ -416,7 +445,6 @@ class Addressings(object):
 
             if addressings['idx'] == index:
                 addressings['idx'] -= 1
-                # FIXME need to show next after this
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]
