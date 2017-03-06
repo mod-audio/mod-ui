@@ -186,10 +186,16 @@ class ControlChainDeviceListener(object):
             print("cc send_device_descriptor RESP", dev_id, dev)
 
             # FIXME
-            slabel  = symbolify(dev['label'])
-            dev_uri = "/cc/" + slabel
-            self.hw_added_cb(dev_uri, slabel, dev['version'])
-            self.hw_versions[dev_id] = (dev_uri, slabel, dev['version'])
+            dev_label = symbolify(dev['label'])
+            dev_uri   = dev['uri']
+
+            if " " in dev_uri:
+                print("WARNING: Control Chain device URI '%s' is invalid" % dev_uri)
+                callback()
+                return
+
+            self.hw_added_cb(dev_uri, dev_label, dev['version'])
+            self.hw_versions[dev_id] = (dev_uri, dev_label, dev['version'])
 
             for actuator in dev['actuators']:
                 modes_int = actuator['supported_modes']
@@ -207,11 +213,11 @@ class ControlChainDeviceListener(object):
                 modes_str += ":"
 
                 # FIXME proper URI
-                uri = "%s-%i/%i" % (dev_uri, dev_id, actuator['id'])
+                uri = "/cc/%s-%i/%i" % (dev_label, dev_id, actuator['id'])
 
                 metadata = {
                     'uri'  : uri,
-                    'name' : actuator['name'],
+                    'name' : "%s:%s" % (dev['label'], actuator['name']),
                     'modes': modes_str,
                     'steps': [],
                     'max_assigns': actuator['max_assignments']
