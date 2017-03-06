@@ -672,15 +672,15 @@ class Host(object):
                 value       = float(msg[3])
 
                 try:
-                    instance = self.mapper.get_instance(instance_id)
-                    plugin   = self.plugins[instance_id]
+                    instance   = self.mapper.get_instance(instance_id)
+                    pluginData = self.plugins[instance_id]
                 except:
                     pass
                 else:
                     if portsymbol == ":bypass":
-                        plugin['bypassed'] = bool(value)
+                        pluginData['bypassed'] = bool(value)
                     else:
-                        plugin['ports'][portsymbol] = value
+                        pluginData['ports'][portsymbol] = value
                     self.pedalboard_modified = True
                     self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
@@ -694,12 +694,12 @@ class Host(object):
 
                 else:
                     try:
-                        instance = self.mapper.get_instance(instance_id)
-                        plugin   = self.plugins[instance_id]
+                        instance   = self.mapper.get_instance(instance_id)
+                        pluginData = self.plugins[instance_id]
                     except:
                         pass
                     else:
-                        plugin['outputs'][portsymbol] = value
+                        pluginData['outputs'][portsymbol] = value
                         self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
             elif cmd == "midi_mapped":
@@ -1164,34 +1164,37 @@ class Host(object):
 
     def bypass(self, instance, bypassed, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
 
-        self.plugins[instance_id]['bypassed'] = bypassed
+        pluginData['bypassed'] = bypassed
         self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
-        enabled_symbol = self.plugins[instance_id]['designations'][0]
+        enabled_symbol = pluginData['designations'][0]
         if enabled_symbol is None:
             return
 
         value = 0.0 if bypassed else 1.0
-        self.plugins[instance_id]['ports'][enabled_symbol] = value
+        pluginData['ports'][enabled_symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, enabled_symbol, value), callback, datatype='boolean')
 
     def param_set(self, port, value, callback):
         instance, symbol = port.rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
 
-        if symbol in self.plugins[instance_id]['designations']:
+        if symbol in pluginData['designations']:
             print("ERROR: Trying to modify a specially designated port '%s', stop!" % symbol)
             return
 
-        self.plugins[instance_id]['ports'][symbol] = value
+        pluginData['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
 
-        self.plugins[instance_id]['x'] = x
-        self.plugins[instance_id]['y'] = y
+        pluginData['x'] = x
+        pluginData['y'] = y
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
@@ -1204,28 +1207,26 @@ class Host(object):
                 callback(False)
                 return
 
-            plugin = self.plugins[instance_id]
+            pluginData = self.plugins[instance_id]
 
-            plugin['preset'] = uri
+            pluginData['preset'] = uri
             self.msg_callback("preset %s %s" % (instance, uri))
 
             portValues = get_state_port_values(state)
-            plugin['ports'].update(portValues)
+            pluginData['ports'].update(portValues)
 
-            badports = plugin['badports']
             used_actuators = []
+            enabled_symbol, freewheel_symbol = pluginData['designations']
 
-            enabled_symbol, freewheel_symbol = plugin['designations']
-
-            for symbol, value in plugin['ports'].items():
+            for symbol, value in pluginData['ports'].items():
                 if symbol == enabled_symbol:
-                    value = 0.0 if plugin['bypassed'] else 1.0
+                    value = 0.0 if pluginData['bypassed'] else 1.0
                 elif symbol == freewheel_symbol:
                     value = 0.0
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
-                addressing = plugin['addressings'].get(symbol, None)
+                addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
                     addressing['value'] = value
                     if addressing['actuator_uri'] not in used_actuators:
@@ -1244,7 +1245,8 @@ class Host(object):
 
     def preset_save_new(self, instance, name, callback):
         instance_id  = self.mapper.get_id_without_creating(instance)
-        plugin_uri   = self.plugins[instance_id]['uri']
+        pluginData   = self.plugins[instance_id]
+        plugin_uri   = pluginData['uri']
         symbolname   = symbolify(name)[:32]
         presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
 
@@ -1259,7 +1261,7 @@ class Host(object):
         def add_bundle_callback(ok):
             # done
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
-            self.plugins[instance_id]['preset'] = preseturi
+            pluginData['preset'] = preseturi
 
             callback({
                 'ok'    : True,
@@ -1283,10 +1285,11 @@ class Host(object):
 
     def preset_save_replace(self, instance, uri, bundlepath, name, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
-        plugin_uri  = self.plugins[instance_id]['uri']
+        pluginData  = self.plugins[instance_id]
+        plugin_uri  = pluginData['uri']
         symbolname  = symbolify(name)[:32]
 
-        if self.plugins[instance_id]['preset'] != uri or not os.path.exists(bundlepath):
+        if pluginData['preset'] != uri or not os.path.exists(bundlepath):
             callback({
                 'ok': False,
             })
@@ -1294,7 +1297,7 @@ class Host(object):
 
         def add_bundle_callback(ok):
             preseturi = "file://%s.ttl" % os.path.join(bundlepath, symbolname)
-            self.plugins[instance_id]['preset'] = preseturi
+            pluginData['preset'] = preseturi
             callback({
                 'ok'    : True,
                 'bundle': bundlepath,
@@ -1312,7 +1315,7 @@ class Host(object):
         def start(ok):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
-            self.plugins[instance_id]['preset'] = ""
+            pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
                                                                        name.replace('"','\\"'),
                                                                        bundlepath,
@@ -1322,16 +1325,17 @@ class Host(object):
 
     def preset_delete(self, instance, uri, bundlepath, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
-        plugin_uri  = self.plugins[instance_id]['uri']
+        pluginData  = self.plugins[instance_id]
+        plugin_uri  = pluginData['uri']
 
-        if self.plugins[instance_id]['preset'] != uri or not os.path.exists(bundlepath):
+        if pluginData['preset'] != uri or not os.path.exists(bundlepath):
             callback(False)
             return
 
         def start(ok):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
-            self.plugins[instance_id]['preset'] = ""
+            pluginData['preset'] = ""
             self.msg_callback("preset %s null" % instance)
             callback(True)
 
@@ -2547,37 +2551,37 @@ _:b%i
         instance = self.mapper.get_instance(instance_id)
 
         if instance_id == PEDALBOARD_INSTANCE_ID:
-            plugin = self.pedalboard_pdata
+            pluginData = self.pedalboard_pdata
         else:
-            plugin = self.plugins[instance_id]
+            pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
-            plugin['bypassed'] = bypassed
+            pluginData['bypassed'] = bypassed
 
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
-            enabled_symbol = plugin['designations'][0]
+            enabled_symbol = pluginData['designations'][0]
             if enabled_symbol is None:
                 return
 
             value = 0.0 if bypassed else 1.0
-            plugin['ports'][enabled_symbol] = value
+            pluginData['ports'][enabled_symbol] = value
             self.msg_callback("param_set %s %s %f" % (instance, enabled_symbol, value))
 
         elif portsymbol == ":presets":
             value = int(value)
-            if value < 0 or value >= len(plugin['mapPresets']):
+            if value < 0 or value >= len(pluginData['mapPresets']):
                 callback(False)
                 return
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 self.pedalpreset_load(value, callback)
             else:
-                self.preset_load(instance, plugin['mapPresets'][value], callback)
+                self.preset_load(instance, pluginData['mapPresets'][value], callback)
 
         else:
-            plugin['ports'][portsymbol] = value
+            pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
