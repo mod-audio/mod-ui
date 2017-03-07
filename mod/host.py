@@ -1413,7 +1413,11 @@ class Host(object):
         used_actuators = []
 
         for instance, data in pedalpreset['data'].items():
-            instance    = "/graph/%s" % instance
+            instance = "/graph/%s" % instance
+
+            if instance in self.plugins_removed:
+                continue
+
             instance_id = self.mapper.get_id_without_creating(instance)
             pluginData  = self.plugins[instance_id]
             diffBypass  = pluginData['bypassed'] != data['bypassed']
