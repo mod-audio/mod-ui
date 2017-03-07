@@ -1424,6 +1424,12 @@ class Host(object):
             return
 
         pedalpreset = self.pedalboard_presets[idx]
+
+        if pedalpreset is None:
+            print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
+            callback(False)
+            return
+
         self.pedalboard_preset = idx
 
         used_actuators = []
@@ -2587,6 +2593,7 @@ _:b%i
                 callback(False)
                 return
             if instance_id == PEDALBOARD_INSTANCE_ID:
+                value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 self.pedalpreset_load(value, callback)
             else:
                 self.preset_load(instance, pluginData['mapPresets'][value], callback)

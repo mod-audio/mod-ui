@@ -185,8 +185,8 @@ class Addressings(object):
             if actuator_type == self.ADDRESSING_TYPE_HMI:
                 yield gen.Task(self.hmi_load_first, actuator_uri)
 
-            elif actuator_type == self.ADDRESSING_TYPE_CC:
-                self.cc_load_all(actuator_uri)
+            #elif actuator_type == self.ADDRESSING_TYPE_CC:
+                #self.cc_load_all(actuator_uri)
 
         # NOTE: MIDI addressings are not stored in addressings.json.
         #       They must be loaded by calling 'add_midi' before calling this function.
