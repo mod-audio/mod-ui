@@ -2296,14 +2296,6 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
-    def add_external_port(self, name, mode, typ, callback):
-        # ignored
-        callback(True)
-
-    def remove_external_port(self, name, callback):
-        # ignored
-        callback(True)
-
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
 
