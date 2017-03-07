@@ -100,7 +100,8 @@ class Addressings(object):
     def get_actuators(self):
         actuators = self.hw_actuators.copy()
 
-        for uri, data in self.cc_metadata.items():
+        for uri in sorted(self.cc_metadata.keys()):
+            data = self.cc_metadata[uri]
             actuators.append({
                 'uri': uri,
                 'name' : data['name'],
@@ -185,8 +186,8 @@ class Addressings(object):
             if actuator_type == self.ADDRESSING_TYPE_HMI:
                 yield gen.Task(self.hmi_load_first, actuator_uri)
 
-            #elif actuator_type == self.ADDRESSING_TYPE_CC:
-                #self.cc_load_all(actuator_uri)
+            elif actuator_type == self.ADDRESSING_TYPE_CC:
+                self.cc_load_all(actuator_uri)
 
         # NOTE: MIDI addressings are not stored in addressings.json.
         #       They must be loaded by calling 'add_midi' before calling this function.
@@ -609,11 +610,9 @@ class Addressings(object):
     def get_actuator_type(self, actuator_uri):
         if actuator_uri.startswith("/hmi/"):
             return self.ADDRESSING_TYPE_HMI
-        if actuator_uri.startswith("/cc/"):
-            return self.ADDRESSING_TYPE_CC
         if actuator_uri.startswith(kMidiCustomPrefixURI):
             return self.ADDRESSING_TYPE_MIDI
-        return self.ADDRESSING_TYPE_NONE
+        return self.ADDRESSING_TYPE_CC
 
     def get_presets_as_options(self, instance_id):
         pluginData = self._task_get_plugin_data(instance_id)

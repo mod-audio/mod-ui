@@ -194,6 +194,12 @@ class ControlChainDeviceListener(object):
                 callback()
                 return
 
+            # assign an unique id starting from 0
+            dev_unique_id = 0
+            for _dev_uri, _1, _2 in self.hw_versions.items():
+                if _dev_uri == dev_uri:
+                    dev_unique_id += 1
+
             self.hw_added_cb(dev_uri, dev_label, dev['version'])
             self.hw_versions[dev_id] = (dev_uri, dev_label, dev['version'])
 
@@ -212,11 +218,8 @@ class ControlChainDeviceListener(object):
 
                 modes_str += ":"
 
-                # FIXME proper URI
-                uri = "/cc/%s-%i/%i" % (dev_label, dev_id, actuator['id'])
-
                 metadata = {
-                    'uri'  : uri,
+                    'uri'  : "%s:%i:%i" % (dev_uri, dev_unique_id, actuator['id']),
                     'name' : "%s:%s" % (dev['label'], actuator['name']),
                     'modes': modes_str,
                     'steps': [],
