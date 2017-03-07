@@ -1402,6 +1402,12 @@ class Host(object):
             return
 
         pedalpreset = self.pedalboard_presets[idx]
+
+        if pedalpreset is None:
+            print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
+            callback(False)
+            return
+
         self.pedalboard_preset = idx
 
         used_actuators = []
@@ -2504,37 +2510,38 @@ _:b%i
         instance = self.mapper.get_instance(instance_id)
 
         if instance_id == PEDALBOARD_INSTANCE_ID:
-            plugin = self.pedalboard_pdata
+            pluginData = self.pedalboard_pdata
         else:
-            plugin = self.plugins[instance_id]
+            pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
-            plugin['bypassed'] = bypassed
+            pluginData['bypassed'] = bypassed
 
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
-            enabled_symbol = plugin['designations'][0]
+            enabled_symbol = pluginData['designations'][0]
             if enabled_symbol is None:
                 return
 
             value = 0.0 if bypassed else 1.0
-            plugin['ports'][enabled_symbol] = value
+            pluginData['ports'][enabled_symbol] = value
             self.msg_callback("param_set %s %s %f" % (instance, enabled_symbol, value))
 
         elif portsymbol == ":presets":
             value = int(value)
-            if value < 0 or value >= len(plugin['mapPresets']):
+            if value < 0 or value >= len(pluginData['mapPresets']):
                 callback(False)
                 return
             if instance_id == PEDALBOARD_INSTANCE_ID:
+                value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 self.pedalpreset_load(value, callback)
             else:
-                self.preset_load(instance, plugin['mapPresets'][value], callback)
+                self.preset_load(instance, pluginData['mapPresets'][value], callback)
 
         else:
-            plugin['ports'][portsymbol] = value
+            pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
