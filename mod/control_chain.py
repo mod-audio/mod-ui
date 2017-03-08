@@ -34,7 +34,6 @@ class ControlChainDeviceListener(object):
             return
 
         self.initialized = False
-        print("cc start socket initializing")
 
         self.socket = iostream.IOStream(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM))
         self.socket.set_close_callback(self.connection_closed)
@@ -63,20 +62,19 @@ class ControlChainDeviceListener(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     def connection_started(self):
-        print("cc started")
         if len(self.write_queue):
             self.process_write_queue()
         else:
             self.idle = True
 
     def connection_closed(self):
-        print("cc closed")
+        print("control-chain closed")
         self.socket  = None
         self.crashed = True
         self.set_initialized()
 
     def set_initialized(self):
-        print("cc initialized")
+        print("control-chain initialized")
         self.initialized = True
 
         if self.initialized_cb is not None:
@@ -150,7 +148,6 @@ class ControlChainDeviceListener(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     def send_request(self, request_name, request_data, callback=None):
-        print("cc send_request", request_name, request_data)
 
         request = {
             'request': request_name,
@@ -167,8 +164,6 @@ class ControlChainDeviceListener(object):
 
     @gen.coroutine
     def device_list_init(self, dev_list):
-        print("cc device_list_init", dev_list)
-
         for dev_id in dev_list:
             yield gen.Task(self.send_device_descriptor, dev_id)
 
@@ -180,11 +175,7 @@ class ControlChainDeviceListener(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     def send_device_descriptor(self, dev_id, callback):
-        print("cc send_device_descriptor", dev_id)
-
         def dev_desc_cb(dev):
-            print("cc send_device_descriptor RESP", dev_id, dev)
-
             # FIXME
             dev_label = symbolify(dev['label'])
             dev_uri   = dev['uri']
@@ -226,7 +217,6 @@ class ControlChainDeviceListener(object):
                     'max_assigns': actuator['max_assignments']
                 }
                 self.act_added_cb(dev_id, actuator['id'], metadata)
-                print("cc added", metadata)
 
             callback()
 

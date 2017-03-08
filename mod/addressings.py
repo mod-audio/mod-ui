@@ -355,7 +355,6 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             if actuator_uri not in self.cc_addressings.keys():
                 print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
-                print(self.cc_addressings.keys())
                 return None
 
             addressings = self.cc_addressings[actuator_uri]
@@ -523,14 +522,15 @@ class Addressings(object):
     # Control Chain specific functions
 
     def cc_hardware_added(self, dev_uri, label, version):
+        print("cc_hardware_added", dev_uri, label, version)
         self._task_hw_added(dev_uri, label, version)
 
     def cc_actuator_added(self, dev_id, actuator_id, metadata):
+        print("cc_actuator_added", metadata['uri'])
         actuator_uri = metadata['uri']
         self.cc_metadata[actuator_uri] = metadata.copy()
         self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
         self.cc_addressings[actuator_uri] = []
-        print(self.cc_addressings.keys())
         self._task_act_added(metadata)
 
     def cc_actuator_removed(self, dev_id):
@@ -541,6 +541,7 @@ class Addressings(object):
                 removed_actuators.append(actuator['uri'])
 
         for actuator_uri in removed_actuators:
+            print("cc_actuator_removed", actuator_uri)
             self.cc_metadata.pop(actuator_uri)
             self.cc_addressings.pop(actuator_uri)
             self._task_act_removed(actuator_uri)
