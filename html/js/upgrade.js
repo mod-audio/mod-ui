@@ -127,7 +127,7 @@ JqueryClass('upgradeWindow', {
         self.data('updatedata', data)
         self.data('updaterequired', false)
         self.data('updatesystem', true)
-        icon.statusTooltip('message', "An update is available, click to know details", ignoreUpdate || required, 8000)
+        icon.statusTooltip('message', "An update is available, click to learn more", ignoreUpdate || required, 8000)
         icon.statusTooltip('status', 'update-available')
 
         if (required && ! ignoreUpdate) {
