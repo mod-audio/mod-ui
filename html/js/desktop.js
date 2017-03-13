@@ -790,6 +790,7 @@ function Desktop(elements) {
                 $('#js-preset-menu').show()
                 self.titleBox.text((self.title || 'Untitled') + " - Default")
                 self.pedalboardPresetId = 0
+                self.pedalboardModified = true
             },
             error: function () {
                 new Bug("Failed to activate pedalboard presets")
@@ -809,6 +810,7 @@ function Desktop(elements) {
             method: 'POST',
             success: function () {
                 self.pedalboardPresetId = -1
+                self.pedalboardModified = true
                 self.titleBox.text(self.title || 'Untitled')
                 $('#js-preset-menu').hide()
                 $('#js-preset-enabler').show()
@@ -828,6 +830,7 @@ function Desktop(elements) {
             url: '/pedalpreset/save',
             method: 'POST',
             success: function () {
+                self.pedalboardModified = true
                 new Notification('info', 'Pedalboard preset saved', 2000)
             },
             error: function () {
@@ -849,6 +852,7 @@ function Desktop(elements) {
                         return
                     }
                     self.pedalboardPresetId = resp.id
+                    self.pedalboardModified = true
                     self.titleBox.text((self.title || 'Untitled') + " - " + newName)
                     new Notification('info', 'Pedalboard preset saved', 2000)
                 },

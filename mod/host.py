@@ -1345,6 +1345,8 @@ class Host(object):
     # Host stuff - pedalboard presets
 
     def pedalpreset_make(self, name):
+        self.pedalboard_modified = True
+
         pedalpreset = {
             "name": name,
             "data": {},
@@ -1382,15 +1384,18 @@ class Host(object):
 
     def pedalpreset_disable(self, callback):
         self.pedalpreset_clear()
+        self.pedalboard_modified = True
         self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, callback)
 
     def pedalpreset_save(self):
-        if self.pedalboard_preset < 0 or self.pedalboard_preset >= len(self.pedalboard_presets):
+        idx = self.pedalboard_preset
+
+        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return False
 
-        name   = self.pedalboard_presets[self.pedalboard_preset]['name']
+        name   = self.pedalboard_presets[idx]['name']
         preset = self.pedalpreset_make(name)
-        self.pedalboard_presets[self.pedalboard_preset] = preset
+        self.pedalboard_presets[idx] = preset
         return True
 
     def pedalpreset_saveas(self, name):
@@ -1404,16 +1409,18 @@ class Host(object):
         return self.pedalboard_preset
 
     def pedalpreset_rename(self, idx, title):
-        if idx >= len(self.pedalboard_presets):
+        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return False
 
+        self.pedalboard_modified = True
         self.pedalboard_presets[idx]['name'] = title
         return True
 
     def pedalpreset_remove(self, idx):
-        if idx >= len(self.pedalboard_presets):
+        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return False
 
+        self.pedalboard_modified = True
         self.pedalboard_presets[idx] = None
         return True
 
