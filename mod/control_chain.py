@@ -67,6 +67,9 @@ class ControlChainDeviceListener(object):
         else:
             self.idle = True
 
+        # FIXME: remove this after we stop forcing arduino-usb
+        self.set_initialized()
+
     def connection_closed(self):
         print("control-chain closed")
         self.socket  = None
