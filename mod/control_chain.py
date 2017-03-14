@@ -7,6 +7,9 @@ import socket
 from tornado import gen, iostream
 from mod import symbolify
 
+CC_MODE_TOGGLE  = 0x01
+CC_MODE_TRIGGER = 0x02
+
 # ---------------------------------------------------------------------------------------------------------------------
 
 class ControlChainDeviceListener(object):
@@ -179,7 +182,6 @@ class ControlChainDeviceListener(object):
 
     def send_device_descriptor(self, dev_id, callback):
         def dev_desc_cb(dev):
-            # FIXME
             dev_label = symbolify(dev['label'])
             dev_uri   = dev['uri']
 
@@ -201,10 +203,9 @@ class ControlChainDeviceListener(object):
                 modes_int = actuator['supported_modes']
                 modes_str = ""
 
-                # FIXME use real values
-                if modes_int & 1:
+                if modes_int & CC_MODE_TOGGLE:
                     modes_str += ":bypass:toggled"
-                if modes_int & 2:
+                if modes_int & CC_MODE_TRIGGER:
                     modes_str += ":trigger"
 
                 if not modes_str:
