@@ -165,6 +165,8 @@ class Host(object):
             self.jack_hwin_prefix  = "mod-monitor:in_"
             self.jack_hwout_prefix = "mod-monitor:out_"
 
+        self.jack_slave_prefix = "slave"
+
         # pluginData-like pedalboard
         self.pedalboard_pdata = {
             "uri"        : PEDALBOARD_URI,
@@ -886,7 +888,7 @@ class Host(object):
         ports = get_jack_hardware_ports(False, False)
         for i in range(len(ports)):
             name = ports[i]
-            if name not in midiports:
+            if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
                 continue
             alias = get_jack_port_alias(name)
             if alias:
@@ -903,7 +905,7 @@ class Host(object):
         ports = get_jack_hardware_ports(False, True)
         for i in range(len(ports)):
             name = ports[i]
-            if name not in midiports:
+            if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
                 continue
             alias = get_jack_port_alias(name)
             if alias:
@@ -1511,6 +1513,8 @@ class Host(object):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
                     return self.jack_hwin_prefix + num
+            if data[2].startswith(("audio_from_slave_", "audio_to_slave_", "midi_from_slave_", "midi_to_slave_")):
+                return "%s:%s" % (self.jack_slave_prefix, data[2])
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
