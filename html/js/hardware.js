@@ -419,11 +419,14 @@ function HardwareManager(options) {
             form.remove()
         })
 
-        form.keydown(function (e) {
-            if (e.keyCode == 27) {
+        $('body').keydown(function (e) {
+            if (e.keyCode == 27 && form && form.is(':visible')) {
                 form.remove()
+                form = null
                 return false
             }
+        })
+        form.keydown(function (e) {
             if (e.keyCode == 13) {
                 saveAddressing()
                 return false
