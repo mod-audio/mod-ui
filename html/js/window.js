@@ -28,16 +28,16 @@ function WindowManager() {
         self.windows.push(window)
 
         window.bind('windowopen', function () {
-            self.closeWindows(window)
+            self.closeWindows(window, true)
         })
-
     }
 
-    this.closeWindows = function (window) {
+    this.closeWindows = function (window, forced) {
         for (var i = 0; i < self.windows.length; i++) {
             var win = self.windows[i]
-            if (win != window)
+            if (win != window && (forced || ! win.data('isMainWindow'))) {
                 win.window('close')
+            }
         }
     }
 
@@ -57,13 +57,16 @@ function WindowManager() {
         init: function (options) {
             var self = $(this)
 
-            if (!options) {
-                options = {
-                    windowManager: WINDOWMANAGER
-                }
-            }
+            options = $.extend({
+                isMainWindow: false,
+                windowName: "Unknown",
+                windowManager: WINDOWMANAGER
+            }, options)
+
             var trigger = options.trigger
             self.data('trigger', trigger)
+            self.data('isMainWindow', options.isMainWindow)
+            self.data('windowName', options.windowName)
 
             if (options.open) {
                 self.bind('windowopen', options.open)

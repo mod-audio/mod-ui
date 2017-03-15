@@ -41,7 +41,9 @@ JqueryClass('cloudPluginBox', {
             },
             upgradePluginURI: function (uri, callback) {
                 callback({}, "")
-            }
+            },
+            isMainWindow: true,
+            windowName: "Plugin Store"
         }, options)
 
         self.data(options)
@@ -798,6 +800,9 @@ JqueryClass('cloudPluginBox', {
             }
 
             info.appendTo($('body'))
+            info.window({
+                windowName: "Cloud Plugin Info"
+            })
             info.window('open')
             self.data('info', info)
         }

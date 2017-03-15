@@ -128,6 +128,8 @@ JqueryClass('pedalboardBox', {
             load: function (bundlepath, broken, callback) {
                 callback()
             },
+            isMainWindow: true,
+            windowName: "Pedalboards",
         }, options)
 
         self.data(options)

@@ -231,7 +231,7 @@ function Desktop(elements) {
     }
 
     elements.pedalboardTrigger.click(function () {
-        self.windowManager.closeWindows()
+        self.windowManager.closeWindows(null, true)
     })
 
     this.titleBox = elements.titleBox
@@ -642,7 +642,7 @@ function Desktop(elements) {
     },
 
     this.loadRemotePedalboard = function (pedalboard_id) {
-        self.windowManager.closeWindows()
+        self.windowManager.closeWindows(null, true)
 
         if (self.cloudAccessToken == null) {
             self.authenticateDevice(function (ok) {
@@ -1320,9 +1320,11 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         self.pedalboardEmpty = false
         self.pedalboardModified = true
     })
+    /*
     el.bind('dragStart', function () {
-        self.windowManager.closeWindows()
+        self.windowManager.closeWindows(null, true)
     })
+    */
 
     el.bind('pluginDragStart', function () {
         self.effectBox.addClass('fade')

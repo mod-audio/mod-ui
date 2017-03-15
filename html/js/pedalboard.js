@@ -1357,6 +1357,7 @@ JqueryClass('pedalboard', {
             }).appendTo(actions)
 
             settings.window({
+                windowName: "Plugin Settings",
                 windowManager: self.data('windowManager')
             }).appendTo($('body'))
             icon.css({

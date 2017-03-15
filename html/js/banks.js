@@ -28,7 +28,9 @@ JqueryClass('bankBox', {
             },
             save: function (data, callback) {
                 callback(true)
-            }
+            },
+            isMainWindow: true,
+            windowName: "Banks"
         }, options)
 
         self.data(options)
