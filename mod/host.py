@@ -970,7 +970,7 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
-        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), instances)
+        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), "", instances)
 
         # TODO: restore HMI and CC addressings if crashed
 
@@ -1674,7 +1674,7 @@ class Host(object):
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
         self.addressings.load(bundlepath, instances)
-        self.addressings.registerMappings(self.msg_callback, rinstances)
+        self.addressings.registerMappings(self.msg_callback, "/graph/", rinstances)
 
         self.msg_callback("loading_end %d" % self.pedalboard_preset)
 

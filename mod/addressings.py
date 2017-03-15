@@ -228,38 +228,41 @@ class Addressings(object):
         with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
             json.dump(addressings, fh)
 
-    def registerMappings(self, msg_callback, instances):
+    def registerMappings(self, msg_callback, iprefix, instances):
         # HMI
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
-                msg_callback("hw_map %s %s %s %s %f %f %d" % (instances[addr['instance_id']],
-                                                              addr['port'],
-                                                              uri,
-                                                              addr['label'],
-                                                              addr['minimum'],
-                                                              addr['maximum'],
-                                                              addr['steps']))
+                msg_callback("hw_map %s%s %s %s %s %f %f %d" % (iprefix,
+                                                                instances[addr['instance_id']],
+                                                                addr['port'],
+                                                                uri,
+                                                                addr['label'],
+                                                                addr['minimum'],
+                                                                addr['maximum'],
+                                                                addr['steps']))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
             for addr in addrs:
-                msg_callback("hw_map %s %s %s %s %f %f %d" % (instances[addr['instance_id']],
-                                                              addr['port'],
-                                                              uri,
-                                                              addr['label'],
-                                                              addr['minimum'],
-                                                              addr['maximum'],
-                                                              addr['steps']))
+                msg_callback("hw_map %s%s %s %s %s %f %f %d" % (iprefix,
+                                                                instances[addr['instance_id']],
+                                                                addr['port'],
+                                                                uri,
+                                                                addr['label'],
+                                                                addr['minimum'],
+                                                                addr['maximum'],
+                                                                addr['steps']))
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():
             for addr in addrs:
-                msg_callback("midi_map %s %s %i %i %f %f" % (instances[addr['instance_id']],
-                                                             addr['port'],
-                                                             addr['midichannel'],
-                                                             addr['midicontrol'],
-                                                             addr['minimum'],
-                                                             addr['maximum']))
+                msg_callback("midi_map %s%s %s %i %i %f %f" % (iprefix,
+                                                               instances[addr['instance_id']],
+                                                               addr['port'],
+                                                               addr['midichannel'],
+                                                               addr['midicontrol'],
+                                                               addr['minimum'],
+                                                               addr['maximum']))
 
     # -----------------------------------------------------------------------------------------------------------------
 
