@@ -344,6 +344,7 @@ function HardwareManager(options) {
                 }
 
                 form.remove()
+                form = null
             })
         }
 
@@ -354,6 +355,7 @@ function HardwareManager(options) {
             if (actuator.uri == null && currentAddressing.uri == null) {
                 console.log("Nothing to do")
                 form.remove()
+                form = null
                 return
             }
 
@@ -402,6 +404,7 @@ function HardwareManager(options) {
                     // if not, just close the form
                     } else {
                         form.remove()
+                        form = null
                     }
                 })
             }
@@ -417,6 +420,7 @@ function HardwareManager(options) {
 
         form.find('.js-close').click(function () {
             form.remove()
+            form = null
         })
 
         $('body').keydown(function (e) {
