@@ -57,6 +57,7 @@ JqueryClass('shareBox', {
         self.data(options)
         self.data('bundlepath', '')
         self.data('recordedData', null)
+        self.data('recordTimeout', null)
         self.data('status', STOPPED)
         self.data('step', 0)
         self.data('screenshotDone', false)
@@ -169,9 +170,11 @@ JqueryClass('shareBox', {
             return
         }
         self.find('#record-countdown').text(secs)
-        setTimeout(function () {
+
+        var recordTimeout = setTimeout(function () {
             self.shareBox('recordCountdown', secs - 1)
         }, 1000)
+        self.data('recordTimeout', recordTimeout)
     },
     recordStopCountdown: function (secs) {
         var self = $(this)
@@ -190,7 +193,7 @@ JqueryClass('shareBox', {
         var status = self.data('status')
         var _callback = callback || function () {}
         if (status == STOPPED) {
-            return _callback()
+            return _callback(false)
         } else if (status == RECORDING) {
             var timeout = self.data('stopTimeout')
             if (timeout)
@@ -200,13 +203,13 @@ JqueryClass('shareBox', {
                 self.shareBox('showStep', 4)
                 self.find('#record-play').show()
                 self.find('#record-play-stop').hide()
-                _callback()
+                _callback(true)
             })
         } else { // PLAYING
             self.data('playStop')(function () {
                 self.find('#record-play').removeClass('playing')
                 self.data('status', STOPPED)
-                _callback()
+                _callback(true)
             })
         }
     },
@@ -356,7 +359,18 @@ JqueryClass('shareBox', {
 
     close: function () {
         var self = $(this)
-        self.shareBox('recordStop', function () {
+
+        var recordTimeout = self.data('recordTimeout')
+        if (recordTimeout) {
+            clearTimeout(recordTimeout)
+            self.data('recordTimeout', null)
+        }
+
+        self.shareBox('recordStop', function (resetNeeded) {
+            if (! resetNeeded) {
+                self.hide()
+                return
+            }
             self.data('recordReset')(function () {
                 self.hide()
             })
