@@ -32,6 +32,9 @@
 #define ALSA_CONTROL_BYPASS_RIGHT "Right True-Bypass"
 #define ALSA_CONTROL_LOOPBACK     "LOOPBACK"
 
+#define JACK_SLAVE_PREFIX     "mod-slave"
+#define JACK_SLAVE_PREFIX_LEN 9
+
 // --------------------------------------------------------------------------------------------------------
 
 static jack_client_t* gClient = nullptr;
@@ -45,14 +48,14 @@ static std::mutex gPortUnregisterMutex;
 static std::vector<std::string> gUnregisteredPorts;
 
 static snd_mixer_t* gAlsaMixer = nullptr;
-static snd_mixer_elem_t* gAlsaControlLeft = nullptr;
+static snd_mixer_elem_t* gAlsaControlLeft  = nullptr;
 static snd_mixer_elem_t* gAlsaControlRight = nullptr;
-static bool gLastAlsaValueLeft = false;
+static bool gLastAlsaValueLeft  = false;
 static bool gLastAlsaValueRight = false;
 
-static JackMidiPortAppeared   jack_midi_port_appeared_cb = nullptr;
-static JackMidiPortDeleted    jack_midi_port_deleted_cb  = nullptr;
-static TrueBypassStateChanged true_bypass_changed_cb     = nullptr;
+static JackPortAppeared       jack_port_appeared_cb  = nullptr;
+static JackPortDeleted        jack_port_deleted_cb   = nullptr;
+static TrueBypassStateChanged true_bypass_changed_cb = nullptr;
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -72,20 +75,24 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 
     if (reg)
     {
-        if (jack_midi_port_appeared_cb == nullptr)
+        if (jack_port_appeared_cb == nullptr)
             return;
     }
     else
     {
-        if (jack_midi_port_deleted_cb == nullptr)
+        if (jack_port_deleted_cb == nullptr)
             return;
     }
 
     if (const jack_port_t* const port = jack_port_by_id(gClient, port_id))
     {
+        if ((jack_port_flags(port) & JackPortIsPhysical) == 0x0)
+            return;
+
         if (const char* const port_name = jack_port_name(port))
         {
             if (strncmp(port_name, "system:midi_", 12) != 0 &&
+                strncmp(port_name, JACK_SLAVE_PREFIX ":", JACK_SLAVE_PREFIX_LEN + 1) != 0 &&
                 strncmp(port_name, "nooice", 5) != 0)
                 return;
 
@@ -220,7 +227,7 @@ JackData* get_jack_data(void)
         data.cpuLoad = jack_cpu_load(gClient);
         data.xruns   = gXrunCount;
 
-        if (jack_midi_port_appeared_cb != nullptr)
+        if (jack_port_appeared_cb != nullptr)
         {
             // See if any new ports have been registered
             {
@@ -235,14 +242,14 @@ JackData* get_jack_data(void)
                 if (jack_port_t* const port = jack_port_by_name(gClient, portName.c_str()))
                 {
                     const bool isOutput = jack_port_flags(port) & JackPortIsInput; // inverted on purpose
-                    jack_midi_port_appeared_cb(portName.c_str(), isOutput);
+                    jack_port_appeared_cb(portName.c_str(), isOutput);
                 }
             }
 
             localPorts.clear();
         }
 
-        if (jack_midi_port_deleted_cb != nullptr)
+        if (jack_port_deleted_cb != nullptr)
         {
             // See if any new ports have been unregistered
             {
@@ -253,7 +260,7 @@ JackData* get_jack_data(void)
             }
 
             for (const std::string& portName : localPorts)
-                jack_midi_port_deleted_cb(portName.c_str());
+                jack_port_deleted_cb(portName.c_str());
 
             localPorts.clear();
         }
@@ -476,13 +483,13 @@ bool set_truebypass_value(bool right, bool bypassed)
 
 // --------------------------------------------------------------------------------------------------------
 
-void set_util_callbacks(JackMidiPortAppeared midiPortAppeared,
-                        JackMidiPortDeleted midiPortDeleted,
+void set_util_callbacks(JackPortAppeared portAppeared,
+                        JackPortDeleted portDeleted,
                         TrueBypassStateChanged trueBypassChanged)
 {
-    jack_midi_port_appeared_cb = midiPortAppeared;
-    jack_midi_port_deleted_cb  = midiPortDeleted;
-    true_bypass_changed_cb     = trueBypassChanged;
+    jack_port_appeared_cb  = portAppeared;
+    jack_port_deleted_cb   = portDeleted;
+    true_bypass_changed_cb = trueBypassChanged;
 }
 
 // --------------------------------------------------------------------------------------------------------

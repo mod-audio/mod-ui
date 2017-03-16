@@ -165,7 +165,7 @@ class Host(object):
             self.jack_hwin_prefix  = "mod-monitor:in_"
             self.jack_hwout_prefix = "mod-monitor:out_"
 
-        self.jack_slave_prefix = "slave"
+        self.jack_slave_prefix = "mod-slave"
 
         # pluginData-like pedalboard
         self.pedalboard_pdata = {
@@ -214,7 +214,7 @@ class Host(object):
 
         self.msg_callback = msg_callback
 
-        set_util_callbacks(self.midi_port_appeared, self.midi_port_deleted, self.true_bypass_changed)
+        set_util_callbacks(self.jack_port_appeared, self.jack_port_deleted, self.true_bypass_changed)
 
         # Setup addressing callbacks
         self.addressings._task_addressing = self.addr_task_addressing
@@ -247,9 +247,13 @@ class Host(object):
         self.msg_callback("stop")
         self.close_jack()
 
-    def midi_port_appeared(self, name, isOutput):
+    def jack_port_appeared(self, name, isOutput):
         name = charPtrToString(name)
         isOutput = bool(isOutput)
+
+        if name.startswith(self.jack_slave_prefix+":"):
+            print("SLAVE PORT APPEARED", name, isOutput)
+            return
 
         alias = get_jack_port_alias(name)
         if not alias:
@@ -307,7 +311,7 @@ class Host(object):
             self.msg_callback("connect %s %s" % (connection[0], connection[1]))
             port_conns.pop(i)
 
-    def midi_port_deleted(self, name):
+    def jack_port_deleted(self, name):
         name = charPtrToString(name)
         removed_conns = []
 
