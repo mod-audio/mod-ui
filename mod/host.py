@@ -252,7 +252,11 @@ class Host(object):
         isOutput = bool(isOutput)
 
         if name.startswith(self.jack_slave_prefix+":"):
-            print("SLAVE PORT APPEARED", name, isOutput)
+            name  = name.replace(self.jack_slave_prefix+":","")
+            ptype = "midi" if name.startswith("midi_") else "audio"
+            index = 100 + int(name.rsplit("_",1)[-1])
+            title = name.title().replace(" ","_")
+            self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
             return
 
         alias = get_jack_port_alias(name)
