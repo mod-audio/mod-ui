@@ -486,6 +486,7 @@ function GUI(effect, options) {
                 }
             }
             templateData.presets = presets
+            var totalPresetCount = self.effect.presets.length
 
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
 
@@ -493,7 +494,7 @@ function GUI(effect, options) {
 
             var presetElem = self.settings.find('.mod-presets')
 
-            if (instance && (self.effect.presets.length > 0 || self.effect.ports.control.input.length > 0))
+            if (instance && (totalPresetCount > 0 || self.effect.ports.control.input.length > 0))
             {
                 presetElem.data('enabled', true)
 
@@ -551,6 +552,7 @@ function GUI(effect, options) {
                             presetElem.find('.radio-preset-user').click()
                             presetElem.find('.preset-btn-assign-all').removeClass("disabled")
 
+                            totalPresetCount += 1
                             self.selectPreset(resp.uri)
                         })
                     })
@@ -595,6 +597,12 @@ function GUI(effect, options) {
                     options.presetDelete(self.currentPreset, path, function () {
                         self.selectPreset("")
                         item.remove()
+
+                        totalPresetCount -= 1
+
+                        if (totalPresetCount == 1) {
+                            presetElem.find('.preset-btn-assign-all').addClass("disabled")
+                        }
                     })
                 })
 
@@ -610,7 +618,10 @@ function GUI(effect, options) {
                     $(this).click(presetItemClicked)
                 })
 
-                if (presets.factory.length == 0) {
+                if (totalPresetCount == 1) {
+                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
+
+                } else if (presets.factory.length == 0) {
                     presetElem.find('.mod-enumerated-title').find('span').hide()
                     presetElem.find('.mod-preset-factory').hide()
                     presetElem.find('.mod-preset-user').show()
