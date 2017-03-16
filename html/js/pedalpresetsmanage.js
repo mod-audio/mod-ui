@@ -29,17 +29,16 @@ function PedalboardPresetsManager(options) {
         presetCount: 0,
     }, options)
 
-    options.pedalPresetsOverlay.hide().blur(self.pedalPresetRenamed).keydown(function (e) {
-        if (e.keyCode == 13) { // enter
-            return self.pedalPresetRenamed()
-        }
-    })
-
-    options.pedalPresetsWindow.keydown(function (e) {
+    $('body').keydown(function (e) {
         if (e.keyCode == 27) { // esc
             self.hideRenameOverlay()
             options.pedalPresetsWindow.hide()
-            return false
+        }
+    })
+
+    options.pedalPresetsOverlay.hide().blur(self.pedalPresetRenamed).keydown(function (e) {
+        if (e.keyCode == 13) { // enter
+            return self.pedalPresetRenamed()
         }
     })
 
