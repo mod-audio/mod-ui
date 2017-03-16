@@ -1087,7 +1087,7 @@ JqueryClass('pedalboard', {
                 var e2_cv    = e2.hasClass('mod-cv-output')    || e2.hasClass('mod-cv-input')
                 // FIXME - there's got to be a better way..
                 if ((e1_audio && e2_audio) || (e1_midi && e2_midi) || (e1_cv && e2_cv)) {
-                    return (e1.attr('mod-port-index') > e2.attr('mod-port-index')) ? 1 : -1;
+                    return (parseInt(e1.attr('mod-port-index')) > parseInt(e2.attr('mod-port-index'))) ? 1 : -1;
                 } else if (e1_cv || e2_cv) {
                     return e1_cv ? 1 : -1;
                 } else {
