@@ -366,17 +366,50 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
             unit  = '"%s"' % data['unit'].replace('"', '')
-            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s" % (data['instance_id'],
-                                                                                   data['port'],
-                                                                                   actuator[0], actuator[1],
-                                                                                   label,
-                                                                                   data['value'],
-                                                                                   data['minimum'],
-                                                                                   data['maximum'],
-                                                                                   data['steps'],
-                                                                                   unit,
-                                                                                   #data['options'], # TODO
-                                                                                   ), callback, datatype='boolean')
+            optionsData = []
+
+            rmaximum = data['maximum']
+            rvalue   = data['value']
+
+            if data['options']:
+                currentNum = 0
+                numBytesFree = 1024-128
+
+                for o in data['options']:
+                    if currentNum > 50:
+                        if rvalue >= currentNum:
+                            rvalue = 0
+                        rmaximum = currentNum
+                        break
+
+                    optdata    = '"%s" %f' % (o[1].replace('"', ''), float(o[0]))
+                    optdataLen = len(optdata)
+
+                    if numBytesFree-optdataLen-2 < 0:
+                        print("WARNING: Preventing sending too many options to addressing (stopped at %i)" % currentNum)
+                        if rvalue >= currentNum:
+                            rvalue = 0.0
+                        rmaximum = currentNum
+                        break
+
+                    currentNum += 1
+                    numBytesFree -= optdataLen+1
+                    optionsData.append(optdata)
+
+            options = "%d %s" % (len(optionsData), " ".join(optionsData))
+            options = options.strip()
+
+            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s %s" % (data['instance_id'],
+                                                                                      data['port'],
+                                                                                      actuator[0], actuator[1],
+                                                                                      label,
+                                                                                      rvalue,
+                                                                                      data['minimum'],
+                                                                                      rmaximum,
+                                                                                      data['steps'],
+                                                                                      unit,
+                                                                                      options
+                                                                                      ), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
             return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
