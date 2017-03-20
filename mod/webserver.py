@@ -187,14 +187,37 @@ def move_file(src, dst, callback):
     ioloop = IOLoop.instance()
     ioloop.add_handler(proc.stdout.fileno(), end_move, 16)
 
-class JsonRequestHandler(web.RequestHandler):
+class TimelessRequestHandler(web.RequestHandler):
+    def compute_etag(self):
+        return None
+
+    def set_default_headers(self):
+        self._headers.pop("Date")
+
+class TimelessStaticFileHandler(web.StaticFileHandler):
+    def compute_etag(self):
+        return None
+
+    def get_cache_time(self, path, modified, mime_type):
+        return 0
+
+    def get_modified_time(self):
+        return None
+
+    def set_default_headers(self):
+        self._headers.pop("Date")
+
+    def set_extra_headers(self, path):
+        self.set_header("Cache-Control", "public, max-age=31536000")
+
+class JsonRequestHandler(TimelessRequestHandler):
     def write(self, data):
         # FIXME: something is sending strings out, need to investigate what later..
         # it's likely something using write(json.dumps(...))
         # we want to prevent that as it causes issues under Mac OS
 
         if isinstance(data, (bytes, unicode_type, dict)):
-            web.RequestHandler.write(self, data)
+            TimelessRequestHandler.write(self, data)
             self.finish()
             return
 
@@ -216,7 +239,7 @@ class JsonRequestHandler(web.RequestHandler):
             data = json.dumps(data)
             self.set_header("Content-Type", "application/json; charset=UTF-8")
 
-        web.RequestHandler.write(self, data)
+        TimelessRequestHandler.write(self, data)
         self.finish()
 
 class RemoteRequestHandler(JsonRequestHandler):
@@ -383,7 +406,7 @@ class SDKEffectInstaller(EffectInstaller):
 
         self.write(resp)
 
-class EffectResource(web.StaticFileHandler):
+class EffectResource(TimelessStaticFileHandler):
 
     def initialize(self):
         # Overrides StaticFileHandler initialize
@@ -419,7 +442,7 @@ class EffectResource(web.StaticFileHandler):
         super(EffectResource, self).initialize(os.path.join(HTML_DIR, 'resources'))
         return super(EffectResource, self).get(path)
 
-class EffectImage(web.StaticFileHandler):
+class EffectImage(TimelessStaticFileHandler):
     def initialize(self):
         uri = self.get_argument('uri')
 
@@ -433,7 +456,7 @@ class EffectImage(web.StaticFileHandler):
         except:
             raise web.HTTPError(404)
 
-        return web.StaticFileHandler.initialize(self, root)
+        return TimelessStaticFileHandler.initialize(self, root)
 
     def parse_url_path(self, image):
         try:
@@ -447,11 +470,11 @@ class EffectImage(web.StaticFileHandler):
             except:
                 raise web.HTTPError(404)
             else:
-                web.StaticFileHandler.initialize(self, os.path.dirname(path))
+                TimelessStaticFileHandler.initialize(self, os.path.dirname(path))
 
         return path
 
-class EffectFile(web.StaticFileHandler):
+class EffectFile(TimelessStaticFileHandler):
     def initialize(self):
         # return custom type directly. The browser will do the parsing
         self.custom_type = None
@@ -468,7 +491,7 @@ class EffectFile(web.StaticFileHandler):
         except:
             raise web.HTTPError(404)
 
-        return web.StaticFileHandler.initialize(self, root)
+        return TimelessStaticFileHandler.initialize(self, root)
 
     def parse_url_path(self, prop):
         try:
@@ -484,7 +507,7 @@ class EffectFile(web.StaticFileHandler):
     def get_content_type(self):
         if self.custom_type is not None:
             return self.custom_type
-        return web.StaticFileHandler.get_content_type(self)
+        return TimelessStaticFileHandler.get_content_type(self)
 
 class EffectAdd(JsonRequestHandler):
     @web.asynchronous
@@ -696,7 +719,7 @@ class PedalboardSave(JsonRequestHandler):
             'bundlepath': bundlepath
         })
 
-class PedalboardPackBundle(web.RequestHandler):
+class PedalboardPackBundle(TimelessRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
@@ -841,10 +864,10 @@ class PedalboardRemove(JsonRequestHandler):
         remove_pedalboard_from_banks(bundlepath)
         self.write(True)
 
-class PedalboardImage(web.StaticFileHandler):
+class PedalboardImage(TimelessStaticFileHandler):
     def initialize(self):
         root = self.get_argument('bundlepath')
-        return web.StaticFileHandler.initialize(self, root)
+        return TimelessStaticFileHandler.initialize(self, root)
 
     def parse_url_path(self, image):
         return os.path.join(self.root, "%s.png" % image)
@@ -995,7 +1018,7 @@ class HardwareLoad(JsonRequestHandler):
         hardware = SESSION.get_hardware()
         self.write(hardware)
 
-class TemplateHandler(web.RequestHandler):
+class TemplateHandler(TimelessRequestHandler):
     def get(self, path):
         # Caching strategy.
         # 1. If we don't have a version parameter, redirect
@@ -1101,14 +1124,14 @@ class TemplateHandler(web.RequestHandler):
         context['pedalboard'] = b64encode(json.dumps(pedalboard).encode("utf-8"))
         return context
 
-class TemplateLoader(web.RequestHandler):
+class TemplateLoader(TimelessRequestHandler):
     def get(self, path):
         self.set_header("Content-Type", "text/plain; charset=UTF-8")
         with open(os.path.join(HTML_DIR, 'include', path), 'r') as fh:
             self.write(fh.read())
         self.finish()
 
-class BulkTemplateLoader(web.RequestHandler):
+class BulkTemplateLoader(TimelessRequestHandler):
     def get(self):
         self.set_header("Content-Type", "text/plain; charset=UTF-8")
         basedir = os.path.join(HTML_DIR, 'include')
@@ -1475,7 +1498,7 @@ application = web.Application(
 
             (r"/websocket/?$", ServerWebSocket),
 
-            (r"/(.*)", web.StaticFileHandler, {"path": HTML_DIR}),
+            (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],
         debug=LOG and False, **settings)
 
