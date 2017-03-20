@@ -47,7 +47,7 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (APP, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
                           PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
                           TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
@@ -701,113 +701,128 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
 
-    def process_read_queue(self):
-        def check_message(msg):
-            msg = msg[:-1].decode("utf-8", errors="ignore")
-            logging.info("[host] received <- %s" % repr(msg))
+    @gen.coroutine
+    def process_read_message(self, msg):
+        msg = msg[:-1].decode("utf-8", errors="ignore")
+        if LOG: logging.info("[host] received <- %s" % repr(msg))
 
-            msg = msg.split()
-            cmd = msg[0]
+        msg = msg.split()
+        cmd = msg[0]
 
-            if cmd == "param_set":
-                instance_id = int(msg[1])
-                portsymbol  = msg[2]
-                value       = float(msg[3])
+        if cmd == "param_set":
+            instance_id = int(msg[1])
+            portsymbol  = msg[2]
+            value       = float(msg[3])
 
+            try:
+                instance   = self.mapper.get_instance(instance_id)
+                pluginData = self.plugins[instance_id]
+            except:
+                pass
+            else:
+                if portsymbol == ":bypass":
+                    pluginData['bypassed'] = bool(value)
+
+                elif portsymbol == ":presets":
+                    print("presets changed by backend", value)
+                    value = int(value)
+                    if value < 0 or value >= len(pluginData['mapPresets']):
+                        self.process_read_queue()
+                        return
+
+                    if instance_id == PEDALBOARD_INSTANCE_ID:
+                        value = int(pluginData['mapPresets'][value].replace("file:///",""))
+                        yield gen.Task(self.pedalpreset_load, value)
+                    else:
+                        yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value])
+
+                else:
+                    pluginData['ports'][portsymbol] = value
+
+                self.pedalboard_modified = True
+                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+        elif cmd == "output_set":
+            instance_id = int(msg[1])
+            portsymbol  = msg[2]
+            value       = float(msg[3])
+
+            if instance_id == TUNER_INSTANCE_ID:
+                self.set_tuner_value(value)
+
+            else:
                 try:
                     instance   = self.mapper.get_instance(instance_id)
                     pluginData = self.plugins[instance_id]
                 except:
                     pass
                 else:
-                    if portsymbol == ":bypass":
-                        pluginData['bypassed'] = bool(value)
-                    else:
-                        pluginData['ports'][portsymbol] = value
-                    self.pedalboard_modified = True
-                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+                    pluginData['outputs'][portsymbol] = value
+                    self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
-            elif cmd == "output_set":
-                instance_id = int(msg[1])
-                portsymbol  = msg[2]
-                value       = float(msg[3])
+        elif cmd == "midi_mapped":
+            instance_id = int(msg[1])
+            portsymbol  = msg[2]
+            channel     = int(msg[3])
+            controller  = int(msg[4])
+            value       = float(msg[5])
+            minimum     = float(msg[6])
+            maximum     = float(msg[7])
 
-                if instance_id == TUNER_INSTANCE_ID:
-                    self.set_tuner_value(value)
+            instance   = self.mapper.get_instance(instance_id)
+            pluginData = self.plugins[instance_id]
 
-                else:
-                    try:
-                        instance   = self.mapper.get_instance(instance_id)
-                        pluginData = self.plugins[instance_id]
-                    except:
-                        pass
-                    else:
-                        pluginData['outputs'][portsymbol] = value
-                        self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
-
-            elif cmd == "midi_mapped":
-                instance_id = int(msg[1])
-                portsymbol  = msg[2]
-                channel     = int(msg[3])
-                controller  = int(msg[4])
-                value       = float(msg[5])
-                minimum     = float(msg[6])
-                maximum     = float(msg[7])
-
-                instance   = self.mapper.get_instance(instance_id)
-                pluginData = self.plugins[instance_id]
-
-                if portsymbol == ":bypass":
-                    pluginData['bypassCC'] = (channel, controller)
-                    pluginData['bypassed'] = bool(value)
-                else:
-                    pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
-                    pluginData['ports'][portsymbol] = value
-
-                self.pedalboard_modified = True
-                pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
-                                                                                  portsymbol,
-                                                                                  channel, controller,
-                                                                                  minimum, maximum)
-
-                self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, portsymbol,
-                                                                  channel, controller,
-                                                                  minimum, maximum))
-                self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-
-            elif cmd == "midi_program":
-                program = int(msg[1])
-                bank_id = self.bank_id
-
-                if self.bank_id > 0 and self.bank_id <= len(self.banks):
-                    pedalboards = self.banks[self.bank_id-1]['pedalboards']
-                else:
-                    pedalboards = self.allpedalboards
-
-                if program >= 0 and program < len(pedalboards):
-                    bundlepath = pedalboards[program]['bundle']
-
-                    def load_callback(ok):
-                        self.bank_id = bank_id
-                        self.load(bundlepath)
-
-                    def hmi_clear_callback(ok):
-                        self.hmi.clear(load_callback)
-
-                    self.reset(hmi_clear_callback)
-
-            elif cmd == "data_finish":
-                self.send_output_data_ready()
-
+            if portsymbol == ":bypass":
+                pluginData['bypassCC'] = (channel, controller)
+                pluginData['bypassed'] = bool(value)
             else:
-                logging.error("[host] unrecognized command: %s" % cmd)
+                pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
+                pluginData['ports'][portsymbol] = value
 
-            self.process_read_queue()
+            self.pedalboard_modified = True
+            pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
+                                                                              portsymbol,
+                                                                              channel, controller,
+                                                                              minimum, maximum)
 
+            self.msg_callback("midi_map %s %s %i %i %f %f" % (instance, portsymbol,
+                                                              channel, controller,
+                                                              minimum, maximum))
+            self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+        elif cmd == "midi_program":
+            program = int(msg[1])
+            bank_id = self.bank_id
+
+            if self.bank_id > 0 and self.bank_id <= len(self.banks):
+                pedalboards = self.banks[self.bank_id-1]['pedalboards']
+            else:
+                pedalboards = self.allpedalboards
+
+            if program >= 0 and program < len(pedalboards):
+                bundlepath = pedalboards[program]['bundle']
+
+                def load_callback(ok):
+                    self.bank_id = bank_id
+                    self.load(bundlepath)
+
+                def hmi_clear_callback(ok):
+                    self.hmi.clear(load_callback)
+
+                self.reset(hmi_clear_callback)
+
+        elif cmd == "data_finish":
+            self.send_output_data_ready()
+
+        else:
+            logging.error("[host] unrecognized command: %s" % cmd)
+
+        self.process_read_queue()
+
+    def process_read_queue(self):
         if self.readsock is None:
             return
-
-        self.readsock.read_until(b"\0", check_message)
+        self.readsock.read_until(b"\0", self.process_read_message)
 
     @gen.coroutine
     def send_output_data_ready(self):
