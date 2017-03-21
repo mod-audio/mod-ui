@@ -7,9 +7,9 @@ import socket
 from tornado import gen, iostream
 from mod import symbolify
 
-CC_MODE_TOGGLE      = 0x01
-CC_MODE_TRIGGER     = 0x02
-CC_MODE_ENUMERATION = 0x04
+CC_MODE_TOGGLE  = 0x01
+CC_MODE_TRIGGER = 0x02
+CC_MODE_OPTIONS = 0x04
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -209,7 +209,7 @@ class ControlChainDeviceListener(object):
                     modes_str += ":bypass:toggled"
                 if modes_int & CC_MODE_TRIGGER:
                     modes_str += ":trigger"
-                if modes_int & CC_MODE_ENUMERATION:
+                if modes_int & CC_MODE_OPTIONS:
                     modes_str += ":enumeration"
 
                 if not modes_str:
