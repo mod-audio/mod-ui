@@ -185,28 +185,37 @@ class Host(object):
         if os.path.exists("/proc/meminfo"):
             self.memfile  = open("/proc/meminfo", 'r')
             self.memtotal = 0.0
-            self.memfseek = 0
             self.memfskip = False
             wasFreeBefore = False
+
+            self.memfseek_free    = 0
+            self.memfseek_buffers = 0
+            self.memfseek_cached  = 0
+            self.memfseek_shmmem  = 0
+            self.memfseek_reclaim = 0
+
+            memfseek = 0
 
             for line in self.memfile.readlines():
                 if line.startswith("MemTotal:"):
                     self.memtotal = float(int(line.replace("MemTotal:","",1).replace("kB","",1).strip()))
                 elif line.startswith("MemFree:"):
-                    wasFreeBefore = True
-                    continue
-                elif wasFreeBefore:
-                    if line.startswith("MemAvailable:"):
-                        self.memfskip = True
-                        break
-                    elif line.startswith("Buffers:"):
-                        break
-                wasFreeBefore = False
-                self.memfseek += len(line)
-            else:
-                self.memfseek = 0
+                    self.memfseek_free = memfseek
+                elif line.startswith("Buffers:"):
+                    self.memfseek_buffers = memfseek
+                elif line.startswith("Cached:"):
+                    self.memfseek_cached = memfseek
+                elif line.startswith("Shmem:"):
+                    self.memfseek_shmmem = memfseek
+                elif line.startswith("SReclaimable:"):
+                    self.memfseek_reclaim = memfseek
+                memfseek += len(line)
 
-            if self.memtotal != 0.0 and self.memfseek != 0:
+            if self.memtotal != 0.0 and 0 not in (self.memfseek_free,
+                                                  self.memfseek_buffers,
+                                                  self.memfseek_cached,
+                                                  self.memfseek_shmmem,
+                                                  self.memfseek_reclaim):
                 self.memtimer = ioloop.PeriodicCallback(self.memtimer_callback, 5000)
 
         else:
@@ -2374,16 +2383,22 @@ _:b%i
         if not self.memfile:
             return "??"
 
-        self.memfile.seek(self.memfseek)
+        self.memfile.seek(self.memfseek_free)
         memfree = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
 
-        # skip 'MemAvailable'
-        if self.memfskip: self.memfile.readline()
+        self.memfile.seek(self.memfseek_buffers)
+        memcached  = float(int(self.memfile.readline().replace("Buffers:","",1).replace("kB","",1).strip()))
 
-        memfree += float(int(self.memfile.readline().replace("Buffers:","",1).replace("kB","",1).strip()))
-        memfree += float(int(self.memfile.readline().replace("Cached:" ,"",1).replace("kB","",1).strip()))
+        self.memfile.seek(self.memfseek_cached)
+        memcached += float(int(self.memfile.readline().replace("Cached:","",1).replace("kB","",1).strip()))
 
-        return "%0.1f" % ((self.memtotal-memfree)/self.memtotal*100.0)
+        self.memfile.seek(self.memfseek_shmmem)
+        memcached -= float(int(self.memfile.readline().replace("Shmem:","",1).replace("kB","",1).strip()))
+
+        self.memfile.seek(self.memfseek_reclaim)
+        memcached += float(int(self.memfile.readline().replace("SReclaimable:","",1).replace("kB","",1).strip()))
+
+        return "%0.1f" % ((self.memtotal-memfree-memcached)/self.memtotal*100.0)
 
     def memtimer_callback(self):
         self.msg_callback("mem_load " + self.get_free_memory_value())
