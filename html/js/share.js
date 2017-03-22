@@ -92,6 +92,10 @@ JqueryClass('shareBox', {
             self.shareBox('close');
             return false
         })
+        self.find('.js-cancel').click(function () {
+            self.shareBox('close');
+            return false
+        })
         self.find('#record-share').click(function () {
             self.shareBox('share');
             return false
