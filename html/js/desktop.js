@@ -762,6 +762,11 @@ function Desktop(elements) {
         })
     })
     elements.presetSaveAsButton.click(function () {
+        var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
+        if (addressed) {
+            return new Notification("warn", "Cannot change presets while addressed to hardware", 3000)
+        }
+
         desktop.openPresetSaveWindow("", function (newName) {
             $.ajax({
                 url: '/pedalpreset/saveas',
