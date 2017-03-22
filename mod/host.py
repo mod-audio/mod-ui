@@ -233,6 +233,7 @@ class Host(object):
         self.addressings._task_get_port_value = self.addr_task_get_port_value
         self.addressings._task_store_address_data = self.addr_task_store_address_data
         self.addressings._task_hw_added = self.addr_task_hw_added
+        self.addressings._task_hw_removed = self.addr_task_hw_removed
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
 
@@ -490,6 +491,9 @@ class Host(object):
 
     def addr_task_hw_added(self, dev_uri, label, version):
         self.msg_callback("hw_add %s %s %s" % (dev_uri, label, version))
+
+    def addr_task_hw_removed(self, dev_uri, label, version):
+        self.msg_callback("hw_rem %s %s %s" % (dev_uri, label, version))
 
     def addr_task_act_added(self, metadata):
         self.msg_callback("act_add " + b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))

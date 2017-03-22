@@ -319,7 +319,15 @@ $('document').ready(function() {
             var dev_uri = data[1]
             var label   = data[2]
             var version = data[3]
-            desktop.checkHardwareDeviceVersion(dev_uri, label, version)
+            desktop.hardwareDeviceAdded(dev_uri, label, version)
+            return
+        }
+
+        if (cmd == "hw_rem") {
+            var dev_uri = data[1]
+            var label   = data[2]
+            var version = data[3]
+            desktop.hardwareDeviceRemoved(dev_uri, label, version)
             return
         }
 

@@ -6888,7 +6888,8 @@ hr.dotted {
 #main-menu #mod-status.online {
   background-image: url(../img/icons/36/disconnect.png);
 }
-#main-menu #mod-cloud {
+#main-menu #mod-devices {
+  /* FIXME */
   background-image: url(../img/icons/36/cloud.png);
 }
 #cloud_install_all {

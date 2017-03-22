@@ -54,6 +54,7 @@ function Desktop(elements) {
         shareButton: $('<div>'),
         shareWindow: $('<div>'),
         presetSaveBox: $('<div>'),
+        devicesIcon: $('<div>'),
         statusIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
@@ -436,6 +437,41 @@ function Desktop(elements) {
                 callback(false)
             },
         })
+    }
+
+    elements.devicesIcon.statusTooltip()
+    elements.devicesIcon.statusTooltip('message', "No Control Chain devices connected", true)
+
+    this.connectedDevices = []
+
+    this.hardwareDeviceAdded = function (dev_uri, label, version) {
+        if (! self.loadingPeldaboardForFirstTime) {
+            new Notification('info', 'New device connected: ' + label + ' v' + version, 4000)
+        }
+
+        self.checkHardwareDeviceVersion(dev_uri, label, version)
+
+        self.connectedDevices.push((dev_uri, label, version))
+        self.hardwareDevicesUpdated()
+    }
+
+    this.hardwareDeviceRemoved = function (dev_uri, label, version) {
+        if (! self.loadingPeldaboardForFirstTime) {
+            new Notification('info', 'Device disconnected: ' + label, 4000)
+        }
+
+        remove_from_array(self.connectedDevices, (dev_uri, label, version))
+        self.hardwareDevicesUpdated()
+    }
+
+    this.hardwareDevicesUpdated = function () {
+        var count = self.connectedDevices.length
+        if (count == 0) {
+            elements.devicesIcon.statusTooltip('message', "No Control Chain devices connected", true)
+        } else {
+            var msg = sprintf("%d Control Chain device%s connected", count, (count > 1 ? "s" : ""))
+            elements.devicesIcon.statusTooltip('message', msg, true)
+        }
     }
 
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {
@@ -1767,6 +1803,9 @@ function enable_dev_mode(skipSaveConfig) {
 
     // network and controller ping times
     $('#mod-status').show().statusTooltip('updatePosition')
+
+    // adjust position
+    $('#mod-devices').statusTooltip('updatePosition')
 
     // xrun counter
     $('#mod-xruns').show()

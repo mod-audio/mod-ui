@@ -16,14 +16,14 @@ CC_MODE_OPTIONS = 0x04
 class ControlChainDeviceListener(object):
     socket_path = "/tmp/control-chain.sock"
 
-    def __init__(self, hw_added_cb, act_added_cb, act_removed_cb):
+    def __init__(self, hw_added_cb, hw_removed_cb, act_added_cb):
         self.crashed        = False
         self.idle           = False
         self.initialized    = False
         self.initialized_cb = None
         self.hw_added_cb    = hw_added_cb
+        self.hw_removed_cb  = hw_removed_cb
         self.act_added_cb   = act_added_cb
-        self.act_removed_cb = act_removed_cb
         self.hw_versions    = {}
         self.write_queue    = []
 
@@ -110,11 +110,13 @@ class ControlChainDeviceListener(object):
                     yield gen.Task(self.send_device_descriptor, dev_id)
 
                 else:
-                    self.act_removed_cb(dev_id)
                     try:
-                        self.hw_versions.pop(dev_id)
+                        hw_data = self.hw_versions.pop(dev_id)
                     except KeyError:
-                        pass
+                        print("ERROR: control-chain device removed, but not on current list!?", dev_id)
+                    else:
+                        dev_uri, label, version = hw_data
+                        self.hw_removed_cb(dev_id, dev_uri, label, version)
 
         finally:
             self.process_read_queue()
@@ -198,7 +200,7 @@ class ControlChainDeviceListener(object):
                 if _dev_uri == dev_uri:
                     dev_unique_id += 1
 
-            self.hw_added_cb(dev_uri, dev_label, dev['version'])
+            self.hw_added_cb(dev_id, dev_uri, dev_label, dev['version'])
             self.hw_versions[dev_id] = (dev_uri, dev_label, dev['version'])
 
             for actuator in dev['actuators']:
@@ -236,15 +238,15 @@ if __name__ == "__main__":
     from tornado.web import Application
     from tornado.ioloop import IOLoop
 
-    def hw_added_cb(dev_uri, label, version):
+    def hw_added_cb(dev_id, dev_uri, label, version):
         print("hw_added_cb", dev_uri, label, version)
+
+    def hw_removed_cb(dev_id, dev_uri, label, version):
+        print("hw_removed_cb", dev_id)
 
     def act_added_cb(dev_id, actuator_id, metadata):
         print("act_added_cb", dev_id, actuator_id, metadata)
 
-    def act_removed_cb(dev_id):
-        print("act_removed_cb", dev_id)
-
     application = Application()
-    cc = ControlChainDeviceListener(hw_added_cb, act_added_cb, act_removed_cb)
+    cc = ControlChainDeviceListener(hw_added_cb, hw_removed_cb, act_added_cb)
     IOLoop.instance().start()
