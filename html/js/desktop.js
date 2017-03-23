@@ -116,8 +116,11 @@ function Desktop(elements) {
         })
     };
     this.getPedalboardHref = function(uri) {
+        if (!this.pedalboardStatsSuccess) {
+            return null;
+        }
         var base64Uri = btoa(uri);
-        if (!this.pedalboardStatsSuccess || !this.pedalboardStats[base64Uri]) {
+        if (!this.pedalboardStats[base64Uri]) {
             return null;
         }
         var encodedUri = encodeURIComponent(uri);
@@ -158,8 +161,7 @@ function Desktop(elements) {
             if (instance == "/pedalboard") {
                 label = "Pedalboard"
             } else {
-                var plugin = self.pedalboard.pedalboard('getGui', instance).effect
-                label = plugin.label
+                label = self.pedalboard.pedalboard('getLabel', instance)
             }
 
             if (port.symbol == ':bypass' || port.symbol == ':presets') {
@@ -1778,7 +1780,7 @@ JqueryClass('statusTooltip', {
         tooltip.show().stop().animate({
             opacity: 1
         }, 200)
-        if (timeout)
+        if (timeout) {
             setTimeout(function () {
                 tooltip.stop().animate({
                         opacity: 0
@@ -1787,6 +1789,7 @@ JqueryClass('statusTooltip', {
                         $(this).hide()
                     })
             }, timeout)
+        }
     },
 
     updatePosition: function() {
@@ -1829,6 +1832,9 @@ function disable_dev_mode() {
 
     // network and controller ping times
     $('#mod-status').hide()
+
+    // adjust position
+    $('#mod-devices').statusTooltip('updatePosition')
 
     // xrun counter
     $('#mod-xruns').hide()

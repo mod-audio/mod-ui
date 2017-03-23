@@ -1279,6 +1279,7 @@ JqueryClass('pedalboard', {
                 self.trigger('modified')
             }
 
+            icon.data('label', pluginData.label)
             icon.data('uri', pluginData.uri)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
@@ -1370,6 +1371,14 @@ JqueryClass('pedalboard', {
             if (renderCallback)
                 renderCallback()
         })
+    },
+
+    getLabel: function (instance) {
+        var plugin = $(this).data('plugins')[instance]
+        if (plugin && plugin.data) {
+            return plugin.data('label')
+        }
+        return "effect"
     },
 
     getGui: function (instance) {
