@@ -202,7 +202,7 @@ class ControlChainDeviceListener(object):
 
             # assign an unique id starting from 0
             dev_unique_id = 0
-            for _dev_uri, _1, _2 in self.hw_versions.items():
+            for _dev_uri, _1, _2 in self.hw_versions.values():
                 if _dev_uri == dev_uri:
                     dev_unique_id += 1
 
