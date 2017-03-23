@@ -138,6 +138,10 @@ $('document').ready(function() {
             var maximum  = parseFloat(data[6])
             var steps    = parseInt(data[7])
 
+            if (data.length > 8) {
+                console.log("FIXME: received hw_map with spaces:", data)
+            }
+
             desktop.hardwareManager.addHardwareMapping(instance, symbol, actuator, label, minimum, maximum, steps)
             return
         }
