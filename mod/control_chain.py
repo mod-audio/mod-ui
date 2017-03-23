@@ -4,7 +4,7 @@
 import json
 import os
 import socket
-from tornado import gen, iostream
+from tornado import gen, iostream, ioloop
 from mod import symbolify
 
 CC_MODE_TOGGLE  = 0x01
@@ -80,6 +80,13 @@ class ControlChainDeviceListener(object):
         self.socket  = None
         self.crashed = True
         self.set_initialized()
+
+        hw_versions = self.hw_versions.copy()
+        self.hw_versions = {}
+        for dev_id, (dev_uri, label, version) in hw_versions.items():
+            self.hw_removed_cb(dev_id, dev_uri, label, version)
+
+        ioloop.IOLoop.instance().call_later(2, self.restart_if_crashed)
 
     def set_initialized(self):
         print("control-chain initialized")
@@ -188,7 +195,7 @@ class ControlChainDeviceListener(object):
         def dev_desc_cb(dev):
             dev_uri = dev['uri']
 
-            if " " in dev_uri:
+            if " " in dev_uri or "<" in dev_uri or ">" in dev_uri:
                 print("WARNING: Control Chain device URI '%s' is invalid" % dev_uri)
                 callback()
                 return
