@@ -234,26 +234,26 @@ class Addressings(object):
         # HMI
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
-                msg_callback("hw_map %s%s %s %s %s %f %f %d" % (iprefix,
+                msg_callback("hw_map %s%s %s %s %f %f %d %s" % (iprefix,
                                                                 instances[addr['instance_id']],
                                                                 addr['port'],
                                                                 uri,
-                                                                addr['label'].replace(" ","_"),
                                                                 addr['minimum'],
                                                                 addr['maximum'],
-                                                                addr['steps']))
+                                                                addr['steps'],
+                                                                addr['label'].replace(" ","_")))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
             for addr in addrs:
-                msg_callback("hw_map %s%s %s %s %s %f %f %d" % (iprefix,
+                msg_callback("hw_map %s%s %s %s %f %f %d %s" % (iprefix,
                                                                 instances[addr['instance_id']],
                                                                 addr['port'],
                                                                 uri,
-                                                                addr['label'].replace(" ","_"),
                                                                 addr['minimum'],
                                                                 addr['maximum'],
-                                                                addr['steps']))
+                                                                addr['steps'],
+                                                                addr['label'].replace(" ","_")))
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():

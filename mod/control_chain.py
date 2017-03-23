@@ -186,8 +186,7 @@ class ControlChainDeviceListener(object):
 
     def send_device_descriptor(self, dev_id, callback):
         def dev_desc_cb(dev):
-            dev_label = symbolify(dev['label'])
-            dev_uri   = dev['uri']
+            dev_uri = dev['uri']
 
             if " " in dev_uri:
                 print("WARNING: Control Chain device URI '%s' is invalid" % dev_uri)
@@ -200,8 +199,13 @@ class ControlChainDeviceListener(object):
                 if _dev_uri == dev_uri:
                     dev_unique_id += 1
 
-            self.hw_added_cb(dev_id, dev_uri, dev_label, dev['version'])
-            self.hw_versions[dev_id] = (dev_uri, dev_label, dev['version'])
+            if dev_unique_id != 0:
+                dev_label_suffix = " " + str(dev_unique_id+1)
+            else:
+                dev_label_suffix = ""
+
+            self.hw_added_cb(dev_id, dev_uri, dev['label'], dev['version'])
+            self.hw_versions[dev_id] = (dev_uri, dev['label'], dev['version'])
 
             for actuator in dev['actuators']:
                 modes_int = actuator['supported_modes']
@@ -221,7 +225,7 @@ class ControlChainDeviceListener(object):
 
                 metadata = {
                     'uri'  : "%s:%i:%i" % (dev_uri, dev_unique_id, actuator['id']),
-                    'name' : "%s:%s" % (dev['label'], actuator['name']),
+                    'name' : "%s%s:%s" % (dev['label'], dev_label_suffix, actuator['name']),
                     'modes': modes_str,
                     'steps': [],
                     'max_assigns': actuator['max_assignments']

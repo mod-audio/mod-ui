@@ -133,10 +133,10 @@ $('document').ready(function() {
             var instance = data[1]
             var symbol   = data[2]
             var actuator = data[3]
-            var label    = data[4].replace(/_/g," ")
-            var minimum  = parseFloat(data[5])
-            var maximum  = parseFloat(data[6])
-            var steps    = parseInt(data[7])
+            var minimum  = parseFloat(data[4])
+            var maximum  = parseFloat(data[5])
+            var steps    = parseInt(data[6])
+            var label    = data[7].replace(/_/g," ")
 
             if (data.length > 8) {
                 console.log("FIXME: received hw_map with spaces:", data)
@@ -281,7 +281,7 @@ $('document').ready(function() {
             var type     = data[2]
             var isOutput = parseInt(data[3]) == 0 // reversed
             var name     = data[4].replace(/_/g," ")
-            var index    = parseInt(data[5])
+            var index    = parseInt(data[data.length-1])
 
             if (data.length > 6) {
                 console.log("FIXME: received add_hw_port with spaces:", data)
@@ -321,16 +321,26 @@ $('document').ready(function() {
 
         if (cmd == "hw_add") {
             var dev_uri = data[1]
-            var label   = data[2]
-            var version = data[3]
+            var label   = data[2].replace(/_/g," ")
+            var version = data[data.length-1]
+
+            if (data.length > 4) {
+                console.log("FIXME: received hw_add with spaces:", data)
+            }
+
             desktop.hardwareDeviceAdded(dev_uri, label, version)
             return
         }
 
         if (cmd == "hw_rem") {
             var dev_uri = data[1]
-            var label   = data[2]
-            var version = data[3]
+            var label   = data[2].replace(/_/g," ")
+            var version = data[data.length-1]
+
+            if (data.length > 4) {
+                console.log("FIXME: received hw_rem with spaces:", data)
+            }
+
             desktop.hardwareDeviceRemoved(dev_uri, label, version)
             return
         }
