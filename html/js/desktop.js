@@ -448,31 +448,74 @@ function Desktop(elements) {
 
     this.hardwareDeviceAdded = function (dev_uri, label, version) {
         if (! self.loadingPeldaboardForFirstTime) {
-            new Notification('info', 'New device connected: ' + label + ' v' + version, 4000)
+            new Notification('info', 'New Control Chain device connected:<br/>' + label + ' v' + version, 5000)
         }
 
         self.checkHardwareDeviceVersion(dev_uri, label, version)
 
-        self.connectedDevices.push((dev_uri, label, version))
+        var item = [dev_uri, label, version]
+        self.connectedDevices.push(item)
         self.hardwareDevicesUpdated()
     }
 
     this.hardwareDeviceRemoved = function (dev_uri, label, version) {
         if (! self.loadingPeldaboardForFirstTime) {
-            new Notification('info', 'Device disconnected: ' + label, 4000)
+            new Notification('info', 'Control Chain device disconnected:<br/>' + label + ' v' + version, 5000)
         }
 
-        remove_from_array(self.connectedDevices, (dev_uri, label, version))
+        var item
+        for (var i in self.connectedDevices) {
+            item = self.connectedDevices[i]
+            if (item[0] == dev_uri && item[1] == label && item[2] == version) {
+                self.connectedDevices.splice(i, 1)
+                break
+            }
+        }
         self.hardwareDevicesUpdated()
     }
 
     this.hardwareDevicesUpdated = function () {
         var count = self.connectedDevices.length
         if (count == 0) {
-            elements.devicesIcon.statusTooltip('message', "No Control Chain devices connected", true)
+            elements.devicesIcon
+            .removeClass('ico_cpu')
+            .removeClass('ico_faders')
+            .removeClass('ico_knob')
+            .removeClass('ico_switch')
+            .statusTooltip('message', "No Control Chain devices connected", true)
+
+        } else if (count == 1) {
+            var icoclass, msg
+
+            // set icon depending on label
+            switch (self.connectedDevices[0][0]) {
+            case "https://github.com/moddevices/cc-fw-footswitch":
+                icoclass = 'ico_switch'
+                msg = "1 MOD Footswitch connected"
+                break
+            default:
+                icoclass = 'ico_cpu'
+                msg = "1 Control Chain device connected"
+                break
+            }
+
+            elements.devicesIcon
+            .removeClass('ico_cpu')
+            .removeClass('ico_faders')
+            .removeClass('ico_knob')
+            .removeClass('ico_switch')
+            .addClass(icoclass)
+            .statusTooltip('message', msg, true)
+
         } else {
-            var msg = sprintf("%d Control Chain device%s connected", count, (count > 1 ? "s" : ""))
-            elements.devicesIcon.statusTooltip('message', msg, true)
+            var msg = sprintf("%d Control Chain devices connected", count)
+            elements.devicesIcon
+            .removeClass('ico_cpu')
+            .removeClass('ico_faders')
+            .removeClass('ico_knob')
+            .removeClass('ico_switch')
+            .addClass('ico_faders')
+            .statusTooltip('message', msg, true)
         }
     }
 
@@ -497,6 +540,7 @@ function Desktop(elements) {
                         console.log("Notice: failed to get latest device version")
                         return
                     }
+                    // FIXME: must be v1
                     if (resp.api_version != 0) {
                         return
                     }
