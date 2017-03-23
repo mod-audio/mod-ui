@@ -190,17 +190,6 @@ function Desktop(elements) {
         }
     })
 
-    this.ccDeviceUpdateWindow = new ControlChainDeviceUpdateWindow({
-        updateInfoWindow: elements.updateDeviceWindow,
-    })
-
-    this.ccDeviceUpdateFinished = function () {
-        elements.upgradeWindow.upgradeWindow('setUpdated')
-        elements.upgradeWindow.hide()
-        self.ccDeviceUpdateWindow.hide()
-        new Notification("info", "Control-Chain device firmware is now updated!")
-    }
-
     this.isApp = false
     this.title = ''
     this.cloudAccessToken = null
@@ -442,81 +431,24 @@ function Desktop(elements) {
     }
 
     elements.devicesIcon.statusTooltip()
-    elements.devicesIcon.statusTooltip('message', "No Control Chain devices connected", true)
-
-    this.connectedDevices = []
-
-    this.hardwareDeviceAdded = function (dev_uri, label, version) {
-        if (! self.loadingPeldaboardForFirstTime) {
-            new Notification('info', 'New Control Chain device connected:<br/>' + label + ' v' + version, 5000)
-        }
-
-        self.checkHardwareDeviceVersion(dev_uri, label, version)
-
-        var item = [dev_uri, label, version]
-        self.connectedDevices.push(item)
-        self.hardwareDevicesUpdated()
-    }
-
-    this.hardwareDeviceRemoved = function (dev_uri, label, version) {
-        if (! self.loadingPeldaboardForFirstTime) {
-            new Notification('info', 'Control Chain device disconnected:<br/>' + label + ' v' + version, 5000)
-        }
-
-        var item
-        for (var i in self.connectedDevices) {
-            item = self.connectedDevices[i]
-            if (item[0] == dev_uri && item[1] == label && item[2] == version) {
-                self.connectedDevices.splice(i, 1)
-                break
+    this.ccDeviceManager = new ControlChainDeviceManager({
+        devicesIcon: elements.devicesIcon,
+        updateInfoWindow: elements.updateDeviceWindow,
+        setIconTooltip: function (msg) {
+            elements.devicesIcon.statusTooltip('message', msg, true)
+        },
+        showNotification: function (msg) {
+            if (! self.loadingPeldaboardForFirstTime) {
+                new Notification('info', msg, 5000)
             }
-        }
-        self.hardwareDevicesUpdated()
-    }
+        },
+    })
 
-    this.hardwareDevicesUpdated = function () {
-        var count = self.connectedDevices.length
-        if (count == 0) {
-            elements.devicesIcon
-            .removeClass('ico_cpu')
-            .removeClass('ico_faders')
-            .removeClass('ico_knob')
-            .removeClass('ico_switch')
-            .statusTooltip('message', "No Control Chain devices connected", true)
-
-        } else if (count == 1) {
-            var icoclass, msg
-
-            // set icon depending on label
-            switch (self.connectedDevices[0][0]) {
-            case "https://github.com/moddevices/cc-fw-footswitch":
-                icoclass = 'ico_switch'
-                msg = "1 MOD Footswitch connected"
-                break
-            default:
-                icoclass = 'ico_cpu'
-                msg = "1 Control Chain device connected"
-                break
-            }
-
-            elements.devicesIcon
-            .removeClass('ico_cpu')
-            .removeClass('ico_faders')
-            .removeClass('ico_knob')
-            .removeClass('ico_switch')
-            .addClass(icoclass)
-            .statusTooltip('message', msg, true)
-
-        } else {
-            var msg = sprintf("%d Control Chain devices connected", count)
-            elements.devicesIcon
-            .removeClass('ico_cpu')
-            .removeClass('ico_faders')
-            .removeClass('ico_knob')
-            .removeClass('ico_switch')
-            .addClass('ico_faders')
-            .statusTooltip('message', msg, true)
-        }
+    this.ccDeviceUpdateFinished = function () {
+        elements.upgradeWindow.upgradeWindow('setUpdated')
+        elements.upgradeWindow.hide()
+        self.ccDeviceManager.hideUpdateWindow()
+        new Notification("info", "Control-Chain device firmware is now updated!")
     }
 
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {
@@ -1185,7 +1117,7 @@ function Desktop(elements) {
             })
         },
         startDeviceUpgrade: function () {
-            self.ccDeviceUpdateWindow.show()
+            self.ccDeviceManager.showUpdateWindow()
         },
     })
 

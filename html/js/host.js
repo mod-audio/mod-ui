@@ -328,7 +328,8 @@ $('document').ready(function() {
                 console.log("FIXME: received hw_add with spaces:", data)
             }
 
-            desktop.hardwareDeviceAdded(dev_uri, label, version)
+            desktop.ccDeviceManager.deviceAdded(dev_uri, label, version)
+            desktop.checkHardwareDeviceVersion(dev_uri, label, version)
             return
         }
 
@@ -341,7 +342,7 @@ $('document').ready(function() {
                 console.log("FIXME: received hw_rem with spaces:", data)
             }
 
-            desktop.hardwareDeviceRemoved(dev_uri, label, version)
+            desktop.ccDeviceManager.deviceRemoved(dev_uri, label, version)
             return
         }
 
