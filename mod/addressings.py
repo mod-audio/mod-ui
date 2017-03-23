@@ -238,7 +238,7 @@ class Addressings(object):
                                                                 instances[addr['instance_id']],
                                                                 addr['port'],
                                                                 uri,
-                                                                addr['label'],
+                                                                addr['label'].replace(" ","_"),
                                                                 addr['minimum'],
                                                                 addr['maximum'],
                                                                 addr['steps']))
@@ -250,7 +250,7 @@ class Addressings(object):
                                                                 instances[addr['instance_id']],
                                                                 addr['port'],
                                                                 uri,
-                                                                addr['label'],
+                                                                addr['label'].replace(" ","_"),
                                                                 addr['minimum'],
                                                                 addr['maximum'],
                                                                 addr['steps']))

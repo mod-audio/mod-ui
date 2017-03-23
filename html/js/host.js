@@ -133,7 +133,7 @@ $('document').ready(function() {
             var instance = data[1]
             var symbol   = data[2]
             var actuator = data[3]
-            var label    = data[4]
+            var label    = data[4].replace(/_/g," ")
             var minimum  = parseFloat(data[5])
             var maximum  = parseFloat(data[6])
             var steps    = parseInt(data[7])
