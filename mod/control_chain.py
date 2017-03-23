@@ -204,8 +204,8 @@ class ControlChainDeviceListener(object):
             else:
                 dev_label_suffix = ""
 
-            self.hw_added_cb(dev_id, dev_uri, dev['label'], dev['version'])
-            self.hw_versions[dev_id] = (dev_uri, dev['label'], dev['version'])
+            self.hw_added_cb(dev_id, dev_uri, dev['label']+dev_label_suffix, dev['version'])
+            self.hw_versions[dev_id] = (dev_uri, dev['label']+dev_label_suffix, dev['version'])
 
             for actuator in dev['actuators']:
                 modes_int = actuator['supported_modes']

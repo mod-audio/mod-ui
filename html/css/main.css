@@ -7142,6 +7142,7 @@ header#pedalboard-actions {
   right: 14px;
   width: 0;
 }
+#mod-devices-window,
 #mod-upgrade {
   background: white;
   color: black;
@@ -7155,11 +7156,13 @@ header#pedalboard-actions {
   bottom: 50px;
   z-index: 100;
 }
+#mod-devices-window .progressbar-wrapper,
 #mod-upgrade .progressbar-wrapper {
   border: 1px solid #444444;
   height: 20px;
   width: 330px;
 }
+#mod-devices-window .progressbar,
 #mod-upgrade .progressbar {
   background-color: #8888ff;
   height: 20px;

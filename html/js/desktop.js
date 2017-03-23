@@ -55,6 +55,7 @@ function Desktop(elements) {
         shareWindow: $('<div>'),
         presetSaveBox: $('<div>'),
         devicesIcon: $('<div>'),
+        devicesWindow: $('<div>'),
         statusIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
@@ -433,6 +434,7 @@ function Desktop(elements) {
     elements.devicesIcon.statusTooltip()
     this.ccDeviceManager = new ControlChainDeviceManager({
         devicesIcon: elements.devicesIcon,
+        devicesWindow: elements.devicesWindow,
         updateInfoWindow: elements.updateDeviceWindow,
         setIconTooltip: function (msg) {
             elements.devicesIcon.statusTooltip('message', msg, true)
