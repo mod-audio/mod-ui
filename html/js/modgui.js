@@ -48,7 +48,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             effect.gui.iconTemplate = loadedIcons[plughash]
         } else {
             iconLoaded = false
-            var iconUrl = baseUrl + '/effect/file/iconTemplate?uri=' + escapeduri + '&v=' + version
+            var iconUrl = baseUrl + '/effect/file/iconTemplate?uri='+escapeduri+'&v='+version+'&r='+VERSION
             $.get(iconUrl, function (data) {
                 effect.gui.iconTemplate = loadedIcons[plughash] = data
                 iconLoaded = true
@@ -62,7 +62,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             effect.gui.settingsTemplate = loadedSettings[plughash]
         } else {
             settingsLoaded = false
-            var settingsUrl = baseUrl + '/effect/file/settingsTemplate?uri=' + escapeduri + '&v=' + version
+            var settingsUrl = baseUrl + '/effect/file/settingsTemplate?uri='+escapeduri+'&v='+version+'&r='+VERSION
             $.get(settingsUrl, function (data) {
                 effect.gui.settingsTemplate = loadedSettings[plughash] = data
                 settingsLoaded = true
@@ -73,7 +73,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
 
     if (effect.gui.stylesheet && !loadedCSSs[plughash]) {
         cssLoaded = false
-        var cssUrl = baseUrl + '/effect/file/stylesheet?uri=' + escapeduri + '&v=' + version
+        var cssUrl = baseUrl + '/effect/file/stylesheet?uri='+escapeduri+'&v='+version+'&r='+VERSION
         $.get(cssUrl, function (data) {
               data = Mustache.render(data, {
                          ns : '?uri=' + escapeduri + '&v=' + version,
@@ -91,7 +91,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             gui.jsCallback = loadedJSs[plughash]
         } else {
             jsLoaded = false
-            var jsUrl = baseUrl + '/effect/file/javascript?uri=' + escapeduri + '&v=' + version
+            var jsUrl = baseUrl+'/effect/file/javascript?uri='+escapeduri+'&v='+version+'&r='+VERSION
             $.ajax({
                 url: jsUrl,
                 success: function (code) {
@@ -111,7 +111,6 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
                     jsLoaded = true
                     cb()
                 },
-                cache: false,
             })
         }
     }

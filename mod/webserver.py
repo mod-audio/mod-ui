@@ -194,10 +194,10 @@ class TimelessRequestHandler(web.RequestHandler):
     def set_default_headers(self):
         self._headers.pop("Date")
 
-class TimelessStaticFileHandler(web.StaticFileHandler):
-    def compute_etag(self):
-        return None
+    def should_return_304(self):
+        return False
 
+class TimelessStaticFileHandler(web.StaticFileHandler):
     def get_cache_time(self, path, modified, mime_type):
         return 0
 
@@ -209,6 +209,9 @@ class TimelessStaticFileHandler(web.StaticFileHandler):
 
     def set_extra_headers(self, path):
         self.set_header("Cache-Control", "public, max-age=31536000")
+
+    def should_return_304(self):
+        return self.check_etag_header()
 
 class JsonRequestHandler(TimelessRequestHandler):
     def write(self, data):
