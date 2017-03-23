@@ -33,8 +33,9 @@ function MidiPortsWindow(options) {
 
         $.each(options.midiPortsList.find('input'), function (index, input) {
             var input = $(input)
-            if (input.is(':checked'))
+            if (input.is(':checked')) {
                 devs.push(input.val())
+            }
         })
 
         self.selectDevices(devs)
@@ -48,8 +49,9 @@ function MidiPortsWindow(options) {
         options.midiPortsList.find('span').remove()
 
         self.getDeviceList(function (devsInUse, devList, names) {
-            if (devList.length == 0)
+            if (devList.length == 0) {
                 return new Notification("info", "No MIDI devices available")
+            }
 
             // add new ones
             for (var i in devList) {

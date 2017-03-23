@@ -270,8 +270,9 @@ function GUI(effect, options) {
     }
 
     this.setPortValue = function (symbol, value, source) {
-        if (isNaN(value))
+        if (isNaN(value)) {
             throw "Invalid NaN value for " + symbol
+        }
         var port = self.controls[symbol]
         var mod_port = source ? source.attr("mod-port") : (self.instance ? self.instance+'/'+symbol : symbol)
         if (!port.enabled || port.value == value)
@@ -307,8 +308,9 @@ function GUI(effect, options) {
 
         for (var i in port.valueFields) {
             label = sprintf(port.format, value)
-            if (port.scalePointsIndex && port.scalePointsIndex[label])
+            if (port.scalePointsIndex && port.scalePointsIndex[label]) {
                 label = port.scalePointsIndex[label].label
+            }
 
             valueField = port.valueFields[i]
             valueField.data('value', value)
@@ -437,10 +439,11 @@ function GUI(effect, options) {
         self.instance = instance
 
         var render = function () {
-            if (instance)
+            if (instance) {
                 self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
-            else
+            } else {
                 self.icon = $('<div class="mod-pedal">')
+            }
 
             var templateData = self.getTemplateData(effect, skipNamespace)
             self.icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate, templateData))
@@ -467,10 +470,11 @@ function GUI(effect, options) {
                 options.presetLoad(value)
             })
 
-            if (instance)
+            if (instance) {
                 self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
-            else
+            } else {
                 self.settings = $('<div class="mod-settings">')
+            }
 
             // split presets, factory vs user
             var preset, presets = {
@@ -809,19 +813,24 @@ function GUI(effect, options) {
                             return false
                         }
                         // numbers
-                        if (e.keyCode >= 48 && e.keyCode <= 57)
+                        if (e.keyCode >= 48 && e.keyCode <= 57) {
                             return true;
-                        if (e.keyCode >= 96 && e.keyCode <= 105)
+                        }
+                        if (e.keyCode >= 96 && e.keyCode <= 105) {
                             return true;
+                        }
                         // backspace and delete
-                        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110)
+                        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110) {
                             return true;
+                        }
                         // left, right, dot
-                        if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190)
+                        if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190) {
                             return true;
+                        }
                         // minus
-                        if (e.keyCode == 109 || e.keyCode == 189)
+                        if (e.keyCode == 109 || e.keyCode == 189) {
                             return true;
+                        }
                         // prevent key
                         e.preventDefault();
                         return false
@@ -912,8 +921,9 @@ function GUI(effect, options) {
             self.setPortWidgetsValue(':bypass', onlySetValues ? 0 : (self.bypassed ? 1 : 0), $(this), true)
         })
 
-        if (onlySetValues)
+        if (onlySetValues) {
             return
+        }
 
         element.find('[mod-role=input-control-minimum]').each(function () {
             var symbol = $(this).attr('mod-port-symbol')
@@ -922,14 +932,16 @@ function GUI(effect, options) {
                 return
             }
             var port = self.controls[symbol]
-            if (! port)
+            if (! port) {
                 return
+            }
 
             var format, value
-            if (port.units.render)
+            if (port.units.render) {
                 format = port.units.render
-            else
+            } else {
                 format = '%f'
+            }
 
             if (port.properties.indexOf("integer") >= 0) {
                 format = format.replace(/%\.\d+f/, '%d')
@@ -952,14 +964,16 @@ function GUI(effect, options) {
                 return
             }
             var port = self.controls[symbol]
-            if (! port)
+            if (! port) {
                 return
+            }
 
             var format, value
-            if (port.units.render)
+            if (port.units.render) {
                 format = port.units.render
-            else
+            } else {
                 format = '%f'
+            }
 
             if (port.properties.indexOf("integer") >= 0) {
                 format = format.replace(/%\.\d+f/, '%d')
@@ -1000,8 +1014,9 @@ function GUI(effect, options) {
         element[0].addEventListener('gesturechange', function (ev) {
             ev.preventDefault()
             var widget = element.data('gestureWidget')
-            if (!widget)
+            if (!widget) {
                 return
+            }
             widget.controlWidget('gestureChange', ev.scale)
             ev.handled = true
         })
@@ -1027,20 +1042,27 @@ function GUI(effect, options) {
         }
 
         // fill fields that might not be present on modgui data
-        if (!data.brand)
+        if (!data.brand) {
             data.brand = options.gui.brand || ""
-        if (!data.label)
+        }
+        if (!data.label) {
             data.label = options.gui.label || ""
-        if (!data.color)
+        }
+        if (!data.color) {
             data.color = options.gui.color
-        if (!data.knob)
+        }
+        if (!data.knob) {
             data.knob = options.gui.knob
-        if (!data.model)
+        }
+        if (!data.model) {
             data.model = options.gui.model
-        if (!data.panel)
+        }
+        if (!data.panel) {
             data.panel = options.gui.panel
-        if (!data.controls)
+        }
+        if (!data.controls) {
             data.controls = options.gui.ports || {}
+        }
 
         // insert comment and scalePoints into controls
         for (var i in data.controls)
@@ -1186,8 +1208,9 @@ var baseWidget = {
             portSteps = self.data('filmSteps')
         }
 
-        if (port.rangeSteps)
+        if (port.rangeSteps) {
             portSteps = Math.min(port.rangeSteps, portSteps)
+        }
 
         // This is a bit verbose and could be optmized, but it's better that
         // each port property used is documented here
@@ -1244,19 +1267,23 @@ var baseWidget = {
         var portSteps = self.data('portSteps')
 
         var value = min + steps * (max - min) / (portSteps - 1)
-        if (self.data('logarithmic'))
+        if (self.data('logarithmic')) {
             value = Math.pow(2, value)
+        }
 
-        if (self.data('integer'))
+        if (self.data('integer')) {
             value = Math.round(value)
+        }
 
-        if (self.data('enumeration'))
+        if (self.data('enumeration')) {
             value = self.data('scalePoints')[steps].value
+        }
 
-        if (value < self.data('minimum'))
+        if (value < self.data('minimum')) {
             value = self.data('minimum')
-        else if (value > self.data('maximum'))
+        } else if (value > self.data('maximum')) {
             value = self.data('maximum')
+        }
 
         return value
     },
@@ -1270,10 +1297,12 @@ var baseWidget = {
             if (value <= points[0].value)
                 return 0
             for (var step = 0; step < points.length; step++) {
-                if (points[step + 1] == null)
+                if (points[step + 1] == null) {
                     return step
-                if (value < points[step].value + (points[step + 1].value - points[step].value) / 2)
+                }
+                if (value < points[step].value + (points[step + 1].value - points[step].value) / 2) {
                     return step
+                }
             }
         }
 
@@ -1281,19 +1310,22 @@ var baseWidget = {
         var min = self.data('scaleMinimum')
         var max = self.data('scaleMaximum')
 
-        if (self.data('logarithmic'))
+        if (self.data('logarithmic')) {
             value = Math.log(value) / Math.log(2)
+        }
 
-        if (self.data('integer'))
+        if (self.data('integer')) {
             value = Math.round(value)
+        }
 
         return parseInt((value - min) * (portSteps - 1) / (max - min))
     },
 
     prevent: function (e) {
         var self = $(this)
-        if (self.data('prevent'))
+        if (self.data('prevent')) {
             return
+        }
         self.data('prevent', true)
         var img = $('<img>').attr('src', 'img/icn-blocked.png')
         $('body').append(img)
@@ -1328,8 +1360,9 @@ JqueryClass('film', baseWidget, {
         })
 
         var moveHandler = function (e) {
-            if (!self.data('enabled'))
+            if (!self.data('enabled')) {
                 return
+            }
             self.film('mouseMove', e)
         }
 
@@ -1341,8 +1374,9 @@ JqueryClass('film', baseWidget, {
 
         self.mousedown(function (e) {
             e.preventDefault();
-            if (!self.data('enabled'))
+            if (!self.data('enabled')) {
                 return self.film('prevent', e)
+            }
             if (e.which == 1) { // left button
                 self.film('mouseDown', e)
                 $(document).bind('mouseup', upHandler)
@@ -1353,14 +1387,16 @@ JqueryClass('film', baseWidget, {
 
         self.data('wheelBuffer', 0)
         self.bind('mousewheel', function (e) {
-            if (!self.data('enabled'))
+            if (!self.data('enabled')) {
                 return self.film('prevent', e)
+            }
             self.film('mouseWheel', e)
         })
 
         self.click(function (e) {
-            if (!self.data('enabled'))
+            if (!self.data('enabled')) {
                 return self.film('prevent', e)
+            }
             if (self.data('dragged')) {
                 /* If we get a click after dragging the knob, ignore the click.
                    This happens when the user releases the mouse while hovering the knob.
@@ -1382,8 +1418,9 @@ JqueryClass('film', baseWidget, {
         } else {
             self.data('initvalue', value)
         }
-        if (!only_gui)
+        if (!only_gui) {
             self.trigger('valuechange', value)
+        }
     },
 
     getAndSetSize: function (dummy, callback) {
@@ -1392,8 +1429,9 @@ JqueryClass('film', baseWidget, {
         var handled = false
 
         function tryGetAndSetSizeNow() {
-            if (dummy && ! self.is(":visible"))
+            if (dummy && ! self.is(":visible")) {
                 return
+            }
             if (self.data('initialized') || handled) {
                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
                 return
@@ -1458,10 +1496,12 @@ JqueryClass('film', baseWidget, {
         var hdiff = e.pageX - self.data('lastX')
         hdiff = parseInt(hdiff / self.data('dragPrecisionHorizontal'))
 
-        if (Math.abs(vdiff) > 0)
+        if (Math.abs(vdiff) > 0) {
             self.data('lastY', e.pageY)
-        if (Math.abs(hdiff) > 0)
+        }
+        if (Math.abs(hdiff) > 0) {
             self.data('lastX', e.pageX)
+        }
 
         var position = self.data('position')
 
@@ -1485,19 +1525,21 @@ JqueryClass('film', baseWidget, {
             // going down
             position -= 1
             if (position < 0) {
-                if (self.data('enumeration') || self.data('toggled'))
+                if (self.data('enumeration') || self.data('toggled')) {
                     position = filmSteps-1
-                else
+                } else {
                     position = 0
+                }
             }
         } else {
             // going up
             position += 1
             if (position >= filmSteps) {
-                if (self.data('enumeration') || self.data('toggled'))
+                if (self.data('enumeration') || self.data('toggled')) {
                     position = 0
-                else
+                } else {
                     position = filmSteps-1
+                }
             }
         }
 
@@ -1518,8 +1560,9 @@ JqueryClass('film', baseWidget, {
         position += diff
         position = Math.min(self.data("filmSteps"), Math.max(0, position));
         self.data('position', position)
-        if (Math.abs(diff) > 0)
+        if (Math.abs(diff) > 0) {
             self.data('lastY', e.pageY)
+        }
         self.film('setRotation', position)
         var value = self.film('valueFromSteps', position)
         self.trigger('valuechange', value)
@@ -1548,12 +1591,13 @@ JqueryClass('film', baseWidget, {
         var portSteps = self.data('portSteps')
         var rotation
 
-        if (portSteps == 1)
+        if (portSteps == 1) {
         // this is very dummy, a control with only one possible. let's just avoid zero division
         // in this theoric case.
             rotation = Math.round(filmSteps / 2)
-        else if (portSteps != null)
+        } else if (portSteps != null) {
             rotation = steps * parseInt(filmSteps / (portSteps - 1))
+        }
 
         rotation = Math.min(rotation, filmSteps - 1)
         rotation = Math.max(rotation, 0)
@@ -1592,8 +1636,9 @@ JqueryClass('selectWidget', baseWidget, {
     setValue: function (value, only_gui) {
         var self = $(this)
         self.val(value)
-        if (!only_gui)
+        if (!only_gui) {
             self.trigger('valuechange', value)
+        }
     }
 })
 
@@ -1603,8 +1648,9 @@ JqueryClass('switchWidget', baseWidget, {
         self.switchWidget('config', options)
         self.switchWidget('setValue', options.port.ranges.default, true)
         self.click(function (e) {
-            if (!self.data('enabled'))
+            if (!self.data('enabled')) {
                 return self.switchWidget('prevent', e)
+            }
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
             self.switchWidget('setValue', nextValue, false)
         })
@@ -1620,8 +1666,9 @@ JqueryClass('switchWidget', baseWidget, {
             self.addClass('on').removeClass('off')
         }
 
-        if (!only_gui)
+        if (!only_gui) {
             self.trigger('valuechange', value)
+        }
     }
 })
 
@@ -1633,8 +1680,9 @@ JqueryClass('bypassWidget', baseWidget, {
         self.bypassWidget('config', options)
         self.bypassWidget('setValue', options.port.ranges.default, true)
         self.click(function (e) {
-            if (!self.data('enabled'))
+            if (!self.data('enabled')) {
                 return self.bypassWidget('prevent', e)
+            }
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
             self.bypassWidget('setValue', nextValue, false)
         })
@@ -1645,13 +1693,15 @@ JqueryClass('bypassWidget', baseWidget, {
         self.data('value', value)
         self.data('changeLights')(value)
 
-        if (value)
+        if (value) {
             self.addClass('on').removeClass('off')
-        else
+        } else {
             self.addClass('off').removeClass('on')
+        }
 
-        if (!only_gui)
+        if (!only_gui) {
             self.trigger('valuechange', value)
+        }
     },
 })
 
@@ -1663,8 +1713,9 @@ JqueryClass('customSelect', baseWidget, {
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
             opt.click(function (e) {
-                if (!self.data('enabled'))
+                if (!self.data('enabled')) {
                     return self.customSelect('prevent', e)
+                }
                 var value = opt.attr('mod-port-value')
                 self.customSelect('setValue', value, false)
             })
@@ -1690,7 +1741,8 @@ JqueryClass('customSelect', baseWidget, {
             valueField.text(selected.text())
         }
 
-        if (!only_gui)
+        if (!only_gui) {
             self.trigger('valuechange', value)
+        }
     }
 })
