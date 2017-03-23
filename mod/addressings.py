@@ -214,7 +214,7 @@ class Addressings(object):
                 msg_callback("hw_map %s %s %s %s %f %f %d" % (instances[addr['instance_id']],
                                                               addr['port'],
                                                               uri,
-                                                              addr['label'],
+                                                              addr['label'].replace(" ","_"),
                                                               addr['minimum'],
                                                               addr['maximum'],
                                                               addr['steps']))
@@ -225,7 +225,7 @@ class Addressings(object):
                 msg_callback("hw_map %s %s %s %s %f %f %d" % (instances[addr['instance_id']],
                                                               addr['port'],
                                                               uri,
-                                                              addr['label'],
+                                                              addr['label'].replace(" ","_"),
                                                               addr['minimum'],
                                                               addr['maximum'],
                                                               addr['steps']))
