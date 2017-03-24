@@ -7148,8 +7148,6 @@ header#pedalboard-actions {
   color: black;
   font-size: 15px;
   max-height: 350px;
-  max-width: 450px;
-  min-width: 350px;
   overflow: auto;
   position: absolute;
   right: 10px;
@@ -7166,6 +7164,14 @@ header#pedalboard-actions {
 #mod-upgrade .progressbar {
   background-color: #8888ff;
   height: 20px;
+}
+#mod-devices-window {
+  max-width: 600px;
+  min-width: 500px;
+}
+#mod-upgrade {
+  max-width: 450px;
+  min-width: 350px;
 }
 #plugins-library {
   bottom: 45px;
