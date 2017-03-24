@@ -20,7 +20,7 @@
     z-index: 100;
 }
 
-/* = ACTIONS - Icons above:settings, remove, etc
+/* = ACTIONS - Icons above: settings, remove, etc
 ================================================ */
 .mod-pedal .mod-actions {
     position:absolute;
@@ -45,7 +45,8 @@
     font-family: fontello !important;
     cursor: pointer;
     position: absolute;
-    right: 0px;
+    width: 32px;
+    right: 0em;
     color: #666;
     transition: color 0.33s;
 }
@@ -53,6 +54,19 @@
     content: '\e801';
 }
 .mod-pedal .mod-actions .mod-remove:hover { color: #eee; }
+.mod-pedal .mod-actions .mod-information {
+    font-family: fontello !important;
+    cursor: pointer;
+    position: absolute;
+    width: 32px;
+    right: 3em;
+    color: #666;
+    transition: color 0.33s;
+}
+.mod-information:after {
+    content: '\e802';
+}
+.mod-pedal .mod-actions .mod-information:hover { color: #eee; }
 
 /* = DRAG HANDLE
 ================================================ */

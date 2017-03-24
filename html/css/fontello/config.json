@@ -17,6 +17,12 @@
       "css": "trash",
       "code": 59393,
       "src": "modernpics"
+    },
+    {
+      "uid": "e82cedfa1d5f15b00c5a81c9bd731ea2",
+      "css": "info",
+      "code": 59394,
+      "src": "fontawesome"
     }
   ]
 }

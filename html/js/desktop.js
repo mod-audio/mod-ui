@@ -1306,6 +1306,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
         getPluginsData: self.getPluginsData,
 
+        showPluginInfo: function (pluginData) {
+            self.effectBox.effectBox('showPluginInfo', pluginData)
+        },
+
         pluginParameterChange: function (port, value) {
             ws.send(sprintf("param_set %s %f", port, value))
         },

@@ -107,6 +107,10 @@ JqueryClass('pedalboard', {
                 callback({})
             },
 
+            // Show dialog with plugin info, same as clicking on the bottom plugin bar
+            showPluginInfo: function (pluginData) {
+            },
+
             // Sets the size of the pedalboard
             windowSize: function (width, height) {},
 
@@ -1348,6 +1352,10 @@ JqueryClass('pedalboard', {
             })
 
             var actions = $('<div>').addClass('mod-actions').appendTo(icon)
+            $('<div>').addClass('mod-information').click(function () {
+                self.data('showPluginInfo')(pluginData)
+                return false
+            }).appendTo(actions)
             $('<div>').addClass('mod-settings').click(function () {
                 settings.window('open')
                 return false
