@@ -6889,20 +6889,7 @@ hr.dotted {
   background-image: url(../img/icons/36/disconnect.png);
 }
 #main-menu #mod-devices {
-  /* FIXME */
-  background-image: url(../img/icons/36/disconnect.png);
-}
-#main-menu #mod-devices.ico_cpu {
-  background-image: url(../img/icons/36/cpu.png);
-}
-#main-menu #mod-devices.ico_faders {
-  background-image: url(../img/icons/36/faders.png);
-}
-#main-menu #mod-devices.ico_knob {
-  background-image: url(../img/icons/36/knob.png);
-}
-#main-menu #mod-devices.ico_switch {
-  background-image: url(../img/icons/36/footswitch.png);
+  background-image: url(../img/icons/36/control-chain.png);
 }
 #cloud_install_all {
   background-image: url(../img/icons/36/save.png);
