@@ -450,7 +450,7 @@ function Desktop(elements) {
         elements.upgradeWindow.upgradeWindow('setUpdated')
         elements.upgradeWindow.hide()
         self.ccDeviceManager.hideUpdateWindow()
-        new Notification("info", "Control-Chain device firmware is now updated!")
+        new Notification("info", "Control Chain device firmware update complete!")
     }
 
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {

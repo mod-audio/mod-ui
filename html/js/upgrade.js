@@ -149,7 +149,7 @@ JqueryClass('upgradeWindow', {
         self.data('updatedata', data)
         self.data('updaterequired', false)
         self.data('updatesystem', false)
-        icon.statusTooltip('message', "A device update is available, click to know details", ignoreUpdate, 8000)
+        icon.statusTooltip('message', "A device update is available, click to learn more", ignoreUpdate, 8000)
         icon.statusTooltip('status', 'update-available')
     },
 
