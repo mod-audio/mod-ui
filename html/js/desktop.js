@@ -1317,6 +1317,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         getPluginsData: self.getPluginsData,
 
         showPluginInfo: function (pluginData) {
+            pluginData.installedVersion = [pluginData.builder,
+                                           pluginData.minorVersion,
+                                           pluginData.microVersion,
+                                           pluginData.release]
             self.effectBox.effectBox('showPluginInfo', pluginData)
         },
 
