@@ -446,6 +446,16 @@ function Desktop(elements) {
         },
     })
 
+    this.ccDeviceAdded = function (dev_uri, label, version) {
+        self.ccDeviceManager.deviceAdded(dev_uri, label, version)
+        self.checkHardwareDeviceVersion(dev_uri, label, version)
+    }
+
+    this.ccDeviceRemoved = function (dev_uri, label, version) {
+        self.ccDeviceManager.deviceRemoved(dev_uri, label, version)
+        elements.upgradeWindow.upgradeWindow('cancelDeviceSetup', dev_uri)
+    }
+
     this.ccDeviceUpdateFinished = function () {
         elements.upgradeWindow.upgradeWindow('setUpdated')
         elements.upgradeWindow.hide()
@@ -474,8 +484,7 @@ function Desktop(elements) {
                         console.log("Notice: failed to get latest device version")
                         return
                     }
-                    // FIXME: must be v1
-                    if (resp.api_version != 0) {
+                    if (resp.api_version != 1) {
                         return
                     }
 
@@ -512,6 +521,7 @@ function Desktop(elements) {
 
         if (compareVersions(version.split("."), cloudversion.split("."), 3) < 0) {
             data = {
+                'uri': dev_uri,
                 'label': label,
                 'download-url': CONTROLCHAIN_URL + "/file/" + label + cloudversion + ".bin",
                 'release-url': "http://wiki.moddevices.com/wiki/ControlChainReleases#" + label + "," + cloudversion

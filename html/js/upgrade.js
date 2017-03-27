@@ -153,6 +153,27 @@ JqueryClass('upgradeWindow', {
         icon.statusTooltip('status', 'update-available')
     },
 
+    cancelDeviceSetup: function (dev_uri) {
+        var self = $(this)
+
+        if (self.data('updatesystem')) {
+            return
+        }
+
+        var data = self.data('updatedata')
+        if (! data) {
+            return
+        }
+
+        var uri = data['uri']
+        if (! uri || uri != dev_uri) {
+            return
+        }
+
+        self.hide()
+        self.upgradeWindow('setUpdated')
+    },
+
     setErrored: function () {
         var self = $(this)
         var icon = self.data('icon')
