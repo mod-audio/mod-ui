@@ -31,8 +31,12 @@
                             <b>Homepage:</b> <a href="{{author.homepage}}" target="_blank">{{author.homepage}}</a><br/>
                         </p>
                         <p class="version">
-                            <span class="js-latest-version">Latest Version: <span class="bold">{{latest_version}}</span><br/></span>
-                            <span class="js-installed-version">Installed Version: <span class="bold">{{installed_version}}</span><br/></span>
+                            <span class="js-latest-version">
+                                Latest Version: <span class="bold">{{latest_version}}</span><br/>
+                            </span>
+                            <span class="js-installed-version">
+                                Installed Version: <span class="bold">{{installed_version}}</span><br/>
+                            </span>
                             <button class="js-install btn btn-info btn-mini">Install</button>
                             <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
                             <button class="js-remove btn btn-danger btn-mini">Remove</button>
@@ -40,8 +44,13 @@
                     </header>
                     <p>{{comment}}</p>
                     {{#pedalboard_href}}
-                    <a target="_blank" href="{{pedalboard_href}}" class="btn btn-info pedalboard-href"><span>See it in action</span></a>
+                    <a target="_blank" href="{{pedalboard_href}}" class="btn btn-info online-button-href">
+                        <span>See it in action</span>
+                    </a>
                     {{/pedalboard_href}}
+                    <a target="_blank" href="{{plugin_href}}" class="btn btn-info online-button-href">
+                        <span>See online</span>
+                    </a>
                     <div class="plugin-controlports">
                         <p><strong>CONTROL PORTS:</strong></p>
                         <table class="plugin-specs table table-bordered">

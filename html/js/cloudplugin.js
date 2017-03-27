@@ -742,6 +742,7 @@ JqueryClass('cloudPluginBox', {
                 label : plugin.label,
                 ports : plugin.ports,
                 demo  : !!plugin.demo, // FIXME
+                plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
 
