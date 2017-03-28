@@ -76,7 +76,7 @@ class ControlChainDeviceListener(object):
             self.set_initialized()
 
     def connection_closed(self):
-        print("control-chain closed")
+        print("Control Chain closed")
         self.socket  = None
         self.crashed = True
         self.set_initialized()
@@ -89,7 +89,7 @@ class ControlChainDeviceListener(object):
         ioloop.IOLoop.instance().call_later(2, self.restart_if_crashed)
 
     def set_initialized(self):
-        print("control-chain initialized")
+        print("Control Chain initialized")
         self.initialized = True
 
         if self.initialized_cb is not None:
@@ -107,7 +107,7 @@ class ControlChainDeviceListener(object):
         try:
             data = json.loads(resp[:-1].decode("utf-8", errors="ignore"))
         except:
-            print("ERROR: control-chain read response failed")
+            print("ERROR: Control Chain read response failed")
         else:
             if data['event'] == "device_status":
                 data   = data['data']
@@ -120,7 +120,7 @@ class ControlChainDeviceListener(object):
                     try:
                         hw_data = self.hw_versions.pop(dev_id)
                     except KeyError:
-                        print("ERROR: control-chain device removed, but not on current list!?", dev_id)
+                        print("ERROR: Control Chain device removed, but not on current list!?", dev_id)
                     else:
                         dev_uri, label, version = hw_data
                         self.hw_removed_cb(dev_id, dev_uri, label, version)
@@ -147,10 +147,10 @@ class ControlChainDeviceListener(object):
                     data = json.loads(resp[:-1].decode("utf-8", errors="ignore"))
                 except:
                     data = None
-                    print("ERROR: control-chain write response failed")
+                    print("ERROR: Control Chain write response failed")
                 else:
                     if data is not None and data['reply'] != request_name:
-                        print("ERROR: control-chain reply name mismatch")
+                        print("ERROR: Control Chain reply name mismatch")
                         data = None
 
                 if data is not None:
