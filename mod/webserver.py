@@ -1049,9 +1049,6 @@ class TemplateHandler(TimelessRequestHandler):
             context = getattr(self, section)()
         except AttributeError:
             context = {}
-        context['cloud_url']  = CLOUD_HTTP_ADDRESS
-        context['bufferSize'] = get_jack_buffer_size()
-        context['sampleRate'] = get_jack_sample_rate()
         self.write(loader.load(path).generate(**context))
 
     def get_version(self):
@@ -1062,8 +1059,6 @@ class TemplateHandler(TimelessRequestHandler):
         return str(int(time.time()))
 
     def index(self):
-        context = {}
-
         user_id = safe_json_load(USER_ID_JSON_FILE, dict)
         prefs   = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
@@ -1102,15 +1097,19 @@ class TemplateHandler(TimelessRequestHandler):
             'user_email': squeeze(user_id.get("email", "").replace("'", "\\'")),
             'favorites': json.dumps(gState.favorites),
             'preferences': json.dumps(prefs),
+            'bufferSize': get_jack_buffer_size(),
+            'sampleRate': get_jack_sample_rate(),
         }
         return context
 
-    def icon(self):
-        return self.index()
-
     def pedalboard(self):
-        context = self.index()
         bundlepath = self.get_argument('bundlepath')
+
+        with open(DEFAULT_ICON_TEMPLATE, 'r') as fh:
+            default_icon_template = squeeze(fh.read().replace("'", "\\'"))
+
+        with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fh:
+            default_settings_template = squeeze(fh.read().replace("'", "\\'"))
 
         try:
             pedalboard = get_pedalboard_info(bundlepath)
@@ -1125,7 +1124,12 @@ class TemplateHandler(TimelessRequestHandler):
                 'hardware': {},
             }
 
-        context['pedalboard'] = b64encode(json.dumps(pedalboard).encode("utf-8"))
+        context = {
+            'default_icon_template': default_icon_template,
+            'default_settings_template': default_settings_template,
+            'pedalboard': b64encode(json.dumps(pedalboard).encode("utf-8"))
+        }
+
         return context
 
 class TemplateLoader(TimelessRequestHandler):
