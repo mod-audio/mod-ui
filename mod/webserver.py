@@ -1132,6 +1132,18 @@ class TemplateHandler(TimelessRequestHandler):
 
         return context
 
+    def settings(self):
+        prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
+
+        context = {
+            'cloud_url': CLOUD_HTTP_ADDRESS,
+            'version': self.get_argument('v'),
+            'preferences': json.dumps(prefs),
+            'bufferSize': get_jack_buffer_size(),
+            'sampleRate': get_jack_sample_rate(),
+        }
+        return context
+
 class TemplateLoader(TimelessRequestHandler):
     def get(self, path):
         self.set_header("Content-Type", "text/plain; charset=UTF-8")
