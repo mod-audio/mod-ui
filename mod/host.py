@@ -1923,7 +1923,10 @@ class Host(object):
                 for pedalpreset in self.pedalboard_presets:
                     if pedalpreset is None:
                         continue
-                    pedalpreset['data'].pop(instance.replace("/graph/","",1))
+                    try:
+                        pedalpreset['data'].pop(instance.replace("/graph/","",1))
+                    except KeyError:
+                        pass
 
             for instance_id in self.plugins_added:
                 for pedalpreset in self.pedalboard_presets:
