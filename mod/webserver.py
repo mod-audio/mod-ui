@@ -298,25 +298,81 @@ class SimpleFileReceiver(JsonRequestHandler):
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
-        uname = os.uname()
+        hwdesc = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+        uname  = os.uname()
+
+        if os.path.exists("/etc/mod-release/system"):
+            with open("/etc/mod-release/system") as fh:
+                sysdate = fh.readline().replace("generated=","").split(" at ",1)[0].strip()
+        else:
+            sysdate = "Unknown"
+
         info = {
-            "hardware": safe_json_load("/etc/mod-hardware-descriptor.json", dict),
-            "env": dict((k, os.environ[k]) for k in [k for k in os.environ.keys() if k.startswith("MOD")]),
+            "hwname": hwdesc.get('name',"Unknown"),
+            "sysdate": sysdate,
             "python": {
-                "argv"    : sys.argv,
-                "path"    : sys.path,
-                "platform": sys.platform,
-                "prefix"  : sys.prefix,
                 "version" : sys.version
             },
             "uname": {
                 "machine": uname.machine,
                 "release": uname.release,
+                "sysname": uname.sysname,
                 "version": uname.version
             }
         }
 
         self.write(info)
+
+class SystemPreferences(JsonRequestHandler):
+    OPTION_NULL          = 0
+    OPTION_FILE_EXISTS   = 1
+    OPTION_FILE_CONTENTS = 2
+
+    def __init__(self, application, request, **kwargs):
+        JsonRequestHandler.__init__(self, application, request, **kwargs)
+
+        self.prefs = []
+
+        self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
+
+        # Optional services
+        self.make_pref("service_midiclock",  self.OPTION_FILE_EXISTS, "/data/enable-midiclock")
+        self.make_pref("service_mixserver",  self.OPTION_FILE_EXISTS, "/data/enable-mixserver")
+        self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
+
+    def make_pref(self, label, otype, data, valtype=None, valdef=None):
+        self.prefs.append({
+            "label": label,
+            "type" : otype,
+            "data" : data,
+            "valtype": valtype,
+            "valdef" : valdef,
+        })
+
+    def get(self):
+        ret = {}
+
+        for pref in self.prefs:
+            print(pref)
+            if pref['type'] == self.OPTION_FILE_EXISTS:
+                val = os.path.exists(pref['data'])
+
+            elif pref['type'] == self.OPTION_FILE_CONTENTS:
+                if os.path.exists(pref['data']):
+                    with open(pref['data']) as fh:
+                        val = fh.read().strip()
+                    try:
+                        val = pref['valtype'](val)
+                    except:
+                        val = pref['valdef']
+                else:
+                    val = pref['valdef']
+            else:
+                pass
+
+            ret[pref['label']] = val
+
+        self.write(ret)
 
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp/os-update"
@@ -1414,6 +1470,7 @@ application = web.Application(
         EffectInstaller.urls('effect/install') +
         [
             (r"/system/info", SystemInfo),
+            (r"/system/prefs", SystemPreferences),
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),

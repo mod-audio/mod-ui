@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<title>MOD Settings</title>
+
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
+
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.ba-resize.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/mustache.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.svg.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/sprintf-0.6.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.mousewheel.min.js?v={{version}}"></script>
+
+<script type="text/javascript">
+    {% autoescape None %}
+    SITEURL = '{{cloud_url}}'
+    VERSION = '{{version}}'
+    var NOTIFICATIONS_ENABLED = true
+    var PREFERENCES = {{preferences}}
+
+    var INFO = {
+        "hwname": "",
+        "sysdate": "",
+        "python": {},
+        "uname": {}
+    }
+
+function refresh_sysinfo() {
+    $.ajax({
+        url: '/system/info',
+        method: 'GET',
+        success: function (info) {
+            INFO = info
+            $("#info-system-unit").text(INFO.hwname)
+            $("#info-system-date").text(INFO.sysdate)
+            $("#info-kernel-machine").text(INFO.uname.machine)
+            $("#info-kernel-release").text(INFO.uname.release)
+            $("#info-kernel-version").text(INFO.uname.version)
+        },
+        cache: false,
+        global: false,
+        dataType: 'json'
+    });
+}
+
+function refresh_sysprefs() {
+    $.ajax({
+        url: '/system/prefs',
+        method: 'GET',
+        success: function (resp) {
+            console.log(resp)
+            if (resp.bluetooth_name != null)
+            {
+                $("#prefs-bluetooth-custom").prop("checked", true)
+                $("#prefs-bluetooth-name").prop("disabled", false).val(resp.bluetooth_name)
+            }
+            else
+            {
+                $("#prefs-bluetooth-custom").prop("checked", false)
+                $("#prefs-bluetooth-name").prop("disabled", true)
+            }
+
+            $("#prefs-service-midiclock").prop("checked", resp.service_midiclock)
+            $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
+            $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
+        },
+        cache: false,
+        global: false,
+        dataType: 'json'
+    });
+}
+
+$('document').ready(function() {
+    var cached_cpuLoad
+
+    var ws = new WebSocket("ws://" + window.location.host + "/websocket")
+
+    ws.onclose = function (evt) {
+    }
+
+    ws.onmessage = function (evt) {
+        var data = evt.data.split(" ")
+
+        if (!data.length) {
+            return
+        }
+
+        var cmd = data[0]
+
+        if (cmd == "stats") {
+            var cpuLoad = parseFloat(data[1])
+
+            if (cpuLoad != cached_cpuLoad) {
+                cached_cpuLoad = cpuLoad
+                $("#info-dsp-load").text(""+cpuLoad.toString()+"%")
+            }
+            return
+        }
+
+        if (cmd == "ping") {
+            ws.send("pong")
+            return
+        }
+
+        if (cmd == "mem_load") {
+            var value = parseFloat(data[1])
+            /*
+            $("#ram-bar").css("width", (100.0-value).toFixed().toString()+"%")
+            $("#ram-bar-text").text("RAM "+value.toString()+"%")*/
+            return
+        }
+    }
+
+    refresh_sysinfo()
+    refresh_sysprefs()
+
+    $("#prefs-bluetooth-custom").click(function (e) {
+        console.log("clicked")
+        var on = $(this)
+    })
+
+    $("#prefs-bluetooth-name").prop("disabled", true)
+
+    $("#prefs-service-midiclock").prop("checked", resp.service_midiclock)
+    $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
+    $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
+
+    // start code for ajax loading bar
+
+    NProgress.configure({
+      template: '<div class="bar" role="bar"><div class="peg"></div></div><div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
+    });
+
+    $(document)
+    .ajaxStart(function(data) {
+        NProgress.start();
+    })
+    .ajaxComplete(function() {
+        NProgress.done();
+    });
+
+    // end code for ajax loading bar
+})
+</script>
+
+<script type="text/javascript" src="js/common.js?v={{version}}"></script>
+<script type="text/javascript" src="js/file_transfer.js?v={{version}}"></script>
+<script type="text/javascript" src="js/window.js?v={{version}}"></script>
+<script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
+<script type="text/javascript" src="js/notification.js?v={{version}}"></script>
+<script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
+<script type="text/javascript" src="js/networkstatus.js?v={{version}}"></script>
+
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark">
+
+<!-- WRAPPER -->
+<div id="wrapper">
+
+    <!-- BANKS -->
+    <div id="bank-library">
+        <div class="box clearfix">
+            <header>
+                <h1 class="bottom top">MOD Settings</h1>
+<!--                <div class="form-group">
+                    <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search"/>
+                </div>
+                <a style="display:inline-block;float:right;color:#AAA;font-size:1.1em;margin-right:30px;"
+                   href="http://pedalboards.moddevices.com/" target="_blank">
+                    <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
+                    <span style="vertical-align: middle;">Browse Online Pedalboards</span>
+                </a>-->
+            </header>
+            <div class="pedalboards clearfix js-pedalboards"></div>
+        </div>
+
+        <!-- BANK-LIST -->
+        <div id="bank-list" style="bottom:0px;">
+            <div class="add-bank selected">(ico) Basic</div>
+            <div class="add-bank">(ico) Advanced</div>
+            <div class="add-bank">(ico) Dangerous</div>
+        </div>
+        <!-- END BANK-LIST -->
+
+        <!-- BANK-PEDALBOARDS -->
+        <div id="bank-edit" style="bottom:0px;">
+            <div id="bank-addressings">
+                <h1>Personal</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-bluetooth-custom">
+                            Use custom Bluetooth device name: &nbsp;
+                        </input>
+                        <input type="text" value="" id="prefs-bluetooth-name" disabled></input>
+                    </label>
+                </form>
+
+                <h1>Maintenance &amp; Backup</h1>
+                <form class="form">
+                    <label>
+                        <input type="button" value="Export user settings..."></input>
+                        <input type="button" value="Import user settings..."></input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="button" value="Reboot MOD"></input>fo
+                        <input type="button" value="Start recovery mode"></input>
+                    </label>
+                </form>
+
+                <h1>Services</h1>
+                <form class="form">
+                    <p>
+                        Note: Each additional service you enable consumes a small amount of CPU.<br/>
+                        Only enable services that you absolutely need.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-midiclock"> MIDI Clock Output</input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                    </label>
+                </form>
+            </div>
+        </div>
+        <!-- END BANK-PEDALBOARDS -->
+
+        <!-- BANK-PEDALBOARDS-SEARCH -->
+        <div id="bank-pedalboards-search"><div class="box">
+            <!-- FORM HORIZONTAL -->
+            <div class="filter clearfix">
+                <div class="clearfix">
+                    <div class="form-group">
+                        <label>System Information</label>
+                    </div>
+                </div>
+            </div>
+            <!-- END FORM-HORIZONTAL -->
+
+            <!-- BANK-PEDALBOARDS-RESULT -->
+            <div id="bank-pedalboards-result" style="background:none;top:30px;">
+                <hr style="border:1px solid #444;"/>
+
+                <h2 style="margin:20px;width:90px;">Audio</h2>
+                <form class="form" style="min-height:50px;color:#AAA;">
+                    <b>Buffer Size:</b> {{bufferSize}} frames<br/>
+                    <b>Sample Rate:</b> {{sampleRate}} Hz<br/>
+                    <b>DSP Load:</b> <span id="info-dsp-load">--.- %</span><br/>
+                </form>
+
+                <hr style="border:1px solid #333;"/>
+
+                <h2 style="margin:20px;width:90px;">System</h2>
+                <form class="form" style="min-height:50px;color:#AAA;">
+                    <b>Unit:</b> <span id="info-system-unit">---</span><br/>
+                    <b>Build Date:</b> <span id="info-system-date">---</span><br/>
+                    <b>OS Version:</b> {{version}}<br/>
+                </form>
+
+                <hr style="border:1px solid #333;"/>
+
+                <h2 style="margin:20px;width:90px;">Kernel</h2>
+                <form class="form" style="min-height:50px;color:#AAA;">
+                    <b>Machine:</b> <span id="info-kernel-machine">---</span><br/>
+                    <b>Release:</b> <span id="info-kernel-release">---</span><br/>
+                    <b>Version:</b> <span id="info-kernel-version">---</span><br/>
+                </form>
+
+                <hr style="border:1px solid #444;"/>
+            </div>
+            <!-- END BANK-PEDALBOARDS-RESULT -->
+
+        </div></div>
+        <!-- END BANK-PEDALBOARDS-SEARCH -->
+
+    </div>
+    <!-- END BANKS -->
+
+<!-- END WRAPPER -->
+</div>
+
+</body>
+<!-- END BODY -->
+
+</html>

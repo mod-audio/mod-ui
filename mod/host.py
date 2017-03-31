@@ -1620,7 +1620,6 @@ class Host(object):
 
             if not ok:
                 print("ERROR: disconnect '%s' => '%s' failed" % (port_from, port_to))
-                return
 
             self.pedalboard_modified = True
 
