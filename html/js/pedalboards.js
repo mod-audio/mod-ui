@@ -68,25 +68,25 @@ function PedalboardSearcher(opt) {
         if (e.keyCode == 13) { //detect enter
             self.search()
             return false
-        }
-        else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-            setTimeout(function () {
+        } else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+            if (self.lastKeyUp != null) {
+                clearTimeout(self.lastKeyUp)
+            }
+            self.lastKeyUp = setTimeout(function () {
                 self.search()
-            }, 400);
+            }, 400)
         }
     })
     this.searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
-        if (e.which == 13)
+        if (e.which == 13) {
             return
+        }
         if (self.lastKeyUp != null) {
             clearTimeout(self.lastKeyUp)
-            self.lastKeyUp = null
         }
-        if (e.which == 13)
-            return
         self.lastKeyUp = setTimeout(function () {
             self.search()
-        }, 400);
+        }, 400)
     })
 
     if (this.searchbutton)

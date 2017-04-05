@@ -148,6 +148,18 @@ def install_bundles_in_tmp_dir(callback):
 
     callback(resp)
 
+def run_command(args, cwd, callback):
+    ioloop = IOLoop.instance()
+    proc   = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE)
+
+    def end_fileno(fileno, event):
+        if proc.poll() is None:
+            return
+        ioloop.remove_handler(fileno)
+        callback()
+
+    ioloop.add_handler(proc.stdout.fileno(), end_fileno, 16)
+
 def install_package(bundlename, callback):
     filename = os.path.join(DOWNLOAD_TMP_DIR, bundlename)
 
@@ -160,32 +172,15 @@ def install_package(bundlename, callback):
         })
         return
 
-    proc = subprocess.Popen(['tar','zxf', filename],
-                            cwd=DOWNLOAD_TMP_DIR,
-                            stdout=subprocess.PIPE)
-
-    def end_untar_pkgs(fileno, event):
-        if proc.poll() is None:
-            return
-        ioloop.remove_handler(fileno)
+    def end_untar_pkgs():
         os.remove(filename)
         install_bundles_in_tmp_dir(callback)
 
-    ioloop = IOLoop.instance()
-    ioloop.add_handler(proc.stdout.fileno(), end_untar_pkgs, 16)
+    run_command(['tar','zxf', filename], DOWNLOAD_TMP_DIR, end_untar_pkgs)
 
-def move_file(src, dst, callback):
-    proc = subprocess.Popen(['mv', src, dst],
-                            stdout=subprocess.PIPE)
-
-    def end_move(fileno, event):
-        if proc.poll() is None:
-            return
-        ioloop.remove_handler(fileno)
-        callback()
-
-    ioloop = IOLoop.instance()
-    ioloop.add_handler(proc.stdout.fileno(), end_move, 16)
+@gen.coroutine
+def start_restore():
+    yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
 
 class TimelessRequestHandler(web.RequestHandler):
     def compute_etag(self):
@@ -374,6 +369,52 @@ class SystemPreferences(JsonRequestHandler):
 
         self.write(ret)
 
+class SystemExeChange(JsonRequestHandler):
+    def post(self):
+        etype = self.get_argument('type')
+        print(etype)
+
+        if etype == "command":
+            cmd = self.get_argument('cmd')
+            print(cmd)
+
+            if cmd == "reboot":
+                self.run_command_wait(["hmi-reset"])
+                self.run_command_wait(["reboot"])
+
+            elif cmd == "restore":
+                IOLoop.instance().add_callback(start_restore)
+
+        elif etype == "service":
+            name   = self.get_argument('name')
+            enable = bool(int(self.get_argument('enable')))
+
+            if name not in ("midiclock", "mixserver", "netmanager"):
+                self.write(False)
+                return
+
+            checkname   = "/data/enable-" + name
+            servicename = name
+
+            if servicename == "netmanager":
+                servicename = "jack-netmanager"
+
+            if enable:
+                with open(checkname, 'wb') as fh:
+                    fh.write(b"")
+                self.run_command_wait(["systemctl", "start", servicename])
+
+            else:
+                if os.path.exists(checkname):
+                    os.remove(checkname)
+                self.run_command_wait(["systemctl", "stop", servicename])
+
+        self.write(True)
+
+    @gen.coroutine
+    def run_command_wait(self, args):
+        yield gen.Task(run_command, args, None)
+
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp/os-update"
 
@@ -381,7 +422,9 @@ class UpdateDownload(SimpleFileReceiver):
         self.sfr_callback = callback
 
         # TODO: verify checksum?
-        move_file(os.path.join(self.destination_dir, data['filename']), UPDATE_MOD_OS_FILE, self.move_file_finished)
+        src = os.path.join(self.destination_dir, data['filename'])
+        dst = UPDATE_MOD_OS_FILE
+        run_command(['mv', src, dst], None, self.move_file_finished)
 
     def move_file_finished(self):
         self.result = True
@@ -395,12 +438,8 @@ class UpdateBegin(JsonRequestHandler):
             self.write(False)
             return
 
-        # write & finish before sending message
+        IOLoop.instance().add_callback(start_restore)
         self.write(True)
-
-        # send message asap, but not quite right now
-        yield gen.Task(self.flush, False)
-        yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
 
 class ControlChainDownload(SimpleFileReceiver):
     destination_dir = "/tmp/cc-update"
@@ -409,7 +448,9 @@ class ControlChainDownload(SimpleFileReceiver):
         self.sfr_callback = callback
 
         # TODO: verify checksum?
-        move_file(os.path.join(self.destination_dir, data['filename']), UPDATE_CC_FIRMWARE_FILE, self.move_file_finished)
+        src = os.path.join(self.destination_dir, data['filename'])
+        dst = UPDATE_CC_FIRMWARE_FILE
+        run_command(['mv', src, dst], None, self.move_file_finished)
 
     def move_file_finished(self):
         self.result = True
@@ -1471,6 +1512,7 @@ application = web.Application(
         [
             (r"/system/info", SystemInfo),
             (r"/system/prefs", SystemPreferences),
+            (r"/system/exechange", SystemExeChange),
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),

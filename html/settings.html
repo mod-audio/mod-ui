@@ -67,7 +67,7 @@ function refresh_sysinfo() {
         cache: false,
         global: false,
         dataType: 'json'
-    });
+    })
 }
 
 function refresh_sysprefs() {
@@ -94,12 +94,46 @@ function refresh_sysprefs() {
         cache: false,
         global: false,
         dataType: 'json'
-    });
+    })
+}
+
+function system_exechange(data) {
+    $.ajax({
+        url: '/system/exechange',
+        method: 'POST',
+        data: data,
+        success: function (resp) {
+            console.log("success", resp)
+        },
+        error: function (resp) {
+            console.log("error", resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
+function enable_service(name, enable) {
+    console.log("enable_service", name, enable)
+    system_exechange({
+        'type'  : 'service',
+        'name'  : name,
+        'enable': enable ? 1 : 0,
+    })
+}
+
+function run_custom_command(cmd) {
+    console.log("run_custom_command", cmd)
+    system_exechange({
+        'type': 'command',
+        'cmd' : cmd,
+    })
 }
 
 $('document').ready(function() {
-    var cached_cpuLoad
+    var self = this
 
+    var cached_cpuLoad
     var ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
     ws.onclose = function (evt) {
@@ -136,21 +170,109 @@ $('document').ready(function() {
             $("#ram-bar-text").text("RAM "+value.toString()+"%")*/
             return
         }
+
+//         console.log(data)
     }
+
+    // ----------------------------------------------------------------------------------------------------------------
 
     refresh_sysinfo()
     refresh_sysprefs()
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Personal :: Bluetooth custom name
+
+    this.last_bluetooth_timeout = null
+    this.set_bluetooth_name = function() {
+
+        if (self.last_bluetooth_timeout != null) {
+            clearTimeout(self.last_bluetooth_timeout)
+            self.last_bluetooth_timeout = null
+        }
+
+        var name = $("#prefs-bluetooth-name").val()
+
+        // TODO
+        console.log("set_bluetooth_name", name)
+    }
+
     $("#prefs-bluetooth-custom").click(function (e) {
-        console.log("clicked")
-        var on = $(this)
+        var elem_btname = $("#prefs-bluetooth-name")
+
+        if ($(this).prop("checked")) {
+            // Give it a default name if one was not set before
+            if (! elem_btname.val()) {
+                elem_btname.val(INFO.hwname)
+            }
+            elem_btname.prop("disabled", false)
+
+            // Set name
+            self.set_bluetooth_name()
+
+        } else {
+            // disable text input
+            elem_btname.prop("disabled", true)
+
+            // clear name
+            // TODO
+        }
     })
 
-    $("#prefs-bluetooth-name").prop("disabled", true)
+    $("#prefs-bluetooth-name")
+    .keydown(function (e) {
+        if (e.keyCode == 13) {
+            // detect enter
+            self.set_bluetooth_name()
+            return false
+        } else if (e.keyCode == 8 || e.keyCode == 46) {
+            if (self.last_bluetooth_timeout != null) {
+                clearTimeout(self.last_bluetooth_timeout)
+            }
+            // detect delete and backspace
+            self.last_bluetooth_timeout = setTimeout(function () {
+                self.set_bluetooth_name()
+            }, 400)
+        }
+    })
+    .keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+        if (e.which == 13) {
+            return
+        }
+        if (self.last_bluetooth_timeout != null) {
+            clearTimeout(self.last_bluetooth_timeout)
+        }
+        self.last_bluetooth_timeout = setTimeout(function () {
+            self.set_bluetooth_name()
+        }, 400)
+    })
 
-    $("#prefs-service-midiclock").prop("checked", resp.service_midiclock)
-    $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
-    $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Maintenance & Backup
+
+    $("#button-action-reboot").click(function () {
+        run_custom_command("reboot")
+    })
+
+    $("#button-action-restore").click(function () {
+        run_custom_command("restore")
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Services
+
+    $("#prefs-service-midiclock").click(function (e) {
+        enable_service("midiclock", $(this).prop("checked"))
+    })
+
+    $("#prefs-service-mixserver").click(function () {
+        enable_service("mixserver", $(this).prop("checked"))
+    })
+
+    $("#prefs-service-netmanager").click(function () {
+        enable_service("netmanager", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
 
     // start code for ajax loading bar
 
@@ -192,14 +314,16 @@ $('document').ready(function() {
         <div class="box clearfix">
             <header>
                 <h1 class="bottom top">MOD Settings</h1>
-<!--                <div class="form-group">
+                <!--
+                <div class="form-group">
                     <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search"/>
                 </div>
                 <a style="display:inline-block;float:right;color:#AAA;font-size:1.1em;margin-right:30px;"
                    href="http://pedalboards.moddevices.com/" target="_blank">
                     <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
-                </a>-->
+                </a>
+                -->
             </header>
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
@@ -213,7 +337,7 @@ $('document').ready(function() {
         <!-- END BANK-LIST -->
 
         <!-- BANK-PEDALBOARDS -->
-        <div id="bank-edit" style="bottom:0px;">
+        <div id="settings-page-basic" style="bottom:0px;">
             <div id="bank-addressings">
                 <h1>Personal</h1>
                 <form class="form">
@@ -230,11 +354,6 @@ $('document').ready(function() {
                     <label>
                         <input type="button" value="Export user settings..."></input>
                         <input type="button" value="Import user settings..."></input>
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="button" value="Reboot MOD"></input>fo
-                        <input type="button" value="Start recovery mode"></input>
                     </label>
                 </form>
 
@@ -254,6 +373,14 @@ $('document').ready(function() {
                     <br>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                    </label>
+                </form>
+
+                <h1>Boot?</h1>
+                <form class="form">
+                    <label>
+                        <input type="button" id="button-action-reboot" value="Reboot MOD"></input>
+                        <input type="button" id="button-action-restore" value="Start recovery mode"></input>
                     </label>
                 </form>
             </div>
