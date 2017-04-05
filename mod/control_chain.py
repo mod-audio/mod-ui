@@ -71,10 +71,6 @@ class ControlChainDeviceListener(object):
         else:
             self.idle = True
 
-        # FIXME: remove this after we stop forcing arduino-usb
-        if os.path.exists("/etc/udev/rules.d/60-arduino.rules") and not os.path.exists("/dev/arduino"):
-            self.set_initialized()
-
     def connection_closed(self):
         print("Control Chain closed")
         self.socket  = None
