@@ -20,13 +20,15 @@ import os, time, logging, json
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
-from mod.settings import (DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA)
+from mod import safe_json_load
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
+from mod.settings import (DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA,
+                          PREFERENCES_JSON_FILE)
 
 if DEV_HOST:
     from mod.development import FakeHost as Host
@@ -35,10 +37,34 @@ elif HOST_CARLA:
 else:
     from mod.host import Host
 
+class UserPreferences(object):
+    def __init__(self):
+        prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
+
+        if prefs.get("link-enabled-at-boot", "") == "true":
+            prefs["link-enabled"] = "true"
+
+        if prefs.get("transport-rolling-at-boot", "") == "true":
+            prefs["transport-rolling"] = "true"
+
+        self.prefs = prefs
+
+    def get(self, key, default):
+        return self.prefs.get(key, default)
+
+    def setAndSave(self, key, value):
+        self.prefs[key] = value
+        self.save()
+
+    def save(self):
+        with open(PREFERENCES_JSON_FILE, 'w') as fh:
+            json.dump(self.prefs, fh)
+
 class Session(object):
     def __init__(self):
         self.ioloop = ioloop.IOLoop.instance()
 
+        self.prefs = UserPreferences()
         self.player = Player()
         self.recorder = Recorder()
         self.recordhandle = None
@@ -61,7 +87,7 @@ class Session(object):
         if not hmiOpened:
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
 
-        self.host = Host(self.hmi, self.msg_callback)
+        self.host = Host(self.hmi, self.prefs, self.msg_callback)
 
     def signal_save(self):
         # reuse HMI function

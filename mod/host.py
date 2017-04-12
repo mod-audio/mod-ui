@@ -123,12 +123,14 @@ class InstanceIdMapper(object):
         return self.id_map[id]
 
 class Host(object):
-    def __init__(self, hmi, msg_callback):
+    def __init__(self, hmi, prefs, msg_callback):
         if False:
             from mod.hmi import HMI
-            self.hmi = HMI()
+            hmi = HMI()
 
         self.hmi = hmi
+        self.prefs = prefs
+
         self.addr = ("localhost", 5555)
         self.readsock = None
         self.writesock = None
@@ -574,12 +576,10 @@ class Host(object):
         close_jack()
 
     def load_prefs(self):
-        prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
-
-        if prefs.get("link-enabled", "") == "true" or prefs.get("link-enabled-at-boot", "") == "true":
+        if self.prefs.get("link-enabled", "") == "true":
             self.set_link_enabled(True)
 
-        if prefs.get("transport-rolling", "") == "true" or prefs.get("transport-rolling-at-boot", "") == "true":
+        if self.prefs.get("transport-rolling", "") == "true":
             self.set_transport_rolling(True)
 
     def open_connection_if_needed(self, websocket):
@@ -2447,14 +2447,17 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
-    def set_link_enabled(self, enabled):
+    def set_link_enabled(self, enabled, saveConfig = False):
         self.send_notmodified("link_enable %i" % int(enabled))
+
+        if saveConfig:
+            self.prefs.setAndSave("link-enabled", "true" if enabled else "false")
 
     def set_transport_rolling(self, rolling):
         self.transport_rolling = rolling
         self.send_notmodified("transport %i %f" % (int(rolling), self.transport_bpm))
 
-    def set_transport(self, rolling, bpm):
+    def set_transport(self, rolling, bpm, saveConfig):
         speed = 1.0 if rolling else 0.0
         msg   = "transport %i %f" % (int(rolling), bpm)
 
@@ -2476,6 +2479,9 @@ _:b%i
             self.send_modified(msg)
         else:
             self.send_notmodified(msg)
+
+        if saveConfig:
+            self.prefs.setAndSave("transport-rolling", "true" if rolling else "false")
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers

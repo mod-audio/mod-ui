@@ -659,12 +659,12 @@ class ServerWebSocket(websocket.WebSocketHandler):
 
         elif cmd == "link_enable":
             on = bool(int(data[1]))
-            SESSION.host.set_link_enabled(on)
+            SESSION.host.set_link_enabled(on, True)
 
         elif cmd == "transport":
             rolling = bool(int(data[1]))
             bpm     = float(data[2])
-            SESSION.host.set_transport(rolling, bpm)
+            SESSION.host.set_transport(rolling, bpm, True)
 
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
@@ -1069,7 +1069,6 @@ class TemplateHandler(TimelessRequestHandler):
 
     def index(self):
         user_id = safe_json_load(USER_ID_JSON_FILE, dict)
-        prefs   = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
         with open(DEFAULT_ICON_TEMPLATE, 'r') as fh:
             default_icon_template = squeeze(fh.read().replace("'", "\\'"))
@@ -1105,7 +1104,7 @@ class TemplateHandler(TimelessRequestHandler):
             'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),
             'user_email': squeeze(user_id.get("email", "").replace("'", "\\'")),
             'favorites': json.dumps(gState.favorites),
-            'preferences': json.dumps(prefs),
+            'preferences': json.dumps(SESSION.prefs),
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),
         }
@@ -1226,12 +1225,7 @@ class SaveSingleConfigValue(JsonRequestHandler):
         key   = self.get_argument("key")
         value = self.get_argument("value")
 
-        data = safe_json_load(PREFERENCES_JSON_FILE, dict)
-        data[key] = value
-
-        with open(PREFERENCES_JSON_FILE, 'w') as fh:
-            json.dump(data, fh)
-
+        SESSION.prefs.setAndSave(key, value)
         self.write(True)
 
 class SaveUserId(JsonRequestHandler):

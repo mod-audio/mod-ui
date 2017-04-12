@@ -90,7 +90,7 @@ def get_last_bank_and_pedalboard():
     data = safe_json_load(LAST_STATE_JSON_FILE, dict)
     keys = data.keys()
 
-    if "bank" not in keys or "pedalboard" not in keys or not isinstance(data['bank'], int):
+    if len(keys) == 0 or "bank" not in keys or "pedalboard" not in keys or not isinstance(data['bank'], int):
         print("last state file does not exist or is corrupt")
         return (-1, None)
 

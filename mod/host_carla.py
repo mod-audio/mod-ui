@@ -42,8 +42,8 @@ class FakeSocket(object):
         return
 
 class CarlaHost(Host):
-    def __init__(self, hmi, msg_callback):
-        Host.__init__(self, hmi, msg_callback)
+    def __init__(self, hmi, prefs, msg_callback):
+        Host.__init__(self, hmi, prefs, msg_callback)
 
         self.carla = CarlaHostDLL("/usr/lib/carla/libcarla_standalone2.so")
         self.carla.set_engine_callback(self.carla_callback)
