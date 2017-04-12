@@ -280,6 +280,7 @@ class Session(object):
         return title
 
     def reset(self, callback):
+        self.host.msg_callback("resetConnections")
         def reset_host(ok):
             self.host.reset(callback)
 

@@ -319,6 +319,11 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "resetConnections") {
+            desktop.pedalboard.pedalboard("resetConnections")
+            return
+        }
+
         if (cmd == "hw_add") {
             var dev_uri = data[1]
             var label   = data[2].replace(/_/g," ")
