@@ -657,6 +657,15 @@ class ServerWebSocket(websocket.WebSocketHandler):
             height = int(float(data[2]))
             SESSION.ws_pedalboard_size(width, height)
 
+        elif cmd == "link_enable":
+            on = bool(int(data[1]))
+            SESSION.host.set_link_enabled(on)
+
+        elif cmd == "transport":
+            rolling = bool(int(data[1]))
+            bpm     = float(data[2])
+            SESSION.host.set_transport(rolling, bpm)
+
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine

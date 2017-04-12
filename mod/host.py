@@ -47,7 +47,7 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PREFERENCES_JSON_FILE,
                           PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
                           TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
@@ -520,6 +520,7 @@ class Host(object):
     def init_host(self):
         self.init_jack()
         self.open_connection_if_needed(None)
+        self.load_prefs()
 
         data = get_jack_data(True)
         self.transport_rolling = data['rolling']
@@ -571,6 +572,15 @@ class Host(object):
 
     def close_jack(self):
         close_jack()
+
+    def load_prefs(self):
+        prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
+
+        if prefs.get("link-enabled", "") == "true" or prefs.get("link-enabled-at-boot", "") == "true":
+            self.set_link_enabled(True)
+
+        if prefs.get("transport-rolling", "") == "true" or prefs.get("transport-rolling-at-boot", "") == "true":
+            self.set_transport_rolling(True)
 
     def open_connection_if_needed(self, websocket):
         if self.readsock is not None and self.writesock is not None:
@@ -952,6 +962,7 @@ class Host(object):
 
         if crashed:
             self.init_jack()
+            self.load_prefs()
             self.send_notmodified("transport %i %f" % (int(self.transport_rolling), self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
 
@@ -2435,6 +2446,36 @@ _:b%i
 
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
+
+    def set_link_enabled(self, enabled):
+        self.send_notmodified("link_enable %i" % int(enabled))
+
+    def set_transport_rolling(self, rolling):
+        self.transport_rolling = rolling
+        self.send_notmodified("transport %i %f" % (int(rolling), self.transport_bpm))
+
+    def set_transport(self, rolling, bpm):
+        speed = 1.0 if rolling else 0.0
+        msg   = "transport %i %f" % (int(rolling), bpm)
+
+        for pluginData in self.plugins.values():
+            _, _2, bpm_symbol, speed_symbol = pluginData['designations']
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+
+            elif speed_symbol is not None:
+                pluginData['ports'][speed_symbol] = speed
+                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+
+        self.transport_rolling = rolling
+
+        if self.transport_bpm != bpm:
+            self.transport_bpm = bpm
+            self.send_modified(msg)
+        else:
+            self.send_notmodified(msg)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
