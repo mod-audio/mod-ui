@@ -378,6 +378,8 @@ class JackData(Structure):
     _fields_ = [
         ("cpuLoad", c_float),
         ("xruns", c_uint),
+        ("rolling", c_bool),
+        ("bpm", c_double),
     ]
 
 JackPortAppeared = CFUNCTYPE(None, c_char_p, c_bool)
@@ -473,7 +475,7 @@ utils.init_jack.restype  = c_bool
 utils.close_jack.argtypes = None
 utils.close_jack.restype  = None
 
-utils.get_jack_data.argtypes = None
+utils.get_jack_data.argtypes = [c_bool]
 utils.get_jack_data.restype  = POINTER(JackData)
 
 utils.get_jack_buffer_size.argtypes = None
@@ -657,13 +659,15 @@ def init_jack():
 def close_jack():
     utils.close_jack()
 
-def get_jack_data():
-    data = utils.get_jack_data()
+def get_jack_data(withTransport):
+    data = utils.get_jack_data(withTransport)
     if not data:
         raise Exception
     return {
         'cpuLoad': data.contents.cpuLoad,
         'xruns'  : data.contents.xruns,
+        'rolling': data.contents.rolling,
+        'bpm'    : data.contents.bpm
     }
 
 def get_jack_buffer_size():

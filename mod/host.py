@@ -909,7 +909,7 @@ class Host(object):
         if websocket is None:
             return
 
-        data = get_jack_data()
+        data = get_jack_data(False)
         websocket.write_message("mem_load " + self.get_free_memory_value())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
@@ -2383,7 +2383,7 @@ _:b%i
     # Host stuff - timers
 
     def statstimer_callback(self):
-        data = get_jack_data()
+        data = get_jack_data(False)
         self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
     def get_free_memory_value(self):
