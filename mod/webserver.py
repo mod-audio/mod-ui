@@ -1104,7 +1104,7 @@ class TemplateHandler(TimelessRequestHandler):
             'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),
             'user_email': squeeze(user_id.get("email", "").replace("'", "\\'")),
             'favorites': json.dumps(gState.favorites),
-            'preferences': json.dumps(SESSION.prefs),
+            'preferences': json.dumps(SESSION.prefs.prefs),
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),
         }
