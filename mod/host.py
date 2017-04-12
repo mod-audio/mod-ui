@@ -2823,12 +2823,12 @@ _:b%i
         full_ports = {}
 
         # Current setup
-        for port_symbol, port_alias, _ in self.midiports:
-            port_aliases = port_alias.split(";",1)
-            port_alias   = port_aliases[0]
-            if len(port_aliases) != 1:
-                out_ports[port_alias] = port_symbol
-            full_ports[port_symbol] = port_alias
+        #for port_symbol, port_alias, _ in self.midiports:
+        #    port_aliases = port_alias.split(";",1)
+        #    port_alias   = port_aliases[0]
+        #    if len(port_aliases) != 1:
+        #        out_ports[port_alias] = port_symbol
+        #    full_ports[port_symbol] = port_alias
 
         # Extra MIDI Outs
         ports = get_jack_hardware_ports(False, True)
@@ -2839,7 +2839,7 @@ _:b%i
             if not alias:
                 continue
             title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
-            out_ports[title] = port
+            out_ports[port] = title
 
         # Extra MIDI Ins
         ports = get_jack_hardware_ports(False, False)
@@ -2862,7 +2862,13 @@ _:b%i
             devList.append(port_id)
             if port_id in midiportIds:
                 devsInUse.append(port_id)
-            names[port_id] = port_alias + (" (in+out)" if port_alias in out_ports else " (in)")
+            names[port_id] = port_alias +" (in)"
+
+        for port_id, port_alias in out_ports.items():
+            devList.append(";" + port_id)
+            if ";" + port_id in midiportIds:
+                devsInUse.append(";" + port_id)
+            names[";" + port_id] = port_alias + " (out)"
 
         devList.sort()
         return (devsInUse, devList, names)
@@ -2913,7 +2919,8 @@ _:b%i
 
             if ";" in port_symbol:
                 inp, outp = port_symbol.split(";",1)
-                remove_port(inp)
+                if (inp):
+                    remove_port(inp)
                 remove_port(outp)
             else:
                 remove_port(port_symbol)
@@ -2930,7 +2937,8 @@ _:b%i
                 title_in  = self.get_port_name_alias(inp)
                 title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
-                add_port(inp, title_in, False)
+                if (inp):
+                    add_port(inp, title_in, False)
                 add_port(outp, title_out, True)
             else:
                 title = self.get_port_name_alias(port_symbol)
