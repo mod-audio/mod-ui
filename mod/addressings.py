@@ -159,8 +159,6 @@ class Addressings(object):
 
         used_actuators = []
 
-        yield gen.Task(self.cchain.wait_initialized)
-
         for actuator_uri, addrs in data.items():
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
@@ -182,18 +180,24 @@ class Addressings(object):
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
 
+        # Load HMI addressings
         for actuator_uri in used_actuators:
-            actuator_type = self.get_actuator_type(actuator_uri)
-
-            if actuator_type == self.ADDRESSING_TYPE_HMI:
+            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
                 yield gen.Task(self.hmi_load_first, actuator_uri)
 
-            elif actuator_type == self.ADDRESSING_TYPE_CC:
-                self.cc_load_all(actuator_uri)
-
+        # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
         #       They must be loaded by calling 'add_midi' before calling this function.
         self.midi_load_everything()
+
+        # Load Control Chain addressings
+        # NOTE: Need to wait for Control Chain to finish initializing.
+        #       Can take some time due to waiting for several device descriptors.
+        yield gen.Task(self.cchain.wait_initialized)
+
+        for actuator_uri in used_actuators:
+            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC:
+                self.cc_load_all(actuator_uri)
 
     def save(self, bundlepath, instances):
         addressings = {}

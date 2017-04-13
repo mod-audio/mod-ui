@@ -47,7 +47,7 @@ from mod.utils import (charPtrToString,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
                        connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PREFERENCES_JSON_FILE,
                           PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
                           TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
 from mod.tuner import find_freqnotecents
@@ -123,12 +123,14 @@ class InstanceIdMapper(object):
         return self.id_map[id]
 
 class Host(object):
-    def __init__(self, hmi, msg_callback):
+    def __init__(self, hmi, prefs, msg_callback):
         if False:
             from mod.hmi import HMI
-            self.hmi = HMI()
+            hmi = HMI()
 
         self.hmi = hmi
+        self.prefs = prefs
+
         self.addr = ("localhost", 5555)
         self.readsock = None
         self.writesock = None
@@ -157,6 +159,8 @@ class Host(object):
         self.pedalboard_preset   = -1
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
+        self.transport_rolling   = False
+        self.transport_bpm       = 120.0
 
         if APP and os.getenv("MOD_LIVE_ISO") is not None:
             self.jack_hwin_prefix  = "system:playback_"
@@ -518,6 +522,11 @@ class Host(object):
     def init_host(self):
         self.init_jack()
         self.open_connection_if_needed(None)
+        self.load_prefs()
+
+        data = get_jack_data(True)
+        self.transport_rolling = data['rolling']
+        self.transport_bpm     = data['bpm']
 
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
@@ -565,6 +574,13 @@ class Host(object):
 
     def close_jack(self):
         close_jack()
+
+    def load_prefs(self):
+        if self.prefs.get("link-enabled", "") == "true":
+            self.set_link_enabled(True)
+
+        if self.prefs.get("transport-rolling", "") == "true":
+            self.set_transport_rolling(True)
 
     def open_connection_if_needed(self, websocket):
         if self.readsock is not None and self.writesock is not None:
@@ -824,6 +840,27 @@ class Host(object):
 
                 self.reset(hmi_clear_callback)
 
+        elif cmd == "transport":
+            rolling = int(msg[1])
+            speed   = 1.0 if (rolling != 0) else 0.0
+            bpm     = float(msg[2])
+
+            for pluginData in self.plugins.values():
+                _, _2, bpm_symbol, speed_symbol = pluginData['designations']
+
+                if bpm_symbol is not None:
+                    pluginData['ports'][bpm_symbol] = bpm
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+
+                elif speed_symbol is not None:
+                    pluginData['ports'][speed_symbol] = speed
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+
+            self.transport_rolling = bool(rolling)
+            self.transport_bpm     = bpm
+
+            self.msg_callback("transport %i %f" % (rolling, bpm))
+
         elif cmd == "data_finish":
             self.send_output_data_ready()
 
@@ -909,9 +946,10 @@ class Host(object):
         if websocket is None:
             return
 
-        data = get_jack_data()
+        data = get_jack_data(False)
         websocket.write_message("mem_load " + self.get_free_memory_value())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
+        websocket.write_message("transport %i %f" % (int(self.transport_rolling), self.transport_bpm))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
@@ -924,6 +962,8 @@ class Host(object):
 
         if crashed:
             self.init_jack()
+            self.load_prefs()
+            self.send_notmodified("transport %i %f" % (int(self.transport_rolling), self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
 
         midiports = []
@@ -1126,6 +1166,8 @@ class Host(object):
 
             enabled_symbol = None
             freewheel_symbol = None
+            bpm_symbol = None
+            speed_symbol = None
 
             for port in allports['inputs']:
                 symbol = port['symbol']
@@ -1146,6 +1188,16 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
+
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
+                    speed_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 1.0 if self.transport_rolling else 0.0
+
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -1157,7 +1209,7 @@ class Host(object):
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
                 "badports"    : badports,
-                "designations": (enabled_symbol, freewheel_symbol),
+                "designations": (enabled_symbol, freewheel_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : "",
                 "mapPresets"  : []
@@ -1287,13 +1339,17 @@ class Host(object):
             pluginData['ports'].update(portValues)
 
             used_actuators = []
-            enabled_symbol, freewheel_symbol = pluginData['designations']
+            enabled_symbol, freewheel_symbol, bpm_symbol, speed_symbol = pluginData['designations']
 
             for symbol, value in pluginData['ports'].items():
                 if symbol == enabled_symbol:
                     value = 0.0 if pluginData['bypassed'] else 1.0
                 elif symbol == freewheel_symbol:
                     value = 0.0
+                elif symbol == bpm_symbol:
+                    value = self.transport_bpm
+                elif symbol == speed_symbol:
+                    value = 1.0 if self.transport_rolling else 0.0
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
@@ -1813,6 +1869,8 @@ class Host(object):
 
             enabled_symbol = None
             freewheel_symbol = None
+            bpm_symbol = None
+            speed_symbol = None
 
             for port in allports['inputs']:
                 symbol = port['symbol']
@@ -1834,6 +1892,16 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
+
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
+                    speed_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 1.0 if self.transport_rolling else 0.0
+
             self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,
                 "uri"         : p['uri'],
@@ -1845,7 +1913,7 @@ class Host(object):
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
                 "badports"    : badports,
-                "designations": (enabled_symbol, freewheel_symbol),
+                "designations": (enabled_symbol, freewheel_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : p['preset'],
                 "mapPresets"  : []
@@ -2378,11 +2446,47 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
+    def set_link_enabled(self, enabled, saveConfig = False):
+        self.send_notmodified("link_enable %i" % int(enabled))
+
+        if saveConfig:
+            self.prefs.setAndSave("link-enabled", "true" if enabled else "false")
+
+    def set_transport_rolling(self, rolling):
+        self.transport_rolling = rolling
+        self.send_notmodified("transport %i %f" % (int(rolling), self.transport_bpm))
+
+    def set_transport(self, rolling, bpm, saveConfig):
+        speed = 1.0 if rolling else 0.0
+        msg   = "transport %i %f" % (int(rolling), bpm)
+
+        for pluginData in self.plugins.values():
+            _, _2, bpm_symbol, speed_symbol = pluginData['designations']
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+
+            elif speed_symbol is not None:
+                pluginData['ports'][speed_symbol] = speed
+                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+
+        self.transport_rolling = rolling
+
+        if self.transport_bpm != bpm:
+            self.transport_bpm = bpm
+            self.send_modified(msg)
+        else:
+            self.send_notmodified(msg)
+
+        if saveConfig:
+            self.prefs.setAndSave("transport-rolling", "true" if rolling else "false")
+
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
 
     def statstimer_callback(self):
-        data = get_jack_data()
+        data = get_jack_data(False)
         self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
     def get_free_memory_value(self):

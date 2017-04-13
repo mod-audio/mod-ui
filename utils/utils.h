@@ -246,6 +246,8 @@ typedef struct {
 typedef struct {
     float cpuLoad;
     unsigned xruns;
+    bool rolling;
+    double bpm;
 } JackData;
 
 typedef void (*JackPortAppeared)(const char* name, bool isOutput);
@@ -325,7 +327,7 @@ MOD_API const char* file_uri_parse(const char* fileuri);
 // jack stuff
 MOD_API bool init_jack(void);
 MOD_API void close_jack(void);
-MOD_API JackData* get_jack_data(void);
+MOD_API JackData* get_jack_data(bool withTransport);
 MOD_API unsigned get_jack_buffer_size(void);
 MOD_API unsigned set_jack_buffer_size(unsigned size);
 MOD_API float get_jack_sample_rate(void);

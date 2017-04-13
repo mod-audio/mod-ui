@@ -62,6 +62,19 @@ class ControlChainDeviceListener(object):
             return
 
         self.initialized_cb = callback
+        ioloop.IOLoop.instance().call_later(10, self.wait_init_timeout)
+
+    def wait_init_timeout(self):
+        if self.initialized:
+            return
+
+        print("Control Chain initialization timed out")
+        self.socket = None
+
+        if self.initialized_cb is not None:
+            cb = self.initialized_cb
+            self.initialized_cb = None
+            cb()
 
     # -----------------------------------------------------------------------------------------------------------------
 
