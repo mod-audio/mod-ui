@@ -1148,6 +1148,10 @@ class TemplateHandler(TimelessRequestHandler):
 
         if not path:
             path = 'index.html'
+        elif not os.path.exists(os.path.join(HTML_DIR, path)):
+            uri = '/?v=%s' % curVersion
+            self.redirect(uri)
+            return
 
         loader = Loader(HTML_DIR)
         section = path.split('.')[0]
