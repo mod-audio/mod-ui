@@ -29,6 +29,62 @@
 <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
 
+<style type="text/css" media="screen">
+    .settings-page {
+        bottom: 0px;
+    }
+    .settings-page-content {
+        background: #111;
+        left: 20%;
+        height: 92px;
+        margin: 0;
+        padding: 0;
+        position: fixed;
+        text-align: left;
+        top: 45px;
+        width: 50%;
+    }
+    .settings-page-content h1 {
+        font-size: 2em;
+        padding: 0em;
+        max-height: 2em;
+        display: block;
+        margin: 0.5em 0.8em 0 0.8em;
+        padding-bottom: 0.2em;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    .settings-page-content form {
+        margin: 0 2em;
+        color: #666;
+    }
+    .settings-page-content form label,
+    .settings-page-content form p {
+        color: #999;
+    }
+    .settings-page-content form label input {
+        color: #555;
+    }
+
+    #bank-library #bank-list {
+        bottom: 0px;
+    }
+
+    #bank-pedalboards-search #bank-pedalboards-result {
+        background: none;
+        top: 30px;
+    }
+    #bank-pedalboards-search #bank-pedalboards-result h2 {
+        margin: 20px;
+        width: 90px;
+    }
+    #bank-pedalboards-search #bank-pedalboards-result .form {
+        min-height: 50px;
+        color: #AAA;
+    }
+</style>
+
 <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
@@ -51,6 +107,10 @@
         "python": {},
         "uname": {}
     }
+
+function bool2str(ok) {
+    return ok ? "true" : "false"
+}
 
 function refresh_sysinfo() {
     $.ajax({
@@ -93,6 +153,25 @@ function refresh_sysprefs() {
         },
         cache: false,
         global: false,
+        dataType: 'json'
+    })
+}
+
+function config_set(key, value) {
+    $.ajax({
+        url: '/config/set',
+        method: 'POST',
+        data: {
+          key: key,
+          value: value,
+        },
+        success: function (resp) {
+            console.log("success", resp)
+        },
+        error: function (resp) {
+            console.log("error", resp)
+        },
+        cache: false,
         dataType: 'json'
     })
 }
@@ -176,8 +255,56 @@ $('document').ready(function() {
 
     // ----------------------------------------------------------------------------------------------------------------
 
+    $("#tab-basic").click(function () {
+        // hide avanced
+        $("#tab-advanced").removeClass("selected")
+        $("#settings-page-advanced").hide()
+        // hide dangerous
+        $("#tab-dangerous").removeClass("selected")
+        $("#settings-page-dangerous").hide()
+        // show basic
+        $("#tab-basic").addClass("selected")
+        $("#settings-page-basic").show()
+    })
+
+    $("#tab-advanced").click(function () {
+        // hide basic
+        $("#tab-basic").removeClass("selected")
+        $("#settings-page-basic").hide()
+        // hide dangerous
+        $("#tab-dangerous").removeClass("selected")
+        $("#settings-page-dangerous").hide()
+        // show advanced
+        $("#tab-advanced").addClass("selected")
+        $("#settings-page-advanced").show()
+    })
+
+    $("#tab-dangerous").click(function () {
+        // hide basic
+        $("#tab-basic").removeClass("selected")
+        $("#settings-page-basic").hide()
+        // hide advanced
+        $("#tab-advanced").removeClass("selected")
+        $("#settings-page-advanced").hide()
+        // show dangerous
+        $("#tab-dangerous").addClass("selected")
+        $("#settings-page-dangerous").show()
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+
     refresh_sysinfo()
     refresh_sysprefs()
+
+    if (PREFERENCES['link-enabled-at-boot'] == "true") {
+        $("#transport-rolling-at-boot").prop("checked", true)
+    }
+    if (PREFERENCES['transport-rolling-at-boot'] == "true") {
+        $("#prefs-prefs-autostart-playback").prop("checked", true)
+    }
+    if (PREFERENCES['tuner-mutes-outputs'] != "false") {
+        $("#prefs-prefs-muted-tuner").prop("checked", true)
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Personal :: Bluetooth custom name
@@ -249,12 +376,16 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Maintenance & Backup
 
-    $("#button-action-reboot").click(function () {
-        run_custom_command("reboot")
+    $("#prefs-prefs-autostart-playback").click(function (e) {
+        config_set("transport-rolling-at-boot", bool2str($(this).prop("checked")))
     })
 
-    $("#button-action-restore").click(function () {
-        run_custom_command("restore")
+    $("#prefs-prefs-autostart-link").click(function (e) {
+        config_set("link-enabled-at-boot", bool2str($(this).prop("checked")))
+    })
+
+    $("#prefs-prefs-muted-tuner").click(function (e) {
+        config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -270,6 +401,17 @@ $('document').ready(function() {
 
     $("#prefs-service-netmanager").click(function () {
         enable_service("netmanager", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Boot?
+
+    $("#button-action-reboot").click(function () {
+        run_custom_command("reboot")
+    })
+
+    $("#button-action-restore").click(function () {
+        run_custom_command("restore")
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -309,7 +451,7 @@ $('document').ready(function() {
 <!-- WRAPPER -->
 <div id="wrapper">
 
-    <!-- BANKS -->
+    <!-- BANKS|SETTINGS -->
     <div id="bank-library">
         <div class="box clearfix">
             <header>
@@ -328,17 +470,17 @@ $('document').ready(function() {
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
 
-        <!-- BANK-LIST -->
-        <div id="bank-list" style="bottom:0px;">
-            <div class="add-bank selected">(ico) Basic</div>
-            <div class="add-bank">(ico) Advanced</div>
-            <div class="add-bank">(ico) Dangerous</div>
+        <!-- BANK|SETTINGS-LIST -->
+        <div id="bank-list">
+            <div id="tab-basic" class="add-bank selected">(ico) Basic</div>
+            <div id="tab-advanced" class="add-bank">(ico) Advanced</div>
+            <!--<div id="tab-dangerous" class="add-bank">(ico) Dangerous</div>-->
         </div>
-        <!-- END BANK-LIST -->
+        <!-- END BANK|SETTINGS-LIST -->
 
-        <!-- BANK-PEDALBOARDS -->
-        <div id="settings-page-basic" style="bottom:0px;">
-            <div id="bank-addressings">
+        <!-- SETTINGS PAGE (BASIC) -->
+        <div class="settings-page" id="settings-page-basic">
+            <div class="settings-page-content">
                 <h1>Personal</h1>
                 <form class="form">
                     <label>
@@ -349,6 +491,28 @@ $('document').ready(function() {
                     </label>
                 </form>
 
+                <h1>Preferences</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-playback">
+                            Always start with playback/transport rolling
+                        </input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-link">
+                            Always start with Link support enabled
+                        </input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
+                            Mute audio outputs when Tuner is enabled
+                        </input>
+                    </label>
+                </form>
+
+                <!--
                 <h1>Maintenance &amp; Backup</h1>
                 <form class="form">
                     <label>
@@ -356,6 +520,7 @@ $('document').ready(function() {
                         <input type="button" value="Import user settings..."></input>
                     </label>
                 </form>
+                -->
 
                 <h1>Services</h1>
                 <form class="form">
@@ -375,7 +540,13 @@ $('document').ready(function() {
                         <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
                     </label>
                 </form>
+            </div>
+        </div>
+        <!-- END SETTINGS PAGE (BASIC) -->
 
+        <!-- SETTINGS PAGE (ADVANCED) -->
+        <div class="settings-page mod-hidden" id="settings-page-advanced">
+            <div class="settings-page-content">
                 <h1>Boot?</h1>
                 <form class="form">
                     <label>
@@ -385,26 +556,49 @@ $('document').ready(function() {
                 </form>
             </div>
         </div>
-        <!-- END BANK-PEDALBOARDS -->
+        <!-- SETTINGS PAGE (ADVANCED) -->
 
-        <!-- BANK-PEDALBOARDS-SEARCH -->
+        <!-- SETTINGS PAGE (DANGEROUS) -->
+        <div class="settings-page mod-hidden" id="settings-page-dangerous">
+            <div class="settings-page-content">
+                <h1>Cleanup</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Banks</input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Pedalboards</input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Plugins</input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="button" id="button-action-delete" value="Delete"></input>
+                    </label>
+                </form>
+            </div>
+        </div>
+        <!-- SETTINGS PAGE (DANGEROUS) -->
+
+        <!-- BANK-PEDALBOARDS-SEARCH|SYSTEM-INFORMATION -->
         <div id="bank-pedalboards-search"><div class="box">
             <!-- FORM HORIZONTAL -->
-            <div class="filter clearfix">
-                <div class="clearfix">
-                    <div class="form-group">
-                        <label>System Information</label>
-                    </div>
+            <div class="filter clearfix"><div class="clearfix">
+                <div class="form-group">
+                    <label>System Information</label>
                 </div>
-            </div>
+            </div></div>
             <!-- END FORM-HORIZONTAL -->
 
-            <!-- BANK-PEDALBOARDS-RESULT -->
-            <div id="bank-pedalboards-result" style="background:none;top:30px;">
+            <!-- BANK-PEDALBOARDS-RESULT|SYSTEM-INFORMATION -->
+            <div id="bank-pedalboards-result">
                 <hr style="border:1px solid #444;"/>
 
-                <h2 style="margin:20px;width:90px;">Audio</h2>
-                <form class="form" style="min-height:50px;color:#AAA;">
+                <h2>Audio</h2>
+                <form class="form">
                     <b>Buffer Size:</b> {{bufferSize}} frames<br/>
                     <b>Sample Rate:</b> {{sampleRate}} Hz<br/>
                     <b>DSP Load:</b> <span id="info-dsp-load">--.- %</span><br/>
@@ -412,8 +606,8 @@ $('document').ready(function() {
 
                 <hr style="border:1px solid #333;"/>
 
-                <h2 style="margin:20px;width:90px;">System</h2>
-                <form class="form" style="min-height:50px;color:#AAA;">
+                <h2>System</h2>
+                <form class="form">
                     <b>Unit:</b> <span id="info-system-unit">---</span><br/>
                     <b>Build Date:</b> <span id="info-system-date">---</span><br/>
                     <b>OS Version:</b> {{version}}<br/>
@@ -421,8 +615,8 @@ $('document').ready(function() {
 
                 <hr style="border:1px solid #333;"/>
 
-                <h2 style="margin:20px;width:90px;">Kernel</h2>
-                <form class="form" style="min-height:50px;color:#AAA;">
+                <h2>Kernel</h2>
+                <form class="form">
                     <b>Machine:</b> <span id="info-kernel-machine">---</span><br/>
                     <b>Release:</b> <span id="info-kernel-release">---</span><br/>
                     <b>Version:</b> <span id="info-kernel-version">---</span><br/>
@@ -430,13 +624,13 @@ $('document').ready(function() {
 
                 <hr style="border:1px solid #444;"/>
             </div>
-            <!-- END BANK-PEDALBOARDS-RESULT -->
+            <!-- END BANK-PEDALBOARDS-RESULT|SYSTEM-INFORMATION -->
 
         </div></div>
-        <!-- END BANK-PEDALBOARDS-SEARCH -->
+        <!-- END BANK-PEDALBOARDS-SEARCH|SYSTEM-INFORMATION -->
 
     </div>
-    <!-- END BANKS -->
+    <!-- END BANKS|SETTINGS -->
 
 <!-- END WRAPPER -->
 </div>

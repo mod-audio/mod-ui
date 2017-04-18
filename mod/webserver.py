@@ -348,7 +348,6 @@ class SystemPreferences(JsonRequestHandler):
         ret = {}
 
         for pref in self.prefs:
-            print(pref)
             if pref['type'] == self.OPTION_FILE_EXISTS:
                 val = os.path.exists(pref['data'])
 

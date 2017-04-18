@@ -576,10 +576,10 @@ class Host(object):
         close_jack()
 
     def load_prefs(self):
-        if self.prefs.get("link-enabled", "") == "true":
+        if self.prefs.get("link-enabled", "false") == "true":
             self.set_link_enabled(True)
 
-        if self.prefs.get("transport-rolling", "") == "true":
+        if self.prefs.get("transport-rolling", "false") == "true":
             self.set_transport_rolling(True)
 
     def open_connection_if_needed(self, websocket):
@@ -2872,7 +2872,9 @@ _:b%i
                 callback(False)
                 return
 
-            self.mute()
+            if self.prefs.get("tuner-mutes-outputs", "true") != "false":
+                self.mute()
+
             callback(True)
 
         def tuner_added(ok):
