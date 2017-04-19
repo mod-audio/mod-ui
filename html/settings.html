@@ -209,6 +209,15 @@ function run_custom_command(cmd) {
     })
 }
 
+function write_file_contents(path, content) {
+    console.log("write_file_contents", path, content)
+    system_exechange({
+        'type'   : 'filewrite',
+        'path'   : path,
+        'content': content,
+    })
+}
+
 $('document').ready(function() {
     var self = this
 
@@ -306,6 +315,13 @@ $('document').ready(function() {
         $("#prefs-prefs-muted-tuner").prop("checked", true)
     }
 
+    if (PREFERENCES['dev-mode'] == "on") {
+        $("#prefs-ui-developer-mode").prop("checked", true)
+    }
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#prefs-ui-unstable-plugins").prop("checked", true)
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // --- Personal :: Bluetooth custom name
 
@@ -318,9 +334,7 @@ $('document').ready(function() {
         }
 
         var name = $("#prefs-bluetooth-name").val()
-
-        // TODO
-        console.log("set_bluetooth_name", name)
+        write_file_contents("bluetooth/name", name)
     }
 
     $("#prefs-bluetooth-custom").click(function (e) {
@@ -374,7 +388,7 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
-    // --- Maintenance & Backup
+    // --- Preferences
 
     $("#prefs-prefs-autostart-playback").click(function (e) {
         config_set("transport-rolling-at-boot", bool2str($(this).prop("checked")))
@@ -389,6 +403,9 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
+    // --- Maintenance & Backup
+
+    // ----------------------------------------------------------------------------------------------------------------
     // --- Services
 
     $("#prefs-service-midiclock").click(function (e) {
@@ -401,6 +418,22 @@ $('document').ready(function() {
 
     $("#prefs-service-netmanager").click(function () {
         enable_service("netmanager", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- User Interface
+
+    $("#prefs-ui-developer-mode").click(function (e) {
+        config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
+    })
+
+    $("#prefs-ui-unstable-plugins").click(function (e) {
+        var checked = $(this).prop("checked")
+        if (checked && !confirm("TODO: note here about unstable")) {
+            $(this).prop("checked", false)
+            return
+        }
+        config_set("show-unstable-plugins", bool2str(checked))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -547,6 +580,21 @@ $('document').ready(function() {
         <!-- SETTINGS PAGE (ADVANCED) -->
         <div class="settings-page mod-hidden" id="settings-page-advanced">
             <div class="settings-page-content">
+                <h1>User Interface</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-developer-mode">
+                            Developer Mode
+                        </input>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
+                            Show unstable in Plugin Store
+                        </input>
+                    </label>
+                </form>
+
                 <h1>Boot?</h1>
                 <form class="form">
                     <label>

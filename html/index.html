@@ -174,6 +174,9 @@ $('document').ready(function() {
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#cloud-plugins-stable").parent().show()
+    }
 
     // start code for ajax loading bar
 

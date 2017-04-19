@@ -384,6 +384,25 @@ class SystemExeChange(JsonRequestHandler):
             elif cmd == "restore":
                 IOLoop.instance().add_callback(start_restore)
 
+        elif etype == "filewrite":
+            path    = self.get_argument('path')
+            content = self.get_argument('content').strip()
+
+            if path not in ("bluetooth/name",):
+                self.write(False)
+                return
+
+            filename = "/data/" + path
+
+            if content:
+                foldername = os.path.dirname(filename)
+                if not os.path.exists(foldername):
+                    os.makedirs(foldername)
+                with open(filename, 'w') as fh:
+                    fh.write(content)
+            elif os.path.exists(filename):
+                os.remove(filename)
+
         elif etype == "service":
             name   = self.get_argument('name')
             enable = bool(int(self.get_argument('enable')))
