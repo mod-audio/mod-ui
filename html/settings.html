@@ -35,7 +35,7 @@
     }
     .settings-page-content {
         background: #111;
-        left: 20%;
+        left: 245px;
         height: 92px;
         margin: 0;
         padding: 0;
@@ -69,6 +69,14 @@
 
     #bank-library #bank-list {
         bottom: 0px;
+        left: 5px;
+        width: 200px;
+    }
+
+    #bank-library #bank-list div.add-bank {
+        padding-left: 5px;
+        padding-right: 5px;
+        text-align: center;
     }
 
     #bank-pedalboards-search #bank-pedalboards-result {
@@ -438,7 +446,9 @@ $('document').ready(function() {
 
     $("#prefs-ui-unstable-plugins").click(function () {
         var checked = $(this).prop("checked")
-        if (checked && !confirm("TODO: note here about unstable")) {
+        if (checked && !confirm("Installing non-stable plugins is unsupported.\n"
+                               +"Expect things to break, and note that you cannot share pedalboards containing such plugins.\n"
+                               +"Are you sure you want to continue?")) {
             $(this).prop("checked", false)
             return
         }
@@ -504,9 +514,9 @@ $('document').ready(function() {
 
         <!-- BANK|SETTINGS-LIST -->
         <div id="bank-list">
-            <div id="tab-basic" class="add-bank selected">(ico) Basic</div>
-            <div id="tab-advanced" class="add-bank">(ico) Advanced</div>
-            <!--<div id="tab-dangerous" class="add-bank">(ico) Dangerous</div>-->
+            <div id="tab-basic" class="add-bank selected">Basic</div>
+            <div id="tab-advanced" class="add-bank">Advanced</div>
+            <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
         </div>
         <!-- END BANK|SETTINGS-LIST -->
 
@@ -594,11 +604,22 @@ $('document').ready(function() {
                     </label>
                 </form>
 
-                <h1>Boot?</h1>
+                <h1>Boot &amp; Restore</h1>
                 <form class="form">
+                    <p>
+                        Reboot the MOD.<br>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
                     <label>
                         <input type="button" id="button-action-reboot" value="Reboot MOD"></input>
-                        <input type="button" id="button-action-restore" value="Start recovery mode"></input>
+                    </label>
+                    <br><br>
+                    <p>
+                        Start the MOD's restore/upgrade mode, where you can manually update the MOD via USB.<br>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-restore" value="Start upgrade mode"></input>
                     </label>
                 </form>
             </div>
