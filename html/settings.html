@@ -135,7 +135,6 @@ function refresh_sysprefs() {
         url: '/system/prefs',
         method: 'GET',
         success: function (resp) {
-            console.log(resp)
             if (resp.bluetooth_name != null)
             {
                 $("#prefs-bluetooth-custom").prop("checked", true)
@@ -193,7 +192,6 @@ function system_exechange(data) {
 }
 
 function enable_service(name, enable) {
-    console.log("enable_service", name, enable)
     system_exechange({
         'type'  : 'service',
         'name'  : name,
@@ -202,7 +200,6 @@ function enable_service(name, enable) {
 }
 
 function run_custom_command(cmd) {
-    console.log("run_custom_command", cmd)
     system_exechange({
         'type': 'command',
         'cmd' : cmd,
@@ -210,7 +207,6 @@ function run_custom_command(cmd) {
 }
 
 function write_file_contents(path, content) {
-    console.log("write_file_contents", path, content)
     system_exechange({
         'type'   : 'filewrite',
         'path'   : path,
@@ -352,26 +348,24 @@ $('document').ready(function() {
         write_file_contents("bluetooth/name", name)
     }
 
-    $("#prefs-bluetooth-custom").click(function (e) {
+    $("#prefs-bluetooth-custom").click(function () {
         var elem_btname = $("#prefs-bluetooth-name")
 
         if ($(this).prop("checked")) {
-            // Give it a default name if one was not set before
+            // give it a default name if one was not set before
             if (! elem_btname.val()) {
                 elem_btname.val(INFO.hwname)
             }
+            // enable text input
             elem_btname.prop("disabled", false)
-
-            // Set name
-            self.set_bluetooth_name()
 
         } else {
             // disable text input
             elem_btname.prop("disabled", true)
-
-            // clear name
-            self.set_bluetooth_name()
         }
+
+        // set name
+        self.set_bluetooth_name()
     })
 
     $("#prefs-bluetooth-name")
@@ -405,15 +399,15 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Preferences
 
-    $("#prefs-prefs-autostart-playback").click(function (e) {
+    $("#prefs-prefs-autostart-playback").click(function () {
         config_set("transport-rolling-at-boot", bool2str($(this).prop("checked")))
     })
 
-    $("#prefs-prefs-autostart-link").click(function (e) {
+    $("#prefs-prefs-autostart-link").click(function () {
         config_set("link-enabled-at-boot", bool2str($(this).prop("checked")))
     })
 
-    $("#prefs-prefs-muted-tuner").click(function (e) {
+    $("#prefs-prefs-muted-tuner").click(function () {
         config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
     })
 
@@ -423,7 +417,7 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Services
 
-    $("#prefs-service-midiclock").click(function (e) {
+    $("#prefs-service-midiclock").click(function () {
         enable_service("midiclock", $(this).prop("checked"))
     })
 
@@ -438,11 +432,11 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- User Interface
 
-    $("#prefs-ui-developer-mode").click(function (e) {
+    $("#prefs-ui-developer-mode").click(function () {
         config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
     })
 
-    $("#prefs-ui-unstable-plugins").click(function (e) {
+    $("#prefs-ui-unstable-plugins").click(function () {
         var checked = $(this).prop("checked")
         if (checked && !confirm("TODO: note here about unstable")) {
             $(this).prop("checked", false)
@@ -504,16 +498,6 @@ $('document').ready(function() {
         <div class="box clearfix">
             <header>
                 <h1 class="bottom top">MOD Settings</h1>
-                <!--
-                <div class="form-group">
-                    <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search"/>
-                </div>
-                <a style="display:inline-block;float:right;color:#AAA;font-size:1.1em;margin-right:30px;"
-                   href="http://pedalboards.moddevices.com/" target="_blank">
-                    <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
-                    <span style="vertical-align: middle;">Browse Online Pedalboards</span>
-                </a>
-                -->
             </header>
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
