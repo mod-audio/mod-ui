@@ -33,7 +33,7 @@ from collections import OrderedDict
 from random import randint
 from shutil import rmtree
 from tornado import gen, iostream, ioloop
-import os, json, socket, logging
+import os, json, socket, time, logging
 
 from mod import safe_json_load, symbolify
 from mod.addressings import Addressings
@@ -157,6 +157,7 @@ class Host(object):
         self.pedalboard_preset   = -1
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
+        self.last_data_finish_msg = 0.0
 
         if APP and os.getenv("MOD_LIVE_ISO") is not None:
             self.jack_hwin_prefix  = "system:playback_"
@@ -825,7 +826,15 @@ class Host(object):
                 self.reset(hmi_clear_callback)
 
         elif cmd == "data_finish":
-            self.send_output_data_ready()
+            now  = time.clock()
+            diff = now-self.last_data_finish_msg
+
+            if diff >= 0.5:
+                self.send_output_data_ready(now)
+
+            else:
+                diff = (0.5-diff)/0.5*0.064
+                ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
 
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
@@ -838,7 +847,8 @@ class Host(object):
         self.readsock.read_until(b"\0", self.process_read_message)
 
     @gen.coroutine
-    def send_output_data_ready(self):
+    def send_output_data_ready(self, now = None):
+        self.last_data_finish_msg = time.clock() if now is None else now
         yield gen.Task(self.send_notmodified, "output_data_ready", datatype='boolean')
 
     def process_write_queue(self):
