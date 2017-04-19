@@ -225,6 +225,20 @@ $('document').ready(function() {
     var ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
     ws.onclose = function (evt) {
+        if ($('body').find('.screen-disconnected').length != 0) {
+            return
+        }
+
+        var block = $('<div class="screen-disconnected blocker">')
+        block.html('<p>Disconnected</p>')
+
+        var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+        re.css("background-image", "url(img/icons/25/reload.png)");
+        re.click(function () { location.reload(); });
+
+        $('body').append(block).css('overflow', 'hidden')
+        $('#wrapper').css('z-index', -1)
+        $('#bank-library').css('z-index', -1)
     }
 
     ws.onmessage = function (evt) {
@@ -251,15 +265,10 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "mem_load") {
-            var value = parseFloat(data[1])
-            /*
-            $("#ram-bar").css("width", (100.0-value).toFixed().toString()+"%")
-            $("#ram-bar-text").text("RAM "+value.toString()+"%")*/
+        if (cmd == "stop") {
+            ws.close()
             return
         }
-
-//         console.log(data)
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -333,7 +342,13 @@ $('document').ready(function() {
             self.last_bluetooth_timeout = null
         }
 
-        var name = $("#prefs-bluetooth-name").val()
+        var name
+        if ($("#prefs-bluetooth-name").prop("checked")) {
+            name = $("#prefs-bluetooth-name").val()
+        } else {
+            name = ""
+        }
+
         write_file_contents("bluetooth/name", name)
     }
 
@@ -355,7 +370,7 @@ $('document').ready(function() {
             elem_btname.prop("disabled", true)
 
             // clear name
-            // TODO
+            self.set_bluetooth_name()
         }
     })
 
