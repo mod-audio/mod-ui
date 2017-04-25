@@ -280,7 +280,7 @@ class Addressings(object):
             print("ERROR: Trying to address the wrong way, stop!")
             return None
 
-        unit = "(none)"
+        unit = "none"
         options = []
 
         if portsymbol == ":presets":
@@ -294,6 +294,7 @@ class Addressings(object):
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             if portsymbol == ":bpm":
                 pprops = ["tapTempo"]
+                unit = "BPM"
 
             elif portsymbol == ":rolling":
                 pprops = ["toggled"]
@@ -313,7 +314,8 @@ class Addressings(object):
             # useful info about this port
             pprops = port_info["properties"]
 
-            unit = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
+            if "symbol" in port_info["units"].keys():
+                unit = port_info["units"]["symbol"]
 
             if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]

@@ -972,6 +972,7 @@ function Desktop(elements) {
             elements.transportWindow.show()
         }
     })
+
     elements.transportWindow.find(".mod-switch-image").click(function (e) {
         var rolling = !$(this).hasClass("on")
         console.log("changing playback to", rolling)
@@ -1030,13 +1031,11 @@ function Desktop(elements) {
         dummy: false,
         port: transportBeatsPerMinutePort,
         change: function (e, value) {
-            console.log("knob image change", value)
             ws.send("transport-bpm " + value)
             self.setTransportBPM(value)
         }
     })
     elements.transportWindow.find(".mod-knob").find(".mod-address").click(function (e) {
-        console.log("bpm address")
         self.hardwareManager.open("/pedalboard", transportBeatsPerMinutePort, "Global-BPM")
     })
 
@@ -1949,6 +1948,11 @@ function enable_dev_mode(skipSaveConfig) {
     // buffer size button
     $('#mod-buffersize').show()
 
+    // transport parameters
+    $('#mod-transport-window').css({
+        right: '740px'
+    })
+
     if (!skipSaveConfig) {
         // save settings
         desktop.saveConfigValue("dev-mode", "on")
@@ -1974,6 +1978,11 @@ function disable_dev_mode() {
 
     // buffer size button
     $('#mod-buffersize').hide()
+
+    // transport parameters
+    $('#mod-transport-window').css({
+        right: '460px'
+    })
 
     // save settings
     desktop.saveConfigValue("dev-mode", "off")
