@@ -15,6 +15,46 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var transportBeatsPerMinutePort = {
+    name: 'BPM',
+    shortName: 'BPM',
+    symbol: ':bpm',
+    ranges: {
+        minimum: 22.0,
+        maximum: 999.0,
+        default: 120.0,
+    },
+    comment: "",
+    designation: "",
+    properties: ["logarithmic", "integer", "tapTempo"],
+    enabled: true,
+    value: 120.0,
+    format: null,
+    units: {
+        symbol: "bpm",
+    },
+    scalePoints: [],
+}
+
+var transportRollingPort = {
+    name: 'Rolling',
+    shortName: 'Rolling',
+    symbol: ':rolling',
+    ranges: {
+        minimum: 0.0,
+        maximum: 1.0,
+        default: 0.0,
+    },
+    comment: "",
+    designation: "",
+    properties: ["toggled"],
+    enabled: true,
+    value: 0.0,
+    format: null,
+    units: {},
+    scalePoints: [],
+}
+
 function Desktop(elements) {
     var self = this
 
@@ -39,6 +79,8 @@ function Desktop(elements) {
         presetSaveAsButton: $('<div>'),
         presetManageButton: $('<div>'),
         presetDisableButton: $('<div>'),
+        transportButton: $('<div>'),
+        transportWindow: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -747,6 +789,26 @@ function Desktop(elements) {
         }
     },
 
+    this.setTransportBPM = function (bpm) {
+        var text = sprintf("%.2f BPM", bpm)
+        if (bpm < 100.0) {
+            text = "&nbsp;" + text
+        }
+        transportBeatsPerMinutePort.value = bpm
+        elements.transportButton.find('span').html(text)
+        elements.transportWindow.find(".mod-knob-current-value").html(text)
+    },
+    this.setTransportPlaybackState = function (playing) {
+        transportRollingPort.value = playing ? 1.0 : 0.0
+        if (playing) {
+            elements.transportButton.addClass("playing")
+            elements.transportWindow.find(".mod-switch-image").removeClass("off").addClass("on")
+        } else {
+            elements.transportButton.removeClass("playing")
+            elements.transportWindow.find(".mod-switch-image").removeClass("on").addClass("off")
+        }
+    },
+
     this.saveBox = elements.saveBox.saveBox({
         save: function (title, asNew, callback) {
             $.ajax({
@@ -903,6 +965,81 @@ function Desktop(elements) {
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
         self.pedalPresets.start(self.pedalboardPresetId, addressed)
     })
+    elements.transportButton.click(function (e) {
+        if (elements.transportWindow.is(":visible")){
+            elements.transportWindow.hide()
+        } else {
+            elements.transportWindow.show()
+        }
+    })
+    elements.transportWindow.find(".mod-switch-image").click(function (e) {
+        var rolling = !$(this).hasClass("on")
+        console.log("changing playback to", rolling)
+        ws.send("transport-rolling " + (rolling ? "1" : "0"))
+        self.setTransportPlaybackState(rolling)
+    })
+    elements.transportWindow.find(".mod-switch").find(".mod-address").click(function (e) {
+        console.log("playing address")
+        self.hardwareManager.open("/pedalboard", transportRollingPort, "Global-Rolling")
+    })
+
+    elements.transportWindow.find(".mod-knob").find(".mod-knob-current-value")
+    .attr('contenteditable', true)
+    .focus(function () {
+        self.setTransportBPM(transportBeatsPerMinutePort.value)
+    })
+    .keydown(function (e) {
+        // enter
+        if (e.keyCode == 13) {
+            $(this).blur()
+            return false
+        }
+        // numbers
+        if (e.keyCode >= 48 && e.keyCode <= 57) {
+            return true;
+        }
+        if (e.keyCode >= 96 && e.keyCode <= 105) {
+            return true;
+        }
+        // backspace and delete
+        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110) {
+            return true;
+        }
+        // left, right, dot
+        if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190) {
+            return true;
+        }
+        // prevent key
+        e.preventDefault();
+        return false
+    })
+    .blur(function () {
+        var value = parseFloat($(this).text())
+        if (isNaN(value)) {
+            value = transportBeatsPerMinutePort.value
+        } else if (value < 22.0) {
+            value = 22.0
+        } else if (value > 999.0) {
+            value = 999.0
+        }
+        ws.send("transport-bpm " + value)
+        self.setTransportBPM(value)
+    })
+
+    elements.transportWindow.find(".mod-knob-image").controlWidget({
+        dummy: false,
+        port: transportBeatsPerMinutePort,
+        change: function (e, value) {
+            console.log("knob image change", value)
+            ws.send("transport-bpm " + value)
+            self.setTransportBPM(value)
+        }
+    })
+    elements.transportWindow.find(".mod-knob").find(".mod-address").click(function (e) {
+        console.log("bpm address")
+        self.hardwareManager.open("/pedalboard", transportBeatsPerMinutePort, "Global-BPM")
+    })
+
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
     })

@@ -6773,6 +6773,7 @@ hr.dotted {
   display: none;
 }
 #main-menu #mod-show-midi-port,
+#main-menu #mod-transport-icon,
 #main-menu .mod-bypass,
 #main-menu #mod-cpu,
 #main-menu #mod-ram,
@@ -6792,6 +6793,7 @@ hr.dotted {
   transition: all 0.33s;
 }
 #main-menu #mod-show-midi-port:hover,
+#main-menu #mod-transport-icon:hover,
 #main-menu .mod-bypass:hover,
 #main-menu #mod-cpu:hover,
 #main-menu #mod-ram:hover,
@@ -6800,6 +6802,7 @@ hr.dotted {
   background-color: #000;
 }
 #main-menu #mod-show-midi-port.selected,
+#main-menu #mod-transport-icon.selected,
 #main-menu .mod-bypass.selected,
 #main-menu #mod-cpu.selected,
 #main-menu #mod-ram.selected,
@@ -6809,6 +6812,15 @@ hr.dotted {
 }
 #main-menu #mod-show-midi-port {
   background-image: url(../img/icons/25/midi.png);
+}
+#main-menu #mod-transport-icon {
+  background-image: url(../img/icons/25/midi.png);
+  font-family: monospace;
+  width: 10.5em !important;
+  text-align: right;
+}
+#main-menu #mod-transport-icon.playing {
+  background-color: #883996;
 }
 #main-menu .mod-bypass {
   background-image: url(../img/icons/25/bypass.png);
@@ -7159,6 +7171,14 @@ header#pedalboard-actions {
 #mod-upgrade {
   max-width: 450px;
   min-width: 350px;
+}
+#mod-transport-window {
+  bottom: 50px;
+  right: 460px;
+  top: initial;
+  left: initial;
+  background: rgba(17, 17, 17, 0.9);
+  padding: 50px 40px 15px 40px;
 }
 #plugins-library {
   bottom: 45px;

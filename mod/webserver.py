@@ -776,10 +776,14 @@ class ServerWebSocket(websocket.WebSocketHandler):
             on = bool(int(data[1]))
             SESSION.host.set_link_enabled(on, True)
 
-        elif cmd == "transport":
+        elif cmd == "transport-bpm":
+            bpm = float(data[1])
+            print("transport-bpm called", bpm)
+            SESSION.host.set_transport_bpm(bpm)
+
+        elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
-            bpm     = float(data[2])
-            SESSION.host.set_transport(rolling, bpm, True)
+            SESSION.host.set_transport_rolling(rolling)
 
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous

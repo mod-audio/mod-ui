@@ -110,6 +110,8 @@ $('document').ready(function() {
         presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
         presetManageButton: $('#pedalboard-info .js-preset-manage'),
         presetDisableButton: $('#pedalboard-info .js-preset-disable'),
+        transportButton: $('#mod-transport-icon'),
+        transportWindow: $('#mod-transport-window'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
         cloudPluginBox: $('#cloud-plugins-library'),
@@ -565,6 +567,9 @@ $('document').ready(function() {
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass 2</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass 1</div>
         <div id="mod-show-midi-port" class="icon">MIDI Ports</div>
+        <div id="mod-transport-icon" class="icon">
+            <span>---.-- BPM</span>
+        </div>
     </div>
     <!-- END MAIN MENU-->
 
@@ -812,6 +817,29 @@ $('document').ready(function() {
         </div>
     </div>
     <!-- END CONTROL CHAIN DEVICES BOX -->
+
+    <!-- TRANSPORT BOX -->
+    <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
+        <div class="mod-controls clearfix">
+            <div class="mod-control-group clearfix">
+                <div class="mod-switch">
+                    <span class="mod-switch-title">Playing</span>
+                    <div class="mod-switch-image off"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-knob">
+                    <span class="mod-knob-title">Beats Per Minute</span>
+                    <span class="mod-knob-min-value">20 BPM</span>
+                    <span class="mod-knob-max-value">999 BPM</span>
+                    <span class="mod-knob-current-value">---.-- BPM</span>
+                    <div class="mod-knob-image"></div>
+                    <div class="mod-address"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TRANSPORT BOX -->
 
 <!-- END WRAPPER -->
 </div>

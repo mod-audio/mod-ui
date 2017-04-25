@@ -7,6 +7,7 @@ import os
 from tornado import gen
 from mod import get_hardware_actuators, safe_json_load
 from mod.control_chain import ControlChainDeviceListener
+from mod.settings import PEDALBOARD_INSTANCE_ID
 from mod.utils import get_plugin_info, get_plugin_control_inputs_and_monitored_outputs
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0
@@ -289,6 +290,17 @@ class Addressings(object):
                 return None
 
             value, maximum, options, spreset = data
+
+        elif instance_id == PEDALBOARD_INSTANCE_ID:
+            if portsymbol == ":bpm":
+                pprops = ["tapTempo"]
+
+            elif portsymbol == ":rolling":
+                pprops = ["toggled"]
+
+            else:
+                print("ERROR: Trying to address wrong pedalboard port")
+                return None
 
         elif portsymbol != ":bypass":
             for port_info in get_plugin_control_inputs_and_monitored_outputs(plugin_uri)['inputs']:
