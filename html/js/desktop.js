@@ -34,6 +34,7 @@ var transportBeatsPerMinutePort = {
         symbol: "bpm",
     },
     scalePoints: [],
+    widget: null,
 }
 
 var transportRollingPort = {
@@ -53,6 +54,7 @@ var transportRollingPort = {
     format: null,
     units: {},
     scalePoints: [],
+    widget: null,
 }
 
 function Desktop(elements) {
@@ -194,6 +196,12 @@ function Desktop(elements) {
         },
         setEnabled: function (instance, portSymbol, enabled) {
             if (instance == "/pedalboard") {
+                if (portSymbol == ":bpm") {
+                    transportBeatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
+                    elements.transportWindow.find(".mod-knob").find(".mod-knob-current-value").attr('contenteditable', enabled)
+                } else if (portSymbol == ":rolling") {
+                    transportRollingPort.widget.controlWidget(enabled ? 'enable' : 'disable')
+                }
                 return
             }
             self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
@@ -789,23 +797,32 @@ function Desktop(elements) {
         }
     },
 
-    this.setTransportBPM = function (bpm) {
+    this.setTransportBPM = function (bpm, set_control) {
         var text = sprintf("%.2f BPM", bpm)
         if (bpm < 100.0) {
             text = "&nbsp;" + text
         }
         transportBeatsPerMinutePort.value = bpm
+
+        if (set_control) {
+            transportBeatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
+        }
+
         elements.transportButton.find('span').html(text)
         elements.transportWindow.find(".mod-knob-current-value").html(text)
     },
-    this.setTransportPlaybackState = function (playing) {
-        transportRollingPort.value = playing ? 1.0 : 0.0
+    this.setTransportPlaybackState = function (playing, set_control) {
+        var value = playing ? 1.0 : 0.0
+        transportRollingPort.value = value
+
+        if (set_control) {
+            transportRollingPort.widget.controlWidget('setValue', value, true)
+        }
+
         if (playing) {
             elements.transportButton.addClass("playing")
-            elements.transportWindow.find(".mod-switch-image").removeClass("off").addClass("on")
         } else {
             elements.transportButton.removeClass("playing")
-            elements.transportWindow.find(".mod-switch-image").removeClass("on").addClass("off")
         }
     },
 
@@ -973,21 +990,37 @@ function Desktop(elements) {
         }
     })
 
-    elements.transportWindow.find(".mod-switch-image").click(function (e) {
-        var rolling = !$(this).hasClass("on")
-        console.log("changing playback to", rolling)
-        ws.send("transport-rolling " + (rolling ? "1" : "0"))
-        self.setTransportPlaybackState(rolling)
+    transportRollingPort.widget = elements.transportWindow.find(".mod-switch-image")
+    transportRollingPort.widget.controlWidget({
+        dummy: false,
+        port: transportRollingPort,
+        change: function (e, value) {
+            var rolling = (value > 0.5)
+            ws.send("transport-rolling " + (rolling ? "1" : "0"))
+            self.setTransportPlaybackState(rolling, false)
+        }
     })
     elements.transportWindow.find(".mod-switch").find(".mod-address").click(function (e) {
-        console.log("playing address")
         self.hardwareManager.open("/pedalboard", transportRollingPort, "Global-Rolling")
+    })
+
+    transportBeatsPerMinutePort.widget = elements.transportWindow.find(".mod-knob-image")
+    transportBeatsPerMinutePort.widget.controlWidget({
+        dummy: false,
+        port: transportBeatsPerMinutePort,
+        change: function (e, value) {
+            ws.send("transport-bpm " + value)
+            self.setTransportBPM(value, false)
+        }
+    })
+    elements.transportWindow.find(".mod-knob").find(".mod-address").click(function (e) {
+        self.hardwareManager.open("/pedalboard", transportBeatsPerMinutePort, "Global-BPM")
     })
 
     elements.transportWindow.find(".mod-knob").find(".mod-knob-current-value")
     .attr('contenteditable', true)
     .focus(function () {
-        self.setTransportBPM(transportBeatsPerMinutePort.value)
+        self.setTransportBPM(transportBeatsPerMinutePort.value, false)
     })
     .keydown(function (e) {
         // enter
@@ -1018,25 +1051,13 @@ function Desktop(elements) {
         var value = parseFloat($(this).text())
         if (isNaN(value)) {
             value = transportBeatsPerMinutePort.value
-        } else if (value < 22.0) {
-            value = 22.0
-        } else if (value > 999.0) {
-            value = 999.0
+        } else if (value < transportBeatsPerMinutePort.ranges.minimum) {
+            value = transportBeatsPerMinutePort.ranges.minimum
+        } else if (value > transportBeatsPerMinutePort.ranges.maximum) {
+            value = transportBeatsPerMinutePort.ranges.maximum
         }
         ws.send("transport-bpm " + value)
-        self.setTransportBPM(value)
-    })
-
-    elements.transportWindow.find(".mod-knob-image").controlWidget({
-        dummy: false,
-        port: transportBeatsPerMinutePort,
-        change: function (e, value) {
-            ws.send("transport-bpm " + value)
-            self.setTransportBPM(value)
-        }
-    })
-    elements.transportWindow.find(".mod-knob").find(".mod-address").click(function (e) {
-        self.hardwareManager.open("/pedalboard", transportBeatsPerMinutePort, "Global-BPM")
+        self.setTransportBPM(value, true)
     })
 
     elements.bypassLeftButton.click(function () {
