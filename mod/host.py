@@ -2187,12 +2187,12 @@ _:b%i
 
         # Blocks (plugins)
         blocks = ""
-        for instance_id, plugin in self.plugins.items():
+        for instance_id, pluginData in self.plugins.items():
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 continue
 
-            info = get_plugin_info(plugin['uri'])
-            instance = plugin['instance'].replace("/graph/","",1)
+            info = get_plugin_info(pluginData['uri'])
+            instance = pluginData['instance'].replace("/graph/","",1)
             blocks += """
 <%s>
     ingen:canvasX %.1f ;
@@ -2207,7 +2207,7 @@ _:b%i
     lv2:prototype <%s> ;
     pedal:preset <%s> ;
     a ingen:Block .
-""" % (instance, plugin['x'], plugin['y'], "false" if plugin['bypassed'] else "true",
+""" % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
        info['microVersion'], info['minorVersion'], info['builder'], info['release'],
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
@@ -2218,8 +2218,8 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
-       plugin['uri'],
-       plugin['preset'])
+       pluginData['uri'],
+       pluginData['preset'])
 
             # audio input
             for port in info['ports']['audio']['input']:
@@ -2274,7 +2274,7 @@ _:b%i
 """ % (instance, port['symbol'])
 
             # control input, save values
-            for symbol, value in plugin['ports'].items():
+            for symbol, value in pluginData['ports'].items():
                 blocks += """
 <%s/%s>
     ingen:value %f ;%s
@@ -2288,7 +2288,7 @@ _:b%i
         lv2:minimum %f ;
         lv2:maximum %f ;
         a midi:Controller ;
-    ] ;""" % plugin['midiCCs'][symbol]) if -1 not in plugin['midiCCs'][symbol][0:2] else "")
+    ] ;""" % pluginData['midiCCs'][symbol]) if -1 not in pluginData['midiCCs'][symbol][0:2] else "")
 
             # control output
             for port in info['ports']['control']['output']:
@@ -2303,19 +2303,55 @@ _:b%i
     ingen:value %i ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
-""" % (instance, 1 if plugin['bypassed'] else 0,
+""" % (instance, 1 if pluginData['bypassed'] else 0,
        ("""
     midi:binding [
         midi:channel %i ;
         midi:controllerNumber %i ;
         a midi:Controller ;
-    ] ;""" % plugin['bypassCC']) if -1 not in plugin['bypassCC'] else "")
+    ] ;""" % pluginData['bypassCC']) if -1 not in pluginData['bypassCC'] else "")
 
-        # Ports
+        # Globak Ports
+        pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
+
+        # BPM
+        ports = """
+<:bpm>
+    ingen:value %f ;%s
+    lv2:index 0 ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (self.transport_bpm,
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        lv2:minimum %f ;
+        lv2:maximum %f ;
+        a midi:Controller ;
+    ] ;""" % pluginData['midiCCs'][':bpm']) if -1 not in pluginData['midiCCs'][':bpm'][0:2] else "")
+
+        # Rolling
+        index += 1
+        ports += """
+<:rolling>
+    ingen:value %i ;%s
+    lv2:index 1 ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (int(self.transport_rolling),
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        a midi:Controller ;
+    ] ;""" % pluginData['midiCCs'][':rolling'][0:2]) if -1 not in pluginData['midiCCs'][':rolling'][0:2] else "")
+
+        # Control In/Out
         ports = """
 <control_in>
     atom:bufferType atom:Sequence ;
-    lv2:index 0 ;
+    lv2:index 2 ;
     lv2:name "Control In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_in" ;
@@ -2325,7 +2361,7 @@ _:b%i
 
 <control_out>
     atom:bufferType atom:Sequence ;
-    lv2:index 1 ;
+    lv2:index 3 ;
     lv2:name "Control Out" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_out" ;
@@ -2333,7 +2369,7 @@ _:b%i
     a atom:AtomPort ,
         lv2:OutputPort .
 """
-        index = 1
+        index = 3
 
         # Ports (Audio In)
         for port in self.audioportsIn:
@@ -2427,44 +2463,6 @@ _:b%i
         lv2:OutputPort .
 """ % index
 
-        ## BPM
-        #pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
-        #print(pluginData['midiCCs'][':bpm'])
-        #index += 1
-        #ports += """
-#<:bpm>
-    #ingen:value %f ;%s
-    #lv2:index %i ;
-    #a lv2:ControlPort ,
-        #lv2:InputPort .
-#""" % (self.transport_bpm,
-       #("""
-    #midi:binding [
-        #midi:channel %i ;
-        #midi:controllerNumber %i ;
-        #lv2:minimum %f ;
-        #lv2:maximum %f ;
-        #a midi:Controller ;
-    #] ;""" % pluginData['midiCCs'][':bpm']) if -1 not in pluginData['midiCCs'][':bpm'][0:2] else "")
-
-        ## Rolling
-        #index += 1
-        #ports += """
-#<:rolling>
-    #ingen:value %i ;%s
-    #lv2:index %i ;
-    #a lv2:ControlPort ,
-        #lv2:InputPort .
-#""" % (int(self.transport_rolling),
-       #("""
-    #midi:binding [
-        #midi:channel %i ;
-        #midi:controllerNumber %i ;
-        #lv2:minimum %f ;
-        #lv2:maximum %f ;
-        #a midi:Controller ;
-    #] ;""" % pluginData['midiCCs'][':rolling']) if -1 not in pluginData['midiCCs'][':rolling'][0:2] else "")
-
         # Write the main pedalboard file
         pbdata = """\
 @prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
@@ -2488,14 +2486,16 @@ _:b%i
 
         # Arcs (connections)
         if len(self.connections) > 0:
-            pbdata += "    ingen:arc _:b%s ;\n" % (" ,\n              _:b".join(tuple(str(i+1) for i in range(len(self.connections)))))
+            args = (" ,\n              _:b".join(tuple(str(i+1) for i in range(len(self.connections)))))
+            pbdata += "    ingen:arc _:b%s ;\n" % args
 
         # Blocks (plugins)
         if len(self.plugins) > 0:
-            pbdata += "    ingen:block <%s> ;\n" % ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for p in self.plugins.values())))
+            args = ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for i, p in self.plugins.items() if i != PEDALBOARD_INSTANCE_ID)))
+            pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = ["control_in","control_out"]
+        portsyms = [":bpm",":rolling","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:

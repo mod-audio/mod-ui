@@ -339,6 +339,14 @@ class PedalboardHardware(Structure):
         ("serial_midi_out", c_bool),
     ]
 
+class PedalboardTimeInfo(Structure):
+    _fields_ = [
+        ("bpm", c_float),
+        ("bpmCC", PedalboardMidiControl),
+        ("rolling", c_bool),
+        ("rollingCC", PedalboardMidiControl),
+    ]
+
 class PedalboardInfo(Structure):
     _fields_ = [
         ("title", c_char_p),
@@ -347,6 +355,7 @@ class PedalboardInfo(Structure):
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
         ("hardware", PedalboardHardware),
+        ("timeInfo", PedalboardTimeInfo),
     ]
 
 class PedalboardInfo_Mini(Structure):
