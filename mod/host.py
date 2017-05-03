@@ -123,6 +123,12 @@ class InstanceIdMapper(object):
         return self.id_map[id]
 
 class Host(object):
+    DESIGNATIONS_INDEX_ENABLED   = 0
+    DESIGNATIONS_INDEX_FREEWHEEL = 1
+    DESIGNATIONS_INDEX_BPB       = 2
+    DESIGNATIONS_INDEX_BPM       = 3
+    DESIGNATIONS_INDEX_SPEED     = 4
+
     def __init__(self, hmi, prefs, msg_callback):
         if False:
             from mod.hmi import HMI
@@ -159,6 +165,7 @@ class Host(object):
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
         self.transport_rolling   = False
+        self.transport_bpb       = 4.0
         self.transport_bpm       = 120.0
         self.last_data_finish_msg = 0.0
         self.init_plugins_data()
@@ -461,6 +468,8 @@ class Host(object):
 
     def addr_task_get_port_value(self, instance_id, portsymbol):
         if instance_id == PEDALBOARD_INSTANCE_ID:
+            if portsymbol == ":bpb":
+                return self.transport_bpb
             if portsymbol == ":bpm":
                 return self.transport_bpm
             if portsymbol == ":rolling":
@@ -516,6 +525,7 @@ class Host(object):
         data = get_jack_data(True)
         self.transport_rolling = data['rolling']
         self.transport_bpm     = data['bpm']
+        self.transport_bpb     = data['bpb']
 
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
@@ -571,11 +581,12 @@ class Host(object):
                 "uri"         : PEDALBOARD_URI,
                 "addressings" : {},
                 "midiCCs"     : {
+                    ":bpb"    : (-1,-1,0.0,1.0),
                     ":bpm"    : (-1,-1,0.0,1.0),
                     ":rolling": (-1,-1,0.0,1.0),
                 },
                 "ports"       : {},
-                "designations": (None,None,None,None),
+                "designations": (None,None,None,None,None),
                 "preset"      : "",
                 "mapPresets"  : []
             }
@@ -775,12 +786,27 @@ class Host(object):
                     pluginData['ports'][portsymbol] = value
 
                     if instance_id == PEDALBOARD_INSTANCE_ID:
-                        if portsymbol == ":bpm":
-                            self.transport_bpm = value
-                            self.msg_callback("transport %i %f" % (self.transport_rolling, value))
+                        if portsymbol == ":bpb":
+                            self.transport_bpb = value
+                            self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                                      self.transport_bpb,
+                                                                      self.transport_bpm))
 
                             for pluginData2 in self.plugins.values():
-                                _, _2, bpm_symbol, _3 = pluginData2['designations']
+                                bpb_symbol = pluginData2['designations'][self.DESIGNATIONS_INDEX_BPB]
+                                if bpb_symbol is None:
+                                    continue
+                                pluginData2['ports'][bpb_symbol] = value
+                                self.msg_callback("param_set %s %s %f" % (pluginData2['instance'], bpb_symbol, value))
+
+                        elif portsymbol == ":bpm":
+                            self.transport_bpm = value
+                            self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                                      self.transport_bpb,
+                                                                      self.transport_bpm))
+
+                            for pluginData2 in self.plugins.values():
+                                bpm_symbol = pluginData2['designations'][self.DESIGNATIONS_INDEX_BPM]
                                 if bpm_symbol is None:
                                     continue
                                 pluginData2['ports'][bpm_symbol] = value
@@ -788,10 +814,12 @@ class Host(object):
 
                         elif portsymbol == ":rolling":
                             self.transport_rolling = bool(int(value))
-                            self.msg_callback("transport %i %f" % (self.transport_rolling, self.transport_bpm))
+                            self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                                      self.transport_bpb,
+                                                                      self.transport_bpm))
 
                             for pluginData2 in self.plugins.values():
-                                _, _2, _3, speed_symbol = pluginData2['designations']
+                                speed_symbol = pluginData2['designations'][self.DESIGNATIONS_INDEX_SPEED]
                                 if speed_symbol is None:
                                     continue
                                 pluginData2['ports'][speed_symbol] = value
@@ -870,14 +898,19 @@ class Host(object):
                 self.reset(hmi_clear_callback)
 
         elif cmd == "transport":
-            rolling = int(msg[1])
-            speed   = 1.0 if (rolling != 0) else 0.0
-            bpm     = float(msg[2])
+            rolling = bool(int(msg[1]))
+            speed   = 1.0 if rolling else 0.0
+            bpb     = float(msg[2])
+            bpm     = float(msg[3])
 
             for pluginData in self.plugins.values():
-                _, _2, bpm_symbol, speed_symbol = pluginData['designations']
+                _, _2, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
 
-                if bpm_symbol is not None:
+                if bpb_symbol is not None:
+                    pluginData['ports'][bpb_symbol] = bpb
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+
+                elif bpm_symbol is not None:
                     pluginData['ports'][bpm_symbol] = bpm
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
@@ -885,10 +918,11 @@ class Host(object):
                     pluginData['ports'][speed_symbol] = speed
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
-            self.transport_rolling = bool(rolling)
+            self.transport_rolling = rolling
+            self.transport_bpb     = bpb
             self.transport_bpm     = bpm
 
-            self.msg_callback("transport %i %f" % (rolling, bpm))
+            self.msg_callback("transport %i %f %f" % (rolling, bpb, bpm))
 
         elif cmd == "data_finish":
             now  = time.clock()
@@ -987,7 +1021,7 @@ class Host(object):
         data = get_jack_data(False)
         websocket.write_message("mem_load " + self.get_free_memory_value())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
-        websocket.write_message("transport %i %f" % (int(self.transport_rolling), self.transport_bpm))
+        websocket.write_message("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
@@ -1001,7 +1035,7 @@ class Host(object):
         if crashed:
             self.init_jack()
             self.load_prefs()
-            self.send_notmodified("transport %i %f" % (int(self.transport_rolling), self.transport_bpm))
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
 
         midiports = []
@@ -1201,6 +1235,7 @@ class Host(object):
 
             enabled_symbol = None
             freewheel_symbol = None
+            bpb_symbol = None
             bpm_symbol = None
             speed_symbol = None
 
@@ -1223,6 +1258,11 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerBar":
+                    bpb_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpb
+
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
                     bpm_symbol = symbol
                     badports.append(symbol)
@@ -1244,7 +1284,7 @@ class Host(object):
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
                 "badports"    : badports,
-                "designations": (enabled_symbol, freewheel_symbol, bpm_symbol, speed_symbol),
+                "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : "",
                 "mapPresets"  : []
@@ -1327,7 +1367,7 @@ class Host(object):
         pluginData['bypassed'] = bypassed
         self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
-        enabled_symbol = pluginData['designations'][0]
+        enabled_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_ENABLED]
         if enabled_symbol is None:
             return
 
@@ -1374,13 +1414,15 @@ class Host(object):
             pluginData['ports'].update(portValues)
 
             used_actuators = []
-            enabled_symbol, freewheel_symbol, bpm_symbol, speed_symbol = pluginData['designations']
+            enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
 
             for symbol, value in pluginData['ports'].items():
                 if symbol == enabled_symbol:
                     value = 0.0 if pluginData['bypassed'] else 1.0
                 elif symbol == freewheel_symbol:
                     value = 0.0
+                elif symbol == bpb_symbol:
+                    value = self.transport_bpb
                 elif symbol == bpm_symbol:
                     value = self.transport_bpm
                 elif symbol == speed_symbol:
@@ -1904,6 +1946,7 @@ class Host(object):
 
             enabled_symbol = None
             freewheel_symbol = None
+            bpb_symbol = None
             bpm_symbol = None
             speed_symbol = None
 
@@ -1927,6 +1970,11 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerBar":
+                    bpb_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpb
+
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
                     bpm_symbol = symbol
                     badports.append(symbol)
@@ -1948,7 +1996,7 @@ class Host(object):
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
                 "badports"    : badports,
-                "designations": (enabled_symbol, freewheel_symbol, bpm_symbol, speed_symbol),
+                "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : p['preset'],
                 "mapPresets"  : []
@@ -2528,12 +2576,27 @@ _:b%i
         if saveConfig:
             self.prefs.setAndSave("link-enabled", "true" if enabled else "false")
 
-    def set_transport_bpm(self, bpm, callback=None, datatype='int'):
-        self.transport_bpm = bpm
-        self.send_modified("transport %i %f" % (int(self.transport_rolling), bpm), callback, datatype)
+    def set_transport_bpb(self, bpb, callback=None, datatype='int'):
+        self.transport_bpm = bpb
+        self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                   self.transport_bpb,
+                                                   self.transport_bpm), callback, datatype)
 
         for pluginData in self.plugins.values():
-            _, _2, bpm_symbol, _3 = pluginData['designations']
+            bpb_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPB]
+
+            if bpb_symbol is not None:
+                pluginData['ports'][bpb_symbol] = bpb
+                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+
+    def set_transport_bpm(self, bpm, callback=None, datatype='int'):
+        self.transport_bpm = bpm
+        self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                   self.transport_bpb,
+                                                   self.transport_bpm), callback, datatype)
+
+        for pluginData in self.plugins.values():
+            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
 
             if bpm_symbol is not None:
                 pluginData['ports'][bpm_symbol] = bpm
@@ -2541,12 +2604,14 @@ _:b%i
 
     def set_transport_rolling(self, rolling, callback=None, datatype='int'):
         self.transport_rolling = rolling
-        self.send_notmodified("transport %i %f" % (int(rolling), self.transport_bpm), callback, datatype)
+        self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                      self.transport_bpb,
+                                                      self.transport_bpm), callback, datatype)
 
         speed = 1.0 if rolling else 0.0
 
         for pluginData in self.plugins.values():
-            _, _2, _3, speed_symbol = pluginData['designations']
+            speed_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_SPEED]
 
             if speed_symbol is not None:
                 pluginData['ports'][speed_symbol] = speed
@@ -2855,7 +2920,7 @@ _:b%i
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
-            enabled_symbol = pluginData['designations'][0]
+            enabled_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_ENABLED]
             if enabled_symbol is None:
                 return
 
@@ -2875,14 +2940,24 @@ _:b%i
                 self.preset_load(instance, pluginData['mapPresets'][value], callback)
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
-            if portsymbol == ":bpm":
+            if portsymbol == ":bpb":
+                self.set_transport_bpb(value, callback)
+                self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm))
+
+            elif portsymbol == ":bpm":
                 self.set_transport_bpm(value, callback)
-                self.msg_callback("transport %i %f" % (self.transport_rolling, value))
+                self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm))
 
             elif portsymbol == ":rolling":
                 rolling = bool(value > 0.5)
                 self.set_transport_rolling(rolling, callback)
-                self.msg_callback("transport %i %f" % (rolling, self.transport_bpm))
+                self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm))
 
             else:
                 print("ERROR: Trying to address wrong pedalboard port")

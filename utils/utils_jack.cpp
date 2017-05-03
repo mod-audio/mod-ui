@@ -219,7 +219,7 @@ void close_jack(void)
 
 JackData* get_jack_data(bool withTransport)
 {
-    static JackData data = { 0.0f, 0, false, 120.0 };
+    static JackData data = { 0.0f, 0, false, 4.0, 120.0 };
     static std::vector<std::string> localPorts;
 
     if (gClient != nullptr)
@@ -231,7 +231,17 @@ JackData* get_jack_data(bool withTransport)
         {
             jack_position_t pos;
             data.rolling = jack_transport_query(gClient, &pos) == JackTransportRolling;
-            data.bpm     = (pos.valid & JackTransportBBT) ? pos.beats_per_minute : 120.0;
+
+            if (pos.valid & JackTransportBBT)
+            {
+                data.bpb = pos.beats_per_bar;
+                data.bpm = pos.beats_per_minute;
+            }
+            else
+            {
+                data.bpb = 4.0;
+                data.bpm = 120.0;
+            }
         }
 
         if (jack_port_appeared_cb != nullptr)
@@ -277,6 +287,7 @@ JackData* get_jack_data(bool withTransport)
         data.cpuLoad = 0.0f;
         data.xruns   = 0;
         data.rolling = false;
+        data.bpb     = 4.0;
         data.bpm     = 120.0;
     }
 

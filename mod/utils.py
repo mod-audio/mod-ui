@@ -341,6 +341,8 @@ class PedalboardHardware(Structure):
 
 class PedalboardTimeInfo(Structure):
     _fields_ = [
+        ("bpb", c_float),
+        ("bpbCC", PedalboardMidiControl),
         ("bpm", c_float),
         ("bpmCC", PedalboardMidiControl),
         ("rolling", c_bool),
@@ -388,6 +390,7 @@ class JackData(Structure):
         ("cpuLoad", c_float),
         ("xruns", c_uint),
         ("rolling", c_bool),
+        ("bpb", c_double),
         ("bpm", c_double),
     ]
 
@@ -676,6 +679,7 @@ def get_jack_data(withTransport):
         'cpuLoad': data.contents.cpuLoad,
         'xruns'  : data.contents.xruns,
         'rolling': data.contents.rolling,
+        'bpb'    : data.contents.bpb,
         'bpm'    : data.contents.bpm
     }
 

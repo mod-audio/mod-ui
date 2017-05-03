@@ -214,6 +214,8 @@ typedef struct {
 } PedalboardHardware;
 
 typedef struct {
+    float bpb;
+    PedalboardMidiControl bpbCC;
     float bpm;
     PedalboardMidiControl bpmCC;
     bool rolling;
@@ -255,6 +257,7 @@ typedef struct {
     float cpuLoad;
     unsigned xruns;
     bool rolling;
+    double bpb;
     double bpm;
 } JackData;
 
