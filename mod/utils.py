@@ -406,7 +406,8 @@ c_struct_types = (PluginAuthor,
                   PluginPortsI,
                   PluginPorts,
                   PedalboardMidiControl,
-                  PedalboardHardware)
+                  PedalboardHardware,
+                  PedalboardTimeInfo)
 
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),

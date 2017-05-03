@@ -28,7 +28,7 @@ var transportBeatsPerBarPort = {
     designation: "",
     properties: ["integer"],
     enabled: true,
-    value: 4.0,
+    value: null,
     format: null,
     units: {},
     scalePoints: [],
@@ -48,7 +48,7 @@ var transportBeatsPerMinutePort = {
     designation: "",
     properties: ["logarithmic", "integer", "tapTempo"],
     enabled: true,
-    value: 120.0,
+    value: null,
     format: null,
     units: {
         symbol: "bpm",
@@ -216,9 +216,9 @@ function Desktop(elements) {
         },
         setEnabled: function (instance, portSymbol, enabled) {
             if (instance == "/pedalboard") {
-                if (portSymbol == ":bpm") {
-                    transportBeatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
+                if (portSymbol == ":bpb") {
                     // FIXME
+                    //transportBeatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
                     //elements.transportWindow.find(".mod-knob").find(".mod-knob-current-value").attr('contenteditable', enabled)
                 } else if (portSymbol == ":bpm") {
                     transportBeatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
@@ -825,7 +825,7 @@ function Desktop(elements) {
         if (transportBeatsPerBarPort.value == bpb) {
             return
         }
-        transportBeatsPerBarPort.value = bpm
+        transportBeatsPerBarPort.value = bpb
 
         // TODO
     },
