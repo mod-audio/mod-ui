@@ -99,7 +99,9 @@ $('document').ready(function() {
 
         if (cmd == "transport") {
             var rolling = parseInt(data[1]) != 0
-            var bpm     = parseFloat(data[2])
+            var bpb     = parseFloat(data[2])
+            var bpm     = parseFloat(data[3])
+            desktop.setTransportBPB(bpb, true)
             desktop.setTransportBPM(bpm, true)
             desktop.setTransportPlaybackState(rolling, true)
             return

@@ -15,6 +15,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var transportBeatsPerBarPort = {
+    name: 'BPB',
+    shortName: 'BPB',
+    symbol: ':bpb',
+    ranges: {
+        minimum: 1.0,
+        maximum: 32.0,
+        default: 4.0,
+    },
+    comment: "",
+    designation: "",
+    properties: ["integer"],
+    enabled: true,
+    value: 4.0,
+    format: null,
+    units: {},
+    scalePoints: [],
+    widget: null,
+}
+
 var transportBeatsPerMinutePort = {
     name: 'BPM',
     shortName: 'BPM',
@@ -197,6 +217,10 @@ function Desktop(elements) {
         setEnabled: function (instance, portSymbol, enabled) {
             if (instance == "/pedalboard") {
                 if (portSymbol == ":bpm") {
+                    transportBeatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
+                    // FIXME
+                    //elements.transportWindow.find(".mod-knob").find(".mod-knob-current-value").attr('contenteditable', enabled)
+                } else if (portSymbol == ":bpm") {
                     transportBeatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
                     elements.transportWindow.find(".mod-knob").find(".mod-knob-current-value").attr('contenteditable', enabled)
                 } else if (portSymbol == ":rolling") {
@@ -797,7 +821,18 @@ function Desktop(elements) {
         }
     },
 
+    this.setTransportBPB = function (bpb, set_control) {
+        if (transportBeatsPerBarPort.value == bpb) {
+            return
+        }
+        transportBeatsPerBarPort.value = bpm
+
+        // TODO
+    },
     this.setTransportBPM = function (bpm, set_control) {
+        if (transportBeatsPerMinutePort.value == bpm) {
+            return
+        }
         var text = sprintf("%.2f BPM", bpm)
         if (bpm < 100.0) {
             text = "&nbsp;" + text
@@ -813,6 +848,9 @@ function Desktop(elements) {
     },
     this.setTransportPlaybackState = function (playing, set_control) {
         var value = playing ? 1.0 : 0.0
+        if (transportRollingPort.value == value) {
+            return
+        }
         transportRollingPort.value = value
 
         if (set_control) {
