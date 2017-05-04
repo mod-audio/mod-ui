@@ -1293,17 +1293,13 @@ class Host(object):
             pluginData['preset'] = uri
             self.msg_callback("preset %s %s" % (instance, uri))
 
-            portValues = get_state_port_values(state)
-            pluginData['ports'].update(portValues)
-
             used_actuators = []
-            enabled_symbol, freewheel_symbol = pluginData['designations']
 
-            for symbol, value in pluginData['ports'].items():
-                if symbol == enabled_symbol:
-                    value = 0.0 if pluginData['bypassed'] else 1.0
-                elif symbol == freewheel_symbol:
-                    value = 0.0
+            for symbol, value in get_state_port_values(state).items():
+                if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
+                    continue
+
+                pluginData['ports'][symbol] = value
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
