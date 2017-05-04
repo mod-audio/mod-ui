@@ -258,6 +258,10 @@ function HardwareManager(options) {
             // hide ranges
             form.find('.range').hide()
 
+        } else if (port.properties.indexOf("enumeration") >= 0) {
+            // hide ranges
+            form.find('.range').hide()
+
         } else if (port.properties.indexOf("integer") < 0) {
             // float, allow non-integer stepping
             var step = (maxv-minv)/100
