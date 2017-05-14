@@ -846,6 +846,19 @@ class Host(object):
                     pluginData['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
+        elif cmd == "atom":
+            instance_id = int(msg[1])
+            portsymbol  = msg[2]
+            atomjson    = " ".join (msg[3:])
+            try:
+                instance   = self.mapper.get_instance(instance_id)
+                pluginData = self.plugins[instance_id]
+            except:
+                pass
+            else:
+                pluginData['outputs'][portsymbol] = atomjson
+                self.msg_callback("output_atom %s %s %s" % (instance, portsymbol, atomjson))
+
         elif cmd == "midi_mapped":
             instance_id = int(msg[1])
             portsymbol  = msg[2]
@@ -1136,7 +1149,10 @@ class Host(object):
             for symbol, value in pluginData['outputs'].items():
                 if value is None:
                     continue
-                websocket.write_message("output_set %s %s %f" % (pluginData['instance'], symbol, value))
+                if isinstance (value, float):
+                    websocket.write_message("output_set %s %s %f" % (pluginData['instance'], symbol, value))
+                if isinstance (value, str):
+                    websocket.write_message("output_atom %s %s %s" % (pluginData['instance'], symbol, value))
 
                 if crashed:
                     self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))

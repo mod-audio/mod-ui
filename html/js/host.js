@@ -32,7 +32,7 @@ $('document').ready(function() {
     }
 
     ws.onmessage = function (evt) {
-        var data = evt.data.split(" ")
+        var data = evt.data.split(" ", 10)
 
         if (!data.length) {
             return
@@ -86,6 +86,14 @@ $('document').ready(function() {
             var symbol   = data[2]
             var value    = parseFloat(data[3])
             desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
+            return
+        }
+
+        if (cmd == "output_atom") {
+            var instance = data[1]
+            var symbol   = data[2]
+            var atom = evt.data.substr(3 + cmd.length + instance.length + symbol.length);
+            desktop.pedalboard.pedalboard("setOutputPortValue", instance, symbol, JSON.parse(atom));
             return
         }
 
