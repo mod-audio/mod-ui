@@ -822,17 +822,26 @@ $('document').ready(function() {
     <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
         <div class="mod-controls clearfix">
             <div class="mod-control-group clearfix">
-                <div class="mod-switch">
+                <div class="mod-switch" id="mod-switch-transport-play">
                     <span class="mod-switch-title">Playing</span>
                     <div class="mod-switch-image" mod-widget="switch"></div>
                     <div class="mod-address"></div>
                 </div>
 
-                <div class="mod-knob">
+                <div class="mod-knob" id="mod-knob-transport-bpm">
                     <span class="mod-knob-title">Beats Per Minute</span>
                     <span class="mod-knob-min-value">20 BPM</span>
-                    <span class="mod-knob-max-value">999 BPM</span>
+                    <span class="mod-knob-max-value">200 BPM</span>
                     <span class="mod-knob-current-value">---.-- BPM</span>
+                    <div class="mod-knob-image" mod-widget="film"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-knob" id="mod-knob-transport-bpb">
+                    <span class="mod-knob-title">Beats Per Bar</span>
+                    <span class="mod-knob-min-value">1/4</span>
+                    <span class="mod-knob-max-value">16/4</span>
+                    <span class="mod-knob-current-value">-/4</span>
                     <div class="mod-knob-image" mod-widget="film"></div>
                     <div class="mod-address"></div>
                 </div>
