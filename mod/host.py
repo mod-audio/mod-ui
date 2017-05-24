@@ -747,18 +747,22 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
 
-    @gen.coroutine
     def process_read_message(self, msg):
         msg = msg[:-1].decode("utf-8", errors="ignore")
         if LOG: logging.info("[host] received <- %s" % repr(msg))
 
-        msg = msg.split()
-        cmd = msg[0]
+        self.process_read_message_body(msg)
+        self.process_read_queue()
+
+    @gen.coroutine
+    def process_read_message_body(self, msg):
+        cmd = msg.split(" ",1)[0]
 
         if cmd == "param_set":
-            instance_id = int(msg[1])
-            portsymbol  = msg[2]
-            value       = float(msg[3])
+            msg_data    = msg[len(cmd)+1:].split(" ",3)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            value       = float(msg_data[2])
 
             try:
                 instance   = self.mapper.get_instance(instance_id)
@@ -773,7 +777,6 @@ class Host(object):
                     print("presets changed by backend", value)
                     value = int(value)
                     if value < 0 or value >= len(pluginData['mapPresets']):
-                        self.process_read_queue()
                         return
 
                     if instance_id == PEDALBOARD_INSTANCE_ID:
@@ -786,52 +789,16 @@ class Host(object):
                     pluginData['ports'][portsymbol] = value
 
                     if instance_id == PEDALBOARD_INSTANCE_ID:
-                        if portsymbol == ":bpb":
-                            self.transport_bpb = value
-                            self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                                      self.transport_bpb,
-                                                                      self.transport_bpm))
-
-                            for pluginData2 in self.plugins.values():
-                                bpb_symbol = pluginData2['designations'][self.DESIGNATIONS_INDEX_BPB]
-                                if bpb_symbol is None:
-                                    continue
-                                pluginData2['ports'][bpb_symbol] = value
-                                self.msg_callback("param_set %s %s %f" % (pluginData2['instance'], bpb_symbol, value))
-
-                        elif portsymbol == ":bpm":
-                            self.transport_bpm = value
-                            self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                                      self.transport_bpb,
-                                                                      self.transport_bpm))
-
-                            for pluginData2 in self.plugins.values():
-                                bpm_symbol = pluginData2['designations'][self.DESIGNATIONS_INDEX_BPM]
-                                if bpm_symbol is None:
-                                    continue
-                                pluginData2['ports'][bpm_symbol] = value
-                                self.msg_callback("param_set %s %s %f" % (pluginData2['instance'], bpm_symbol, value))
-
-                        elif portsymbol == ":rolling":
-                            self.transport_rolling = bool(int(value))
-                            self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                                      self.transport_bpb,
-                                                                      self.transport_bpm))
-
-                            for pluginData2 in self.plugins.values():
-                                speed_symbol = pluginData2['designations'][self.DESIGNATIONS_INDEX_SPEED]
-                                if speed_symbol is None:
-                                    continue
-                                pluginData2['ports'][speed_symbol] = value
-                                self.msg_callback("param_set %s %s %f" % (pluginData2['instance'], speed_symbol, value))
+                        self.process_read_message_pedal_changed(portsymbol, value)
 
                 self.pedalboard_modified = True
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
         elif cmd == "output_set":
-            instance_id = int(msg[1])
-            portsymbol  = msg[2]
-            value       = float(msg[3])
+            msg_data    = msg[len(cmd)+1:].split(" ",3)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            value       = float(msg_data[2])
 
             if instance_id == TUNER_INSTANCE_ID:
                 self.set_tuner_value(value)
@@ -846,14 +813,30 @@ class Host(object):
                     pluginData['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
+        elif cmd == "atom":
+            msg_data    = msg[len(cmd)+1:].split(" ",3)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            atomjson    = msg_data[2]
+
+            try:
+                instance   = self.mapper.get_instance(instance_id)
+                pluginData = self.plugins[instance_id]
+            except:
+                pass
+            else:
+                #pluginData['outputs'][portsymbol] = atomjson
+                self.msg_callback("output_atom %s %s %s" % (instance, portsymbol, atomjson))
+
         elif cmd == "midi_mapped":
-            instance_id = int(msg[1])
-            portsymbol  = msg[2]
-            channel     = int(msg[3])
-            controller  = int(msg[4])
-            value       = float(msg[5])
-            minimum     = float(msg[6])
-            maximum     = float(msg[7])
+            msg_data    = msg[len(cmd)+1:].split(" ",7)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            channel     = int(msg_data[2])
+            controller  = int(msg_data[3])
+            value       = float(msg_data[4])
+            minimum     = float(msg_data[5])
+            maximum     = float(msg_data[6])
 
             instance   = self.mapper.get_instance(instance_id)
             pluginData = self.plugins[instance_id]
@@ -877,8 +860,9 @@ class Host(object):
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
         elif cmd == "midi_program":
-            program = int(msg[1])
-            bank_id = self.bank_id
+            msg_data = msg[len(cmd)+1:].split(" ",1)
+            program  = int(msg_data[0])
+            bank_id  = self.bank_id
 
             if self.bank_id > 0 and self.bank_id <= len(self.banks):
                 pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -898,10 +882,11 @@ class Host(object):
                 self.reset(hmi_clear_callback)
 
         elif cmd == "transport":
-            rolling = bool(int(msg[1]))
-            speed   = 1.0 if rolling else 0.0
-            bpb     = float(msg[2])
-            bpm     = float(msg[3])
+            msg_data = msg[len(cmd)+1:].split(" ",3)
+            rolling  = bool(int(msg_data[0]))
+            bpb      = float(msg_data[1])
+            bpm      = float(msg_data[2])
+            speed    = 1.0 if rolling else 0.0
 
             for pluginData in self.plugins.values():
                 _, _2, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
@@ -938,8 +923,32 @@ class Host(object):
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
 
-        self.process_read_queue()
+    def process_read_message_pedal_changed(self, portsymbol, value):
+        if portsymbol == ":bpb":
+            self.transport_bpb = value
+            designation_index  = self.DESIGNATIONS_INDEX_BPB
 
+        elif portsymbol == ":bpm":
+            self.transport_bpm = value
+            designation_index  = self.DESIGNATIONS_INDEX_BPM
+
+        elif portsymbol == ":rolling":
+            self.transport_rolling = bool(int(value))
+            designation_index      = self.DESIGNATIONS_INDEX_SPEED
+
+        else:
+            return
+
+        for pluginData in self.plugins.values():
+            des_symbol = pluginData['designations'][designation_index]
+            if des_symbol is None:
+                continue
+            pluginData['ports'][des_symbol] = value
+            self.msg_callback("param_set %s %s %f" % (pluginData['instance'], des_symbol, value))
+
+        self.msg_callback("transport %i %f %f" % (self.transport_rolling,
+                                                  self.transport_bpb,
+                                                  self.transport_bpm))
     def process_read_queue(self):
         if self.readsock is None:
             return
