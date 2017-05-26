@@ -329,9 +329,10 @@ class SystemPreferences(JsonRequestHandler):
         self.prefs = []
 
         self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
+        self.make_pref("jack_sync_mode",  self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
+        self.make_pref("jack_256_frames",  self.OPTION_FILE_EXISTS, "/data/using-256-frames")
 
         # Optional services
-        self.make_pref("service_midiclock",  self.OPTION_FILE_EXISTS, "/data/enable-midiclock")
         self.make_pref("service_mixserver",  self.OPTION_FILE_EXISTS, "/data/enable-mixserver")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
 
@@ -384,6 +385,25 @@ class SystemExeChange(JsonRequestHandler):
             elif cmd == "restore":
                 IOLoop.instance().add_callback(start_restore)
 
+        elif etype == "filecreate":
+            path   = self.get_argument('path')
+            create = self.get_argument('create').strip()
+
+            if path not in ("jack-sync-mode", "using-256-frames"):
+                self.write(False)
+                return
+
+            filename = "/data/" + path
+
+            if create:
+                foldername = os.path.dirname(filename)
+                if not os.path.exists(foldername):
+                    os.makedirs(foldername)
+                with open(filename, 'wb') as fh:
+                    fh.write(b"")
+            elif os.path.exists(filename):
+                os.remove(filename)
+
         elif etype == "filewrite":
             path    = self.get_argument('path')
             content = self.get_argument('content').strip()
@@ -407,7 +427,7 @@ class SystemExeChange(JsonRequestHandler):
             name   = self.get_argument('name')
             enable = bool(int(self.get_argument('enable')))
 
-            if name not in ("midiclock", "mixserver", "netmanager"):
+            if name not in ("mixserver", "netmanager"):
                 self.write(False)
                 return
 

@@ -106,7 +106,7 @@
     {% autoescape None %}
     SITEURL = '{{cloud_url}}'
     VERSION = '{{version}}'
-    var NOTIFICATIONS_ENABLED = true
+    var NOTIFICATIONS_ENABLED = false
     var PREFERENCES = {{preferences}}
 
     var INFO = {
@@ -154,7 +154,8 @@ function refresh_sysprefs() {
                 $("#prefs-bluetooth-name").prop("disabled", true)
             }
 
-            $("#prefs-service-midiclock").prop("checked", resp.service_midiclock)
+            $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
+            $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
             $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
         },
@@ -222,6 +223,14 @@ function write_file_contents(path, content) {
     })
 }
 
+function create_or_delete_file(path, create) {
+    system_exechange({
+        'type'  : 'filecreate',
+        'path'  : path,
+        'create': create,
+    })
+}
+
 $('document').ready(function() {
     var self = this
 
@@ -246,16 +255,17 @@ $('document').ready(function() {
     }
 
     ws.onmessage = function (evt) {
-        var data = evt.data.split(" ")
+        var data = evt.data
+        var cmd  = data.split(" ",1)
 
-        if (!data.length) {
+        if (!cmd.length) {
             return
         }
 
-        var cmd = data[0]
+        var cmd = cmd[0]
 
         if (cmd == "stats") {
-            var cpuLoad = parseFloat(data[1])
+            var cpuLoad = parseFloat(data.substr(cmd.length+1).split(" ",2)[0])
 
             if (cpuLoad != cached_cpuLoad) {
                 cached_cpuLoad = cpuLoad
@@ -425,16 +435,35 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Services
 
-    $("#prefs-service-midiclock").click(function () {
-        enable_service("midiclock", $(this).prop("checked"))
-    })
-
     $("#prefs-service-mixserver").click(function () {
         enable_service("mixserver", $(this).prop("checked"))
     })
 
     $("#prefs-service-netmanager").click(function () {
         enable_service("netmanager", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Audio Server
+
+    $("#prefs-audio-256-frames").click(function () {
+        var using256 = $(this).prop("checked")
+        create_or_delete_file("using-256-frames", using256)
+
+        $.ajax({
+            url: '/set_buffersize/' + (using256 ? '256' : '128'),
+            method: 'POST',
+            cache: false,
+            success: function (resp) {
+                if (resp.ok) {
+                    $("#info-dsp-buffer-size").html(""+resp.size)
+                }
+            },
+            error: function () {},
+        })
+    })
+    $("#prefs-audio-sync-mode").click(function () {
+        create_or_delete_file("jack-sync-mode", $(this).prop("checked"))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -457,6 +486,10 @@ $('document').ready(function() {
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Boot?
+
+    $("#button-action-poweroff").click(function () {
+        run_custom_command("poweroff")
+    })
 
     $("#button-action-reboot").click(function () {
         run_custom_command("reboot")
@@ -492,13 +525,19 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
-<script type="text/javascript" src="js/networkstatus.js?v={{version}}"></script>
 
 </head>
 <!-- END HEAD -->
 
 <!-- BODY -->
 <body class="mod-dark">
+
+<!-- PRELOAD -->
+<div class="mod-hidden">
+    <img src="img/icons/blocked.svg" alt=""/>
+    <img src="img/icons/25/reload.png" width="25px" height="25px" alt=""/>
+</div>
+<!-- END PRELOAD -->
 
 <!-- WRAPPER -->
 <div id="wrapper">
@@ -540,13 +579,13 @@ $('document').ready(function() {
                             Always start with playback/transport rolling
                         </input>
                     </label>
-                    <br>
+                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-link">
                             Always start with Link support enabled
                         </input>
                     </label>
-                    <br>
+                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
                             Mute audio outputs when Tuner is enabled
@@ -573,11 +612,7 @@ $('document').ready(function() {
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
                     </label>
-                    <br>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-midiclock"> MIDI Clock Output</input>
-                    </label>
-                    <br>
+                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
                     </label>
@@ -589,6 +624,32 @@ $('document').ready(function() {
         <!-- SETTINGS PAGE (ADVANCED) -->
         <div class="settings-page mod-hidden" id="settings-page-advanced">
             <div class="settings-page-content">
+                <h1>Audio Server</h1>
+                <form class="form">
+                    <!--
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-audio-sync-mode">
+                            Run JACK in Sync Mode
+                        </input>
+                    </label>
+                    <p>
+                        Do not use an additional audio cycle, instead wait for all plugins to finish processing.<br/>
+                        This reduces latency, but bad plugins will cause issues just by being loaded.<br/>
+                        Note that changing this option requires a reboot for changes to take effect.
+                    </p>
+                    -->
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
+                            Use 256 frames as Buffer Size
+                        </input>
+                    </label>
+                    <p>
+                        MOD runs at 128 frames by default, enable this option to run JACK with 256 frames instead.<br/>
+                        Useful if you need the extra time for more plugin processing.<br/>
+                        Obviously this doubles the latency, so only enable it if really necessary.
+                    </p>
+                </form>
+
                 <h1>User Interface</h1>
                 <form class="form">
                     <label>
@@ -596,26 +657,41 @@ $('document').ready(function() {
                             Developer Mode
                         </input>
                     </label>
-                    <br>
+                    <p>
+                        Show a few more options on the Web Interface, useful for developers.
+                    </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
                             Show unstable in Plugin Store
                         </input>
                     </label>
+                    <p>
+                        Show the 'stable' check-box under the Plugin Store, allowing it to be unselected.<br/>
+                        Note that installing non-stable plugins is unsupported and you cannot share pedalboards containing such plugins.<br/>
+                        Expect things to break!
+                    </p>
                 </form>
 
                 <h1>Boot &amp; Restore</h1>
                 <form class="form">
                     <p>
-                        Reboot the MOD.<br>
+                        <b>Power off the MOD</b>.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-poweroff" value="Power off MOD"></input>
+                    </label>
+                    <br/><br/>
+                    <p>
+                        <b>Reboot the MOD</b>.<br/>
                         Note that all unsaved pedalboard changes will be lost.
                     </p>
                     <label>
                         <input type="button" id="button-action-reboot" value="Reboot MOD"></input>
                     </label>
-                    <br><br>
+                    <br/><br/>
                     <p>
-                        Start the MOD's restore/upgrade mode, where you can manually update the MOD via USB.<br>
+                        <b>Start the MOD's restore/upgrade mode</b>, where you can manually update the MOD via USB.<br/>
                         Note that all unsaved pedalboard changes will be lost.
                     </p>
                     <label>
@@ -634,15 +710,15 @@ $('document').ready(function() {
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Banks</input>
                     </label>
-                    <br>
+                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Pedalboards</input>
                     </label>
-                    <br>
+                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Plugins</input>
                     </label>
-                    <br>
+                    <br/>
                     <label>
                         <input type="button" id="button-action-delete" value="Delete"></input>
                     </label>
@@ -667,7 +743,7 @@ $('document').ready(function() {
 
                 <h2>Audio</h2>
                 <form class="form">
-                    <b>Buffer Size:</b> {{bufferSize}} frames<br/>
+                    <b>Buffer Size:</b> <span id="info-dsp-buffer-size">{{bufferSize}}</span> frames<br/>
                     <b>Sample Rate:</b> {{sampleRate}} Hz<br/>
                     <b>DSP Load:</b> <span id="info-dsp-load">--.- %</span><br/>
                 </form>
