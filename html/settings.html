@@ -156,7 +156,6 @@ function refresh_sysprefs() {
 
             $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
-            $("#prefs-service-midiclock").prop("checked", resp.service_midiclock)
             $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
         },
@@ -436,10 +435,6 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Services
 
-    $("#prefs-service-midiclock").click(function () {
-        enable_service("midiclock", $(this).prop("checked"))
-    })
-
     $("#prefs-service-mixserver").click(function () {
         enable_service("mixserver", $(this).prop("checked"))
     })
@@ -619,12 +614,6 @@ $('document').ready(function() {
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
                     </label>
-                    <!--
-                    <br/>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-midiclock"> MIDI Clock Output</input>
-                    </label>
-                    -->
                     <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
