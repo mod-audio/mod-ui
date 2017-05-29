@@ -29,26 +29,6 @@ function TransportControls(options) {
         },
     }, options)
 
-//     options.midiPortsWindow.find('.js-cancel').click(function () {
-//         options.midiPortsWindow.hide()
-//         return false
-//     })
-//
-//     options.midiPortsWindow.find('.js-submit').click(function () {
-//         var devs = []
-//
-//         $.each(options.midiPortsList.find('input'), function (index, input) {
-//             var input = $(input)
-//             if (input.is(':checked')) {
-//                 devs.push(input.val())
-//             }
-//         })
-//
-//         self.selectDevices(devs)
-//         options.midiPortsWindow.hide()
-//         return false
-//     })
-
     this.rollingPort = {
         name: 'Rolling',
         shortName: 'Rolling',
@@ -184,6 +164,21 @@ function TransportControls(options) {
         }
     })
     options.transportBPM.find(".mod-address").click(function (e) {
+        if ($(this).hasClass('link-enabled')) {
+            var img = $('<img>').attr('src', 'img/icn-blocked.png')
+            $('body').append(img)
+            img.css({
+                position: 'absolute',
+                top: e.pageY - img.height() / 2,
+                left: e.pageX - img.width() / 2,
+                zIndex: 99999
+            })
+            setTimeout(function () {
+                img.remove()
+            }, 500)
+            new Notification("warn", "Cannot address BPM parameter with Link enabled", 5000)
+            return false
+        }
         options.openAddressingDialog(self.beatsPerMinutePort, "Global-BPM")
     })
     options.transportBPM.find(".mod-knob-current-value")
@@ -229,13 +224,15 @@ function TransportControls(options) {
         self.setBeatsPerMinuteValue(value, true)
     })
 
-    $('#mod-enum-tranport-sync-mode-none').click(function() {
-        $('#mod-enum-tranport-sync-mode-link').removeClass("selected")
-        $(this).addClass("selected")
-    })
-    $('#mod-enum-tranport-sync-mode-link').click(function() {
-        $('#mod-enum-tranport-sync-mode-none').removeClass("selected")
-        $(this).addClass("selected")
+    var syncMode,
+        syncModeWidgets = options.transportSyncMode.find('.mod-enumerated-list').children()
+    syncModeWidgets.each(function() {
+        var opt = $(this)
+        opt.click(function (e) {
+            var syncMode = opt.attr('mod-sync-mode')
+            ws.send("link_enable " + (syncMode == "link" ? "1" : "0"))
+            self.setSyncMode(syncMode)
+        })
     })
 
     options.transportButton.click(function (e) {
@@ -313,9 +310,30 @@ function TransportControls(options) {
         options.transportBPM.find(".mod-knob-current-value").html(text)
     }
 
-    this.setValues = function (playing, bpb, bpm) {
+    this.setSyncMode = function (newSyncMode) {
+        if (newSyncMode == syncMode) {
+            return
+        }
+        syncMode = newSyncMode
+
+        syncModeWidgets.removeClass('selected')
+        options.transportSyncMode.find('[mod-sync-mode="'+newSyncMode+'"]').addClass('selected')
+
+        if (newSyncMode == "link") {
+            self.beatsPerMinutePort.widget.controlWidget('disable')
+            options.transportBPM.find(".mod-address").addClass('link-enabled')
+            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', false)
+        } else {
+            self.beatsPerMinutePort.widget.controlWidget('enable')
+            options.transportBPM.find(".mod-address").removeClass('link-enabled')
+            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', true)
+        }
+    }
+
+    this.setValues = function (playing, bpb, bpm, syncMode) {
         self.setPlaybackState(playing, true)
         self.setBeatsPerBarValue(bpb, true)
         self.setBeatsPerMinuteValue(bpm, true)
+        self.setSyncMode(syncMode)
     }
 }

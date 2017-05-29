@@ -111,11 +111,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "transport") {
-            data        = data.substr(cmd.length+1).split(" ",3)
-            var rolling = parseInt(data[0]) != 0
-            var bpb     = parseFloat(data[1])
-            var bpm     = parseFloat(data[2])
-            desktop.transportControls.setValues(rolling, bpb, bpm)
+            data         = data.substr(cmd.length+1).split(" ",4)
+            var rolling  = parseInt(data[0]) != 0
+            var bpb      = parseFloat(data[1])
+            var bpm      = parseFloat(data[2])
+            var syncMode = data[3]
+            desktop.transportControls.setValues(rolling, bpb, bpm, syncMode)
             return
         }
 

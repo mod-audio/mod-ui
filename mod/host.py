@@ -167,6 +167,7 @@ class Host(object):
         self.transport_rolling   = False
         self.transport_bpb       = 4.0
         self.transport_bpm       = 120.0
+        self.transport_sync      = "none"
         self.last_data_finish_msg = 0.0
         self.init_plugins_data()
 
@@ -907,7 +908,7 @@ class Host(object):
             self.transport_bpb     = bpb
             self.transport_bpm     = bpm
 
-            self.msg_callback("transport %i %f %f" % (rolling, bpb, bpm))
+            self.msg_callback("transport %i %f %f %s" % (rolling, bpb, bpm, self.transport_sync))
 
         elif cmd == "data_finish":
             now  = time.clock()
@@ -946,9 +947,10 @@ class Host(object):
             pluginData['ports'][des_symbol] = value
             self.msg_callback("param_set %s %s %f" % (pluginData['instance'], des_symbol, value))
 
-        self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                  self.transport_bpb,
-                                                  self.transport_bpm))
+        self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                     self.transport_bpb,
+                                                     self.transport_bpm,
+                                                     self.transport_sync))
     def process_read_queue(self):
         if self.readsock is None:
             return
@@ -1030,7 +1032,10 @@ class Host(object):
         data = get_jack_data(False)
         websocket.write_message("mem_load " + self.get_free_memory_value())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
-        websocket.write_message("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
+        websocket.write_message("transport %i %f %f %s" % (self.transport_rolling,
+                                                           self.transport_bpb,
+                                                           self.transport_bpm,
+                                                           self.transport_sync))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
@@ -1043,9 +1048,11 @@ class Host(object):
 
         if crashed:
             self.init_jack()
-            self.load_prefs()
             self.send_notmodified("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
+
+            if self.transport_sync == "link":
+                self.set_link_enabled(True)
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -2570,10 +2577,8 @@ _:b%i
         self.pedalboard_size = [width, height]
 
     def set_link_enabled(self, enabled, saveConfig = False):
+        self.transport_sync = "link" if enabled else "none"
         self.send_notmodified("link_enable %i" % int(enabled))
-
-        if saveConfig:
-            self.prefs.setAndSave("link-enabled", "true" if enabled else "false")
 
     def set_transport_bpb(self, bpb, callback=None, datatype='int'):
         self.transport_bpb = bpb
@@ -2941,26 +2946,19 @@ _:b%i
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             if portsymbol == ":bpb":
                 self.set_transport_bpb(value, callback)
-                self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                          self.transport_bpb,
-                                                          self.transport_bpm))
-
             elif portsymbol == ":bpm":
                 self.set_transport_bpm(value, callback)
-                self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                          self.transport_bpb,
-                                                          self.transport_bpm))
-
             elif portsymbol == ":rolling":
                 rolling = bool(value > 0.5)
                 self.set_transport_rolling(rolling, callback)
-                self.msg_callback("transport %i %f %f" % (self.transport_rolling,
-                                                          self.transport_bpb,
-                                                          self.transport_bpm))
-
             else:
                 print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
                 return None
+
+            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                         self.transport_bpb,
+                                                         self.transport_bpm,
+                                                         self.transport_sync))
 
         else:
             pluginData['ports'][portsymbol] = value
