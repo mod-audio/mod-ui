@@ -15,68 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var transportBeatsPerBarPort = {
-    name: 'BPB',
-    shortName: 'BPB',
-    symbol: ':bpb',
-    ranges: {
-        minimum: 1.0,
-        maximum: 16.0,
-        default: 4.0,
-    },
-    comment: "",
-    designation: "",
-    properties: ["integer"],
-    enabled: true,
-    value: null,
-    format: null,
-    units: {},
-    scalePoints: [],
-    widget: null,
-}
-
-var transportBeatsPerMinutePort = {
-    name: 'BPM',
-    shortName: 'BPM',
-    symbol: ':bpm',
-    ranges: {
-        minimum: 20.0,
-        maximum: 200.0,
-        default: 120.0,
-    },
-    comment: "",
-    designation: "",
-    properties: ["integer", "tapTempo"],
-    enabled: true,
-    value: null,
-    format: null,
-    units: {
-        symbol: "bpm",
-    },
-    scalePoints: [],
-    widget: null,
-}
-
-var transportRollingPort = {
-    name: 'Rolling',
-    shortName: 'Rolling',
-    symbol: ':rolling',
-    ranges: {
-        minimum: 0.0,
-        maximum: 1.0,
-        default: 0.0,
-    },
-    comment: "",
-    designation: "",
-    properties: ["toggled"],
-    enabled: true,
-    value: 0.0,
-    format: null,
-    units: {},
-    scalePoints: [],
-    widget: null,
-}
-
 function Desktop(elements) {
     var self = this
 
@@ -103,6 +41,10 @@ function Desktop(elements) {
         presetDisableButton: $('<div>'),
         transportButton: $('<div>'),
         transportWindow: $('<div>'),
+        transportPlay: $('<div>'),
+        transportBPB: $('<div>'),
+        transportBPM: $('<div>'),
+        transportSyncMode: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -216,15 +158,7 @@ function Desktop(elements) {
         },
         setEnabled: function (instance, portSymbol, enabled) {
             if (instance == "/pedalboard") {
-                if (portSymbol == ":bpb") {
-                    transportBeatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
-                    $('#mod-knob-transport-bpb').find(".mod-knob-current-value").attr('contenteditable', enabled)
-                } else if (portSymbol == ":bpm") {
-                    transportBeatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
-                    $('#mod-knob-transport-bpm').find(".mod-knob-current-value").attr('contenteditable', enabled)
-                } else if (portSymbol == ":rolling") {
-                    transportRollingPort.widget.controlWidget(enabled ? 'enable' : 'disable')
-                }
+                self.transportControls.setControlEnabled(portSymbol, enabled)
                 return
             }
             self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
@@ -536,6 +470,18 @@ function Desktop(elements) {
         new Notification("info", "Control Chain device firmware update complete!")
     }
 
+    this.transportControls = new TransportControls({
+        transportButton: elements.transportButton,
+        transportWindow: elements.transportWindow,
+        transportPlay: elements.transportPlay,
+        transportBPB: elements.transportBPB,
+        transportBPM: elements.transportBPM,
+        transportSyncMode: elements.transportSyncMode,
+        openAddressingDialog: function (port, label) {
+            self.hardwareManager.open("/pedalboard", port, label)
+        }
+    })
+
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {
         if (self.cloudAccessToken == null) {
             self.authenticateDevice(function (ok) {
@@ -648,13 +594,13 @@ function Desktop(elements) {
     }
 
     this.effectBox = self.makeEffectBox(elements.effectBox,
-            elements.effectBoxTrigger)
+                                        elements.effectBoxTrigger)
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
-            elements.cloudPluginBoxTrigger)
+                                                  elements.cloudPluginBoxTrigger)
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
-        elements.pedalboardBoxTrigger)
+                                                elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
-            elements.bankBoxTrigger)
+                                    elements.bankBoxTrigger)
 
     this.getPluginsData = function (uris, callback) {
         $.ajax({
@@ -820,59 +766,6 @@ function Desktop(elements) {
         }
     },
 
-    this.setTransportBPB = function (bpb, set_control) {
-        if (transportBeatsPerBarPort.value == bpb) {
-            return
-        }
-        transportBeatsPerBarPort.value = bpb
-
-        var text = sprintf("%d/4", bpb)
-        if (bpb < 10) {
-            text = "&nbsp;" + text
-        }
-        transportBeatsPerBarPort.value = bpb
-
-        if (set_control) {
-            transportBeatsPerBarPort.widget.controlWidget('setValue', bpb, true)
-        }
-
-        $('#mod-knob-transport-bpb').find(".mod-knob-current-value").html(text)
-    },
-    this.setTransportBPM = function (bpm, set_control) {
-        if (transportBeatsPerMinutePort.value == bpm) {
-            return
-        }
-        var text = sprintf("%.2f BPM", bpm)
-        if (bpm < 100.0) {
-            text = "&nbsp;" + text
-        }
-        transportBeatsPerMinutePort.value = bpm
-
-        if (set_control) {
-            transportBeatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
-        }
-
-        elements.transportButton.find('span').html(text)
-        $('#mod-knob-transport-bpm').find(".mod-knob-current-value").html(text)
-    },
-    this.setTransportPlaybackState = function (playing, set_control) {
-        var value = playing ? 1.0 : 0.0
-        if (transportRollingPort.value == value) {
-            return
-        }
-        transportRollingPort.value = value
-
-        if (set_control) {
-            transportRollingPort.widget.controlWidget('setValue', value, true)
-        }
-
-        if (playing) {
-            elements.transportButton.addClass("playing")
-        } else {
-            elements.transportButton.removeClass("playing")
-        }
-    },
-
     this.saveBox = elements.saveBox.saveBox({
         save: function (title, asNew, callback) {
             $.ajax({
@@ -1028,142 +921,6 @@ function Desktop(elements) {
 
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
         self.pedalPresets.start(self.pedalboardPresetId, addressed)
-    })
-    elements.transportButton.click(function (e) {
-        if (elements.transportWindow.is(":visible")){
-            elements.transportWindow.hide()
-        } else {
-            elements.transportWindow.show()
-        }
-    })
-
-    // transport rolling
-    transportRollingPort.widget = $('#mod-switch-transport-play').find(".mod-switch-image")
-    transportRollingPort.widget.controlWidget({
-        dummy: false,
-        port: transportRollingPort,
-        change: function (e, value) {
-            var rolling = (value > 0.5)
-            ws.send("transport-rolling " + (rolling ? "1" : "0"))
-            self.setTransportPlaybackState(rolling, false)
-        }
-    })
-    $('#mod-switch-transport-play').find(".mod-address").click(function (e) {
-        self.hardwareManager.open("/pedalboard", transportRollingPort, "Global-Rolling")
-    })
-
-    // transport BeatsPerBar
-    transportBeatsPerBarPort.widget = $('#mod-knob-transport-bpb').find(".mod-knob-image")
-    transportBeatsPerBarPort.widget.controlWidget({
-        dummy: false,
-        port: transportBeatsPerBarPort,
-        change: function (e, value) {
-            ws.send("transport-bpb " + value)
-            self.setTransportBPB(value, false)
-        }
-    })
-    $('#mod-knob-transport-bpb').find(".mod-address").click(function (e) {
-        self.hardwareManager.open("/pedalboard", transportBeatsPerBarPort, "Global-BPB")
-    })
-
-    $('#mod-knob-transport-bpb').find(".mod-knob-current-value")
-    .attr('contenteditable', true)
-    .focus(function () {
-        self.setTransportBPB(transportBeatsPerBarPort.value, false)
-    })
-    .keydown(function (e) {
-        // enter
-        if (e.keyCode == 13) {
-            $(this).blur()
-            return false
-        }
-        // numbers
-        if (e.keyCode >= 48 && e.keyCode <= 57) {
-            return true;
-        }
-        if (e.keyCode >= 96 && e.keyCode <= 105) {
-            return true;
-        }
-        // backspace and delete
-        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110) {
-            return true;
-        }
-        // left, right
-        if (e.keyCode == 37 || e.keyCode == 39) {
-            return true;
-        }
-        // prevent key
-        e.preventDefault();
-        return false
-    })
-    .blur(function () {
-        var value = parseFloat($(this).text())
-        if (isNaN(value)) {
-            value = transportBeatsPerBarPort.value
-        } else if (value < transportBeatsPerBarPort.ranges.minimum) {
-            value = transportBeatsPerBarPort.ranges.minimum
-        } else if (value > transportBeatsPerBarPort.ranges.maximum) {
-            value = transportBeatsPerBarPort.ranges.maximum
-        }
-        ws.send("transport-bpb " + value)
-        self.setTransportBPB(value, true)
-    })
-
-    // transport BeatsPerMinute
-    transportBeatsPerMinutePort.widget = $('#mod-knob-transport-bpm').find(".mod-knob-image")
-    transportBeatsPerMinutePort.widget.controlWidget({
-        dummy: false,
-        port: transportBeatsPerMinutePort,
-        change: function (e, value) {
-            ws.send("transport-bpm " + value)
-            self.setTransportBPM(value, false)
-        }
-    })
-    $('#mod-knob-transport-bpm').find(".mod-address").click(function (e) {
-        self.hardwareManager.open("/pedalboard", transportBeatsPerMinutePort, "Global-BPM")
-    })
-
-    $('#mod-knob-transport-bpm').find(".mod-knob-current-value")
-    .attr('contenteditable', true)
-    .focus(function () {
-        self.setTransportBPM(transportBeatsPerMinutePort.value, false)
-    })
-    .keydown(function (e) {
-        // enter
-        if (e.keyCode == 13) {
-            $(this).blur()
-            return false
-        }
-        // numbers
-        if (e.keyCode >= 48 && e.keyCode <= 57) {
-            return true;
-        }
-        if (e.keyCode >= 96 && e.keyCode <= 105) {
-            return true;
-        }
-        // backspace and delete
-        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110) {
-            return true;
-        }
-        // left, right, dot
-        if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190) {
-            return true;
-        }
-        // prevent key
-        e.preventDefault();
-        return false
-    })
-    .blur(function () {
-        var value = parseFloat($(this).text())
-        if (isNaN(value)) {
-            value = transportBeatsPerMinutePort.value
-        } else if (value < transportBeatsPerMinutePort.ranges.minimum) {
-            value = transportBeatsPerMinutePort.ranges.minimum
-        } else if (value > transportBeatsPerMinutePort.ranges.maximum) {
-            value = transportBeatsPerMinutePort.ranges.maximum
-        }
-        ws.send("transport-bpm " + value)
-        self.setTransportBPM(value, true)
     })
 
     elements.bypassLeftButton.click(function () {

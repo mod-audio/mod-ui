@@ -115,9 +115,7 @@ $('document').ready(function() {
             var rolling = parseInt(data[0]) != 0
             var bpb     = parseFloat(data[1])
             var bpm     = parseFloat(data[2])
-            desktop.setTransportBPB(bpb, true)
-            desktop.setTransportBPM(bpm, true)
-            desktop.setTransportPlaybackState(rolling, true)
+            desktop.transportControls.setValues(rolling, bpb, bpm)
             return
         }
 
