@@ -82,8 +82,8 @@ function TransportControls(options) {
     })
 
     this.beatsPerBarPort = {
-        name: 'BPB',
-        shortName: 'BPB',
+        name: 'Beats Per Bar',
+        shortName: 'Beats Per Bar',
         symbol: ':bpb',
         ranges: {
             minimum: 1.0,
@@ -155,8 +155,8 @@ function TransportControls(options) {
     })
 
     this.beatsPerMinutePort = {
-        name: 'BPM',
-        shortName: 'BPM',
+        name: 'Beats Per Minute',
+        shortName: 'Beats Per Minute',
         symbol: ':bpm',
         ranges: {
             minimum: 20.0,

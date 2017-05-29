@@ -2576,7 +2576,7 @@ _:b%i
             self.prefs.setAndSave("link-enabled", "true" if enabled else "false")
 
     def set_transport_bpb(self, bpb, callback=None, datatype='int'):
-        self.transport_bpm = bpb
+        self.transport_bpb = bpb
         self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                    self.transport_bpb,
                                                    self.transport_bpm), callback, datatype)
@@ -2959,7 +2959,7 @@ _:b%i
                                                           self.transport_bpm))
 
             else:
-                print("ERROR: Trying to address wrong pedalboard port")
+                print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
                 return None
 
         else:

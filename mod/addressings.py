@@ -292,7 +292,11 @@ class Addressings(object):
             value, maximum, options, spreset = data
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
-            if portsymbol == ":bpm":
+            if portsymbol == ":bpb":
+                pprops = ["integer"]
+                unit = "/4"
+
+            elif portsymbol == ":bpm":
                 pprops = ["tapTempo"]
                 unit = "BPM"
 
@@ -300,7 +304,7 @@ class Addressings(object):
                 pprops = ["toggled"]
 
             else:
-                print("ERROR: Trying to address wrong pedalboard port")
+                print("ERROR: Trying to address wrong pedalboard port:", portsymbol)
                 return None
 
         elif portsymbol != ":bypass":
