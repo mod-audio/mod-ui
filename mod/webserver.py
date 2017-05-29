@@ -1189,6 +1189,10 @@ class TemplateHandler(TimelessRequestHandler):
 
         if not path:
             path = 'index.html'
+        elif path == 'settings':
+            uri = '/settings.html?v=%s' % curVersion
+            self.redirect(uri)
+            return
         elif not os.path.exists(os.path.join(HTML_DIR, path)):
             uri = '/?v=%s' % curVersion
             self.redirect(uri)
@@ -1660,6 +1664,7 @@ application = web.Application(
 
             (r"/(index.html)?$", TemplateHandler),
             (r"/([a-z]+\.html)$", TemplateHandler),
+            (r"/(settings)$", TemplateHandler),
             (r"/load_template/([a-z_]+\.html)$", TemplateLoader),
             (r"/js/templates.js$", BulkTemplateLoader),
 
