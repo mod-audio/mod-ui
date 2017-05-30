@@ -320,13 +320,10 @@ function TransportControls(options) {
         options.transportSyncMode.find('[mod-sync-mode="'+newSyncMode+'"]').addClass('selected')
 
         if (newSyncMode == "link") {
-            self.beatsPerMinutePort.widget.controlWidget('disable')
+            // TODO: remove addressings
             options.transportBPM.find(".mod-address").addClass('link-enabled')
-            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', false)
         } else {
-            self.beatsPerMinutePort.widget.controlWidget('enable')
             options.transportBPM.find(".mod-address").removeClass('link-enabled')
-            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', true)
         }
     }
 
