@@ -2578,7 +2578,7 @@ _:b%i
 
     def set_link_enabled(self, enabled, saveConfig = False):
         self.transport_sync = "link" if enabled else "none"
-        self.send_notmodified("link_enable %i" % int(enabled))
+        self.send_notmodified("feature_enable link %i" % int(enabled))
 
     def set_transport_bpb(self, bpb, callback=None, datatype='int'):
         self.transport_bpb = bpb
