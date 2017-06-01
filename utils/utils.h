@@ -214,11 +214,21 @@ typedef struct {
 } PedalboardHardware;
 
 typedef struct {
+    float bpb;
+    PedalboardMidiControl bpbCC;
+    float bpm;
+    PedalboardMidiControl bpmCC;
+    bool rolling;
+    PedalboardMidiControl rollingCC;
+} PedalboardTimeInfo;
+
+typedef struct {
     const char* title;
     int width, height;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
+    PedalboardTimeInfo timeInfo;
 } PedalboardInfo;
 
 typedef struct {
@@ -247,6 +257,7 @@ typedef struct {
     float cpuLoad;
     unsigned xruns;
     bool rolling;
+    double bpb;
     double bpm;
 } JackData;
 

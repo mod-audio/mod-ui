@@ -110,6 +110,12 @@ $('document').ready(function() {
         presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
         presetManageButton: $('#pedalboard-info .js-preset-manage'),
         presetDisableButton: $('#pedalboard-info .js-preset-disable'),
+        transportButton: $('#mod-transport-icon'),
+        transportWindow: $('#mod-transport-window'),
+        transportPlay: $('#mod-switch-transport-play'),
+        transportBPB: $('#mod-knob-transport-bpb'),
+        transportBPM: $('#mod-knob-transport-bpm'),
+        transportSyncMode: $('#mod-enum-transport-sync-mode'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
         cloudPluginBox: $('#cloud-plugins-library'),
@@ -232,6 +238,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/host.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cc-manager.js?v={{version}}"></script>
+<script type="text/javascript" src="js/transport.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 
 </head>
@@ -565,6 +572,9 @@ $('document').ready(function() {
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass 2</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass 1</div>
         <div id="mod-show-midi-port" class="icon">MIDI Ports</div>
+        <div id="mod-transport-icon" class="icon">
+            <span>---.-- BPM</span>
+        </div>
     </div>
     <!-- END MAIN MENU-->
 
@@ -812,6 +822,46 @@ $('document').ready(function() {
         </div>
     </div>
     <!-- END CONTROL CHAIN DEVICES BOX -->
+
+    <!-- TRANSPORT BOX -->
+    <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
+        <div class="mod-controls clearfix">
+            <div class="mod-control-group clearfix">
+                <div class="mod-switch" id="mod-switch-transport-play">
+                    <span class="mod-switch-title">Playing</span>
+                    <div class="mod-switch-image" mod-widget="switch"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-knob" id="mod-knob-transport-bpm">
+                    <span class="mod-knob-title">Beats Per Minute</span>
+                    <span class="mod-knob-min-value">20 BPM</span>
+                    <span class="mod-knob-max-value">200 BPM</span>
+                    <span class="mod-knob-current-value">---.-- BPM</span>
+                    <div class="mod-knob-image" mod-widget="film"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-knob" id="mod-knob-transport-bpb">
+                    <span class="mod-knob-title">Beats Per Bar</span>
+                    <span class="mod-knob-min-value">1/4</span>
+                    <span class="mod-knob-max-value">16/4</span>
+                    <span class="mod-knob-current-value">-/4</span>
+                    <div class="mod-knob-image" mod-widget="film"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
+                    <span class="mod-enumerated-title">Sync Mode</span>
+                    <div class="mod-enumerated-list">
+                        <div mod-sync-mode="none">None / Addressings</div>
+                        <div mod-sync-mode="link">Ableton&trade; Link</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TRANSPORT BOX -->
 
 <!-- END WRAPPER -->
 </div>

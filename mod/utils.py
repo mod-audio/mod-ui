@@ -339,6 +339,16 @@ class PedalboardHardware(Structure):
         ("serial_midi_out", c_bool),
     ]
 
+class PedalboardTimeInfo(Structure):
+    _fields_ = [
+        ("bpb", c_float),
+        ("bpbCC", PedalboardMidiControl),
+        ("bpm", c_float),
+        ("bpmCC", PedalboardMidiControl),
+        ("rolling", c_bool),
+        ("rollingCC", PedalboardMidiControl),
+    ]
+
 class PedalboardInfo(Structure):
     _fields_ = [
         ("title", c_char_p),
@@ -347,6 +357,7 @@ class PedalboardInfo(Structure):
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
         ("hardware", PedalboardHardware),
+        ("timeInfo", PedalboardTimeInfo),
     ]
 
 class PedalboardInfo_Mini(Structure):
@@ -379,6 +390,7 @@ class JackData(Structure):
         ("cpuLoad", c_float),
         ("xruns", c_uint),
         ("rolling", c_bool),
+        ("bpb", c_double),
         ("bpm", c_double),
     ]
 
@@ -394,7 +406,8 @@ c_struct_types = (PluginAuthor,
                   PluginPortsI,
                   PluginPorts,
                   PedalboardMidiControl,
-                  PedalboardHardware)
+                  PedalboardHardware,
+                  PedalboardTimeInfo)
 
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
@@ -667,6 +680,7 @@ def get_jack_data(withTransport):
         'cpuLoad': data.contents.cpuLoad,
         'xruns'  : data.contents.xruns,
         'rolling': data.contents.rolling,
+        'bpb'    : data.contents.bpb,
         'bpm'    : data.contents.bpm
     }
 

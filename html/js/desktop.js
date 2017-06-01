@@ -39,6 +39,12 @@ function Desktop(elements) {
         presetSaveAsButton: $('<div>'),
         presetManageButton: $('<div>'),
         presetDisableButton: $('<div>'),
+        transportButton: $('<div>'),
+        transportWindow: $('<div>'),
+        transportPlay: $('<div>'),
+        transportBPB: $('<div>'),
+        transportBPM: $('<div>'),
+        transportSyncMode: $('<div>'),
         effectBox: $('<div>'),
         effectBoxTrigger: $('<div>'),
         cloudPluginBox: $('<div>'),
@@ -152,6 +158,7 @@ function Desktop(elements) {
         },
         setEnabled: function (instance, portSymbol, enabled) {
             if (instance == "/pedalboard") {
+                self.transportControls.setControlEnabled(portSymbol, enabled)
                 return
             }
             self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
@@ -463,6 +470,18 @@ function Desktop(elements) {
         new Notification("info", "Control Chain device firmware update complete!")
     }
 
+    this.transportControls = new TransportControls({
+        transportButton: elements.transportButton,
+        transportWindow: elements.transportWindow,
+        transportPlay: elements.transportPlay,
+        transportBPB: elements.transportBPB,
+        transportBPM: elements.transportBPM,
+        transportSyncMode: elements.transportSyncMode,
+        openAddressingDialog: function (port, label) {
+            self.hardwareManager.open("/pedalboard", port, label)
+        }
+    })
+
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {
         if (self.cloudAccessToken == null) {
             self.authenticateDevice(function (ok) {
@@ -575,13 +594,13 @@ function Desktop(elements) {
     }
 
     this.effectBox = self.makeEffectBox(elements.effectBox,
-            elements.effectBoxTrigger)
+                                        elements.effectBoxTrigger)
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
-            elements.cloudPluginBoxTrigger)
+                                                  elements.cloudPluginBoxTrigger)
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
-        elements.pedalboardBoxTrigger)
+                                                elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
-            elements.bankBoxTrigger)
+                                    elements.bankBoxTrigger)
 
     this.getPluginsData = function (uris, callback) {
         $.ajax({
@@ -903,6 +922,7 @@ function Desktop(elements) {
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
         self.pedalPresets.start(self.pedalboardPresetId, addressed)
     })
+
     elements.bypassLeftButton.click(function () {
         self.triggerTrueBypass("Left", !$(this).hasClass("bypassed"))
     })
@@ -1812,6 +1832,11 @@ function enable_dev_mode(skipSaveConfig) {
     // buffer size button
     $('#mod-buffersize').show()
 
+    // transport parameters
+    $('#mod-transport-window').css({
+        right: '740px'
+    })
+
     if (!skipSaveConfig) {
         // save settings
         desktop.saveConfigValue("dev-mode", "on")
@@ -1837,6 +1862,11 @@ function disable_dev_mode() {
 
     // buffer size button
     $('#mod-buffersize').hide()
+
+    // transport parameters
+    $('#mod-transport-window').css({
+        right: '460px'
+    })
 
     // save settings
     desktop.saveConfigValue("dev-mode", "off")

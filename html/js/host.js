@@ -32,17 +32,19 @@ $('document').ready(function() {
     }
 
     ws.onmessage = function (evt) {
-        var data = evt.data.split(" ")
+        var data = evt.data
+        var cmd  = data.split(" ",1)
 
-        if (!data.length) {
+        if (!cmd.length) {
             return
         }
 
-        var cmd = data[0]
+        var cmd = cmd[0]
 
         if (cmd == "stats") {
-            var cpuLoad = parseFloat(data[1])
-            var xruns   = parseInt(data[2])
+            data        = data.substr(cmd.length+1).split(" ",2)
+            var cpuLoad = parseFloat(data[0])
+            var xruns   = parseInt(data[1])
 
             if (cpuLoad != cached_cpuLoad) {
                 cached_cpuLoad = cpuLoad
@@ -75,38 +77,53 @@ $('document').ready(function() {
         }
 
         if (cmd == "mem_load") {
-            var value = parseFloat(data[1])
+            var value = parseFloat(data.substr(cmd.length+1))
             $("#ram-bar").css("width", (100.0-value).toFixed().toString()+"%")
             $("#ram-bar-text").text("RAM "+value.toString()+"%")
             return
         }
 
         if (cmd == "param_set") {
-            var instance = data[1]
-            var symbol   = data[2]
-            var value    = parseFloat(data[3])
+            data         = data.substr(cmd.length+1).split(" ",3)
+            var instance = data[0]
+            var symbol   = data[1]
+            var value    = parseFloat(data[2])
             desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
             return
         }
 
         if (cmd == "output_set") {
-            var instance = data[1]
-            var symbol   = data[2]
-            var value    = parseFloat(data[3])
+            data         = data.substr(cmd.length+1).split(" ",3)
+            var instance = data[0]
+            var symbol   = data[1]
+            var value    = parseFloat(data[2])
             desktop.pedalboard.pedalboard("setOutputPortValue", instance, symbol, value);
             return
         }
 
+        if (cmd == "output_atom") {
+            data         = data.substr(cmd.length+1).split(" ",3)
+            var instance = data[0]
+            var symbol   = data[1]
+            var atom     = data[2]
+            desktop.pedalboard.pedalboard("setOutputPortValue", instance, symbol, JSON.parse(atom))
+            return
+        }
+
         if (cmd == "transport") {
-            var rolling = parseInt(data[1]) != 0
-            var bpm     = parseFloat(data[2])
-            // TODO
+            data         = data.substr(cmd.length+1).split(" ",4)
+            var rolling  = parseInt(data[0]) != 0
+            var bpb      = parseFloat(data[1])
+            var bpm      = parseFloat(data[2])
+            var syncMode = data[3]
+            desktop.transportControls.setValues(rolling, bpb, bpm, syncMode)
             return
         }
 
         if (cmd == "preset") {
-            var instance = data[1]
-            var value    = data[2]
+            data         = data.substr(cmd.length+1).split(" ",2)
+            var instance = data[0]
+            var value    = data[1]
             if (value == "null") {
                 value = ""
             }
@@ -115,7 +132,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "pedal_preset") {
-            var index = parseInt(data[1])
+            var index = parseInt(data.substr(cmd.length+1))
 
             $.ajax({
                 url: '/pedalpreset/name',
@@ -137,29 +154,26 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_map") {
-            var instance = data[1]
-            var symbol   = data[2]
-            var actuator = data[3]
-            var minimum  = parseFloat(data[4])
-            var maximum  = parseFloat(data[5])
-            var steps    = parseInt(data[6])
-            var label    = data[7].replace(/_/g," ")
-
-            if (data.length > 8) {
-                console.log("FIXME: received hw_map with spaces:", data)
-            }
-
+            data         = data.substr(cmd.length+1).split(" ",7)
+            var instance = data[0]
+            var symbol   = data[1]
+            var actuator = data[2]
+            var minimum  = parseFloat(data[3])
+            var maximum  = parseFloat(data[4])
+            var steps    = parseInt(data[5])
+            var label    = data[6].replace(/_/g," ")
             desktop.hardwareManager.addHardwareMapping(instance, symbol, actuator, label, minimum, maximum, steps)
             return
         }
 
         if (cmd == "midi_map") {
-            var instance = data[1]
-            var symbol   = data[2]
-            var channel  = parseInt(data[3])
-            var control  = parseInt(data[4])
-            var minimum  = parseFloat(data[5])
-            var maximum  = parseFloat(data[6])
+            data         = data.substr(cmd.length+1).split(" ",6)
+            var instance = data[0]
+            var symbol   = data[1]
+            var channel  = parseInt(data[2])
+            var control  = parseInt(data[3])
+            var minimum  = parseFloat(data[4])
+            var maximum  = parseFloat(data[5])
 
             if (channel < 0 || control < 0 || minimum >= maximum) {
                 console.log("WARNING: Received MIDI mapping with invalid values, ignored")
@@ -171,8 +185,9 @@ $('document').ready(function() {
         }
 
         if (cmd == "connect") {
-            var source  = data[1]
-            var target  = data[2]
+            data        = data.substr(cmd.length+1).split(" ",2)
+            var source  = data[0]
+            var target  = data[1]
             var connMgr = desktop.pedalboard.data("connectionManager")
 
             if (! connMgr.connected(source, target)) {
@@ -219,8 +234,9 @@ $('document').ready(function() {
         }
 
         if (cmd == "disconnect") {
-            var source  = data[1]
-            var target  = data[2]
+            data        = data.substr(cmd.length+1).split(" ",2)
+            var source  = data[0]
+            var target  = data[1]
             var connMgr = desktop.pedalboard.data("connectionManager")
 
             if (connMgr.connected(source, target)) {
@@ -237,11 +253,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "add") {
-            var instance = data[1]
-            var uri      = data[2]
-            var x        = parseFloat(data[3])
-            var y        = parseFloat(data[4])
-            var bypassed = parseInt(data[5]) != 0
+            data         = data.substr(cmd.length+1).split(" ",5)
+            var instance = data[0]
+            var uri      = data[1]
+            var x        = parseFloat(data[2])
+            var y        = parseFloat(data[3])
+            var bypassed = parseInt(data[4]) != 0
             var plugins  = desktop.pedalboard.data('plugins')
             var skipModified = loading
 
@@ -273,7 +290,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "remove") {
-            var instance = data[1]
+            var instance = data.substr(cmd.length+1)
 
             if (instance == ":all") {
                 desktop.pedalboard.pedalboard('resetData')
@@ -284,15 +301,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_hw_port") {
-            var instance = data[1]
-            var type     = data[2]
-            var isOutput = parseInt(data[3]) == 0 // reversed
-            var name     = data[4].replace(/_/g," ")
-            var index    = parseInt(data[data.length-1])
-
-            if (data.length > 6) {
-                console.log("FIXME: received add_hw_port with spaces:", data)
-            }
+            data         = data.substr(cmd.length+1).split(" ",5)
+            var instance = data[0]
+            var type     = data[1]
+            var isOutput = parseInt(data[2]) == 0 // reversed
+            var name     = data[3].replace(/_/g," ")
+            var index    = parseInt(data[4])
 
             if (isOutput) {
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
@@ -309,59 +323,52 @@ $('document').ready(function() {
         }
 
         if (cmd == "remove_hw_port") {
-            var port = data[1]
+            var port = data.substr(cmd.length+1)
             desktop.pedalboard.pedalboard('removeItemFromCanvas', port)
             return
         }
 
         if (cmd == "act_add") {
-            var metadata = JSON.parse(atob(data[1]))
+            var metadata = JSON.parse(atob(data.substr(cmd.length+1)))
             desktop.hardwareManager.addActuator(metadata)
             return
         }
 
         if (cmd == "act_del") {
-            var uri = data[1]
+            var uri = data.substr(cmd.length+1)
             desktop.hardwareManager.removeActuator(uri)
             return
         }
 
         if (cmd == "hw_add") {
-            var dev_uri = data[1]
-            var label   = data[2].replace(/_/g," ")
-            var version = data[data.length-1]
-
-            if (data.length > 4) {
-                console.log("FIXME: received hw_add with spaces:", data)
-            }
-
+            data        = data.substr(cmd.length+1).split(" ",3)
+            var dev_uri = data[0]
+            var label   = data[1].replace(/_/g," ")
+            var version = data[2]
             desktop.ccDeviceAdded(dev_uri, label, version)
             return
         }
 
         if (cmd == "hw_rem") {
-            var dev_uri = data[1]
-            var label   = data[2].replace(/_/g," ")
-            var version = data[data.length-1]
-
-            if (data.length > 4) {
-                console.log("FIXME: received hw_rem with spaces:", data)
-            }
-
+            data        = data.substr(cmd.length+1).split(" ",3)
+            var dev_uri = data[0]
+            var label   = data[1].replace(/_/g," ")
+            var version = data[2]
             desktop.ccDeviceRemoved(dev_uri, label, version)
             return
         }
 
         if (cmd == "loading_start") {
+            data     = data.substr(cmd.length+1).split(" ",2)
+            empty    = parseInt(data[0]) != 0
+            modified = parseInt(data[1]) != 0
             loading  = true
-            empty    = parseInt(data[1]) != 0
-            modified = parseInt(data[2]) != 0
             desktop.pedalboard.data('wait').start('Loading pedalboard...')
             return
         }
 
         if (cmd == "loading_end") {
-            var presetId = parseInt(data[1])
+            var presetId = parseInt(data.substr(cmd.length+1))
 
             $.ajax({
                 url: '/pedalpreset/name',
@@ -394,15 +401,17 @@ $('document').ready(function() {
         }
 
         if (cmd == "size") {
-            var width  = data[1]
-            var height = data[2]
+            data       = data.substr(cmd.length+1).split(" ",2)
+            var width  = data[0]
+            var height = data[1]
             // TODO
             return
         }
 
         if (cmd == "truebypass") {
-            var left  = parseInt(data[1]) != 0
-            var right = parseInt(data[2]) != 0
+            data      = data.substr(cmd.length+1).split(" ",2)
+            var left  = parseInt(data[0]) != 0
+            var right = parseInt(data[1]) != 0
 
             desktop.setTrueBypassButton("Left", left)
             desktop.setTrueBypassButton("Right", right)
@@ -415,7 +424,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "rescan") {
-            var resp = JSON.parse(atob(data[1]))
+            var resp = JSON.parse(atob(data.substr(cmd.length+1)))
             desktop.updatePluginList(resp.installed, resp.removed)
             return
         }
@@ -426,7 +435,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "load-pb-remote") {
-            var pedalboard_id = data[1]
+            var pedalboard_id = data.substr(cmd.length+1)
             desktop.loadRemotePedalboard(pedalboard_id)
             return
         }

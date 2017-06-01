@@ -7,6 +7,7 @@ import os
 from tornado import gen
 from mod import get_hardware_actuators, safe_json_load
 from mod.control_chain import ControlChainDeviceListener
+from mod.settings import PEDALBOARD_INSTANCE_ID
 from mod.utils import get_plugin_info, get_plugin_control_inputs_and_monitored_outputs
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0
@@ -279,7 +280,7 @@ class Addressings(object):
             print("ERROR: Trying to address the wrong way, stop!")
             return None
 
-        unit = "(none)"
+        unit = "none"
         options = []
 
         if portsymbol == ":presets":
@@ -289,6 +290,22 @@ class Addressings(object):
                 return None
 
             value, maximum, options, spreset = data
+
+        elif instance_id == PEDALBOARD_INSTANCE_ID:
+            if portsymbol == ":bpb":
+                pprops = ["integer"]
+                unit = "/4"
+
+            elif portsymbol == ":bpm":
+                pprops = ["tapTempo"]
+                unit = "BPM"
+
+            elif portsymbol == ":rolling":
+                pprops = ["toggled"]
+
+            else:
+                print("ERROR: Trying to address wrong pedalboard port:", portsymbol)
+                return None
 
         elif portsymbol != ":bypass":
             for port_info in get_plugin_control_inputs_and_monitored_outputs(plugin_uri)['inputs']:
@@ -301,7 +318,8 @@ class Addressings(object):
             # useful info about this port
             pprops = port_info["properties"]
 
-            unit = port_info["units"]["symbol"] if "symbol" in port_info["units"] else "none"
+            if "symbol" in port_info["units"].keys():
+                unit = port_info["units"]["symbol"]
 
             if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
