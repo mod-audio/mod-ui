@@ -652,6 +652,9 @@ function GUI(effect, options) {
                 if (width != 0 && height != 0) {
                     self.icon.width(width)
                     self.icon.height(height)
+                    if (width < 150) {
+                        self.icon.find('.mod-information').hide()
+                    }
                 }
 
                 if (! instance) {
@@ -670,6 +673,11 @@ function GUI(effect, options) {
                     if (width != 0 && height != 0) {
                         self.icon.width(width)
                         self.icon.height(height)
+                        if (width < 150) {
+                            self.icon.find('.mod-information').hide()
+                        } else {
+                            self.icon.find('.mod-information').show()
+                        }
                     }
                 })
             }, 1)
