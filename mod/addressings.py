@@ -477,6 +477,9 @@ class Addressings(object):
             self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, None, callback)
             return
 
+        if addressings_len == addressings_idx:
+            addressings['idx'] = addressings_idx = addressings_len - 1
+
         # current addressing data
         addressing_data = addressings_addrs[addressings_idx].copy()
 

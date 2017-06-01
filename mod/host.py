@@ -2471,9 +2471,14 @@ _:b%i
                                                                               maximum), callback, datatype='boolean')
 
             self.addressings.remove(old_addressing)
-            yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                        old_addressing['instance_id'],
-                                                        old_addressing['port'])
+            self.pedalboard_modified = True
+
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
+            else:
+                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                            old_addressing['instance_id'],
+                                                            old_addressing['port'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
