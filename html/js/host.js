@@ -440,6 +440,12 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "bufsize") {
+            var bufsize = data.substr(cmd.length+1)
+            $("#mod-buffersize").text(bufsize+" frames")
+            return
+        }
+
         console.log(data)
     }
 })

@@ -975,7 +975,6 @@ function Desktop(elements) {
                 if (! resp.ok) {
                     new Bug("Couldn't set new buffer size")
                 }
-                $("#mod-buffersize").text(""+resp.size+" frames")
             },
             error: function () {
                 new Bug("Communication failure")

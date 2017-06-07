@@ -266,7 +266,7 @@ class Host(object):
         self.close_jack()
 
     def jack_bufsize_changed(self, bufSize):
-        print("bufSize changed", bufSize)
+        self.msg_callback("bufsize %i" % bufSize)
 
     def jack_port_appeared(self, name, isOutput):
         name = charPtrToString(name)

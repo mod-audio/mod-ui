@@ -284,6 +284,13 @@ $('document').ready(function() {
             ws.close()
             return
         }
+
+        if (cmd == "bufsize") {
+            var bufsize = data.substr(cmd.length+1)
+            $("#info-dsp-buffer-size").html(bufsize)
+            $("#prefs-audio-256-frames").prop("checked", bufsize == "256")
+            return
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -455,11 +462,7 @@ $('document').ready(function() {
             url: '/set_buffersize/' + (using256 ? '256' : '128'),
             method: 'POST',
             cache: false,
-            success: function (resp) {
-                if (resp.ok) {
-                    $("#info-dsp-buffer-size").html(""+resp.size)
-                }
-            },
+            success: function () {},
             error: function () {},
         })
     })
