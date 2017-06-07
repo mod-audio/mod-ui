@@ -268,6 +268,7 @@ typedef struct {
     double bpm;
 } JackData;
 
+typedef void (*JackBufSizeChanged)(unsigned bufsize);
 typedef void (*JackPortAppeared)(const char* name, bool isOutput);
 typedef void (*JackPortDeleted)(const char* name);
 typedef void (*TrueBypassStateChanged)(bool left, bool right);
@@ -363,7 +364,8 @@ MOD_API bool get_truebypass_value(bool right);
 MOD_API bool set_truebypass_value(bool right, bool bypassed);
 
 // callbacks
-MOD_API void set_util_callbacks(JackPortAppeared portAppeared,
+MOD_API void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
+                                JackPortAppeared portAppeared,
                                 JackPortDeleted portDeleted,
                                 TrueBypassStateChanged trueBypassChanged);
 

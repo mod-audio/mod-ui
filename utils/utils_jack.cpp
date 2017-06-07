@@ -38,6 +38,7 @@
 // --------------------------------------------------------------------------------------------------------
 
 static jack_client_t* gClient = nullptr;
+static volatile unsigned gNewBufSize = 0;
 static volatile unsigned gXrunCount = 0;
 static const char** gPortListRet = nullptr;
 
@@ -53,9 +54,10 @@ static snd_mixer_elem_t* gAlsaControlRight = nullptr;
 static bool gLastAlsaValueLeft  = false;
 static bool gLastAlsaValueRight = false;
 
-static JackPortAppeared       jack_port_appeared_cb  = nullptr;
-static JackPortDeleted        jack_port_deleted_cb   = nullptr;
-static TrueBypassStateChanged true_bypass_changed_cb = nullptr;
+static JackBufSizeChanged     jack_bufsize_changed_cb = nullptr;
+static JackPortAppeared       jack_port_appeared_cb   = nullptr;
+static JackPortDeleted        jack_port_deleted_cb    = nullptr;
+static TrueBypassStateChanged true_bypass_changed_cb  = nullptr;
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -67,6 +69,12 @@ static bool _get_alsa_switch_value(snd_mixer_elem_t* const elem)
 }
 
 // --------------------------------------------------------------------------------------------------------
+
+static int JackBufSize(jack_nframes_t frames, void*)
+{
+    gNewBufSize = frames;
+    return 0;
+}
 
 static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 {
@@ -172,11 +180,13 @@ bool init_jack(void)
     if (client == nullptr)
         return false;
 
+    jack_set_buffer_size_callback(client, JackBufSize, nullptr);
     jack_set_port_registration_callback(client, JackPortRegistration, nullptr);
     jack_set_xrun_callback(client, JackXRun, nullptr);
     jack_on_shutdown(client, JackShutdown, nullptr);
 
     gClient = client;
+    gNewBufSize = 0;
     gXrunCount = 0;
     jack_activate(client);
 
@@ -289,6 +299,14 @@ JackData* get_jack_data(bool withTransport)
         data.rolling = false;
         data.bpb     = 4.0;
         data.bpm     = 120.0;
+    }
+
+    if (gNewBufSize > 0 && jack_bufsize_changed_cb != nullptr)
+    {
+        const unsigned int bufsize = gNewBufSize;
+        gNewBufSize = 0;
+
+        jack_bufsize_changed_cb(bufsize);
     }
 
     if (gAlsaMixer != nullptr && true_bypass_changed_cb != nullptr)
@@ -503,13 +521,15 @@ bool set_truebypass_value(bool right, bool bypassed)
 
 // --------------------------------------------------------------------------------------------------------
 
-void set_util_callbacks(JackPortAppeared portAppeared,
+void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
+                        JackPortAppeared portAppeared,
                         JackPortDeleted portDeleted,
                         TrueBypassStateChanged trueBypassChanged)
 {
-    jack_port_appeared_cb  = portAppeared;
-    jack_port_deleted_cb   = portDeleted;
-    true_bypass_changed_cb = trueBypassChanged;
+    jack_bufsize_changed_cb = bufSizeChanged;
+    jack_port_appeared_cb   = portAppeared;
+    jack_port_deleted_cb    = portDeleted;
+    true_bypass_changed_cb  = trueBypassChanged;
 }
 
 // --------------------------------------------------------------------------------------------------------

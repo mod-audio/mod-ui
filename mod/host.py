@@ -228,7 +228,10 @@ class Host(object):
 
         self.msg_callback = msg_callback
 
-        set_util_callbacks(self.jack_port_appeared, self.jack_port_deleted, self.true_bypass_changed)
+        set_util_callbacks(self.jack_bufsize_changed,
+                           self.jack_port_appeared,
+                           self.jack_port_deleted,
+                           self.true_bypass_changed)
 
         # Setup addressing callbacks
         self.addressings._task_addressing = self.addr_task_addressing
@@ -261,6 +264,9 @@ class Host(object):
     def __del__(self):
         self.msg_callback("stop")
         self.close_jack()
+
+    def jack_bufsize_changed(self, bufSize):
+        print("bufSize changed", bufSize)
 
     def jack_port_appeared(self, name, isOutput):
         name = charPtrToString(name)
