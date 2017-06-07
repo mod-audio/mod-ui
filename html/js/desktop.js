@@ -479,7 +479,37 @@ function Desktop(elements) {
         transportSyncMode: elements.transportSyncMode,
         openAddressingDialog: function (port, label) {
             self.hardwareManager.open("/pedalboard", port, label)
-        }
+        },
+        unaddressPort: function (portSymbol, callback) {
+            var addressing = {
+                uri    : kNullAddressURI,
+                label  : "",
+                minimum: 0,
+                maximum: 0,
+                value  : 0,
+                steps  : 0,
+            }
+            var instanceAndSymbol = "/pedalboard/" + portSymbol
+
+            $.ajax({
+                url: '/effect/parameter/address/' + instanceAndSymbol,
+                type: 'POST',
+                data: JSON.stringify(addressing),
+                success: function (resp) {
+                    if (resp) {
+                        if (self.hardwareManager.removeHardwareMappping(instanceAndSymbol)) {
+                            new Notification('info', 'BPM addressing removed, incompatible with Link sync mode', 8000)
+                        }
+                    }
+                    callback(resp)
+                },
+                error: function () {
+                    callback(false)
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
     })
 
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {

@@ -27,6 +27,9 @@ function TransportControls(options) {
         transportSyncMode: $('<div>'),
         openAddressingDialog: function (port, label) {
         },
+        unaddressPort: function (portSymbol, callback) {
+            callback()
+        },
     }, options)
 
     this.rollingPort = {
@@ -230,8 +233,19 @@ function TransportControls(options) {
         var opt = $(this)
         opt.click(function (e) {
             var syncMode = opt.attr('mod-sync-mode')
-            ws.send("link_enable " + (syncMode == "link" ? "1" : "0"))
-            self.setSyncMode(syncMode)
+            if (syncMode == "link") {
+                options.unaddressPort(":bpm", function (ok) {
+                    if (! ok) {
+                        return
+                    }
+                    ws.send("link_enable 1")
+                    self.setControlEnabled(":bpm", true)
+                    self.setSyncMode(syncMode)
+                })
+            } else {
+                ws.send("link_enable 0")
+                self.setSyncMode(syncMode)
+            }
         })
     })
 

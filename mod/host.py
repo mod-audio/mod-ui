@@ -2602,6 +2602,9 @@ _:b%i
         self.pedalboard_size = [width, height]
 
     def set_link_enabled(self, enabled, saveConfig = False):
+        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+            print("ERROR: link enabled while BPM is still addressed")
+
         self.transport_sync = "link" if enabled else "none"
         self.send_notmodified("feature_enable link %i" % int(enabled))
 
