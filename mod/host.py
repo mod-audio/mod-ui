@@ -1159,7 +1159,10 @@ class Host(object):
             for symbol, value in pluginData['outputs'].items():
                 if value is None:
                     continue
-                websocket.write_message("output_set %s %s %f" % (pluginData['instance'], symbol, value))
+                if isinstance (value, float):
+                    websocket.write_message("output_set %s %s %f" % (pluginData['instance'], symbol, value))
+                if isinstance (value, str):
+                    websocket.write_message("output_atom %s %s %s" % (pluginData['instance'], symbol, value))
 
                 if crashed:
                     self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))

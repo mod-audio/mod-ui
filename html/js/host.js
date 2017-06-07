@@ -92,6 +92,15 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "output_atom") {
+            data         = data.substr(cmd.length+1).split(" ",3)
+            var instance = data[0]
+            var symbol   = data[1]
+            var atom     = data[2]
+            desktop.pedalboard.pedalboard("setOutputPortValue", instance, symbol, JSON.parse(atom));
+            return
+        }
+
         if (cmd == "output_set") {
             data         = data.substr(cmd.length+1).split(" ",3)
             var instance = data[0]
