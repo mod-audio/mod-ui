@@ -46,7 +46,8 @@ from mod.utils import (charPtrToString,
                        get_all_pedalboards, get_pedalboard_plugin_values,
                        init_jack, close_jack, get_jack_data, init_bypass,
                        get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
-                       connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
+                       connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks,
+                       kPedalboardTimeAvailableBPB, kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling)
 from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PREFERENCES_JSON_FILE,
                           PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
                           TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
@@ -1875,6 +1876,13 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
+        if pb['timeInfo']['available'] & kPedalboardTimeAvailableBPB:
+            self.set_transport_bpb(pb['timeInfo']['bpb'])
+        if pb['timeInfo']['available'] & kPedalboardTimeAvailableBPM:
+            self.set_transport_bpm(pb['timeInfo']['bpm'])
+        if pb['timeInfo']['available'] & kPedalboardTimeAvailableRolling:
+            self.set_transport_rolling(pb['timeInfo']['rolling'])
+
         self.load_pb_presets(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
@@ -2368,11 +2376,29 @@ _:b%i
         # Globak Ports
         pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
 
-        # BPM
+        # BeatsPerBar
         ports = """
-<:bpm>
+<:bpb>
     ingen:value %f ;%s
     lv2:index 0 ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (self.transport_bpb,
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        lv2:minimum %f ;
+        lv2:maximum %f ;
+        a midi:Controller ;
+    ] ;""" % pluginData['midiCCs'][':bpb']) if -1 not in pluginData['midiCCs'][':bpb'][0:2] else "")
+
+        # BeatsPerMinute
+        index += 1
+        ports += """
+<:bpm>
+    ingen:value %f ;%s
+    lv2:index 1 ;
     a lv2:ControlPort ,
         lv2:InputPort .
 """ % (self.transport_bpm,
@@ -2386,11 +2412,10 @@ _:b%i
     ] ;""" % pluginData['midiCCs'][':bpm']) if -1 not in pluginData['midiCCs'][':bpm'][0:2] else "")
 
         # Rolling
-        index += 1
         ports += """
 <:rolling>
     ingen:value %i ;%s
-    lv2:index 1 ;
+    lv2:index 2 ;
     a lv2:ControlPort ,
         lv2:InputPort .
 """ % (int(self.transport_rolling),
@@ -2402,10 +2427,10 @@ _:b%i
     ] ;""" % pluginData['midiCCs'][':rolling'][0:2]) if -1 not in pluginData['midiCCs'][':rolling'][0:2] else "")
 
         # Control In/Out
-        ports = """
+        ports += """
 <control_in>
     atom:bufferType atom:Sequence ;
-    lv2:index 2 ;
+    lv2:index 3 ;
     lv2:name "Control In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_in" ;
@@ -2415,7 +2440,7 @@ _:b%i
 
 <control_out>
     atom:bufferType atom:Sequence ;
-    lv2:index 3 ;
+    lv2:index 4 ;
     lv2:name "Control Out" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_out" ;
@@ -2423,7 +2448,7 @@ _:b%i
     a atom:AtomPort ,
         lv2:OutputPort .
 """
-        index = 3
+        index = 4
 
         # Ports (Audio In)
         for port in self.audioportsIn:
@@ -2549,7 +2574,7 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = [":bpm",":rolling","control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:

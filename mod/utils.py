@@ -339,8 +339,13 @@ class PedalboardHardware(Structure):
         ("serial_midi_out", c_bool),
     ]
 
+kPedalboardTimeAvailableBPB     = 0x1
+kPedalboardTimeAvailableBPM     = 0x2
+kPedalboardTimeAvailableRolling = 0x4
+
 class PedalboardTimeInfo(Structure):
     _fields_ = [
+        ("available", c_uint),
         ("bpb", c_float),
         ("bpbCC", PedalboardMidiControl),
         ("bpm", c_float),

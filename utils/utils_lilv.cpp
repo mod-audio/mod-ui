@@ -3958,11 +3958,13 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // hardware ports
+    // hardware ports and time info
 
     if (LilvNodes* const hwports = lilv_plugin_get_value(p, lv2_port))
     {
+#if 0
         std::vector<std::string> handled_port_uris;
+#endif
         std::vector<PedalboardHardwareMidiPort> midi_ins;
         std::vector<PedalboardHardwareMidiPort> midi_outs;
 
@@ -3970,13 +3972,105 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         {
             const LilvNode* const hwport = lilv_nodes_get(hwports, ithwp);
 
+            char* portsym = lilv_file_uri_parse(lilv_node_as_uri(hwport), nullptr);
+
+            if (portsym == nullptr)
+                continue;
+            if (strstr(portsym, bundlepath) != nullptr)
+                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
+
             // check if we already handled this port
-            const std::string port_uri = lilv_node_as_uri(hwport);
-            if (std::find(handled_port_uris.begin(), handled_port_uris.end(), port_uri) != handled_port_uris.end())
+            if (strcmp(portsym, "control_in") == 0 || strcmp(portsym, "control_out") == 0)
+            {
+                lilv_free(portsym);
                 continue;
-            if (ends_with(port_uri, "/control_in") || ends_with(port_uri, "/control_out"))
+            }
+
+#if 0
+            {
+                const std::string portsym_s = portsym;
+                if (std::find(handled_port_uris.begin(), handled_port_uris.end(), portsym_s) != handled_port_uris.end())
+                {
+                    lilv_free(portsym);
+                    continue;
+                }
+                handled_port_uris.push_back(portsym_s);
+            }
+#endif
+
+            int isTimePort = 0;
+            /**/ if (strcmp(portsym, ":bpb") == 0)
+                isTimePort = 1;
+            else if (strcmp(portsym, ":bpm") == 0)
+                isTimePort = 2;
+            else if (strcmp(portsym, ":rolling") == 0)
+                isTimePort = 3;
+
+            if (isTimePort)
+            {
+                if (LilvNode* const portvalue = lilv_world_get(w, hwport, ingen_value, nullptr))
+                {
+                    float value;
+                    int8_t mchan = -1;
+                    uint8_t mctrl = 0;
+
+                    if (LilvNode* const bind = lilv_world_get(w, hwport, midi_binding, nullptr))
+                    {
+                        LilvNode* const bindChan = lilv_world_get(w, bind, midi_channel, nullptr);
+                        LilvNode* const bindCtrl = lilv_world_get(w, bind, midi_controlNum, nullptr);
+
+                        if (bindChan != nullptr && bindCtrl != nullptr)
+                        {
+                            const int mchantest = lilv_node_as_int(bindChan);
+                            const int mctrltest = lilv_node_as_int(bindCtrl);
+
+                            if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 255)
+                            {
+                                mchan = (int8_t)mchantest;
+                                mctrl = (uint8_t)mctrltest;
+                            }
+                        }
+
+                        lilv_node_free(bindCtrl);
+                        lilv_node_free(bindChan);
+                        lilv_node_free(bind);
+                    }
+
+                    switch (isTimePort)
+                    {
+                    case 1:
+                        value = lilv_node_as_float(portvalue);
+                        if (value >= 1.0f && value <= 16.0f)
+                        {
+                            info.timeInfo.bpb = value;
+                            info.timeInfo.bpbCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.available |= kPedalboardTimeAvailableBPB;
+                        }
+                        break;
+
+                    case 2:
+                        value = lilv_node_as_float(portvalue);
+                        if (value >= 20.0f && value <= 280.0f)
+                        {
+                            info.timeInfo.bpm = value;
+                            info.timeInfo.bpmCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.available |= kPedalboardTimeAvailableBPM;
+                        }
+                        break;
+
+                    case 3:
+                        info.timeInfo.rolling = lilv_node_as_int(portvalue) != 0;
+                        info.timeInfo.rollingCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                        info.timeInfo.available |= kPedalboardTimeAvailableRolling;
+                        break;
+                    }
+
+                    lilv_node_free(portvalue);
+                }
+
+                lilv_free(portsym);
                 continue;
-            handled_port_uris.push_back(port_uri);
+            }
 
             // get types
             if (LilvNodes* const port_types = lilv_world_find_nodes(w, hwport, rdftypenode, NULL))
@@ -3988,23 +4082,28 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 {
                     const LilvNode* const ptyp = lilv_nodes_get(port_types, itptyp);
 
-                    if (const char* const port_type_uri = lilv_node_as_uri(ptyp))
+                    if (const char* port_type_uri = lilv_node_as_uri(ptyp))
                     {
-                        if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#InputPort") == 0)
+                        port_type_uri += 21; // http://lv2plug.in/ns/
+
+                        if (strcmp(port_type_uri, "lv2core#InputPort") == 0)
                             portDir = 'i';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#OutputPort") == 0)
+                        else if (strcmp(port_type_uri, "lv2core#OutputPort") == 0)
                             portDir = 'o';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#AudioPort") == 0)
+                        else if (strcmp(port_type_uri, "lv2core#AudioPort") == 0)
                             portType = 'a';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#CVPort") == 0)
+                        else if (strcmp(port_type_uri, "lv2core#CVPort") == 0)
                             portType = 'c';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/ext/atom#AtomPort") == 0)
+                        else if (strcmp(port_type_uri, "ext/atom#AtomPort") == 0)
                             portType = 't';
                     }
                 }
 
                 if (portDir == -1 || portType == -1)
+                {
+                    lilv_free(portsym);
                     continue;
+                }
 
                 if (portType == 'a')
                 {
@@ -4017,17 +4116,12 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 {
                     if (portDir == 'i')
                     {
-                        if (ends_with(port_uri, "/serial_midi_in"))
+                        if (strcmp(portsym, "serial_midi_in") == 0)
                         {
                             info.hardware.serial_midi_in = true;
                         }
                         else
                         {
-                            char* portsym = lilv_file_uri_parse(port_uri.c_str(), nullptr);
-
-                            if (strstr(portsym, bundlepath) != nullptr)
-                                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
-
                             LilvNode* const hwportname = lilv_world_get(w, hwport, lv2_name, nullptr);
 
                             PedalboardHardwareMidiPort mport = {
@@ -4041,22 +4135,18 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                             lilv_node_free(hwportname);
 
+                            portsym = nullptr;
                             midi_ins.push_back(mport);
                         }
                     }
                     else
                     {
-                        if (ends_with(port_uri, "/serial_midi_out"))
+                        if (strcmp(portsym, "serial_midi_out") == 0)
                         {
                             info.hardware.serial_midi_out = true;
                         }
                         else
                         {
-                            char* portsym = lilv_file_uri_parse(port_uri.c_str(), nullptr);
-
-                            if (strstr(portsym, bundlepath) != nullptr)
-                                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
-
                             LilvNode* const hwportname = lilv_world_get(w, hwport, lv2_name, nullptr);
 
                             PedalboardHardwareMidiPort mport = {
@@ -4070,6 +4160,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                             lilv_node_free(hwportname);
 
+                            portsym = nullptr;
                             midi_outs.push_back(mport);
                         }
                     }
@@ -4082,6 +4173,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         info.hardware.cv_outs += 1;
                 }
 
+                lilv_free(portsym);
                 lilv_nodes_free(port_types);
             }
         }

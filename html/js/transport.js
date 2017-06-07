@@ -140,7 +140,7 @@ function TransportControls(options) {
         symbol: ':bpm',
         ranges: {
             minimum: 20.0,
-            maximum: 200.0,
+            maximum: 280.0,
             default: 120.0,
         },
         comment: "",

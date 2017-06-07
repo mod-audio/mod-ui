@@ -213,7 +213,14 @@ typedef struct {
     bool serial_midi_out;
 } PedalboardHardware;
 
+typedef enum {
+    kPedalboardTimeAvailableBPB     = 0x1,
+    kPedalboardTimeAvailableBPM     = 0x2,
+    kPedalboardTimeAvailableRolling = 0x4,
+} PedalboardTimeInfoAvailableBits;
+
 typedef struct {
+    unsigned int available;
     float bpb;
     PedalboardMidiControl bpbCC;
     float bpm;
