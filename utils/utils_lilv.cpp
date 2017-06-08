@@ -412,6 +412,7 @@ static const char* const kCategoryFunctionPlugin[] = { "Utility", "Function", nu
 static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
 static const char* const kCategoryMIDIPlugin[] = { "MIDI", "Utility", nullptr };
 static const char* const kCategoryMIDIPluginMOD[] = { "MIDI", nullptr };
+static const char* const kCategoryMaxGenPluginMOD[] = { "MaxGen", nullptr };
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -918,6 +919,8 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                     info.category = kCategoryUtilityPlugin;
                 else if (strcmp(cat2, "MIDIPlugin") == 0)
                     info.category = kCategoryMIDIPluginMOD;
+                else if (strcmp(cat2, "MaxGenPlugin") == 0)
+                    info.category = kCategoryMaxGenPluginMOD;
                 else
                     continue; // invalid mod category
 
