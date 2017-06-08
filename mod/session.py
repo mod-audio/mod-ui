@@ -298,7 +298,9 @@ class Session(object):
             ws.write_message(msg)
 
     def load_pedalboard(self, bundlepath, isDefault):
+        self.host.send_notmodified("feature_enable processing 0")
         title = self.host.load(bundlepath, isDefault)
+        self.host.send_notmodified("feature_enable processing 1")
         if isDefault:
             bundlepath = ""
             title = ""
@@ -306,8 +308,14 @@ class Session(object):
         return title
 
     def reset(self, callback):
+        self.host.send_notmodified("feature_enable processing 0")
+
+        def host_callback(resp):
+            self.host.send_notmodified("feature_enable processing 1")
+            callback(resp)
+
         def reset_host(ok):
-            self.host.reset(callback)
+            self.host.reset(host_callback)
 
         if self.hmi.initialized:
             def clear_hmi(ok):

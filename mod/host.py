@@ -170,6 +170,7 @@ class Host(object):
         self.transport_bpm       = 120.0
         self.transport_sync      = "none"
         self.last_data_finish_msg = 0.0
+        self.processing_pending_flag = False
         self.init_plugins_data()
 
         if APP and os.getenv("MOD_LIVE_ISO") is not None:
@@ -535,12 +536,13 @@ class Host(object):
         self.transport_bpm     = data['bpm']
         self.transport_bpb     = data['bpb']
 
+        self.send_notmodified("feature_enable processing 0")
+        yield gen.Task(self.send_notmodified, "remove -1", datatype='boolean')
+
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
-
-        yield gen.Task(self.send_notmodified, "remove -1", datatype='boolean')
 
         # FIXME: ensure HMI is initialized by now
 
@@ -563,7 +565,7 @@ class Host(object):
             navigateChannel      = 15
 
         self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
-        self.send_notmodified("output_data_ready")
+        self.send_notmodified("feature_enable processing 2")
         init_bypass()
 
     def init_jack(self):
@@ -883,10 +885,12 @@ class Host(object):
                 def load_callback(ok):
                     self.bank_id = bank_id
                     self.load(bundlepath)
+                    self.send_notmodified("feature_enable processing 1")
 
                 def hmi_clear_callback(ok):
                     self.hmi.clear(load_callback)
 
+                self.send_notmodified("feature_enable processing 0")
                 self.reset(hmi_clear_callback)
 
         elif cmd == "transport":
@@ -2932,6 +2936,9 @@ _:b%i
 
             if next_pedalboard != (bank_id, pedalboard_id):
                 self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], loaded2_callback)
+            else:
+                self.processing_pending_flag = False
+                self.send_notmodified("feature_enable processing 1")
 
         def load_callback(ok):
             self.bank_id = bank_id
@@ -2944,6 +2951,10 @@ _:b%i
 
         def hmi_clear_callback(ok):
             self.hmi.clear(footswitch_callback)
+
+        if not self.processing_pending_flag:
+            self.processing_pending_flag = True
+            self.send_notmodified("feature_enable processing 0")
 
         self.reset(hmi_clear_callback)
 
