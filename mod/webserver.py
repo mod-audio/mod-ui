@@ -371,6 +371,7 @@ class SystemPreferences(JsonRequestHandler):
         self.write(ret)
 
 class SystemExeChange(JsonRequestHandler):
+    @gen.coroutine
     def post(self):
         etype = self.get_argument('type')
         print(etype)
@@ -380,8 +381,8 @@ class SystemExeChange(JsonRequestHandler):
             print(cmd)
 
             if cmd == "reboot":
-                self.run_command_wait(["hmi-reset"])
-                self.run_command_wait(["reboot"])
+                yield gen.Task(run_command, ["hmi-reset"], None)
+                IOLoop.instance().add_callback(self.reboot)
 
             elif cmd == "restore":
                 IOLoop.instance().add_callback(start_restore)
@@ -441,18 +442,18 @@ class SystemExeChange(JsonRequestHandler):
             if enable:
                 with open(checkname, 'wb') as fh:
                     fh.write(b"")
-                self.run_command_wait(["systemctl", "start", servicename])
+                yield gen.Task(run_command, ["systemctl", "start", servicename], None)
 
             else:
                 if os.path.exists(checkname):
                     os.remove(checkname)
-                self.run_command_wait(["systemctl", "stop", servicename])
+                yield gen.Task(run_command, ["systemctl", "stop", servicename], None)
 
         self.write(True)
 
     @gen.coroutine
-    def run_command_wait(self, args):
-        yield gen.Task(run_command, args, None)
+    def reboot(self):
+        yield gen.Task(run_command, ["reboot"], None)
 
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp/os-update"

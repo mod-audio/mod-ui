@@ -448,6 +448,7 @@ $('document').ready(function() {
     })
 
     $("#button-action-reboot").click(function () {
+        ws.close()
         run_custom_command("reboot")
     })
 
