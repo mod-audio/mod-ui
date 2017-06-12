@@ -797,6 +797,10 @@ class ServerWebSocket(websocket.WebSocketHandler):
             on = bool(int(data[1]))
             SESSION.host.set_link_enabled(on, True)
 
+        elif cmd == "transport-bpb":
+            bpb = float(data[1])
+            SESSION.host.set_transport_bpb(bpb)
+
         elif cmd == "transport-bpm":
             bpm = float(data[1])
             SESSION.host.set_transport_bpm(bpm)
