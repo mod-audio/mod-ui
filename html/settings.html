@@ -441,14 +441,18 @@ $('document').ready(function() {
     // --- Maintenance & Backup
 
     // ----------------------------------------------------------------------------------------------------------------
-    // --- Services
+    // --- Boot & Restore
 
-    $("#prefs-service-mixserver").click(function () {
-        enable_service("mixserver", $(this).prop("checked"))
+    $("#button-action-poweroff").click(function () {
+        run_custom_command("poweroff")
     })
 
-    $("#prefs-service-netmanager").click(function () {
-        enable_service("netmanager", $(this).prop("checked"))
+    $("#button-action-reboot").click(function () {
+        run_custom_command("reboot")
+    })
+
+    $("#button-action-restore").click(function () {
+        run_custom_command("restore")
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -492,18 +496,14 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
-    // --- Boot?
+    // --- Services
 
-    $("#button-action-poweroff").click(function () {
-        run_custom_command("poweroff")
+    $("#prefs-service-mixserver").click(function () {
+        enable_service("mixserver", $(this).prop("checked"))
     })
 
-    $("#button-action-reboot").click(function () {
-        run_custom_command("reboot")
-    })
-
-    $("#button-action-restore").click(function () {
-        run_custom_command("restore")
+    $("#prefs-service-netmanager").click(function () {
+        enable_service("netmanager", $(this).prop("checked"))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -610,18 +610,33 @@ $('document').ready(function() {
                 </form>
                 -->
 
-                <h1>Services</h1>
+                <h1>Boot &amp; Restore</h1>
                 <form class="form">
+                    <!--
                     <p>
-                        Note: Each additional service you enable consumes a small amount of CPU.<br/>
-                        Only enable services that you absolutely need.
+                        <b>Power off the MOD</b>.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
                     </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
+                        <input type="button" id="button-action-poweroff" value="Power off MOD"></input>
                     </label>
-                    <br/>
+                    <br/><br/>
+                    -->
+                    <p>
+                        <b>Reboot the MOD</b>.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                        <input type="button" id="button-action-reboot" value="Reboot MOD"></input>
+                    </label>
+                    <br/><br/>
+                    <p>
+                        <b>Start the MOD's restore/upgrade mode</b>, where you can manually update the MOD via
+                            USB Mass Storage mode.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-restore" value="Start upgrade mode"></input>
                     </label>
                 </form>
             </div>
@@ -667,6 +682,21 @@ $('document').ready(function() {
                     </p>
                 </form>
 
+                <h1>Services</h1>
+                <form class="form">
+                    <p>
+                        Note: Each additional service you enable consumes a small amount of CPU.<br/>
+                        Only enable services that you absolutely need.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                    </label>
+                </form>
+
                 <h1>User Interface</h1>
                 <form class="form">
                     <label>
@@ -687,36 +717,6 @@ $('document').ready(function() {
                         Note that installing non-stable plugins is unsupported and you cannot share pedalboards containing such plugins.<br/>
                         Expect things to break!
                     </p>
-                </form>
-
-                <h1>Boot &amp; Restore</h1>
-                <form class="form">
-                    <!--
-                    <p>
-                        <b>Power off the MOD</b>.<br/>
-                        Note that all unsaved pedalboard changes will be lost.
-                    </p>
-                    <label>
-                        <input type="button" id="button-action-poweroff" value="Power off MOD"></input>
-                    </label>
-                    <br/><br/>
-                    -->
-                    <p>
-                        <b>Reboot the MOD</b>.<br/>
-                        Note that all unsaved pedalboard changes will be lost.
-                    </p>
-                    <label>
-                        <input type="button" id="button-action-reboot" value="Reboot MOD"></input>
-                    </label>
-                    <br/><br/>
-                    <p>
-                        <b>Start the MOD's restore/upgrade mode</b>, where you can manually update the MOD via
-                            USB Mass Storage mode.<br/>
-                        Note that all unsaved pedalboard changes will be lost.
-                    </p>
-                    <label>
-                        <input type="button" id="button-action-restore" value="Start upgrade mode"></input>
-                    </label>
                 </form>
             </div>
         </div>
