@@ -524,7 +524,7 @@ function Desktop(elements) {
                 'uri': dev_uri,
                 'label': label,
                 'download-url': CONTROLCHAIN_URL + "/file/" + label + cloudversion + ".bin",
-                'release-url': "http://wiki.moddevices.com/wiki/ControlChainReleases#" + label + "," + cloudversion
+                'release-url': "http://wiki.moddevices.com/wiki/Control_Chain_Releases#" + label + "," + cloudversion
             }
             elements.upgradeWindow.upgradeWindow('setupDevice', data)
         }
