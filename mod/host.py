@@ -1574,6 +1574,8 @@ class Host(object):
         }
 
         for instance_id, pluginData in self.plugins.items():
+            if instance_id == PEDALBOARD_INSTANCE_ID:
+                continue
             instance = pluginData['instance'].replace("/graph/","",1)
             pedalpreset['data'][instance] = {
                 "bypassed": pluginData['bypassed'],
