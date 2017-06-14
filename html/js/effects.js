@@ -46,20 +46,34 @@ JqueryClass('effectBox', {
         // make sure searchbox is empty on init
         searchbox.val("")
 
-        self.data('searchbox', searchbox)
-        searchbox.cleanableInput()
+        if (SEARCH_ENABLED) {
+            self.data('searchbox', searchbox)
+            searchbox.cleanableInput()
 
-        var lastKeyUp = null
-        searchbox.keydown(function (e) {
-            if (e.keyCode == 13) { //detect enter
-                if (lastKeyUp != null) {
-                    clearTimeout(lastKeyUp)
-                    lastKeyUp = null
+            var lastKeyUp = null
+            searchbox.keydown(function (e) {
+                if (e.keyCode == 13) { //detect enter
+                    if (lastKeyUp != null) {
+                        clearTimeout(lastKeyUp)
+                        lastKeyUp = null
+                    }
+                    self.effectBox('search')
+                    return false
                 }
-                self.effectBox('search')
-                return false
-            }
-            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+                else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+                    if (lastKeyUp != null) {
+                        clearTimeout(lastKeyUp)
+                        lastKeyUp = null
+                    }
+                    lastKeyUp = setTimeout(function () {
+                        self.effectBox('search')
+                    }, 400);
+                }
+            })
+            searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+                if (e.which == 13) {
+                    return
+                }
                 if (lastKeyUp != null) {
                     clearTimeout(lastKeyUp)
                     lastKeyUp = null
@@ -67,20 +81,12 @@ JqueryClass('effectBox', {
                 lastKeyUp = setTimeout(function () {
                     self.effectBox('search')
                 }, 400);
-            }
-        })
-        searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
-            if (e.which == 13) {
-                return
-            }
-            if (lastKeyUp != null) {
-                clearTimeout(lastKeyUp)
-                lastKeyUp = null
-            }
-            lastKeyUp = setTimeout(function () {
-                self.effectBox('search')
-            }, 400);
-        })
+            })
+        } else {
+            self.data('searchbox', null)
+            searchbox.hide()
+            self.find('.js-settings-trigger').hide()
+        }
 
         var settingsBox = self.find('#plugins-library-settings-window')
         settingsBox.window({
@@ -196,8 +202,13 @@ JqueryClass('effectBox', {
 
     search: function (callback) {
         var self = $(this)
-        var searchbox = self.data('searchbox')
-        var term = searchbox.val()
+        var term
+
+        if (SEARCH_ENABLED) {
+            term = self.data('searchbox').val()
+        } else {
+            term = ""
+        }
 
         if (term)
         {
@@ -218,13 +229,21 @@ JqueryClass('effectBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
-                    var i, plugin, allplugins = {}
-                    for (i in plugins) {
-                        plugin = plugins[i]
-                        plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
-                        allplugins[plugin.uri] = plugin
+                    if (SEARCH_ENABLED) {
+                        var i, plugin, allplugins = {}
+                        for (i in plugins) {
+                            plugin = plugins[i]
+                            plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
+                            allplugins[plugin.uri] = plugin
+                        }
+                        desktop.resetPluginIndexer(allplugins)
+                    } else {
+                        var i, plugin
+                        for (i in plugins) {
+                            plugin = plugins[i]
+                            plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
+                        }
                     }
-                    desktop.resetPluginIndexer(allplugins)
                     self.effectBox('showPlugins', plugins, callback)
                 },
                 cache: false,
@@ -512,8 +531,9 @@ JqueryClass('effectBox', {
                 },
                 success: function (pluginData) {
                     plugin = $.extend(plugin, pluginData)
-                    // FIXME: needed?
-                    desktop.pluginIndexerData[plugin.uri] = plugin
+                    if (SEARCH_ENABLED) {
+                        desktop.pluginIndexerData[plugin.uri] = plugin
+                    }
                     showInfo()
                 },
                 cache: false,

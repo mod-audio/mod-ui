@@ -54,34 +54,39 @@ JqueryClass('cloudPluginBox', {
         // make sure searchbox is empty on init
         searchbox.val("")
 
-        self.data('searchbox', searchbox)
-        searchbox.cleanableInput()
+        if (SEARCH_ENABLED) {
+            self.data('searchbox', searchbox)
+            searchbox.cleanableInput()
 
-        searchbox.keydown(function (e) {
-            if (e.keyCode == 13) { //detect enter
-                self.cloudPluginBox('search')
-                return false
-            }
-            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-                setTimeout(function () {
+            searchbox.keydown(function (e) {
+                if (e.keyCode == 13) { //detect enter
+                    self.cloudPluginBox('search')
+                    return false
+                }
+                else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
+                    setTimeout(function () {
+                        self.cloudPluginBox('search')
+                    }, 400);
+                }
+            })
+            var lastKeyUp = null
+            searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+                if (e.which == 13)
+                    return
+                if (lastKeyUp != null) {
+                    clearTimeout(lastKeyUp)
+                    lastKeyUp = null
+                }
+                if (e.which == 13)
+                    return
+                lastKeyUp = setTimeout(function () {
                     self.cloudPluginBox('search')
                 }, 400);
-            }
-        })
-        var lastKeyUp = null
-        searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
-            if (e.which == 13)
-                return
-            if (lastKeyUp != null) {
-                clearTimeout(lastKeyUp)
-                lastKeyUp = null
-            }
-            if (e.which == 13)
-                return
-            lastKeyUp = setTimeout(function () {
-                self.cloudPluginBox('search')
-            }, 400);
-        })
+            })
+        } else {
+            self.data('searchbox', null)
+            searchbox.hide()
+        }
 
         self.find('input:checkbox[name=installed]').click(function (e) {
             self.cloudPluginBox('search')
@@ -173,7 +178,7 @@ JqueryClass('cloudPluginBox', {
     search: function (customRenderCallback) {
         var self  = $(this)
         var query = {
-            text: self.data('searchbox').val(),
+            text: SEARCH_ENABLED ? self.data('searchbox').val() : "",
             summary: "true",
             image_version: VERSION,
         }
@@ -304,7 +309,9 @@ JqueryClass('cloudPluginBox', {
                         plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
-                    desktop.resetPluginIndexer(allplugins)
+                    if (SEARCH_ENABLED) {
+                        desktop.resetPluginIndexer(allplugins)
+                    }
 
                     results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
                     if (results.cloud != null)
@@ -429,7 +436,9 @@ JqueryClass('cloudPluginBox', {
                         plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
-                    desktop.resetPluginIndexer(allplugins)
+                    if (SEARCH_ENABLED) {
+                        desktop.resetPluginIndexer(allplugins)
+                    }
 
                     results.local = plugins
                     if (results.cloud != null)

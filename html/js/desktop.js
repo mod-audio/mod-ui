@@ -74,38 +74,39 @@ function Desktop(elements) {
     this.installationQueue = new InstallationQueue()
     this.windowManager = new WindowManager()
 
-    this.pluginIndexer = lunr(function () {
-        this.field('data')
-        this.ref('id')
-        this.requireAllTerms = true
-    })
-
     this.pedalboardIndexer = lunr(function () {
         this.field('data')
         this.ref('id')
         this.requireAllTerms = true
     })
-
-    this.pluginIndexerData = {}
     this.pedalboardIndexerData = {}
     this.previousPedalboardList = null
 
-    this.resetPluginIndexer = function (plugins) {
-        self.pluginIndexer = lunr(function () {
+    if (SEARCH_ENABLED) {
+        this.pluginIndexer = lunr(function () {
             this.field('data')
             this.ref('id')
             this.requireAllTerms = true
         })
+        this.pluginIndexerData = {}
 
-        var i, plugin
-        for (i in plugins) {
-            plugin = plugins[i]
-            self.pluginIndexer.add({
-                id: plugin.uri,
-                data: [plugin.uri, plugin.name, plugin.brand, plugin.comment, plugin.category.join(" ")].join(" "),
+        this.resetPluginIndexer = function (plugins) {
+            self.pluginIndexer = lunr(function () {
+                this.field('data')
+                this.ref('id')
+                this.requireAllTerms = true
             })
+
+            var i, plugin
+            for (i in plugins) {
+                plugin = plugins[i]
+                self.pluginIndexer.add({
+                    id: plugin.uri,
+                    data: [plugin.uri, plugin.name, plugin.brand, plugin.comment, plugin.category.join(" ")].join(" "),
+                })
+            }
+            self.pluginIndexerData = plugins
         }
-        self.pluginIndexerData = plugins
     }
 
     this.pedalboardStatsSuccess = false;
