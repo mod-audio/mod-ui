@@ -1243,7 +1243,13 @@ var baseWidget = {
             self.data('scaleMaximum', port.ranges.maximum)
         }
 
+        var wheelStep = 30
+        var stepDivider = portSteps / Math.max(portSteps, wheelStep)
+
         self.data('portSteps', portSteps)
+        self.data('wheelStep', wheelStep)
+        self.data('stepDivider', stepDivider)
+
         self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
         self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
     },
@@ -1271,8 +1277,7 @@ var baseWidget = {
         var max = self.data('scaleMaximum')
         var portSteps = self.data('portSteps')
 
-        steps = Math.min(steps, portSteps - 1)
-        steps = Math.max(steps, 0)
+        steps = Math.min(portSteps-1, Math.max(0, steps))
 
         var portSteps = self.data('portSteps')
 
@@ -1283,6 +1288,7 @@ var baseWidget = {
 
         if (self.data('integer')) {
             value = Math.round(value)
+            steps = Math.round(steps)
         }
 
         if (self.data('enumeration')) {
@@ -1328,7 +1334,7 @@ var baseWidget = {
             value = Math.round(value)
         }
 
-        return parseInt((value - min) * (portSteps - 1) / (max - min))
+        return Math.round((value - min) * (portSteps - 1) / (max - min))
     },
 
     prevent: function (e) {
@@ -1501,10 +1507,9 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         self.data('dragged', true)
 
-        var vdiff = self.data('lastY') - e.pageY
-        vdiff = parseInt(vdiff / self.data('dragPrecisionVertical'))
-        var hdiff = e.pageX - self.data('lastX')
-        hdiff = parseInt(hdiff / self.data('dragPrecisionHorizontal'))
+        var vdiff = (self.data('lastY') - e.pageY) / self.data('dragPrecisionVertical')
+        var hdiff = (e.pageX - self.data('lastX')) / self.data('dragPrecisionHorizontal')
+        var portSteps = self.data("portSteps")
 
         if (Math.abs(vdiff) > 0) {
             self.data('lastY', e.pageY)
@@ -1514,9 +1519,10 @@ JqueryClass('film', baseWidget, {
         }
 
         var position = self.data('position')
+        var diff = (vdiff + hdiff) * self.data('stepDivider')
 
-        position += vdiff + hdiff
-        position = Math.min(self.data("filmSteps"), Math.max(0, position));
+        position += diff
+        position = Math.min(portSteps-1, Math.max(0, position));
 
         self.data('position', position)
         self.film('setRotation', position)
@@ -1528,7 +1534,7 @@ JqueryClass('film', baseWidget, {
         // Advance one step, to go beginning if at end.
         // Useful for fine tunning and toggle
         var self = $(this)
-        var filmSteps = self.data('filmSteps')
+        var portSteps = self.data('portSteps')
         var position = self.data('position')
 
         if (e.shiftKey) {
@@ -1536,7 +1542,7 @@ JqueryClass('film', baseWidget, {
             position -= 1
             if (position < 0) {
                 if (self.data('enumeration') || self.data('toggled')) {
-                    position = filmSteps-1
+                    position = portSteps-1
                 } else {
                     position = 0
                 }
@@ -1544,11 +1550,11 @@ JqueryClass('film', baseWidget, {
         } else {
             // going up
             position += 1
-            if (position >= filmSteps) {
+            if (position >= portSteps) {
                 if (self.data('enumeration') || self.data('toggled')) {
                     position = 0
                 } else {
-                    position = filmSteps-1
+                    position = portSteps-1
                 }
             }
         }
@@ -1561,14 +1567,23 @@ JqueryClass('film', baseWidget, {
 
     mouseWheel: function (e) {
         var self = $(this)
-        var wheelStep = 30
+        var portSteps = self.data("portSteps")
+        var wheelStep = self.data("wheelStep")
         var delta = ('wheelDelta' in e.originalEvent) ? e.originalEvent.wheelDelta : -wheelStep * e.originalEvent.detail;
         delta += self.data('wheelBuffer')
         self.data('wheelBuffer', delta % wheelStep)
-        var diff = parseInt(delta / wheelStep)
+        var diff = (delta / wheelStep) * self.data("stepDivider")
+        if (diff == 0.0) {
+            return
+        }
+        if (diff >= -1.0 && diff <= 1.0) {
+            diff = diff > 0 ? 1 : -1
+        } else {
+            diff = Math.round(diff)
+        }
         var position = self.data('position')
         position += diff
-        position = Math.min(self.data("filmSteps"), Math.max(0, position));
+        position = Math.min(portSteps-1, Math.max(0, position))
         self.data('position', position)
         if (Math.abs(diff) > 0) {
             self.data('lastY', e.pageY)
@@ -1581,7 +1596,7 @@ JqueryClass('film', baseWidget, {
     gestureStart: function () {},
     gestureChange: function (scale) {
         var self = $(this)
-        var diff = parseInt(Math.log(scale) * 30)
+        var diff = Math.round(Math.log(scale) * 30)
         var position = self.data('position')
         position += diff
         self.film('setRotation', position)
@@ -1606,11 +1621,10 @@ JqueryClass('film', baseWidget, {
         // in this theoric case.
             rotation = Math.round(filmSteps / 2)
         } else if (portSteps != null) {
-            rotation = steps * parseInt(filmSteps / (portSteps - 1))
+            rotation = Math.round(steps) * Math.round(filmSteps / (portSteps - 1))
         }
 
-        rotation = Math.min(rotation, filmSteps - 1)
-        rotation = Math.max(rotation, 0)
+        rotation = Math.min(filmSteps-1, Math.max(0, rotation))
 
         var bgShift = rotation * -self.data('size')
         bgShift += 'px 0px'
