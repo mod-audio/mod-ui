@@ -1288,10 +1288,10 @@ var baseWidget = {
 
         if (self.data('integer')) {
             value = Math.round(value)
-            steps = Math.round(steps)
         }
 
         if (self.data('enumeration')) {
+            steps = Math.round(steps)
             value = self.data('scalePoints')[steps].value
         }
 
