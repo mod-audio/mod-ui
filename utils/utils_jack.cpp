@@ -86,7 +86,7 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 
     if (const jack_port_t* const port = jack_port_by_id(gClient, port_id))
     {
-        if ((jack_port_flags(port) & JackPortIsPhysical) == 0x0)
+        if ((jack_port_flags(port) & JackPortIsPhysical) == 0x0 && reg != 0)
             return;
 
         if (const char* const port_name = jack_port_name(port))
@@ -340,8 +340,10 @@ const char* get_jack_port_alias(const char* portname)
         aliases[1]
     };
 
-    if (gClient != nullptr && jack_port_get_aliases(jack_port_by_name(gClient, portname), aliasesptr) > 0)
-        return aliases[0];
+    if (gClient != nullptr)
+        if (jack_port_t* const port = jack_port_by_name(gClient, portname))
+            if (jack_port_get_aliases(port, aliasesptr) > 0)
+                return aliases[0];
 
     return nullptr;
 }
