@@ -234,41 +234,38 @@ class Addressings(object):
         with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
             json.dump(addressings, fh)
 
-    def registerMappings(self, msg_callback, iprefix, instances):
+    def registerMappings(self, msg_callback, instances):
         # HMI
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
-                msg_callback("hw_map %s%s %s %s %f %f %d %s" % (iprefix,
-                                                                instances[addr['instance_id']],
-                                                                addr['port'],
-                                                                uri,
-                                                                addr['minimum'],
-                                                                addr['maximum'],
-                                                                addr['steps'],
-                                                                addr['label'].replace(" ","_")))
+                msg_callback("hw_map %s %s %s %f %f %d %s" % (instances[addr['instance_id']],
+                                                              addr['port'],
+                                                              uri,
+                                                              addr['minimum'],
+                                                              addr['maximum'],
+                                                              addr['steps'],
+                                                              addr['label'].replace(" ","_")))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
             for addr in addrs:
-                msg_callback("hw_map %s%s %s %s %f %f %d %s" % (iprefix,
-                                                                instances[addr['instance_id']],
-                                                                addr['port'],
-                                                                uri,
-                                                                addr['minimum'],
-                                                                addr['maximum'],
-                                                                addr['steps'],
-                                                                addr['label'].replace(" ","_")))
+                msg_callback("hw_map %s %s %s %f %f %d %s" % (instances[addr['instance_id']],
+                                                              addr['port'],
+                                                              uri,
+                                                              addr['minimum'],
+                                                              addr['maximum'],
+                                                              addr['steps'],
+                                                              addr['label'].replace(" ","_")))
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():
             for addr in addrs:
-                msg_callback("midi_map %s%s %s %i %i %f %f" % (iprefix,
-                                                               instances[addr['instance_id']],
-                                                               addr['port'],
-                                                               addr['midichannel'],
-                                                               addr['midicontrol'],
-                                                               addr['minimum'],
-                                                               addr['maximum']))
+                msg_callback("midi_map %s %s %i %i %f %f" % (instances[addr['instance_id']],
+                                                             addr['port'],
+                                                             addr['midichannel'],
+                                                             addr['midicontrol'],
+                                                             addr['minimum'],
+                                                             addr['maximum']))
 
     # -----------------------------------------------------------------------------------------------------------------
 

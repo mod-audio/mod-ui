@@ -994,12 +994,12 @@ class Host(object):
             title = title.replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
-        instances = {
+        rinstances = {
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
         for instance_id, plugin in self.plugins.items():
-            instances[instance_id] = plugin['instance']
+            rinstances[instance_id] = plugin['instance']
 
             websocket.write_message("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'],
                                                                 plugin['x'], plugin['y'], int(plugin['bypassed'])))
@@ -1049,7 +1049,7 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
-        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), "", instances)
+        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), rinstances)
 
         # TODO: restore HMI and CC addressings if crashed
 
@@ -1749,7 +1749,7 @@ class Host(object):
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
         self.addressings.load(bundlepath, instances)
-        self.addressings.registerMappings(self.msg_callback, "/graph/", rinstances)
+        self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.pedalboard_preset)
 
@@ -1812,7 +1812,7 @@ class Host(object):
             instance_id = self.mapper.get_id(instance)
 
             instances[p['instance']] = (instance_id, p['uri'])
-            rinstances[instance_id]  = p['instance']
+            rinstances[instance_id]  = instance
 
             badports = []
             valports = {}
