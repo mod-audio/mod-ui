@@ -109,12 +109,22 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
             if (reg)
             {
                 const std::lock_guard<std::mutex> clg(gPortRegisterMutex);
-                gRegisteredPorts.push_back(portName);
+
+                if (std::find(gRegisteredPorts.begin(), gRegisteredPorts.end(), portName) == gRegisteredPorts.end())
+                    gRegisteredPorts.push_back(portName);
             }
             else
             {
-                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
-                gUnregisteredPorts.push_back(portName);
+                const std::lock_guard<std::mutex> clgr(gPortRegisterMutex);
+                const std::lock_guard<std::mutex> clgu(gPortUnregisterMutex);
+
+                if (std::find(gUnregisteredPorts.begin(), gUnregisteredPorts.end(), portName) == gUnregisteredPorts.end())
+                    gUnregisteredPorts.push_back(portName);
+
+                const std::vector<std::string>::iterator portNameItr =
+                    std::find(gRegisteredPorts.begin(), gRegisteredPorts.end(), portName);
+                if (portNameItr != gRegisteredPorts.end())
+                    gRegisteredPorts.erase(portNameItr);
             }
         }
     }
@@ -252,6 +262,21 @@ JackData* get_jack_data(bool withTransport)
                 data.bpb = 4.0;
                 data.bpm = 120.0;
             }
+
+        if (jack_port_deleted_cb != nullptr)
+        {
+            // See if any new ports have been unregistered
+            {
+                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
+
+                if (gUnregisteredPorts.size() > 0)
+                    gUnregisteredPorts.swap(localPorts);
+            }
+
+            for (const std::string& portName : localPorts)
+                jack_port_deleted_cb(portName.c_str());
+
+            localPorts.clear();
         }
 
         if (jack_port_appeared_cb != nullptr)
@@ -272,22 +297,6 @@ JackData* get_jack_data(bool withTransport)
                     jack_port_appeared_cb(portName.c_str(), isOutput);
                 }
             }
-
-            localPorts.clear();
-        }
-
-        if (jack_port_deleted_cb != nullptr)
-        {
-            // See if any new ports have been unregistered
-            {
-                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
-
-                if (gUnregisteredPorts.size() > 0)
-                    gUnregisteredPorts.swap(localPorts);
-            }
-
-            for (const std::string& portName : localPorts)
-                jack_port_deleted_cb(portName.c_str());
 
             localPorts.clear();
         }
