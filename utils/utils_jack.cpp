@@ -262,6 +262,7 @@ JackData* get_jack_data(bool withTransport)
                 data.bpb = 4.0;
                 data.bpm = 120.0;
             }
+        }
 
         if (jack_port_deleted_cb != nullptr)
         {
