@@ -1863,7 +1863,7 @@ function enable_dev_mode(skipSaveConfig) {
 
     // transport parameters
     $('#mod-transport-window').css({
-        right: '310px'
+        right: '592px'
     })
 
     if (!skipSaveConfig) {
@@ -1894,7 +1894,7 @@ function disable_dev_mode() {
 
     // transport parameters
     $('#mod-transport-window').css({
-        right: '460px'
+        right: '310px'
     })
 
     // save settings
