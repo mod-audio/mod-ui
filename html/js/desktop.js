@@ -168,7 +168,7 @@ function Desktop(elements) {
             if (port.symbol == ':bypass' || port.symbol == ':presets') {
                 context = {
                     label: label,
-                    name: port.symbol == ':bypass' ? "Bypass" : "Presets"
+                    name: port.symbol == ':bypass' ? "On/Off" : "Presets"
                 }
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
