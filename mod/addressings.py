@@ -489,7 +489,6 @@ class Addressings(object):
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
-            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, None, callback)
             return
 
         if addressings_len == addressings_idx:
@@ -536,7 +535,6 @@ class Addressings(object):
 
         if addressings_len == 0:
             print("ERROR: hmi_load_next_hw failed, empty list")
-            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, None, callback)
             return
 
         # jump to next available addressing
