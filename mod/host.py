@@ -356,9 +356,6 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            if data is None:
-                return self.hmi.control_clean(actuator[0], actuator[1], actuator[2], actuator[3], callback)
-
             return self.hmi.control_add(data['instance_id'],
                                         data['port'],
                                         data['label'],
@@ -2473,12 +2470,9 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
-            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
-            else:
-                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                            old_addressing['instance_id'],
-                                                            old_addressing['port'])
+            yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                        old_addressing['instance_id'],
+                                                        old_addressing['port'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)

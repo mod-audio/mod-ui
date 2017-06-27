@@ -193,9 +193,6 @@ class HMI(object):
     def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-    def control_clean(self, hw_type, hw_id, actuator_type, actuator_id, callback):
-        self.send("control_clean %d %d %d %d" % (hw_type, hw_id, actuator_type, actuator_id), callback, datatype='boolean')
-
     def control_add(self, instance_id, port, label, var_type, unit, value, min, max, steps,
                     hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
         label = '"%s"' % label.upper().replace('"', "")
