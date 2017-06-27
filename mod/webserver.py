@@ -800,15 +800,15 @@ class ServerWebSocket(websocket.WebSocketHandler):
 
         elif cmd == "transport-bpb":
             bpb = float(data[1])
-            SESSION.host.set_transport_bpb(bpb)
+            SESSION.host.set_transport_bpb(bpb, True)
 
         elif cmd == "transport-bpm":
             bpm = float(data[1])
-            SESSION.host.set_transport_bpm(bpm)
+            SESSION.host.set_transport_bpm(bpm, True)
 
         elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
-            SESSION.host.set_transport_rolling(rolling)
+            SESSION.host.set_transport_rolling(rolling, True)
 
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous

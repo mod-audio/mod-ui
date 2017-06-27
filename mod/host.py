@@ -607,7 +607,7 @@ class Host(object):
             self.set_link_enabled(True)
 
         if self.prefs.get("transport-rolling", "false") == "true":
-            self.set_transport_rolling(True)
+            self.set_transport_rolling(True, False)
 
     def open_connection_if_needed(self, websocket):
         if self.readsock is not None and self.writesock is not None:
@@ -1888,12 +1888,23 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
-        if pb['timeInfo']['available'] & kPedalboardTimeAvailableBPB:
-            self.set_transport_bpb(pb['timeInfo']['bpb'])
-        if pb['timeInfo']['available'] & kPedalboardTimeAvailableBPM:
-            self.set_transport_bpm(pb['timeInfo']['bpm'])
-        if pb['timeInfo']['available'] & kPedalboardTimeAvailableRolling:
-            self.set_transport_rolling(pb['timeInfo']['rolling'])
+        timeAvailable = pb['timeInfo']['available']
+        if timeAvailable != 0:
+            if timeAvailable & kPedalboardTimeAvailableBPB:
+                self.set_transport_bpb(pb['timeInfo']['bpb'], False)
+            if timeAvailable & kPedalboardTimeAvailableBPM:
+                self.set_transport_bpm(pb['timeInfo']['bpm'], False)
+            if timeAvailable & kPedalboardTimeAvailableRolling:
+                self.set_transport_rolling(pb['timeInfo']['rolling'], False)
+
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm))
+
+            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                         self.transport_bpb,
+                                                         self.transport_bpm,
+                                                         self.transport_sync))
 
         self.load_pb_presets(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
@@ -2620,37 +2631,45 @@ _:b%i
         self.transport_sync = "link" if enabled else "none"
         self.send_notmodified("feature_enable link %i" % int(enabled))
 
-    def set_transport_bpb(self, bpb, callback=None, datatype='int'):
+    def set_transport_bpb(self, bpb, sendMsg, callback=None, datatype='int'):
         self.transport_bpb = bpb
-        self.send_modified("transport %i %f %f" % (self.transport_rolling,
-                                                   self.transport_bpb,
-                                                   self.transport_bpm), callback, datatype)
+
+        if sendMsg:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
 
         for pluginData in self.plugins.values():
             bpb_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPB]
 
             if bpb_symbol is not None:
                 pluginData['ports'][bpb_symbol] = bpb
-                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
-    def set_transport_bpm(self, bpm, callback=None, datatype='int'):
+    def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
         self.transport_bpm = bpm
-        self.send_modified("transport %i %f %f" % (self.transport_rolling,
-                                                   self.transport_bpb,
-                                                   self.transport_bpm), callback, datatype)
+
+        if sendMsg:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
 
         for pluginData in self.plugins.values():
             bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
 
             if bpm_symbol is not None:
                 pluginData['ports'][bpm_symbol] = bpm
-                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
-    def set_transport_rolling(self, rolling, callback=None, datatype='int'):
+    def set_transport_rolling(self, rolling, sendMsg, callback=None, datatype='int'):
         self.transport_rolling = rolling
-        self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
-                                                      self.transport_bpb,
-                                                      self.transport_bpm), callback, datatype)
+
+        if sendMsg:
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm), callback, datatype)
 
         speed = 1.0 if rolling else 0.0
 
@@ -2659,7 +2678,8 @@ _:b%i
 
             if speed_symbol is not None:
                 pluginData['ports'][speed_symbol] = speed
-                self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
     #def set_transport(self, rolling, bpm, saveConfig):
         #speed = 1.0 if rolling else 0.0
@@ -2997,12 +3017,12 @@ _:b%i
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             if portsymbol == ":bpb":
-                self.set_transport_bpb(value, callback)
+                self.set_transport_bpb(value, True, callback)
             elif portsymbol == ":bpm":
-                self.set_transport_bpm(value, callback)
+                self.set_transport_bpm(value, True, callback)
             elif portsymbol == ":rolling":
                 rolling = bool(value > 0.5)
-                self.set_transport_rolling(rolling, callback)
+                self.set_transport_rolling(rolling, True, callback)
             else:
                 print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
                 return None
