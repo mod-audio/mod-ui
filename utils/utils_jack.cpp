@@ -244,8 +244,12 @@ JackData* get_jack_data(bool withTransport)
 
     if (gClient != nullptr)
     {
-        data.cpuLoad = jack_cpu_load(gClient);
-        data.xruns   = gXrunCount;
+        if (gXrunCount != 0 && data.xruns != gXrunCount)
+            data.cpuLoad = 100.0f;
+        else
+            data.cpuLoad = jack_cpu_load(gClient);
+
+        data.xruns = gXrunCount;
 
         if (withTransport)
         {
