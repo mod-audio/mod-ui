@@ -1340,8 +1340,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             $.ajax({
                 url: '/reset',
                 success: function (resp) {
-                    if (!resp)
+                    if (!resp) {
                         return new Notification('error', "Couldn't reset pedalboard")
+                    }
 
                     self.title = ''
                     self.pedalboardBundle = null
@@ -1349,7 +1350,8 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardModified = false
                     self.pedalboardPresetId = -1
                     self.titleBox.text('Untitled')
-                    self.titleBox.addClass("blend");
+                    self.titleBox.addClass("blend")
+                    self.transportControls.resetControlsEnabled()
 
                     $('#js-preset-menu').hide()
                     $('#js-preset-enabler').show()

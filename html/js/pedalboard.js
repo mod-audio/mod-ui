@@ -1680,8 +1680,9 @@ JqueryClass('pedalboard', {
                 return
             }
             self.pedalboard('resetData')
-            if (callback)
+            if (callback) {
                 callback()
+            }
         })
     },
 

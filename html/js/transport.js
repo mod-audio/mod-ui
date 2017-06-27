@@ -232,19 +232,19 @@ function TransportControls(options) {
     syncModeWidgets.each(function() {
         var opt = $(this)
         opt.click(function (e) {
-            var syncMode = opt.attr('mod-sync-mode')
-            if (syncMode == "link") {
+            var newSyncMode = opt.attr('mod-sync-mode')
+            if (newSyncMode == "link") {
                 options.unaddressPort(":bpm", function (ok) {
                     if (! ok) {
                         return
                     }
                     ws.send("link_enable 1")
                     self.setControlEnabled(":bpm", true)
-                    self.setSyncMode(syncMode)
+                    self.setSyncMode(newSyncMode)
                 })
             } else {
                 ws.send("link_enable 0")
-                self.setSyncMode(syncMode)
+                self.setSyncMode(newSyncMode)
             }
         })
     })
@@ -267,6 +267,12 @@ function TransportControls(options) {
         } else if (portSymbol == ":rolling") {
             self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'disable')
         }
+    }
+
+    this.resetControlsEnabled = function () {
+        self.setControlEnabled(":bpb", true)
+        self.setControlEnabled(":bpm", true)
+        self.setControlEnabled(":rolling", true)
     }
 
     this.setPlaybackState = function (playing, set_control) {
@@ -341,10 +347,10 @@ function TransportControls(options) {
         }
     }
 
-    this.setValues = function (playing, bpb, bpm, syncMode) {
+    this.setValues = function (playing, bpb, bpm, newSyncMode) {
         self.setPlaybackState(playing, true)
         self.setBeatsPerBarValue(bpb, true)
         self.setBeatsPerMinuteValue(bpm, true)
-        self.setSyncMode(syncMode)
+        self.setSyncMode(newSyncMode)
     }
 }
