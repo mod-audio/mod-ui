@@ -155,6 +155,7 @@ typedef struct {
     int builder;
     int licensed;
     PluginGUI_Mini gui;
+    bool needsDealloc;
 } PluginInfo_Mini;
 
 typedef struct {
