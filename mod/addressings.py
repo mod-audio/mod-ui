@@ -493,6 +493,7 @@ class Addressings(object):
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
+            callback(False)
             return
 
         if addressings_len == addressings_idx:
