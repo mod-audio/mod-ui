@@ -151,7 +151,7 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     @gen.coroutine
-    def load(self, bundlepath, instances):
+    def load(self, bundlepath, instances, skippedPorts):
         datafile = os.path.join(bundlepath, "addressings.json")
         if not os.path.exists(datafile):
             return
@@ -169,6 +169,10 @@ class Addressings(object):
                     instance_id, plugin_uri = instances[instance]
                 except KeyError:
                     print("ERROR: An instance specified in addressings file is invalid")
+                    continue
+
+                if len(skippedPorts) > 0 and instance+"/"+portsymbol in skippedPorts:
+                    print("NOTE: An incompatible addressing has been skipped, port:", instance, portsymbol)
                     continue
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)

@@ -526,20 +526,26 @@ class Host(object):
         self.init_jack()
         self.open_connection_if_needed(None)
 
+        # Disable plugin processing while initializing
+        yield gen.Task(self.send_notmodified, "feature_enable processing 0", datatype='boolean')
+
+        # Remove all plugins, non-waiting
+        self.send_notmodified("remove -1")
+
+        # get current transport data
         data = get_jack_data(True)
         self.transport_rolling = data['rolling']
         self.transport_bpm     = data['bpm']
         self.transport_bpb     = data['bpb']
 
-        yield gen.Task(self.send_notmodified, "feature_enable processing 0", datatype='boolean')
-        yield gen.Task(self.send_notmodified, "remove -1", datatype='boolean')
-
+        # load user prefs
         if self.prefs.get("transport-rolling-at-boot", "false") == "true":
             self.first_transport_rolling = True
 
-        if self.prefs.get("link-enabled-at-boot", "false") == "true":
-            self.set_link_enabled(True)
+        link_enabled = self.prefs.get("link-enabled-at-boot", "false") == "true"
+        self.set_link_enabled(link_enabled)
 
+        # load everything
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
 
@@ -557,16 +563,22 @@ class Host(object):
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
 
+        # Setup MIDI program navigation
+        navigateFootswitches = False
+        navigateChannel      = 15
+
         if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
             bank = self.banks[self.bank_id-1]
             navigateFootswitches = bank['navigateFootswitches']
-            navigateChannel      = int(bank['navigateChannel'])-1 if "navigateChannel" in bank.keys() and not navigateFootswitches else 15
-        else:
-            navigateFootswitches = False
-            navigateChannel      = 15
+            if "navigateChannel" in bank.keys() and not navigateFootswitches:
+                navigateChannel  = int(bank['navigateChannel'])-1
 
         self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
-        self.send_notmodified("feature_enable processing 2")
+
+        # Wait for all mod-host messages to be processed
+        yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
+
+        # All set, disable HW bypass now
         init_bypass()
 
     def init_jack(self):
@@ -1882,6 +1894,10 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
+        skippedPortAddressings = []
+        if self.transport_sync == "link":
+            skippedPortAddressings.append(PEDALBOARD_INSTANCE+"/:bpm")
+
         timeAvailable = pb['timeInfo']['available']
         if timeAvailable != 0:
             if timeAvailable & kPedalboardTimeAvailableBPB:
@@ -1910,7 +1926,7 @@ class Host(object):
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
-        self.addressings.load(bundlepath, instances)
+        self.addressings.load(bundlepath, instances, skippedPortAddressings)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.pedalboard_preset)
