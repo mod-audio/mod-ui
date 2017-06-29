@@ -336,11 +336,11 @@ $('document').ready(function() {
     refresh_sysinfo()
     refresh_sysprefs()
 
-    if (PREFERENCES['link-enabled-at-boot'] == "true") {
-        $("#transport-rolling-at-boot").prop("checked", true)
-    }
     if (PREFERENCES['transport-rolling-at-boot'] == "true") {
         $("#prefs-prefs-autostart-playback").prop("checked", true)
+    }
+    if (PREFERENCES['prefs-prefs-autostart-link'] == "true") {
+        $("#prefs-prefs-autostart-link").prop("checked", true)
     }
     if (PREFERENCES['tuner-mutes-outputs'] != "false") {
         $("#prefs-prefs-muted-tuner").prop("checked", true)

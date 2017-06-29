@@ -39,15 +39,7 @@ else:
 
 class UserPreferences(object):
     def __init__(self):
-        prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
-
-        if prefs.get("link-enabled-at-boot", "") == "true":
-            prefs["link-enabled"] = "true"
-
-        if prefs.get("transport-rolling-at-boot", "") == "true":
-            prefs["transport-rolling"] = "true"
-
-        self.prefs = prefs
+        self.prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
     def get(self, key, default):
         return self.prefs.get(key, default)
