@@ -1900,11 +1900,50 @@ class Host(object):
 
         timeAvailable = pb['timeInfo']['available']
         if timeAvailable != 0:
+            pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
             if timeAvailable & kPedalboardTimeAvailableBPB:
+                ccData = pb['timeInfo']['bpbCC']
+                if ccData['channel'] >= 0 and ccData['channel'] < 16:
+                    if ccData['hasRanges'] and ccData['maximum'] > ccData['minimum']:
+                        minimum = ccData['minimum']
+                        maximum = ccData['maximum']
+                    else:
+                        minimum = 1
+                        maximum = 16
+                    pluginData['midiCCs'][':bpb'] = (ccData['channel'], ccData['control'], minimum, maximum)
+                    pluginData['addressings'][':bpb'] = self.addressings.add_midi(PEDALBOARD_INSTANCE_ID,
+                                                                                  ':bpb',
+                                                                                  ccData['channel'],
+                                                                                  ccData['control'],
+                                                                                  minimum, maximum)
                 self.set_transport_bpb(pb['timeInfo']['bpb'], False)
+
             if timeAvailable & kPedalboardTimeAvailableBPM:
+                ccData = pb['timeInfo']['bpmCC']
+                if ccData['channel'] >= 0 and ccData['channel'] < 16:
+                    if ccData['hasRanges'] and ccData['maximum'] > ccData['minimum']:
+                        minimum = ccData['minimum']
+                        maximum = ccData['maximum']
+                    else:
+                        minimum = 20
+                        maximum = 280
+                    pluginData['midiCCs'][':bpm'] = (ccData['channel'], ccData['control'], minimum, maximum)
+                    pluginData['addressings'][':bpm'] = self.addressings.add_midi(PEDALBOARD_INSTANCE_ID,
+                                                                                  ':bpm',
+                                                                                  ccData['channel'],
+                                                                                  ccData['control'],
+                                                                                  minimum, maximum)
                 self.set_transport_bpm(pb['timeInfo']['bpm'], False)
+
             if timeAvailable & kPedalboardTimeAvailableRolling:
+                ccData = pb['timeInfo']['rollingCC']
+                if ccData['channel'] >= 0 and ccData['channel'] < 16:
+                    pluginData['midiCCs'][':rolling'] = (ccData['channel'], ccData['control'], 0.0, 1.0)
+                    pluginData['addressings'][':rolling'] = self.addressings.add_midi(PEDALBOARD_INSTANCE_ID,
+                                                                                      ':rolling',
+                                                                                      ccData['channel'],
+                                                                                      ccData['control'],
+                                                                                      0.0, 1.0)
                 self.set_transport_rolling(pb['timeInfo']['rolling'] or self.first_transport_rolling, False)
 
         elif self.first_transport_rolling:
@@ -2087,8 +2126,8 @@ class Host(object):
                 mchnnl = port['midiCC']['channel']
                 mctrl  = port['midiCC']['control']
 
-                if mchnnl >= 0 and mctrl >= 0:
-                    if port['midiCC']['hasRanges']:
+                if mchnnl >= 0 and mchnnl < 16:
+                    if port['midiCC']['hasRanges'] and port['midiCC']['maximum'] > port['midiCC']['minimum']:
                         minimum = port['midiCC']['minimum']
                         maximum = port['midiCC']['maximum']
                     else:
