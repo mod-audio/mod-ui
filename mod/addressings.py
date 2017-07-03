@@ -158,8 +158,16 @@ class Addressings(object):
         data = safe_json_load(datafile, dict)
 
         used_actuators = []
+        cc_initialized = self.cchain.initialized
 
+        # NOTE: We need to wait for Control Chain to finish initializing.
+        #       Can take some time due to waiting for several device descriptors.
+        #       We load everything that is possible first, then wait for Control Chain at the end if not ready yet.
+
+        # Load all addressings possible
         for actuator_uri, addrs in data.items():
+            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and not cc_initialized:
+                continue
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
@@ -180,24 +188,43 @@ class Addressings(object):
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
 
-        # Load HMI addressings
+        # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
             if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
                 yield gen.Task(self.hmi_load_first, actuator_uri)
+            elif self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and cc_initialized:
+                self.cc_load_all(actuator_uri)
 
         # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
         #       They must be loaded by calling 'add_midi' before calling this function.
         self.midi_load_everything()
 
-        # Load Control Chain addressings
-        # NOTE: Need to wait for Control Chain to finish initializing.
-        #       Can take some time due to waiting for several device descriptors.
+        # Wait for Control Chain and setup addressings if not initialized before
+        if cc_initialized:
+            return
+
         yield gen.Task(self.cchain.wait_initialized)
 
-        for actuator_uri in used_actuators:
-            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC:
-                self.cc_load_all(actuator_uri)
+        for actuator_uri, addrs in data.items():
+            for addr in addrs:
+                instance   = addr['instance'].replace("/graph/","",1)
+                portsymbol = addr['port']
+
+                try:
+                    instance_id, plugin_uri = instances[instance]
+                except KeyError:
+                    print("ERROR: An instance specified in addressings file is invalid")
+                    continue
+
+                curvalue = self._task_get_port_value(instance_id, portsymbol)
+                addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
+                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
+
+                if addrdata is not None:
+                    self._task_store_address_data(instance_id, portsymbol, addrdata)
+
+            self.cc_load_all(actuator_uri)
 
     def save(self, bundlepath, instances):
         addressings = {}
