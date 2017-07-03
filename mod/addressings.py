@@ -207,6 +207,8 @@ class Addressings(object):
         yield gen.Task(self.cchain.wait_initialized)
 
         for actuator_uri, addrs in data.items():
+            if self.get_actuator_type(actuator_uri) != self.ADDRESSING_TYPE_CC:
+                continue
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
