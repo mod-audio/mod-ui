@@ -490,7 +490,10 @@ class Host(object):
                 return 0.0
             return float(pluginData['mapPresets'].index(pluginData['preset']))
 
-        return pluginData['ports'][portsymbol]
+        try:
+            return pluginData['ports'][portsymbol]
+        except KeyError:
+            return pluginData['outputs'][portsymbol]
 
     def addr_task_store_address_data(self, instance_id, portsymbol, data):
         pluginData = self.plugins[instance_id]
@@ -828,6 +831,10 @@ class Host(object):
                 else:
                     pluginData['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
+                    addressing = pluginData['addressings'].get(portsymbol, None)
+                    self.set_monitor_output_to_hmi(addressing)
+                    #if addressing is not None:
+                        #yield gen.Task(self.addressings.hmi_load_current, addressing['actuator_uri'])
 
         elif cmd == "atom":
             msg_data    = msg[len(cmd)+1:].split(" ",3)
@@ -940,6 +947,11 @@ class Host(object):
 
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
+
+    @gen.coroutine
+    def set_monitor_output_to_hmi(self, addressing):
+        if addressing is not None:
+            yield gen.Task(self.addressings.hmi_load_current, addressing['actuator_uri'])
 
     def process_read_message_pedal_changed(self, portsymbol, value):
         if portsymbol == ":bpb":

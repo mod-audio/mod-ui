@@ -211,7 +211,7 @@ function GUI(effect, options) {
         return indexes
     }
 
-    self.controls = self.makePortIndexes(effect.ports.control.input)
+    self.controls = self.makePortIndexes(effect.ports.control.input.concat(effect.ports.control.output))
 
     // Bypass needs to be represented as a port since it shares the hardware addressing
     // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
@@ -331,6 +331,7 @@ function GUI(effect, options) {
     }
 
     this.setOutputPortValue = function (symbol, value) {
+        self.setPortWidgetsValue(symbol, value, null, true)
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
     }
 
@@ -857,6 +858,58 @@ function GUI(effect, options) {
                         control.controlWidget('setValue', value, true)
                     })
                 }
+
+                port.widgets.push(control)
+
+                control.attr("mod-port", (instance ? instance + "/" : "") + symbol)
+                control.addClass("mod-port")
+
+                self.setPortWidgetsValue(symbol, port.value, control, true)
+            }
+            else
+            {
+                control.text('No such symbol: ' + symbol)
+            }
+        })
+
+        element.find('[mod-role=output-control-port]').each(function () {
+            var control = $(this)
+            var symbol = $(this).attr('mod-port-symbol')
+            var port = self.controls[symbol]
+
+            if (port)
+            {
+                // Set the display formatting of this control
+                if (port.units.render)
+                    port.format = port.units.render.replace('%f', '%.2f')
+                else
+                    port.format = '%.2f'
+
+                if (port.properties.indexOf("integer") >= 0) {
+                    port.format = port.format.replace(/%\.\d+f/, '%d')
+                }
+
+                var valueField = element.find('[mod-role=output-control-value][mod-port-symbol=' + symbol + ']')
+                port.valueFields.push(valueField)
+
+                if (port.scalePoints && port.scalePoints.length > 0) {
+                    port.scalePointsIndex = {}
+                    for (var i in port.scalePoints) {
+                        port.scalePointsIndex[sprintf(port.format, port.scalePoints[i].value)] = port.scalePoints[i]
+                    }
+                }
+
+                if (port.properties.indexOf("expensive") >= 0) {
+                    element.find('.mod-address[mod-port-symbol=' + symbol + ']').addClass('disabled').hide()
+                }
+
+                control.controlWidget({
+                    dummy: onlySetValues,
+                    port: port,
+                    change: function (e, value) {
+                        self.setPortValue(symbol, value, control)
+                    }
+                })
 
                 port.widgets.push(control)
 

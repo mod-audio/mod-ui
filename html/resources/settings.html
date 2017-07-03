@@ -90,6 +90,17 @@
                 {{/trigger}}
             {{/enumeration}}
             {{/effect.ports.control.input}}
+
+            {{#effect.ports.control.output}}
+            <div class="mod-knob">
+                <span class="mod-knob-title">{{shortName}}</span>
+                <span class="mod-knob-min-value" mod-role="output-control-minimum" mod-port-symbol="{{symbol}}"></span>
+                <span class="mod-knob-max-value" mod-role="output-control-maximum" mod-port-symbol="{{symbol}}"></span>
+                <span class="mod-knob-current-value" mod-role="output-control-value" mod-port-symbol="{{symbol}}"></span>
+                <div class="mod-knob-image" mod-role="output-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+            </div>
+            {{/effect.ports.control.output}}
         </div>
     </div>
 </div>

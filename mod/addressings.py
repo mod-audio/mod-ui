@@ -309,12 +309,21 @@ class Addressings(object):
                 return None
 
         elif portsymbol != ":bypass":
-            for port_info in get_plugin_control_inputs_and_monitored_outputs(plugin_uri)['inputs']:
+            all_ports = get_plugin_control_inputs_and_monitored_outputs(plugin_uri)
+            for port_info in all_ports['inputs']:
                 if port_info["symbol"] == portsymbol:
                     break
             else:
-                print("ERROR: Trying to address non-existing control port '%s'" % (portsymbol))
-                return None
+                for portsymbol2 in all_ports['monitoredOutputs']:
+                    if portsymbol2 == portsymbol:
+                        port_info = {
+                            "properties": [],
+                            "units": {},
+                        }
+                        break
+                else:
+                    print("ERROR: Trying to address non-existing control port '%s'" % (portsymbol))
+                    return None
 
             # useful info about this port
             pprops = port_info["properties"]
