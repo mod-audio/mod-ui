@@ -157,8 +157,9 @@ class Addressings(object):
 
         data = safe_json_load(datafile, dict)
 
-        used_actuators = []
         cc_initialized = self.cchain.initialized
+        retry_cc_addrs = False
+        used_actuators = []
 
         # NOTE: We need to wait for Control Chain to finish initializing.
         #       Can take some time due to waiting for several device descriptors.
@@ -166,7 +167,8 @@ class Addressings(object):
 
         # Load all addressings possible
         for actuator_uri, addrs in data.items():
-            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and not cc_initialized:
+            is_cc = self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC
+            if is_cc and not cc_initialized:
                 continue
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
@@ -188,6 +190,9 @@ class Addressings(object):
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
 
+                elif is_cc:
+                    retry_cc_addrs = True
+
         # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
             if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
@@ -200,13 +205,23 @@ class Addressings(object):
         #       They must be loaded by calling 'add_midi' before calling this function.
         self.midi_load_everything()
 
+        if retry_cc_addrs and len(self.cc_metadata) > 0:
+            retry_cc_addrs = False
+
         # Wait for Control Chain and setup addressings if not initialized before
-        if cc_initialized:
+        if cc_initialized and not retry_cc_addrs:
             return
 
-        yield gen.Task(self.cchain.wait_initialized)
+        if retry_cc_addrs:
+            for i in range(5):
+                yield gen.sleep(1)
+                if len(self.cc_metadata) > 0:
+                    break
 
-        # reset used actuators, only load for those that succeeded
+        else:
+            yield gen.Task(self.cchain.wait_initialized)
+
+        # reset used actuators, only load for those that succeed
         used_actuators = []
 
         for actuator_uri, addrs in data.items():
