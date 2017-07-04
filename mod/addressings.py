@@ -55,6 +55,7 @@ class Addressings(object):
         self._task_hw_removed  = None
         self._task_act_added   = None
         self._task_act_removed = None
+        self.first_load = True
 
         self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
                                                  self.cc_hardware_removed,
@@ -152,15 +153,36 @@ class Addressings(object):
 
     @gen.coroutine
     def load(self, bundlepath, instances, skippedPorts):
+        # Check if this is the first time we load addressings (ie, first time mod-ui starts)
+        first_load = self.first_load
+        self.first_load = False
+
+        # Check if pedalboard contains addressings first
         datafile = os.path.join(bundlepath, "addressings.json")
         if not os.path.exists(datafile):
             return
 
+        # Load addressings
         data = safe_json_load(datafile, dict)
 
+        # Basic setup
+        cc_initialized = self.cchain.initialized
+        has_cc_addrs   = False
+        retry_cc_addrs = False
         used_actuators = []
 
+        # NOTE: We need to wait for Control Chain to finish initializing.
+        #       Can take some time due to waiting for several device descriptors.
+        #       We load everything that is possible first, then wait for Control Chain at the end if not ready yet.
+
+        # Load all addressings possible
         for actuator_uri, addrs in data.items():
+            is_cc = self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC
+            if is_cc:
+                has_cc_addrs = True
+                if not cc_initialized:
+                    continue
+
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
@@ -185,24 +207,85 @@ class Addressings(object):
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
 
-        # Load HMI addressings
+                elif is_cc:
+                    # Control Chain is initialized but addressing failed to load (likely due to missing hardware)
+                    # Set this flag so we wait for devices later
+                    retry_cc_addrs = True
+
+        # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
             if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
                 yield gen.Task(self.hmi_load_first, actuator_uri)
+            elif self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and cc_initialized:
+                self.cc_load_all(actuator_uri)
 
         # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
         #       They must be loaded by calling 'add_midi' before calling this function.
         self.midi_load_everything()
 
-        # Load Control Chain addressings
-        # NOTE: Need to wait for Control Chain to finish initializing.
-        #       Can take some time due to waiting for several device descriptors.
-        yield gen.Task(self.cchain.wait_initialized)
+        # Unset retry flag if at least 1 Control Chain device is connected
+        if retry_cc_addrs and len(self.cc_metadata) > 0:
+            retry_cc_addrs = False
+
+        # Check if we need to wait for Control Chain
+        if first_load and cc_initialized and not retry_cc_addrs:
+            return
+
+        if retry_cc_addrs:
+            # Wait for any Control Chain devices to appear, with 10s maximum time-out
+            for i in range(10):
+                yield gen.sleep(1)
+                if len(self.cc_metadata) > 0:
+                    break
+
+        else:
+            # Control Chain was not initialized yet by this point, wait for it
+            # 'wait_initialized' will time-out in 10s if nothing happens
+            yield gen.Task(self.cchain.wait_initialized)
+
+        # Don't bother continuing if there are no Control Chain addressesings
+        if not has_cc_addrs:
+            return
+
+        # Don't bother continuing if there are no Control Chain devices available
+        if len(self.cc_metadata) == 0:
+            print("WARNING: Pedalboard has Control Chain addressings but no devices are available")
+            return
+
+        # reset used actuators, only load for those that succeed
+        used_actuators = []
+
+        # Re-do the same as we did above
+        for actuator_uri, addrs in data.items():
+            if self.get_actuator_type(actuator_uri) != self.ADDRESSING_TYPE_CC:
+                continue
+            for addr in addrs:
+                instance   = addr['instance'].replace("/graph/","",1)
+                portsymbol = addr['port']
+
+                try:
+                    instance_id, plugin_uri = instances[instance]
+                except KeyError:
+                    print("ERROR: An instance specified in addressings file is invalid")
+                    continue
+
+                if len(skippedPorts) > 0 and instance+"/"+portsymbol in skippedPorts:
+                    print("NOTE: An incompatible addressing has been skipped, port:", instance, portsymbol)
+                    continue
+
+                curvalue = self._task_get_port_value(instance_id, portsymbol)
+                addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
+                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
+
+                if addrdata is not None:
+                    self._task_store_address_data(instance_id, portsymbol, addrdata)
+
+                    if actuator_uri not in used_actuators:
+                        used_actuators.append(actuator_uri)
 
         for actuator_uri in used_actuators:
-            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC:
-                self.cc_load_all(actuator_uri)
+            self.cc_load_all(actuator_uri)
 
     def save(self, bundlepath, instances):
         addressings = {}

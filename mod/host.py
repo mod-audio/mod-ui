@@ -1058,7 +1058,7 @@ class Host(object):
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
         for dev_uri, label, version in self.addressings.cchain.hw_versions.values():
-            websocket.write_message("hw_add %s %s %s" % (dev_uri, label, version))
+            websocket.write_message("hw_add %s %s %s" % (dev_uri, label.replace(" ","_"), version))
 
         crashed = self.crashed
         self.crashed = False
