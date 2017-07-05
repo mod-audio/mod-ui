@@ -120,7 +120,10 @@ class ControlChainDeviceListener(object):
         except:
             print("ERROR: Control Chain read response failed")
         else:
-            if data['event'] == "device_status":
+            if 'event' not in data.keys():
+                print("ERROR: Control Chain read response invalid, missing 'event' field", data)
+
+            elif data['event'] == "device_status":
                 data   = data['data']
                 dev_id = data['device_id']
 
@@ -160,9 +163,13 @@ class ControlChainDeviceListener(object):
                     data = None
                     print("ERROR: Control Chain write response failed")
                 else:
-                    if data is not None and data['reply'] != request_name:
-                        print("ERROR: Control Chain reply name mismatch")
-                        data = None
+                    if data is not None:
+                        if 'reply' not in data.keys():
+                            print("ERROR: Control Chain write response invalid, missing 'reply' field", data)
+                            data = None
+                        elif data['reply'] != request_name:
+                            print("ERROR: Control Chain reply name mismatch")
+                            data = None
 
                 if data is not None:
                     callback(data['data'])
