@@ -1022,6 +1022,7 @@ class HardwareLoad(JsonRequestHandler):
         self.write(hardware)
 
 class TemplateHandler(TimelessRequestHandler):
+    @gen.coroutine
     def get(self, path):
         # Caching strategy.
         # 1. If we don't have a version parameter, redirect
@@ -1045,6 +1046,10 @@ class TemplateHandler(TimelessRequestHandler):
 
         loader = Loader(HTML_DIR)
         section = path.split('.')[0]
+
+        if section == 'index':
+            yield gen.Task(SESSION.wait_for_hardware_if_needed)
+
         try:
             context = getattr(self, section)()
         except AttributeError:
