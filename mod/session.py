@@ -99,6 +99,9 @@ class Session(object):
     def get_hardware_actuators(self):
         return self.host.addressings.get_actuators()
 
+    def wait_for_hardware_if_needed(self, callback):
+        return self.host.addressings.wait_for_cc_if_needed(callback)
+
     # -----------------------------------------------------------------------------------------------------------------
     # App utilities, needed only for mod-app
 
