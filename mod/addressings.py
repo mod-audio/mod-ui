@@ -236,7 +236,7 @@ class Addressings(object):
             retry_cc_addrs = False
 
         # Check if we need to wait for Control Chain
-        if first_load and cc_initialized and not retry_cc_addrs:
+        if not first_load or (cc_initialized and not retry_cc_addrs):
             self.waiting_for_cc = False
             return
 
@@ -245,9 +245,10 @@ class Addressings(object):
             print("NOTE: Waiting for Control Chain devices to appear")
             for i in range(10):
                 yield gen.sleep(1)
-                if len(self.cc_metadata) > 0:
+                if len(self.cc_metadata) > 0 and self.cchain.initialized:
                     break
-        else:
+
+        elif not self.cchain.initialized:
             # Control Chain was not initialized yet by this point, wait for it
             # 'wait_initialized' will time-out in 10s if nothing happens
             print("NOTE: Waiting for Control Chain to initialize")
