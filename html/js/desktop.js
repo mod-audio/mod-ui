@@ -146,10 +146,17 @@ function Desktop(elements) {
                 type: 'POST',
                 data: JSON.stringify(addressing),
                 success: function (resp) {
-                    callback(resp)
+                    console.log(addressing, resp)
+                    if (resp) {
+                        self.pedalboardModified = true
+                        callback(true)
+                    } else {
+                        new Bug("Couldn't address parameter, not allowed")
+                        callback(false)
+                    }
                 },
                 error: function () {
-                    new Bug("Couldn't address parameter")
+                    new Bug("Couldn't address parameter, server error")
                     callback(false)
                 },
                 cache: false,
@@ -500,10 +507,15 @@ function Desktop(elements) {
                         if (self.hardwareManager.removeHardwareMappping(instanceAndSymbol)) {
                             new Notification('info', 'BPM addressing removed, incompatible with Link sync mode', 8000)
                         }
+                        self.pedalboardModified = true
+                        callback(true)
+                    } else {
+                        new Bug("Couldn't address parameter")
+                        callback(false)
                     }
-                    callback(resp)
                 },
                 error: function () {
+                    new Bug("Couldn't address parameter, server error")
                     callback(false)
                 },
                 cache: false,
@@ -1655,7 +1667,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
 Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
     var self = this
 
-    if (self.pedalboardEmpty) {
+    if (self.pedalboardEmpty && ! self.pedalboardModified) {
         new Notification('warn', 'Nothing to save', 1500)
         return
     }
