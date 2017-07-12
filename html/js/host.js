@@ -346,6 +346,7 @@ $('document').ready(function() {
             var label   = data[1].replace(/_/g," ")
             var lsuffix = data[2].replace(/_/g," ")
             var version = data[3]
+
             desktop.ccDeviceAdded(dev_uri, label, lsuffix, version)
             return
         }
