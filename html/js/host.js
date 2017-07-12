@@ -322,13 +322,14 @@ $('document').ready(function() {
         if (cmd == "hw_add") {
             var dev_uri = data[1]
             var label   = data[2].replace(/_/g," ")
+            var lsuffix = data[3].replace(/_/g," ")
             var version = data[data.length-1]
 
             if (data.length > 4) {
                 console.log("FIXME: received hw_add with spaces:", data)
             }
 
-            desktop.ccDeviceAdded(dev_uri, label, version)
+            desktop.ccDeviceAdded(dev_uri, label, lsuffix, version)
             return
         }
 

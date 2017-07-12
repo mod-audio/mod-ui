@@ -94,8 +94,8 @@ class ControlChainDeviceListener(object):
 
         hw_versions = self.hw_versions.copy()
         self.hw_versions = {}
-        for dev_id, (dev_uri, label, version) in hw_versions.items():
-            self.hw_removed_cb(dev_id, dev_uri, label, version)
+        for dev_id, (dev_uri, label, labelsuffix, version) in hw_versions.items():
+            self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
 
         ioloop.IOLoop.instance().call_later(2, self.restart_if_crashed)
 
@@ -136,8 +136,8 @@ class ControlChainDeviceListener(object):
                     except KeyError:
                         print("ERROR: Control Chain device removed, but not on current list!?", dev_id)
                     else:
-                        dev_uri, label, version = hw_data
-                        self.hw_removed_cb(dev_id, dev_uri, label, version)
+                        dev_uri, label, labelsuffix, version = hw_data
+                        self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
 
         finally:
             self.process_read_queue()
@@ -220,7 +220,7 @@ class ControlChainDeviceListener(object):
 
             # assign an unique id starting from 0
             dev_unique_id = 0
-            for _dev_uri, _1, _2 in self.hw_versions.values():
+            for _dev_uri, _1, _2, _3 in self.hw_versions.values():
                 if _dev_uri == dev_uri:
                     dev_unique_id += 1
 
@@ -229,8 +229,8 @@ class ControlChainDeviceListener(object):
             else:
                 dev_label_suffix = ""
 
-            self.hw_added_cb(dev_id, dev_uri, dev['label']+dev_label_suffix, dev['version'])
-            self.hw_versions[dev_id] = (dev_uri, dev['label']+dev_label_suffix, dev['version'])
+            self.hw_added_cb(dev_id, dev_uri, dev['label'], dev_label_suffix, dev['version'])
+            self.hw_versions[dev_id] = (dev_uri, dev['label'], dev_label_suffix, dev['version'])
 
             for actuator in dev['actuators']:
                 modes_int = actuator['supported_modes']
@@ -271,8 +271,8 @@ if __name__ == "__main__":
     from tornado.web import Application
     from tornado.ioloop import IOLoop
 
-    def hw_added_cb(dev_id, dev_uri, label, version):
-        print("hw_added_cb", dev_uri, label, version)
+    def hw_added_cb(dev_id, dev_uri, label, labelsuffix, version):
+        print("hw_added_cb", dev_uri, label, labelsuffix, version)
 
     def hw_removed_cb(dev_id, dev_uri, label, version):
         print("hw_removed_cb", dev_id)

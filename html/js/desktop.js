@@ -446,8 +446,8 @@ function Desktop(elements) {
         },
     })
 
-    this.ccDeviceAdded = function (dev_uri, label, version) {
-        self.ccDeviceManager.deviceAdded(dev_uri, label, version)
+    this.ccDeviceAdded = function (dev_uri, label, labelsuffix, version) {
+        self.ccDeviceManager.deviceAdded(dev_uri, label+labelsuffix, version)
         self.checkHardwareDeviceVersion(dev_uri, label, version)
     }
 
