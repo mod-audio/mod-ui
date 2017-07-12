@@ -325,7 +325,7 @@ $('document').ready(function() {
             var lsuffix = data[3].replace(/_/g," ")
             var version = data[data.length-1]
 
-            if (data.length > 4) {
+            if (data.length > 5) {
                 console.log("FIXME: received hw_add with spaces:", data)
             }
 
