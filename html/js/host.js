@@ -341,11 +341,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_add") {
-            data        = data.substr(cmd.length+1).split(" ",3)
+            data        = data.substr(cmd.length+1).split(" ",4)
             var dev_uri = data[0]
             var label   = data[1].replace(/_/g," ")
-            var version = data[2]
-            desktop.ccDeviceAdded(dev_uri, label, version)
+            var lsuffix = data[2].replace(/_/g," ")
+            var version = data[3]
+            desktop.ccDeviceAdded(dev_uri, label, lsuffix, version)
             return
         }
 

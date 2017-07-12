@@ -650,9 +650,9 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions
 
-    def cc_hardware_added(self, dev_id, dev_uri, label, version):
-        print("cc_hardware_added", dev_id, dev_uri, label, version)
-        self._task_hw_added(dev_uri, label, version)
+    def cc_hardware_added(self, dev_id, dev_uri, label, labelsuffix, version):
+        print("cc_hardware_added", dev_id, dev_uri, label, labelsuffix, version)
+        self._task_hw_added(dev_uri, label, labelsuffix, version)
 
     def cc_hardware_removed(self, dev_id, dev_uri, label, version):
         removed_actuators = []

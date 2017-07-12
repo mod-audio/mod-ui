@@ -496,8 +496,11 @@ class Host(object):
         pluginData = self.plugins[instance_id]
         pluginData['addressings'][portsymbol] = data
 
-    def addr_task_hw_added(self, dev_uri, label, version):
-        self.msg_callback("hw_add %s %s %s" % (dev_uri, label.replace(" ","_"), version))
+    def addr_task_hw_added(self, dev_uri, label, labelsuffix, version):
+        self.msg_callback("hw_add %s %s %s %s" % (dev_uri,
+                                                  label.replace(" ","_"),
+                                                  labelsuffix.replace(" ","_"),
+                                                  version))
 
     def addr_task_hw_removed(self, dev_uri, label, version):
         self.msg_callback("hw_rem %s %s %s" % (dev_uri, label.replace(" ","_"), version))
@@ -1057,8 +1060,11 @@ class Host(object):
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
-        for dev_uri, label, version in self.addressings.cchain.hw_versions.values():
-            websocket.write_message("hw_add %s %s %s" % (dev_uri, label.replace(" ","_"), version))
+        for dev_uri, label, labelsuffix, version in self.addressings.cchain.hw_versions.values():
+            websocket.write_message("hw_add %s %s %s %s" % (dev_uri,
+                                                            label.replace(" ","_"),
+                                                            labelsuffix.replace(" ","_"),
+                                                            version))
 
         crashed = self.crashed
         self.crashed = False
