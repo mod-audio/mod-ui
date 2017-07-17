@@ -158,6 +158,7 @@ function refresh_sysprefs() {
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
             $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
+            $("#prefs-service-mod-sdk").prop("checked", resp.service_mod_sdk)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
         },
         cache: false,
@@ -503,6 +504,10 @@ $('document').ready(function() {
         enable_service("mixserver", $(this).prop("checked"))
     })
 
+    $("#prefs-service-mod-sdk").click(function () {
+        enable_service("mod-sdk", $(this).prop("checked"))
+    })
+
     $("#prefs-service-netmanager").click(function () {
         enable_service("netmanager", $(this).prop("checked"))
     })
@@ -691,6 +696,10 @@ $('document').ready(function() {
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-mod-sdk"> MOD SDK</input>
                     </label>
                     <br/>
                     <label>

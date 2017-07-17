@@ -335,6 +335,7 @@ class SystemPreferences(JsonRequestHandler):
 
         # Optional services
         self.make_pref("service_mixserver",  self.OPTION_FILE_EXISTS, "/data/enable-mixserver")
+        self.make_pref("service_mod_sdk",    self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
 
     def make_pref(self, label, otype, data, valtype=None, valdef=None):
@@ -429,7 +430,7 @@ class SystemExeChange(JsonRequestHandler):
             name   = self.get_argument('name')
             enable = bool(int(self.get_argument('enable')))
 
-            if name not in ("mixserver", "netmanager"):
+            if name not in ("mixserver", "netmanager", "mod-sdk"):
                 self.write(False)
                 return
 
@@ -1196,9 +1197,12 @@ class TemplateHandler(TimelessRequestHandler):
 
         if not path:
             path = 'index.html'
+        elif path == 'sdk':
+            self.redirect(self.request.full_url().replace("/sdk", ":9000"), True)
+            return
         elif path == 'settings':
             uri = '/settings.html?v=%s' % curVersion
-            self.redirect(uri)
+            self.redirect(uri, True)
             return
         elif not os.path.exists(os.path.join(HTML_DIR, path)):
             uri = '/?v=%s' % curVersion
@@ -1675,7 +1679,7 @@ application = web.Application(
 
             (r"/(index.html)?$", TemplateHandler),
             (r"/([a-z]+\.html)$", TemplateHandler),
-            (r"/(settings)$", TemplateHandler),
+            (r"/(sdk|settings)$", TemplateHandler),
             (r"/load_template/([a-z_]+\.html)$", TemplateLoader),
             (r"/js/templates.js$", BulkTemplateLoader),
 
