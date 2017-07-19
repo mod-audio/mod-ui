@@ -1356,14 +1356,17 @@ JqueryClass('pedalboard', {
 
             var actions = $('<div>').addClass('mod-actions').appendTo(icon)
             $('<div>').addClass('mod-information').click(function () {
+                self.pedalboard('finishConnection')
                 self.data('showPluginInfo')(pluginData)
                 return false
             }).appendTo(actions)
             $('<div>').addClass('mod-settings').click(function () {
+                self.pedalboard('finishConnection')
                 settings.window('open')
                 return false
             }).appendTo(actions)
             $('<div>').addClass('mod-remove').click(function () {
+                self.pedalboard('finishConnection')
                 self.pedalboard('removePlugin', instance)
                 return false
             }).appendTo(actions)
