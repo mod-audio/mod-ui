@@ -62,7 +62,8 @@ class Player(object):
             return
         ioloop.IOLoop.instance().remove_handler(self.proc.stdout.fileno())
         if self.proc.poll() is None:
-            self.proc.kill()
+            self.proc.send_signal(SIGINT)
+            self.proc.wait()
         self.proc = None
         self.fhandle.seek(0)
         self.callback()

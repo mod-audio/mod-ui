@@ -514,11 +514,9 @@ JqueryClass('cloudPluginBox', {
 
         for (var category in categories) {
             var tab = self.find('#cloud-plugin-tab-' + category)
-
             if (tab.length == 0) {
                 continue
             }
-
             var content = tab.html().split(/\s/)
 
             if (content.length >= 2 && content[1] == "Utility") {
