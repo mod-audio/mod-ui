@@ -468,6 +468,11 @@ function HardwareManager(options) {
         var instanceAndSymbol = instance+"/"+portSymbol
         var actuator_uri = create_midi_cc_uri(channel, control)
 
+        if (self.addressingsByPortSymbol[instanceAndSymbol] == kMidiLearnURI) {
+            var controlstr = (control == MIDI_PITCHBEND_AS_CC) ? "Pitchbend" : ("Controller #" + control)
+            new Notification('info', "Parameter mapped to MIDI " + controlstr + ", Channel " + (channel+1), 8000)
+        }
+
         self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
         self.addressingsData        [instanceAndSymbol] = {
