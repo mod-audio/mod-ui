@@ -122,3 +122,18 @@ def get_hardware_actuators():
     mod_hw = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
 
     return mod_hw.get('actuators', [])
+
+class TextFileFlusher(object):
+    def __init__(self, filename):
+        self.filename   = filename
+        self.filehandle = None
+
+    def __enter__(self):
+        self.filehandle = open(self.filename+".tmp", 'w', 1)
+        return self.filehandle
+
+    def __exit__(self, typ, val, tb):
+        if self.filehandle is None:
+            return
+        os.fsync(self.filehandle)
+        os.rename(self.filename+".tmp", self.filename)

@@ -39,7 +39,7 @@ from mod.settings import (APP, LOG,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE)
 
-from mod import check_environment, jsoncall, safe_json_load
+from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.utils import (init as lv2_init,
@@ -146,6 +146,7 @@ def install_bundles_in_tmp_dir(callback):
             'installed': installed,
         }
 
+    os.sync()
     callback(resp)
 
 def run_command(args, cwd, callback):
@@ -356,7 +357,7 @@ class SystemPreferences(JsonRequestHandler):
 
             elif pref['type'] == self.OPTION_FILE_CONTENTS:
                 if os.path.exists(pref['data']):
-                    with open(pref['data']) as fh:
+                    with open(pref['data'], 'r') as fh:
                         val = fh.read().strip()
                     try:
                         val = pref['valtype'](val)
@@ -450,6 +451,7 @@ class SystemExeChange(JsonRequestHandler):
                     os.remove(checkname)
                 yield gen.Task(run_command, ["systemctl", "stop", servicename], None)
 
+        os.sync()
         self.write(True)
 
     @gen.coroutine
@@ -1382,6 +1384,8 @@ class SetBufferSize(JsonRequestHandler):
             elif os.path.exists(USING_256_FRAMES_FILE):
                 os.remove(USING_256_FRAMES_FILE)
 
+            os.sync()
+
         newsize = set_jack_buffer_size(size)
         self.write({
             'ok'  : newsize == size,
@@ -1405,7 +1409,7 @@ class SaveUserId(JsonRequestHandler):
     def post(self):
         name  = self.get_argument("name")
         email = self.get_argument("email")
-        with open(USER_ID_JSON_FILE, 'w') as fh:
+        with TextFileFlusher(USER_ID_JSON_FILE) as fh:
             json.dump({
                 "name" : name,
                 "email": email,
@@ -1439,7 +1443,7 @@ class FavoritesAdd(JsonRequestHandler):
 
         # add and save
         gState.favorites.append(uri)
-        with open(FAVORITES_JSON_FILE, 'w') as fh:
+        with TextFileFlusher(FAVORITES_JSON_FILE) as fh:
             json.dump(gState.favorites, fh)
 
         # done
@@ -1457,7 +1461,7 @@ class FavoritesRemove(JsonRequestHandler):
 
         # remove and save
         gState.favorites.remove(uri)
-        with open(FAVORITES_JSON_FILE, 'w') as fh:
+        with TextFileFlusher(FAVORITES_JSON_FILE) as fh:
             json.dump(gState.favorites, fh)
 
         # done
@@ -1539,6 +1543,7 @@ class TokensDelete(JsonRequestHandler):
 
         if os.path.exists(tokensConf):
             os.remove(tokensConf)
+            os.sync()
 
         self.write(True)
 
@@ -1550,9 +1555,8 @@ class TokensGet(JsonRequestHandler):
             self.write({ 'ok': False })
             return
 
-        with open(tokensConf, 'r') as fh:
-            data = json.load(fh)
-            keys = data.keys()
+        data = safe_json_load(tokensConf, dict)
+        keys = data.keys()
 
         data['ok'] = bool("user_id"       in keys and
                           "access_token"  in keys and
@@ -1567,7 +1571,7 @@ class TokensSave(JsonRequestHandler):
         data = dict(self.request.body)
         data.pop("expires_in_days")
 
-        with open(tokensConf, 'w') as fh:
+        with TextFileFlusher(tokensConf) as fh:
             json.dump(data, fh)
 
         self.write(True)
@@ -1698,7 +1702,7 @@ def signal_upgrade_check():
         countRead = fh.read().strip()
         countNumb = int(countRead) if countRead else 0
 
-    with open("/root/check-upgrade-system", 'w') as fh:
+    with TextFileFlusher("/root/check-upgrade-system") as fh:
         fh.write("%i\n" % (countNumb+1))
 
     SESSION.hmi.send("restore")

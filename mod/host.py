@@ -35,7 +35,7 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
-from mod import safe_json_load, symbolify
+from mod import safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
@@ -1486,7 +1486,9 @@ class Host(object):
         if os.path.exists(presetbundle):
             # if presetbundle already exists, generate a new random bundle path
             while True:
-                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), symbolname, randint(1,99999)))
+                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1),
+                                                                           symbolname,
+                                                                           randint(1,99999)))
                 if os.path.exists(presetbundle):
                     continue
                 break
@@ -1496,6 +1498,7 @@ class Host(object):
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
 
+            os.sync()
             callback({
                 'ok'    : True,
                 'bundle': presetbundle,
@@ -1504,6 +1507,7 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
+                os.sync()
                 callback({
                     'ok': False,
                 })
@@ -1531,6 +1535,7 @@ class Host(object):
         def add_bundle_callback(ok):
             preseturi = "file://%s.ttl" % os.path.join(bundlepath, symbolname)
             pluginData['preset'] = preseturi
+            os.sync()
             callback({
                 'ok'    : True,
                 'bundle': bundlepath,
@@ -1539,6 +1544,7 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
+                os.sync()
                 callback({
                     'ok': False,
                 })
@@ -1995,6 +2001,8 @@ class Host(object):
             else:
                 save_last_bank_and_pedalboard(0, "")
 
+            os.sync()
+
         return self.pedalboard_name
 
     def load_pb_presets(self, plugins, bundlepath):
@@ -2229,6 +2237,7 @@ class Host(object):
         self.save_state_to_ttl(bundlepath, title, titlesym)
 
         save_last_bank_and_pedalboard(0, bundlepath)
+        os.sync()
 
         return bundlepath
 
@@ -2240,7 +2249,7 @@ class Host(object):
 
     def save_state_manifest(self, bundlepath, titlesym):
         # Write manifest.ttl
-        with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
+        with TextFileFlusher(os.path.join(bundlepath, "manifest.ttl")) as fh:
             fh.write("""\
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
@@ -2292,7 +2301,7 @@ class Host(object):
                     }
 
             presets = [p for p in self.pedalboard_presets if p is not None]
-            with open(presets_path, 'w') as fh:
+            with TextFileFlusher(presets_path) as fh:
                 json.dump(presets, fh)
 
         elif os.path.exists(presets_path):
@@ -2675,7 +2684,7 @@ _:b%i
 """
 
         # Write the main pedalboard file
-        with open(os.path.join(bundlepath, "%s.ttl" % titlesym), 'w') as fh:
+        with TextFileFlusher(os.path.join(bundlepath, "%s.ttl" % titlesym)) as fh:
             fh.write(pbdata)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -3077,6 +3086,7 @@ _:b%i
         logging.info("hmi save current pedalboard")
         titlesym = symbolify(self.pedalboard_name)[:16]
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
+        os.sync()
         callback(True)
 
     def hmi_reset_current_pedalboard(self, callback):

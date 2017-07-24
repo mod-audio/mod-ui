@@ -5,7 +5,7 @@ import json
 import os
 
 from tornado import gen
-from mod import get_hardware_actuators, safe_json_load
+from mod import get_hardware_actuators, safe_json_load, TextFileFlusher
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from mod.utils import get_plugin_info, get_plugin_control_inputs_and_monitored_outputs
@@ -335,7 +335,7 @@ class Addressings(object):
             addressings[uri] = addrs2
 
         # Write addressings to disk
-        with open(os.path.join(bundlepath, "addressings.json"), 'w') as fh:
+        with TextFileFlusher(os.path.join(bundlepath, "addressings.json")) as fh:
             json.dump(addressings, fh)
 
     def registerMappings(self, msg_callback, instances):
