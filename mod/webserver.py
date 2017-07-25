@@ -1310,6 +1310,7 @@ class TemplateHandler(TimelessRequestHandler):
 
         context = {
             'cloud_url': CLOUD_HTTP_ADDRESS,
+            'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'version': self.get_argument('v'),
             'preferences': json.dumps(prefs),
             'bufferSize': get_jack_buffer_size(),

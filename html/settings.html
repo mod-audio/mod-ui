@@ -45,7 +45,7 @@
         width: 50%;
     }
     .settings-page-content h1 {
-        font-size: 2em;
+        font-size: 2.2em;
         padding: 0em;
         max-height: 2em;
         display: block;
@@ -55,6 +55,9 @@
         white-space: nowrap;
         overflow: hidden;
     }
+    #settings-page-device-updates h2 {
+        color: #BBB;
+    }
     .settings-page-content form {
         margin: 0 2em;
         color: #666;
@@ -62,6 +65,7 @@
     .settings-page-content form label,
     .settings-page-content form p {
         color: #999;
+        font-size: 1.1em;
     }
     .settings-page-content form label input {
         color: #555;
@@ -104,8 +108,9 @@
 
 <script type="text/javascript">
     {% autoescape None %}
-    SITEURL = '{{cloud_url}}'
-    VERSION = '{{version}}'
+    SITEURL          = '{{cloud_url}}'
+    CONTROLCHAIN_URL = '{{controlchain_url}}'
+    VERSION          = '{{version}}'
     var NOTIFICATIONS_ENABLED = false
     var PREFERENCES = {{preferences}}
 
@@ -164,6 +169,77 @@ function refresh_sysprefs() {
         cache: false,
         global: false,
         dataType: 'json'
+    })
+}
+
+function refresh_device_updates(respDev, respVer) {
+    if (!respDev || !respVer) {
+        return
+    }
+    if (respDev.api_version != 1 || respVer.api_version != 1) {
+        return
+    }
+
+    var elem = $('#settings-page-device-updates').find('form')
+
+    for (var i in respDev.devices) {
+        var dev = respDev.devices[i],
+            text = "",
+            note = ""
+
+        if (dev.label) {
+            var dev2 = respVer.devices[dev.uri]
+            if (dev2) {
+                dev.version = dev2.latest
+            } else {
+                dev.label = ""
+            }
+        }
+        if (! dev.label) {
+            note = "<br/>Note: Updates for this device need to be done manually."
+        }
+
+        text += "<h2>" + dev.name + "</h2>"
+        text += "<p>" + dev.description.replace(/\n/g,"<br/>") + note + "</p>"
+
+        if (dev.label) {
+            var labelclasses = 'button-action-update-firmware update-fw-label-' + dev.label
+            text += "<label>"
+            text += "<input type='button' class='" + labelclasses + "' value='Update firmware'></input>"
+            text += " &nbsp; Latest version: v" + dev.version
+            text += "</label>"
+        }
+
+        elem.append(text)
+    }
+
+    $(".button-action-update-firmware").click(function () {
+        var self = $(this)
+        if (self.hasClass("disabled")) {
+            return
+        }
+        self.addClass("disabled")
+        console.log("update firmware clicked")
+
+        // TODO: find correct dev based on 'update-fw-label-' class
+
+        var url = CONTROLCHAIN_URL + "/file/" + dev.label + dev.version + ".bin"
+
+        var transfer = new SimpleTransference(url, '/controlchain/download/')
+
+        transfer.reportFinished = function () {
+            self.removeClass("disabled")
+            console.log("download finished")
+
+            // TODO: show splash screen
+        }
+
+        transfer.reportError = function (error) {
+            new Bug("Couldn't download firmware, reason:<br/>" + error)
+            self.removeClass("disabled")
+        }
+
+        transfer.start()
     })
 }
 
@@ -297,36 +373,36 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
 
     $("#tab-basic").click(function () {
-        // hide avanced
-        $("#tab-advanced").removeClass("selected")
-        $("#settings-page-advanced").hide()
-        // hide dangerous
-        $("#tab-dangerous").removeClass("selected")
-        $("#settings-page-dangerous").hide()
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
         // show basic
         $("#tab-basic").addClass("selected")
         $("#settings-page-basic").show()
     })
 
     $("#tab-advanced").click(function () {
-        // hide basic
-        $("#tab-basic").removeClass("selected")
-        $("#settings-page-basic").hide()
-        // hide dangerous
-        $("#tab-dangerous").removeClass("selected")
-        $("#settings-page-dangerous").hide()
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
         // show advanced
         $("#tab-advanced").addClass("selected")
         $("#settings-page-advanced").show()
     })
 
+    $("#tab-device-updates").click(function () {
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
+        // show dangerous
+        $("#tab-device-updates").addClass("selected")
+        $("#settings-page-device-updates").show()
+    })
+
     $("#tab-dangerous").click(function () {
-        // hide basic
-        $("#tab-basic").removeClass("selected")
-        $("#settings-page-basic").hide()
-        // hide advanced
-        $("#tab-advanced").removeClass("selected")
-        $("#settings-page-advanced").hide()
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
         // show dangerous
         $("#tab-dangerous").addClass("selected")
         $("#settings-page-dangerous").show()
@@ -513,6 +589,38 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
+    // --- Device Updates
+
+    var respDev, respVer
+
+    $.ajax({
+        method: 'GET',
+        url: CONTROLCHAIN_URL + '/devices',
+        success: function (resp) {
+            respDev = resp
+            refresh_device_updates(respDev, respVer)
+        },
+        error: function () {
+            console.log("Error: failed to get devices information")
+        },
+        cache: false,
+        dataType: 'json'
+    })
+
+    $.ajax({
+        method: 'GET',
+        url: CONTROLCHAIN_URL + '/versions',
+        success: function (resp) {
+            respVer = resp
+            refresh_device_updates(respDev, respVer)
+        },
+        error: function () {
+        },
+        cache: false,
+        dataType: 'json'
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
 
     // start code for ajax loading bar
 
@@ -568,6 +676,7 @@ $('document').ready(function() {
         <div id="bank-list">
             <div id="tab-basic" class="add-bank selected">Basic</div>
             <div id="tab-advanced" class="add-bank">Advanced</div>
+            <div id="tab-device-updates" class="add-bank">Device Updates</div>
             <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
         </div>
         <!-- END BANK|SETTINGS-LIST -->
@@ -673,7 +782,7 @@ $('document').ready(function() {
                     </label>
                     <p>
                         Automatically copy the audio data from an unconnected output to another.<br/>
-                        With this enabled, the 2 outputs will receive the same data if one of them in unconnected.<br/>
+                        With this enabled, the 2 outputs will receive the same data if one of them is unconnected.<br/>
                         Note that changing this option requires a reboot for changes to take effect.
                     </p>
                     <label>
@@ -729,6 +838,16 @@ $('document').ready(function() {
                         Note that installing non-stable plugins is unsupported and you cannot share pedalboards containing such plugins.<br/>
                         Expect things to break!
                     </p>
+                </form>
+            </div>
+        </div>
+        <!-- SETTINGS PAGE (ADVANCED) -->
+
+        <!-- SETTINGS PAGE (DEVICES) -->
+        <div class="settings-page mod-hidden" id="settings-page-device-updates">
+            <div class="settings-page-content">
+                <h1>Supported Control Chain Devices</h1>
+                <form class="form">
                 </form>
             </div>
         </div>
