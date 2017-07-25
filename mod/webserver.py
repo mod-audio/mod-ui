@@ -181,6 +181,7 @@ def install_package(bundlename, callback):
 
 @gen.coroutine
 def start_restore():
+    os.sync()
     yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
 
 class TimelessRequestHandler(web.RequestHandler):
@@ -456,6 +457,7 @@ class SystemExeChange(JsonRequestHandler):
 
     @gen.coroutine
     def reboot(self):
+        os.sync()
         yield gen.Task(run_command, ["reboot"], None)
 
 class UpdateDownload(SimpleFileReceiver):

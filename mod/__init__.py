@@ -92,6 +92,7 @@ def check_environment():
     # remove previous update file
     if os.path.exists(UPDATE_MOD_OS_FILE):
         os.remove(UPDATE_MOD_OS_FILE)
+        os.sync()
 
     return True
 
@@ -135,5 +136,6 @@ class TextFileFlusher(object):
     def __exit__(self, typ, val, tb):
         if self.filehandle is None:
             return
+        self.filehandle.flush()
         os.fsync(self.filehandle)
         os.rename(self.filename+".tmp", self.filename)
