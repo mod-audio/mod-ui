@@ -71,8 +71,11 @@
         color: #555;
     }
 
-    #bank-library #bank-list {
+    #bank-library {
         bottom: 0px;
+    }
+    #bank-library #bank-list {
+        bottom: 5px;
         left: 5px;
         width: 200px;
     }
@@ -111,7 +114,8 @@
     SITEURL          = '{{cloud_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     VERSION          = '{{version}}'
-    var NOTIFICATIONS_ENABLED = false
+    var TEMPLATES    = {}
+    var NOTIFICATIONS_ENABLED = true
     var PREFERENCES = {{preferences}}
 
     var INFO = {
@@ -203,9 +207,10 @@ function refresh_device_updates(respDev, respVer) {
         text += "<p>" + dev.description.replace(/\n/g,"<br/>") + note + "</p>"
 
         if (dev.label) {
-            var labelclasses = 'button-action-update-firmware update-fw-label-' + dev.label
+            var labelcl = 'button-action-update-firmware'
+            var labelid = 'button-action-update-firmware-'+i
             text += "<label>"
-            text += "<input type='button' class='" + labelclasses + "' value='Update firmware'></input>"
+            text += "<input type='button' class='" + labelcl + "' id='" + labelid + "' value='Update firmware'></input>"
             text += " &nbsp; Latest version: v" + dev.version
             text += "</label>"
         }
@@ -213,30 +218,35 @@ function refresh_device_updates(respDev, respVer) {
         elem.append(text)
     }
 
+    $("#tab-device-updates").show()
+
     $(".button-action-update-firmware").click(function () {
         var self = $(this)
         if (self.hasClass("disabled")) {
             return
         }
-        self.addClass("disabled")
-        console.log("update firmware clicked")
 
-        // TODO: find correct dev based on 'update-fw-label-' class
+        var dev_id = parseInt(this.id.replace("button-action-update-firmware-","")),
+            dev = respDev.devices[dev_id]
+
+        if (!dev || !dev.label) {
+            new Bug("Couldn't download firmware, wrong Id")
+            return
+        }
+
+        self.addClass("disabled")
 
         var url = CONTROLCHAIN_URL + "/file/" + dev.label + dev.version + ".bin"
-
         var transfer = new SimpleTransference(url, '/controlchain/download/')
 
         transfer.reportFinished = function () {
             self.removeClass("disabled")
-            console.log("download finished")
-
-            // TODO: show splash screen
+            $('#cc-device-update-window').show()
         }
 
         transfer.reportError = function (error) {
-            new Bug("Couldn't download firmware, reason:<br/>" + error)
             self.removeClass("disabled")
+            new Bug("Couldn't download firmware, reason:<br/>" + error)
         }
 
         transfer.start()
@@ -368,6 +378,12 @@ $('document').ready(function() {
             $("#prefs-audio-256-frames").prop("checked", bufsize == "256")
             return
         }
+
+        if (cmd == "cc-device-updated") {
+            $('#cc-device-update-window').hide()
+            new Notification("info", "Control Chain device firmware update complete!")
+            return
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -406,6 +422,13 @@ $('document').ready(function() {
         // show dangerous
         $("#tab-dangerous").addClass("selected")
         $("#settings-page-dangerous").show()
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+
+    $('#cc-device-update-window').find('.js-cancel').click(function () {
+        $('#cc-device-update-window').hide()
+        return false
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -640,6 +663,7 @@ $('document').ready(function() {
 })
 </script>
 
+<script type="text/javascript" src="js/templates.js?v={{version}}"></script>
 <script type="text/javascript" src="js/common.js?v={{version}}"></script>
 <script type="text/javascript" src="js/file_transfer.js?v={{version}}"></script>
 <script type="text/javascript" src="js/window.js?v={{version}}"></script>
@@ -660,6 +684,10 @@ $('document').ready(function() {
 </div>
 <!-- END PRELOAD -->
 
+<!-- NOTIFICATIONS -->
+<div id="notifications" class="mod-hidden"></div>
+<!-- END NOTIFICATIONS -->
+
 <!-- WRAPPER -->
 <div id="wrapper">
 
@@ -676,7 +704,7 @@ $('document').ready(function() {
         <div id="bank-list">
             <div id="tab-basic" class="add-bank selected">Basic</div>
             <div id="tab-advanced" class="add-bank">Advanced</div>
-            <div id="tab-device-updates" class="add-bank">Device Updates</div>
+            <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
             <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
         </div>
         <!-- END BANK|SETTINGS-LIST -->
@@ -923,6 +951,36 @@ $('document').ready(function() {
 
         </div></div>
         <!-- END BANK-PEDALBOARDS-SEARCH|SYSTEM-INFORMATION -->
+
+        <!-- CC DEVICE UPDATE WINDOW -->
+        <div id="cc-device-update-window" class="save-popup mod-hidden">
+            <div class="mod-box" style="width: 600px; margin:-150px -280px">
+                <h1 class="pull-left">Control Chain Device Update</h1><span class="js-cancel close">&times;</span>
+                <form class="bottom">
+                    <div class="clearfix"></div>
+                    <div id="cc-device-update-text">
+                        <p>
+                            Your Control Chain device firmware is ready to be updated.
+                        </p>
+                        <p>
+                            To begin, follow these steps:
+                        </p>
+                        <ul>
+                            <li>Disconnect the device from the Control Chain/Ethernet port</li>
+                            <li>Hold down the first footswitch on the Control Chain device</li>
+                            <li>While the first footswitch is down, connect the device to the MOD Duo via USB</li>
+                            <li>Wait for the "update completed" message</li>
+                            <li>Disconnect the device from the USB port</li>
+                            <li>Connect it to the Control Chain/Ethernet port once again</li>
+                        </ul>
+                        <p>
+                            Note: The update should only take a few seconds.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END CC DEVICE UPDATE WINDOW -->
 
     </div>
     <!-- END BANKS|SETTINGS -->
