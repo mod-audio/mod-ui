@@ -1285,9 +1285,14 @@ class Host(object):
 
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
+        current_pedal = self.pedalboard_path
 
         def preset_callback(state):
             if not state:
+                callback(False)
+                return
+            if self.pedalboard_path != current_pedal:
+                print("WARNING: Pedalboard changed during preset_show request")
                 callback(False)
                 return
 
@@ -1317,6 +1322,10 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
+                callback(False)
+                return
+            if self.pedalboard_path != current_pedal:
+                print("WARNING: Pedalboard changed during preset_load request")
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2661,12 +2670,14 @@ _:b%i
 
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
-        instance = self.mapper.get_instance(instance_id)
+        try:
+            instance = self.mapper.get_instance(instance_id)
+        except KeyError:
+            print("WARNING: hmi_parameter_set requested for non-existing plugin")
+            callback(False)
+            return
 
-        if instance_id == PEDALBOARD_INSTANCE_ID:
-            pluginData = self.pedalboard_pdata
-        else:
-            pluginData = self.plugins[instance_id]
+        pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)

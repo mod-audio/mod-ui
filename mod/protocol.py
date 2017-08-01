@@ -127,11 +127,17 @@ class Protocol(object):
             callback("-1003") # TODO: proper error handling
             return
 
-        if not self.cmd in self.COMMANDS_FUNC.keys():
+        cmd = self.COMMANDS_FUNC.get(self.cmd, None)
+        if cmd is None:
             callback("-1003") # TODO: proper error handling
             return
+
+        if len(self.args) != len(self.COMMANDS[self.cmd]):
+            callback("-1003") # TODO: proper error handling
+            return
+
         args = self.args + [callback]
-        self.COMMANDS_FUNC[self.cmd](*args)
+        cmd(*args)
 
     def process_resp(self, datatype):
         if "resp" in self.msg:
