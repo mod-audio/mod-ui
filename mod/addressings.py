@@ -505,12 +505,12 @@ class Addressings(object):
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback)
 
     @gen.coroutine
-    def load_current(self, actuator_uris):
+    def load_current(self, actuator_uris, skippedPort):
         for actuator_uri in actuator_uris:
             actuator_type = self.get_actuator_type(actuator_uri)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                yield gen.Task(self.hmi_load_current, actuator_uri)
+                yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 # FIXME: we need a way to change CC value, without re-addressing
@@ -518,6 +518,8 @@ class Addressings(object):
                 addressings = self.cc_addressings[actuator_uri]
 
                 for addressing in addressings:
+                    if (addressing['instance_id'], addressing['port']) == skippedPort:
+                        continue
                     data = {
                         'instance_id': addressing['instance_id'],
                         'port'       : addressing['port'],
@@ -558,7 +560,7 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
-    def hmi_load_current(self, actuator_uri, callback):
+    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None)):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
@@ -570,10 +572,18 @@ class Addressings(object):
             return
 
         if addressings_len == addressings_idx:
+            canSkipAddressing = False
             addressings['idx'] = addressings_idx = addressings_len - 1
+        else:
+            canSkipAddressing = True
 
         # current addressing data
         addressing_data = addressings_addrs[addressings_idx].copy()
+
+        if canSkipAddressing and (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
+            print("skippedPort", skippedPort)
+            callback(True)
+            return
 
         # needed fields for addressing task
         addressing_data['addrs_idx'] = addressings_idx+1
