@@ -2677,7 +2677,10 @@ _:b%i
             callback(False)
             return
 
-        pluginData = self.plugins[instance_id]
+        if instance_id == PEDALBOARD_INSTANCE_ID:
+            pluginData = self.pedalboard_pdata
+        else:
+            pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
