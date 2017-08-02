@@ -1470,7 +1470,7 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            self.addressings.load_current(used_actuators)
+            self.addressings.load_current(used_actuators, (instance_id, ":presets"))
             callback(True)
 
         def host_callback(ok):
@@ -1741,7 +1741,7 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
-        self.addressings.load_current(used_actuators)
+        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
         self.msg_callback("pedal_preset %d" % idx)
@@ -3088,6 +3088,11 @@ _:b%i
                                                          self.transport_sync))
 
         else:
+            oldvalue = pluginData['ports'].get(portsymbol, None)
+            if oldvalue is None:
+                print("WARNING: hmi_parameter_set requested for non-existing port", portsymbol)
+                callback(False)
+                return
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
@@ -3156,7 +3161,7 @@ _:b%i
                         used_actuators.append(addressing['actuator_uri'])
 
         self.pedalboard_modified = False
-        self.addressings.load_current(used_actuators)
+        self.addressings.load_current(used_actuators, (None, None))
 
     def hmi_tuner(self, status, callback):
         if status == "on":
