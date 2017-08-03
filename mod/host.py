@@ -529,7 +529,7 @@ class Host(object):
 
         # FIXME: ensure HMI is initialized by now
 
-        if pedalboard:
+        if pedalboard and os.path.exists(pedalboard):
             self.bank_id = bank_id
             self.load(pedalboard)
 
