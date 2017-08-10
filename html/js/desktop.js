@@ -829,7 +829,7 @@ function Desktop(elements) {
                 },
                 error: function (resp) {
                     self.saveBox.hide()
-                    new Bug("Couldn't save pedalboard")
+                    callback(false, "Couldn't save pedalboard")
                 },
                 cache: false,
                 dataType: 'json'
@@ -1719,6 +1719,7 @@ JqueryClass('saveBox', {
         }, options)
 
         self.data(options)
+        self.data('disabled', false)
 
         var save = function () {
             self.saveBox('send')
@@ -1727,6 +1728,9 @@ JqueryClass('saveBox', {
 
         self.find('.js-save').click(save).prop('disabled',true)
         self.find('.js-cancel-saving').click(function () {
+            if (self.data('disabled')) {
+                return false
+            }
             self.hide()
             return false
         })
@@ -1734,9 +1738,13 @@ JqueryClass('saveBox', {
             self.find('.js-save').prop('disabled', this.value.length == 0 ? true : false);
         })
         self.keydown(function (e) {
+            if (self.data('disabled')) {
+                return false
+            }
             if (e.keyCode == 13) {
                 return save()
-            } else if (e.keyCode == 27) {
+            }
+            if (e.keyCode == 27) {
                 self.hide()
                 return false
             }
@@ -1770,19 +1778,23 @@ JqueryClass('saveBox', {
         var asNew = self.data('asNew')
 
         if (title.length == 0) {
-            alert("Cannot save with an empty name!")
+            new Bug("Cannot save with an empty name!")
             return
         }
 
+        self.data('disabled', true)
+        self.find('.js-cancel-saving').prop('disabled', true)
+        self.find('.js-save').prop('disabled', true)
         self.data('save')(title, asNew,
             function (ok, errorOrPath, realTitle) {
                 if (! ok) {
-                    // TODO error handling here, the Notification does not work well
-                    // with popup
-                    alert(errorOrPath)
+                    new Bug(errorOrPath)
                 }
 
                 self.hide()
+                self.data('disabled', false)
+                self.find('.js-cancel-saving').prop('disabled', false)
+                self.find('.js-save').prop('disabled', false)
                 self.data('callback')(true, errorOrPath, realTitle)
             })
         return
