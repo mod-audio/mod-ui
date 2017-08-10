@@ -106,8 +106,8 @@ JqueryClass('cloudPluginBox', {
 
         var results = {}
         self.data('results', results)
-
         self.data('category', null)
+        self.data('firstLoad', true)
         self.find('ul.categories li').click(function () {
             var category = $(this).attr('id').replace(/^cloud-plugin-tab-/, '')
             self.cloudPluginBox('setCategory', category)
@@ -116,6 +116,10 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategory', "All")
 
         options.open = function () {
+            self.data('firstLoad', true)
+            $('#cloud_install_all').addClass("disabled").css({color:'#444'})
+            $('#cloud_update_all').addClass("disabled").css({color:'#444'})
+
             var stablecb = self.find('input:checkbox[name=stable]')
             if (stablecb.is(':checked')) {
                 self.cloudPluginBox('search')
@@ -248,6 +252,12 @@ JqueryClass('cloudPluginBox', {
             } else {
                 self.cloudPluginBox('showPlugins', plugins, cloudReached)
             }
+
+            if (self.data('firstLoad')) {
+                self.data('firstLoad', false)
+                $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                $('#cloud_update_all').removeClass("disabled").css({color:'white'})
+            }
         }
 
         // cloud search
@@ -369,6 +379,12 @@ JqueryClass('cloudPluginBox', {
                 customRenderCallback(plugins)
             } else {
                 self.cloudPluginBox('showPlugins', plugins, cloudReached)
+            }
+
+            if (self.data('firstLoad')) {
+                self.data('firstLoad', false)
+                $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
         }
 
