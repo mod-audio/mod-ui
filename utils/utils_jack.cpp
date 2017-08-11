@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <string>
 #include <vector>
 
 #define ALSA_SOUNDCARD_ID         "hw:MODDUO"
