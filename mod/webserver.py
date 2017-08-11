@@ -551,6 +551,28 @@ class SDKEffectInstaller(EffectInstaller):
 
         self.write(resp)
 
+class SDKEffectUpdater(JsonRequestHandler):
+    def post(self):
+        bundle = self.get_argument("bundle")
+        uri    = self.get_argument("uri")
+
+        ok, error = SESSION.host.refresh_bundle(bundle, uri)
+        if not ok:
+            self.write({
+                'ok'   : False,
+                'error': error
+            })
+            return
+
+        data = {
+            'ok'       : True,
+            'removed'  : [uri],
+            'installed': [uri],
+        }
+        SESSION.msg_callback("rescan " + b64encode(json.dumps(data).encode("utf-8")).decode("utf-8"))
+
+        self.write({ 'ok': True })
+
 class EffectResource(TimelessStaticFileHandler):
 
     def initialize(self):
@@ -1666,6 +1688,7 @@ application = web.Application(
             (r"/reset/?", DashboardClean),
 
             (r"/sdk/install/?", SDKEffectInstaller),
+            (r"/sdk/update", SDKEffectUpdater),
 
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),

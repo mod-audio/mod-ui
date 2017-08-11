@@ -1235,6 +1235,19 @@ class Host(object):
 
         self.send_notmodified("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
+    def refresh_bundle(self, bundlepath, plugin_uri):
+        if not is_bundle_loaded(bundlepath):
+            return (False, "Bundle not loaded")
+
+        plugins = list_plugins_in_bundle(bundlepath)
+
+        if plugin_uri not in plugins:
+            return (False, "Requested plugin URI does not exist inside the bundle")
+
+        remove_bundle_from_lilv_world(bundlepath)
+        add_bundle_to_lilv_world(bundlepath)
+        return (True, "")
+
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
