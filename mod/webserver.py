@@ -552,6 +552,18 @@ class SDKEffectInstaller(EffectInstaller):
         self.write(resp)
 
 class SDKEffectUpdater(JsonRequestHandler):
+    def set_default_headers(self):
+        if 'Origin' not in self.request.headers.keys():
+            return
+        origin = self.request.headers['Origin']
+        match  = re.match(r'^(\w+)://([^/]*)/?', origin)
+        if match is None:
+            return
+        protocol, domain = match.groups()
+        if protocol != "http" or not domain.endswith(":9000"):
+            return
+        self.set_header("Access-Control-Allow-Origin", origin)
+
     def post(self):
         bundle = self.get_argument("bundle")
         uri    = self.get_argument("uri")
