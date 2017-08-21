@@ -43,6 +43,7 @@ from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.utils import (init as lv2_init,
+                       cleanup as lv2_cleanup,
                        get_plugin_list,
                        get_all_plugins,
                        get_plugin_info,
@@ -154,10 +155,11 @@ def run_command(args, cwd, callback):
     proc   = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE)
 
     def end_fileno(fileno, event):
-        if proc.poll() is None:
+        ret = proc.poll()
+        if ret is None:
             return
         ioloop.remove_handler(fileno)
-        callback()
+        callback((ret,) + proc.communicate())
 
     ioloop.add_handler(proc.stdout.fileno(), end_fileno, 16)
 
@@ -173,7 +175,7 @@ def install_package(bundlename, callback):
         })
         return
 
-    def end_untar_pkgs():
+    def end_untar_pkgs(resp):
         os.remove(filename)
         install_bundles_in_tmp_dir(callback)
 
@@ -377,11 +379,9 @@ class SystemExeChange(JsonRequestHandler):
     @gen.coroutine
     def post(self):
         etype = self.get_argument('type')
-        print(etype)
 
         if etype == "command":
             cmd = self.get_argument('cmd')
-            print(cmd)
 
             if cmd == "reboot":
                 yield gen.Task(run_command, ["hmi-reset"], None)
@@ -389,6 +389,28 @@ class SystemExeChange(JsonRequestHandler):
 
             elif cmd == "restore":
                 IOLoop.instance().add_callback(start_restore)
+
+            elif cmd == "backup-export":
+                resp = yield gen.Task(run_command, ["mod-backup", "backup"], None)
+                self.write({
+                    'ok'   : resp[0] == 0,
+                    'error': resp[1].decode("utf-8", errors="ignore").strip(),
+                })
+                return
+
+            elif cmd == "backup-import":
+                resp = yield gen.Task(run_command, ["mod-backup", "restore"], None)
+                self.write({
+                    'ok'   : resp[0] == 0,
+                    'error': resp[1].decode("utf-8", errors="ignore").strip(),
+                })
+                if resp[0] == 0:
+                    IOLoop.instance().add_callback(self.restart_services)
+                return
+
+            else:
+                self.write(False)
+                return
 
         elif etype == "filecreate":
             path   = self.get_argument('path')
@@ -460,6 +482,12 @@ class SystemExeChange(JsonRequestHandler):
         os.sync()
         yield gen.Task(run_command, ["reboot"], None)
 
+    @gen.coroutine
+    def restart_services(self):
+        yield gen.Task(run_command, ["systemctl", "restart", "jack2"], None)
+        lv2_cleanup()
+        lv2_init()
+
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp/os-update"
 
@@ -471,7 +499,7 @@ class UpdateDownload(SimpleFileReceiver):
         dst = UPDATE_MOD_OS_FILE
         run_command(['mv', src, dst], None, self.move_file_finished)
 
-    def move_file_finished(self):
+    def move_file_finished(self, resp):
         self.result = True
         self.sfr_callback()
 
@@ -497,7 +525,7 @@ class ControlChainDownload(SimpleFileReceiver):
         dst = UPDATE_CC_FIRMWARE_FILE
         run_command(['mv', src, dst], None, self.move_file_finished)
 
-    def move_file_finished(self):
+    def move_file_finished(self, resp):
         self.result = True
         self.sfr_callback()
 

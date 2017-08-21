@@ -272,13 +272,16 @@ function config_set(key, value) {
     })
 }
 
-function system_exechange(data) {
+function system_exechange(data, callback) {
     $.ajax({
         url: '/system/exechange',
         method: 'POST',
         data: data,
         success: function (resp) {
             console.log("success", resp)
+            if (callback) {
+                callback(resp)
+            }
         },
         error: function (resp) {
             console.log("error", resp)
@@ -296,11 +299,11 @@ function enable_service(name, enable) {
     })
 }
 
-function run_custom_command(cmd) {
+function run_custom_command(cmd, callback) {
     system_exechange({
         'type': 'command',
         'cmd' : cmd,
-    })
+    }, callback)
 }
 
 function write_file_contents(path, content) {
@@ -540,6 +543,56 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Maintenance & Backup
 
+    function show_blocker (exporting) {
+        var block = $('<div class="screen-disconnected blocker">')
+
+        if (exporting) {
+            block.html('<p>Exporting data, please wait...</p>')
+        } else {
+            block.html('<p>Import data, please wait...<br/>This might take a few minutes.</p>')
+        }
+        block.css('overflow', 'hidden')
+
+        $('body').append(block)
+        return block
+    }
+
+    $("#button-action-backup-export").click(function () {
+        var block = show_blocker(true)
+
+        run_custom_command("backup-export", function (resp) {
+            block.remove()
+            if (resp.ok) {
+                new Notification("info", "Backup to USB stick complete!<br>You can now safely remove the USB stick.")
+            } else {
+                new Notification("error", "Backup to USB stick failed!<br>" + resp.error)
+            }
+        })
+    })
+
+    $("#button-action-backup-import").click(function () {
+        if (!confirm("Restoring data from USB stick will erase the current data inside the MOD.\n"
+                    +"Are you sure you want to continue?")) {
+            return
+        }
+
+        var block = show_blocker(false)
+
+        run_custom_command("backup-import", function (resp) {
+            if (resp.ok) {
+                setTimeout(function () {
+                    block.html('<p>Import from USB stick complete!</p>')
+
+                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                    re.css("background-image", "url(img/icons/25/reload.png)");
+                    re.click(function () { location.reload(); });
+                }, 1000)
+            } else {
+                block.html('<p>Importing from USB stick failed!<br/>' + resp.error + '</p>')
+            }
+        })
+    })
+
     // ----------------------------------------------------------------------------------------------------------------
     // --- Boot & Restore
 
@@ -743,17 +796,22 @@ $('document').ready(function() {
                     </label>
                 </form>
 
-                <!--
-                <h1>Maintenance &amp; Backup</h1>
+                <h1>Backup &amp; Restore</h1>
                 <form class="form">
+                    <p>
+                        <b>Backup and restore user data using a USB stick</b>.<br/>
+                        Make sure the USB stick has enough disk space, preferably with fat32 file system.<br/>
+                        Note that current user data will be deleted during restore!
+                    </p>
                     <label>
-                        <input type="button" value="Export user settings..."></input>
-                        <input type="button" value="Import user settings..."></input>
+                        <input type="button" id="button-action-backup-export" value="Backup user data..."></input>
+                    </label>
+                    <label>
+                        <input type="button" id="button-action-backup-import" value="Restore user data..."></input>
                     </label>
                 </form>
-                -->
 
-                <h1>Boot &amp; Restore</h1>
+                <h1>Reboot &amp; Update</h1>
                 <form class="form">
                     <!--
                     <p>
@@ -774,12 +832,12 @@ $('document').ready(function() {
                     </label>
                     <br/><br/>
                     <p>
-                        <b>Start the MOD's restore/upgrade mode</b>, where you can manually update the MOD via
+                        <b>Start the MOD's restore/update mode</b>, where you can manually update the MOD via
                             USB Mass Storage mode.<br/>
                         Note that all unsaved pedalboard changes will be lost.
                     </p>
                     <label>
-                        <input type="button" id="button-action-restore" value="Start upgrade mode"></input>
+                        <input type="button" id="button-action-restore" value="Start update mode"></input>
                     </label>
                 </form>
             </div>
