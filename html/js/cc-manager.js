@@ -24,6 +24,7 @@ function ControlChainDeviceManager(options) {
         updateInfoWindow: $('<div>'),
         setIconTooltip: function (msg) {},
         showNotification: function (msg, timeout) {},
+        cancelDownload: function (callback) { callback() },
     }, options)
 
     this.connectedDevices = []
@@ -41,7 +42,9 @@ function ControlChainDeviceManager(options) {
     })
 
     options.updateInfoWindow.find('.js-cancel').click(function () {
-        options.updateInfoWindow.hide()
+        options.cancelDownload(function () {
+            options.updateInfoWindow.hide()
+        })
         return false
     })
 

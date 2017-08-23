@@ -529,6 +529,15 @@ class ControlChainDownload(SimpleFileReceiver):
         self.result = True
         self.sfr_callback()
 
+class ControlChainCancel(JsonRequestHandler):
+    def post(self):
+        if not os.path.exists(UPDATE_CC_FIRMWARE_FILE):
+            self.write(False)
+            return
+
+        os.remove(UPDATE_CC_FIRMWARE_FILE)
+        self.write(True)
+
 class EffectInstaller(SimpleFileReceiver):
     destination_dir = DOWNLOAD_TMP_DIR
 
@@ -1654,6 +1663,7 @@ application = web.Application(
             (r"/update/begin", UpdateBegin),
 
             (r"/controlchain/download/", ControlChainDownload),
+            (r"/controlchain/cancel/", ControlChainCancel),
 
             (r"/resources/(.*)", EffectResource),
 

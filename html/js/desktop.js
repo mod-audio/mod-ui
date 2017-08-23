@@ -458,6 +458,20 @@ function Desktop(elements) {
                 new Notification('info', msg, 5000)
             }
         },
+        cancelDownload: function (callback) {
+            $.ajax({
+                url: '/controlchain/cancel/',
+                type: 'POST',
+                success: function () {
+                    callback()
+                },
+                error: function () {
+                    callback()
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
     })
 
     this.ccDeviceAdded = function (dev_uri, label, labelsuffix, version) {
