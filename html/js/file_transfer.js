@@ -130,8 +130,8 @@ function SimpleTransference(from, to, options) {
         var req = $.ajax($.extend({
             method: 'POST',
             url: self.destination,
-            data: file,
-            contentType: file.type,
+            data: new FormData(file),
+            contentType: false,
             success: self.success,
             processData: false,
             error: function (resp) {
@@ -152,7 +152,6 @@ function SimpleTransference(from, to, options) {
                 }
                 self.abort(resp.statusText)
             },
-            dataType: 'json',
             cache: false,
             global: false,
         }, self.options.to_args))
