@@ -2824,34 +2824,43 @@ _:b%i
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
 
         if old_addressing is not None:
+            # Need to remove old addressings first
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
 
-            # Changing ranges without changing MIDI CC
-            if old_actuator_type == Addressings.ADDRESSING_TYPE_MIDI and actuator_uri == old_actuator_uri:
-                channel, controller = self.addressings.get_midi_cc_from_uri(actuator_uri)
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_MIDI:
+                channel, controller = self.addressings.get_midi_cc_from_uri(old_actuator_uri)
 
-                if -1 in (channel, controller):
-                    # error
-                    actuator_uri = None
+                if actuator_uri != old_actuator_uri:
+                    # Removing MIDI addressing
+                    if portsymbol == ":bypass":
+                        pluginData['bypassCC'] = (-1, -1)
+                    else:
+                        pluginData['midiCCs'][portsymbol] = (-1, -1, 0.0, 1.0)
 
                 else:
-                    if portsymbol == ":bypass":
-                        pluginData['bypassCC'] = (channel, controller)
+                    # Changing ranges without changing MIDI CC
+                    if -1 in (channel, controller):
+                        # error
+                        actuator_uri = None
+
                     else:
-                        pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
+                        if portsymbol == ":bypass":
+                            pluginData['bypassCC'] = (channel, controller)
+                        else:
+                            pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
 
-                    pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
-                                                                                      portsymbol,
-                                                                                      channel, controller,
-                                                                                      minimum, maximum)
+                        pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
+                                                                                          portsymbol,
+                                                                                          channel, controller,
+                                                                                          minimum, maximum)
 
-                    return self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
-                                                                              portsymbol,
-                                                                              channel,
-                                                                              controller,
-                                                                              minimum,
-                                                                              maximum), callback, datatype='boolean')
+                        return self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
+                                                                                  portsymbol,
+                                                                                  channel,
+                                                                                  controller,
+                                                                                  minimum,
+                                                                                  maximum), callback, datatype='boolean')
 
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
