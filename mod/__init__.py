@@ -138,4 +138,5 @@ class TextFileFlusher(object):
             return
         self.filehandle.flush()
         os.fsync(self.filehandle)
+        self.filehandle.close()
         os.rename(self.filename+".tmp", self.filename)
