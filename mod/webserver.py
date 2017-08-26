@@ -278,21 +278,18 @@ class SimpleFileReceiver(JsonRequestHandler):
         # self.result can be set by subclass in process_file,
         # so that answer will be returned to browser
         self.result = None
-        name = str(uuid4())
+        basename = str(uuid4())
         if not os.path.exists(self.destination_dir):
             os.mkdir(self.destination_dir)
-        with open(os.path.join(self.destination_dir, name), 'wb') as fh:
+        with open(os.path.join(self.destination_dir, basename), 'wb') as fh:
             fh.write(self.request.body)
-        data = {
-            "filename": name
-        }
-        yield gen.Task(self.process_file, data)
+        yield gen.Task(self.process_file, basename)
         self.write({
             'ok'    : True,
             'result': self.result
         })
 
-    def process_file(self, data, callback=lambda:None):
+    def process_file(self, basename, callback=lambda:None):
         """to be overriden"""
 
 class SystemInfo(JsonRequestHandler):
@@ -491,11 +488,11 @@ class SystemExeChange(JsonRequestHandler):
 class UpdateDownload(SimpleFileReceiver):
     destination_dir = "/tmp/os-update"
 
-    def process_file(self, data, callback=lambda:None):
+    def process_file(self, basename, callback=lambda:None):
         self.sfr_callback = callback
 
         # TODO: verify checksum?
-        src = os.path.join(self.destination_dir, data['filename'])
+        src = os.path.join(self.destination_dir, basename)
         dst = UPDATE_MOD_OS_FILE
         run_command(['mv', src, dst], None, self.move_file_finished)
 
@@ -517,11 +514,11 @@ class UpdateBegin(JsonRequestHandler):
 class ControlChainDownload(SimpleFileReceiver):
     destination_dir = "/tmp/cc-update"
 
-    def process_file(self, data, callback=lambda:None):
+    def process_file(self, basename, callback=lambda:None):
         self.sfr_callback = callback
 
         # TODO: verify checksum?
-        src = os.path.join(self.destination_dir, data['filename'])
+        src = os.path.join(self.destination_dir, basename)
         dst = UPDATE_CC_FIRMWARE_FILE
         run_command(['mv', src, dst], None, self.move_file_finished)
 
@@ -543,11 +540,11 @@ class EffectInstaller(SimpleFileReceiver):
 
     @web.asynchronous
     @gen.engine
-    def process_file(self, data, callback=lambda:None):
+    def process_file(self, basename, callback=lambda:None):
         def on_finish(resp):
             self.result = resp
             callback()
-        install_package(data['filename'], on_finish)
+        install_package(basename, on_finish)
 
 class EffectBulk(JsonRequestHandler):
     def prepare(self):
