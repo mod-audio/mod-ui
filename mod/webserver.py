@@ -163,9 +163,7 @@ def run_command(args, cwd, callback):
 
     ioloop.add_handler(proc.stdout.fileno(), end_fileno, 16)
 
-def install_package(bundlename, callback):
-    filename = os.path.join(DOWNLOAD_TMP_DIR, bundlename)
-
+def install_package(filename, callback):
     if not os.path.exists(filename):
         callback({
             'ok'       : False,
@@ -545,7 +543,7 @@ class EffectInstaller(SimpleFileReceiver):
         def on_finish(resp):
             self.result = resp
             callback()
-        install_package(basename, on_finish)
+        install_package(os.path.join(DOWNLOAD_TMP_DIR, basename), on_finish)
 
 class EffectBulk(JsonRequestHandler):
     def prepare(self):
@@ -574,12 +572,13 @@ class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
     @gen.engine
     def post(self):
-        upload = self.request.files['package'][0]
+        upload   = self.request.files['package'][0]
+        filename = os.path.join(DOWNLOAD_TMP_DIR, upload['filename'])
 
-        with open(os.path.join(DOWNLOAD_TMP_DIR, upload['filename']), 'wb') as fh:
+        with open(filename, 'wb') as fh:
             fh.write(b64decode(upload['body']))
 
-        resp = yield gen.Task(install_package, upload['filename'])
+        resp = yield gen.Task(install_package, filename)
 
         if resp['ok']:
             SESSION.msg_callback("rescan " + b64encode(json.dumps(resp).encode("utf-8")).decode("utf-8"))
