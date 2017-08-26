@@ -288,6 +288,53 @@ class SimpleFileReceiver(JsonRequestHandler):
     def process_file(self, basename, callback=lambda:None):
         """to be overriden"""
 
+@web.stream_request_body
+class MultiPartFileReceiver(JsonRequestHandler):
+    @property
+    def destination_dir(self):
+        raise NotImplemented
+
+    @classmethod
+    def urls(cls, path):
+        return [
+            (r"/%s/$" % path, cls),
+        ]
+
+    def prepare(self):
+        self.basename = "/tmp/" + str(uuid4())
+        if not os.path.exists(self.destination_dir):
+            os.mkdir(self.destination_dir)
+        self.filehandle = open(os.path.join(self.destination_dir, self.basename), 'wb')
+        self.filehandle.write(b'')
+
+        if 'expected_size' in self.request.arguments:
+            self.request.connection.set_max_body_size(int(self.get_argument('expected_size')))
+        else:
+            self.request.connection.set_max_body_size(200*1024*1024)
+
+        if 'body_timeout' in self.request.arguments:
+            self.request.connection.set_body_timeout(float(self.get_argument('body_timeout')))
+
+    def data_received(self, data):
+        self.filehandle.write(data)
+
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        # self.result can be set by subclass in process_file,
+        # so that answer will be returned to browser
+        self.result = None
+        self.filehandle.flush()
+        self.filehandle.close()
+        yield gen.Task(self.process_file, self.basename)
+        self.write({
+            'ok'    : True,
+            'result': self.result
+        })
+
+    def process_file(self, basename, callback=lambda:None):
+        """to be overriden"""
+
 class SystemInfo(JsonRequestHandler):
     def get(self):
         hwdesc = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
@@ -481,7 +528,7 @@ class SystemExeChange(JsonRequestHandler):
         lv2_cleanup()
         lv2_init()
 
-class UpdateDownload(SimpleFileReceiver):
+class UpdateDownload(MultiPartFileReceiver):
     destination_dir = "/tmp/os-update"
 
     def process_file(self, basename, callback=lambda:None):
