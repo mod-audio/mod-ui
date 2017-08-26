@@ -266,8 +266,6 @@ class SimpleFileReceiver(JsonRequestHandler):
     def urls(cls, path):
         return [
             (r"/%s/$" % path, cls),
-            #(r"/%s/([a-f0-9]{32})/(\d+)$" % path, cls),
-            #(r"/%s/([a-f0-9]{40})/(finish)$" % path, cls),
         ]
 
     @web.asynchronous
