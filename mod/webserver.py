@@ -497,6 +497,7 @@ class UpdateDownload(SimpleFileReceiver):
         run_command(['mv', src, dst], None, self.move_file_finished)
 
     def move_file_finished(self, resp):
+        os.sync()
         self.result = True
         self.sfr_callback()
 
