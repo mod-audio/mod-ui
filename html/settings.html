@@ -552,7 +552,7 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
-    // --- Maintenance & Backup
+    // --- Backup & Restore
 
     function show_blocker (exporting) {
         var block = $('<div class="screen-disconnected blocker">')
@@ -569,9 +569,11 @@ $('document').ready(function() {
     }
 
     $("#button-action-backup-export").click(function () {
-        var block = show_blocker(true)
+        var block = show_blocker(true),
+            pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
+            pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
-        run_custom_command("backup-export", function (resp) {
+        run_custom_command("backup-export " + pConfigs + "," + pPlugins, function (resp) {
             block.remove()
             if (resp.ok) {
                 new Notification("info", "Backup to USB stick complete!<br>You can now safely remove the USB stick.")
@@ -587,9 +589,11 @@ $('document').ready(function() {
             return
         }
 
-        var block = show_blocker(false)
+        var block = show_blocker(false),
+            pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
+            pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
-        run_custom_command("backup-import", function (resp) {
+        run_custom_command("backup-import " + pConfigs + "," + pPlugins, function (resp) {
             if (resp.ok) {
                 setTimeout(function () {
                     block.html('<p>Import from USB stick complete!</p>')
@@ -812,8 +816,21 @@ $('document').ready(function() {
                     <p>
                         <b>Backup and restore user data using a USB stick</b>.<br/>
                         Make sure the USB stick has enough disk space, preferably with fat32 file system.<br/>
+                        User configuration, banks and pedalboards are always saved and overwritten.<br/>
                         Note that current user data will be deleted during restore!
                     </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-backup-configs">
+                            Also backup/restore device configs (audio gains, bluetooth config, etc)
+                        </input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-backup-plugins">
+                            Also backup/restore LV2 plugins
+                        </input>
+                    </label>
+                    <br/>
                     <label>
                         <input type="button" id="button-action-backup-export" value="Backup user data..."></input>
                     </label>

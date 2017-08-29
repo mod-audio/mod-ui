@@ -152,7 +152,7 @@ def install_bundles_in_tmp_dir(callback):
 
 def run_command(args, cwd, callback):
     ioloop = IOLoop.instance()
-    proc   = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE)
+    proc   = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def end_fileno(fileno, event):
         ret = proc.poll()
@@ -421,7 +421,11 @@ class SystemExeChange(JsonRequestHandler):
         etype = self.get_argument('type')
 
         if etype == "command":
-            cmd = self.get_argument('cmd')
+            cmd = self.get_argument('cmd').split(" ",1)
+            if len(cmd) == 1:
+                cmd = cmd[0]
+            else:
+                cmd, cdata = cmd
 
             if cmd == "reboot":
                 yield gen.Task(run_command, ["hmi-reset"], None)
@@ -431,18 +435,36 @@ class SystemExeChange(JsonRequestHandler):
                 IOLoop.instance().add_callback(start_restore)
 
             elif cmd == "backup-export":
-                resp = yield gen.Task(run_command, ["mod-backup", "backup"], None)
+                args  = ["mod-backup", "backup"]
+                cdata = cdata.split(",")
+                if cdata[0] == "1":
+                    args.append("-d")
+                if cdata[1] == "1":
+                    args.append("-p")
+                resp  = yield gen.Task(run_command, args, None)
+                error = resp[2].decode("utf-8", errors="ignore").strip()
+                if len(error) > 1:
+                    error = error[0].title()+error[1:]+"."
                 self.write({
                     'ok'   : resp[0] == 0,
-                    'error': resp[1].decode("utf-8", errors="ignore").strip(),
+                    'error': error,
                 })
                 return
 
             elif cmd == "backup-import":
-                resp = yield gen.Task(run_command, ["mod-backup", "restore"], None)
+                args  = ["mod-backup", "restore"]
+                cdata = cdata.split(",")
+                if cdata[0] == "1":
+                    args.append("-d")
+                if cdata[1] == "1":
+                    args.append("-p")
+                resp = yield gen.Task(run_command, args, None)
+                error = resp[2].decode("utf-8", errors="ignore").strip()
+                if len(error) > 1:
+                    error = error[0].title()+error[1:]+"."
                 self.write({
                     'ok'   : resp[0] == 0,
-                    'error': resp[1].decode("utf-8", errors="ignore").strip(),
+                    'error': error,
                 })
                 if resp[0] == 0:
                     IOLoop.instance().add_callback(self.restart_services)
@@ -1327,7 +1349,7 @@ class TemplateHandler(TimelessRequestHandler):
             return
 
         loader = Loader(HTML_DIR)
-        section = path.split('.')[0]
+        section = path.split('.',1)[0]
 
         if section == 'index':
             yield gen.Task(SESSION.wait_for_hardware_if_needed)
