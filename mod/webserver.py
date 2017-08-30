@@ -1120,8 +1120,8 @@ class PedalboardLoadWeb(SimpleFileReceiver):
 
     @web.asynchronous
     @gen.engine
-    def process_file(self, data, callback=lambda:None):
-        filename = os.path.join(self.destination_dir, data['filename'])
+    def process_file(self, basename, callback=lambda:None):
+        filename = os.path.join(self.destination_dir, basename)
 
         if not os.path.exists(filename):
             callback()
