@@ -157,14 +157,8 @@ class Host(object):
         self.pedalboard_preset   = -1
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
-
-        if APP and os.getenv("MOD_LIVE_ISO") is not None:
-            self.jack_hwin_prefix  = "system:playback_"
-            self.jack_hwout_prefix = "system:capture_"
-        else:
-            self.jack_hwin_prefix  = "mod-monitor:in_"
-            self.jack_hwout_prefix = "mod-monitor:out_"
-
+        self.jack_hwin_prefix  = "system:playback_"
+        self.jack_hwout_prefix = "system:capture_"
         self.jack_slave_prefix = "mod-slave"
 
         # pluginData-like pedalboard
