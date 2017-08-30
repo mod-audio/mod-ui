@@ -21,6 +21,22 @@ var loadedCSSs = {}
 var loadedJSs = {}
 var isSDK = false
 
+function shouldSkipPort(port) {
+    // skip notOnGUI controls
+    if (port.properties.indexOf("notOnGUI") >= 0)
+        return true
+    // skip special designated controls
+    if (port.designation == "http://lv2plug.in/ns/lv2core#enabled" ||
+        port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling" ||
+        port.designation == "http://lv2plug.in/ns/ext/time#beatsPerBar" ||
+        port.designation == "http://lv2plug.in/ns/ext/time#beatsPerMinute" ||
+        port.designation == "http://lv2plug.in/ns/ext/time#speed") {
+        return true
+    }
+    // what else?
+    return false;
+}
+
 function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
     var settingsLoaded = true
@@ -1085,7 +1101,6 @@ function GUI(effect, options) {
             }
         }
 
-        // skip notOnGUI controls
         if (data.effect.ports.control.input)
         {
             var inputs = []
@@ -1093,15 +1108,7 @@ function GUI(effect, options) {
                 var port = data.effect.ports.control.input[i]
 
                 // skip notOnGUI controls
-                if (port.properties.indexOf("notOnGUI") >= 0) {
-                    continue
-                }
-                // skip special designated controls
-                if (port.designation == "http://lv2plug.in/ns/lv2core#enabled" ||
-                    port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling" ||
-                    port.designation == "http://lv2plug.in/ns/ext/time#beatsPerBar" ||
-                    port.designation == "http://lv2plug.in/ns/ext/time#beatsPerMinute" ||
-                    port.designation == "http://lv2plug.in/ns/ext/time#speed") {
+                if (shouldSkipPort(port)) {
                     continue
                 }
 
