@@ -1409,6 +1409,23 @@ JqueryClass('film', baseWidget, {
             self.film('mouseWheel', e)
         })
 
+        self.bind('touchstart', function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.film('prevent', e)
+            }
+            self.film('mouseDown', e.originalEvent.changedTouches[0])
+        })
+        self.bind('touchmove', function (e) {
+            if (!self.data('enabled')) {
+                return
+            }
+            self.film('mouseMove', e.originalEvent.changedTouches[0])
+        })
+        self.bind('touchend', function (e) {
+            self.film('mouseUp', e.originalEvent.changedTouches[0])
+        })
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.film('prevent', e)
