@@ -1737,7 +1737,7 @@ class Host(object):
                         used_actuators.append(addressing['actuator_uri'])
 
             for symbol, value in data['ports'].items():
-                if value == pluginData['ports'][symbol]:
+                if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
                     continue
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
@@ -3143,34 +3143,38 @@ _:b%i
             instance_id = self.mapper.get_id(instance)
             pluginData  = self.plugins[instance_id]
 
-            bypassed = bool(p['bypassed'])
-            pluginData['bypassed'] = bypassed
+            bypassed    = bool(p['bypassed'])
+            diffBypass  = pluginData['bypassed'] != p['bypassed']
 
-            self.send_notmodified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
-            #self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
+            if diffBypass:
+                addressing = pluginData['addressings'].get(":bypass", None)
+                if addressing is not None:
+                    addressing['value'] = 1.0 if bypassed else 0.0
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
-            addressing = pluginData['addressings'].get(":bypass", None)
-            if addressing is not None:
-                addressing['value'] = 1.0 if bypassed else 0.0
-                if addressing['actuator_uri'] not in used_actuators:
-                    used_actuators.append(addressing['actuator_uri'])
+            # if bypassed, do it now
+            if diffBypass and bypassed:
+                self.bypass(instance, True, None)
+                #self.msg_callback("param_set %s :bypass 1.0" % (instance,))
 
-            addressing = pluginData['addressings'].get(":presets", None)
-            if addressing is not None:
-                if p['preset']:
+            if p['preset'] and pluginData['preset'] != p['preset']:
+                pluginData['preset'] = p['preset']
+                self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
+                #self.msg_callback("preset %s %s" % (instance, p['preset']))
+
+                addressing = pluginData['addressings'].get(":presets", None)
+                if addressing is not None:
                     addressing['value'] = pluginData['mapPresets'].index(p['preset'])
-                if addressing['actuator_uri'] not in used_actuators:
-                    used_actuators.append(addressing['actuator_uri'])
-
-            if p['preset']:
-                preset = p['preset']
-                pluginData['preset'] = preset
-                self.send_notmodified("preset_load %d %s" % (instance_id, preset))
-                #self.msg_callback("preset %s %s" % (instance, preset))
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
+
+                if pluginData['ports'][symbol] == value:
+                    continue
 
                 pluginData['ports'][symbol] = value
                 self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
@@ -3181,6 +3185,11 @@ _:b%i
                     addressing['value'] = value
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
+
+            # if not bypassed (enabled), do it at the end
+            if diffBypass and not bypassed:
+                self.bypass(instance, False, None)
+                #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
 
         self.pedalboard_modified = False
         self.addressings.load_current(used_actuators, (None, None))
