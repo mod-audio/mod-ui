@@ -2885,11 +2885,23 @@ _:b%i
                                                                      minimum,
                                                                      maximum), callback, datatype='boolean')
 
+        if value < minimum:
+            value = minimum
+            needsValueChange = True
+        elif value > maximum:
+            value = maximum
+            needsValueChange = True
+        else:
+            needsValueChange = False
+
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value)
         if addressing is None:
             callback(False)
             return
+
+        if needsValueChange:
+            yield gen.Task(self.hmi_parameter_set, instance_id, portsymbol, value)
 
         pluginData['addressings'][portsymbol] = addressing
 
