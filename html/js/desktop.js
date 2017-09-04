@@ -146,7 +146,6 @@ function Desktop(elements) {
                 type: 'POST',
                 data: JSON.stringify(addressing),
                 success: function (resp) {
-                    console.log(addressing, resp)
                     if (resp) {
                         self.pedalboardModified = true
                         callback(true)
