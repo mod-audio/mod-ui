@@ -3114,7 +3114,8 @@ _:b%i
                 self.set_transport_rolling(rolling, True, callback)
             else:
                 print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
-                return None
+                callback(False)
+                return
 
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
                                                          self.transport_bpb,
