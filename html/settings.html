@@ -319,7 +319,7 @@ function create_or_delete_file(path, create) {
     system_exechange({
         'type'  : 'filecreate',
         'path'  : path,
-        'create': create,
+        'create': create ? 1 : 0,
     })
 }
 

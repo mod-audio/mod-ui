@@ -476,7 +476,7 @@ class SystemExeChange(JsonRequestHandler):
 
         elif etype == "filecreate":
             path   = self.get_argument('path')
-            create = self.get_argument('create').strip()
+            create = bool(int(self.get_argument('create')))
 
             if path not in ("jack-mono-copy", "jack-sync-mode", "using-256-frames"):
                 self.write(False)
