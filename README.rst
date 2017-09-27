@@ -28,6 +28,12 @@ Install python requirements::
 
     $ pip3 install -r requirements.txt
 
+Compile libmod_utils:
+
+    $ cd utils
+    $ make
+    $ cd ..
+
 Run
 ---
 
