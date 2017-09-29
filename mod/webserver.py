@@ -37,7 +37,8 @@ from mod.settings import (APP, LOG,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE)
+                          DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
+                          DEV_HOST)
 
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -1400,7 +1401,7 @@ class TemplateHandler(TimelessRequestHandler):
             'fulltitle':  xhtml_escape(fullpbname),
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'using_app': 'true' if APP else 'false',
-            'using_mod': 'true' if DEVICE_KEY else 'false',
+            'using_mod': 'true' if DEVICE_KEY or DEV_HOST else 'false',
             'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),
             'user_email': squeeze(user_id.get("email", "").replace("'", "\\'")),
             'favorites': json.dumps(gState.favorites),
