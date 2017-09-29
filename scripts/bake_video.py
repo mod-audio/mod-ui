@@ -4,7 +4,7 @@ import subprocess, time, json, base64, random, os, shutil, sys, Image
 from os.path import join
 
 ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-DATA_DIR = join(ROOT, 'dados')
+DATA_DIR = join(ROOT, 'data')
 
 os.environ['MOD_DEV_ENVIRONMENT'] = os.environ.get("MOD_DEV_ENVIRONMENT", '1')
 os.environ['MOD_DATA_DIR'] = DATA_DIR

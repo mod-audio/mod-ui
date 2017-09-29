@@ -40,7 +40,7 @@ if os.path.isfile(IMAGE_VERSION_PATH):
 else:
     IMAGE_VERSION = None
 
-DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
+DATA_DIR = os.environ.get('MOD_DATA_DIR', '/data')
 KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys') + os.sep)
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 FAVORITES_JSON_FILE = os.environ.get('MOD_FAVORITES_JSON', join(DATA_DIR, 'favorites.json'))
