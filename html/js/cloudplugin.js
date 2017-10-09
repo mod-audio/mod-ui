@@ -44,7 +44,13 @@ JqueryClass('cloudPluginBox', {
             },
             info: null,
             isMainWindow: true,
-            windowName: "Plugin Store"
+            windowName: "Plugin Store",
+
+            /* HACK hardcoded shopify IDs for development purposes */
+            shopifyIdsHack: {
+                'http://code.google.com/p/amsynth/amsynth': 114052890654,
+                'http://moddevices.com/plugins/mda/Ambience': 118603710494
+            }
         }, options)
 
         self.data(options)
@@ -555,6 +561,7 @@ JqueryClass('cloudPluginBox', {
         }
         var plugin_data = {
             uri: uri,
+            shopify_id: self.data('shopifyIdsHack')[unescape(uri)],
             screenshot_href: plugin.screenshot_href,
             has_comment: has_comment,
             comment: comment,
@@ -748,6 +755,7 @@ JqueryClass('cloudPluginBox', {
 
             var metadata = {
                 author: plugin.author,
+                shopify_id: self.data('shopifyIdsHack')[unescape(plugin.uri)],
                 uri: plugin.uri,
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
@@ -831,6 +839,160 @@ JqueryClass('cloudPluginBox', {
             info.window({
                 windowName: "Cloud Plugin Info"
             })
+
+            if (metadata.shopify_id) {
+                (function () {
+                    var scriptURL = 'js/lib/buy-button-storefront.js';
+                  //var scriptURL = 'https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.js';
+                    if (window.ShopifyBuy) {
+                        if (window.ShopifyBuy.UI) {
+                            ShopifyBuyInit();
+                        } else {
+                            loadScript();
+                        }
+                    } else {
+                        loadScript();
+                    }
+
+                    function loadScript() {
+                        var script = document.createElement('script');
+                        script.async = true;
+                        script.src = scriptURL;
+                        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(script);
+                        script.onload = ShopifyBuyInit;
+                    }
+
+                    function ShopifyBuyInit() {
+                        var client = ShopifyBuy.buildClient({
+                            domain: 'moddevices.myshopify.com',
+                            apiKey: 'a367fce84b88e7a14fc70b031a6257df',
+                            appId: '6',
+                        });
+
+                        ShopifyBuy.UI.onReady(client).then(function (ui) {
+                            ui.createComponent('product', {
+                                id: [metadata.shopify_id],
+                                node: document.getElementById('product-component-'+metadata.shopify_id),
+                                moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+                                options: {
+                                    "product": {
+                                        "variantId": "all",
+                                        "width": "240px",
+                                        "contents": {
+                                            "img": false,
+                                            "imgWithCarousel": false,
+                                            "title": false,
+                                            "variantTitle": false,
+                                            "price": false,
+                                            "description": false,
+                                            "buttonWithQuantity": false,
+                                            "quantity": false
+                                        },
+                                        "styles": {
+                                            "product": {
+                                                "text-align": "left",
+                                                "@media (min-width: 601px)": {
+                                                    "max-width": "100%",
+                                                    "margin-left": "0",
+                                                    "margin-bottom": "50px"
+                                                }
+                                            },
+                                            "button": {
+                                                "background-color": "#d828c3",
+                                                ":hover": {
+                                                    "background-color": "#c224b0"
+                                                },
+                                                ":focus": {
+                                                    "background-color": "#c224b0"
+                                                }
+                                            },
+                                            "title": {
+                                                "font-size": "26px"
+                                            },
+                                            "price": {
+                                                "font-size": "18px"
+                                            },
+                                            "compareAt": {
+                                                "font-size": "15px"
+                                            }
+                                        }
+                                    },
+                                    "cart": {
+                                        "contents": {
+                                            "button": true
+                                        },
+                                        "styles": {
+                                            "button": {
+                                                "background-color": "#d828c3",
+                                                ":hover": {
+                                                    "background-color": "#c224b0"
+                                                },
+                                                ":focus": {
+                                                    "background-color": "#c224b0"
+                                                }
+                                            },
+                                            "footer": {
+                                                "background-color": "#ffffff"
+                                            }
+                                        }
+                                    },
+                                    "modalProduct": {
+                                        "contents": {
+                                            "img": false,
+                                            "imgWithCarousel": true,
+                                            "variantTitle": false,
+                                            "buttonWithQuantity": true,
+                                            "button": false,
+                                            "quantity": false
+                                        },
+                                        "styles": {
+                                            "product": {
+                                                "@media (min-width: 601px)": {
+                                                    "max-width": "100%",
+                                                    "margin-left": "0px",
+                                                    "margin-bottom": "0px"
+                                                }
+                                            },
+                                            "button": {
+                                                "background-color": "#d828c3",
+                                                ":hover": {
+                                                    "background-color": "#c224b0"
+                                                },
+                                                ":focus": {
+                                                    "background-color": "#c224b0"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "toggle": {
+                                        "styles": {
+                                            "toggle": {
+                                                "background-color": "#d828c3",
+                                                ":hover": {
+                                                    "background-color": "#c224b0"
+                                                },
+                                                ":focus": {
+                                                    "background-color": "#c224b0"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "productSet": {
+                                        "styles": {
+                                            "products": {
+                                                "@media (min-width: 601px)": {
+                                                    "margin-left": "-20px"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                })();
+            }
+
             info.window('open')
             self.data('info', info)
         }

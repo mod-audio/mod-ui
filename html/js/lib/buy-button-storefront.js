@@ -4304,7 +4304,7 @@ var Product = function (_Component) {
 
   Product.prototype.onQuantityIncrement = function onQuantityIncrement(qty) {
     this.updateQuantity(function (prevQty) {
-      return prevQty + qty;
+      return Math.min(1, prevQty + qty);
     });
   };
 
@@ -5708,7 +5708,7 @@ var Cart = function (_Component) {
 
   Cart.prototype.onQuantityIncrement = function onQuantityIncrement(qty, evt, target) {
     this.setQuantity(target, function (prevQty) {
-        return Math.max(1, prevQty + qty);
+      return Math.min(1, prevQty + qty);
     });
   };
 
@@ -5773,6 +5773,9 @@ var Cart = function (_Component) {
       return null;
     }
     this.open();
+    if (_this5.hasItem(variant)) {
+      return null;
+    }
     return this.model.createLineItemsFromVariants({ variant: variant, quantity: quantity }).then(function (cart) {
       _this5.view.render();
       _this5.toggles.forEach(function (toggle) {
@@ -5781,6 +5784,20 @@ var Cart = function (_Component) {
       _this5.view.setFocus();
       return cart;
     });
+  };
+
+  /**
+   * Check if item is already in cart
+   */
+  Cart.prototype.hasItem = function hasItem(variant) {
+    for (var i=0; i<this.model.lineItems.length; i++) {
+      if (this.model.lineItems[i].product_id == variant.productId) {
+        console.log('true')
+        return true;
+      }
+    }
+    console.log('false');
+    return false;
   };
 
   /**

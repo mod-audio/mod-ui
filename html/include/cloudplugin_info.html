@@ -9,7 +9,10 @@
 
                 <div class="plugin-description">
                     <header>
-                        <h1>{{name}}</h1>
+                      <h1>{{name}}</h1>
+                        {{#shopify_id}}
+                        <div id='product-component-{{shopify_id}}'></div>
+                        {{/shopify_id}}
                         {{#installed}}
                         <a class="favorite-button {{favorite_class}}" title="Favorite Plugin"></a>
                         {{/installed}}
