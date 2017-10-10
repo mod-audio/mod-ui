@@ -5713,7 +5713,17 @@ var Cart = function (_Component) {
   };
 
   Cart.prototype.onCheckout = function onCheckout() {
-    this.checkout.open(this.model.checkoutUrl);
+    var checkoutUrl = this.model.checkoutUrl;
+    if (!DEVICE_TOKEN) {
+      // User is about to buy, but we can't identify device and so he won't
+      // get a license automatically.
+      // TODO: How to handle this?
+      alert("Can't identify your device");
+      return;
+    }  else {
+      checkoutUrl += '&attributes[deviceToken]=' + DEVICE_TOKEN;
+    }
+    this.checkout.open(checkoutUrl);
   };
 
   /**

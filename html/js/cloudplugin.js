@@ -46,11 +46,15 @@ JqueryClass('cloudPluginBox', {
             isMainWindow: true,
             windowName: "Plugin Store",
 
-            /* HACK hardcoded shopify IDs for development purposes */
+            /*
+             * TODO get shopify product IDs and device token from cloud
+             * Meanwhile, use hardcoded shopify IDs and device token for development purposes
+            */
             shopifyIdsHack: {
                 'http://code.google.com/p/amsynth/amsynth': 114052890654,
                 'http://moddevices.com/plugins/mda/Ambience': 118603710494
-            }
+            },
+            shopifyDeviceTokenHack: 'TestDeviceToken'
         }, options)
 
         self.data(options)
@@ -722,6 +726,12 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategoryCount', categories)
     },
 
+    getDeviceToken: function(callback) {
+        var self = $(this);
+        DEVICE_TOKEN = self.data('shopifyDeviceTokenHack');
+        callback();
+    },
+
     showPluginInfo: function (plugin) {
         var self = $(this)
         var uri  = escape(plugin.uri)
@@ -841,18 +851,17 @@ JqueryClass('cloudPluginBox', {
             })
 
             if (metadata.shopify_id) {
-                (function () {
-                  var client = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
-
-                  ShopifyBuy.UI.onReady(client).then(function (ui) {
-                    ui.createComponent('product', {
-                      id: [metadata.shopify_id],
-                      node: document.getElementById('product-component-'+metadata.shopify_id),
-                      moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
-                      options: SHOPIFY_PRODUCT_OPTIONS
+                self.cloudPluginBox('getDeviceToken', function() {
+                    var shopifyClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+                    ShopifyBuy.UI.onReady(shopifyClient).then(function (ui) {
+                        ui.createComponent('product', {
+                            id: [metadata.shopify_id],
+                            node: document.getElementById('product-component-'+metadata.shopify_id),
+                            moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+                            options: SHOPIFY_PRODUCT_OPTIONS
+                        });
                     });
-                  });
-                })();
+                })
             }
 
             info.window('open')
