@@ -728,7 +728,9 @@ JqueryClass('cloudPluginBox', {
 
     getDeviceToken: function(callback) {
         var self = $(this);
-        DEVICE_TOKEN = self.data('shopifyDeviceTokenHack');
+        if (!DEVICE_TOKEN) {
+            DEVICE_TOKEN = self.data('shopifyDeviceTokenHack');
+        }
         callback();
     },
 
@@ -852,8 +854,14 @@ JqueryClass('cloudPluginBox', {
 
             if (metadata.shopify_id) {
                 self.cloudPluginBox('getDeviceToken', function() {
-                    var shopifyClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
-                    ShopifyBuy.UI.onReady(shopifyClient).then(function (ui) {
+                    var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+
+                    shopClient.fetchProduct(metadata.shopify_id)
+                        .then(function(product) {
+                            info.find('#product-price-'+metadata.shopify_id).html('€'+product.selectedVariant.price)
+                        });
+
+                    ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
                         ui.createComponent('product', {
                             id: [metadata.shopify_id],
                             node: document.getElementById('product-component-'+metadata.shopify_id),
