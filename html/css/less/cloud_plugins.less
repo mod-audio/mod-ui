@@ -240,6 +240,7 @@
 }
 
 .plugin-container {
+  overflow: hidden;
   .status-container {
     position: absolute;
     top: 0;
@@ -271,6 +272,32 @@
       content: "new version";
     }
   }
+  .price {
+      background-color: @brand-success;
+      border: 1px solid @brand-success;
+      &:before {
+          content: "€ ";
+      }
+      position: absolute;
+      top: 9px;
+      left: -25px;
+      padding: 3px 0;
+      transform: rotate(-45deg);
+      min-width: 108px;
+      text-align: center;
+  }
+  .licensed {
+      background-color: @brand-success;
+      border: 1px solid @brand-success;
+      &:before {
+          content: "LICENSED";
+      }
+      position: absolute;
+      top: 15px;
+      left: -25px;
+      padding: 3px 27px;
+      transform: rotate(-45deg);
+  }
   .status.unstable {
     border: 1px solid #FF2927;
     background-color: #FF2927;
@@ -278,10 +305,9 @@
       content: "unstable";
     }
   }
-  .status.demo {
-    border: 1px solid #235789;
-    background-color: #235789;
-    color: #FFFFFF;
+  .demo {
+    border: 1px solid #FF2927;
+    background-color: #FF2927;
     &:after {
       content: "demo";
     }

@@ -59,6 +59,7 @@ from mod.utils import (init as lv2_init,
                        set_truebypass_value,
                        set_process_name,
                        reset_xruns)
+from mod.plugin_licenses import get_plugins_licenses
 
 try:
     from mod.communication import token
@@ -634,6 +635,7 @@ class EffectBulk(JsonRequestHandler):
 class EffectList(JsonRequestHandler):
     def get(self):
         data = get_all_plugins()
+        data = get_plugins_licenses(data)
         self.write(data)
 
 class SDKEffectInstaller(EffectInstaller):

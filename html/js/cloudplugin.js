@@ -54,6 +54,9 @@ JqueryClass('cloudPluginBox', {
                 'http://code.google.com/p/amsynth/amsynth': 114052890654,
                 'http://moddevices.com/plugins/mda/Ambience': 118603710494
             },
+            shopifyLicensesHack: {
+                'http://code.google.com/p/amsynth/amsynth': true
+            },
             shopifyDeviceTokenHack: 'TestDeviceToken'
         }, options)
 
@@ -207,6 +210,9 @@ JqueryClass('cloudPluginBox', {
             cloudReached = false
 
         renderResults = function () {
+            if (results.local == null || results.cloud == null || results.shopify == null)
+                return
+
             var plugins = []
 
             for (var i in results.cloud) {
@@ -214,6 +220,18 @@ JqueryClass('cloudPluginBox', {
                 lplugin = results.local[cplugin.uri]
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
+                cplugin.shopify_id = self.data('shopifyIdsHack')[cplugin.uri];
+                cplugin.licensed = self.data('shopifyLicensesHack')[cplugin.uri];
+
+                if (cplugin.shopify_id) {
+                    if (!cplugin.licensed)
+                        cplugin.price = results.shopify[cplugin.shopify_id];
+                    if (lplugin && !cplugin.licensed)
+                        cplugin.demo = true
+                    if (lplugin && cplugin.licensed && !lplugin.licensed) {
+                        // TODO get license file from cloud and install locally
+                    }
+                }
 
                 if (lplugin) {
                     if (!lplugin.installedVersion) {
@@ -270,6 +288,17 @@ JqueryClass('cloudPluginBox', {
             }
         }
 
+        // get list of shopify commercial plugins
+        var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+        shopClient.fetchAllProducts().then(function(products) {
+            results.shopify = {};
+            for (var i in products) {
+                results.shopify[products[i].id] = products[i].selectedVariant.price;
+            }
+            renderResults();
+        });
+        
+
         // cloud search
         $.ajax({
             method: 'GET',
@@ -278,15 +307,11 @@ JqueryClass('cloudPluginBox', {
             success: function (plugins) {
                 cloudReached = true
                 results.cloud = plugins
-                if (results.local != null) {
-                    renderResults()
-                }
+                renderResults()
             },
             error: function () {
                 results.cloud = []
-                if (results.local != null) {
-                    renderResults()
-                }
+                renderResults()
             },
             cache: false,
             dataType: 'json'
@@ -309,8 +334,7 @@ JqueryClass('cloudPluginBox', {
             }
 
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
-            if (results.cloud != null)
-                renderResults()
+            renderResults()
         }
         else
         {
@@ -327,8 +351,7 @@ JqueryClass('cloudPluginBox', {
                     desktop.resetPluginIndexer(allplugins)
 
                     results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
-                    if (results.cloud != null)
-                        renderResults()
+                    renderResults()
                 },
                 cache: false,
                 dataType: 'json'
@@ -363,6 +386,9 @@ JqueryClass('cloudPluginBox', {
                         lplugin.status = 'installed'
                     } else {
                         lplugin.status = 'outdated'
+                    }
+                    if (cplugin.shopify_id && !lplugin.licensed) {
+                        lplugin.demo = true
                     }
                 } else {
                     lplugin.latestVersion = null
@@ -565,7 +591,6 @@ JqueryClass('cloudPluginBox', {
         }
         var plugin_data = {
             uri: uri,
-            shopify_id: self.data('shopifyIdsHack')[unescape(uri)],
             screenshot_href: plugin.screenshot_href,
             has_comment: has_comment,
             comment: comment,
@@ -573,7 +598,9 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            demo: !!plugin.demo // FIXME
+            demo: !!plugin.demo,
+            price: plugin.price,
+            licensed: plugin.licensed
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))

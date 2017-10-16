@@ -5750,6 +5750,9 @@ button.close {
 .cloud-plugins .cloud-plugin .actions span.duplicate {
   margin: 0 6px;
 }
+.plugin-container {
+  overflow: hidden;
+}
 .plugin-container .status-container {
   position: absolute;
   top: 0;
@@ -5781,6 +5784,32 @@ button.close {
 .plugin-container .status.outdated:after {
   content: "new version";
 }
+.plugin-container .price {
+  background-color: #883996;
+  border: 1px solid #883996;
+  position: absolute;
+  top: 9px;
+  left: -25px;
+  padding: 3px 0;
+  transform: rotate(-45deg);
+  min-width: 108px;
+  text-align: center;
+}
+.plugin-container .price:before {
+  content: "€ ";
+}
+.plugin-container .licensed {
+  background-color: #883996;
+  border: 1px solid #883996;
+  position: absolute;
+  top: 15px;
+  left: -25px;
+  padding: 3px 27px;
+  transform: rotate(-45deg);
+}
+.plugin-container .licensed:before {
+  content: "LICENSED";
+}
 .plugin-container .status.unstable {
   border: 1px solid #FF2927;
   background-color: #FF2927;
@@ -5788,12 +5817,11 @@ button.close {
 .plugin-container .status.unstable:after {
   content: "unstable";
 }
-.plugin-container .status.demo {
-  border: 1px solid #235789;
-  background-color: #235789;
-  color: #FFFFFF;
+.plugin-container .demo {
+  border: 1px solid #FF2927;
+  background-color: #FF2927;
 }
-.plugin-container .status.demo:after {
+.plugin-container .demo:after {
   content: "demo";
 }
 #bank-library {
