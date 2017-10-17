@@ -5824,6 +5824,48 @@ button.close {
 .plugin-container .demo:after {
   content: "demo";
 }
+.plugin-container .description-price-container {
+  position: absolute;
+  top: 43px;
+  left: 41px;
+  overflow: hidden;
+  height: 180px;
+}
+.plugin-container .description-price-container .description-price {
+  background-color: #883996;
+  border: 1px solid #883996;
+  position: relative;
+  top: 34px;
+  left: -57px;
+  padding: 3px 0;
+  transform: rotate(-45deg);
+  min-width: 250px;
+  text-align: center;
+  font-size: 34px;
+  z-index: 1;
+}
+.plugin-container .description-price-container .description-price:before {
+  content: "€ ";
+}
+.plugin-container .description-price-container .description-licensed {
+  background-color: #883996;
+  border: 1px solid #883996;
+  position: relative;
+  top: 34px;
+  left: -57px;
+  padding: 3px 0;
+  transform: rotate(-45deg);
+  min-width: 250px;
+  text-align: center;
+  font-size: 34px;
+  z-index: 1;
+}
+.plugin-container .description-price-container .description-licensed:before {
+  content: "LICENSED";
+}
+.buy-button {
+  margin-top: -20px;
+}
 #bank-library {
   bottom: 45px;
   left: 0;

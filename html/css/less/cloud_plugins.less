@@ -312,4 +312,47 @@
       content: "demo";
     }
   }
+  .description-price-container {
+      position: absolute;
+      top: 43px;
+      left: 41px;
+      overflow: hidden;
+      height: 180px;
+      .description-price {
+          background-color: @brand-success;
+          border: 1px solid @brand-success;
+          &:before {
+              content: "€ ";
+          }
+          position: relative;
+          top: 34px;
+          left: -57px;
+          padding: 3px 0;
+          transform: rotate(-45deg);
+          min-width: 250px;
+          text-align: center;
+          font-size: 34px;
+          z-index: 1;
+      }
+      .description-licensed {
+          background-color: @brand-success;
+          border: 1px solid @brand-success;
+          &:before {
+              content: "LICENSED";
+          }
+          position: relative;
+          top: 34px;
+          left: -57px;
+          padding: 3px 0;
+          transform: rotate(-45deg);
+          min-width: 250px;
+          text-align: center;
+          font-size: 34px;
+          z-index: 1;
+      }
+  }
+}
+
+.buy-button {
+    margin-top: -20px;
 }

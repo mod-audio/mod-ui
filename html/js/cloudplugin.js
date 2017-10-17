@@ -795,6 +795,7 @@ JqueryClass('cloudPluginBox', {
             var metadata = {
                 author: plugin.author,
                 shopify_id: self.data('shopifyIdsHack')[unescape(plugin.uri)],
+                price: plugin.price,
                 uri: plugin.uri,
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
@@ -807,7 +808,8 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                demo  : !!plugin.demo, // FIXME
+                demo  : !!plugin.demo,
+                licensed: !!plugin.licensed,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
@@ -879,15 +881,9 @@ JqueryClass('cloudPluginBox', {
                 windowName: "Cloud Plugin Info"
             })
 
-            if (metadata.shopify_id) {
+            if (metadata.shopify_id && !metadata.licensed) {
                 self.cloudPluginBox('getDeviceToken', function() {
                     var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
-
-                    shopClient.fetchProduct(metadata.shopify_id)
-                        .then(function(product) {
-                            info.find('#product-price-'+metadata.shopify_id).html('€'+product.selectedVariant.price)
-                        });
-
                     ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
                         ui.createComponent('product', {
                             id: [metadata.shopify_id],
