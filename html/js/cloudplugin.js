@@ -753,10 +753,37 @@ JqueryClass('cloudPluginBox', {
 
     getDeviceToken: function(callback) {
         var self = $(this);
-        if (!DEVICE_TOKEN) {
-            DEVICE_TOKEN = 'TODO FIXME'
+        if (DEVICE_TOKEN)
+            return callback();
+
+        var getToken = function() {
+            $.ajax({
+                url: SITEURL + '/licenses/requests/',
+                method: 'GET',
+                headers: {
+                    'Authorization' : 'MOD ' + desktop.cloudAccessToken
+                },
+                success: function(result) {
+                    DEVICE_TOKEN = result.id
+                    callback();
+                },
+                error: function(result) {
+                    new Notification('error', "Cannot get transaction authorization from Cloud, please contact support", 10000);
+                }
+            });
         }
-        callback();
+
+        if (desktop.cloudAccessToken == null) {
+            desktop.authenticateDevice(function (ok) {
+                if (ok && desktop.cloudAccessToken != null) {
+                    getToken()
+                } else {
+                    new Notification('error', "Can't authenticate with Cloud to access plugin store", 5000)
+                }
+            })
+        } else {
+            getToken();
+        }
     },
 
     showPluginInfo: function (plugin) {
