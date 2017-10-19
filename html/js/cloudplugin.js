@@ -46,18 +46,6 @@ JqueryClass('cloudPluginBox', {
             isMainWindow: true,
             windowName: "Plugin Store",
 
-            /*
-             * TODO get shopify product IDs and device token from cloud
-             * Meanwhile, use hardcoded shopify IDs and device token for development purposes
-            */
-            shopifyIdsHack: {
-                'http://code.google.com/p/amsynth/amsynth': 114052890654,
-                'http://moddevices.com/plugins/mda/Ambience': 118603710494
-            },
-            shopifyLicensesHack: {
-                'http://code.google.com/p/amsynth/amsynth': true
-            },
-            shopifyDeviceTokenHack: 'TestDeviceToken'
         }, options)
 
         self.data(options)
@@ -214,18 +202,22 @@ JqueryClass('cloudPluginBox', {
                 return
 
             var plugins = []
-
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
-                cplugin.shopify_id = self.data('shopifyIdsHack')[cplugin.uri];
-                cplugin.licensed = self.data('shopifyLicensesHack')[cplugin.uri];
+
+                if (results.shopify[cplugin.uri] && cplugin.mod_license == 'paid_perpetual') {
+                    cplugin.shopify_id = results.shopify[cplugin.uri].id
+                    // cplugin.licensed = TODO
+                    if (!cplugin.licensed)
+                        cplugin.price = results.shopify[cplugin.uri].price
+                }
 
                 if (cplugin.shopify_id) {
                     if (!cplugin.licensed)
-                        cplugin.price = results.shopify[cplugin.shopify_id];
+                        cplugin.price = results.shopify[cplugin.uri].price;
                     if (lplugin && !cplugin.licensed)
                         cplugin.demo = true
                     if (lplugin && cplugin.licensed && !lplugin.licensed) {
@@ -293,7 +285,11 @@ JqueryClass('cloudPluginBox', {
         shopClient.fetchAllProducts().then(function(products) {
             results.shopify = {};
             for (var i in products) {
-                results.shopify[products[i].id] = products[i].selectedVariant.price;
+                var uri = products[i].selectedVariant.attrs.variant.sku;
+                results.shopify[uri] = {
+                    id: products[i].id,
+                    price: products[i].selectedVariant.price
+                }
             }
             renderResults();
         });
@@ -600,7 +596,9 @@ JqueryClass('cloudPluginBox', {
             stable: !!(plugin.stable || !cloudReached),
             demo: !!plugin.demo,
             price: plugin.price,
-            licensed: plugin.licensed
+            // TODO licensed can come from cloud or MOD.
+            // We need to assure data type consistency from both sources
+            //licensed: plugin.licensed
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
@@ -756,7 +754,7 @@ JqueryClass('cloudPluginBox', {
     getDeviceToken: function(callback) {
         var self = $(this);
         if (!DEVICE_TOKEN) {
-            DEVICE_TOKEN = self.data('shopifyDeviceTokenHack');
+            DEVICE_TOKEN = 'TODO FIXME'
         }
         callback();
     },
@@ -794,8 +792,6 @@ JqueryClass('cloudPluginBox', {
 
             var metadata = {
                 author: plugin.author,
-                shopify_id: self.data('shopifyIdsHack')[unescape(plugin.uri)],
-                price: plugin.price,
                 uri: plugin.uri,
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
@@ -808,10 +804,14 @@ JqueryClass('cloudPluginBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                demo  : !!plugin.demo,
-                licensed: !!plugin.licensed,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                shopify_id: plugin.shopify_id,
+                price: plugin.price,
+                demo  : !!plugin.demo,
+                // TODO licensed can come from cloud or MOD.
+                // We need to assure data type consistency from both sources
+                //licensed: plugin.licensed
             };
 
             var info = self.data('info')
