@@ -2,3 +2,4 @@ Pillow==2.8.1
 pyserial==2.7
 pystache==0.5.4
 tornado==4.1
+http://github.com/dlitz/pycrypto/tarball/v2.7a1#egg=pycrypto-2.7a1
