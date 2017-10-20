@@ -43,6 +43,7 @@ from mod.settings import (APP, LOG,
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
+from mod.licensing import check_missing_licenses, save_license
 from mod.utils import (init as lv2_init,
                        cleanup as lv2_cleanup,
                        get_plugin_list,
@@ -635,6 +636,19 @@ class EffectList(JsonRequestHandler):
     def get(self):
         data = get_all_plugins()
         self.write(data)
+
+class EffectLicenseList(JsonRequestHandler):
+    def post(self):
+        # Receives a list of available licenses from cloud
+        # and returns a list of licenses that are missing
+        licenses = json.loads(self.request.body.decode())
+        missing = check_missing_licenses(licenses)
+        self.write(missing)
+
+class EffectLicenseSave(JsonRequestHandler):
+    def post(self, license_id):
+        save_license(license_id, self.request.body)
+        self.write(True)
 
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
@@ -1755,6 +1769,10 @@ application = web.Application(
             # connections
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
+
+            # plugin licensing
+            (r"/effect/licenses/list", EffectLicenseList),
+            (r"/effect/licenses/save/(.*)", EffectLicenseSave),
 
             (r"/package/uninstall", PackageUninstall),
 

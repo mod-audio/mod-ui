@@ -390,6 +390,8 @@ function Desktop(elements) {
                                     return;
                                 }
 
+                                self.licenses = new LicenseManager(resp.license_info);
+
                                 if (resp['upgrade']) {
                                     $.ajax({
                                         method: 'GET',
@@ -421,6 +423,11 @@ function Desktop(elements) {
                                                 headers: { 'Authorization' : 'MOD ' + resp.access_token }
                                             }
                                         }
+                                        self.licenses.updateLicenses(function() {
+                                            // TODO reload demo plugin rendering
+                                            console.log('licenses updated');
+                                        })
+
                                         callback(true, opts);
                                     },
                                     error: function () {
