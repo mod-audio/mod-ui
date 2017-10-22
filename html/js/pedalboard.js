@@ -287,12 +287,32 @@ JqueryClass('pedalboard', {
                 if (ui.helper.consumed)
                     return // TODO Check if this really necessary
                 var scale = self.data('scale')
-                ui.draggable.trigger('pluginAdded', {
-                    x: (ui.helper.offset().left - self.offset().left) / scale,
-                    y: (ui.helper.offset().top - self.offset().top) / scale,
-                    width: ui.helper.children().width(),
-                    height: ui.helper.children().height()
-                })
+                var offset = ui.helper.offset()
+                var x = (offset.left - self.offset().left) / scale;
+                var y = (offset.top - self.offset().top) / scale;
+                var w = ui.helper.children().width();
+                var h = ui.helper.children().height();
+
+                // Schedule the addition of plugin, to a moment after all events related to this
+                // one have happened, so that we can determine if this is a new plugin or a replacement
+                // of an existing one.
+                setTimeout(function() {
+                    var replacedInstance = self.data('replacedInstance');
+                    if (replacedInstance) {
+                        self.data('replacedInstance', null);
+                        var instance = replacedInstance[0];
+                        var icon = replacedInstance[1];
+                        x = icon.offset().left / scale;
+                        y = (icon.offset().top - 45 ) / scale;
+                        self.pedalboard('removePlugin', instance);
+                    }
+                    ui.draggable.trigger('pluginAdded', {
+                        x: x,
+                        y: y,
+                        width: w,
+                        height: h
+                    })
+                }, 1);
             }
         })
 
@@ -1375,13 +1395,35 @@ JqueryClass('pedalboard', {
                 windowName: "Plugin Settings",
                 windowManager: self.data('windowManager')
             }).appendTo($('body'))
+
+            var dropContainer = $('<div>');
             icon.css({
                 'z-index': self.data('z_index'),
                 position: 'absolute',
                 left: x,
                 top: y
-            }).appendTo(self)
+            }).appendTo(dropContainer)
+            dropContainer.appendTo(self)
             self.data('z_index', self.data('z_index')+1)
+
+            // Make the plugin replaceable, by dropping a plugin
+            // over it
+            icon.droppable({
+                drop: function(event, ui) {
+                    icon.css('border', '0');
+                    icon.css('margin', '0');
+                    self.data('replacedInstance', [instance, icon]);
+                },
+                over: function(event, ui) {
+                    icon.css('border', '10px solid red');
+                    icon.css('margin', '-10px 0 0 -10px');
+                },
+                out: function(event, ui) {
+                    icon.css('border', '0');
+                    icon.css('margin', '0');
+                }
+            })
+
             if (renderCallback)
                 renderCallback()
         })
