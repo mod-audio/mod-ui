@@ -2302,7 +2302,6 @@ JqueryClass('pedalboard', {
             self.pedalboard('connect', jack, newInput);
         })
         manager.iterateOutputs(fromInstance, function(input, output) {
-            console.log('aqui');
             // find new output to connect this input from
             var outputType = $('[mod-port="'+output+'"]').attr('mod-role');
             var newOutput = $('.mod-pedal[mod-instance="'+toInstance+'"] [mod-role="'+outputType+'"]');
