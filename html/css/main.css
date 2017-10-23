@@ -5678,6 +5678,21 @@ button.close {
   left: 10px;
   background-position: 0% 50%;
 }
+.cloud-plugins .cloud-plugin:hover div.demo-plugin {
+  opacity: 0;
+}
+.cloud-plugins .cloud-plugin:hover span.price {
+  position: absolute;
+  top: 25px;
+  margin-left: 98px;
+  padding: 3px 0;
+  transform: rotate(0deg) scale(1.3);
+  width: 80px;
+}
+.cloud-plugins .cloud-plugin:hover span.price-container {
+  margin-left: 170px;
+  width: 200px;
+}
 .cloud-plugins .cloud-plugin figure {
   height: 100px;
   position: absolute;
@@ -5688,6 +5703,12 @@ button.close {
   background-position: 50% 50%;
   background-repeat: no-repeat;
   margin: 0;
+  transition: all 0.33s linear;
+}
+.cloud-plugins .cloud-plugin span.price {
+  transition: all 0.33s linear;
+}
+.cloud-plugins .cloud-plugin span.price-container {
   transition: all 0.33s linear;
 }
 .cloud-plugins .cloud-plugin .description {
@@ -5750,9 +5771,6 @@ button.close {
 .cloud-plugins .cloud-plugin .actions span.duplicate {
   margin: 0 6px;
 }
-.plugin-container {
-  overflow: hidden;
-}
 .plugin-container .status-container {
   position: absolute;
   top: 0;
@@ -5783,6 +5801,14 @@ button.close {
 }
 .plugin-container .status.outdated:after {
   content: "new version";
+}
+.plugin-container .price-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 75px;
+  height: 75px;
+  overflow: hidden;
 }
 .plugin-container .price {
   background-color: #883996;
