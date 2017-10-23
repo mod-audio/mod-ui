@@ -9,9 +9,9 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="218.41241mm"
-   height="219.76013mm"
-   viewBox="0 0 773.90225 778.67763"
+   width="263.27124mm"
+   height="263.27124mm"
+   viewBox="0 0 932.85082 932.85085"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
@@ -25,9 +25,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.12374369"
-     inkscape:cx="1301.3846"
-     inkscape:cy="240.5601"
+     inkscape:zoom="0.35"
+     inkscape:cx="428.81341"
+     inkscape:cy="481.46843"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -56,21 +56,32 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-2.8256185,-23.906414)">
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:277.52258301px;line-height:125%;font-family:'Arial Black';-inkscape-font-specification:'Arial Black, ';letter-spacing:0px;word-spacing:0px;opacity:0.50499998;fill:#e6e6e6;fill-opacity:1;stroke:#000000;stroke-width:14.43959904;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       x="-479.96951"
-       y="667.04309"
-       id="text4136"
-       sodipodi:linespacing="125%"
-       transform="matrix(0.7035519,-0.71064388,0.71064388,0.7035519,0,0)"
-       inkscape:export-xdpi="46.18"
-       inkscape:export-ydpi="46.18"><tspan
-         sodipodi:role="line"
-         id="tspan4138"
-         x="-479.96951"
-         y="667.04309"
-         style="stroke-width:14.43959904">DEMO</tspan></text>
+     transform="translate(4490.0409,234.40852)">
+    <g
+       id="g4254"
+       transform="matrix(0.70710678,-0.70710678,0.70710678,0.70710678,-1342.5504,-2777.1697)">
+      <rect
+         y="80.988075"
+         x="-4513.3203"
+         height="302.05768"
+         width="979.40948"
+         id="rect4234"
+         style="color:#000000;display:inline;overflow:visible;visibility:visible;opacity:0.50499998;fill:#e6e6e6;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:18.89154625;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate" />
+      <text
+         inkscape:export-ydpi="46.18"
+         inkscape:export-xdpi="46.18"
+         transform="matrix(0.99999346,-0.0036169,0.0036169,0.99999346,0,0)"
+         sodipodi:linespacing="125%"
+         id="text4136-7"
+         y="317.20978"
+         x="-4483.3623"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:277.52258301px;line-height:125%;font-family:'Arial Black';-inkscape-font-specification:'Arial Black, ';letter-spacing:0px;word-spacing:0px;opacity:0.50499998;fill:#e6e6e6;fill-opacity:1;stroke:#000000;stroke-width:14.43959904;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="stroke-width:14.43959904"
+           y="317.20978"
+           x="-4483.3623"
+           id="tspan4138-5"
+           sodipodi:role="line">DEMO</tspan></text>
+    </g>
   </g>
 </svg>
