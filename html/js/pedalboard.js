@@ -1282,7 +1282,7 @@ JqueryClass('pedalboard', {
 
             if (pluginData.licensed < 0) {
                 // This is a DEMO plugin
-                icon.find('[mod-role="drag-handle"]').addClass('demo-plugin');
+                icon.find('[mod-role="drag-handle"]').addClass('demo-plugin').addClass('demo-plugin-light');
             }
 
             self.data('plugins')[instance] = icon
