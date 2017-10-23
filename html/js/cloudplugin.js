@@ -751,41 +751,6 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategoryCount', categories)
     },
 
-    getDeviceToken: function(callback) {
-        var self = $(this);
-        if (DEVICE_TOKEN)
-            return callback();
-
-        var getToken = function() {
-            $.ajax({
-                url: SITEURL + '/licenses/requests/',
-                method: 'GET',
-                headers: {
-                    'Authorization' : 'MOD ' + desktop.cloudAccessToken
-                },
-                success: function(result) {
-                    DEVICE_TOKEN = result.id
-                    callback();
-                },
-                error: function(result) {
-                    new Notification('error', "Cannot get transaction authorization from Cloud, please contact support", 10000);
-                }
-            });
-        }
-
-        if (desktop.cloudAccessToken == null) {
-            desktop.authenticateDevice(function (ok) {
-                if (ok && desktop.cloudAccessToken != null) {
-                    getToken()
-                } else {
-                    new Notification('error', "Can't authenticate with Cloud to access plugin store", 5000)
-                }
-            })
-        } else {
-            getToken();
-        }
-    },
-
     showPluginInfo: function (plugin) {
         var self = $(this)
         var uri  = escape(plugin.uri)
@@ -909,17 +874,15 @@ JqueryClass('cloudPluginBox', {
             })
 
             if (metadata.shopify_id && !metadata.licensed) {
-                self.cloudPluginBox('getDeviceToken', function() {
-                    var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
-                    ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
-                        ui.createComponent('product', {
-                            id: [metadata.shopify_id],
-                            node: document.getElementById('product-component-'+metadata.shopify_id),
-                            moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
-                            options: SHOPIFY_PRODUCT_OPTIONS
-                        });
+                var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+                ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+                    ui.createComponent('product', {
+                        id: [metadata.shopify_id],
+                        node: document.getElementById('product-component-'+metadata.shopify_id),
+                        moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+                        options: SHOPIFY_PRODUCT_OPTIONS
                     });
-                })
+                });
             }
 
             info.window('open')

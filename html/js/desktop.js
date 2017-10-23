@@ -1728,6 +1728,38 @@ Desktop.prototype.openPresetSaveWindow = function (name, callback) {
         })
 }
 
+Desktop.prototype.getDeviceShopToken = function(callback) {
+    var self = this;
+
+    var getToken = function() {
+        $.ajax({
+            url: SITEURL + '/licenses/requests/',
+            method: 'GET',
+            headers: {
+                'Authorization' : 'MOD ' + self.cloudAccessToken
+            },
+            success: function(result) {
+                callback(result.id);
+            },
+            error: function(result) {
+                new Notification('error', "Cannot get transaction authorization from Cloud, please contact support", 10000);
+            }
+        });
+    }
+
+    if (self.cloudAccessToken == null) {
+        desktop.authenticateDevice(function (ok) {
+            if (ok && self.cloudAccessToken != null) {
+                getToken()
+            } else {
+                new Notification('error', "Can't authenticate with Cloud to access plugin store", 5000)
+            }
+        })
+    } else {
+        getToken();
+    }
+}
+
 JqueryClass('saveBox', {
     init: function (options) {
         var self = $(this)
