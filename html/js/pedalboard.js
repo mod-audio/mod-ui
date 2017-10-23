@@ -2299,7 +2299,7 @@ JqueryClass('pedalboard', {
             newInput = $(newInput[0]);
             // find a spare jack
             var jack = $('[mod-port="'+output+'"]').find('[mod-role="output-jack"]')
-            self.pedalboard('connect', jack, newInput);
+            self.pedalboard('do_connect', jack, newInput);
         })
         manager.iterateOutputs(fromInstance, function(input, output) {
             // find new output to connect this input from
@@ -2309,7 +2309,7 @@ JqueryClass('pedalboard', {
             newOutput = $(newOutput[0]);
             // find a spare jack
             var jack = newOutput.find('[mod-role="output-jack"]')
-            self.pedalboard('connect', jack, $('[mod-port="'+input+'"]'));
+            self.pedalboard('do_connect', jack, $('[mod-port="'+input+'"]'));
         })
     },
 
