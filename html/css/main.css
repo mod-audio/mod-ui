@@ -7232,7 +7232,7 @@ header#pedalboard-actions {
 #mod-devices-window .progressbar,
 #mod-upgrade .progressbar {
   background-color: #8888ff;
-  height: 20px;
+  height: 18px;
 }
 #mod-devices-window {
   max-width: 600px;
@@ -7995,6 +7995,10 @@ header#pedalboard-actions {
   right: 0;
   top: 0;
   z-index: 20;
+}
+.demo-plugin {
+  background: url("/img/demo.svg") no-repeat center center;
+  background-size: contain;
 }
 .actions {
   z-index: 20;

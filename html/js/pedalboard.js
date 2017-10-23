@@ -1280,6 +1280,11 @@ JqueryClass('pedalboard', {
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
 
+            if (pluginData.licensed < 0) {
+                // This is a DEMO plugin
+                icon.find('[mod-role="drag-handle"]').addClass('demo-plugin');
+            }
+
             self.data('plugins')[instance] = icon
 
             if (! skipModified) {
