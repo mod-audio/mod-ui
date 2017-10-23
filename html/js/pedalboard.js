@@ -299,12 +299,9 @@ JqueryClass('pedalboard', {
                 setTimeout(function() {
                     var replacedInstance = self.data('replacedInstance');
                     if (replacedInstance) {
-                        self.data('replacedInstance', null);
-                        var instance = replacedInstance[0];
                         var icon = replacedInstance[1];
                         x = icon.offset().left / scale;
                         y = (icon.offset().top - 45 ) / scale;
-                        self.pedalboard('removePlugin', instance);
                     }
                     ui.draggable.trigger('pluginAdded', {
                         x: x,
@@ -1424,6 +1421,15 @@ JqueryClass('pedalboard', {
                 }
             })
 
+            // Check if this plugin addition is replacing an existing instance
+            var replacedInstance = self.data('replacedInstance');
+            if (replacedInstance) {
+                self.data('replacedInstance', null);
+                replacedInstance = replacedInstance[0];
+                self.pedalboard('migrateConnections', replacedInstance, instance);
+                self.pedalboard('removePlugin', replacedInstance);
+            }
+
             if (renderCallback)
                 renderCallback()
         })
@@ -2282,6 +2288,32 @@ JqueryClass('pedalboard', {
         return self.data('connectionManager').connected(output.attr("mod-port"), input.attr("mod-port"))
     },
 
+    migrateConnections: function(fromInstance, toInstance) {
+        var self = $(this);
+        var manager = self.data('connectionManager');
+        manager.iterateInputs(fromInstance, function(input, output) {
+            // find new input to connect this output
+            var inputType = $('[mod-port="'+input+'"]').attr('mod-role');
+            var newInput = $('.mod-pedal[mod-instance="'+toInstance+'"] [mod-role="'+inputType+'"]');
+            // TODO consider that a connection might be to different input
+            newInput = $(newInput[0]);
+            // find a spare jack
+            var jack = $('[mod-port="'+output+'"]').find('[mod-role="output-jack"]')
+            self.pedalboard('connect', jack, newInput);
+        })
+        manager.iterateOutputs(fromInstance, function(input, output) {
+            console.log('aqui');
+            // find new output to connect this input from
+            var outputType = $('[mod-port="'+output+'"]').attr('mod-role');
+            var newOutput = $('.mod-pedal[mod-instance="'+toInstance+'"] [mod-role="'+outputType+'"]');
+            // TODO consider that a connection might be from different output
+            newOutput = $(newOutput[0]);
+            // find a spare jack
+            var jack = newOutput.find('[mod-role="output-jack"]')
+            self.pedalboard('connect', jack, $('[mod-port="'+input+'"]'));
+        })
+    },
+
     // Adjust layout of all jacks connected to this input to fit inside it
     packJacks: function (input) {
         var self = $(this)
@@ -2460,6 +2492,24 @@ function ConnectionManager() {
             for (var key1 in self.destByInstanceIndex[instance])
                 for (var key2 in self.destByInstanceIndex[instance][key1])
                     callback(self.destByInstanceIndex[instance][key1][key2])
+    }
+
+    // Execute callback for each connection going in,
+    // passing output and input ports as parameter
+    this.iterateInputs = function(instance, callback) {
+        if (self.destByInstanceIndex[instance] != null)
+            for (var key1 in self.destByInstanceIndex[instance])
+                for (var key2 in self.destByInstanceIndex[instance][key1])
+                    callback(key1, key2);
+    }
+
+    // Execute callback for each connection going out,
+    // passing output input ports as parameter
+    this.iterateOutputs = function(instance, callback) {
+        if (self.origByInstanceIndex[instance] != null)
+            for (var key1 in self.origByInstanceIndex[instance])
+                for (var key2 in self.origByInstanceIndex[instance][key1])
+                    callback(key2, key1);
     }
 
     this.removeInstance = function (instance) {
