@@ -14,6 +14,9 @@
         <div class="row-fluid clearfix">
             <div class="span10 offset1 clearfix">
                 <figure class="screenshot">
+                  {{#demo}}
+                    <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
+                  {{/demo}}
                     <img src="{{screenshot_href}}">
                 </figure>
 
@@ -23,14 +26,6 @@
                         {{#installed}}
                         <a class="favorite-button {{favorite_class}}" title="Favorite Plugin"></a>
                         {{/installed}}
-                        {{#demo}}
-                        <div style="margin-bottom: 5px;">
-                            <span class="status demo"></span>
-                            <span style="display: block;">
-                                This plugin is for demo purposes only and shall not be used live or in a studio.
-                            </span>
-                        </div>
-                        {{/demo}}
                         <br/>
                         <p>
                             <b>URI:</b> {{uri}}<br/>

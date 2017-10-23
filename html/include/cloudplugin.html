@@ -1,5 +1,9 @@
 <div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="{{uri}}">
-    <figure class="thumb" style="background-image: url('{{screenshot_href}}');"></figure>
+    <figure class="thumb" style="background-image: url('{{screenshot_href}}');">
+      {{#demo}}
+        <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
+      {{/demo}}
+    </figure>
     <div class="description">
         <span class="title">{{label}}</span>
         <span class="author">{{brand}}</span>
@@ -19,8 +23,5 @@
         {{#licensed}}
         <span class="licensed"></span>
         {{/licensed}}
-        {{#demo}}
-        <span class="status demo" title="This plugin is for demo purposes only and shall not be used live or in a studio"></span>
-        {{/demo}}
     </div>
 </div>
