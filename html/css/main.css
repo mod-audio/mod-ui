@@ -5852,8 +5852,8 @@ button.close {
 }
 .plugin-container .description-price-container {
   position: absolute;
-  top: 43px;
-  left: 41px;
+  top: -17px;
+  left: -17px;
   overflow: hidden;
   height: 180px;
 }
@@ -5868,7 +5868,7 @@ button.close {
   min-width: 250px;
   text-align: center;
   font-size: 34px;
-  z-index: 1;
+  z-index: 11;
 }
 .plugin-container .description-price-container .description-price:before {
   content: "€ ";
@@ -7578,6 +7578,9 @@ header#pedalboard-actions {
   padding: 15px;
   border: 2px solid #333;
 }
+.plugin-info .box .row-fluid {
+  position: relative;
+}
 .plugin-info .close {
   color: #fff;
   font-size: 12px;
@@ -8026,6 +8029,7 @@ header#pedalboard-actions {
   background: url("/img/trial.svg") no-repeat center center;
   background-size: contain;
   opacity: 0.4;
+  z-index: 11 !important;
 }
 .demo-mask {
   width: 100%;

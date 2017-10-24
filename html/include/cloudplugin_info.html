@@ -1,17 +1,17 @@
 <div class="js-close plugin-info plugin-container">
-    {{#price}}
-    <div class="description-price-container">
-        <div class="description-price">{{price}}</div>
-    </div>
-    {{/price}}
     {{#licensed}}
     <div class="description-price-container">
         <div class="description-licensed"></div>
     </div>
     {{/licensed}}
     <div class="container box">
-        <span class="js-close alignright btn btn-mini btn-danger">Close</span>
         <div class="row-fluid clearfix">
+          <span class="js-close alignright btn btn-mini btn-danger">Close</span>
+          {{#price}}
+          <div class="description-price-container">
+            <div class="description-price">{{price}}</div>
+          </div>
+          {{/price}}
             <div class="span10 offset1 clearfix">
                 <figure class="screenshot">
                   {{#demo}}
@@ -45,7 +45,9 @@
                             <table><tr><td>
                             <button class="js-install btn btn-info btn-mini">Install</button>
                             <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
-                            <button class="js-remove btn btn-danger btn-mini">Remove</button>
+                            <button class="js-remove btn btn-danger btn-mini">
+                              Remove
+                            </button>
                             </td>
                             {{#shopify_id}}
                             <td>&nbsp;</td>    
