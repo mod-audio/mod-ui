@@ -208,11 +208,16 @@ JqueryClass('cloudPluginBox', {
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
-                if (results.shopify[cplugin.uri] && cplugin.mod_license == 'paid_perpetual') {
-                    cplugin.shopify_id = results.shopify[cplugin.uri].id
-                    cplugin.licensed = desktop.licenses.licensed(cplugin.uri)
-                    if (!cplugin.licensed)
-                        cplugin.price = results.shopify[cplugin.uri].price
+                if (cplugin.mod_license == 'paid_perpetual') {
+                    if (results.shopify[cplugin.uri]) {
+                        cplugin.shopify_id = results.shopify[cplugin.uri].id
+                        cplugin.licensed = desktop.licenses.licensed(cplugin.uri)
+                        if (!cplugin.licensed)
+                            cplugin.price = results.shopify[cplugin.uri].price
+                    } else {
+                        // TODO this is inconsistent, we should remove it from
+                        // UI until plugin managers create a product at Shopify
+                    }
                 }
 
                 if (cplugin.shopify_id) {
@@ -413,7 +418,6 @@ JqueryClass('cloudPluginBox', {
                         lplugin.demo = true;
                     }
                 }
-
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
                 if (lplugin.gui) {
