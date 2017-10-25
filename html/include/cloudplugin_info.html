@@ -1,9 +1,4 @@
 <div class="js-close plugin-info plugin-container">
-    {{#licensed}}
-    <div class="description-price-container">
-        <div class="description-licensed"></div>
-    </div>
-    {{/licensed}}
     <div class="container box">
         <div class="row-fluid clearfix">
           <span class="js-close alignright btn btn-mini btn-danger">Close</span>
@@ -12,6 +7,12 @@
             <div class="description-price">{{price}}</div>
           </div>
           {{/price}}
+          {{#licensed}}
+          <div class="description-price-container">
+            <div class="description-licensed"></div>
+          </div>
+          {{/licensed}}
+          
             <div class="span10 offset1 clearfix">
                 <figure class="screenshot">
                   {{#demo}}
@@ -43,10 +44,10 @@
                                 Installed Version: <span class="bold">{{installed_version}}</span><br/>
                             </span>
                             <table><tr><td>
-                            <button class="js-install btn btn-info btn-mini">Install</button>
-                            <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
+                            <button class="js-install btn btn-info btn-mini">Install{{#trial}} Trial{{/trial}}</button>
+                            <button class="js-upgrade btn btn-info btn-mini">Upgrade{{#trial}} Trial{{/trial}}</button>
                             <button class="js-remove btn btn-danger btn-mini">
-                              Remove
+                              Remove{{#trial}} Trial{{/trial}}
                             </button>
                             </td>
                             {{#shopify_id}}

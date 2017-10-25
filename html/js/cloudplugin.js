@@ -210,7 +210,7 @@ JqueryClass('cloudPluginBox', {
 
                 if (results.shopify[cplugin.uri] && cplugin.mod_license == 'paid_perpetual') {
                     cplugin.shopify_id = results.shopify[cplugin.uri].id
-                    // cplugin.licensed = TODO
+                    cplugin.licensed = desktop.licenses.licensed(cplugin.uri)
                     if (!cplugin.licensed)
                         cplugin.price = results.shopify[cplugin.uri].price
                 }
@@ -221,7 +221,8 @@ JqueryClass('cloudPluginBox', {
                     if (lplugin && !cplugin.licensed)
                         cplugin.demo = true
                     if (lplugin && cplugin.licensed && !lplugin.licensed) {
-                        // TODO get license file from cloud and install locally
+                        // Should not happen
+                        new Notification('warn', 'License for '+cplugin.label+' not downloaded, please reload interface', 4000);
                     }
                 }
 
@@ -291,6 +292,10 @@ JqueryClass('cloudPluginBox', {
                     price: products[i].selectedVariant.price
                 }
             }
+            renderResults();
+        }, function() {
+            if (desktop.cloudAccessToken)
+                new Notification('error', "Our commercial gear store is offline now, sorry for the inconvenience")
             renderResults();
         });
         
@@ -391,6 +396,16 @@ JqueryClass('cloudPluginBox', {
                     lplugin.stable = false
                     lplugin.status = 'installed'
                 }
+
+                if (lplugin.licensed) {
+                    if (lplugin.licensed > 0) {
+                        lplugin.licensed = true;
+                    } else {
+                        lplugin.licensed = false;
+                        lplugin.demo = true;
+                    }
+                }
+
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
                 if (lplugin.gui) {
@@ -596,9 +611,7 @@ JqueryClass('cloudPluginBox', {
             stable: !!(plugin.stable || !cloudReached),
             demo: !!plugin.demo,
             price: plugin.price,
-            // TODO licensed can come from cloud or MOD.
-            // We need to assure data type consistency from both sources
-            //licensed: plugin.licensed
+            licensed: plugin.licensed
         }
 
         var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
@@ -800,10 +813,9 @@ JqueryClass('cloudPluginBox', {
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
                 shopify_id: plugin.shopify_id,
                 price: plugin.price,
+                trial: plugin.price && !plugin.licensed,
                 demo  : !!plugin.demo,
-                // TODO licensed can come from cloud or MOD.
-                // We need to assure data type consistency from both sources
-                //licensed: plugin.licensed
+                licensed: plugin.licensed
             };
 
             var info = self.data('info')

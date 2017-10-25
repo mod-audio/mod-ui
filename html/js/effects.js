@@ -362,6 +362,7 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
+            licensed: plugin.licensed,
             demo: plugin.licensed < 0
         }
 
@@ -433,6 +434,7 @@ JqueryClass('effectBox', {
                 label : plugin.label,
                 ports : plugin.ports,
                 demo  : plugin.licensed < 0,
+                licensed: plugin.licensed > 0,
                 installed: true,
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),

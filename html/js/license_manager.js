@@ -18,6 +18,10 @@
 function LicenseManager(license_info) {
     var self = this;
     self.licenses = license_info;
+    self.index = {};
+    for (var i in license_info) {
+        self.index[license_info[i].plugin_uri] = true;
+    }
 }
 
 LicenseManager.prototype.updateLicenses = function(callback) {
@@ -62,4 +66,8 @@ LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
             callback();
         }
     });
+}
+
+LicenseManager.prototype.licensed = function(uri) {
+    return !! this.index[uri];
 }
