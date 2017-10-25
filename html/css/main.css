@@ -7426,6 +7426,7 @@ header#pedalboard-actions {
   overflow: hidden;
   position: relative;
   width: 100%;
+  z-index: 1;
 }
 #plugins-library #plugins-list .nav {
   background: url(../img/nav-left.png) 50% 50% no-repeat;
