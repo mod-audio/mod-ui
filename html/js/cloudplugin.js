@@ -292,6 +292,14 @@ JqueryClass('cloudPluginBox', {
                     price: products[i].selectedVariant.price
                 }
             }
+            if (products.length > 0) {
+                ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+                    ui.createComponent('cart', {
+                        moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+                        options: SHOPIFY_PRODUCT_OPTIONS
+                    })
+                })
+            }
             renderResults();
         }, function() {
             if (desktop.cloudAccessToken)
