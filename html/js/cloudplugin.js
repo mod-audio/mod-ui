@@ -708,6 +708,8 @@ JqueryClass('cloudPluginBox', {
             }
 
             plugin.status  = 'installed'
+            if (plugin.price && !plugin.licensed)
+                plugin.demo = true;
             plugin.bundles = [bundle]
             plugin.installedVersion = plugin.latestVersion
 
