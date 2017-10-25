@@ -18,9 +18,11 @@
 function LicenseManager(license_info) {
     var self = this;
     self.licenses = license_info;
-    self.index = {};
+    self.index_by_uri = {};
+    self.index_by_id = {};
     for (var i in license_info) {
-        self.index[license_info[i].plugin_uri] = true;
+        self.index_by_uri[license_info[i].plugin_uri] = license_info[i];
+        self.index_by_id[license_info[i].id] = license_info[i];
     }
 }
 
@@ -43,6 +45,12 @@ LicenseManager.prototype.updateLicenses = function(callback) {
 }
 
 LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
+    var self = this;
+    var success =  function() {
+        var uri = self.index_by_id[licenseId].plugin_uri;
+        desktop.refreshPlugin(uri, { licensed: 1 })
+        callback();
+    }
     $.ajax({
         url: SITEURL + '/licenses/' + licenseId,
         method: 'GET',
@@ -54,7 +62,7 @@ LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
                 url: '/effect/licenses/save/' + licenseId,
                 data: data,
                 method: 'POST',
-                success: callback,
+                success: success,
                 error: function() {
                     new Notification('error', 'Could not save plugin license, please contact support', 8000);
                     callback();
@@ -69,5 +77,5 @@ LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
 }
 
 LicenseManager.prototype.licensed = function(uri) {
-    return !! this.index[uri];
+    return !! this.index_by_uri[uri];
 }

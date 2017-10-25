@@ -1596,6 +1596,10 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
     })
 }
 
+Desktop.prototype.refreshPlugin = function(uri, extensionData) {
+    this.effectBox.effectBox('refresh', uri, extensionData)
+}
+
 Desktop.prototype.reset = function (callback) {
     if (this.pedalboardModified && !confirm("There are unsaved modifications that will be lost. Are you sure?")) {
         return

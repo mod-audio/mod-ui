@@ -348,7 +348,24 @@ JqueryClass('effectBox', {
         renderNextPlugin(0)
     },
 
-    renderPlugin: function (plugin, container) {
+    refresh: function(uri, update) {
+        var self = $(this)
+        var index = self.data('index')
+        if (!index[uri])
+            return
+        var occurrences = index[uri]
+        delete index[uri]
+        var key, plugin, element, container
+        for (var i in occurrences) {
+            plugin = occurrences[i][0]
+            element = occurrences[i][1]
+            container = occurrences[i][2]
+            plugin = $.extend(plugin, update)
+            self.effectBox('renderPlugin', plugin, container, element)
+        }
+    },
+
+    renderPlugin: function (plugin, container, replace) {
         var self = $(this)
         if (container.length == 0)
             return
@@ -388,7 +405,17 @@ JqueryClass('effectBox', {
             self.effectBox('showPluginInfo', plugin)
         })
 
-        container.append(rendered)
+        if (replace) {
+            rendered.insertAfter(replace)
+            replace.remove()
+        } else {
+            container.append(rendered)
+        }
+
+        var index = self.data('index')
+        if (!index[plugin.uri])
+            index[plugin.uri] = []
+        index[plugin.uri].push([plugin, rendered, container])
     },
 
     showPluginInfo: function (plugin) {
@@ -538,6 +565,7 @@ JqueryClass('effectBox', {
             }
         });
         self.effectBox('resetShift')
+        self.data('index', {})
             //$('#js-effect-info').hide()
     },
 
