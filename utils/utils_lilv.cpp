@@ -44,7 +44,7 @@
 
 #define OS_SEP '/'
 
-#define MOD_LICENSE "http://moddevices.com/ns/license/commercial"
+#define MOD_LICENSE__interface "http://moddevices.com/ns/ext/license#interface"
 
 #ifndef HAVE_NEW_LILV
 #warning Your current lilv version is too old, please update it
@@ -166,7 +166,6 @@ inline std::string sha1(const char* const cstring)
 #define LILV_NS_MODPEDAL "http://moddevices.com/ns/modpedal#"
 
 struct NamespaceDefinitions_Mini {
-    LilvNode* const doap_license;
     LilvNode* const rdf_type;
     LilvNode* const rdfs_comment;
     LilvNode* const lv2core_microVersion;
@@ -175,14 +174,14 @@ struct NamespaceDefinitions_Mini {
     LilvNode* const mod_label;
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
+    LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
     LilvNode* const modgui_screenshot;
     LilvNode* const modgui_thumbnail;
 
     NamespaceDefinitions_Mini()
-        : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
-          rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
+        : rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
           rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
           lv2core_minorVersion     (lilv_new_uri(W, LILV_NS_LV2    "minorVersion"      )),
@@ -190,6 +189,7 @@ struct NamespaceDefinitions_Mini {
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
+          modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
           modgui_screenshot        (lilv_new_uri(W, LILV_NS_MODGUI "screenshot"        )),
@@ -197,7 +197,6 @@ struct NamespaceDefinitions_Mini {
 
     ~NamespaceDefinitions_Mini()
     {
-        lilv_node_free(doap_license);
         lilv_node_free(rdf_type);
         lilv_node_free(rdfs_comment);
         lilv_node_free(lv2core_microVersion);
@@ -206,6 +205,7 @@ struct NamespaceDefinitions_Mini {
         lilv_node_free(mod_label);
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
+        lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
         lilv_node_free(modgui_screenshot);
@@ -240,6 +240,7 @@ struct NamespaceDefinitions {
     LilvNode* const mod_rangeSteps;
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
+    LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
     LilvNode* const modgui_iconTemplate;
@@ -292,6 +293,7 @@ struct NamespaceDefinitions {
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
+          modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
           modgui_iconTemplate      (lilv_new_uri(W, LILV_NS_MODGUI "iconTemplate"      )),
@@ -345,6 +347,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_rangeSteps);
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
+        lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
         lilv_node_free(modgui_iconTemplate);
@@ -1056,17 +1059,11 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // licensed
 
-    if (LilvNodes* const license = lilv_plugin_get_value(p, ns.doap_license))
+    if (KEYS_PATHlen > 0 && lilv_plugin_has_extension_data(p, ns.modlicense_interface))
     {
-        const char* license_uri = lilv_node_as_string(lilv_nodes_get_first(license));
-        if (strcmp(license_uri, MOD_LICENSE) == 0) {
-            if (KEYS_PATHlen > 0) {
-                const std::string licensefile(KEYS_PATH + sha1(info.uri));
-                info.licensed = std::ifstream(licensefile).good() ? 1 : -1;
-            } else {
-                info.licensed = -1;
-            }
-        }
+        const std::string licensefile(KEYS_PATH + sha1(info.uri));
+
+        info.licensed = std::ifstream(licensefile).good() ? 1 : -1;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1284,17 +1281,11 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // --------------------------------------------------------------------------------------------------------
     // licensed
 
-    if (LilvNodes* const license = lilv_plugin_get_value(p, ns.doap_license))
+    if (KEYS_PATHlen > 0 && lilv_plugin_has_extension_data(p, ns.modlicense_interface))
     {
-        const char* license_uri = lilv_node_as_string(lilv_nodes_get_first(license));
-        if (strcmp(license_uri, MOD_LICENSE) == 0) {
-            if (KEYS_PATHlen > 0) {
-                const std::string licensefile(KEYS_PATH + sha1(info.uri));
-                info.licensed = std::ifstream(licensefile).good() ? 1 : -1;
-            } else {
-                info.licensed = -1;
-            }
-        }
+        const std::string licensefile(KEYS_PATH + sha1(info.uri));
+
+        info.licensed = std::ifstream(licensefile).good() ? 1 : -1;
     }
 
     // --------------------------------------------------------------------------------------------------------
