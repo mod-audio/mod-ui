@@ -365,6 +365,10 @@ JqueryClass('effectBox', {
         }
     },
 
+    license: function(uri) {
+        $(this).effectBox('refresh', uri, { licensed: 1 });
+    },
+
     renderPlugin: function (plugin, container, replace) {
         var self = $(this)
         if (container.length == 0)

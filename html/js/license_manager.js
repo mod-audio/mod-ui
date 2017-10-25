@@ -48,7 +48,7 @@ LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
     var self = this;
     var success =  function() {
         var uri = self.index_by_id[licenseId].plugin_uri;
-        desktop.refreshPlugin(uri, { licensed: 1 })
+        desktop.license(uri);
         callback();
     }
     $.ajax({

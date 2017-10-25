@@ -1281,7 +1281,7 @@ JqueryClass('pedalboard', {
             obj.icon = icon
 
             if (pluginData.licensed < 0) {
-                // This is a DEMO plugin
+                // This is a TRIAL plugin
                 icon.find('[mod-role="drag-handle"]').addClass('demo-plugin').addClass('demo-plugin-light');
             }
 
@@ -1390,6 +1390,20 @@ JqueryClass('pedalboard', {
             if (renderCallback)
                 renderCallback()
         })
+    },
+
+    // Remove "Trial" watermark from all instances of a plugin
+    license: function(uri) {
+        var self = $(this);
+        var plugins = self.data('plugins');
+
+        var icon;
+        for (var instance in plugins) {
+            icon = plugins[instance]
+            if (icon.data('uri') == uri) {
+                icon.find('[mod-role="drag-handle"]').removeClass('demo-plugin').removeClass('demo-plugin-light');
+            }
+        }
     },
 
     getLabel: function (instance) {

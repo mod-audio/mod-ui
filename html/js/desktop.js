@@ -1596,8 +1596,9 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
     })
 }
 
-Desktop.prototype.refreshPlugin = function(uri, extensionData) {
-    this.effectBox.effectBox('refresh', uri, extensionData)
+Desktop.prototype.license = function(uri) {
+    this.effectBox.effectBox('license', uri)
+    this.pedalboard.pedalboard('license', uri)
 }
 
 Desktop.prototype.reset = function (callback) {
