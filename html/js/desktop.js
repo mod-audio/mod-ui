@@ -1780,10 +1780,8 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     setTimeout(poll, 5000);
                     return;
                 }
-                // TODO remove this workaround when cloud is fixed
-                var license_info = [ result.license_info ]
-                self.licenseManager.addLicenses(license_info, function() {
-                    msg = license_info.length + ' new gear purchased'
+                self.licenseManager.addLicenses(result.license_info, function() {
+                    msg = result.license_info.length + ' new gear purchased'
                     new Notification('info', msg);
                     // TODO focus on constructor
                     // TODO reload trial plugin rendering
