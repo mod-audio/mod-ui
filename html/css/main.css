@@ -5900,6 +5900,28 @@ button.close {
 }
 .buy-button {
   margin-top: -20px;
+  position: relative;
+}
+.buy-button iframe {
+  position: absolute;
+  top: -17px;
+  left: 0;
+  min-width: 115px;
+  z-index: 1;
+}
+.shopify-fake-button {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  z-index: 0;
+  background-color: #c224b0;
+  font-family: Arial;
+  font-size: 12px;
+  opacity: 0.25;
+  min-width: 115px;
+  min-height: 34px;
+  padding: 9px 15px;
+  text-align: center;
 }
 #bank-library {
   bottom: 45px;

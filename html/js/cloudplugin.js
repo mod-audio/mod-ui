@@ -903,9 +903,11 @@ JqueryClass('cloudPluginBox', {
             if (metadata.shopify_id && !metadata.licensed) {
                 var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
                 ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+                    var node = document.getElementById('product-component-'+metadata.shopify_id);
+                    var button = $('<div class="shopify-fake-button">ADD TO CART</div>').appendTo(node);
                     ui.createComponent('product', {
                         id: [metadata.shopify_id],
-                        node: document.getElementById('product-component-'+metadata.shopify_id),
+                        node: node,
                         moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
                         options: SHOPIFY_PRODUCT_OPTIONS
                     });
