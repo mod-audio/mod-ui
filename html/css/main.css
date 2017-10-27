@@ -5815,8 +5815,8 @@ button.close {
   position: absolute;
   top: 0;
   left: 0;
-  width: 75px;
-  height: 75px;
+  width: 90px;
+  height: 90px;
   overflow: hidden;
 }
 .plugin-container .price {
@@ -5837,13 +5837,14 @@ button.close {
   background-color: #883996;
   border: 1px solid #883996;
   position: absolute;
-  top: 13px;
+  top: 21px;
   left: -30px;
   padding: 3px 27px;
+  font-size: 14px;
   transform: rotate(-45deg);
 }
 .plugin-container .licensed:before {
-  content: "LICENSED";
+  content: "PURCHASED";
 }
 .plugin-container .status.unstable {
   border: 1px solid #FF2927;
@@ -5864,7 +5865,7 @@ button.close {
   top: -17px;
   left: -17px;
   overflow: hidden;
-  height: 180px;
+  height: 200px;
 }
 .plugin-container .description-price-container .description-price {
   background-color: #883996;
@@ -5886,17 +5887,17 @@ button.close {
   background-color: #883996;
   border: 1px solid #883996;
   position: relative;
-  top: 34px;
-  left: -57px;
+  top: 50px;
+  left: -60px;
   padding: 3px 0;
   transform: rotate(-45deg);
-  min-width: 250px;
+  min-width: 280px;
   text-align: center;
   font-size: 34px;
   z-index: 1;
 }
 .plugin-container .description-price-container .description-licensed:before {
-  content: "LICENSED";
+  content: "PURCHASED";
 }
 .buy-button {
   margin-top: -20px;

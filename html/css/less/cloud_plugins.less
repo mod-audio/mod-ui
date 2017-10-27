@@ -305,8 +305,8 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 75px;
-    height: 75px;
+    width: 90px;
+    height: 90px;
     overflow: hidden;
   }
   .price {
@@ -327,12 +327,13 @@
       background-color: @brand-success;
       border: 1px solid @brand-success;
       &:before {
-          content: "LICENSED";
+          content: "PURCHASED";
       }
       position: absolute;
-      top: 13px;
+      top: 21px;
       left: -30px;
       padding: 3px 27px;
+      font-size: 14px;
       transform: rotate(-45deg);
   }
   .status.unstable {
@@ -354,7 +355,7 @@
       top: -17px;
       left: -17px;
       overflow: hidden;
-      height: 180px;
+      height: 200px;
       .description-price {
           background-color: @brand-success;
           border: 1px solid @brand-success;
@@ -375,14 +376,14 @@
           background-color: @brand-success;
           border: 1px solid @brand-success;
           &:before {
-              content: "LICENSED";
+              content: "PURCHASED";
           }
           position: relative;
-          top: 34px;
-          left: -57px;
+          top: 50px;
+          left: -60px;
           padding: 3px 0;
           transform: rotate(-45deg);
-          min-width: 250px;
+          min-width: 280px;
           text-align: center;
           font-size: 34px;
           z-index: 1;
