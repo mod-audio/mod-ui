@@ -15,36 +15,50 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function LicenseManager(license_info) {
-    var self = this;
-    self.licenses = license_info;
-    self.index_by_uri = {};
-    self.index_by_id = {};
-    for (var i in license_info) {
-        self.index_by_uri[license_info[i].plugin_uri] = license_info[i];
-        self.index_by_id[license_info[i].id] = license_info[i];
-    }
+function LicenseManager() {
+    this.index_by_uri = {};
+    this.index_by_id = {};
 }
 
-LicenseManager.prototype.updateLicenses = function(callback) {
+// Stores a license in internal index
+LicenseManager.prototype.addLicense = function(license) {
+    this.index_by_uri[license.plugin_uri] = license
+    this.index_by_id[license.id] = license
+}
+
+
+// Gets a list of licenses available, sends it to MOD,
+// receives a list of missing license IDs and
+// install all missing licenses.
+LicenseManager.prototype.addLicenses = function(license_info, callback) {
     var self = this;
+    for (var i in license_info)
+        self.addLicense(license_info[i]);
+
     $.ajax({
         url: '/effect/licenses/list',
         method: 'POST',
-        data: JSON.stringify(self.licenses),
+        data: JSON.stringify(license_info),
         dataType: 'json',
         success: function(missing) {
-            var downloadNext = function() {
-                if (missing.length == 0)
-                    return callback()
-                self.downloadLicense(missing.pop(), downloadNext);
-            }
-            downloadNext();
-        },
+            self.installLicenses(missing, callback)
+        }
     });  
 }
 
-LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
+// Asynchronously download a list of licenses and saves them to MOD
+LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
+    var self = this;
+    var installNext = function() {
+        if (licenseIds.length == 0)
+            return callback()
+        self.installLicense(licenseIds.pop(), installNext);
+    }
+    installNext();
+}
+
+// Download single license from cloud and sends to MOD
+LicenseManager.prototype.installLicense = function(licenseId, callback) {
     var self = this;
     var success =  function() {
         var uri = self.index_by_id[licenseId].plugin_uri;
@@ -76,6 +90,7 @@ LicenseManager.prototype.downloadLicense = function(licenseId, callback) {
     });
 }
 
+// Checks if a plugin is licensed
 LicenseManager.prototype.licensed = function(uri) {
     return !! this.index_by_uri[uri];
 }

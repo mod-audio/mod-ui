@@ -390,7 +390,7 @@ function Desktop(elements) {
                                     return;
                                 }
 
-                                self.licenses = new LicenseManager(resp.license_info);
+                                var license_info = resp.license_info;
 
                                 if (resp['upgrade']) {
                                     $.ajax({
@@ -423,9 +423,9 @@ function Desktop(elements) {
                                                 headers: { 'Authorization' : 'MOD ' + resp.access_token }
                                             }
                                         }
-                                        self.licenses.updateLicenses(function() {
-                                            // TODO reload demo plugin rendering
-                                            console.log('licenses updated');
+                                        self.licenseManager = new LicenseManager()
+                                        self.licenseManager.addLicenses(license_info, function() {
+                                            // TODO reload trial plugin rendering
                                         })
 
                                         callback(true, opts);
@@ -1744,6 +1744,7 @@ Desktop.prototype.getDeviceShopToken = function(callback) {
                 'Authorization' : 'MOD ' + self.cloudAccessToken
             },
             success: function(result) {
+                self.waitForLicenses(result.id);
                 callback(result.id);
             },
             error: function(result) {
@@ -1763,6 +1764,37 @@ Desktop.prototype.getDeviceShopToken = function(callback) {
     } else {
         getToken();
     }
+}
+
+Desktop.prototype.waitForLicenses = function(deviceToken) {
+    var self = this;
+    var poll = function() {
+        $.ajax({
+            url: SITEURL + '/licenses/requests/'+deviceToken,
+            method: 'GET',
+            headers: {
+                'Authorization' : 'MOD ' + self.cloudAccessToken
+            },
+            success: function(result) {
+                if (!result.fulfilled) {
+                    setTimeout(poll, 5000);
+                    return;
+                }
+                // TODO remove this workaround when cloud is fixed
+                var license_info = [ result.license_info ]
+                self.licenseManager.addLicenses(license_info, function() {
+                    msg = license_info.length + ' new gear purchased'
+                    new Notification('info', msg);
+                    // TODO focus on constructor
+                    // TODO reload trial plugin rendering
+                })
+            },
+            error: function() {
+                new Notification('error', "Can't get licenses from Cloud, please reload interface after finishing your purchase");
+            }
+        });
+    }
+    setTimeout(poll, 5000);
 }
 
 JqueryClass('saveBox', {
