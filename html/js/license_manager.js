@@ -49,9 +49,11 @@ LicenseManager.prototype.addLicenses = function(license_info, callback) {
 // Asynchronously download a list of licenses and saves them to MOD
 LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
     var self = this;
+    var installedLicenses = licenseIds.length
+    
     var installNext = function() {
         if (licenseIds.length == 0)
-            return callback()
+            return callback(installedLicenses)
         self.installLicense(licenseIds.pop(), installNext);
     }
     installNext();

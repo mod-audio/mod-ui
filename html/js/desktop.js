@@ -424,8 +424,9 @@ function Desktop(elements) {
                                             }
                                         }
                                         self.licenseManager = new LicenseManager()
-                                        self.licenseManager.addLicenses(license_info, function() {
-                                            // TODO reload trial plugin rendering
+                                        self.licenseManager.addLicenses(license_info, function(installed) {
+                                            if (installed > 0)
+                                                new Notification('info', installed + ' gear licensed')
                                         })
 
                                         callback(true, opts);
@@ -1784,7 +1785,6 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     msg = result.license_info.length + ' new gear purchased'
                     new Notification('info', msg);
                     // TODO focus on constructor
-                    // TODO reload trial plugin rendering
                 })
             },
             error: function() {
