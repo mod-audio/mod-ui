@@ -1784,7 +1784,7 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                 self.licenseManager.addLicenses(result.license_info, function() {
                     msg = result.license_info.length + ' new gear purchased'
                     new Notification('info', msg);
-                    // TODO focus on constructor
+                    self.windowManager.closeWindows(null, true);
                 })
             },
             error: function() {

@@ -303,6 +303,7 @@ JqueryClass('cloudPluginBox', {
                         moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
                         options: SHOPIFY_PRODUCT_OPTIONS
                     })
+                    desktop.windowManager.registerShopify(ui);
                 })
             }
             renderResults();
