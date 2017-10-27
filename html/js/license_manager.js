@@ -52,8 +52,16 @@ LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
     var installedLicenses = licenseIds.length
     
     var installNext = function() {
-        if (licenseIds.length == 0)
-            return callback(installedLicenses)
+        if (licenseIds.length == 0) {
+            $.ajax({
+                url: '/effect/refresh',
+                dataType: 'json',
+                success: function() {
+                    callback(installedLicenses)
+                }
+            });
+            return
+        }
         self.installLicense(licenseIds.pop(), installNext);
     }
     installNext();

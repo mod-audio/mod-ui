@@ -650,6 +650,14 @@ class EffectLicenseSave(JsonRequestHandler):
         save_license(license_id, self.request.body)
         self.write(True)
 
+class EffectRefresh(JsonRequestHandler):
+    def get(self):
+        # This is called after new licenses are installed
+        # TODO clear cache only of affected bundles
+        lv2_cleanup()
+        lv2_init()
+        self.write(True)
+
 class SDKEffectInstaller(EffectInstaller):
     @web.asynchronous
     @gen.engine
@@ -1773,6 +1781,7 @@ application = web.Application(
             # plugin licensing
             (r"/effect/licenses/list", EffectLicenseList),
             (r"/effect/licenses/save/(.*)", EffectLicenseSave),
+            (r"/effect/refresh", EffectRefresh),
 
             (r"/package/uninstall", PackageUninstall),
 
