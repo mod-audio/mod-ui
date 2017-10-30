@@ -26,7 +26,7 @@ from tornado import ioloop
 from mod.utils import get_pedalboard_size
 from mod.settings import (DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           PHANTOM_BINARY, SCREENSHOT_JS,
-                          MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH)
+                          MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH, DEV_ENVIRONMENT)
 
 def generate_screenshot(bundlepath, callback):
     if not os.path.exists(PHANTOM_BINARY):
@@ -46,7 +46,7 @@ def generate_screenshot(bundlepath, callback):
            "http://localhost:%d/pedalboard.html?bundlepath=%s" % (DEVICE_WEBSERVER_PORT, bundlepath),
             screenshot, str(width), str(height)]
 
-    if DEVICE_KEY: # if using a real MOD, setup niceness
+    if not DEV_ENVIRONMENT and DEVICE_KEY: # if using a real MOD, setup niceness
         cmd = ["/usr/bin/nice", "-n", "+17"] + cmd
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
