@@ -1446,6 +1446,25 @@ class Host(object):
         pluginData['x'] = x
         pluginData['y'] = y
 
+    def reload_pedalboard(self, affected_uris):
+        # Reload pedalboard if any effect in affected_uris is in use
+        # Reloading works by saving and loading current pedalboard to a tmp path
+        running_uris = dict([ (p['uri'], 1) for p in self.plugins.values() ])
+        affected = False
+        for uri in affected_uris:
+            if running_uris.get(uri.decode()):
+                affected = True
+                break
+        if not affected:
+            return
+        bundlepath = '/tmp/reloaded.pedalboard'
+        if os.path.exists(bundlepath):
+            rmtree(bundlepath)
+        os.mkdir(bundlepath)
+        self.save_state_to_ttl(bundlepath, self.pedalboard_name, 'tmp')
+        self.load(bundlepath)
+        rmtree(bundlepath)
+
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
 

@@ -43,7 +43,7 @@ from mod.settings import (APP, LOG,
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
-from mod.licensing import check_missing_licenses, save_license
+from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
 from mod.utils import (init as lv2_init,
                        cleanup as lv2_cleanup,
                        get_plugin_list,
@@ -653,9 +653,16 @@ class EffectLicenseSave(JsonRequestHandler):
 class EffectRefresh(JsonRequestHandler):
     def get(self):
         # This is called after new licenses are installed
+
+        # First clear LV2 effect cache
         # TODO clear cache only of affected bundles
         lv2_cleanup()
         lv2_init()
+
+        # Reload pedalboard if licenses affect any running plugin
+        affected_uris = get_new_licenses_and_flush()
+        SESSION.host.reload_pedalboard(affected_uris)
+
         self.write(True)
 
 class SDKEffectInstaller(EffectInstaller):
