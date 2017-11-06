@@ -269,6 +269,14 @@ JqueryClass('cloudPluginBox', {
                     lplugin.status = 'installed'
                     lplugin.latestVersion = null
                     self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                    if (lplugin.licensed) {
+                        if (lplugin.licensed > 0) {
+                            lplugin.licensed = true;
+                        } else {
+                            lplugin.licensed = false;
+                            lplugin.demo = true;
+                        }
+                    }
                     plugins.push(lplugin)
                 }
             }
