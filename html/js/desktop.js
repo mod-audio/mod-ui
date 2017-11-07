@@ -425,8 +425,10 @@ function Desktop(elements) {
                                         }
                                         self.licenseManager = new LicenseManager()
                                         self.licenseManager.addLicenses(license_info, function(installed) {
-                                            if (installed > 0)
-                                                new Notification('info', installed + ' gear licensed')
+                                            if (installed > 0) {
+                                                var s = installed > 1 ? 's' : ''
+                                                new Notification('info', installed + ' plugin'+s+' licensed')
+                                            }
                                         })
 
                                         callback(true, opts);
@@ -1782,7 +1784,8 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     return;
                 }
                 self.licenseManager.addLicenses(result.license_info, function() {
-                    msg = result.license_info.length + ' new gear purchased'
+                    var s = result.license_info.length > 1 ? 's' : ''
+                    msg = result.license_info.length + ' new plugin'+s+' purchased'
                     new Notification('info', msg);
                     self.windowManager.closeWindows(null, true);
                 })

@@ -317,7 +317,7 @@ JqueryClass('cloudPluginBox', {
             renderResults();
         }, function() {
             if (desktop.cloudAccessToken)
-                new Notification('error', "Our commercial gear store is offline now, sorry for the inconvenience")
+                new Notification('error', "Our commercial plugin store is offline now, sorry for the inconvenience")
             renderResults();
         });
         
