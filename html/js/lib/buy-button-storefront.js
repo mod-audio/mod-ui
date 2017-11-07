@@ -3797,7 +3797,16 @@ var Checkout = function () {
 
   Checkout.prototype.open = function open(url) {
     if (this.config.cart.popup) {
-      window.open(url, 'checkout', this.params);
+      var newWin = window.open(url, 'checkout', this.params);
+      if(!newWin || newWin.closed || typeof newWin.closed=='undefined') 
+      {
+        var button = $('iframe[name=frame-cart]').contents().find('button[data-element="cart.button"]')
+        var txt = button.html()
+        button.html('PLEASE UNBLOCK POPUP')
+        setTimeout(function() {
+          button.html(txt)
+        }, 1000)
+      }
     } else {
       window.location = url;
     }
