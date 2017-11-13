@@ -1462,8 +1462,11 @@ class Host(object):
             rmtree(bundlepath)
         os.mkdir(bundlepath)
         self.save_state_to_ttl(bundlepath, self.pedalboard_name, 'tmp')
-        self.load(bundlepath)
-        rmtree(bundlepath)
+        def load(ok):
+            if ok:
+                self.load(bundlepath)
+            rmtree(bundlepath)
+        self.reset(load)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
