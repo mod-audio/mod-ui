@@ -2026,7 +2026,7 @@ JqueryClass('pedalboard', {
         // It gives us a pretty good result
         var deltaX = xo - xi - 50
         if (deltaX < 0) {
-            deltaX = 8.5 * (deltaX / 6) ^ 0.8
+            deltaX = 8.5 * (deltaX / 6)
         } else {
             deltaX /= 1.5
         }
