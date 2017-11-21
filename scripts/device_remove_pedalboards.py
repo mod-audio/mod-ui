@@ -11,8 +11,6 @@ os.environ['MOD_DATA_DIR'] = DATA_DIR
 os.environ['MOD_KEY_PATH'] = join(ROOT, 'keys')
 os.environ['MOD_HTML_DIR'] = join(ROOT, 'html')
 os.environ['MOD_DEVICE_WEBSERVER_PORT'] = '8888'
-os.environ['MOD_PHANTOM_BINARY'] = join(ROOT, 'phantomjs-1.9.0-linux-x86_64/bin/phantomjs')
-os.environ['MOD_SCREENSHOT_JS'] = join(ROOT, 'screenshot.js')
 
 from mod import settings
 

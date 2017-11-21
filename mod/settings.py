@@ -69,9 +69,6 @@ DEFAULT_ICON_IMAGE = {
     'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
 }
 
-PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
-
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(sys.prefix, 'share/mod/screenshot.js'))
 
 MAX_THUMB_HEIGHT = 350
 MAX_THUMB_WIDTH = 350

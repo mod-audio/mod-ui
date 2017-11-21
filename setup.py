@@ -114,7 +114,6 @@ setup(name = 'mod',
                     (('share/mod/html/resources/pedals'), glob('html/resources/pedals/*.png')),
                     (('share/mod/html/resources/pedals'), glob('html/resources/pedals/*.css')),
                     (('share/mod/html/resources/templates'), glob('html/resources/templates/*.html')),
-                    (('share/mod'), ['screenshot.js']),
       ],
       install_requires = ['tornado'],
 
