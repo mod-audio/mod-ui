@@ -70,8 +70,8 @@ DEFAULT_ICON_IMAGE = {
 }
 
 
-MAX_THUMB_HEIGHT = 350
-MAX_THUMB_WIDTH = 350
+MAX_THUMB_HEIGHT = 640
+MAX_THUMB_WIDTH = 640
 
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.moddevices.com/v2")
