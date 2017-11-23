@@ -24,7 +24,7 @@ except ImportError:
     from PIL import Image
 
 from mod.utils import get_pedalboard_info, get_plugin_info, get_plugin_gui
-from mod.settings import MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH
+from mod.settings import MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH, HTML_DIR
 
 
 def generate_screenshot(bundlepath, callback):
@@ -76,7 +76,7 @@ def generate_screenshot(bundlepath, callback):
         for port in data['ports']['midi'][type]:
             yield port
 
-    img_dir = os.path.abspath('html/img')
+    img_dir = os.path.join(HTML_DIR, 'img')
 
     # preload images
     audio_output_img = Image.open(os.path.join(img_dir, 'audio-output.png'))
