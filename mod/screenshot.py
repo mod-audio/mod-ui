@@ -133,11 +133,13 @@ def generate_screenshot(bundlepath, callback):
 
         # detect connectors
         in_ports = list(all_ports(data, 'input'))
-        for ix, conn in enumerate(chunks(detect_first_column(pimg), 2)):
-            in_ports[ix]['connector'] = conn
+        if len(in_ports) > 0:
+            for ix, conn in enumerate(chunks(detect_first_column(pimg), 2)):
+                in_ports[ix]['connector'] = conn
         out_ports = list(all_ports(data, 'output'))
-        for ix, conn in enumerate(chunks(detect_first_column(pimg, rtol=True), 2)):
-            out_ports[ix]['connector'] = conn
+        if len(out_ports) > 0:
+            for ix, conn in enumerate(chunks(detect_first_column(pimg, rtol=True), 2)):
+                out_ports[ix]['connector'] = conn
 
         plugin_map[p['instance']] = p
 
@@ -147,6 +149,8 @@ def generate_screenshot(bundlepath, callback):
             width = p['x'] + p['img'].size[0] + right_padding
         if p['y'] + p['img'].size[1] + bottom_padding > height:
             height = p['y'] + p['img'].size[1] + bottom_padding
+    width = int(round(width))
+    height = int(round(height))
 
     # create image
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
