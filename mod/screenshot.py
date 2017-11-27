@@ -20,11 +20,7 @@ import sys
 
 from enum import Enum
 from tornado import ioloop
-
-try:
-    import Image
-except ImportError:
-    from PIL import Image
+from PIL import Image
 
 from mod.utils import init as lv2_init, get_pedalboard_info, get_plugin_info, get_plugin_gui
 from mod.settings import MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH, HTML_DIR, DEV_ENVIRONMENT, DEVICE_KEY
@@ -36,7 +32,7 @@ def generate_screenshot(bundle_path, callback):
 
     cwd = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
     cmd = ['python3', '-m', 'mod.screenshot', bundle_path, screenshot, thumbnail]
-    if not DEV_ENVIRONMENT and DEVICE_KEY: # if using a real MOD, setup niceness
+    if not DEV_ENVIRONMENT and DEVICE_KEY:  # if using a real MOD, setup niceness
         cmd = ['/usr/bin/nice', '-n', '+17'] + cmd
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=cwd)
@@ -68,11 +64,14 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
         LEFT_CENTER = 1
         RIGHT_CENTER = 2
 
+    def rint(x):
+        return int(round(x))
+
     def anchor(size, x, y, align: Anchor):
         if align == Anchor.LEFT_CENTER:
-            y = int(round(y - size[1] / 2))
+            y = rint(y - size[1] / 2)
         elif align == Anchor.RIGHT_CENTER:
-            y = int(round(y - size[1] / 2))
+            y = rint(y - size[1] / 2)
             x = x - size[0]
         return x, y
 
@@ -178,14 +177,14 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
             width = p['x'] + p['img'].size[0] + right_padding
         if p['y'] + p['img'].size[1] + bottom_padding > height:
             height = p['y'] + p['img'].size[1] + bottom_padding
-    width = int(round(width))
-    height = int(round(height))
+    width = rint(width)
+    height = rint(height)
 
     # create image
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 
     # draw device connectors
-    step = int(round(height / (len(device_capture) + 1)))
+    step = rint(height / (len(device_capture) + 1))
     h = step
     for d in device_capture:
         d.update({'x': 0, 'y': h})
@@ -213,7 +212,7 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
             source_x = source['x'] + audio_output_connected.size[0]
             source_y = source['y']
         else:
-            if not '/' in c['source']:
+            if '/' not in c['source']:
                 continue
             source_i, source_s = c['source'].split('/')
             source = plugin_map[source_i]
@@ -228,7 +227,7 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
             target_x = target['x'] - audio_input_connected.size[0]
             target_y = target['y']
         else:
-            if not '/' in c['target']:
+            if '/' not in c['target']:
                 continue
             target_i, target_s = c['target'].split('/')
             target = plugin_map[target_i]
@@ -238,25 +237,25 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
             target_x = target_pos[0]
             target_y = target_pos[1] + audio_input_connected.size[1] / 2
 
-        deltaX = target_x - source_x - 50
-        if deltaX < 0:
-            deltaX = 8.5 * (deltaX / 6)
+        delta_x = target_x - source_x - 50
+        if delta_x < 0:
+            delta_x = 8.5 * (delta_x / 6)
         else:
-            deltaX /= 1.5
+            delta_x /= 1.5
 
         path = 'm{0},{1} c{2},{3},{4},{5},{6},{7}'.format(
-            int(round(source_x)),
-            int(round(source_y)),
-            int(round(target_x - deltaX - source_x)),
+            rint(source_x),
+            rint(source_y),
+            rint(target_x - delta_x - source_x),
             0,
-            int(round(deltaX)),
-            int(round(target_y - source_y)),
-            int(round(target_x - source_x)),
-            int(round(target_y - source_y))
+            rint(delta_x),
+            rint(target_y - source_y),
+            rint(target_x - source_x),
+            rint(target_y - source_y)
         )
         paths.append(path)
-        connectors.append((audio_output_connected, (int(round(source_pos[0])), int(round(source_pos[1]))), audio_output_connected))
-        connectors.append((audio_input_connected, (int(round(target_pos[0])), int(round(target_pos[1]))), audio_input_connected))
+        connectors.append((audio_output_connected, (rint(source_pos[0]), rint(source_pos[1])), audio_output_connected))
+        connectors.append((audio_input_connected, (rint(target_pos[0]), rint(target_pos[1])), audio_input_connected))
 
     # draw all paths
     try:
@@ -276,7 +275,7 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
 
     # draw plugins
     for p in plugins:
-        img.paste(p['img'], (int(round(p['x'])), int(round(p['y']))), p['img'])
+        img.paste(p['img'], (rint(p['x']), rint(p['y'])), p['img'])
 
     img.save(screenshot_path)
     resize_image(img)
@@ -345,14 +344,14 @@ class ScreenshotGenerator(object):
         bundlepath = os.path.abspath(bundlepath)
 
         if bundlepath in self.queue or self.processing == bundlepath:
-            return (0, 0.0)
+            return 0, 0.0
 
         thumbnail = os.path.join(bundlepath, "thumbnail.png")
         if not os.path.exists(thumbnail):
-            return (-1, 0.0)
+            return -1, 0.0
 
         ctime = os.path.getctime(thumbnail)
-        return (1, ctime)
+        return 1, ctime
 
     def wait_for_pending_jobs(self, bundlepath, callback):
         bundlepath = os.path.abspath(bundlepath)
