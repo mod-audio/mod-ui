@@ -1,4 +1,3 @@
-
 # Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,19 +15,49 @@
 
 
 import os
+import subprocess
+import sys
+
 from enum import Enum
+from tornado import ioloop
 
 try:
     import Image
 except ImportError:
     from PIL import Image
 
-from mod.utils import get_pedalboard_info, get_plugin_info, get_plugin_gui
-from mod.settings import MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH, HTML_DIR
+from mod.utils import init as lv2_init, get_pedalboard_info, get_plugin_info, get_plugin_gui
+from mod.settings import MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH, HTML_DIR, DEV_ENVIRONMENT, DEVICE_KEY
 
 
-def generate_screenshot(bundlepath, callback):
-    pb = get_pedalboard_info(bundlepath)
+def generate_screenshot(bundle_path, callback):
+    screenshot = os.path.join(bundle_path, 'screenshot.png')
+    thumbnail = os.path.join(bundle_path, 'thumbnail.png')
+
+    cwd = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+    cmd = ['python3', '-m', 'mod.screenshot', bundle_path, screenshot, thumbnail]
+    if not DEV_ENVIRONMENT and DEVICE_KEY: # if using a real MOD, setup niceness
+        cmd = ['/usr/bin/nice', '-n', '+17'] + cmd
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=cwd)
+    loop = ioloop.IOLoop.instance()
+
+    def proc_callback(fileno, event):
+        if proc.poll() is None:
+            return
+        loop.remove_handler(fileno)
+
+        if not os.path.exists(screenshot) or not os.path.exists(thumbnail):
+            return callback()
+
+        callback(thumbnail)
+
+    loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
+
+
+def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
+    lv2_init()
+    pb = get_pedalboard_info(bundle_path)
 
     width = pb['width']
     height = pb['height']
@@ -249,14 +278,10 @@ def generate_screenshot(bundlepath, callback):
     for p in plugins:
         img.paste(p['img'], (int(round(p['x'])), int(round(p['y']))), p['img'])
 
-    screenshot = os.path.join(bundlepath, 'screenshot.png')
-    thumbnail = os.path.join(bundlepath, 'thumbnail.png')
-    img.save(screenshot)
+    img.save(screenshot_path)
     resize_image(img)
-    img.save(thumbnail)
+    img.save(thumbnail_path)
     img.close()
-
-    callback(thumbnail)
 
 
 def resize_image(img):
@@ -350,3 +375,7 @@ class ScreenshotGenerator(object):
             self.callbacks[bundlepath] = [callback]
         else:
             self.callbacks[bundlepath].append(callback)
+
+
+if __name__ == '__main__':
+    take_screenshot(sys.argv[1], sys.argv[2], sys.argv[3])
