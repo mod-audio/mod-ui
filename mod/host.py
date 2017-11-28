@@ -1946,7 +1946,7 @@ class Host(object):
 
         # Save new
         else:
-            lv2path = os.path.expanduser("~/.pedalboards/")
+            lv2path = LV2_PEDALBOARDS_DIR
             trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
 
             # if trypath already exists, generate a random bundlepath based on title

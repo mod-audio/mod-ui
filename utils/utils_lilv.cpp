@@ -3508,8 +3508,9 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     std::vector<PedalboardInfo_Mini*> allpedals;
 
     // Custom path for pedalboards
+    const char* const pedalboards_dir = getenv("LV2_PEDALBOARDS_DIR");
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", pedalboards_dir ? pedalboards_dir : "~/.pedalboards/", 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
@@ -3567,8 +3568,9 @@ const char* const* get_broken_pedalboards(void)
     std::vector<std::string> brokenpedals;
 
     // Custom path for pedalboards
+    const char* const pedalboards_dir = getenv("LV2_PEDALBOARDS_DIR");
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", pedalboards_dir ? pedalboards_dir : "~/.pedalboards/", 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);

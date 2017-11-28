@@ -9,7 +9,7 @@ ROOT = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = join(ROOT, 'dados')
 
 os.environ['MOD_DEV_ENVIRONMENT'] = os.environ.get("MOD_DEV_ENVIRONMENT", '1')
-os.environ['MOD_DATA_DIR'] = DATA_DIR
+#os.environ['MOD_DATA_DIR'] = DATA_DIR
 os.environ['MOD_LOG'] = os.environ.get("MOD_LOG", '1')
 os.environ['MOD_KEY_PATH'] = join(ROOT, 'keys')
 os.environ['MOD_DEVICE_WEBSERVER_PORT'] = os.environ.get("MOD_DEVICE_WEBSERVER_PORT", '8888')
