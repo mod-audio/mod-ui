@@ -98,21 +98,17 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
         for i in range(0, len(o), n):
             yield o[i:i + n]
 
-    def all_ports(data, type):
-        for port in data['ports']['audio'][type]:
-            yield port
-        for port in data['ports']['midi'][type]:
-            yield port
-
     img_dir = os.path.join(HTML_DIR, 'img')
 
     # preload images
-    audio_output_img = Image.open(os.path.join(img_dir, 'audio-output.png'))
     audio_input_img = Image.open(os.path.join(img_dir, 'audio-input.png'))
-    midi_output_img = Image.open(os.path.join(img_dir, 'midi-output.png'))
-    midi_input_img = Image.open(os.path.join(img_dir, 'midi-input.png'))
+    audio_output_img = Image.open(os.path.join(img_dir, 'audio-output.png'))
     audio_input_connected = Image.open(os.path.join(img_dir, 'audio-input-connected.png'))
     audio_output_connected = Image.open(os.path.join(img_dir, 'audio-output-connected.png'))
+    midi_input_img = Image.open(os.path.join(img_dir, 'midi-input.png'))
+    midi_output_img = Image.open(os.path.join(img_dir, 'midi-output.png'))
+    midi_input_connected = Image.open(os.path.join(img_dir, 'midi-input-connected.png'))
+    midi_output_connected = Image.open(os.path.join(img_dir, 'midi-output-connected.png'))
 
     right_padding = audio_input_connected.size[0] * 2
     bottom_padding = 0
@@ -123,18 +119,21 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
         device_capture.append({
             'symbol': 'capture_{0}'.format(ix + 1),
             'img': audio_output_img,
+            'connected_img': audio_output_connected,
             'type': 'audio',
-        })
-    for midi_in in pb['hardware']['midi_ins']:
-        device_capture.append({
-            'symbol': midi_in['symbol'],
-            'img': midi_output_img,
-            'type': 'midi',
         })
     if pb['hardware'].get('serial_midi_in', False):
         device_capture.append({
             'symbol': 'serial_midi_in',
             'img': midi_output_img,
+            'connected_img': midi_output_connected,
+            'type': 'midi',
+        })
+    for midi_in in pb['hardware']['midi_ins']:
+        device_capture.append({
+            'symbol': midi_in['symbol'],
+            'img': midi_output_img,
+            'connected_img': midi_output_connected,
             'type': 'midi',
         })
 
@@ -143,18 +142,21 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
         device_playback.append({
             'symbol': 'playback_{0}'.format(ix + 1),
             'img': audio_input_img,
+            'connected_img': audio_input_connected,
             'type': 'audio',
-        })
-    for midi_out in pb['hardware']['midi_outs']:
-        device_playback.append({
-            'symbol': midi_out['symbol'],
-            'img': midi_input_img,
-            'type': 'midi',
         })
     if pb['hardware'].get('serial_midi_out', False):
         device_playback.append({
             'symbol': 'serial_midi_out',
             'img': midi_input_img,
+            'connected_img': midi_input_connected,
+            'type': 'midi',
+        })
+    for midi_out in pb['hardware']['midi_outs']:
+        device_playback.append({
+            'symbol': midi_out['symbol'],
+            'img': midi_input_img,
+            'connected_img': midi_input_connected,
             'type': 'midi',
         })
 
@@ -172,14 +174,30 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
         p['img'] = pimg
 
         # detect connectors
-        in_ports = list(all_ports(data, 'input'))
+        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input']
         if len(in_ports) > 0:
             for ix, conn in enumerate(chunks(detect_first_column(pimg), 2)):
                 in_ports[ix]['connector'] = conn
-        out_ports = list(all_ports(data, 'output'))
+                if ix < len(data['ports']['audio']['input']):
+                    in_ports[ix]['connected_img'] = audio_input_connected
+                    in_ports[ix]['offset'] = (79, 15)
+                    in_ports[ix]['type'] = 'audio'
+                else:
+                    in_ports[ix]['connected_img'] = midi_input_connected
+                    in_ports[ix]['offset'] = (67, 9)
+                    in_ports[ix]['type'] = 'midi'
+        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output']
         if len(out_ports) > 0:
             for ix, conn in enumerate(chunks(detect_first_column(pimg, rtol=True), 2)):
                 out_ports[ix]['connector'] = conn
+                if ix < len(data['ports']['audio']['output']):
+                    out_ports[ix]['connected_img'] = audio_output_connected
+                    out_ports[ix]['offset'] = (8, 15)
+                    out_ports[ix]['type'] = 'audio'
+                else:
+                    out_ports[ix]['connected_img'] = midi_output_connected
+                    out_ports[ix]['offset'] = (8, 9)
+                    out_ports[ix]['type'] = 'midi'
 
         plugin_map[p['instance']] = p
 
@@ -201,53 +219,59 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
     for d in device_capture:
         d.update({'x': 0, 'y': h})
         h = h + step
-        if d['type'] == 'audio':
-            img.paste(audio_output_img, anchor(audio_output_img.size, d['x'], d['y'], Anchor.LEFT_CENTER))
-        elif d['type'] == 'midi':
-            img.paste(midi_output_img, anchor(midi_output_img.size, d['x'], d['y'], Anchor.LEFT_CENTER))
+        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.LEFT_CENTER))
     h = step
     for d in device_playback:
         d.update({'x': width, 'y': h})
         h = h + step
-        if d['type'] == 'audio':
-            img.paste(audio_input_img, anchor(audio_input_img.size, d['x'], d['y'], Anchor.RIGHT_CENTER))
-        elif d['type'] == 'midi':
-            img.paste(midi_input_img, anchor(midi_input_img.size, d['x'], d['y'], Anchor.RIGHT_CENTER))
+        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.RIGHT_CENTER))
 
     # draw plugin cables and calculate connectors
     connectors = []
     paths = []
     for ix, c in enumerate(pb['connections']):
+        # source
         if any(s['symbol'] == c['source'] for s in device_capture):
             source = next(s for s in device_capture if s['symbol'] == c['source'])
-            source_pos = anchor(audio_output_connected.size, source['x'], source['y'], Anchor.LEFT_CENTER)
-            source_x = source['x'] + audio_output_connected.size[0]
+            source_connected_img = source['connected_img']
+            source_pos = anchor(source_connected_img.size, source['x'], source['y'], Anchor.LEFT_CENTER)
+            source_x = source['x'] + source_connected_img.size[0]
             source_y = source['y']
+            source_type = source['type']
         else:
             if '/' not in c['source']:
                 continue
             source_i, source_s = c['source'].split('/')
             source = plugin_map[source_i]
-            port = next(p for p in all_ports(source['data'], 'output') if p['symbol'] == source_s)
+            all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output']
+            port = next(p for p in all_ports if p['symbol'] == source_s)
             conn = port['connector']
-            source_pos = (source['x'] + conn[0][0] - 8, source['y'] + conn[0][1] - 15)
-            source_x = source_pos[0] + audio_output_connected.size[0]
-            source_y = source_pos[1] + audio_input_connected.size[1] / 2
+            source_connected_img = port['connected_img']
+            source_pos = (source['x'] + conn[0][0] - port['offset'][0], source['y'] + conn[0][1] - port['offset'][1])
+            source_x = source_pos[0] + source_connected_img.size[0]
+            source_y = source_pos[1] + source_connected_img.size[1] / 2
+            source_type = port['type']
+        # target
         if any(s['symbol'] == c['target'] for s in device_playback):
             target = next(t for t in device_playback if t['symbol'] == c['target'])
-            target_pos = anchor(audio_input_connected.size, target['x'], target['y'], Anchor.RIGHT_CENTER)
-            target_x = target['x'] - audio_input_connected.size[0]
+            target_connected_img = target['connected_img']
+            target_pos = anchor(target_connected_img.size, target['x'], target['y'], Anchor.RIGHT_CENTER)
+            target_x = target['x'] - target_connected_img.size[0]
             target_y = target['y']
+            target_type = target['type']
         else:
             if '/' not in c['target']:
                 continue
             target_i, target_s = c['target'].split('/')
             target = plugin_map[target_i]
-            port = next(p for p in all_ports(target['data'], 'input') if p['symbol'] == target_s)
+            all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input']
+            port = next(p for p in all_ports if p['symbol'] == target_s)
             conn = port['connector']
-            target_pos = (target['x'] + conn[0][0] - 79, target['y'] + conn[0][1] - 15)
+            target_connected_img = port['connected_img']
+            target_pos = (target['x'] + conn[0][0] - port['offset'][0], target['y'] + conn[0][1] - port['offset'][1])
             target_x = target_pos[0]
-            target_y = target_pos[1] + audio_input_connected.size[1] / 2
+            target_y = target_pos[1] + target_connected_img.size[1] / 2
+            target_type = port['type']
 
         delta_x = target_x - source_x - 50
         if delta_x < 0:
@@ -265,18 +289,19 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
             rint(target_x - source_x),
             rint(target_y - source_y)
         )
-        paths.append(path)
-        connectors.append((audio_output_connected, (rint(source_pos[0]), rint(source_pos[1])), audio_output_connected))
-        connectors.append((audio_input_connected, (rint(target_pos[0]), rint(target_pos[1])), audio_input_connected))
+        paths.append((path, source_type, target_type))
+        connectors.append((source_connected_img, (rint(source_pos[0]), rint(source_pos[1])), source_connected_img))
+        connectors.append((target_connected_img, (rint(target_pos[0]), rint(target_pos[1])), target_connected_img))
 
     # draw all paths
     try:
         import aggdraw
         draw = aggdraw.Draw(img)
-        outline = aggdraw.Pen('#81009A', 7)
-        for path in paths:
+        audio_pen = aggdraw.Pen('#81009A', 7)
+        midi_pen = aggdraw.Pen('#00546C', 7)
+        for path, source_type, target_type in paths:
             symbol = aggdraw.Symbol(path)
-            draw.symbol((0, 0), symbol, outline)
+            draw.symbol((0, 0), symbol, midi_pen if source_type == 'midi' or target_type == 'midi' else audio_pen)
             draw.flush()
     except:
         print('Aggdraw failed')
