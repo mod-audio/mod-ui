@@ -131,6 +131,12 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
             'img': midi_output_img,
             'type': 'midi',
         })
+    if pb['hardware'].get('serial_midi_in', False):
+        device_capture.append({
+            'symbol': 'serial_midi_in',
+            'img': midi_output_img,
+            'type': 'midi',
+        })
 
     device_playback = []
     for ix in range(0, pb['hardware']['audio_outs']):
@@ -142,6 +148,12 @@ def take_screenshot(bundle_path, screenshot_path, thumbnail_path):
     for midi_out in pb['hardware']['midi_outs']:
         device_playback.append({
             'symbol': midi_out['symbol'],
+            'img': midi_input_img,
+            'type': 'midi',
+        })
+    if pb['hardware'].get('serial_midi_out', False):
+        device_playback.append({
+            'symbol': 'serial_midi_out',
             'img': midi_input_img,
             'type': 'midi',
         })
