@@ -7,7 +7,6 @@ from shutil import copyfile
 from glob import glob
 
 import os
-import sys
 
 class mod_utils_builder(build):
     def run(self):
@@ -18,7 +17,7 @@ class mod_utils_installer(install):
     def run(self):
         install.run(self)
         source = "utils/libmod_utils.so"
-        target = os.path.join(self.install_lib, "mod", "libmod_utils.so")
+        target = os.path.join(self.install_lib, "modtools", "libmod_utils.so")
         print("Copying %s to %s" % (source, target))
         copyfile(source, target)
 

@@ -39,7 +39,7 @@ from mod import safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
-from tools.utils import (
+from modtools.utils import (
     charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,

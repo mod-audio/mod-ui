@@ -21,7 +21,7 @@ import sys
 from enum import Enum
 from PIL import Image
 
-from tools.utils import init as lv2_init, get_pedalboard_info, get_plugin_info, get_plugin_gui
+from modtools.utils import init as lv2_init, get_pedalboard_info, get_plugin_info, get_plugin_gui
 
 MAX_THUMB_HEIGHT = 640
 MAX_THUMB_WIDTH = 640

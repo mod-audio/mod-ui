@@ -25,7 +25,7 @@ def generate_screenshot(bundle_path, callback):
     thumbnail = os.path.join(bundle_path, 'thumbnail.png')
 
     cwd = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-    cmd = ['python3', '-m', 'tools.pedalboard', bundle_path, HTML_DIR, CACHE_DIR]
+    cmd = ['python3', '-m', 'modtools.pedalboard', bundle_path, HTML_DIR, CACHE_DIR]
     if not DEV_ENVIRONMENT and DEVICE_KEY:  # if using a real MOD, setup niceness
         cmd = ['/usr/bin/nice', '-n', '+17'] + cmd
 

@@ -43,7 +43,7 @@ from mod.settings import (APP, LOG,
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
-from tools.utils import (
+from modtools.utils import (
     init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
     set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
