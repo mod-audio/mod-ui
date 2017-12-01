@@ -220,29 +220,33 @@ def take_screenshot(bundle_path, html_dir, cache_dir):
     width = rint(width)
     height = rint(height)
 
-    # create image
-    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-
-    # draw device connectors
+    # calculate device connectors positions
+    used_symbols = [c['source'] for c in pb['connections']] + [c['target'] for c in pb['connections']]
+    device_capture = [
+        d for d in device_capture
+        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_in' or d['symbol'] in used_symbols
+    ]
+    device_playback = [
+        d for d in device_playback
+        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_out' or d['symbol'] in used_symbols
+    ]
     step = rint(height / (len(device_capture) + 1))
     h = step
     for d in device_capture:
         d.update({'x': 0, 'y': h})
         h = h + step
-        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.LEFT_CENTER))
     h = step
     for d in device_playback:
         d.update({'x': width, 'y': h})
         h = h + step
-        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.RIGHT_CENTER))
 
     # draw plugin cables and calculate connectors
     connectors = []
     paths = []
     for ix, c in enumerate(pb['connections']):
         # source
-        if any(s['symbol'] == c['source'] for s in device_capture):
-            source = next(s for s in device_capture if s['symbol'] == c['source'])
+        source = next((s for s in device_capture if s['symbol'] == c['source']), None)
+        if source:
             source_connected_img = source['connected_img']
             source_pos = anchor(source_connected_img.size, source['x'], source['y'], Anchor.LEFT_CENTER)
             source_x = source['x'] + source_connected_img.size[0]
@@ -262,8 +266,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir):
             source_y = source_pos[1] + source_connected_img.size[1] / 2
             source_type = port['type']
         # target
-        if any(s['symbol'] == c['target'] for s in device_playback):
-            target = next(t for t in device_playback if t['symbol'] == c['target'])
+        target = next((t for t in device_playback if t['symbol'] == c['target']), None)
+        if target:
             target_connected_img = target['connected_img']
             target_pos = anchor(target_connected_img.size, target['x'], target['y'], Anchor.RIGHT_CENTER)
             target_x = target['x'] - target_connected_img.size[0]
@@ -302,6 +306,15 @@ def take_screenshot(bundle_path, html_dir, cache_dir):
         paths.append((path, source_type, target_type))
         connectors.append((source_connected_img, (rint(source_pos[0]), rint(source_pos[1])), source_connected_img))
         connectors.append((target_connected_img, (rint(target_pos[0]), rint(target_pos[1])), target_connected_img))
+
+    # create image
+    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+
+    # draw device connectors
+    for d in device_capture:
+        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.LEFT_CENTER))
+    for d in device_playback:
+        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.RIGHT_CENTER))
 
     # draw all paths
     try:
