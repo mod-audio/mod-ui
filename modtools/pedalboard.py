@@ -12,11 +12,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import argparse
 import base64
 import json
 import os
-import sys
 
 from enum import Enum
 from PIL import Image
@@ -343,5 +342,27 @@ def take_screenshot(bundle_path, html_dir, cache_dir):
     img.close()
 
 
+def main():
+    parser = argparse.ArgumentParser(description='Pedalboard tools')
+    subparsers = parser.add_subparsers()
+
+    # take screenshot bundle_path, html_dir, cache_dir
+    def _take_screenshot(args):
+        take_screenshot(args.pedalboard_path, args.html_path, args.cache_path)
+
+    subparser = subparsers.add_parser('take_screenshot', help='Take a screenshot of a given pedalboard')
+    subparser.add_argument('pedalboard_path', help='Path to pedalboard bundle folder')
+    subparser.add_argument('html_path', help='Path to mod-ui HTML folder')
+    subparser.add_argument('cache_path', help='Path to cache folder')
+    subparser.set_defaults(func=_take_screenshot)
+
+    args = parser.parse_args()
+    if hasattr(args, 'func'):
+        args.func(args)
+        exit(0)
+    else:
+        parser.print_usage()
+
+
 if __name__ == '__main__':
-    take_screenshot(sys.argv[1], sys.argv[2], sys.argv[3])
+    main()
