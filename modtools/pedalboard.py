@@ -82,13 +82,17 @@ def chunks(l, n):
         yield o[i:i + n]
 
 
-def take_screenshot(bundle_path, html_dir, cache_dir):
+def take_screenshot(bundle_path, html_dir, cache_dir, size):
     os.makedirs(cache_dir, exist_ok=True)
     lv2_init()
     pb = get_pedalboard_info(bundle_path)
 
-    width = pb['width']
-    height = pb['height']
+    if size:
+        w, h = size.split('x')
+        width, height = int(w), int(h)
+    else:
+        width = pb['width']
+        height = pb['height']
     if (width, height) == (0, 0):
         raise Exception('Invalid pb size (0,0)')
 
@@ -348,12 +352,13 @@ def main():
 
     # take screenshot bundle_path, html_dir, cache_dir
     def _take_screenshot(args):
-        take_screenshot(args.pedalboard_path, args.html_path, args.cache_path)
+        take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size)
 
     subparser = subparsers.add_parser('take_screenshot', help='Take a screenshot of a given pedalboard')
     subparser.add_argument('pedalboard_path', help='Path to pedalboard bundle folder')
     subparser.add_argument('html_path', help='Path to mod-ui HTML folder')
     subparser.add_argument('cache_path', help='Path to cache folder')
+    subparser.add_argument('-s', '--size', help='Screenshot width and height (i.e. 800x600)')
     subparser.set_defaults(func=_take_screenshot)
 
     args = parser.parse_args()
