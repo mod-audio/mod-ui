@@ -200,7 +200,7 @@ function Desktop(elements) {
         pedalPresetsOverlay: elements.pedalPresetsOverlay,
         hardwareManager: self.hardwareManager,
         renamedCallback: function (name) {
-            self.titleBox.text((self.title || 'Untitled') + " - " + name)
+            self.setTitle((self.title || 'Untitled') + " - " + name)
         }
     })
 
@@ -241,6 +241,7 @@ function Desktop(elements) {
     })
 
     this.titleBox = elements.titleBox
+    this.setTitle()
 
     this.cloudPluginListFunction = function (callback) {
         $.ajax({
@@ -888,7 +889,7 @@ function Desktop(elements) {
             success: function () {
                 $('#js-preset-enabler').hide()
                 $('#js-preset-menu').show()
-                self.titleBox.text((self.title || 'Untitled') + " - Default")
+                self.setTitle((self.title || 'Untitled') + " - Default")
                 self.pedalboardPresetId = 0
                 self.pedalboardModified = true
             },
@@ -911,7 +912,7 @@ function Desktop(elements) {
             success: function () {
                 self.pedalboardPresetId = -1
                 self.pedalboardModified = true
-                self.titleBox.text(self.title || 'Untitled')
+                self.setTitle(self.title || 'Untitled')
                 $('#js-preset-menu').hide()
                 $('#js-preset-enabler').show()
             },
@@ -958,7 +959,7 @@ function Desktop(elements) {
                     }
                     self.pedalboardPresetId = resp.id
                     self.pedalboardModified = true
-                    self.titleBox.text((self.title || 'Untitled') + " - " + newName)
+                    self.setTitle((self.title || 'Untitled') + " - " + newName)
                     new Notification('info', 'Pedalboard preset saved', 2000)
                 },
                 error: function () {
@@ -1374,7 +1375,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardEmpty  = true
                     self.pedalboardModified = false
                     self.pedalboardPresetId = -1
-                    self.titleBox.text('Untitled')
+                    self.setTitle('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
 
@@ -1658,7 +1659,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardBundle = bundlepath
                 self.pedalboardEmpty = false
                 self.pedalboardModified = false
-                self.titleBox.text(resp.name);
+                self.setTitle(resp.name);
                 self.titleBox.removeClass("blend");
 
                 // TODO: decide what to do with this
@@ -1693,7 +1694,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             }
 
             if (asNew || ! self.title) {
-                self.titleBox.text(title)
+                self.setTitle(title)
                 self.titleBox.removeClass("blend");
                 self.previousPedalboardList = null
             }
@@ -1708,6 +1709,17 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             if (callback)
                 callback()
         })
+}
+
+Desktop.prototype.setTitle = function(title) {
+    if (!title)
+	title = this.titleBox.text()
+    var width = this.titleBox.next().position().left - this.titleBox.position().left
+    var letterWidth = 11
+    var maxLength = width / letterWidth
+    if (title.length > maxLength)
+	title = title.substring(0, maxLength-3) + '...';
+    this.titleBox.text(title)
 }
 
 Desktop.prototype.shareCurrentPedalboard = function (callback) {
