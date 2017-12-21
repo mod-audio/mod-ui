@@ -117,13 +117,13 @@ $('document').ready(function() {
         transportBPM: $('#mod-knob-transport-bpm'),
         transportSyncMode: $('#mod-enum-transport-sync-mode'),
         effectBox: $('#plugins-library'),
-        pedalboardTrigger: $('#main-menu #mod-plugins'),
+        pedalboardTrigger: $('#top-menu #mod-plugins'),
         cloudPluginBox: $('#cloud-plugins-library'),
-        cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
+        cloudPluginBoxTrigger: $('#top-menu #mod-cloud-plugins'),
         pedalboardBox: $('#pedalboards-library'),
-        pedalboardBoxTrigger: $('#main-menu #mod-pedalboard'),
+        pedalboardBoxTrigger: $('#top-menu #mod-pedalboard'),
         bankBox: $('#bank-library'),
-        bankBoxTrigger: $('#main-menu #mod-bank'),
+        bankBoxTrigger: $('#top-menu #mod-bank'),
         bankList: $('#bank-list'),
         shareButton: $('#pedalboard-info .js-share'),
         shareWindow: $('#share-window'),
@@ -299,6 +299,13 @@ $('document').ready(function() {
     </div>
     <!-- END PEDALBOARD-SETTINGS-WINDOW -->
 
+    <div id="top-menu">
+      <div id="mod-plugins" class="icon selected"></div>
+      <div id="mod-pedalboard" class="icon"></div>
+      <div id="mod-bank" class="icon"></div>
+      <div id="mod-cloud-plugins" class="icon"></div>
+    </div>
+
     <!-- PEDALBOARD -->
     <div id="pedalboard">
 
@@ -437,7 +444,6 @@ $('document').ready(function() {
 
         <!-- PEDALBOARD-ACTIONS -->
         <header id="pedalboard-actions">
-
             <!-- PEDALBOARD-SETTINGS -->
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
@@ -547,10 +553,6 @@ $('document').ready(function() {
 
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
-        <div id="mod-plugins" class="icon selected"></div>
-        <div id="mod-pedalboard" class="icon"></div>
-        <div id="mod-bank" class="icon"></div>
-        <div id="mod-cloud-plugins" class="icon"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>

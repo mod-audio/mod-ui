@@ -6710,63 +6710,95 @@ hr.dotted {
   background-color: #000;
   background-position: 0 bottom;
 }
-#main-menu #mod-plugins {
+#top-menu {
+    width: 225px;
+    height: 45px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    background-color: #111;
+    background-position: 3px 50%;
+    background-size: 36px;
+    background-repeat: no-repeat;
+    background-image: url(../img/icons/36/mod.png);
+    padding-left: 45px;
+}
+#top-menu > div.icon {
+  height: 45px;
+  width: 45px;
+  float: left;
+  cursor: pointer;
+}
+#top-menu > div.icon > img {
+  margin: 5px 0 0 6px;
+}
+#top-menu > div.icon.selected {
+  background-color: #000;
+}
+#top-menu > div.icon > a {
+  display: block;
+  height: 45px;
+  width: 45px;
+}
+
+#mod-plugins {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -45px top;
   background-repeat: no-repeat;
   transition: all 0.33s;
 }
-#main-menu #mod-plugins:hover {
+#mod-plugins:hover {
   background-color: #000;
   background-position: -45px bottom;
 }
-#main-menu #mod-plugins.selected {
+#mod-plugins.selected {
   background-color: #000;
   background-position: -45px bottom;
 }
-#main-menu #mod-cloud-plugins {
+#mod-cloud-plugins {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -315px top;
   background-repeat: no-repeat;
   transition: all 0.33s;
 }
-#main-menu #mod-cloud-plugins:hover {
+#mod-cloud-plugins:hover {
   background-color: #000;
   background-position: -315px bottom;
 }
-#main-menu #mod-cloud-plugins.selected {
+#mod-cloud-plugins.selected {
   background-color: #000;
   background-position: -315px bottom;
 }
-#main-menu #mod-pedalboard {
+#mod-pedalboard {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -90px top;
   background-repeat: no-repeat;
   transition: all 0.33s;
 }
-#main-menu #mod-pedalboard:hover {
+#mod-pedalboard:hover {
   background-color: #000;
   background-position: -90px bottom;
 }
-#main-menu #mod-pedalboard.selected {
+#mod-pedalboard.selected {
   background-color: #000;
   background-position: -90px bottom;
 }
-#main-menu #mod-bank {
+#mod-bank {
   background-image: url(../img/menu-icons-sprite.png);
   background-position: -135px top;
   background-repeat: no-repeat;
   transition: all 0.33s;
 }
-#main-menu #mod-bank:hover {
+#mod-bank:hover {
   background-color: #000;
   background-position: -135px bottom;
 }
-#main-menu #mod-bank.selected {
+#mod-bank.selected {
   background-color: #000;
   background-position: -135px bottom;
 }
-#main-menu #banks-saving {
+#banks-saving {
   margin: 21px 0 0 6px;
   font-size: 10px;
   color: #666;
@@ -6928,11 +6960,7 @@ header#pedalboard-actions,
   box-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
   z-index: 5;
   background-color: #111;
-  background-position: 3px 50%;
-  background-size: 36px;
-  background-repeat: no-repeat;
-  background-image: url(../img/icons/36/mod.png);
-  padding-left: 45px;
+  margin-left: 225px;
 }
 header#pedalboard-actions .help,
 #bank-library header .help,
