@@ -239,7 +239,7 @@ hr.dotted {
 }
 
 #top-menu {
-    width: 455px;
+    width: 465px;
     height: 45px;
     position: absolute;
     top: 0;
@@ -265,12 +265,22 @@ hr.dotted {
 	color: white;
 	transition: all 0.33s;
 	float: left;
+	font-weight: 700;
 	&:hover, &.selected {
             opacity: 1;
             background-color: black;
 	}
 	&#mod-plugins {
-            background-image: url(../img/icons/25/save.png);
+            background-image: url(../img/icons/36/assembler.png);
+	}
+	&#mod-pedalboard {
+            background-image: url(../img/icons/36/pedalboardlibrary.png);
+	}
+	&#mod-bank {
+            background-image: url(../img/icons/36/pedalboardstore.png);
+	}
+	&#mod-cloud-plugins {
+            background-image: url(../img/icons/36/banks.png);
 	}
 	> a {
 	    display: block;
@@ -288,49 +298,34 @@ hr.dotted {
 
     #mod-plugins.selected {
 	background-color: #000;
-	background-position: -45px bottom;
     }
     #mod-cloud-plugins {
 	background-image: url(../img/menu-icons-sprite.png);
-	background-position: -315px top;
 	background-repeat: no-repeat;
 	transition: all 0.33s;
     }
     #mod-cloud-plugins:hover {
 	background-color: #000;
-	background-position: -315px bottom;
     }
     #mod-cloud-plugins.selected {
 	background-color: #000;
-	background-position: -315px bottom;
     }
     #mod-pedalboard {
 	background-image: url(../img/menu-icons-sprite.png);
-	background-position: -90px top;
 	background-repeat: no-repeat;
 	transition: all 0.33s;
     }
     #mod-pedalboard:hover {
 	background-color: #000;
-	background-position: -90px bottom;
     }
     #mod-pedalboard.selected {
 	background-color: #000;
-	background-position: -90px bottom;
-    }
-    #mod-bank {
-	background-image: url(../img/menu-icons-sprite.png);
-	background-position: -135px top;
-	background-repeat: no-repeat;
-	transition: all 0.33s;
     }
     #mod-bank:hover {
 	background-color: #000;
-	background-position: -135px bottom;
     }
     #mod-bank.selected {
 	background-color: #000;
-	background-position: -135px bottom;
     }
     
 }
@@ -649,7 +644,7 @@ header#pedalboard-actions,
     line-height: 49px;
     height: 45px;
     padding: 0;
-    margin-left: 420px;
+    margin-left: 430px;
   }
   .shift {
       margin-left: 45px;
