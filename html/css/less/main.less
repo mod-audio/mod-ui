@@ -239,7 +239,7 @@ hr.dotted {
 }
 
 #top-menu {
-    width: 225px;
+    width: 455px;
     height: 45px;
     position: absolute;
     top: 0;
@@ -252,34 +252,40 @@ hr.dotted {
     background-image: url(../img/icons/36/mod.png);
     padding-left: 45px;
 
-    > div.icon {
+    > button {
+	background-position: 8px 50%;
+	background-size: 25px;
+	background-repeat: no-repeat;
+	padding: 0 12px 0 40px;
+	background-color: transparent;
+	border: none;
 	height: 45px;
-	width: 45px;
+	line-height: 45px;
+	opacity: 0.66;
+	color: white;
+	transition: all 0.33s;
 	float: left;
-	cursor: pointer;
-	> img {
-	    margin: 5px 0 0 6px;
+	&:hover, &.selected {
+            opacity: 1;
+            background-color: black;
 	}
-	&.selected {
-	    background-color: #000;
+	&#mod-plugins {
+            background-image: url(../img/icons/25/save.png);
 	}
 	> a {
 	    display: block;
 	    height: 45px;
 	    width: 45px;
 	}
+	#mod-plugins.icon {
+	    width: 45px;
+	    background-image: url(../img/menu-icons-sprite.png);
+	    background-position: -45px top;
+	    background-repeat: no-repeat;
+	    transition: all 0.33s;
+	}
     }
 
-    #mod-plugins {
-	background-image: url(../img/menu-icons-sprite.png);
-	background-position: -45px top;
-	background-repeat: no-repeat;
-	transition: all 0.33s;
-    }
-    #mod-plugins:hover {
-	background-color: #000;
-	background-position: -45px bottom;
-    }
     #mod-plugins.selected {
 	background-color: #000;
 	background-position: -45px bottom;
@@ -643,6 +649,10 @@ header#pedalboard-actions,
     line-height: 49px;
     height: 45px;
     padding: 0;
+    margin-left: 420px;
+  }
+  .shift {
+      margin-left: 45px;
   }
 }
 header#pedalboard-actions {

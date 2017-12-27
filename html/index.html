@@ -146,7 +146,7 @@ $('document').ready(function() {
         desktop.pedalboardModified = true
     }
 
-    if ({{using_app}}) {
+    if (false && {{using_app}}) {
         desktop.setupApp()
     }
 
@@ -300,10 +300,15 @@ $('document').ready(function() {
     <!-- END PEDALBOARD-SETTINGS-WINDOW -->
 
     <div id="top-menu">
-      <div id="mod-plugins" class="icon selected"></div>
+      <button id="mod-plugins" class="btn btn-success">Pedalboard</button>
+      <button id="mod-pedalboard" class="btn btn-success">My Library</button>
+      <button id="mod-bank" class="btn btn-success">Banks</button>
+      <button id="mod-cloud-plugins" class="btn btn-success">Store</button>
+-->
+      <!--div id="mod-plugins" class="icon selected"></div>
       <div id="mod-pedalboard" class="icon"></div>
       <div id="mod-bank" class="icon"></div>
-      <div id="mod-cloud-plugins" class="icon"></div>
+      <div id="mod-cloud-plugins" class="icon"></div-->
     </div>
 
     <!-- PEDALBOARD -->
@@ -446,7 +451,7 @@ $('document').ready(function() {
         <header id="pedalboard-actions">
             <!-- PEDALBOARD-SETTINGS -->
             <div id="pedalboard-info">
-                <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
+                <div class="shift"><h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1></div>
                 <div class="actions">
                     <button class="js-preset" id="js-preset-enabler">Presets</button>
                     <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Presets</button>

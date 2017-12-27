@@ -1714,7 +1714,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
 Desktop.prototype.setTitle = function(title) {
     if (!title)
 	title = this.titleBox.text()
-    var width = this.titleBox.next().position().left - this.titleBox.position().left
+    var width = this.titleBox.parent().next().position().left - this.titleBox.position().left - 420;
     var letterWidth = 11
     var maxLength = width / letterWidth
     if (title.length > maxLength)
