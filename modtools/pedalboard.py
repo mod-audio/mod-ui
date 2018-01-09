@@ -91,10 +91,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         w, h = size.split('x')
         width, height = int(w), int(h)
     else:
-        width = pb['width']
-        height = pb['height']
+        width, height = pb['width'],  pb['height']
     if (width, height) == (0, 0):
-        raise Exception('Invalid pb size (0,0)')
+        width, height = 3840, 2160
 
     img_dir = os.path.join(html_dir, 'img')
 
@@ -107,6 +106,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     midi_output_img = Image.open(os.path.join(img_dir, 'midi-output.png'))
     midi_input_connected = Image.open(os.path.join(img_dir, 'midi-input-connected.png'))
     midi_output_connected = Image.open(os.path.join(img_dir, 'midi-output-connected.png'))
+    default_screenshot = Image.open(os.path.join(html_dir, 'resources', 'pedals', 'default.png'))
 
     right_padding = audio_input_connected.size[0] * 2
     bottom_padding = 0
@@ -168,49 +168,58 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
 
         # read plugin image
         gui = get_plugin_gui(p['uri'])
-        pimg = Image.open(gui['screenshot'])
+        screenshot_path = gui.get('screenshot', None)
+        pimg = Image.open(screenshot_path) if screenshot_path else default_screenshot
         p['img'] = pimg
 
-        # detect ports and save/read
-        version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
-        encoded_uri = base64.b64encode(p['uri'].encode()).decode()
-        filename = os.path.join(cache_dir, '{0}_{1}'.format(encoded_uri, version))
-        if os.path.isfile(filename):
-            with open(filename, 'r') as fh:
-                columns = json.loads(fh.read())
+        if screenshot_path:
+            # detect ports and save/read
+            version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
+            encoded_uri = base64.b64encode(p['uri'].encode()).decode()
+            filename = os.path.join(cache_dir, '{0}_{1}'.format(encoded_uri, version))
+            if os.path.isfile(filename):
+                with open(filename, 'r') as fh:
+                    columns = json.loads(fh.read())
+            else:
+                columns = {
+                    'in_ports': [list(c) for c in detect_first_column(pimg)],
+                    'out_ports': [list(c) for c in detect_first_column(pimg, rtol=True)],
+                }
+                with open(filename, 'w') as fh:
+                    fh.write(json.dumps(columns))
         else:
             columns = {
-                'in_ports': [list(c) for c in detect_first_column(pimg)],
-                'out_ports': [list(c) for c in detect_first_column(pimg, rtol=True)],
+                'in_ports': [[-9, 121], [-9, 146], [-9, 190], [-9, 215]],
+                'out_ports': [[251 + 8, 121], [251 + 8, 146], [251 + 8, 190], [251 + 8, 215]]
             }
-            with open(filename, 'w') as fh:
-                fh.write(json.dumps(columns))
 
         # detect connectors
         in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input']
         if len(in_ports) > 0:
             for ix, conn in enumerate(chunks(columns['in_ports'], 2)):
-                in_ports[ix]['connector'] = conn
-                if ix < len(data['ports']['audio']['input']):
-                    in_ports[ix]['connected_img'] = audio_input_connected
-                    in_ports[ix]['offset'] = (79, 15)
-                    in_ports[ix]['type'] = 'audio'
-                else:
-                    in_ports[ix]['connected_img'] = midi_input_connected
-                    in_ports[ix]['offset'] = (67, 9)
-                    in_ports[ix]['type'] = 'midi'
+                if ix < len(in_ports):
+                    in_ports[ix]['connector'] = conn
+                    if ix < len(data['ports']['audio']['input']):
+                        in_ports[ix]['connected_img'] = audio_input_connected
+                        in_ports[ix]['offset'] = (79, 15)
+                        in_ports[ix]['type'] = 'audio'
+                    else:
+                        in_ports[ix]['connected_img'] = midi_input_connected
+                        in_ports[ix]['offset'] = (67, 9)
+                        in_ports[ix]['type'] = 'midi'
         out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output']
         if len(out_ports) > 0:
             for ix, conn in enumerate(chunks(columns['out_ports'], 2)):
-                out_ports[ix]['connector'] = conn
-                if ix < len(data['ports']['audio']['output']):
-                    out_ports[ix]['connected_img'] = audio_output_connected
-                    out_ports[ix]['offset'] = (8, 15)
-                    out_ports[ix]['type'] = 'audio'
-                else:
-                    out_ports[ix]['connected_img'] = midi_output_connected
-                    out_ports[ix]['offset'] = (8, 9)
-                    out_ports[ix]['type'] = 'midi'
+                if ix < len(out_ports):
+                    out_ports[ix]['connector'] = conn
+                    if ix < len(data['ports']['audio']['output']):
+                        out_ports[ix]['connected_img'] = audio_output_connected
+                        out_ports[ix]['offset'] = (8, 15)
+                        out_ports[ix]['type'] = 'audio'
+                    else:
+                        out_ports[ix]['connected_img'] = midi_output_connected
+                        out_ports[ix]['offset'] = (8, 9)
+                        out_ports[ix]['type'] = 'midi'
 
         plugin_map[p['instance']] = p
 
