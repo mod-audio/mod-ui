@@ -63,6 +63,7 @@ function Desktop(elements) {
         devicesIcon: $('<div>'),
         devicesWindow: $('<div>'),
         statusIcon: $('<div>'),
+        settingsIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
         bypassLeftButton: $('<div>'),
@@ -1184,6 +1185,10 @@ function Desktop(elements) {
             elements.statusIcon.statusTooltip('message', msg, true)
         }
     })
+
+	elements.settingsIcon.click(function() {
+		document.location.href = '/settings';
+	})
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,

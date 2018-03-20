@@ -443,6 +443,23 @@ hr.dotted {
     float: right;
   }
 
+  #mod-settings {
+	  font-family: fontello !important;
+	  font-size: 28px;
+	  padding: 3px 10px;
+	  color: #fff;
+	  opacity: 0.66;
+	  cursor: pointer;
+      transition: all 0.33s;
+	  &:after {
+		  content: '\e800';
+	  }
+	  &:hover {
+		  opacity: 1;
+	  }
+  }
+
+
   #mod-update {
     background-image: url(../img/icons/36/update.png);
     &.uptodate {
@@ -1453,4 +1470,25 @@ header#pedalboard-actions {
 }
 .alert-danger {
     border-color: #c00;
+}
+
+#go-back {
+	width: 200px;
+	text-align: left;
+	margin: 20px 0 0 0;
+	background: none;
+	border: none;
+	font-size: 15px;
+	&:before {
+		content: '\e803';
+	}
+	color: #fff !important;
+	font-family: fontello !important;
+	a {
+		&:hover {
+			text-decoration: none;
+		}
+		padding-left: 5px;
+		color: #fff !important;
+	}
 }
