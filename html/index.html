@@ -131,6 +131,7 @@ $('document').ready(function() {
         devicesIcon: $('#mod-devices'),
         devicesWindow: $('#mod-devices-window'),
         statusIcon: $('#mod-status'),
+        settingsIcon: $('#mod-settings'),
         upgradeIcon: $('#mod-update'),
         upgradeWindow: $('#mod-upgrade'),
         bypassLeftButton: $("#mod-bypassLeft"),
@@ -547,14 +548,15 @@ $('document').ready(function() {
 
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
-        <div id="mod-plugins" class="icon selected"></div>
-        <div id="mod-pedalboard" class="icon"></div>
-        <div id="mod-bank" class="icon"></div>
-        <div id="mod-cloud-plugins" class="icon"></div>
+        <div id="mod-plugins" class="icon selected" data-message="Constructor"></div>
+        <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
+        <div id="mod-bank" class="icon" data-message="Banks"></div>
+        <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>
         <div id="mod-devices" class="status icon"></div>
+        <div id="mod-settings" class="status icon mod-settings" data-message="Go to settings screen"></div>
         <div id="mod-ram" class="icon">
             <div class="progress" id="ram-bar" style="width: 100%;">
                 <div class="bar"></div> <!-- not sure if this is needed -->
