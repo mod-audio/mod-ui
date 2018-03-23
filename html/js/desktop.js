@@ -1190,6 +1190,8 @@ function Desktop(elements) {
 		document.location.href = '/settings';
 	})
 
+	elements.settingsIcon.statusTooltip()
+
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
         windowManager: self.windowManager,
