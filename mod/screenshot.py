@@ -24,6 +24,12 @@ def generate_screenshot(bundle_path, callback):
     screenshot = os.path.join(bundle_path, 'screenshot.png')
     thumbnail = os.path.join(bundle_path, 'thumbnail.png')
 
+    try:
+        os.remove(screenshot)
+        os.remove(thumbnail)
+    except OSError:
+        pass
+
     cwd = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
     cmd = ['python3', '-m', 'modtools.pedalboard', 'take_screenshot', bundle_path, HTML_DIR, CACHE_DIR]
     if not DEV_ENVIRONMENT and DEVICE_KEY:  # if using a real MOD, setup niceness
