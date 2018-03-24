@@ -24,6 +24,7 @@ from modtools.utils import init as lv2_init, get_pedalboard_info, get_plugin_inf
 
 MAX_THUMB_HEIGHT = 640
 MAX_THUMB_WIDTH = 640
+__version__ = '1.0.0'
 
 
 def resize_image(img):
@@ -176,7 +177,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             # detect ports and save/read
             version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
             encoded_uri = base64.b64encode(p['uri'].encode()).decode()
-            filename = os.path.join(cache_dir, '{0}_{1}'.format(encoded_uri, version))
+            filename = os.path.join(cache_dir, '{0}_{1}_{2}'.format(__version__.replace('.', '_'), encoded_uri, version))
             if os.path.isfile(filename):
                 with open(filename, 'r') as fh:
                     columns = json.loads(fh.read())
