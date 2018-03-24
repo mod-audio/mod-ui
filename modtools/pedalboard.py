@@ -182,8 +182,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                     columns = json.loads(fh.read())
             else:
                 columns = {
-                    'in_ports': [list(c) for c in detect_first_column(pimg)],
-                    'out_ports': [list(c) for c in detect_first_column(pimg, rtol=True)],
+                    'in_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0])],
+                    'out_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)],
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
@@ -207,6 +207,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                         in_ports[ix]['connected_img'] = midi_input_connected
                         in_ports[ix]['offset'] = (67, 9)
                         in_ports[ix]['type'] = 'midi'
+            if not all('connector' in p for p in in_ports):
+                raise Exception('Connector detection for input ports of plugin {0} failed'.format(p['uri']))
         out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output']
         if len(out_ports) > 0:
             for ix, conn in enumerate(chunks(columns['out_ports'], 2)):
@@ -220,6 +222,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                         out_ports[ix]['connected_img'] = midi_output_connected
                         out_ports[ix]['offset'] = (8, 9)
                         out_ports[ix]['type'] = 'midi'
+            if not all('connector' in p for p in out_ports):
+                raise Exception('Connector detection for output ports of plugin {0} failed'.format(p['uri']))
 
         plugin_map[p['instance']] = p
 
