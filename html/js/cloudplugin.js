@@ -27,6 +27,35 @@ function getDummyPluginData() {
     })
 }
 
+// TODO this is for development purposes only, this will come from cloud.
+var FEATURED = {
+	'http://moddevices.com/plugins/caps/AutoFilter': {
+		priority: 1,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://moddevices.com/plugins/mod-devel/CrossOver2': {
+		priority: 2,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://moddevices.com/plugins/mda/EPiano': {
+		priority: 3,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://kxstudio.linuxaudio.org/plugins/FluidPlug_FluidEthnic': {
+		priority: 4,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://gareus.org/oss/lv2/midifilter#scalecc': {
+		priority: 5,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://moddevices.com/plugins/mda/RePsycho': {
+		priority: 6,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+}
+
+
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -202,6 +231,9 @@ JqueryClass('cloudPluginBox', {
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
+
+                // TODO remove
+                cplugin.featured = FEATURED[cplugin.uri];
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
@@ -461,6 +493,10 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
+        var featured = plugins.filter(function(p) {
+            return p.featured;
+        })
+
         // sort plugins by label
         plugins.sort(function (a, b) {
             a = a.label.toLowerCase()
@@ -493,17 +529,45 @@ JqueryClass('cloudPluginBox', {
         var cachedContentCanvas = {
             'All': self.find('#cloud-plugin-content-All')
         }
+        var cachedFeaturedCanvas = {
+            'All': $('<div>').addClass('featured-plugins').appendTo(cachedContentCanvas['All'])
+        }
         var pluginsDict = {}
 
+        var getCategory = function(plugin) {
+            category = plugin.category[0]
+            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                return 'MIDI';
+            }
+            return category
+        }
+
         var plugin, render
+        for (var i in featured) {
+            plugin = featured[i]
+            category = getCategory(plugin)
+            render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
+
+            if (category && category != 'All' && categories[category] != null) {
+                if (cachedFeaturedCanvas[category] == null) {
+                    cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
+	                cachedFeaturedCanvas[category] = $('<div>').addClass('featured-plugins').appendTo(cachedContentCanvas[category])
+                }
+                render.clone(true).appendTo(cachedFeaturedCanvas[category])
+            }
+
+            render.appendTo(cachedFeaturedCanvas['All'])
+        }
+
+		for (var category in cachedFeaturedCanvas) {
+			var section = cachedFeaturedCanvas[category];
+			section.featuredCarousel();
+		}
+
         for (var i in plugins) {
             plugin   = plugins[i]
-            category = plugin.category[0]
+            category = getCategory(plugin)
             render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached)
-
-            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
-                category = 'MIDI'
-            }
 
             pluginsDict[plugin.uri] = plugin
 
@@ -544,7 +608,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    renderPlugin: function (plugin, cloudReached) {
+    renderPlugin: function (plugin, cloudReached, featured) {
         var self = $(this)
         var uri = escape(plugin.uri)
         var comment = plugin.comment.trim()
@@ -562,10 +626,12 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            demo: !!plugin.demo // FIXME
+            demo: !!plugin.demo, // FIXME
+			featured: plugin.featured
         }
 
-        var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
+        var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
+        var rendered = $(Mustache.render(template, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin)
         })
