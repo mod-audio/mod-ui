@@ -316,7 +316,7 @@ JqueryClass('shareBox', {
         }
     },
 
-    open: function (bundlepath, title, uris) {
+    open: function (bundlepath, title, stable) {
         var self = $(this)
 
         self.find('#record-share').show()
@@ -330,6 +330,11 @@ JqueryClass('shareBox', {
         self.find('#share-wait-message').text("Waiting for screenshot...")
         self.find('.js-share').addClass('disabled')
         self.find('textarea').val('').focus()
+        if (stable) {
+            self.find('.unstable-warning').hide();
+        } else {
+            self.find('.unstable-warning').show();
+        }
         self.show()
 
         var done = function () {

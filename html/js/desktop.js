@@ -615,10 +615,10 @@ function Desktop(elements) {
             }),
             success: function (resp) {
                 if (! resp.result) {
-                    new Notification('error', 'Cannot share pedalboard, it contains unstable plugins!')
+					callback(false)
                     return
                 }
-                callback()
+                callback(true)
             },
             error: function (resp) {
                 new Bug("Couldn't validate pedalboard, error:<br/>" + resp.statusText)
@@ -1036,8 +1036,8 @@ function Desktop(elements) {
                 return new Notification('warn', 'No plugins loaded, cannot share', 1500)
             }
 
-            self.validatePlugins(uris, function () {
-                elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
+            self.validatePlugins(uris, function (stable) {
+                elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title, stable)
             })
         }
 
