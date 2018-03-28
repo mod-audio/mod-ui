@@ -188,10 +188,10 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
-        else:
+        else:  # tuna can, we have to guess the position of the connectors
             columns = {
-                'in_ports': [[-9, 121], [-9, 146], [-9, 190], [-9, 215]],
-                'out_ports': [[251 + 8, 121], [251 + 8, 146], [251 + 8, 190], [251 + 8, 215]]
+                'in_ports': [[-9, 121], [-9, 146], [-9, 190], [-9, 215], [-9, 259], [-9, -284], [-9, 328], [-9, 353]],
+                'out_ports': [[259, 121], [259, 146], [259, 190], [259, 215], [259, 259], [259, 284], [259, 328], [259, 353]]
             }
 
         # detect connectors
