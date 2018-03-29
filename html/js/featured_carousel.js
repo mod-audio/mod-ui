@@ -12,9 +12,9 @@ JqueryClass('featuredCarousel', {
 			return 0;
 		})
 
-		var carousel = new Carousel(plugins[0]);
-		var left = carousel;
-		var right = carousel;
+		var main = new Carousel(plugins[0]);
+		var left = main;
+		var right = main;
 		for (var i=1; i<plugins.length; i++) {
 			if (i % 2 == 0) {
 				left = left.addLeft(plugins[i])
@@ -34,34 +34,32 @@ JqueryClass('featuredCarousel', {
 			rightArrow.click(function() { self.featuredCarousel('rotateRight') });
 		}
 
-		self.data('carousel', carousel)
+		main.element.addClass('main')
+		main.leftNode.element.addClass('left')
+		main.rightNode.element.addClass('right')
+
+		self.data('main', main)
 		self.data('plugins', plugins)
-
-		self.featuredCarousel('highlight')
-	},
-
-	highlight: function() {
-		var self = $(this)
-		var carousel = self.data('carousel')
-		self.data('plugins').removeClass('left').removeClass('right').removeClass('main')
-		carousel.element.addClass('main')
-		carousel.leftNode.element.addClass('left')
-		carousel.rightNode.element.addClass('right')
-
 	},
 
 	rotateLeft: function() {
 		var self = $(this);
-		var carousel = self.data('carousel');
-		self.data('carousel', carousel.leftNode);
-		self.featuredCarousel('highlight');
+		var main = self.data('main')
+		main.leftNode.leftNode.element.addClass('left')
+		main.leftNode.element.removeClass('left').addClass('main')
+		main.element.removeClass('main').addClass('right')
+		main.rightNode.element.removeClass('right')
+		self.data('main', main.leftNode);
 	},
 
 	rotateRight: function() {
 		var self = $(this);
-		var carousel = self.data('carousel');
-		self.data('carousel', carousel.rightNode);
-		self.featuredCarousel('highlight');
+		var main = self.data('main');
+		main.rightNode.rightNode.element.addClass('right')
+		main.rightNode.element.removeClass('right').addClass('main')
+		main.element.removeClass('main').addClass('left')
+		main.leftNode.element.removeClass('left')
+		self.data('main', main.rightNode);
 	}
 })
 
