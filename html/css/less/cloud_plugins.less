@@ -238,71 +238,36 @@
       }
 	}
 	.featured-plugins {
-		width: 100%;
-		height: 300px;
 		position: relative;
-		.featured {
-			cursor: pointer;
-			transition: all 2s;
+		height: 350px;
+		width: 100%;
+		display: block;
+
+		.carousel {
 			position: absolute;
 			top: 0;
-			height: 200px !important;
-			opacity: 0.4;
-			display: none;
-			h2 {
-				text-align: center;
+			bottom: 0;
+			right: 25px;
+			left: 25px;
+			.featured {
+				width: 30%;
+				height: 300px;
+				cursor: pointer
+				.box {
+					text-align: center;
+					h2 {
+						text-align: center;
+					}
+					img {
+						width: auto;
+						height: auto;
+						margin: auto;
+						display: block;
+						max-height: 200px;
+						max-width: 80%;
+					}
+				}
 			}
-			img {
-				width: auto;
-				height: auto;
-				margin: auto;
-				display: block;
-				max-height: 80%;
-				max-width: 250px;
-			}
-		}
-		.left {
-			left: 80px;
-			display: block !important;
-		}
-		.right {
-			right: 80px;
-			display: block !important;
-		}
-		.main {
-			display: block !important;
-			position: relative !important;
-			margin: auto;
-			opacity: 1 !important;
-			p {
-				text-align: center;
-			}
-			img {
-				max-height: 100% !important;
-				max-width: 350px !important;
-			}
-		}
-
-		.left-arrow {
-			left: 20px;
-			&:before {
-				content: "<";
-			}
-		}
-
-		.right-arrow {
-			right: 20px;
-			&:before {
-				content: ">";
-			}
-		}
-
-		.left-arrow, .right-arrow {
-			position: absolute;
-			top: 100px;
-			font-size: 60px;
-			z-index: 1000;
-			cursor: pointer;
 		}
 	}
 }
