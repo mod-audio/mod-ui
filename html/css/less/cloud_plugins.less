@@ -242,7 +242,6 @@
 		height: 350px;
 		width: 100%;
 		display: block;
-
 		.carousel {
 			position: absolute;
 			top: 0;
@@ -250,9 +249,8 @@
 			right: 25px;
 			left: 25px;
 			.featured {
-				width: 30%;
-				height: 300px;
-				cursor: pointer
+				width: 33%;
+				cursor: pointer;
 				.box {
 					text-align: center;
 					h2 {
@@ -264,8 +262,12 @@
 						margin: auto;
 						display: block;
 						max-height: 200px;
-						max-width: 80%;
+						max-width: 100%;
 					}
+				}
+				&.slick-center {
+					transform: scale(1.1) translate(0,10px);
+					transition: all 500ms ease;
 				}
 			}
 		}

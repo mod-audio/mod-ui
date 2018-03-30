@@ -167,9 +167,7 @@ JqueryClass('cloudPluginBox', {
         self.find('.plugins-wrapper').hide()
         self.find('#cloud-plugin-tab-' + category).addClass('selected')
         self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
-		self.find('#cloud-plugin-content-' + category + ' .carousel').slick({
-			slidesToShow: 3
-		});
+		self.cloudPluginBox('makeCarousel', self.find('#cloud-plugin-content-' + category + ' .carousel'))
         self.data('category', category)
     },
     cleanResults: function () {
@@ -492,6 +490,17 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
+	makeCarousel: function(element) {
+		var plugins = element.find('.featured')
+		if (element.is(':visible')) {
+			element.slick({
+				slidesToShow: Math.min(3, plugins.length),
+				centerPadding: '60px',
+				centerMode: true,
+			});
+		}
+	},
+
     showPlugins: function (plugins, cloudReached) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
@@ -564,11 +573,7 @@ JqueryClass('cloudPluginBox', {
 
 		for (var category in cachedFeaturedCanvas) {
 			var section = cachedFeaturedCanvas[category];
-			if (section.is(':visible')) {
-				section.slick({
-					slidesToShow: 3,
-				});
-			}
+			self.cloudPluginBox('makeCarousel', section);
 		}
 
         for (var i in plugins) {
