@@ -53,6 +53,10 @@ var FEATURED = {
 		priority: 6,
 		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
 	},
+	'http://moddevices.com/plugins/caps/AmpVTS': {
+		priority: 1,
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
+	}
 }
 
 

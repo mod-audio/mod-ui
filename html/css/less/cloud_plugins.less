@@ -286,7 +286,6 @@
 				cursor: pointer;
 				margin-top: 40px;
 				.box {
-					margin: 0 25px;
 					padding: 4px;
 					border: 1px solid #737373;
 					height: 300px;
@@ -310,7 +309,7 @@
 						}
 						p {
 							color: #e0e0e0;
-							padding-top: 20px;
+							padding: 20px 20px 0 20px;
 						}
 						button {
 							background-color: transparent;
@@ -343,6 +342,16 @@
 			.slick-next {
 				right: 30px !important;
 			}
+		}
+	}
+	@media (max-width: 1500px) {
+		.box {
+			margin: 0 25px;
+		}
+	}
+	@media (min-width: 1501px) {
+		.box {
+			margin: 0 40px;
 		}
 	}
 }
