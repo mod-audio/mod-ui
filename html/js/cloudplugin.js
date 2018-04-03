@@ -283,7 +283,7 @@ JqueryClass('cloudPluginBox', {
             if (customRenderCallback) {
                 customRenderCallback(plugins)
             } else {
-                self.cloudPluginBox('showPlugins', plugins, cloudReached)
+                self.cloudPluginBox('showPlugins', plugins, cloudReached, !query.text)
             }
 
             if (self.data('firstLoad')) {
@@ -499,14 +499,14 @@ JqueryClass('cloudPluginBox', {
 				centerMode: true,
 			});
 			if (plugins.length == 2) {
-				element.addClass('double');
+				element.parent().addClass('double');
 			} else if (plugins.length == 1) {
-				element.addClass('single');
+				element.parent().addClass('single');
 			}
 		}
 	},
 
-    showPlugins: function (plugins, cloudReached) {
+    showPlugins: function (plugins, cloudReached, showFeatured) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
@@ -546,9 +546,6 @@ JqueryClass('cloudPluginBox', {
         var cachedContentCanvas = {
             'All': self.find('#cloud-plugin-content-All')
         }
-        var cachedFeaturedCanvas = {
-            'All': $(Mustache.render(TEMPLATES.featuredplugins)).appendTo(cachedContentCanvas['All']).find('.carousel')
-        }
         var pluginsDict = {}
 
         var getCategory = function(plugin) {
@@ -560,26 +557,34 @@ JqueryClass('cloudPluginBox', {
         }
 
         var plugin, render
-        for (var i in featured) {
-            plugin = featured[i]
-            category = getCategory(plugin)
-            render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
+		if (showFeatured) {
+			var cachedFeaturedCanvas = {
+				'All': $(Mustache.render(TEMPLATES.featuredplugins)).appendTo(cachedContentCanvas['All']).find('.carousel')
+			}
+			for (var i in featured) {
+				plugin = featured[i]
+				category = getCategory(plugin)
+				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
 
-            if (category && category != 'All' && categories[category] != null) {
-                if (cachedFeaturedCanvas[category] == null) {
-                    cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
-	                cachedFeaturedCanvas[category] = $(Mustache.render(TEMPLATES.featuredplugins)).appendTo(cachedContentCanvas[category]).find('.carousel')
-                }
-				render.clone(true).appendTo(cachedFeaturedCanvas[category])
-            }
+				if (category && category != 'All' && categories[category] != null) {
+					if (cachedFeaturedCanvas[category] == null) {
+						cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
+						cachedFeaturedCanvas[category] = $(Mustache.render(TEMPLATES.featuredplugins)).appendTo(cachedContentCanvas[category]).find('.carousel')
+						cachedContentCanvas[category].append(Mustache.render(TEMPLATES.filteredresults))
+					}
+					render.clone(true).appendTo(cachedFeaturedCanvas[category])
+				}
 
-			render.appendTo(cachedFeaturedCanvas['All'])
-        }
+				render.appendTo(cachedFeaturedCanvas['All'])
+			}
 
-		for (var category in cachedFeaturedCanvas) {
-			var section = cachedFeaturedCanvas[category];
-			self.cloudPluginBox('makeCarousel', section);
+			for (var category in cachedFeaturedCanvas) {
+				var section = cachedFeaturedCanvas[category];
+				self.cloudPluginBox('makeCarousel', section);
+			}
 		}
+
+		cachedContentCanvas.All.append(Mustache.render(TEMPLATES.filteredresults))
 
         for (var i in plugins) {
             plugin   = plugins[i]
@@ -592,6 +597,7 @@ JqueryClass('cloudPluginBox', {
                 categories[category] += 1
                 if (cachedContentCanvas[category] == null) {
                     cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
+					cachedContentCanvas[category].append(Mustache.render(TEMPLATES.filteredresults))
                 }
                 render.clone(true).appendTo(cachedContentCanvas[category])
             }
