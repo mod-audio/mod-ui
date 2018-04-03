@@ -51,7 +51,7 @@ var FEATURED = {
 	},
 	'http://moddevices.com/plugins/mda/RePsycho': {
 		priority: 6,
-		headline: 'Inspired by Ibanez TS-9',
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
 	},
 }
 
@@ -498,6 +498,11 @@ JqueryClass('cloudPluginBox', {
 				centerPadding: '60px',
 				centerMode: true,
 			});
+			if (plugins.length == 2) {
+				element.addClass('double');
+			} else if (plugins.length == 1) {
+				element.addClass('single');
+			}
 		}
 	},
 

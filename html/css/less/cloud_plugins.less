@@ -239,7 +239,7 @@
 	}
 	.featured-plugins {
 		position: relative;
-		height: 350px;
+		height: 460px;
 		width: 100%;
 		display: block;
 		.carousel {
@@ -248,27 +248,82 @@
 			bottom: 0;
 			right: 25px;
 			left: 25px;
-			.featured {
-				width: 33%;
-				cursor: pointer;
+			height: 455px !important;
+			.slick-list {
+				height: 455px !important;
+			}
+			&.double {
 				.box {
-					text-align: center;
-					h2 {
+					margin: 0 80px !important;
+					transition: all 0s !important;
+				}
+			}
+			&.single {
+				.box {
+					margin: 0 30px !important;
+					transition: all 0s !important;
+				}
+			}
+			.featured {
+				cursor: pointer;
+				margin-top: 40px;
+				.box {
+					margin: 0 25px;
+					padding: 4px;
+					border: 1px solid #737373;
+					height: 375px;
+					opacity: 0.4;
+					.inner-box {
+						border: 1px solid #444444;
 						text-align: center;
-					}
-					img {
-						width: auto;
-						height: auto;
-						margin: auto;
-						display: block;
-						max-height: 200px;
-						max-width: 100%;
+						height: 365px;
+						h2 {
+							color: #c3c3c3;
+							text-align: center;
+						}
+						img {
+							width: auto;
+							height: auto;
+							margin: auto;
+							display: block;
+							max-height: 175px;
+							padding: 0 20px;
+							max-width: 100%;
+						}
+						p {
+							color: #e0e0e0;
+							padding-top: 20px;
+						}
+						button {
+							background-color: transparent;
+							color: #ff3838;
+							border: 1px solid #ff3838;
+							text-transform: uppercase;
+							padding: 8px 20px;
+						}
 					}
 				}
 				&.slick-center {
-					transform: scale(1.1) translate(0,10px);
-					transition: all 500ms ease;
+					height: 390px;
+					.box {
+						opacity: 1;
+						transform: scale(1.2) translate(0,-0);
+						transition: all 500ms ease;
+					}
 				}
+			}
+			.slick-arrow {
+				&:before {
+					font-size: 60px;
+				}
+				top: 200px;
+				z-index: 100;
+			}
+			.slick-prev {
+				left: -10px !important;
+			}
+			.slick-next {
+				right: 30px !important;
 			}
 		}
 	}
