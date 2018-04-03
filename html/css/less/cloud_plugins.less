@@ -142,8 +142,8 @@
       .make-md-column(6);
       .make-lg-column(4);
       height: 120px;
-      margin-top: 30px;
-      margin-bottom: 40px;
+      margin-top: 10px;
+      margin-bottom: 60px;
       background: rgba(255, 255, 255, 0.07);
       transition: all 0.33s;
       cursor: pointer;
@@ -237,13 +237,17 @@
         margin: 0 6px;
       }
 	}
-		h2 {
-			margin-left: 23px;
-			color: #cccccc;
-		}
+	h2 {
+		margin-left: 23px;
+		font-size: 20px;
+		color: #cccccc;
+	}
+	h3 {
+		color: #cccccc;
+	}
 	.featured-plugins {
 		position: relative;
-		height: 460px;
+		height: 360px;
 		width: 100%;
 		display: block;
 		&.double, &.single {
@@ -270,13 +274,13 @@
 		}
 		.carousel {
 			position: absolute;
-			top: 10px;
+			top: 0;
 			bottom: 0;
 			right: 25px;
 			left: 25px;
-			height: 455px !important;
+			height: 380px !important;
 			.slick-list {
-				height: 455px !important;
+				height: 380px !important;
 			}
 			.featured {
 				cursor: pointer;
@@ -285,12 +289,12 @@
 					margin: 0 25px;
 					padding: 4px;
 					border: 1px solid #737373;
-					height: 375px;
+					height: 300px;
 					opacity: 0.4;
 					.inner-box {
 						border: 1px solid #444444;
 						text-align: center;
-						height: 365px;
+						height: 290px;
 						h2 {
 							color: #c3c3c3;
 							text-align: center;
@@ -300,7 +304,7 @@
 							height: auto;
 							margin: auto;
 							display: block;
-							max-height: 175px;
+							max-height: 100px;
 							padding: 0 20px;
 							max-width: 100%;
 						}
