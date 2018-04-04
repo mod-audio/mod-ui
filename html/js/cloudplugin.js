@@ -171,7 +171,6 @@ JqueryClass('cloudPluginBox', {
         self.find('.plugins-wrapper').hide()
         self.find('#cloud-plugin-tab-' + category).addClass('selected')
         self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
-		self.cloudPluginBox('makeCarousel', self.find('#cloud-plugin-content-' + category + ' .carousel'))
         self.data('category', category)
     },
     cleanResults: function () {
@@ -287,7 +286,7 @@ JqueryClass('cloudPluginBox', {
             if (customRenderCallback) {
                 customRenderCallback(plugins)
             } else {
-                self.cloudPluginBox('showPlugins', plugins, cloudReached, !query.text)
+                self.cloudPluginBox('showPlugins', plugins, cloudReached)
             }
 
             if (self.data('firstLoad')) {
@@ -494,23 +493,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-	makeCarousel: function(element) {
-		var plugins = element.find('.featured')
-		if (element.is(':visible')) {
-			element.slick({
-				slidesToShow: Math.min(3, plugins.length),
-				centerPadding: '60px',
-				centerMode: true,
-			});
-			if (plugins.length == 2) {
-				element.parent().addClass('double');
-			} else if (plugins.length == 1) {
-				element.parent().addClass('single');
-			}
-		}
-	},
-
-    showPlugins: function (plugins, cloudReached, showFeatured) {
+    showPlugins: function (plugins, cloudReached) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
@@ -561,34 +544,20 @@ JqueryClass('cloudPluginBox', {
         }
 
         var plugin, render
-		if (showFeatured) {
-			var cachedFeaturedCanvas = {
-				'All': $(Mustache.render(TEMPLATES.featuredplugins)).appendTo(cachedContentCanvas['All']).find('.carousel')
-			}
+		if (!self.data('featuredInitialized')) {
+			var featuredCanvas = $('.carousel')
 			for (var i in featured) {
 				plugin = featured[i]
-				category = getCategory(plugin)
 				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
-
-				if (category && category != 'All' && categories[category] != null) {
-					if (cachedFeaturedCanvas[category] == null) {
-						cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
-						cachedFeaturedCanvas[category] = $(Mustache.render(TEMPLATES.featuredplugins)).appendTo(cachedContentCanvas[category]).find('.carousel')
-						cachedContentCanvas[category].append(Mustache.render(TEMPLATES.filteredresults))
-					}
-					render.clone(true).appendTo(cachedFeaturedCanvas[category])
-				}
-
-				render.appendTo(cachedFeaturedCanvas['All'])
+				render.appendTo(featuredCanvas)
 			}
-
-			for (var category in cachedFeaturedCanvas) {
-				var section = cachedFeaturedCanvas[category];
-				self.cloudPluginBox('makeCarousel', section);
-			}
+			featuredCanvas.slick({
+				slidesToShow: Math.min(3, plugins.length),
+				centerPadding: '60px',
+				centerMode: true,
+			});
+			self.data('featuredInitialized', true)
 		}
-
-		cachedContentCanvas.All.append(Mustache.render(TEMPLATES.filteredresults))
 
         for (var i in plugins) {
             plugin   = plugins[i]
@@ -601,7 +570,6 @@ JqueryClass('cloudPluginBox', {
                 categories[category] += 1
                 if (cachedContentCanvas[category] == null) {
                     cachedContentCanvas[category] = self.find('#cloud-plugin-content-' + category)
-					cachedContentCanvas[category].append(Mustache.render(TEMPLATES.filteredresults))
                 }
                 render.clone(true).appendTo(cachedContentCanvas[category])
             }
