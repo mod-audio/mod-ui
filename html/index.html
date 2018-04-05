@@ -31,6 +31,8 @@
 <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -52,6 +54,7 @@
 <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
 
 <script type="text/javascript">
     {% autoescape None %}
@@ -345,6 +348,9 @@ $('document').ready(function() {
         <div id="share-window" class="save-popup mod-hidden">
             <div class="box">
                 <h1 class="pull-left">SHARE</h1><span class="js-cancel close">&times;</span>
+                <div class="unstable-warning mod-hidden">
+                  <b>Warning:</b> This pedalboard contains beta plugins and won't be available to most users
+                </div>
                 <form>
                     <div class="clearfix"></div>
                     <div class="form-group" id="share-window-form">
@@ -684,7 +690,12 @@ $('document').ready(function() {
             </div>
 
             <div class="cloud-plugins clearfix js-cloud-plugins">
-                <div id="cloudplugin-results-wrapper">
+              <div id="cloudplugin-results-wrapper">
+				    <div class="featured-plugins">
+					  <h2>Featured plugins</h2>
+					  <div class="carousel"></div>
+					</div>
+					<h2>Filtered results</h2>
                     <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>

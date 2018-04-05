@@ -27,6 +27,39 @@ function getDummyPluginData() {
     })
 }
 
+// TODO this is for development purposes only, this will come from cloud.
+var FEATURED = {
+	'http://moddevices.com/plugins/caps/AutoFilter': {
+		priority: 1,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://moddevices.com/plugins/mod-devel/CrossOver2': {
+		priority: 2,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://moddevices.com/plugins/mda/EPiano': {
+		priority: 3,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://kxstudio.linuxaudio.org/plugins/FluidPlug_FluidEthnic': {
+		priority: 4,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://gareus.org/oss/lv2/midifilter#scalecc': {
+		priority: 5,
+		headline: 'Inspired by Ibanez TS-9',
+	},
+	'http://moddevices.com/plugins/mda/RePsycho': {
+		priority: 6,
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
+	},
+	'http://moddevices.com/plugins/caps/AmpVTS': {
+		priority: 1,
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
+	}
+}
+
+
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -202,6 +235,9 @@ JqueryClass('cloudPluginBox', {
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
+
+                // TODO remove
+                cplugin.featured = FEATURED[cplugin.uri];
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
@@ -461,6 +497,10 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
+        var featured = plugins.filter(function(p) {
+            return p.featured;
+        })
+
         // sort plugins by label
         plugins.sort(function (a, b) {
             a = a.label.toLowerCase()
@@ -495,15 +535,34 @@ JqueryClass('cloudPluginBox', {
         }
         var pluginsDict = {}
 
+        var getCategory = function(plugin) {
+            category = plugin.category[0]
+            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                return 'MIDI';
+            }
+            return category
+        }
+
         var plugin, render
+		if (!self.data('featuredInitialized')) {
+			var featuredCanvas = $('.carousel')
+			for (var i in featured) {
+				plugin = featured[i]
+				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
+				render.appendTo(featuredCanvas)
+			}
+			featuredCanvas.slick({
+				slidesToShow: Math.min(3, plugins.length),
+				centerPadding: '60px',
+				centerMode: true,
+			});
+			self.data('featuredInitialized', true)
+		}
+
         for (var i in plugins) {
             plugin   = plugins[i]
-            category = plugin.category[0]
+            category = getCategory(plugin)
             render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached)
-
-            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
-                category = 'MIDI'
-            }
 
             pluginsDict[plugin.uri] = plugin
 
@@ -544,7 +603,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    renderPlugin: function (plugin, cloudReached) {
+    renderPlugin: function (plugin, cloudReached, featured) {
         var self = $(this)
         var uri = escape(plugin.uri)
         var comment = plugin.comment.trim()
@@ -562,10 +621,12 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            demo: !!plugin.demo // FIXME
+            demo: !!plugin.demo, // FIXME
+			featured: plugin.featured
         }
 
-        var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
+        var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
+        var rendered = $(Mustache.render(template, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin)
         })

@@ -656,8 +656,7 @@ $('document').ready(function() {
 
     $("#prefs-ui-unstable-plugins").click(function () {
         var checked = $(this).prop("checked")
-        if (checked && !confirm("Installing non-stable plugins is unsupported.\n"
-                               +"Expect things to break, and note that you cannot share pedalboards containing such plugins.\n"
+        if (checked && !confirm("Installing non-stable plugins is unsupported, expect things to break.\n"
                                +"Are you sure you want to continue?")) {
             $(this).prop("checked", false)
             return
@@ -946,12 +945,13 @@ $('document').ready(function() {
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
-                            Show unstable in Plugin Store
+                            Show beta in Plugin Store
                         </input>
                     </label>
                     <p>
-                        Show the 'stable' check-box under the Plugin Store, allowing it to be unselected.<br/>
-                        Note that installing non-stable plugins is unsupported and you cannot share pedalboards containing such plugins.<br/>
+                        Show the 'stable' check-box under the Plugin Store, allowing it to be unselected, so beta plugins can be installed.<br/>
+                        Note that beta plugins are unsupported. If you share a pedalboard containing beta plugins, it will only
+						be available to users that explicity accept pedalboards with beta plugins.<br/>
                         Expect things to break!
                     </p>
                 </form>
