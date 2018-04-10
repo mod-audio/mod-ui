@@ -51,11 +51,11 @@ var FEATURED = {
 	},
 	'http://moddevices.com/plugins/mda/RePsycho': {
 		priority: 6,
-		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
 	},
 	'http://moddevices.com/plugins/caps/AmpVTS': {
 		priority: 1,
-		headline: 'Inspired by Ibanez TS-9, this is one of greatest plugins of all times',
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
 	}
 }
 
@@ -544,19 +544,31 @@ JqueryClass('cloudPluginBox', {
         }
 
         var plugin, render
+		var factory = function(img) {
+			return function() {
+				console.log(img.parent().height() + ', ' + img.height())
+				img.css('padding-top', (parseInt((img.parent().height()-img.height())/2))+'px');
+				img.css('opacity', 1)
+			};
+		}
 		if (!self.data('featuredInitialized')) {
 			var featuredCanvas = $('.carousel')
 			for (var i in featured) {
 				plugin = featured[i]
 				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
 				render.appendTo(featuredCanvas)
+				render.find('img').on('load', factory(render.find('img')));
 			}
+			var columns = $(window).width() >= 1650 ? 5 : 3;
 			featuredCanvas.slick({
-				slidesToShow: Math.min(3, plugins.length),
+				slidesToShow: Math.min(columns, plugins.length),
 				centerPadding: '60px',
 				centerMode: true,
 			});
 			self.data('featuredInitialized', true)
+			$(window).on('resize', function() {
+				console.log($(window).width())
+			});
 		}
 
         for (var i in plugins) {
