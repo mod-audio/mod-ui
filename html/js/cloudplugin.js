@@ -120,7 +120,7 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('search')
         })
 
-        self.find('input:checkbox[name=stable]').click(function (e) {
+        self.find('input:checkbox[name=unstable]').click(function (e) {
             self.cloudPluginBox('search')
         })
 
@@ -153,11 +153,11 @@ JqueryClass('cloudPluginBox', {
             $('#cloud_install_all').addClass("disabled").css({color:'#444'})
             $('#cloud_update_all').addClass("disabled").css({color:'#444'})
 
-            var stablecb = self.find('input:checkbox[name=stable]')
-            if (stablecb.is(':checked')) {
+            var unstablecb = self.find('input:checkbox[name=unstable]')
+            if (!unstablecb.is(':checked')) {
                 self.cloudPluginBox('search')
             } else {
-                stablecb.click()
+                unstablecb.click()
             }
             return false
         }
@@ -214,7 +214,7 @@ JqueryClass('cloudPluginBox', {
             summary: "true",
             image_version: VERSION,
         }
-        if (self.find('input:checkbox[name=stable]:checked').length > 0) {
+        if (self.find('input:checkbox[name=unstable]:checked').length == 0) {
             query.stable = "true"
         }
         if (self.find('input:checkbox[name=installed]:checked').length)
