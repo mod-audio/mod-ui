@@ -546,7 +546,6 @@ JqueryClass('cloudPluginBox', {
         var plugin, render
 		var factory = function(img) {
 			return function() {
-				console.log(img.parent().height() + ', ' + img.height())
 				img.css('padding-top', (parseInt((img.parent().height()-img.height())/2))+'px');
 				img.css('opacity', 1)
 			};
@@ -566,9 +565,6 @@ JqueryClass('cloudPluginBox', {
 				centerMode: true,
 			});
 			self.data('featuredInitialized', true)
-			$(window).on('resize', function() {
-				console.log($(window).width())
-			});
 		}
 
         for (var i in plugins) {
