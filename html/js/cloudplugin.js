@@ -45,6 +45,10 @@ var FEATURED = {
 		priority: 4,
 		headline: 'Inspired by Ibanez TS-9',
 	},
+	'http://moddevices.com/plugins/caps/AmpVTS': {
+		priority: 4,
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
+	},
 	'http://gareus.org/oss/lv2/midifilter#scalecc': {
 		priority: 5,
 		headline: 'Inspired by Ibanez TS-9',
@@ -53,9 +57,13 @@ var FEATURED = {
 		priority: 6,
 		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
 	},
-	'http://moddevices.com/plugins/caps/AmpVTS': {
-		priority: 1,
-		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
+	'http://kxstudio.linuxaudio.org/plugins/FluidPlug_Black_Pearl_4A': {
+		priority: 7,
+		headline: 'one more',
+	},
+	'http://drobilla.net/plugins/blop/sequencer_64': {
+		priority: 7,
+		headline: 'one more',
 	}
 }
 
@@ -505,6 +513,19 @@ JqueryClass('cloudPluginBox', {
         plugins.sort(function (a, b) {
             a = a.label.toLowerCase()
             b = b.label.toLowerCase()
+            if (a > b) {
+                return 1
+            }
+            if (a < b) {
+                return -1
+            }
+            return 0
+        })
+
+        // sort featured plugins by priority
+        featured.sort(function (a, b) {
+            a = a.featured.priority
+            b = b.featured.priority
             if (a > b) {
                 return 1
             }
