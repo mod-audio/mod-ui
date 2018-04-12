@@ -1872,7 +1872,6 @@ JqueryClass('statusTooltip', {
             return
         var tooltip = self.data('tooltip')
         tooltip.find('.text').html(self.data('message'))
-		console.log(tooltip.left)
         tooltip.show().stop().animate({
             opacity: 1
         }, 200)
