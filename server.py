@@ -30,6 +30,7 @@ def create_dummy_credentials():
 
 ROOT = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = join(ROOT, 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
 
 os.environ['MOD_DEV_ENVIRONMENT'] = os.environ.get("MOD_DEV_ENVIRONMENT", '1')
 os.environ['MOD_DATA_DIR'] = DATA_DIR

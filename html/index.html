@@ -31,6 +31,8 @@
 <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -54,6 +56,7 @@
 <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/buy-button-storefront.js?v={{version}}"></script>
 <script type="text/javascript" src="js/shopify.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
 
 <script type="text/javascript">
     {% autoescape None %}
@@ -133,6 +136,7 @@ $('document').ready(function() {
         devicesIcon: $('#mod-devices'),
         devicesWindow: $('#mod-devices-window'),
         statusIcon: $('#mod-status'),
+        settingsIcon: $('#mod-settings'),
         upgradeIcon: $('#mod-update'),
         upgradeWindow: $('#mod-upgrade'),
         bypassLeftButton: $("#mod-bypassLeft"),
@@ -347,6 +351,9 @@ $('document').ready(function() {
         <div id="share-window" class="save-popup mod-hidden">
             <div class="box">
                 <h1 class="pull-left">SHARE</h1><span class="js-cancel close">&times;</span>
+                <div class="unstable-warning mod-hidden">
+                  <b>Warning:</b> This pedalboard contains beta plugins and won't be available to most users
+                </div>
                 <form>
                     <div class="clearfix"></div>
                     <div class="form-group" id="share-window-form">
@@ -404,7 +411,7 @@ $('document').ready(function() {
                         </div>
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
-                            <h3>Uploaded completed!</h3>
+                            <h3>Upload completed!</h3>
                             <div class="btn-group">
                                 <div class="tooltip top" role="tooltip" id="share-tooltip">
                                     <div class="tooltip-arrow"></div>
@@ -550,14 +557,15 @@ $('document').ready(function() {
 
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
-        <div id="mod-plugins" class="icon selected"></div>
-        <div id="mod-pedalboard" class="icon"></div>
-        <div id="mod-bank" class="icon"></div>
-        <div id="mod-cloud-plugins" class="icon"></div>
+        <div id="mod-plugins" class="icon selected" data-message="Constructor"></div>
+        <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
+        <div id="mod-bank" class="icon" data-message="Banks"></div>
+        <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>
         <div id="mod-devices" class="status icon"></div>
+        <div id="mod-settings" class="status icon mod-settings" data-message="Go to settings screen"></div>
         <div id="mod-ram" class="icon">
             <div class="progress" id="ram-bar" style="width: 100%;">
                 <div class="bar"></div> <!-- not sure if this is needed -->
@@ -661,8 +669,8 @@ $('document').ready(function() {
                     <label for="cloud-plugins-installed">Installed only</label>
                 </div>
                 <div class="control-group mod-hidden">
-                    <input type="checkbox" name="stable" id="cloud-plugins-stable" />
-                    <label for="cloud-plugins-stable">Stable only</label>
+                    <input type="checkbox" name="unstable" id="cloud-plugins-stable" />
+                    <label for="cloud-plugins-stable">Show beta plugins</label>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
@@ -685,7 +693,12 @@ $('document').ready(function() {
             </div>
 
             <div class="cloud-plugins clearfix js-cloud-plugins">
-                <div id="cloudplugin-results-wrapper">
+              <div id="cloudplugin-results-wrapper">
+				    <div class="featured-plugins">
+					  <h2>Featured plugins</h2>
+					  <div class="carousel"></div>
+					</div>
+					<h2>Filtered results</h2>
                     <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>

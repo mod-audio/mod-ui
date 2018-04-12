@@ -655,14 +655,7 @@ $('document').ready(function() {
     })
 
     $("#prefs-ui-unstable-plugins").click(function () {
-        var checked = $(this).prop("checked")
-        if (checked && !confirm("Installing non-stable plugins is unsupported.\n"
-                               +"Expect things to break, and note that you cannot share pedalboards containing such plugins.\n"
-                               +"Are you sure you want to continue?")) {
-            $(this).prop("checked", false)
-            return
-        }
-        config_set("show-unstable-plugins", bool2str(checked))
+        config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -775,6 +768,7 @@ $('document').ready(function() {
             <div id="tab-advanced" class="add-bank">Advanced</div>
             <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
             <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
+            <a href="/" id="go-back"><span class="icon-return"></span>Go back</a>
         </div>
         <!-- END BANK|SETTINGS-LIST -->
 
@@ -945,13 +939,14 @@ $('document').ready(function() {
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
-                            Show unstable in Plugin Store
+                            Show beta plugins in the Store
                         </input>
                     </label>
                     <p>
-                        Show the 'stable' check-box under the Plugin Store, allowing it to be unselected.<br/>
-                        Note that installing non-stable plugins is unsupported and you cannot share pedalboards containing such plugins.<br/>
-                        Expect things to break!
+                        Show option to list 'beta' plugins in the Plugin Store.<br/>
+                        Note that beta plugins can be unstable and cause crashes. If you share a pedalboard containing beta plugins, it will only
+						be available to users that explicitly accept pedalboards with beta plugins.<br/>
+                        Just remember: things can break!
                     </p>
                 </form>
             </div>

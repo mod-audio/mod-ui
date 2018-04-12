@@ -23,6 +23,12 @@
       "css": "info",
       "code": 59394,
       "src": "fontawesome"
+    },
+    {
+      "uid": "3ba4275937db277075fc47d6b5a69a2e",
+      "css": "back",
+      "code": 59395,
+      "src": "entypo"
     }
   ]
 }

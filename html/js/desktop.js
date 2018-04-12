@@ -63,6 +63,7 @@ function Desktop(elements) {
         devicesIcon: $('<div>'),
         devicesWindow: $('<div>'),
         statusIcon: $('<div>'),
+        settingsIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
         bypassLeftButton: $('<div>'),
@@ -624,10 +625,10 @@ function Desktop(elements) {
             }),
             success: function (resp) {
                 if (! resp.result) {
-                    new Notification('error', 'Cannot share pedalboard, it contains unstable plugins!')
+					callback(false)
                     return
                 }
-                callback()
+                callback(true)
             },
             error: function (resp) {
                 new Bug("Couldn't validate pedalboard, error:<br/>" + resp.statusText)
@@ -1045,8 +1046,8 @@ function Desktop(elements) {
                 return new Notification('warn', 'No plugins loaded, cannot share', 1500)
             }
 
-            self.validatePlugins(uris, function () {
-                elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title)
+            self.validatePlugins(uris, function (stable) {
+                elements.shareWindow.shareBox('open', self.pedalboardBundle, self.title, stable)
             })
         }
 
@@ -1194,6 +1195,16 @@ function Desktop(elements) {
             elements.statusIcon.statusTooltip('message', msg, true)
         }
     })
+
+	elements.settingsIcon.click(function() {
+		document.location.href = '/settings';
+	})
+
+	elements.settingsIcon.statusTooltip()
+	elements.pedalboardTrigger.statusTooltip()
+	elements.pedalboardBoxTrigger.statusTooltip()
+	elements.bankBoxTrigger.statusTooltip()
+	elements.cloudPluginBoxTrigger.statusTooltip()
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
@@ -1896,7 +1907,7 @@ JqueryClass('statusTooltip', {
     init: function () {
         var self = $(this)
         var tooltip = $('<div class="tooltip">').appendTo($('body'))
-        $('<div class="arrow">').appendTo(tooltip)
+        tooltip.data('arrow', $('<div class="arrow">').appendTo(tooltip))
         $('<div class="text">').appendTo(tooltip)
         tooltip.hide()
         self.data('tooltip', tooltip)
@@ -1938,9 +1949,15 @@ JqueryClass('statusTooltip', {
             return
         var tooltip = self.data('tooltip')
         tooltip.find('.text').html(self.data('message'))
+		console.log(tooltip.left)
         tooltip.show().stop().animate({
             opacity: 1
         }, 200)
+        if (tooltip.position().left < 0) {
+            var arrow = tooltip.data('arrow');
+            arrow.css('left', arrow.position().left + tooltip.position().left);
+            tooltip.css('right', $(window).width() - self.position().left - self.width() + tooltip.position().left);
+        }
         if (timeout) {
             setTimeout(function () {
                 tooltip.stop().animate({
