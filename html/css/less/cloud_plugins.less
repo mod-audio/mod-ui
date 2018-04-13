@@ -325,6 +325,42 @@
 						border: 1px solid #444444;
 						text-align: center;
 						height: 290px;
+						.price-container {
+							position: absolute;
+							top: 0;
+							left: 0;
+							width: 90px;
+							height: 90px;
+							overflow: hidden;
+							color: #ffffff;
+						}
+						.price {
+							background-color: @brand-success;
+							border: 1px solid @brand-success;
+							&:before {
+								content: "€ ";
+							}
+							position: absolute;
+							top: 9px;
+							left: -30px;
+							padding: 3px 0;
+							transform: rotate(-45deg);
+							min-width: 108px;
+							text-align: center;
+						}
+						.licensed {
+							background-color: @brand-success;
+							border: 1px solid @brand-success;
+							&:before {
+								content: "PURCHASED";
+							}
+							position: absolute;
+							top: 16px;
+							left: -30px;
+							padding: 3px 27px;
+							font-size: 12px;
+							transform: rotate(-45deg);
+						}
 						h2 {
 							color: #c3c3c3;
 							text-align: center;

@@ -56,6 +56,10 @@ var FEATURED = {
 	'http://moddevices.com/plugins/caps/AmpVTS': {
 		priority: 1,
 		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
+	},
+	'urn:mod:commercial-plugin-example': {
+		priority: 0,
+		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
 	}
 }
 
@@ -573,6 +577,19 @@ JqueryClass('cloudPluginBox', {
         plugins.sort(function (a, b) {
             a = a.label.toLowerCase()
             b = b.label.toLowerCase()
+            if (a > b) {
+                return 1
+            }
+            if (a < b) {
+                return -1
+            }
+            return 0
+        })
+
+        // sort featured plugins by priority
+        featured.sort(function (a, b) {
+            a = a.featured.priority
+            b = b.featured.priority
             if (a > b) {
                 return 1
             }
