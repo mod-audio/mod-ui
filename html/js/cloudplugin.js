@@ -917,6 +917,7 @@ JqueryClass('cloudPluginBox', {
                 brand : plugin.brand,
                 name  : plugin.name,
                 label : plugin.label,
+                stable: !!plugin.stable,
                 ports : plugin.ports,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
@@ -933,7 +934,6 @@ JqueryClass('cloudPluginBox', {
                 info.remove()
                 self.data('info', null)
             }
-
             info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
             // hide control ports table if none available
