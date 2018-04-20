@@ -263,8 +263,9 @@ JqueryClass('cloudPluginBox', {
                         if (!cplugin.licensed)
                             cplugin.price = results.shopify[cplugin.uri].price
                     } else {
-                        // TODO this is inconsistent, we should remove it from
-                        // UI until plugin managers create a product at Shopify
+                        // This is inconsistent, so we remove it from UI until
+                        // plugin managers create a product at Shopify
+                        continue;
                     }
                 }
 
