@@ -257,27 +257,30 @@ JqueryClass('cloudPluginBox', {
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (cplugin.mod_license == 'paid_perpetual') {
+                    cplugin.commercial = true
                     if (results.shopify[cplugin.uri]) {
                         cplugin.shopify_id = results.shopify[cplugin.uri].id
                         cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
                         if (!cplugin.licensed)
                             cplugin.price = results.shopify[cplugin.uri].price
                     } else {
-                        // This is inconsistent, so we remove it from UI until
-                        // plugin managers create a product at Shopify
-                        continue;
+                        // Plugin is commercial but it's not at shopify.
+                        // Trial available, commercial version coming soon
+                        cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
                     }
                 }
+
+                cplugin.demo = lplugin && cplugin.commercial && !cplugin.licensed
 
                 if (cplugin.shopify_id) {
                     if (!cplugin.licensed)
                         cplugin.price = results.shopify[cplugin.uri].price;
-                    if (lplugin && !cplugin.licensed)
-                        cplugin.demo = true
                     if (lplugin && cplugin.licensed && !lplugin.licensed) {
                         // Should not happen
                         new Notification('warn', 'License for '+cplugin.label+' not downloaded, please reload interface', 4000);
                     }
+                } else if (cplugin.commercial) {
+                    cplugin.coming = true;
                 }
 
                 if (lplugin) {
@@ -726,7 +729,8 @@ JqueryClass('cloudPluginBox', {
             demo: !!plugin.demo,
             price: plugin.price,
             licensed: plugin.licensed,
-			featured: plugin.featured
+			featured: plugin.featured,
+            coming: plugin.coming
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
@@ -824,7 +828,7 @@ JqueryClass('cloudPluginBox', {
             }
 
             plugin.status  = 'installed'
-            if (plugin.price && !plugin.licensed)
+            if (plugin.commercial && !plugin.licensed)
                 plugin.demo = true;
             plugin.bundles = [bundle]
             plugin.installedVersion = plugin.latestVersion
@@ -932,9 +936,10 @@ JqueryClass('cloudPluginBox', {
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
                 shopify_id: plugin.shopify_id,
                 price: plugin.price,
-                trial: plugin.price && !plugin.licensed,
+                trial: plugin.commercial && !plugin.licensed,
                 demo  : !!plugin.demo,
-                licensed: plugin.licensed
+                licensed: plugin.licensed,
+                coming: plugin.coming,
             };
 
             var info = self.data('info')

@@ -182,6 +182,15 @@
           width: 113px;
           text-align: center;
         }
+        span.coming-soon {
+          position: absolute;
+          top: 25px;
+          margin-left: 98px;
+          padding: 3px 0;
+          transform: rotate(0deg) scale(1.3);
+          width: 113px;
+          text-align: center;
+        }
         span.price-container {
           margin-left: 170px;
           width: 200px;
@@ -488,6 +497,21 @@
       font-size: 14px;
       transform: rotate(-45deg);
   }
+  .coming-soon {
+	  background-color: @brand-success;
+	  border: 1px solid @brand-success;
+	  &:before {
+		  content: "COMING SOON";
+	  }
+	  position: absolute;
+	  top: 26px;
+	  left: -35px;
+	  padding: 3px 27px;
+	  font-size: 12px;
+	  transform: rotate(-45deg);
+	  width: 135px;
+  }
+
   .status.unstable {
     border: 1px solid #FF2927;
     background-color: #FF2927;
@@ -538,6 +562,22 @@
           min-width: 280px;
           text-align: center;
           font-size: 34px;
+          z-index: 1;
+      }
+      .description-coming-soon {
+          background-color: @brand-success;
+          border: 1px solid @brand-success;
+          &:before {
+              content: "COMING SOON";
+          }
+          position: relative;
+          top: 50px;
+          left: -70px;
+          padding: 3px 0;
+          transform: rotate(-45deg);
+          min-width: 280px;
+          text-align: center;
+          font-size: 26px;
           z-index: 1;
       }
   }
