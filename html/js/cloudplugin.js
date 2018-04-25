@@ -176,6 +176,8 @@ JqueryClass('cloudPluginBox', {
         }
 
         self.window(options)
+
+        return self
     },
 
     setCategory: function (category) {
@@ -362,6 +364,8 @@ JqueryClass('cloudPluginBox', {
                     ui.createComponent('cart', {
                         moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
                         options: SHOPIFY_PRODUCT_OPTIONS
+                    }).then(function(cart) {
+                        self.data('cart', cart.model);
                     })
                     desktop.windowManager.registerShopify(ui);
                 })
@@ -431,6 +435,14 @@ JqueryClass('cloudPluginBox', {
                 cache: false,
                 dataType: 'json'
             })
+        }
+    },
+
+    clearCart: function() {
+        var self = $(this)
+        var cart = self.data('cart')
+        if (cart) {
+            cart.clearLineItems()
         }
     },
 

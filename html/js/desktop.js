@@ -1804,6 +1804,7 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     new Notification('info', msg);
                     self.windowManager.closeWindows(null, true);
                 })
+                self.cloudPluginBox.cloudPluginBox('clearCart')
             },
             error: function() {
                 new Notification('error', "Can't get licenses from Cloud, please reload interface after finishing your purchase");
