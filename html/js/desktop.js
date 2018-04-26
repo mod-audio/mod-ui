@@ -1784,6 +1784,68 @@ Desktop.prototype.getDeviceShopToken = function(callback) {
     }
 }
 
+Desktop.prototype.fetchShopProducts = function() {
+    var self = this
+    return new Promise(function(resolve, reject) {
+        var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+        shopClient.fetchAllProducts().then(function(products) {
+            if (products.length > 0) {
+                self.createCart(shopClient)
+            }
+            resolve(products)
+        }, reject)
+    })
+}
+
+Desktop.prototype.fetchShopProduct = function(uri) {
+    var self = this
+    var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+    // TODO would be more efficient to query one single product,
+    // but don't know how to query by variant's SKU
+    return shopClient.fetchAllProducts().then(function(products) {
+        for (var i in products) {
+            if (uri == products[i].selectedVariant.attrs.variant.sku) {
+                self.createCart(shopClient)
+                return products[i]
+            }
+        }
+    })
+}
+
+Desktop.prototype.createCart = function(shopClient) {
+    var self = this
+    ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+        ui.createComponent('cart', {
+            moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+            options: SHOPIFY_PRODUCT_OPTIONS
+        }).then(function(cart) {
+            self.cart = cart.model;
+        })
+        self.windowManager.registerShopify(ui);
+    })
+}
+
+Desktop.prototype.createBuyButton = function(shopifyId) {
+    var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+    ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+        var node = document.getElementById('product-component-'+shopifyId);
+        var button = $('<div class="shopify-fake-button">ADD TO CART</div>').appendTo(node);
+        ui.createComponent('product', {
+            id: [shopifyId],
+            node: node,
+            moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+            options: SHOPIFY_PRODUCT_OPTIONS
+        });
+    });
+}
+
+Desktop.prototype.clearCart = function() {
+    if (this.cart) {
+        this.cart.clearLineItems()
+        this.cart = null
+    }
+}
+
 Desktop.prototype.waitForLicenses = function(deviceToken) {
     var self = this;
     var poll = function() {
@@ -1804,7 +1866,7 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     new Notification('info', msg);
                     self.windowManager.closeWindows(null, true);
                 })
-                self.cloudPluginBox.cloudPluginBox('clearCart')
+                self.clearCart()
             },
             error: function() {
                 new Notification('error', "Can't get licenses from Cloud, please reload interface after finishing your purchase");

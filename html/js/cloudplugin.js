@@ -349,8 +349,7 @@ JqueryClass('cloudPluginBox', {
         }
 
         // get list of shopify commercial plugins
-        var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
-        shopClient.fetchAllProducts().then(function(products) {
+        desktop.fetchShopProducts().then(function(products) {
             results.shopify = {};
             for (var i in products) {
                 var uri = products[i].selectedVariant.attrs.variant.sku;
@@ -358,17 +357,6 @@ JqueryClass('cloudPluginBox', {
                     id: products[i].id,
                     price: products[i].selectedVariant.price
                 }
-            }
-            if (products.length > 0) {
-                ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
-                    ui.createComponent('cart', {
-                        moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
-                        options: SHOPIFY_PRODUCT_OPTIONS
-                    }).then(function(cart) {
-                        self.data('cart', cart.model);
-                    })
-                    desktop.windowManager.registerShopify(ui);
-                })
             }
             renderResults();
         }, function() {
@@ -1021,17 +1009,7 @@ JqueryClass('cloudPluginBox', {
             })
 
             if (metadata.shopify_id && !metadata.licensed) {
-                var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
-                ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
-                    var node = document.getElementById('product-component-'+metadata.shopify_id);
-                    var button = $('<div class="shopify-fake-button">ADD TO CART</div>').appendTo(node);
-                    ui.createComponent('product', {
-                        id: [metadata.shopify_id],
-                        node: node,
-                        moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
-                        options: SHOPIFY_PRODUCT_OPTIONS
-                    });
-                });
+                desktop.createBuyButton(metadata.shopify_id)
             }
 
             info.window('open')

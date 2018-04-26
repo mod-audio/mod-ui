@@ -472,67 +472,89 @@ JqueryClass('effectBox', {
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
 
-            var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
+            var render = function(metadata) {
+                var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
-            // hide install etc buttons
-            info.find('.js-remove').hide()
-            info.find('.js-install').hide()
-            info.find('.js-upgrade').hide()
-            info.find('.js-latest-version').hide()
+                // hide install etc buttons
+                info.find('.js-remove').hide()
+                info.find('.js-install').hide()
+                info.find('.js-upgrade').hide()
+                info.find('.js-latest-version').hide()
 
-            // hide control ports table if none available
-            if (plugin.ports.control.input.length == 0) {
-                info.find('.plugin-controlports').hide()
+                // hide control ports table if none available
+                if (plugin.ports.control.input.length == 0) {
+                    info.find('.plugin-controlports').hide()
+                }
+
+                info.find('.favorite-button').on('click', function () {
+                    var isFavorite = $(this).hasClass('favorite'),
+                        widget = $(this)
+
+                    $.ajax({
+                        url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
+                        type: 'POST',
+                        data: {
+                            uri: plugin.uri,
+                        },
+                        success: function (ok) {
+                            if (! ok) {
+                                console.log("favorite action failed")
+                                return
+                            }
+
+                            if (isFavorite) {
+                                // was favorite, not anymore
+                                widget.removeClass('favorite');
+                                remove_from_array(FAVORITES, plugin.uri)
+                                self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
+
+                            } else {
+                                // was not favorite, now is
+                                widget.addClass('favorite');
+                                FAVORITES.push(plugin.uri)
+                                self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+                            }
+
+                            self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+                        },
+                        cache: false,
+                        dataType: 'json'
+                    })
+                });
+
+                if (metadata.shopify_id && !metadata.licensed) {
+                    desktop.createBuyButton(metadata.shopify_id)
+                }
+
+                info.window({
+                    windowName: "Plugin Info",
+                    windowManager: self.data('windowManager'),
+                    close: function () {
+                        info.remove()
+                        self.data('info', null)
+                    }
+                })
+
+                info.appendTo($('body'))
+                info.window('open')
+                self.data('info', info)
             }
 
-            info.find('.favorite-button').on('click', function () {
-                var isFavorite = $(this).hasClass('favorite'),
-                    widget = $(this)
+            render(metadata)
 
-                $.ajax({
-                    url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
-                    type: 'POST',
-                    data: {
-                        uri: plugin.uri,
-                    },
-                    success: function (ok) {
-                        if (! ok) {
-                            console.log("favorite action failed")
-                            return
-                        }
-
-                        if (isFavorite) {
-                            // was favorite, not anymore
-                            widget.removeClass('favorite');
-                            remove_from_array(FAVORITES, plugin.uri)
-                            self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
-
-                        } else {
-                            // was not favorite, now is
-                            widget.addClass('favorite');
-                            FAVORITES.push(plugin.uri)
-                            self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
-                        }
-
-                        self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
-                    },
-                    cache: false,
-                    dataType: 'json'
+            if (!metadata.licensed) {
+                desktop.fetchShopProduct(plugin.uri).then(function(product) {
+                    if (product) {
+                        metadata.shopify_id = product.id
+                        metadata.price = product.selectedVariant.price
+                        render(metadata)
+                    } else if (metadata.demo) {
+                        metadata.coming = true
+                        render(metadata)
+                    }
                 })
-            });
+            }
 
-            info.window({
-                windowName: "Plugin Info",
-                windowManager: self.data('windowManager'),
-                close: function () {
-                    info.remove()
-                    self.data('info', null)
-                }
-            })
-
-            info.appendTo($('body'))
-            info.window('open')
-            self.data('info', info)
         }
 
         if (plugin.bundles) {
