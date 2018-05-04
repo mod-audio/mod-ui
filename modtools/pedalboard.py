@@ -170,7 +170,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         # read plugin image
         gui = get_plugin_gui(p['uri'])
         screenshot_path = gui.get('screenshot', None)
-        pimg = Image.open(screenshot_path) if screenshot_path else default_screenshot
+        pimg = Image.open(screenshot_path).convert('RGBA') if screenshot_path else default_screenshot
         p['img'] = pimg
 
         if screenshot_path:
