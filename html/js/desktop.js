@@ -760,6 +760,10 @@ function Desktop(elements) {
             url: SITEURL + '/pedalboards/' + pedalboard_id,
             contentType: 'application/json',
             success: function (resp) {
+                if (!resp.data.stable && PREFERENCES['show-unstable-plugins'] !== "true") {
+                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Advanced');
+                    return;
+                }
                 self.reset(function () {
                     self.installMissingPlugins(resp.data.plugins, function (ok) {
                         if (ok) {
@@ -1872,7 +1876,6 @@ JqueryClass('statusTooltip', {
             return
         var tooltip = self.data('tooltip')
         tooltip.find('.text').html(self.data('message'))
-		console.log(tooltip.left)
         tooltip.show().stop().animate({
             opacity: 1
         }, 200)

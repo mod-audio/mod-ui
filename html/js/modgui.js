@@ -1645,7 +1645,7 @@ JqueryClass('film', baseWidget, {
         // in this theoric case.
             rotation = Math.round(filmSteps / 2)
         } else if (portSteps != null) {
-            rotation = Math.round(steps) * Math.round(filmSteps / (portSteps - 1))
+            rotation = Math.round(steps) * Math.round(filmSteps / portSteps)
         }
 
         rotation = Math.min(filmSteps-1, Math.max(0, rotation))

@@ -276,8 +276,8 @@
 			position: absolute;
 			top: 0;
 			bottom: 0;
-			right: 25px;
-			left: 25px;
+			right: 90px;
+			left: 90px;
 			height: 380px !important;
 			.slick-list {
 				height: 380px !important;
@@ -290,6 +290,7 @@
 					border: 1px solid #737373;
 					height: 300px;
 					opacity: 0.4;
+					margin: 0 24px;
 					.inner-box {
 						border: 1px solid #444444;
 						text-align: center;
@@ -298,18 +299,25 @@
 							color: #c3c3c3;
 							text-align: center;
 						}
-						img {
-							width: auto;
-							height: auto;
-							margin: auto;
-							display: block;
-							max-height: 100px;
-							padding: 0 20px;
-							max-width: 100%;
+						.img-container {
+							height: 113px;
+							width: 100%;
+							img {
+								vertical-align: middle;
+								transition: all 500ms ease;
+								width: auto;
+								height: auto;
+								margin: auto;
+								display: block;
+								max-height: 113px;
+								padding: 0 20px;
+								max-width: 100%;
+							}
 						}
 						p {
 							color: #e0e0e0;
 							padding: 20px 20px 0 20px;
+							height: 59px;
 						}
 						button {
 							background-color: transparent;
@@ -333,25 +341,16 @@
 				&:before {
 					font-size: 60px;
 				}
+				width: 60px;
+				height: 60px;
 				top: 200px;
-				z-index: 100;
 			}
 			.slick-prev {
-				left: -10px !important;
+				left: -70px !important;
 			}
 			.slick-next {
-				right: 30px !important;
+				right: -70px !important;
 			}
-		}
-	}
-	@media (max-width: 1500px) {
-		.box {
-			margin: 0 25px;
-		}
-	}
-	@media (min-width: 1501px) {
-		.box {
-			margin: 0 40px;
 		}
 	}
 }
