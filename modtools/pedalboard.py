@@ -110,7 +110,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     default_screenshot = Image.open(os.path.join(html_dir, 'resources', 'pedals', 'default.png'))
 
     right_padding = audio_input_connected.size[0] * 2
-    bottom_padding = 0
+    bottom_padding = right_padding
 
     # create capture/playback connectors
     device_capture = []
@@ -229,6 +229,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         plugin_map[p['instance']] = p
 
     # calculate image size
+    height = 0
     for p in plugins:
         if p['x'] + p['img'].size[0] + right_padding > width:
             width = p['x'] + p['img'].size[0] + right_padding
