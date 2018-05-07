@@ -27,51 +27,6 @@ function getDummyPluginData() {
     })
 }
 
-// TODO this is for development purposes only, this will come from cloud.
-var FEATURED = {
-	'http://moddevices.com/plugins/caps/AutoFilter': {
-		priority: 1,
-		headline: 'Inspired by Ibanez TS-9',
-	},
-	'http://moddevices.com/plugins/mod-devel/CrossOver2': {
-		priority: 2,
-		headline: 'Inspired by Ibanez TS-9',
-	},
-	'http://moddevices.com/plugins/mda/EPiano': {
-		priority: 3,
-		headline: 'Inspired by Ibanez TS-9',
-	},
-	'http://kxstudio.linuxaudio.org/plugins/FluidPlug_FluidEthnic': {
-		priority: 4,
-		headline: 'Inspired by Ibanez TS-9',
-	},
-	'http://moddevices.com/plugins/caps/AmpVTS': {
-		priority: 4,
-		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
-	},
-	'http://gareus.org/oss/lv2/midifilter#scalecc': {
-		priority: 5,
-		headline: 'Inspired by Ibanez TS-9',
-	},
-	'http://moddevices.com/plugins/mda/RePsycho': {
-		priority: 6,
-		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
-	},
-	'urn:mod:commercial-plugin-example': {
-		priority: 0,
-		headline: 'Inspired by Ibanez TS-9, this is one of greatest',
-    },
-	'http://kxstudio.linuxaudio.org/plugins/FluidPlug_Black_Pearl_4A': {
-		priority: 7,
-		headline: 'one more',
-	},
-	'http://drobilla.net/plugins/blop/sequencer_64': {
-		priority: 7,
-		headline: 'one more',
-	}
-}
-
-
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -253,9 +208,7 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
-                // TODO remove
-                cplugin.featured = FEATURED[cplugin.uri];
-
+                cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (cplugin.mod_license == 'paid_perpetual') {
@@ -374,11 +327,28 @@ JqueryClass('cloudPluginBox', {
             success: function (plugins) {
                 cloudReached = true
                 results.cloud = plugins
-                renderResults()
             },
             error: function () {
                 results.cloud = []
-                renderResults()
+            },
+            complete: function () {
+                $.ajax({
+                    method: 'GET',
+                    url: SITEURL + "/lv2/plugins/featured",
+                    success: function (featured) {
+                        results.featured = featured
+                    },
+                    error: function () {
+                        results.featured = []
+                    },
+                    complete: function () {
+                        if (results.local != null) {
+                            renderResults()
+                        }
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             },
             cache: false,
             dataType: 'json'
