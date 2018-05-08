@@ -27,7 +27,6 @@ keys/device_key.pem
 keys/device_key.pub
 keys/model
 keys/serial
-phantomjs-*
 html/pedalboards/*.png
 modui-env/
 build/

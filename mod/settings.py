@@ -40,7 +40,8 @@ if os.path.isfile(IMAGE_VERSION_PATH):
 else:
     IMAGE_VERSION = None
 
-DATA_DIR = os.environ.get('MOD_DATA_DIR', '/data')
+DATA_DIR = os.environ.get('MOD_DATA_DIR', os.path.expanduser('~/data'))
+CACHE_DIR = os.path.join(DATA_DIR, '.cache')
 KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 FAVORITES_JSON_FILE = os.environ.get('MOD_FAVORITES_JSON', join(DATA_DIR, 'favorites.json'))
@@ -69,12 +70,6 @@ DEFAULT_ICON_IMAGE = {
     'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
 }
 
-PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
-
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(sys.prefix, 'share/mod/screenshot.js'))
-
-MAX_THUMB_HEIGHT = 350
-MAX_THUMB_WIDTH = 350
 
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.moddevices.com/v2")

@@ -14,9 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import re
+import json
+import shutil
+
 from datetime import datetime
 from functools import wraps
-import os, re, json, shutil
+
 
 def jsoncall(method):
     @wraps(method)
@@ -28,7 +33,7 @@ def jsoncall(method):
             if decoded:
                 self.request.body = json.loads(decoded)
         result = method(self, *args, **kwargs)
-        if not result is None:
+        if result is not None:
             self.set_header('Content-Type', 'application/json; charset=UTF-8')
             self.write(json.dumps(result, default=json_handler))
         else:
@@ -36,11 +41,12 @@ def jsoncall(method):
             self.set_status(204)
     return wrapper
 
+
 def json_handler(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
-    #print(type(obj), obj)
     return None
+
 
 def check_environment():
     from mod.settings import (LV2_PEDALBOARDS_DIR,
@@ -96,6 +102,7 @@ def check_environment():
 
     return True
 
+
 def safe_json_load(path, objtype):
     if not os.path.exists(path):
         return objtype()
@@ -111,6 +118,7 @@ def safe_json_load(path, objtype):
 
     return data
 
+
 def symbolify(name):
     if len(name) == 0:
         return "_"
@@ -119,14 +127,16 @@ def symbolify(name):
         name = "_" + name
     return name
 
+
 def get_hardware_actuators():
     mod_hw = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
 
     return mod_hw.get('actuators', [])
 
+
 class TextFileFlusher(object):
     def __init__(self, filename):
-        self.filename   = filename
+        self.filename = filename
         self.filehandle = None
 
     def __enter__(self):
