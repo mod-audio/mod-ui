@@ -699,6 +699,6 @@ JqueryClass('effectBox', {
 
 function version(v) {
     if (!v || !v.length)
-        return '0:0.0-0'
-    return ""+v[0]+":"+v[1]+"."+v[2]+"-"+v[3]
+        return '0.0-0'
+    return '{0}.{1}-{2}'.format(v[1], v[2], v[3])
 }
