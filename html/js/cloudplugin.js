@@ -204,7 +204,7 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
-                if (result.featured)
+                if (results.featured)
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
