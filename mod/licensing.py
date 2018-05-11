@@ -6,7 +6,6 @@ LICENSE_INDEX = {}
 NEW_LICENSES = []
 
 def check_missing_licenses(licenses):
-    import ipdb; ipdb.set_trace()
     # Compute a list of all licenses as revoking candidates
     revoked = set()
     for checksum in os.listdir(KEYS_PATH):
