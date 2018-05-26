@@ -236,7 +236,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         if p['y'] + p['img'].size[1] + bottom_padding > height:
             height = p['y'] + p['img'].size[1] + bottom_padding
     width = rint(width)
-    height = rint(height)
+    height = rint(height) or rint(1112)
 
     # calculate device connectors positions
     used_symbols = [c['source'] for c in pb['connections']] + [c['target'] for c in pb['connections']]
