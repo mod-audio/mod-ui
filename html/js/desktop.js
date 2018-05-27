@@ -1762,7 +1762,6 @@ Desktop.prototype.getDeviceShopToken = function(callback) {
                 'Authorization' : 'MOD ' + self.cloudAccessToken
             },
             success: function(result) {
-                self.waitForLicenses(result.id);
                 callback(result.id);
             },
             error: function(result) {

@@ -1059,7 +1059,7 @@ var productTemplate = {
 var cartTemplates = {
   title: "<div class=\"{{data.classes.cart.header}}\" data-element=\"cart.header\">\n            <h2 class=\"{{data.classes.cart.title}}\" data-element=\"cart.title\">{{data.text.title}}</h2>\n            <button class=\"{{data.classes.cart.close}}\" data-element=\"cart.close\">\n              <span aria-role=\"hidden\">&times;</span>\n              <span class=\"visuallyhidden\">Close</span>\n             </button>\n          </div>",
   lineItems: "<div class=\"{{data.classes.cart.cartScroll}}\" data-elemenmt=\"cart.cartScroll\">\n                {{#data.isEmpty}}<p class=\"{{data.classes.cart.empty}} {{data.classes.cart.emptyCart}}\" data-element=\"cart.empty\">{{data.text.empty}}</p>{{/data.isEmpty}}\n                <div class=\"{{data.classes.cart.lineItems}}\" data-element=\"cart.lineItems\">{{{data.lineItemsHtml}}}</div>\n              </div>",
-  footer: "{{^data.isEmpty}}\n            <div class=\"{{data.classes.cart.footer}}\" data-element=\"cart.footer\">\n              <p class=\"{{data.classes.cart.subtotalText}}\" data-element=\"cart.total\">{{data.text.total}}</p>\n              <p class=\"{{data.classes.cart.subtotal}}\" data-element=\"cart.subtotal\">{{data.formattedTotal}}</p>\n              <p class=\"{{data.classes.cart.notice}}\" data-element=\"cart.notice\">{{data.text.notice}}</p>\n              <button class=\"{{data.classes.cart.button}}\" type=\"button\" data-element=\"cart.button\">{{data.text.button}}</button>\n            </div>\n           {{/data.isEmpty}}"
+  footer: "{{^data.isEmpty}}\n            <div class=\"{{data.classes.cart.footer}}\" data-element=\"cart.footer\">\n              <p class=\"{{data.classes.cart.subtotalText}}\" data-element=\"cart.total\">{{data.text.total}}</p>\n              <p class=\"{{data.classes.cart.subtotal}}\" data-element=\"cart.subtotal\">{{data.formattedTotal}}</p>\n              <p class=\"{{data.classes.cart.notice}}\" data-element=\"cart.notice\">{{data.text.notice}}</p>\n              <a target=\"_blank\" style=\"text-align: center\" class=\"{{data.classes.cart.button}}\" data-element=\"cart.button\">{{data.text.button}}</a>\n            </div>\n           {{/data.isEmpty}}"
 };
 
 var optionTemplates = {
@@ -3796,6 +3796,7 @@ var Checkout = function () {
   }
 
   Checkout.prototype.open = function open(url) {
+    // Is this still used?
     if (this.config.cart.popup) {
       var newWin = window.open(url, 'checkout', this.params);
       if(!newWin || newWin.closed || typeof newWin.closed=='undefined') 
@@ -5600,6 +5601,7 @@ var Cart = function (_Component) {
     _this.node = config.node || document.body.appendChild(document.createElement('div'));
     _this.isVisible = _this.options.startOpen;
     _this.checkout = new Checkout(_this.config);
+    _this.modToken = null;
     var toggles = _this.globalConfig.toggles || [{
       node: _this.node.parentNode.insertBefore(document.createElement('div'), _this.node)
     }];
@@ -5657,6 +5659,16 @@ var Cart = function (_Component) {
 
   Cart.prototype.init = function init(data) {
     var _this3 = this;
+
+    if (_this3.modToken === null) {
+      return new Promise(function (resolve, reject) {
+        desktop.getDeviceShopToken(function(token) {
+          console.log('Got token '+token);
+          _this3.modToken = token;
+          resolve(_this3.init(data));
+        });
+      });
+    }
 
     return _Component.prototype.init.call(this, data).then(function (cart) {
       return _this3.toggles.map(function (toggle) {
@@ -5724,11 +5736,11 @@ var Cart = function (_Component) {
   Cart.prototype.onCheckout = function onCheckout() {
     var self = this;
     var checkoutUrl = this.model.checkoutUrl;
-    desktop.getDeviceShopToken(function(token) {
-      console.log('Got token ' + token);
-      checkoutUrl += '&attributes[deviceToken]=' + token;
-      self.checkout.open(checkoutUrl);
-    });
+    checkoutUrl += '&attributes[deviceToken]=' + self.modToken;
+    var button = $('iframe[name=frame-cart]').contents().find('a[data-element="cart.button"]');
+    button.attr('href', checkoutUrl);
+    desktop.waitForLicenses(self.modToken);
+    return true;
   }
 
   /**
