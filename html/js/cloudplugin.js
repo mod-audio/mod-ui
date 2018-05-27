@@ -200,8 +200,11 @@ JqueryClass('cloudPluginBox', {
             cloudReached = false
 
         renderResults = function () {
-            if (results.local == null || results.cloud == null || results.shopify == null)
+            if (results.local == null || results.cloud == null)
                 return
+
+            if (!results.featured || results.featured.length === 0)
+                $('.featured-plugins').hide()
 
             var plugins = []
             for (var i in results.cloud) {
@@ -212,7 +215,7 @@ JqueryClass('cloudPluginBox', {
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
-                if (cplugin.mod_license == 'paid_perpetual') {
+                if (desktop.licenseManager && cplugin.mod_license === 'paid_perpetual') {
                     cplugin.commercial = true
                     if (results.shopify[cplugin.uri]) {
                         cplugin.shopify_id = results.shopify[cplugin.uri].id
