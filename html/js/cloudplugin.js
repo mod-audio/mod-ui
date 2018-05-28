@@ -217,7 +217,7 @@ JqueryClass('cloudPluginBox', {
 
                 if (desktop.licenseManager && cplugin.mod_license === 'paid_perpetual') {
                     cplugin.commercial = true
-                    if (results.shopify[cplugin.uri]) {
+                    if (results.shopify && results.shopify[cplugin.uri]) {
                         cplugin.shopify_id = results.shopify[cplugin.uri].id
                         cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
                         if (!cplugin.licensed)
