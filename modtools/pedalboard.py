@@ -161,6 +161,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
 
     # create plugins
     plugins = pb['plugins']
+    plugins = [p for p in plugins if p['uri'] != 'http://drobilla.net/ns/ingen#GraphPrototype']
     plugin_map = {}
     for p in plugins:
         # read plugin data
