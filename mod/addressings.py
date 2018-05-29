@@ -8,12 +8,12 @@ from tornado import gen
 from mod import get_hardware_actuators, safe_json_load, TextFileFlusher
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
-from mod.utils import get_plugin_info, get_plugin_control_inputs_and_monitored_outputs
+from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0
 HMI_ADDRESSING_TYPE_BYPASS       = 1
 HMI_ADDRESSING_TYPE_TAP_TEMPO    = 2
-HMI_ADDRESSING_TYPE_ENUMERATION  = 4|8 # implies scalepoints
+HMI_ADDRESSING_TYPE_ENUMERATION  = 4 | 8  # implies scalepoints
 HMI_ADDRESSING_TYPE_SCALE_POINTS = 8
 HMI_ADDRESSING_TYPE_TRIGGER      = 16
 HMI_ADDRESSING_TYPE_TOGGLED      = 32

@@ -1,4 +1,3 @@
-
 # Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,43 +13,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import os, subprocess
-
-try:
-    import Image
-except ImportError:
-    from PIL import Image
+import os
+import subprocess
 
 from tornado import ioloop
-from mod.utils import get_pedalboard_size
-from mod.settings import (DEVICE_KEY, DEVICE_WEBSERVER_PORT,
-                          PHANTOM_BINARY, SCREENSHOT_JS,
-                          MAX_THUMB_HEIGHT, MAX_THUMB_WIDTH, DEV_ENVIRONMENT)
+from mod.settings import HTML_DIR, DEV_ENVIRONMENT, DEVICE_KEY, CACHE_DIR
 
-def generate_screenshot(bundlepath, callback):
-    if not os.path.exists(PHANTOM_BINARY):
-        return callback()
-    if not os.path.exists(SCREENSHOT_JS):
-        return callback()
+
+def generate_screenshot(bundle_path, callback):
+    screenshot = os.path.join(bundle_path, 'screenshot.png')
+    thumbnail = os.path.join(bundle_path, 'thumbnail.png')
 
     try:
-        width, height = get_pedalboard_size(bundlepath)
-    except:
-        return callback()
+        os.remove(screenshot)
+        os.remove(thumbnail)
+    except OSError:
+        pass
 
-    screenshot = os.path.join(bundlepath, "screenshot.png")
-    thumbnail  = os.path.join(bundlepath, "thumbnail.png")
+    cwd = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+    cmd = ['python3', '-m', 'modtools.pedalboard', 'take_screenshot', bundle_path, HTML_DIR, CACHE_DIR]
+    if not DEV_ENVIRONMENT and DEVICE_KEY:  # if using a real MOD, setup niceness
+        cmd = ['/usr/bin/nice', '-n', '+17'] + cmd
 
-    cmd = [PHANTOM_BINARY, SCREENSHOT_JS,
-           "http://localhost:%d/pedalboard.html?bundlepath=%s" % (DEVICE_WEBSERVER_PORT, bundlepath),
-            screenshot, str(width), str(height)]
-
-    if not DEV_ENVIRONMENT and DEVICE_KEY: # if using a real MOD, setup niceness
-        cmd = ["/usr/bin/nice", "-n", "+17"] + cmd
-
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=cwd)
     loop = ioloop.IOLoop.instance()
 
     def proc_callback(fileno, event):
@@ -58,27 +43,13 @@ def generate_screenshot(bundlepath, callback):
             return
         loop.remove_handler(fileno)
 
-        if not os.path.exists(screenshot):
+        if not os.path.exists(screenshot) or not os.path.exists(thumbnail):
             return callback()
 
-        img = Image.open(screenshot)
-        resize_image(img)
-        img.save(thumbnail)
-        img.close()
         callback(thumbnail)
 
     loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
 
-def resize_image(img):
-    width, height = img.size
-    if width > MAX_THUMB_WIDTH:
-        height = height * MAX_THUMB_WIDTH / width
-        width = MAX_THUMB_WIDTH
-    if height > MAX_THUMB_HEIGHT:
-        width = width * MAX_THUMB_HEIGHT / height
-        height = MAX_THUMB_HEIGHT
-    img.convert('RGB')
-    img.thumbnail((width, height), Image.ANTIALIAS)
 
 class ScreenshotGenerator(object):
     def __init__(self):
@@ -119,20 +90,24 @@ class ScreenshotGenerator(object):
 
             self.process_next()
 
-        generate_screenshot(self.processing, img_callback)
+        try:
+            generate_screenshot(self.processing, img_callback)
+        except Exception as ex:
+            print('ERROR: {0}'.format(ex))
+            img_callback()
 
     def check_screenshot(self, bundlepath):
         bundlepath = os.path.abspath(bundlepath)
 
         if bundlepath in self.queue or self.processing == bundlepath:
-            return (0, 0.0)
+            return 0, 0.0
 
         thumbnail = os.path.join(bundlepath, "thumbnail.png")
         if not os.path.exists(thumbnail):
-            return (-1, 0.0)
+            return -1, 0.0
 
         ctime = os.path.getctime(thumbnail)
-        return (1, ctime)
+        return 1, ctime
 
     def wait_for_pending_jobs(self, bundlepath, callback):
         bundlepath = os.path.abspath(bundlepath)
