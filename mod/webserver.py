@@ -1020,7 +1020,11 @@ class PackageUninstall(JsonRequestHandler):
 
 class PedalboardList(JsonRequestHandler):
     def get(self):
-        self.write(get_all_pedalboards())
+        all = get_all_pedalboards()
+        default_pb = next((p for p in all if p['title'] == 'Default'), None)
+        if default_pb:
+            default_pb['broken'] = False
+        self.write(all)
 
 class PedalboardSave(JsonRequestHandler):
     def post(self):
