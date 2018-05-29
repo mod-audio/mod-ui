@@ -205,6 +205,8 @@ JqueryClass('cloudPluginBox', {
 
             if (!results.featured || results.featured.length === 0)
                 $('.featured-plugins').hide()
+			else
+                $('.featured-plugins').show()
 
             var plugins = []
             for (var i in results.cloud) {
