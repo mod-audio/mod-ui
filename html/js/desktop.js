@@ -1782,7 +1782,7 @@ Desktop.prototype.getDeviceShopToken = function(callback) {
         getToken();
     }
 }
-
+// TODO cache
 Desktop.prototype.fetchShopProducts = function() {
     var self = this
     return new Promise(function(resolve, reject) {
