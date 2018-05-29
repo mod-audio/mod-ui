@@ -200,7 +200,7 @@ JqueryClass('cloudPluginBox', {
             cloudReached = false
 
         renderResults = function () {
-            if (results.local == null || results.cloud == null)
+            if (results.local == null || results.cloud == null || results.shopify == null)
                 return
 
             if (!results.featured || results.featured.length === 0)
@@ -214,10 +214,9 @@ JqueryClass('cloudPluginBox', {
                 if (results.featured)
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
-
                 if (desktop.licenseManager && cplugin.mod_license === 'paid_perpetual') {
                     cplugin.commercial = true
-                    if (results.shopify && results.shopify[cplugin.uri]) {
+                    if (results.shopify[cplugin.uri]) {
                         cplugin.shopify_id = results.shopify[cplugin.uri].id
                         cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
                         if (!cplugin.licensed)
@@ -319,6 +318,7 @@ JqueryClass('cloudPluginBox', {
         }, function() {
             if (desktop.cloudAccessToken)
                 new Notification('error', "Our commercial plugin store is offline now, sorry for the inconvenience")
+            results.shopify = {}
             renderResults();
         });
         
