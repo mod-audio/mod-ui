@@ -27,8 +27,6 @@ JqueryClass('pedalboard', {
             // wherever to skip zoom animations
             skipAnimations: false,
 
-            // WindowManager instance
-            windowManager: new WindowManager(),
             // HardwareManager instance, must be specified
             hardwareManager: null,
 
@@ -1373,7 +1371,6 @@ JqueryClass('pedalboard', {
 
             settings.window({
                 windowName: "Plugin Settings",
-                windowManager: self.data('windowManager')
             }).appendTo($('body'))
             icon.css({
                 'z-index': self.data('z_index'),
