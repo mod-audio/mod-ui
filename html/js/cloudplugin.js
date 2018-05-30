@@ -203,11 +203,6 @@ JqueryClass('cloudPluginBox', {
             if (results.local == null || results.cloud == null || results.shopify == null)
                 return
 
-            if (!results.featured || results.featured.length === 0)
-                $('.featured-plugins').hide()
-			else
-                $('.featured-plugins').show()
-
             var plugins = []
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
@@ -349,6 +344,7 @@ JqueryClass('cloudPluginBox', {
                     },
                     error: function () {
                         results.featured = []
+                        $('.featured-plugins').hide()
                     },
                     complete: function () {
                         renderResults()
