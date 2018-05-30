@@ -1279,6 +1279,7 @@ JqueryClass('pedalboard', {
         var pluginGui = new GUI(pluginData, options)
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
+            icon.attr('mod-uri', escape(pluginData.uri));
 
             if (pluginData.licensed < 0) {
                 // This is a TRIAL plugin

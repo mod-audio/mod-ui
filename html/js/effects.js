@@ -348,27 +348,6 @@ JqueryClass('effectBox', {
         renderNextPlugin(0)
     },
 
-    refresh: function(uri, update) {
-        var self = $(this)
-        var index = self.data('index')
-        if (!index[uri])
-            return
-        var occurrences = index[uri]
-        delete index[uri]
-        var key, plugin, element, container
-        for (var i in occurrences) {
-            plugin = occurrences[i][0]
-            element = occurrences[i][1]
-            container = occurrences[i][2]
-            plugin = $.extend(plugin, update)
-            self.effectBox('renderPlugin', plugin, container, element)
-        }
-    },
-
-    license: function(uri) {
-        $(this).effectBox('refresh', uri, { licensed: 1 });
-    },
-
     renderPlugin: function (plugin, container, replace) {
         var self = $(this)
         if (container.length == 0)

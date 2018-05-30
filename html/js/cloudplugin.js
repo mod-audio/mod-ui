@@ -223,7 +223,7 @@ JqueryClass('cloudPluginBox', {
                     if (results.shopify[cplugin.uri]) {
                         cplugin.shopify_id = results.shopify[cplugin.uri].id
                         cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
-						console.log(cplugin.licensed);
+
                         if (!cplugin.licensed)
                             cplugin.price = results.shopify[cplugin.uri].price
                     } else {
@@ -400,14 +400,6 @@ JqueryClass('cloudPluginBox', {
                 cache: false,
                 dataType: 'json'
             })
-        }
-    },
-
-    clearCart: function() {
-        var self = $(this)
-        var cart = self.data('cart')
-        if (cart) {
-            cart.clearLineItems()
         }
     },
 
@@ -625,31 +617,22 @@ JqueryClass('cloudPluginBox', {
 			};
 		}
 
-		var seed;
-		if (!self.data('featuredSeed')) {
-			seed = $('.carousel')
-			self.data('featuredSeed', seed)
-			seed.hide()
-		} else {
-			seed = self.data('featuredSeed')
-			seed.next().remove()
+		if (!self.data('featuredInitialized')) {
+			var featuredCanvas = $('.carousel')
+			for (var i in featured) {
+				plugin = featured[i]
+				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
+				render.appendTo(featuredCanvas)
+				render.find('img').on('load', factory(render.find('img')));
+			}
+			var columns = $(window).width() >= 1650 ? 5 : 3;
+			featuredCanvas.slick({
+				slidesToShow: Math.min(columns, plugins.length),
+				centerPadding: '60px',
+				centerMode: true,
+			});
+			self.data('featuredInitialized', true)
 		}
-
-		var featuredCanvas = seed.clone().insertAfter(seed)
-		featuredCanvas.show();
-
-		for (var i in featured) {
-			plugin = featured[i]
-			render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
-			render.appendTo(featuredCanvas)
-			render.find('img').on('load', factory(render.find('img')));
-		}
-		var columns = $(window).width() >= 1650 ? 5 : 3;
-		featuredCanvas.slick({
-			slidesToShow: Math.min(columns, plugins.length),
-			centerPadding: '60px',
-			centerMode: true,
-		});
 
         for (var i in plugins) {
             plugin   = plugins[i]
@@ -875,7 +858,6 @@ JqueryClass('cloudPluginBox', {
 
     showPluginInfo: function (plugin) {
         var self = $(this)
-        var uri  = escape(plugin.uri)
 
         var cloudChecked = false
         var localChecked = false
@@ -904,9 +886,19 @@ JqueryClass('cloudPluginBox', {
                 category = 'MIDI'
             }
 
+            // Plugin might have been licensed after plugin data was bound to event,
+            // so let's check
+            if (desktop.licenseManager.licensed(plugin.uri)) {
+                plugin.licensed = true;
+                plugin.demo = false;
+                plugin.coming = false;
+                plugin.price = null;
+            }
+
             var metadata = {
                 author: plugin.author,
                 uri: plugin.uri,
+                escaped_uri: escape(plugin.uri),
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
                 category: category || "None",

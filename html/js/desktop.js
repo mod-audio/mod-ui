@@ -1614,11 +1614,6 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
     })
 }
 
-Desktop.prototype.license = function(uri) {
-    this.effectBox.effectBox('license', uri)
-    this.pedalboard.pedalboard('license', uri)
-}
-
 Desktop.prototype.reset = function (callback) {
     if (this.pedalboardModified && !confirm("There are unsaved modifications that will be lost. Are you sure?")) {
         return
@@ -1818,7 +1813,7 @@ Desktop.prototype.createCart = function(shopClient) {
             moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
             options: SHOPIFY_PRODUCT_OPTIONS
         }).then(function(cart) {
-            self.cart = cart.model;
+            self.cart = cart;
         })
         self.windowManager.registerShopify(ui);
     })
@@ -1836,13 +1831,6 @@ Desktop.prototype.createBuyButton = function(shopifyId) {
             options: SHOPIFY_PRODUCT_OPTIONS
         });
     });
-}
-
-Desktop.prototype.clearCart = function() {
-    if (this.cart) {
-        this.cart.clearLineItems()
-        this.cart = null
-    }
 }
 
 Desktop.prototype.waitForLicenses = function(deviceToken) {
@@ -1863,9 +1851,12 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     var s = result.license_info.length > 1 ? 's' : ''
                     msg = result.license_info.length + ' new plugin'+s+' purchased'
                     new Notification('info', msg);
-                    self.windowManager.closeWindows(null, true);
+                    var uris = result.license_info.map(function(l) { return l.plugin_uri });
+					if (self.cart) {
+						self.cart.empty()
+						self.cart.close()
+					}
                 })
-                self.clearCart()
             },
             error: function() {
                 new Notification('error', "Can't get licenses from Cloud, please reload interface after finishing your purchase");
@@ -1873,6 +1864,19 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
         });
     }
     setTimeout(poll, 5000);
+}
+
+Desktop.prototype.license = function(uri) {
+    var container = $('[mod-uri="'+escape(uri)+'"]')
+    container.find('.price').removeClass('price').addClass('licensed').html('')
+    container.find('.description-price').removeClass('description-price').addClass('description-licensed').html('')
+    container.find('.demo-mask').remove()
+    container.find('.buy-button').remove()
+    container.find('button').each(function(index, button) {
+        $(button).html($(button).html().replace(/\s+Trial/, ''))
+    });
+
+    this.pedalboard.pedalboard('license', uri)
 }
 
 JqueryClass('saveBox', {
