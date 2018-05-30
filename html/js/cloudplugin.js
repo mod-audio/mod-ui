@@ -884,7 +884,7 @@ JqueryClass('cloudPluginBox', {
 
             // Plugin might have been licensed after plugin data was bound to event,
             // so let's check
-            if (desktop.licenseManager.licensed(plugin.uri)) {
+            if (desktop.licenseManager && desktop.licenseManager.licensed(plugin.uri)) {
                 plugin.licensed = true;
                 plugin.demo = false;
                 plugin.coming = false;
