@@ -46,6 +46,8 @@ JqueryClass('cloudPluginBox', {
             isMainWindow: true,
             windowName: "Plugin Store",
 
+            pluginsData: {},
+
         }, options)
 
         self.data(options)
@@ -192,6 +194,24 @@ JqueryClass('cloudPluginBox', {
         return self.cloudPluginBox('searchAll', query, customRenderCallback)
     },
 
+    synchronizePluginData: function (plugin) {
+        var index = $(this).data('pluginsData')
+        indexed = index[plugin.uri]
+        if (indexed == null) {
+            indexed = {}
+            index[plugin.uri] = indexed
+        }
+		// Let's store all data safely, while modifying the given object
+		// to have all available data
+        $.extend(indexed, plugin)
+		$.extend(plugin, indexed)
+    },
+
+	rebuildSearchIndex: function () {
+		var plugins = Object.values($(this).data('pluginsData'))
+        desktop.resetPluginIndexer(plugins.filter(function(plugin) { return !!plugin.installedVersion }))
+	},
+
     // search cloud and local plugins, show all but prefer cloud
     searchAll: function (query, customRenderCallback) {
         var self = $(this)
@@ -269,7 +289,7 @@ JqueryClass('cloudPluginBox', {
                         cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
-
+                self.cloudPluginBox('synchronizePluginData', cplugin)
                 plugins.push(cplugin)
             }
 
@@ -287,6 +307,7 @@ JqueryClass('cloudPluginBox', {
                             lplugin.demo = true;
                         }
                     }
+					self.cloudPluginBox('synchronizePluginData', lplugin)
                     plugins.push(lplugin)
                 }
             }
@@ -302,6 +323,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
+			self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // get list of shopify commercial plugins
@@ -388,7 +410,6 @@ JqueryClass('cloudPluginBox', {
                         plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
-                    desktop.resetPluginIndexer(allplugins)
 
                     results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
                     renderResults()
@@ -456,7 +477,7 @@ JqueryClass('cloudPluginBox', {
                     lplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                     lplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                 }
-
+                self.cloudPluginBox('synchronizePluginData', lplugin)
                 plugins.push(lplugin)
             }
 
@@ -471,6 +492,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
+			self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // cloud search
@@ -530,7 +552,6 @@ JqueryClass('cloudPluginBox', {
                         plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
-                    desktop.resetPluginIndexer(allplugins)
 
                     results.local = plugins
                     if (results.cloud != null)
@@ -702,7 +723,7 @@ JqueryClass('cloudPluginBox', {
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
         var rendered = $(Mustache.render(template, plugin_data))
         rendered.click(function () {
-            self.cloudPluginBox('showPluginInfo', plugin)
+            self.cloudPluginBox('showPluginInfo', plugin.uri)
         })
 
         return rendered
@@ -787,7 +808,7 @@ JqueryClass('cloudPluginBox', {
 
         for (var i in installed) {
             uri    = installed[i]
-            plugin = self.data('pluginsDict')[uri]
+            plugin = self.data('pluginsData')[uri]
 
             if (! plugin) {
                 continue
@@ -818,15 +839,16 @@ JqueryClass('cloudPluginBox', {
                 $('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
             }
 
-            plugin  = self.data('pluginsDict')[uri]
+            plugin  = self.data('pluginsData')[uri]
             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
 
             if (plugin.latestVersion) {
                 // removing a plugin available on cloud, keep its store item
                 plugin.status = 'blocked'
+				plugin.demo = false
                 plugin.bundle_name = bundle
                 delete plugin.bundles
-                delete plugin.installedVersion
+                plugin.installedVersion = null
 
                 newElem = self.cloudPluginBox('renderPlugin', plugin, true)
                 oldElem.replaceWith(newElem)
@@ -844,7 +866,7 @@ JqueryClass('cloudPluginBox', {
                 categories['All'] -= 1
 
                 // remove it from store
-                delete self.data('pluginsDict')[uri]
+                delete self.data('pluginsData')[uri]
                 oldElem.remove()
             }
         }
@@ -852,8 +874,10 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategoryCount', categories)
     },
 
-    showPluginInfo: function (plugin) {
+    showPluginInfo: function (uri) {
         var self = $(this)
+
+        var plugin = self.data('pluginsData')[uri]
 
         var cloudChecked = false
         var localChecked = false
@@ -911,7 +935,7 @@ JqueryClass('cloudPluginBox', {
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
                 shopify_id: plugin.shopify_id,
                 price: plugin.price,
-                trial: plugin.commercial && !plugin.licensed,
+                trial: plugin.commercial && !plugin.licensed && status != 'blocked',
                 demo  : !!plugin.demo,
                 licensed: plugin.licensed,
                 coming: plugin.coming,
