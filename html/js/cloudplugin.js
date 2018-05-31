@@ -385,17 +385,17 @@ JqueryClass('cloudPluginBox', {
         // local search
         if (query.text)
         {
-            var allplugins = desktop.pluginIndexerData
             var lplugins   = {}
 
             var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
                 var uri = ret[i].ref
-                if (! allplugins[uri]) {
+                var pluginData = self.data('pluginsData')[uri]
+                if (! pluginData) {
                     console.log("ERROR: Plugin '" + uri + "' was not previously cached, cannot show it")
                     continue
                 }
-                lplugins[uri] = allplugins[uri]
+                lplugins[uri] = pluginData
             }
 
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
@@ -528,17 +528,17 @@ JqueryClass('cloudPluginBox', {
         // local search
         if (query.text)
         {
-            var allplugins = desktop.pluginIndexerData
             var lplugins   = []
 
             var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
                 var uri = ret[i].ref
-                if (! allplugins[uri]) {
+                var pluginData = self.data('pluginsData')[uri]
+                if (! pluginData) {
                     console.log("ERROR: Plugin '" + uri + "' was not previously cached, cannot show it")
                     continue
                 }
-                lplugins.push(allplugins[uri])
+                lplugins.push(pluginData)
             }
 
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
