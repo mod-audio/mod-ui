@@ -877,15 +877,7 @@ JqueryClass('cloudPluginBox', {
     showPluginInfo: function (uri) {
         var self = $(this)
 
-        var plugin = self.data('pluginsData')[uri]
-
-        var cloudChecked = false
-        var localChecked = false
-
-        var showInfo = function() {
-            if (!cloudChecked || !localChecked)
-                return
-
+        desktop.db.getPluginDetail(uri).then(function(plugin) {
             function formatNum(x) {
                 var parts = x.toString().split(".");
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -1013,67 +1005,6 @@ JqueryClass('cloudPluginBox', {
 
             info.window('open')
             self.data('info', info)
-        }
-
-        // get full plugin info if plugin has a local version
-        if ((plugin.bundles && plugin.bundles.length > 0) || ! plugin.installedVersion) {
-            localChecked = true
-        } else {
-            $.ajax({
-                url: "/effect/get",
-                data: {
-                    uri: plugin.uri
-                },
-                success: function (pluginData) {
-                    // delete cloud specific fields just in case
-                    delete pluginData.bundle_name
-                    delete pluginData.latestVersion
-                    // ready to merge
-                    plugin = $.extend(pluginData, plugin)
-                    localChecked = true
-                    showInfo()
-                },
-                error: function () {
-                    // assume not installed
-                    localChecked = true
-                    showInfo()
-                },
-                cache: false,
-                dataType: 'json'
-            })
-        }
-
-        // always get cloud plugin info
-        $.ajax({
-            url: SITEURL + "/lv2/plugins",
-            data: {
-                uri: plugin.uri,
-                image_version: VERSION,
-            },
-            success: function (pluginData) {
-                if (pluginData && pluginData.length > 0) {
-                    pluginData = pluginData[0]
-                    // delete local specific fields just in case
-                    delete pluginData.bundles
-                    delete pluginData.installedVersion
-                    // ready to merge
-                    plugin = $.extend(pluginData, plugin)
-                    plugin.latestVersion = [plugin.builder_version || 0, plugin.minorVersion, plugin.microVersion, plugin.release_number]
-                } else {
-                    plugin = $.extend(getDummyPluginData(), plugin)
-                    plugin.latestVersion = null
-                }
-                cloudChecked = true
-                showInfo()
-            },
-            error: function () {
-                plugin = $.extend(getDummyPluginData(), plugin)
-                plugin.latestVersion = null
-                cloudChecked = true
-                showInfo()
-            },
-            cache: false,
-            dataType: 'json'
-        })
+        });
     },
 })

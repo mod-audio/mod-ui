@@ -75,6 +75,9 @@ function Desktop(elements) {
     this.installationQueue = new InstallationQueue()
     this.windowManager = new WindowManager()
 
+	this.db = new PluginDB()
+	this.db.loadLocal()
+
     this.pluginIndexer = lunr(function () {
         this.field('data')
         this.ref('id')
@@ -431,6 +434,9 @@ function Desktop(elements) {
                                                 new Notification('info', installed + ' plugin'+s+' licensed')
                                             }
                                         })
+
+                                        self.db.setLicenseManager(self.licenseManager)
+                                        self.db.loadAll()
 
                                         callback(true, opts);
                                     },
