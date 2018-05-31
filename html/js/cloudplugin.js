@@ -18,7 +18,6 @@
 // add this to plugin data when cloud fails
 function getDummyPluginData() {
     return $.extend(true, {}, {
-        bundles: [""],
         ports: {
             control: {
                 input: []
@@ -508,6 +507,8 @@ JqueryClass('cloudPluginBox', {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
                 for (var i in plugins) {
+                    delete plugins[i].installedVersion
+                    delete plugins[i].bundles
                     cplugins[plugins[i].uri] = plugins[i]
                 }
                 cloudReached = true
