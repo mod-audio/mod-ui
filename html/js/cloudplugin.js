@@ -1035,6 +1035,8 @@ JqueryClass('cloudPluginBox', {
                 },
                 error: function () {
                     // assume not installed
+                    plugin.installedVersion = null
+                    plugin.installed_version = null
                     localChecked = true
                     showInfo()
                 },
