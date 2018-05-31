@@ -277,7 +277,6 @@ JqueryClass('cloudPluginBox', {
                     }
 
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
-
                 } else {
                     cplugin.installedVersion = null // if set to [0, 0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
@@ -298,6 +297,11 @@ JqueryClass('cloudPluginBox', {
                     lplugin = results.local[uri]
                     lplugin.status = 'installed'
                     lplugin.latestVersion = null
+                    if (!cloudReached) {
+                        // We don't know if the plugin is stable or not,
+                        // let's not assume it's beta
+                        lplugin.stable = true;
+                    }
                     self.cloudPluginBox('checkLocalScreenshot', lplugin)
                     if (lplugin.licensed) {
                         if (lplugin.licensed > 0) {
@@ -453,7 +457,7 @@ JqueryClass('cloudPluginBox', {
                     }
                 } else {
                     lplugin.latestVersion = null
-                    lplugin.stable = false
+                    lplugin.stable = !cloudReached
                     lplugin.status = 'installed'
                 }
 
