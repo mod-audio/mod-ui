@@ -349,16 +349,17 @@ JqueryClass('cloudPluginBox', {
         
 
         // cloud search
+        var cloudResults
         $.ajax({
             method: 'GET',
             url: SITEURL + "/lv2/plugins",
             data: query,
             success: function (plugins) {
                 cloudReached = true
-                results.cloud = plugins
+                cloudResults = plugins
             },
             error: function () {
-                results.cloud = []
+                cloudResults = []
             },
             complete: function () {
                 $.ajax({
@@ -372,6 +373,7 @@ JqueryClass('cloudPluginBox', {
                         $('.featured-plugins').hide()
                     },
                     complete: function () {
+                        results.cloud = cloudResults;
                         renderResults()
                     },
                     cache: false,
@@ -397,7 +399,6 @@ JqueryClass('cloudPluginBox', {
                 }
                 lplugins[uri] = pluginData
             }
-
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
             renderResults()
         }
