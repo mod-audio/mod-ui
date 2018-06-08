@@ -446,6 +446,7 @@ JqueryClass('effectBox', {
                 demo  : plugin.licensed < 0,
                 licensed: plugin.licensed > 0,
                 installed: true,
+                stable: true, // we don't know if it's stable or not, better to say it is
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
