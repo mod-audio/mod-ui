@@ -687,7 +687,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     position:absolute;
     right:0;
     top:0;
-    z-index:1000;
+    z-index:1001;
 }
 
 .save-popup .box {
