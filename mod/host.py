@@ -1299,7 +1299,8 @@ class Host(object):
                 if "notOnGUI" in port['properties']:
                     badports.append(symbol)
 
-                # skip special designated controls
+                # skip special designated controls. NOTE: the `badports`
+                # list does not effect the UI.
                 elif port['designation'] == "http://lv2plug.in/ns/lv2core#enabled":
                     enabled_symbol = symbol
                     badports.append(symbol)
@@ -1309,16 +1310,6 @@ class Host(object):
                     freewheel_symbol = symbol
                     badports.append(symbol)
                     valports[symbol] = 0.0
-
-                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerBar":
-                    bpb_symbol = symbol
-                    badports.append(symbol)
-                    valports[symbol] = self.transport_bpb
-
-                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
-                    bpm_symbol = symbol
-                    badports.append(symbol)
-                    valports[symbol] = self.transport_bpm
 
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
                     speed_symbol = symbol
@@ -2096,16 +2087,6 @@ class Host(object):
                     freewheel_symbol = symbol
                     badports.append(symbol)
                     valports[symbol] = 0.0
-
-                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerBar":
-                    bpb_symbol = symbol
-                    badports.append(symbol)
-                    valports[symbol] = self.transport_bpb
-
-                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
-                    bpm_symbol = symbol
-                    badports.append(symbol)
-                    valports[symbol] = self.transport_bpm
 
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
                     speed_symbol = symbol
