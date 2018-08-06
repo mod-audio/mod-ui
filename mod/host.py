@@ -892,7 +892,8 @@ class Host(object):
                 
                 if program >= 0 and program < len(pedalboards):
                     bundlepath = pedalboards[program]['bundle']
-
+                    self.send_notmodified("feature_enable processing 0")
+                    
                     def load_callback(ok):
                         self.bank_id = bank_id
                         self.load(bundlepath)
@@ -901,7 +902,6 @@ class Host(object):
                     def hmi_clear_callback(ok):
                         self.hmi.clear(load_callback)
 
-                    self.send_notmodified("feature_enable processing 0")
                     self.reset(hmi_clear_callback)
             elif channel == 14: # TODO dynamic preset channel number
                 pass
