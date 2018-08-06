@@ -878,9 +878,10 @@ class Host(object):
                                                               minimum, maximum))
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-        elif cmd == "midi_program":
-            msg_data = msg[len(cmd)+1:].split(" ",1)
+        elif cmd == "midi_program change":
+            msg_data = msg[len(cmd)+1:].split(" ", 2)
             program  = int(msg_data[0])
+            channel  = int(msg_data[1])
             bank_id  = self.bank_id
 
             if self.bank_id > 0 and self.bank_id <= len(self.banks):
@@ -888,20 +889,23 @@ class Host(object):
             else:
                 pedalboards = self.allpedalboards
 
-            if program >= 0 and program < len(pedalboards):
-                bundlepath = pedalboards[program]['bundle']
+            if channel == 15: # TODO dynamic bank channel number
+                if program >= 0 and program < len(pedalboards):
+                    bundlepath = pedalboards[program]['bundle']
 
-                def load_callback(ok):
-                    self.bank_id = bank_id
-                    self.load(bundlepath)
-                    self.send_notmodified("feature_enable processing 1")
+                    def load_callback(ok):
+                        self.bank_id = bank_id
+                        self.load(bundlepath)
+                        self.send_notmodified("feature_enable processing 1")
 
-                def hmi_clear_callback(ok):
-                    self.hmi.clear(load_callback)
+                    def hmi_clear_callback(ok):
+                        self.hmi.clear(load_callback)
 
-                self.send_notmodified("feature_enable processing 0")
-                self.reset(hmi_clear_callback)
-
+                    self.send_notmodified("feature_enable processing 0")
+                    self.reset(hmi_clear_callback)
+            elif channel == 14: # TODO dynamic preset channel number
+                pass
+                    
         elif cmd == "transport":
             msg_data = msg[len(cmd)+1:].split(" ",3)
             rolling  = bool(int(msg_data[0]))
