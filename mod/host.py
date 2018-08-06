@@ -882,14 +882,14 @@ class Host(object):
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             program  = int(msg_data[0])
             channel  = int(msg_data[1])
-            bank_id  = self.bank_id
-
-            if self.bank_id > 0 and self.bank_id <= len(self.banks):
-                pedalboards = self.banks[self.bank_id-1]['pedalboards']
-            else:
-                pedalboards = self.allpedalboards
 
             if channel == 15: # TODO dynamic bank channel number
+                bank_id  = self.bank_id
+                if self.bank_id > 0 and self.bank_id <= len(self.banks):
+                    pedalboards = self.banks[self.bank_id-1]['pedalboards']
+                else:
+                    pedalboards = self.allpedalboards
+                
                 if program >= 0 and program < len(pedalboards):
                     bundlepath = pedalboards[program]['bundle']
 
