@@ -576,7 +576,7 @@ class Host(object):
             if "navigateChannel" in bank.keys() and not navigateFootswitches:
                 navigateChannel  = int(bank['navigateChannel'])-1
 
-        self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), navigateChannel))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -723,7 +723,7 @@ class Host(object):
             self.setNavigateWithFootswitches(True, callback)
 
         def midi_prog_callback(ok):
-            self.send_notmodified("midi_program_listen 1 %d" % navigateChannel, callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % navigateChannel, callback, datatype='boolean')
 
         def initial_state_callback(ok):
             cb = footswitch_callback if navigateFootswitches else midi_prog_callback
@@ -745,7 +745,7 @@ class Host(object):
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        self.send_notmodified("midi_program_listen 0 -1")
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
 
         self.banks = []
         self.allpedalboards = []
@@ -3048,8 +3048,7 @@ _:b%i
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel),
-                                  loaded_callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), navigateChannel), loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
