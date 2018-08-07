@@ -883,7 +883,7 @@ class Host(object):
             program  = int(msg_data[0])
             channel  = int(msg_data[1])
 
-            if channel == 15: # TODO dynamic bank channel number
+            if channel == 15: # TODO dynamic bank channel number [0-15]
                 bank_id  = self.bank_id
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
                     pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -903,7 +903,8 @@ class Host(object):
                         self.hmi.clear(load_callback)
 
                     self.reset(hmi_clear_callback)
-            elif channel == 14: # TODO dynamic preset channel number
+            elif channel == 14: # TODO dynamic preset channel number [0-15]
+                yield gen.Task(self.pedalpreset_load, program)
                 pass
                     
         elif cmd == "transport":
