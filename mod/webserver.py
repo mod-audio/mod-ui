@@ -1883,6 +1883,13 @@ def prepare(isModApp = False):
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:
+
+            if SESSION.host.readsock is None:
+                print("Readsock none")
+                
+            if SESSION.host.writesock is None:
+                print("Writesock none")
+                
             print("Host failed to initialize, is the backend running?")
             SESSION.host.close_jack()
             sys.exit(1)

@@ -878,7 +878,7 @@ class Host(object):
                                                               minimum, maximum))
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-        elif cmd == "midi_program change":
+        elif cmd == "midi_program_change":
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             program  = int(msg_data[0])
             channel  = int(msg_data[1])
