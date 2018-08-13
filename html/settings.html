@@ -460,7 +460,13 @@ $('document').ready(function() {
     if (PREFERENCES['tuner-mutes-outputs'] != "false") {
         $("#prefs-prefs-muted-tuner").prop("checked", true)
     }
-
+    if ("js-navigate-bank-midi-channel" in PREFERENCES) {
+        $("#js-navigate-bank-midi-channel").val(PREFERENCES['js-navigate-bank-midi-channel'])
+    }
+    if ("js-navigate-preset-midi-channel" in PREFERENCES) {
+	$("#js-navigate-preset-midi-channel").val(PREFERENCES['js-navigate-preset-midi-channel'])
+    }
+    
     if (PREFERENCES['dev-mode'] == "on") {
         $("#prefs-ui-developer-mode").prop("checked", true)
     }
@@ -552,6 +558,17 @@ $('document').ready(function() {
         config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
     })
 
+    $("#js-navigate-bank-midi-channel").click(function () {
+	var channel = $(this).val()
+        config_set("js-navigate-bank-midi-channel", channel)
+    })
+
+    $("#js-navigate-preset-midi-channel").click(function () {
+	var channel = $(this).val()
+        config_set("js-navigate-preset-midi-channel", channel)
+    })
+
+    
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
@@ -803,6 +820,14 @@ $('document').ready(function() {
                         <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
                             Mute audio outputs when Tuner is enabled
                         </input>
+                    </label>
+                    <label>
+		      Navigate pedalboard banks using MIDI program change on channel: &nbsp;
+		      <input type="number" id="js-navigate-bank-midi-channel" value="1" min="1" max="16" step="1" />
+                    </label>
+		    <label>
+		      Navigate pedalboard presets using MIDI program change on channel: &nbsp;
+		      <input type="number" id="js-navigate-preset-midi-channel" value="1" min="1" max="16" step="1" />
                     </label>
                 </form>
 
