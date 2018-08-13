@@ -568,13 +568,13 @@ class Host(object):
 
         # Setup MIDI program navigation
         navigateFootswitches = False
-        navigateChannel      = 15
+        bankNavigateChannel      = 15
 
         if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
             bank = self.banks[self.bank_id-1]
             navigateFootswitches = bank['navigateFootswitches']
             if "navigateChannel" in bank.keys() and not navigateFootswitches:
-                navigateChannel  = int(bank['navigateChannel'])-1
+                bankNavigateChannel  = int(bank['navigateChannel'])-1
 
         self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), navigateChannel))
 
@@ -693,9 +693,9 @@ class Host(object):
             pedalboards = bank['pedalboards']
             navigateFootswitches = bank['navigateFootswitches']
             if "navigateChannel" in bank.keys() and not navigateFootswitches:
-                navigateChannel = int(bank['navigateChannel'])-1
+                bankNavigateChannel = int(bank['navigateChannel'])-1
             else:
-                navigateChannel = 15
+                bankNavigateChannel = 15
 
         else:
             if self.allpedalboards is None:
@@ -704,7 +704,7 @@ class Host(object):
             pedalboard = DEFAULT_PEDALBOARD
             pedalboards = self.allpedalboards
             navigateFootswitches = False
-            navigateChannel = 15
+            bankNavigateChannel = 15
 
         num = 0
         for pb in pedalboards:
@@ -3007,16 +3007,16 @@ _:b%i
         if bank_id == 0:
             pedalboards = self.allpedalboards
             navigateFootswitches = False
-            navigateChannel      = 15
+            bankNavigateChannel      = 15
         else:
             bank        = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
             navigateFootswitches = bank['navigateFootswitches']
 
             if "navigateChannel" in bank.keys() and not navigateFootswitches:
-                navigateChannel = int(bank['navigateChannel'])-1
+                bankNavigateChannel = int(bank['navigateChannel'])-1
             else:
-                navigateChannel = 15
+                bankNavigateChannel = 15
 
         if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
             print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
