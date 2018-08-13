@@ -460,11 +460,11 @@ $('document').ready(function() {
     if (PREFERENCES['tuner-mutes-outputs'] != "false") {
         $("#prefs-prefs-muted-tuner").prop("checked", true)
     }
-    if ("js-navigate-bank-midi-channel" in PREFERENCES) {
-        $("#js-navigate-bank-midi-channel").val(PREFERENCES['js-navigate-bank-midi-channel'])
+    if ("navigate-bank-midi-channel" in PREFERENCES) {
+        $("#js-navigate-bank-midi-channel").val(PREFERENCES['navigate-bank-midi-channel'])
     }
-    if ("js-navigate-preset-midi-channel" in PREFERENCES) {
-	$("#js-navigate-preset-midi-channel").val(PREFERENCES['js-navigate-preset-midi-channel'])
+    if ("navigate-preset-midi-channel" in PREFERENCES) {
+	$("#js-navigate-preset-midi-channel").val(PREFERENCES['navigate-preset-midi-channel'])
     }
     
     if (PREFERENCES['dev-mode'] == "on") {
@@ -560,12 +560,12 @@ $('document').ready(function() {
 
     $("#js-navigate-bank-midi-channel").click(function () {
 	var channel = $(this).val()
-        config_set("js-navigate-bank-midi-channel", channel)
+        config_set("navigate-bank-midi-channel", channel)
     })
 
     $("#js-navigate-preset-midi-channel").click(function () {
 	var channel = $(this).val()
-        config_set("js-navigate-preset-midi-channel", channel)
+        config_set("navigate-preset-midi-channel", channel)
     })
 
     
