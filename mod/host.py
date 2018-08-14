@@ -2798,7 +2798,7 @@ _:b%i
     def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
         if 0 <= channel and channel < 16:
             self.profile.midi_prgch_snapshot_channel = channel
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
+            self.send_notmodified("set_midi_program_change_pedalboard_preset_channel 1 %d" % channel)
         pass
 
                     
