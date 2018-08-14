@@ -53,6 +53,8 @@ from mod.settings import (
 )
 from mod.tuner import find_freqnotecents
 
+from mod.profile import Profile
+
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
 BANK_CONFIG_PEDALBOARD_UP   = 2
@@ -149,6 +151,9 @@ class Host(object):
         self.addressings = Addressings()
         self.mapper = InstanceIdMapper()
         self.banks = list_banks()
+
+        self.profile = Profile()
+        
         self.allpedalboards = None
         self.bank_id = 0
         self.connections = []
@@ -566,18 +571,27 @@ class Host(object):
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
 
-        # Setup MIDI program navigation
-        navigateFootswitches = False
-        bankNavigateChannel      = 15
+        # # Setup MIDI program navigation
+        # navigateFootswitches = False
+        # bankNavigateChannel      = 15
 
-        if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
-            bank = self.banks[self.bank_id-1]
-            navigateFootswitches = bank['navigateFootswitches']
-            if "navigateChannel" in bank.keys() and not navigateFootswitches:
-                bankNavigateChannel  = int(bank['navigateChannel'])-1
+        # if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
+        #     bank = self.banks[self.bank_id-1]
+        #     navigateFootswitches = bank['navigateFootswitches']
+        #     if "navigateChannel" in bank.keys() and not navigateFootswitches:
+        #         bankNavigateChannel  = int(bank['navigateChannel'])-1
 
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), bankNavigateChannel))
+        # self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), bankNavigateChannel))
 
+        logging.info("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.midi_prgch_bank_channel)
+        
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_bank_channel))
+
+        logging.info("set_midi_program_change_pedalboard_preset_channel 1 %d" % self.profile.midi_prgch_bank_channel)
+
+        self.send_notmodified("set_midi_program_change_pedalboard_preset_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
+
+        
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
