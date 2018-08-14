@@ -584,7 +584,7 @@ class Host(object):
         # self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), bankNavigateChannel))
 
         self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_bank_channel))
-        self.send_notmodified("set_midi_program_change_pedalboard_preset_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
+        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
         
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -2798,7 +2798,7 @@ _:b%i
     def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
         if 0 <= channel and channel < 16:
             self.profile.midi_prgch_snapshot_channel = channel
-            self.send_notmodified("set_midi_program_change_pedalboard_preset_channel 1 %d" % channel)
+            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
         pass
 
                     
