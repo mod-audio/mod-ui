@@ -559,13 +559,15 @@ $('document').ready(function() {
     })
 
     $("#js-navigate-bank-midi-channel").click(function () {
-	var channel = $(this).val()
+	var channel = $(this).val() - 1 // Range [0,15]
         config_set("navigate-bank-midi-channel", channel)
+	ws.send("set_midi_program_change_pedalboard_bank_channel 1 " + channel)
     })
 
     $("#js-navigate-preset-midi-channel").click(function () {
-	var channel = $(this).val()
+	var channel = $(this).val() - 1 // Range [0,15]
         config_set("navigate-preset-midi-channel", channel)
+	ws.send("set_midi_program_change_pedalboard_snapshot_channel 1 " + channel)
     })
 
     

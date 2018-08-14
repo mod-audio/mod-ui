@@ -940,6 +940,17 @@ class ServerWebSocket(websocket.WebSocketHandler):
             rolling = bool(int(data[1]))
             SESSION.host.set_transport_rolling(rolling, True)
 
+        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
+            channel = int(data[2])
+            SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
+
+        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
+            channel = int(data[2])
+            SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
+            
+        else:
+            print("Unexpected command received over websocket")
+            
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine

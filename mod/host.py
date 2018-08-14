@@ -583,14 +583,8 @@ class Host(object):
 
         # self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), bankNavigateChannel))
 
-        logging.info("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.midi_prgch_bank_channel)
-        
         self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_bank_channel))
-
-        logging.info("set_midi_program_change_pedalboard_preset_channel 1 %d" % self.profile.midi_prgch_bank_channel)
-
         self.send_notmodified("set_midi_program_change_pedalboard_preset_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
-
         
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -737,12 +731,14 @@ class Host(object):
             self.setNavigateWithFootswitches(True, callback)
 
         def midi_prog_callback(ok):
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % navigateChannel, callback, datatype='boolean')
+            logging.info("[host] midi_prog_callback called")
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.midi_prgch_bank_channel, callback, datatype='boolean')
 
         def initial_state_callback(ok):
             cb = footswitch_callback if navigateFootswitches else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
+        logging.info("[host] JUST A TEST")
         self.setNavigateWithFootswitches(False, initial_state_callback)
 
     def start_session(self, callback):
@@ -759,6 +755,7 @@ class Host(object):
         def footswitch_bank_callback(ok):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
+        # Does this take effect?
         self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
 
         self.banks = []
@@ -897,7 +894,7 @@ class Host(object):
             program  = int(msg_data[0])
             channel  = int(msg_data[1])
 
-            if channel == 15: # TODO dynamic bank channel number [0-15]
+            if channel == self.profile.midi_prgch_bank_channel:
                 bank_id  = self.bank_id
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
                     pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -917,7 +914,7 @@ class Host(object):
                         self.hmi.clear(load_callback)
 
                     self.reset(hmi_clear_callback)
-            elif channel == 14: # TODO dynamic preset channel number [0-15]
+            elif channel == self.profile.midi_prgch_snapshot_channel:
                 yield gen.Task(self.pedalpreset_load, program)
                 pass
                     
@@ -1044,8 +1041,9 @@ class Host(object):
             self.process_write_queue()
 
     # send data to host, don't change modified flag
-    def send_notmodified(self, msg, callback=None, datatype='int'):
+    def send_notmodified(self, msg, callback=None, datatype='int'):        
         self._queue.append((msg, callback, datatype))
+        logging.info("[host] idle? -> %s" % self._idle)
         if self._idle:
             self.process_write_queue()
 
@@ -2791,6 +2789,19 @@ _:b%i
                 if sendMsg:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
+    def set_midi_program_change_pedalboard_bank_channel(self, channel):
+        if 0 <= channel and channel < 16:
+            self.profile.midi_prgch_bank_channel = channel
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
+        pass
+
+    def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
+        if 0 <= channel and channel < 16:
+            self.profile.midi_prgch_snapshot_channel = channel
+            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
+        pass
+
+                    
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
 
@@ -3020,17 +3031,17 @@ _:b%i
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
-            navigateFootswitches = False
-            bankNavigateChannel      = 15
+            #navigateFootswitches = False
+            #bankNavigateChannel      = 15
         else:
             bank        = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
-            navigateFootswitches = bank['navigateFootswitches']
+            #navigateFootswitches = bank['navigateFootswitches']
 
-            if "navigateChannel" in bank.keys() and not navigateFootswitches:
-                bankNavigateChannel = int(bank['navigateChannel'])-1
-            else:
-                bankNavigateChannel = 15
+            # if "navigateChannel" in bank.keys() and not navigateFootswitches:
+            #     bankNavigateChannel = int(bank['navigateChannel'])-1
+            # else:
+            #     bankNavigateChannel = 15
 
         if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
             print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
@@ -3067,7 +3078,7 @@ _:b%i
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), navigateChannel), loaded_callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), profile.midi_prgch_bank_channel), loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
