@@ -576,7 +576,7 @@ class Host(object):
             if "navigateChannel" in bank.keys() and not navigateFootswitches:
                 bankNavigateChannel  = int(bank['navigateChannel'])-1
 
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), navigateChannel))
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), bankNavigateChannel))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
