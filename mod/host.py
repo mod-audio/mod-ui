@@ -811,7 +811,7 @@ class Host(object):
 
                     if instance_id == PEDALBOARD_INSTANCE_ID:
                         value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                        yield gen.Task(self.pedalpreset_load, value)
+                        yield gen.Task(self.snapshot_load, value)
                     else:
                         yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value])
 
@@ -915,7 +915,7 @@ class Host(object):
 
                     self.reset(hmi_clear_callback)
             elif channel == self.profile.midi_prgch_snapshot_channel:
-                yield gen.Task(self.pedalpreset_load, program)
+                yield gen.Task(self.snapshot_load, program)
                 pass
                     
         elif cmd == "transport":
@@ -1277,7 +1277,7 @@ class Host(object):
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
-        self.pedalpreset_clear()
+        self.snapshot_clear()
 
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
@@ -1622,7 +1622,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - pedalboard presets
 
-    def pedalpreset_make(self, name):
+    def snapshot_make(self, name):
         self.pedalboard_modified = True
 
         pedalpreset = {
@@ -1642,53 +1642,53 @@ class Host(object):
 
         return pedalpreset
 
-    def pedalpreset_name(self, idx=None):
+    def snapshot_name(self, idx=None):
         if idx is None:
             idx = self.pedalboard_preset
         if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return None
         return self.pedalboard_presets[idx]['name']
 
-    def pedalpreset_init(self):
-        preset = self.pedalpreset_make("Default")
+    def snapshot_init(self):
+        preset = self.snapshot_make("Default")
         self.plugins_added   = []
         self.plugins_removed = []
         self.pedalboard_preset = 0
         self.pedalboard_presets = [preset]
 
-    def pedalpreset_clear(self):
+    def snapshot_clear(self):
         self.plugins_added   = []
         self.plugins_removed = []
         self.pedalboard_preset = -1
         self.pedalboard_presets = []
 
-    def pedalpreset_disable(self, callback):
-        self.pedalpreset_clear()
+    def snapshot_disable(self, callback):
+        self.snapshot_clear()
         self.pedalboard_modified = True
         self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, callback)
 
-    def pedalpreset_save(self):
+    def snapshot_save(self):
         idx = self.pedalboard_preset
 
         if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return False
 
         name   = self.pedalboard_presets[idx]['name']
-        preset = self.pedalpreset_make(name)
+        preset = self.snapshot_make(name)
         self.pedalboard_presets[idx] = preset
         return True
 
-    def pedalpreset_saveas(self, name):
+    def snapshot_saveas(self, name):
         if len(self.pedalboard_presets) == 0:
-            self.pedalpreset_init()
+            self.snapshot_init()
 
-        preset = self.pedalpreset_make(name)
+        preset = self.snapshot_make(name)
         self.pedalboard_presets.append(preset)
 
         self.pedalboard_preset = len(self.pedalboard_presets)-1
         return self.pedalboard_preset
 
-    def pedalpreset_rename(self, idx, title):
+    def snapshot_rename(self, idx, title):
         if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return False
 
@@ -1696,7 +1696,7 @@ class Host(object):
         self.pedalboard_presets[idx]['name'] = title
         return True
 
-    def pedalpreset_remove(self, idx):
+    def snapshot_remove(self, idx):
         if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
             return False
 
@@ -1705,7 +1705,7 @@ class Host(object):
         return True
 
     @gen.coroutine
-    def pedalpreset_load(self, idx, callback=lambda r:None):
+    def snapshot_load(self, idx, callback=lambda r:None):
         if idx < 0 or idx >= len(self.pedalboard_presets):
             callback(False)
             return
@@ -2045,7 +2045,7 @@ class Host(object):
         return self.pedalboard_name
 
     def load_pb_presets(self, plugins, bundlepath):
-        self.pedalpreset_clear()
+        self.snapshot_clear()
 
         pedal_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
 
@@ -3129,7 +3129,7 @@ _:b%i
                 return
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                self.pedalpreset_load(value, callback)
+                self.snapshot_load(value, callback)
             else:
                 self.preset_load(instance, pluginData['mapPresets'][value], callback)
 
