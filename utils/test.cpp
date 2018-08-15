@@ -132,39 +132,39 @@ int main()
     assert(get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_") == nullptr);
 
     // add plugin bundle
-    assert(add_bundle_to_lilv_world("/Shared/Personal/FOSS/GIT/MOD/mod-app/source/modules/mod-ui/utils/test-plugins/gx_voxtb.lv2") != nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/gx_voxtb.lv2") != nullptr);
     // get the plugin
     info = get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_");
     assert(info != nullptr);
-    assert(strcmp(info->name, "GxVoxTonebender OLD") == 0);
+    assert(strcmp(info->name, "GxVoxTonebender") == 0);
     assert(info->ports.control.input != nullptr);
 
     // remove bundle, must return some plugins
-    assert(remove_bundle_from_lilv_world("/Shared/Personal/FOSS/GIT/MOD/mod-app/source/modules/mod-ui/utils/test-plugins/gx_voxtb.lv2/") != nullptr);
+    assert(remove_bundle_from_lilv_world("/usr/lib/lv2/gx_voxtb.lv2/") != nullptr);
     // plugin is now null
     info = get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_");
     assert(get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_") == nullptr);
 
     // remove bundle again, must return empty
-    assert(remove_bundle_from_lilv_world("/Shared/Personal/FOSS/GIT/MOD/mod-app/source/modules/mod-ui/utils/test-plugins/gx_voxtb.lv2") == nullptr);
+    assert(remove_bundle_from_lilv_world("/usr/lib/lv2/gx_voxtb.lv2") == nullptr);
     // plugin is still null
     info = get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_");
     assert(info == nullptr);
 
     // re-add plugin bundle
-    assert(add_bundle_to_lilv_world("/Shared/Personal/FOSS/GIT/MOD/mod-app/source/modules/mod-ui/utils/test-plugins/gx_voxtb.lv2") != nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/gx_voxtb.lv2") != nullptr);
     // get the plugin
     info = get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_");
     assert(info != nullptr);
-    assert(strcmp(info->name, "GxVoxTonebender OLD") == 0);
+    assert(strcmp(info->name, "GxVoxTonebender") == 0);
     assert(info->ports.control.input != nullptr);
 
     // re-re-add plugin bundle, because it's already loaded it must return no plugins
-    assert(add_bundle_to_lilv_world("/Shared/Personal/FOSS/GIT/MOD/mod-app/source/modules/mod-ui/utils/test-plugins/gx_voxtb.lv2/") == nullptr);
+    assert(add_bundle_to_lilv_world("/usr/lib/lv2/gx_voxtb.lv2/") == nullptr);
     // get the plugin, still valid as expected
     info = get_plugin_info("http://guitarix.sourceforge.net/plugins/gx_voxtb_#_voxtb_");
     assert(info != nullptr);
-    assert(strcmp(info->name, "GxVoxTonebender OLD") == 0);
+    assert(strcmp(info->name, "GxVoxTonebender") == 0);
     assert(info->ports.control.input != nullptr);
 
     cleanup();
@@ -172,7 +172,7 @@ int main()
 
 #if 0
     assert(init_jack());
-    assert(get_jack_data() != nullptr);
+    assert(get_jack_data(true) != nullptr);
     get_jack_sample_rate();
     get_jack_port_alias("system:capture_1");
     get_jack_hardware_ports(false, false);

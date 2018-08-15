@@ -28,7 +28,7 @@ LOG = bool(int(os.environ.get('MOD_LOG', False)))
 # Enable for testing carla instead of mod-host
 HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
 
-API_KEY = os.environ.pop('MOD_API_KEY', '/usr/share/mod/keys/mod_api_key.pub')
+API_KEY = os.environ.pop('MOD_API_KEY', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
@@ -40,8 +40,9 @@ if os.path.isfile(IMAGE_VERSION_PATH):
 else:
     IMAGE_VERSION = None
 
-DATA_DIR = os.environ.get('MOD_DATA_DIR', '/dados')
-KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys') + os.sep)
+DATA_DIR = os.environ.get('MOD_DATA_DIR', os.path.expanduser('~/data'))
+CACHE_DIR = os.path.join(DATA_DIR, '.cache')
+KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys'))
 BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 FAVORITES_JSON_FILE = os.environ.get('MOD_FAVORITES_JSON', join(DATA_DIR, 'favorites.json'))
 LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'last.json'))
@@ -69,17 +70,11 @@ DEFAULT_ICON_IMAGE = {
     'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
 }
 
-PHANTOM_BINARY = os.environ.get('MOD_PHANTOM_BINARY', '/usr/bin/phantomjs')
-
-SCREENSHOT_JS = os.environ.get('MOD_SCREENSHOT_JS', join(sys.prefix, 'share/mod/screenshot.js'))
-
-MAX_THUMB_HEIGHT = 350
-MAX_THUMB_WIDTH = 350
 
 # Cloud API addresses
-CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "http://api.dev.moddevices.com/v2")
+CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.moddevices.com/v2")
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.moddevices.com/plugins")
-PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "http://pedalboards.dev.moddevices.com")
+PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.moddevices.com")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v1")
 

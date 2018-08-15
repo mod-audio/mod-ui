@@ -265,6 +265,7 @@ JqueryClass('effectBox', {
             'Spatial': 0,
             'Spectral': 0,
             'Utility': 0,
+            'MaxGen': 0,
         }
         var category
         for (i in plugins) {
@@ -285,6 +286,12 @@ JqueryClass('effectBox', {
         for (category in categories) {
             var tab = self.find('#effect-tab-' + category)
             tab.html(tab.html() + ' (' + categories[category] + ')')
+        }
+
+        if (categories[category] == 0) {
+            self.find('#effect-tab-MaxGen').hide()
+        } else {
+            self.find('#effect-tab-MaxGen').show()
         }
 
         // disable navigation while we render plugins
@@ -522,6 +529,8 @@ JqueryClass('effectBox', {
             var content = $(this).html().split(/\s/)
             if (content.length >= 2 && content[1] == "Utility") {
                 $(this).html(content[0] + " Utility")
+            } else if (content.length >= 2 && content[1] == "gen~") {
+                $(this).html(content[0] + " gen~")
             } else {
                 $(this).html(content[0])
             }
@@ -634,6 +643,6 @@ JqueryClass('effectBox', {
 
 function version(v) {
     if (!v || !v.length)
-        return '0:0.0-0'
-    return ""+v[0]+":"+v[1]+"."+v[2]+"-"+v[3]
+        return '0.0-0'
+    return ""+v[1]+"."+v[2]+"-"+v[3]
 }

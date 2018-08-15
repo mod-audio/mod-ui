@@ -24,6 +24,7 @@ function ControlChainDeviceManager(options) {
         updateInfoWindow: $('<div>'),
         setIconTooltip: function (msg) {},
         showNotification: function (msg, timeout) {},
+        cancelDownload: function (callback) { callback() },
     }, options)
 
     this.connectedDevices = []
@@ -41,7 +42,9 @@ function ControlChainDeviceManager(options) {
     })
 
     options.updateInfoWindow.find('.js-cancel').click(function () {
-        options.updateInfoWindow.hide()
+        options.cancelDownload(function () {
+            options.updateInfoWindow.hide()
+        })
         return false
     })
 
@@ -78,19 +81,13 @@ function ControlChainDeviceManager(options) {
     this._devicesUpdated = function () {
         var count = self.connectedDevices.length
         if (count == 0) {
-            options.devicesIcon
-            .removeClass('ico_cpu')
-            .removeClass('ico_faders')
-            .removeClass('ico_knob')
-            .removeClass('ico_switch')
-            .statusTooltip('message', "No Control Chain devices connected", true)
-
+            options.devicesIcon.statusTooltip('message', "No Control Chain devices connected", true)
             options.devicesWindow.hide()
             self.devicesListElem.html("<li>No Control Chain devices connected</li>")
 
         } else {
             var item, lihtml = ""
-            for (var i=0; i<count; ++i) {
+            for (var i in self.connectedDevices) {
                 item = self.connectedDevices[i]
                 lihtml += "<li>" +
                           "<b>" + item[1] + "</b><br/>" +
@@ -100,39 +97,13 @@ function ControlChainDeviceManager(options) {
             }
             self.devicesListElem.html(lihtml)
 
+            var msg
             if (count == 1) {
-                var icoclass, msg
-
-                // set icon depending on label
-                switch (self.connectedDevices[0][0]) {
-                case "https://github.com/moddevices/cc-fw-footswitch":
-                    icoclass = 'ico_switch'
-                    msg = "1 MOD Footswitch connected"
-                    break
-                default:
-                    icoclass = 'ico_cpu'
-                    msg = "1 Control Chain device connected"
-                    break
-                }
-
-                options.devicesIcon
-                .removeClass('ico_cpu')
-                .removeClass('ico_faders')
-                .removeClass('ico_knob')
-                .removeClass('ico_switch')
-                .addClass(icoclass)
-                .statusTooltip('message', msg, true)
-
+                msg = "1 Control Chain device connected"
             } else {
-                var msg = sprintf("%d Control Chain devices connected", count)
-                options.devicesIcon
-                .removeClass('ico_cpu')
-                .removeClass('ico_faders')
-                .removeClass('ico_knob')
-                .removeClass('ico_switch')
-                .addClass('ico_faders')
-                .statusTooltip('message', msg, true)
+                msg = sprintf("%d Control Chain devices connected", count)
             }
+            options.devicesIcon.statusTooltip('message', msg, true)
         }
     }
 }

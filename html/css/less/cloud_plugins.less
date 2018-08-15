@@ -142,8 +142,8 @@
       .make-md-column(6);
       .make-lg-column(4);
       height: 120px;
-      margin-top: 30px;
-      margin-bottom: 40px;
+      margin-top: 10px;
+      margin-bottom: 60px;
       background: rgba(255, 255, 255, 0.07);
       transition: all 0.33s;
       cursor: pointer;
@@ -236,7 +236,123 @@
        .actions span.duplicate {
         margin: 0 6px;
       }
-  }
+	}
+	h2 {
+		margin-left: 23px;
+		font-size: 20px;
+		color: #cccccc;
+	}
+	h3 {
+		color: #cccccc;
+	}
+	.featured-plugins {
+		position: relative;
+		height: 360px;
+		width: 100%;
+		display: block;
+		&.double, &.single {
+			height: 490px !important;
+			.box {
+				transition: all 0s !important;
+			}
+			.carousel {
+				height: 485px !important;
+				.slick-list {
+					height: 485px !important;
+				}
+			}
+		}
+		&.double {
+			.box {
+				margin: 30px 80px !important;
+			}
+		}
+		&.single {
+			.box {
+				margin: 30px 30px !important;
+			}
+		}
+		.carousel {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			right: 90px;
+			left: 90px;
+			height: 380px !important;
+			.slick-list {
+				height: 380px !important;
+			}
+			.featured {
+				cursor: pointer;
+				margin-top: 40px;
+				.box {
+					padding: 4px;
+					border: 1px solid #737373;
+					height: 300px;
+					opacity: 0.4;
+					margin: 0 24px;
+					.inner-box {
+						border: 1px solid #444444;
+						text-align: center;
+						height: 290px;
+						h2 {
+							color: #c3c3c3;
+							text-align: center;
+						}
+						.img-container {
+							height: 113px;
+							width: 100%;
+							img {
+								vertical-align: middle;
+								transition: all 500ms ease;
+								width: auto;
+								height: auto;
+								margin: auto;
+								display: block;
+								max-height: 113px;
+								padding: 0 20px;
+								max-width: 100%;
+							}
+						}
+						p {
+							color: #e0e0e0;
+							padding: 20px 20px 0 20px;
+							height: 59px;
+						}
+						button {
+							background-color: transparent;
+							color: #ff3838;
+							border: 1px solid #ff3838;
+							text-transform: uppercase;
+							padding: 8px 20px;
+						}
+					}
+				}
+				&.slick-center {
+					height: 390px;
+					.box {
+						opacity: 1;
+						transform: scale(1.2) translate(0,-0);
+						transition: all 500ms ease;
+					}
+				}
+			}
+			.slick-arrow {
+				&:before {
+					font-size: 60px;
+				}
+				width: 60px;
+				height: 60px;
+				top: 200px;
+			}
+			.slick-prev {
+				left: -70px !important;
+			}
+			.slick-next {
+				right: -70px !important;
+			}
+		}
+	}
 }
 
 .plugin-container {
@@ -275,7 +391,7 @@
     border: 1px solid #FF2927;
     background-color: #FF2927;
     &:after {
-      content: "unstable";
+      content: "beta";
     }
   }
   .status.demo {
@@ -287,3 +403,4 @@
     }
   }
 }
+

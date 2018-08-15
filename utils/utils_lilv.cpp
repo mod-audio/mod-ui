@@ -97,7 +97,8 @@ static size_t HOMElen = strlen(HOME);
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
     nullptr, 0, 0, 0, 0, 0,                      \
-    { nullptr, nullptr, nullptr }                \
+    { nullptr, nullptr, nullptr },               \
+    false                                        \
 }
 
 #define PluginInfo_Init {                            \
@@ -412,6 +413,7 @@ static const char* const kCategoryFunctionPlugin[] = { "Utility", "Function", nu
 static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr };
 static const char* const kCategoryMIDIPlugin[] = { "MIDI", "Utility", nullptr };
 static const char* const kCategoryMIDIPluginMOD[] = { "MIDI", nullptr };
+static const char* const kCategoryMaxGenPluginMOD[] = { "MaxGen", nullptr };
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -706,6 +708,163 @@ static void _place_preset_info(PluginInfo& info,
     lilv_nodes_free(presetnodes);
 }
 
+const char* const* _get_plugin_categories(const LilvPlugin* const p,
+                                        LilvNode* const rdf_type,
+                                        bool* const supported = nullptr)
+{
+    const char* const* category = nullptr;
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, rdf_type))
+    {
+        LILV_FOREACH(nodes, it, nodes)
+        {
+            const LilvNode* const node2 = lilv_nodes_get(nodes, it);
+            const char* const nodestr = lilv_node_as_string(node2);
+
+            if (nodestr == nullptr)
+                continue;
+
+            if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
+            {
+                if (supported != nullptr)
+                    *supported = false;
+                category = nullptr;
+                break;
+            }
+
+            if (const char* cat = strstr(nodestr, "http://lv2plug.in/ns/lv2core#"))
+            {
+                cat += 29; // strlen("http://lv2plug.in/ns/lv2core#")
+
+                if (cat[0] == '\0')
+                    continue;
+                if (strcmp(cat, "Plugin") == 0)
+                    continue;
+
+                else if (strcmp(cat, "DelayPlugin") == 0)
+                    category = kCategoryDelayPlugin;
+                else if (strcmp(cat, "DistortionPlugin") == 0)
+                    category = kCategoryDistortionPlugin;
+                else if (strcmp(cat, "WaveshaperPlugin") == 0)
+                    category = kCategoryWaveshaperPlugin;
+                else if (strcmp(cat, "DynamicsPlugin") == 0)
+                    category = kCategoryDynamicsPlugin;
+                else if (strcmp(cat, "AmplifierPlugin") == 0)
+                    category = kCategoryAmplifierPlugin;
+                else if (strcmp(cat, "CompressorPlugin") == 0)
+                    category = kCategoryCompressorPlugin;
+                else if (strcmp(cat, "ExpanderPlugin") == 0)
+                    category = kCategoryExpanderPlugin;
+                else if (strcmp(cat, "GatePlugin") == 0)
+                    category = kCategoryGatePlugin;
+                else if (strcmp(cat, "LimiterPlugin") == 0)
+                    category = kCategoryLimiterPlugin;
+                else if (strcmp(cat, "FilterPlugin") == 0)
+                    category = kCategoryFilterPlugin;
+                else if (strcmp(cat, "AllpassPlugin") == 0)
+                    category = kCategoryAllpassPlugin;
+                else if (strcmp(cat, "BandpassPlugin") == 0)
+                    category = kCategoryBandpassPlugin;
+                else if (strcmp(cat, "CombPlugin") == 0)
+                    category = kCategoryCombPlugin;
+                else if (strcmp(cat, "EQPlugin") == 0)
+                    category = kCategoryEQPlugin;
+                else if (strcmp(cat, "MultiEQPlugin") == 0)
+                    category = kCategoryMultiEQPlugin;
+                else if (strcmp(cat, "ParaEQPlugin") == 0)
+                    category = kCategoryParaEQPlugin;
+                else if (strcmp(cat, "HighpassPlugin") == 0)
+                    category = kCategoryHighpassPlugin;
+                else if (strcmp(cat, "LowpassPlugin") == 0)
+                    category = kCategoryLowpassPlugin;
+                else if (strcmp(cat, "GeneratorPlugin") == 0)
+                    category = kCategoryGeneratorPlugin;
+                else if (strcmp(cat, "ConstantPlugin") == 0)
+                    category = kCategoryConstantPlugin;
+                else if (strcmp(cat, "InstrumentPlugin") == 0)
+                    category = kCategoryInstrumentPlugin;
+                else if (strcmp(cat, "OscillatorPlugin") == 0)
+                    category = kCategoryOscillatorPlugin;
+                else if (strcmp(cat, "ModulatorPlugin") == 0)
+                    category = kCategoryModulatorPlugin;
+                else if (strcmp(cat, "ChorusPlugin") == 0)
+                    category = kCategoryChorusPlugin;
+                else if (strcmp(cat, "FlangerPlugin") == 0)
+                    category = kCategoryFlangerPlugin;
+                else if (strcmp(cat, "PhaserPlugin") == 0)
+                    category = kCategoryPhaserPlugin;
+                else if (strcmp(cat, "ReverbPlugin") == 0)
+                    category = kCategoryReverbPlugin;
+                else if (strcmp(cat, "SimulatorPlugin") == 0)
+                    category = kCategorySimulatorPlugin;
+                else if (strcmp(cat, "SpatialPlugin") == 0)
+                    category = kCategorySpatialPlugin;
+                else if (strcmp(cat, "SpectralPlugin") == 0)
+                    category = kCategorySpectralPlugin;
+                else if (strcmp(cat, "PitchPlugin") == 0)
+                    category = kCategoryPitchPlugin;
+                else if (strcmp(cat, "UtilityPlugin") == 0)
+                    category = kCategoryUtilityPlugin;
+                else if (strcmp(cat, "AnalyserPlugin") == 0)
+                    category = kCategoryAnalyserPlugin;
+                else if (strcmp(cat, "ConverterPlugin") == 0)
+                    category = kCategoryConverterPlugin;
+                else if (strcmp(cat, "FunctionPlugin") == 0)
+                    category = kCategoryFunctionPlugin;
+                else if (strcmp(cat, "MixerPlugin") == 0)
+                    category = kCategoryMixerPlugin;
+                /*
+                else if (strcmp(cat, "MIDIPlugin") == 0)
+                    category = kCategoryMIDIPlugin;
+                */
+            }
+            else if (const char* cat2 = strstr(nodestr, LILV_NS_MOD))
+            {
+                cat2 += 29; // strlen("http://moddevices.com/ns/mod#")
+
+                if (cat2[0] == '\0')
+                    continue;
+
+                else if (strcmp(cat2, "DelayPlugin") == 0)
+                    category = kCategoryDelayPlugin;
+                else if (strcmp(cat2, "DistortionPlugin") == 0)
+                    category = kCategoryDistortionPlugin;
+                else if (strcmp(cat2, "DynamicsPlugin") == 0)
+                    category = kCategoryDynamicsPlugin;
+                else if (strcmp(cat2, "FilterPlugin") == 0)
+                    category = kCategoryFilterPlugin;
+                else if (strcmp(cat2, "GeneratorPlugin") == 0)
+                    category = kCategoryGeneratorPlugin;
+                else if (strcmp(cat2, "ModulatorPlugin") == 0)
+                    category = kCategoryModulatorPlugin;
+                else if (strcmp(cat2, "ReverbPlugin") == 0)
+                    category = kCategoryReverbPlugin;
+                else if (strcmp(cat2, "SimulatorPlugin") == 0)
+                    category = kCategorySimulatorPlugin;
+                else if (strcmp(cat2, "SpatialPlugin") == 0)
+                    category = kCategorySpatialPlugin;
+                else if (strcmp(cat2, "SpectralPlugin") == 0)
+                    category = kCategorySpectralPlugin;
+                else if (strcmp(cat2, "UtilityPlugin") == 0)
+                    category = kCategoryUtilityPlugin;
+                else if (strcmp(cat2, "MIDIPlugin") == 0)
+                    category = kCategoryMIDIPluginMOD;
+                else if (strcmp(cat2, "MaxGenPlugin") == 0)
+                    category = kCategoryMaxGenPluginMOD;
+                else
+                    continue; // invalid mod category
+
+                // if we reach this point we found a mod category.
+                // we need to stop now, as only 1 mod category is allowed per plugin.
+                break;
+            }
+        }
+        lilv_nodes_free(nodes);
+    }
+
+    return category;
+}
+
 const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const NamespaceDefinitions_Mini& ns)
 {
     static PluginInfo_Mini info;
@@ -783,151 +942,9 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // categories
+    // category
 
-    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.rdf_type))
-    {
-        LILV_FOREACH(nodes, it, nodes)
-        {
-            const LilvNode* const node2 = lilv_nodes_get(nodes, it);
-            const char* const nodestr = lilv_node_as_string(node2);
-
-            if (nodestr == nullptr)
-                continue;
-
-            if (strcmp(nodestr, LILV_NS_MODPEDAL "Pedalboard") == 0)
-            {
-                supported = false;
-                break;
-            }
-
-            if (const char* cat = strstr(nodestr, "http://lv2plug.in/ns/lv2core#"))
-            {
-                cat += 29; // strlen("http://lv2plug.in/ns/lv2core#")
-
-                if (cat[0] == '\0')
-                    continue;
-                if (strcmp(cat, "Plugin") == 0)
-                    continue;
-
-                else if (strcmp(cat, "DelayPlugin") == 0)
-                    info.category = kCategoryDelayPlugin;
-                else if (strcmp(cat, "DistortionPlugin") == 0)
-                    info.category = kCategoryDistortionPlugin;
-                else if (strcmp(cat, "WaveshaperPlugin") == 0)
-                    info.category = kCategoryWaveshaperPlugin;
-                else if (strcmp(cat, "DynamicsPlugin") == 0)
-                    info.category = kCategoryDynamicsPlugin;
-                else if (strcmp(cat, "AmplifierPlugin") == 0)
-                    info.category = kCategoryAmplifierPlugin;
-                else if (strcmp(cat, "CompressorPlugin") == 0)
-                    info.category = kCategoryCompressorPlugin;
-                else if (strcmp(cat, "ExpanderPlugin") == 0)
-                    info.category = kCategoryExpanderPlugin;
-                else if (strcmp(cat, "GatePlugin") == 0)
-                    info.category = kCategoryGatePlugin;
-                else if (strcmp(cat, "LimiterPlugin") == 0)
-                    info.category = kCategoryLimiterPlugin;
-                else if (strcmp(cat, "FilterPlugin") == 0)
-                    info.category = kCategoryFilterPlugin;
-                else if (strcmp(cat, "AllpassPlugin") == 0)
-                    info.category = kCategoryAllpassPlugin;
-                else if (strcmp(cat, "BandpassPlugin") == 0)
-                    info.category = kCategoryBandpassPlugin;
-                else if (strcmp(cat, "CombPlugin") == 0)
-                    info.category = kCategoryCombPlugin;
-                else if (strcmp(cat, "EQPlugin") == 0)
-                    info.category = kCategoryEQPlugin;
-                else if (strcmp(cat, "MultiEQPlugin") == 0)
-                    info.category = kCategoryMultiEQPlugin;
-                else if (strcmp(cat, "ParaEQPlugin") == 0)
-                    info.category = kCategoryParaEQPlugin;
-                else if (strcmp(cat, "HighpassPlugin") == 0)
-                    info.category = kCategoryHighpassPlugin;
-                else if (strcmp(cat, "LowpassPlugin") == 0)
-                    info.category = kCategoryLowpassPlugin;
-                else if (strcmp(cat, "GeneratorPlugin") == 0)
-                    info.category = kCategoryGeneratorPlugin;
-                else if (strcmp(cat, "ConstantPlugin") == 0)
-                    info.category = kCategoryConstantPlugin;
-                else if (strcmp(cat, "InstrumentPlugin") == 0)
-                    info.category = kCategoryInstrumentPlugin;
-                else if (strcmp(cat, "OscillatorPlugin") == 0)
-                    info.category = kCategoryOscillatorPlugin;
-                else if (strcmp(cat, "ModulatorPlugin") == 0)
-                    info.category = kCategoryModulatorPlugin;
-                else if (strcmp(cat, "ChorusPlugin") == 0)
-                    info.category = kCategoryChorusPlugin;
-                else if (strcmp(cat, "FlangerPlugin") == 0)
-                    info.category = kCategoryFlangerPlugin;
-                else if (strcmp(cat, "PhaserPlugin") == 0)
-                    info.category = kCategoryPhaserPlugin;
-                else if (strcmp(cat, "ReverbPlugin") == 0)
-                    info.category = kCategoryReverbPlugin;
-                else if (strcmp(cat, "SimulatorPlugin") == 0)
-                    info.category = kCategorySimulatorPlugin;
-                else if (strcmp(cat, "SpatialPlugin") == 0)
-                    info.category = kCategorySpatialPlugin;
-                else if (strcmp(cat, "SpectralPlugin") == 0)
-                    info.category = kCategorySpectralPlugin;
-                else if (strcmp(cat, "PitchPlugin") == 0)
-                    info.category = kCategoryPitchPlugin;
-                else if (strcmp(cat, "UtilityPlugin") == 0)
-                    info.category = kCategoryUtilityPlugin;
-                else if (strcmp(cat, "AnalyserPlugin") == 0)
-                    info.category = kCategoryAnalyserPlugin;
-                else if (strcmp(cat, "ConverterPlugin") == 0)
-                    info.category = kCategoryConverterPlugin;
-                else if (strcmp(cat, "FunctionPlugin") == 0)
-                    info.category = kCategoryFunctionPlugin;
-                else if (strcmp(cat, "MixerPlugin") == 0)
-                    info.category = kCategoryMixerPlugin;
-                /*
-                else if (strcmp(cat, "MIDIPlugin") == 0)
-                    info.category = kCategoryMIDIPlugin;
-                */
-            }
-            else if (const char* cat2 = strstr(nodestr, LILV_NS_MOD))
-            {
-                cat2 += 29; // strlen("http://moddevices.com/ns/mod#")
-
-                if (cat2[0] == '\0')
-                    continue;
-
-                else if (strcmp(cat2, "DelayPlugin") == 0)
-                    info.category = kCategoryDelayPlugin;
-                else if (strcmp(cat2, "DistortionPlugin") == 0)
-                    info.category = kCategoryDistortionPlugin;
-                else if (strcmp(cat2, "DynamicsPlugin") == 0)
-                    info.category = kCategoryDynamicsPlugin;
-                else if (strcmp(cat2, "FilterPlugin") == 0)
-                    info.category = kCategoryFilterPlugin;
-                else if (strcmp(cat2, "GeneratorPlugin") == 0)
-                    info.category = kCategoryGeneratorPlugin;
-                else if (strcmp(cat2, "ModulatorPlugin") == 0)
-                    info.category = kCategoryModulatorPlugin;
-                else if (strcmp(cat2, "ReverbPlugin") == 0)
-                    info.category = kCategoryReverbPlugin;
-                else if (strcmp(cat2, "SimulatorPlugin") == 0)
-                    info.category = kCategorySimulatorPlugin;
-                else if (strcmp(cat2, "SpatialPlugin") == 0)
-                    info.category = kCategorySpatialPlugin;
-                else if (strcmp(cat2, "SpectralPlugin") == 0)
-                    info.category = kCategorySpectralPlugin;
-                else if (strcmp(cat2, "UtilityPlugin") == 0)
-                    info.category = kCategoryUtilityPlugin;
-                else if (strcmp(cat2, "MIDIPlugin") == 0)
-                    info.category = kCategoryMIDIPluginMOD;
-                else
-                    continue; // invalid mod category
-
-                // if we reach this point we found a mod category.
-                // we need to stop now, as only 1 mod category is allowed per plugin.
-                break;
-            }
-        }
-        lilv_nodes_free(nodes);
-    }
+    info.category = _get_plugin_categories(p, ns.rdf_type, &supported);
 
     if (! supported)
         return info;
@@ -1118,6 +1135,7 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
 
     info.valid = true;
+    info.needsDealloc = true;
     return info;
 }
 
@@ -1211,103 +1229,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // categories
+    // category
 
-    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.rdf_type))
-    {
-        LILV_FOREACH(nodes, it, nodes)
-        {
-            const LilvNode* const node2 = lilv_nodes_get(nodes, it);
-            const char* const nodestr = lilv_node_as_string(node2);
-
-            if (nodestr == nullptr)
-                continue;
-
-            if (const char* cat = strstr(nodestr, "http://lv2plug.in/ns/lv2core#"))
-            {
-                cat += 29; // strlen("http://lv2plug.in/ns/lv2core#")
-
-                if (cat[0] == '\0')
-                    continue;
-                if (strcmp(cat, "Plugin") == 0)
-                    continue;
-
-                else if (strcmp(cat, "DelayPlugin") == 0)
-                    info.category = kCategoryDelayPlugin;
-                else if (strcmp(cat, "DistortionPlugin") == 0)
-                    info.category = kCategoryDistortionPlugin;
-                else if (strcmp(cat, "WaveshaperPlugin") == 0)
-                    info.category = kCategoryWaveshaperPlugin;
-                else if (strcmp(cat, "DynamicsPlugin") == 0)
-                    info.category = kCategoryDynamicsPlugin;
-                else if (strcmp(cat, "AmplifierPlugin") == 0)
-                    info.category = kCategoryAmplifierPlugin;
-                else if (strcmp(cat, "CompressorPlugin") == 0)
-                    info.category = kCategoryCompressorPlugin;
-                else if (strcmp(cat, "ExpanderPlugin") == 0)
-                    info.category = kCategoryExpanderPlugin;
-                else if (strcmp(cat, "GatePlugin") == 0)
-                    info.category = kCategoryGatePlugin;
-                else if (strcmp(cat, "LimiterPlugin") == 0)
-                    info.category = kCategoryLimiterPlugin;
-                else if (strcmp(cat, "FilterPlugin") == 0)
-                    info.category = kCategoryFilterPlugin;
-                else if (strcmp(cat, "AllpassPlugin") == 0)
-                    info.category = kCategoryAllpassPlugin;
-                else if (strcmp(cat, "BandpassPlugin") == 0)
-                    info.category = kCategoryBandpassPlugin;
-                else if (strcmp(cat, "CombPlugin") == 0)
-                    info.category = kCategoryCombPlugin;
-                else if (strcmp(cat, "EQPlugin") == 0)
-                    info.category = kCategoryEQPlugin;
-                else if (strcmp(cat, "MultiEQPlugin") == 0)
-                    info.category = kCategoryMultiEQPlugin;
-                else if (strcmp(cat, "ParaEQPlugin") == 0)
-                    info.category = kCategoryParaEQPlugin;
-                else if (strcmp(cat, "HighpassPlugin") == 0)
-                    info.category = kCategoryHighpassPlugin;
-                else if (strcmp(cat, "LowpassPlugin") == 0)
-                    info.category = kCategoryLowpassPlugin;
-                else if (strcmp(cat, "GeneratorPlugin") == 0)
-                    info.category = kCategoryGeneratorPlugin;
-                else if (strcmp(cat, "ConstantPlugin") == 0)
-                    info.category = kCategoryConstantPlugin;
-                else if (strcmp(cat, "InstrumentPlugin") == 0)
-                    info.category = kCategoryInstrumentPlugin;
-                else if (strcmp(cat, "OscillatorPlugin") == 0)
-                    info.category = kCategoryOscillatorPlugin;
-                else if (strcmp(cat, "ModulatorPlugin") == 0)
-                    info.category = kCategoryModulatorPlugin;
-                else if (strcmp(cat, "ChorusPlugin") == 0)
-                    info.category = kCategoryChorusPlugin;
-                else if (strcmp(cat, "FlangerPlugin") == 0)
-                    info.category = kCategoryFlangerPlugin;
-                else if (strcmp(cat, "PhaserPlugin") == 0)
-                    info.category = kCategoryPhaserPlugin;
-                else if (strcmp(cat, "ReverbPlugin") == 0)
-                    info.category = kCategoryReverbPlugin;
-                else if (strcmp(cat, "SimulatorPlugin") == 0)
-                    info.category = kCategorySimulatorPlugin;
-                else if (strcmp(cat, "SpatialPlugin") == 0)
-                    info.category = kCategorySpatialPlugin;
-                else if (strcmp(cat, "SpectralPlugin") == 0)
-                    info.category = kCategorySpectralPlugin;
-                else if (strcmp(cat, "PitchPlugin") == 0)
-                    info.category = kCategoryPitchPlugin;
-                else if (strcmp(cat, "UtilityPlugin") == 0)
-                    info.category = kCategoryUtilityPlugin;
-                else if (strcmp(cat, "AnalyserPlugin") == 0)
-                    info.category = kCategoryAnalyserPlugin;
-                else if (strcmp(cat, "ConverterPlugin") == 0)
-                    info.category = kCategoryConverterPlugin;
-                else if (strcmp(cat, "FunctionPlugin") == 0)
-                    info.category = kCategoryFunctionPlugin;
-                else if (strcmp(cat, "MixerPlugin") == 0)
-                    info.category = kCategoryMixerPlugin;
-            }
-        }
-        lilv_nodes_free(nodes);
-    }
+    info.category = _get_plugin_categories(p, ns.rdf_type);
 
     // --------------------------------------------------------------------------------------------------------
     // version
@@ -2677,20 +2601,23 @@ static void _clear_plugin_info(PluginInfo& info)
 
 static void _clear_plugin_info_mini(PluginInfo_Mini& info)
 {
-    if (info.brand != nc)
-        free((void*)info.brand);
-    if (info.label != nc)
-        free((void*)info.label);
-    if (info.name != nc)
-        free((void*)info.name);
-    if (info.comment != nc)
-        free((void*)info.comment);
-    if (info.gui.resourcesDirectory != nc)
-        free((void*)info.gui.resourcesDirectory);
-    if (info.gui.screenshot != nc)
-        free((void*)info.gui.screenshot);
-    if (info.gui.thumbnail != nc)
-        free((void*)info.gui.thumbnail);
+    if (info.needsDealloc)
+    {
+        if (info.brand != nc)
+            free((void*)info.brand);
+        if (info.label != nc)
+            free((void*)info.label);
+        if (info.name != nc)
+            free((void*)info.name);
+        if (info.comment != nc)
+            free((void*)info.comment);
+        if (info.gui.resourcesDirectory != nc)
+            free((void*)info.gui.resourcesDirectory);
+        if (info.gui.screenshot != nc)
+            free((void*)info.gui.screenshot);
+        if (info.gui.thumbnail != nc)
+            free((void*)info.gui.thumbnail);
+    }
 
     memset(&info, 0, sizeof(PluginInfo_Mini));
 }
@@ -2870,6 +2797,45 @@ static const PluginInfo* _fill_plugin_info_with_presets(PluginInfo& info, const 
     lilv_node_free(rdfs_label);
 
     return &info;
+}
+
+// --------------------------------------------------------------------------------------------------------
+
+static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, PluginInfo_Mini* const miniInfo)
+{
+    if (miniInfo->valid)
+    {
+        if (miniInfo->needsDealloc)
+            _clear_plugin_info_mini(*miniInfo);
+        else
+            return;
+    }
+
+    static PluginInfo_Mini info;
+    memset(&info, 0, sizeof(PluginInfo_Mini));
+
+    if (info2.valid)
+    {
+        info.uri          = info2.uri;
+        info.name         = info2.name;
+        info.brand        = info2.brand;
+        info.label        = info2.label;
+        info.comment      = info2.comment;
+        info.category     = info2.category;
+        info.microVersion = info2.microVersion;
+        info.minorVersion = info2.minorVersion;
+        info.release      = info2.release;
+        info.builder      = info2.builder;
+        info.licensed     = info2.licensed;
+
+        info.gui.resourcesDirectory = info2.gui.resourcesDirectory;
+        info.gui.screenshot = info2.gui.screenshot;
+        info.gui.thumbnail  = info2.gui.thumbnail;
+
+        info.valid = true;
+    }
+
+    *miniInfo = info;
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -3334,14 +3300,14 @@ const PluginInfo_Mini* const* get_all_plugins(void)
         }
 
         // get new info
-        const PluginInfo_Mini& info = _get_plugin_info_mini(p, ns);
+        const PluginInfo_Mini& pMiniInfo = _get_plugin_info_mini(p, ns);
 
-        if (! info.valid)
+        if (! pMiniInfo.valid)
             continue;
 
-        PLUGNFO_Mini[uri] = info;
+        PLUGNFO_Mini[uri] = pMiniInfo;
 #if SHOW_ONLY_PLUGINS_WITH_MODGUI
-        if (info.gui.resourcesDirectory == nc)
+        if (pMiniInfo.gui.resourcesDirectory == nc)
             continue;
 #endif
         _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
@@ -3373,7 +3339,11 @@ const PluginInfo* get_plugin_info(const char* const uri_)
     if (p != nullptr)
     {
         const NamespaceDefinitions ns;
-        PLUGNFO[uri] = _get_plugin_info(p, ns);
+        const PluginInfo& pInfo(_get_plugin_info(p, ns));
+
+        PLUGNFO[uri] = pInfo;
+        _fill_plugin_info_mini_from_full(pInfo, &PLUGNFO_Mini[uri]);
+
         return &PLUGNFO[uri];
     }
 
@@ -3403,7 +3373,11 @@ const PluginGUI* get_plugin_gui(const char* uri_)
     if (p != nullptr)
     {
         const NamespaceDefinitions ns;
-        PLUGNFO[uri] = _get_plugin_info(p, ns);
+        const PluginInfo& pInfo(_get_plugin_info(p, ns));
+
+        PLUGNFO[uri] = pInfo;
+        _fill_plugin_info_mini_from_full(pInfo, &PLUGNFO_Mini[uri]);
+
         return &PLUGNFO[uri].gui;
     }
 
@@ -3481,7 +3455,9 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
 
         // found the plugin
         const PluginInfo& pInfo = _get_plugin_info(p, ns);
+
         PLUGNFO[uri] = pInfo;
+        _fill_plugin_info_mini_from_full(pInfo, &PLUGNFO_Mini[uri]);
 
         info.inputs = pInfo.ports.control.input;
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
@@ -3960,11 +3936,13 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // hardware ports
+    // hardware ports and time info
 
     if (LilvNodes* const hwports = lilv_plugin_get_value(p, lv2_port))
     {
+#if 0
         std::vector<std::string> handled_port_uris;
+#endif
         std::vector<PedalboardHardwareMidiPort> midi_ins;
         std::vector<PedalboardHardwareMidiPort> midi_outs;
 
@@ -3972,13 +3950,105 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         {
             const LilvNode* const hwport = lilv_nodes_get(hwports, ithwp);
 
+            char* portsym = lilv_file_uri_parse(lilv_node_as_uri(hwport), nullptr);
+
+            if (portsym == nullptr)
+                continue;
+            if (strstr(portsym, bundlepath) != nullptr)
+                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
+
             // check if we already handled this port
-            const std::string port_uri = lilv_node_as_uri(hwport);
-            if (std::find(handled_port_uris.begin(), handled_port_uris.end(), port_uri) != handled_port_uris.end())
+            if (strcmp(portsym, "control_in") == 0 || strcmp(portsym, "control_out") == 0)
+            {
+                lilv_free(portsym);
                 continue;
-            if (ends_with(port_uri, "/control_in") || ends_with(port_uri, "/control_out"))
+            }
+
+#if 0
+            {
+                const std::string portsym_s = portsym;
+                if (std::find(handled_port_uris.begin(), handled_port_uris.end(), portsym_s) != handled_port_uris.end())
+                {
+                    lilv_free(portsym);
+                    continue;
+                }
+                handled_port_uris.push_back(portsym_s);
+            }
+#endif
+
+            int isTimePort = 0;
+            /**/ if (strcmp(portsym, ":bpb") == 0)
+                isTimePort = 1;
+            else if (strcmp(portsym, ":bpm") == 0)
+                isTimePort = 2;
+            else if (strcmp(portsym, ":rolling") == 0)
+                isTimePort = 3;
+
+            if (isTimePort)
+            {
+                if (LilvNode* const portvalue = lilv_world_get(w, hwport, ingen_value, nullptr))
+                {
+                    float value;
+                    int8_t mchan = -1;
+                    uint8_t mctrl = 0;
+
+                    if (LilvNode* const bind = lilv_world_get(w, hwport, midi_binding, nullptr))
+                    {
+                        LilvNode* const bindChan = lilv_world_get(w, bind, midi_channel, nullptr);
+                        LilvNode* const bindCtrl = lilv_world_get(w, bind, midi_controlNum, nullptr);
+
+                        if (bindChan != nullptr && bindCtrl != nullptr)
+                        {
+                            const int mchantest = lilv_node_as_int(bindChan);
+                            const int mctrltest = lilv_node_as_int(bindCtrl);
+
+                            if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 255)
+                            {
+                                mchan = (int8_t)mchantest;
+                                mctrl = (uint8_t)mctrltest;
+                            }
+                        }
+
+                        lilv_node_free(bindCtrl);
+                        lilv_node_free(bindChan);
+                        lilv_node_free(bind);
+                    }
+
+                    switch (isTimePort)
+                    {
+                    case 1:
+                        value = lilv_node_as_float(portvalue);
+                        if (value >= 1.0f && value <= 16.0f)
+                        {
+                            info.timeInfo.bpb = value;
+                            info.timeInfo.bpbCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.available |= kPedalboardTimeAvailableBPB;
+                        }
+                        break;
+
+                    case 2:
+                        value = lilv_node_as_float(portvalue);
+                        if (value >= 20.0f && value <= 280.0f)
+                        {
+                            info.timeInfo.bpm = value;
+                            info.timeInfo.bpmCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.available |= kPedalboardTimeAvailableBPM;
+                        }
+                        break;
+
+                    case 3:
+                        info.timeInfo.rolling = lilv_node_as_int(portvalue) != 0;
+                        info.timeInfo.rollingCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                        info.timeInfo.available |= kPedalboardTimeAvailableRolling;
+                        break;
+                    }
+
+                    lilv_node_free(portvalue);
+                }
+
+                lilv_free(portsym);
                 continue;
-            handled_port_uris.push_back(port_uri);
+            }
 
             // get types
             if (LilvNodes* const port_types = lilv_world_find_nodes(w, hwport, rdftypenode, NULL))
@@ -3990,23 +4060,28 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 {
                     const LilvNode* const ptyp = lilv_nodes_get(port_types, itptyp);
 
-                    if (const char* const port_type_uri = lilv_node_as_uri(ptyp))
+                    if (const char* port_type_uri = lilv_node_as_uri(ptyp))
                     {
-                        if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#InputPort") == 0)
+                        port_type_uri += 21; // http://lv2plug.in/ns/
+
+                        if (strcmp(port_type_uri, "lv2core#InputPort") == 0)
                             portDir = 'i';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#OutputPort") == 0)
+                        else if (strcmp(port_type_uri, "lv2core#OutputPort") == 0)
                             portDir = 'o';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#AudioPort") == 0)
+                        else if (strcmp(port_type_uri, "lv2core#AudioPort") == 0)
                             portType = 'a';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/lv2core#CVPort") == 0)
+                        else if (strcmp(port_type_uri, "lv2core#CVPort") == 0)
                             portType = 'c';
-                        else if (strcmp(port_type_uri, "http://lv2plug.in/ns/ext/atom#AtomPort") == 0)
+                        else if (strcmp(port_type_uri, "ext/atom#AtomPort") == 0)
                             portType = 't';
                     }
                 }
 
                 if (portDir == -1 || portType == -1)
+                {
+                    lilv_free(portsym);
                     continue;
+                }
 
                 if (portType == 'a')
                 {
@@ -4019,17 +4094,12 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 {
                     if (portDir == 'i')
                     {
-                        if (ends_with(port_uri, "/serial_midi_in"))
+                        if (strcmp(portsym, "serial_midi_in") == 0)
                         {
                             info.hardware.serial_midi_in = true;
                         }
                         else
                         {
-                            char* portsym = lilv_file_uri_parse(port_uri.c_str(), nullptr);
-
-                            if (strstr(portsym, bundlepath) != nullptr)
-                                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
-
                             LilvNode* const hwportname = lilv_world_get(w, hwport, lv2_name, nullptr);
 
                             PedalboardHardwareMidiPort mport = {
@@ -4043,22 +4113,18 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                             lilv_node_free(hwportname);
 
+                            portsym = nullptr;
                             midi_ins.push_back(mport);
                         }
                     }
                     else
                     {
-                        if (ends_with(port_uri, "/serial_midi_out"))
+                        if (strcmp(portsym, "serial_midi_out") == 0)
                         {
                             info.hardware.serial_midi_out = true;
                         }
                         else
                         {
-                            char* portsym = lilv_file_uri_parse(port_uri.c_str(), nullptr);
-
-                            if (strstr(portsym, bundlepath) != nullptr)
-                                memmove(portsym, portsym+(bundlepathsize+1), strlen(portsym)-bundlepathsize);
-
                             LilvNode* const hwportname = lilv_world_get(w, hwport, lv2_name, nullptr);
 
                             PedalboardHardwareMidiPort mport = {
@@ -4072,6 +4138,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                             lilv_node_free(hwportname);
 
+                            portsym = nullptr;
                             midi_outs.push_back(mport);
                         }
                     }
@@ -4084,6 +4151,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         info.hardware.cv_outs += 1;
                 }
 
+                lilv_free(portsym);
                 lilv_nodes_free(port_types);
             }
         }

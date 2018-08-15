@@ -265,7 +265,7 @@ JqueryClass('shareBox', {
             self.find('#record-again').addClass("disabled").attr('disabled', true)
             self.find('#record-delete').addClass("disabled").attr('disabled', true)
 
-            self.find('#share-wait-message').text("Uploading. Please wait...")
+            self.find('#share-wait-message').show().text("Uploading. Please wait...")
 
             self.shareBox('recordStop', function () {
                 self.data('share')(data, function (resp) {
@@ -279,7 +279,7 @@ JqueryClass('shareBox', {
                     if (resp.ok) {
                         self.find('#record-step-' + step).hide()
                         self.find('#record-share').attr('disabled', resp.ok).hide()
-                        self.find('#share-wait-message').html("&nbsp;")
+                        self.find('#share-wait-message').hide()
 
                         var pb_url = PEDALBOARDS_URL + "/pedalboards/" + resp.id
                         self.find('#share-window-url').attr('value', pb_url)
@@ -298,7 +298,7 @@ JqueryClass('shareBox', {
                     } else {
                         new Notification('error', "Couldn't share pedalboard: " + resp.error)
                         self.find('#record-share').attr('disabled', false)
-                        self.find('#share-wait-message').text("Upload failed!")
+                        self.find('#share-wait-message').show().text("Upload failed!")
                     }
                 })
             })
@@ -316,7 +316,7 @@ JqueryClass('shareBox', {
         }
     },
 
-    open: function (bundlepath, title, uris) {
+    open: function (bundlepath, title, stable) {
         var self = $(this)
 
         self.find('#record-share').show()
@@ -327,14 +327,19 @@ JqueryClass('shareBox', {
         self.data('screenshotDone', false)
         self.find('#pedalboard-share-title').val(title)
         self.find('#record-share').attr('disabled', true)
-        self.find('#share-wait-message').text("Waiting for screenshot...")
+        self.find('#share-wait-message').show().text("Waiting for screenshot...")
         self.find('.js-share').addClass('disabled')
         self.find('textarea').val('').focus()
+        if (stable) {
+            self.find('.unstable-warning').hide();
+        } else {
+            self.find('.unstable-warning').show();
+        }
         self.show()
 
         var done = function () {
             self.data('screenshotDone', true)
-            self.find('#share-wait-message').html("&nbsp;")
+            self.find('#share-wait-message').hide()
             self.shareBox('showStep', self.data('step'))
         }
 
@@ -344,17 +349,17 @@ JqueryClass('shareBox', {
                 return
             }
             // 2nd try
-            self.find('#share-wait-message').text("Generating screenshot...")
+            self.find('#share-wait-message').show().text("Generating screenshot...")
             self.data('waitForScreenshot')(true, function (ok) {
                 if (ok) {
                     done()
                     return
                 }
                 // 3rd and final try
-                self.find('#share-wait-message').text("Generating for screenshot... (final attempt)")
+                self.find('#share-wait-message').show().text("Generating for screenshot... (final attempt)")
                 self.data('waitForScreenshot')(true, function (ok) {
                     // shit! just upload without screenshot then.. :(
-                    self.find('#share-wait-message').text("Generating for screenshot... failed!")
+                    self.find('#share-wait-message').show().text("Generating for screenshot... failed!")
                     done()
                 })
             })

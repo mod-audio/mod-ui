@@ -33,23 +33,24 @@ from collections import OrderedDict
 from random import randint
 from shutil import rmtree
 from tornado import gen, iostream, ioloop
-import os, json, socket, logging
+import os, json, socket, time, logging
 
-from mod import safe_json_load, symbolify
+from mod import safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.utils import (charPtrToString,
-                       is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
-                       get_plugin_info, get_plugin_control_inputs_and_monitored_outputs,
-                       get_pedalboard_info, get_state_port_values, list_plugins_in_bundle,
-                       get_all_pedalboards, get_pedalboard_plugin_values,
-                       init_jack, close_jack, get_jack_data, init_bypass,
-                       get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
-                       connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks)
-from mod.settings import (APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
-                          PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-                          TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT)
+from modtools.utils import (
+    charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
+    get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
+    list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
+    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
+    kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
+)
+from mod.settings import (
+    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
+)
 from mod.tuner import find_freqnotecents
 
 BANK_CONFIG_NOTHING         = 0
@@ -123,12 +124,20 @@ class InstanceIdMapper(object):
         return self.id_map[id]
 
 class Host(object):
-    def __init__(self, hmi, msg_callback):
+    DESIGNATIONS_INDEX_ENABLED   = 0
+    DESIGNATIONS_INDEX_FREEWHEEL = 1
+    DESIGNATIONS_INDEX_BPB       = 2
+    DESIGNATIONS_INDEX_BPM       = 3
+    DESIGNATIONS_INDEX_SPEED     = 4
+
+    def __init__(self, hmi, prefs, msg_callback):
         if False:
             from mod.hmi import HMI
-            self.hmi = HMI()
+            hmi = HMI()
 
         self.hmi = hmi
+        self.prefs = prefs
+
         self.addr = ("localhost", 5555)
         self.readsock = None
         self.writesock = None
@@ -142,7 +151,6 @@ class Host(object):
         self.banks = list_banks()
         self.allpedalboards = None
         self.bank_id = 0
-        self.plugins = {}
         self.connections = []
         self.audioportsIn = []
         self.audioportsOut = []
@@ -157,18 +165,23 @@ class Host(object):
         self.pedalboard_preset   = -1
         self.pedalboard_presets  = []
         self.next_hmi_pedalboard = None
-        self.jack_hwin_prefix  = "system:playback_"
-        self.jack_hwout_prefix = "system:capture_"
-        self.jack_slave_prefix = "mod-slave"
+        self.transport_rolling   = False
+        self.transport_bpb       = 4.0
+        self.transport_bpm       = 120.0
+        self.transport_sync      = "none"
+        self.last_data_finish_msg = 0.0
+        self.first_transport_rolling = False
+        self.processing_pending_flag = False
+        self.init_plugins_data()
 
-        # pluginData-like pedalboard
-        self.pedalboard_pdata = {
-            "uri"        : PEDALBOARD_URI,
-            "addressings": {}, # symbol: addressing
-            "ports"      : {},
-            "preset"     : "",
-            "mapPresets" : []
-        }
+        if APP and os.getenv("MOD_LIVE_ISO") is not None:
+            self.jack_hwin_prefix  = "system:playback_"
+            self.jack_hwout_prefix = "system:capture_"
+        else:
+            self.jack_hwin_prefix  = "mod-monitor:in_"
+            self.jack_hwout_prefix = "mod-monitor:out_"
+
+        self.jack_slave_prefix = "mod-slave"
 
         # checked when saving pedal presets
         self.plugins_added = []
@@ -179,8 +192,6 @@ class Host(object):
         if os.path.exists("/proc/meminfo"):
             self.memfile  = open("/proc/meminfo", 'r')
             self.memtotal = 0.0
-            self.memfskip = False
-            wasFreeBefore = False
 
             self.memfseek_free    = 0
             self.memfseek_buffers = 0
@@ -194,15 +205,15 @@ class Host(object):
                 if line.startswith("MemTotal:"):
                     self.memtotal = float(int(line.replace("MemTotal:","",1).replace("kB","",1).strip()))
                 elif line.startswith("MemFree:"):
-                    self.memfseek_free = memfseek
+                    self.memfseek_free = memfseek+9
                 elif line.startswith("Buffers:"):
-                    self.memfseek_buffers = memfseek
+                    self.memfseek_buffers = memfseek+9
                 elif line.startswith("Cached:"):
-                    self.memfseek_cached = memfseek
+                    self.memfseek_cached = memfseek+8
                 elif line.startswith("Shmem:"):
-                    self.memfseek_shmmem = memfseek
+                    self.memfseek_shmmem = memfseek+7
                 elif line.startswith("SReclaimable:"):
-                    self.memfseek_reclaim = memfseek
+                    self.memfseek_reclaim = memfseek+14
                 memfseek += len(line)
 
             if self.memtotal != 0.0 and 0 not in (self.memfseek_free,
@@ -217,7 +228,10 @@ class Host(object):
 
         self.msg_callback = msg_callback
 
-        set_util_callbacks(self.jack_port_appeared, self.jack_port_deleted, self.true_bypass_changed)
+        set_util_callbacks(self.jack_bufsize_changed,
+                           self.jack_port_appeared,
+                           self.jack_port_deleted,
+                           self.true_bypass_changed)
 
         # Setup addressing callbacks
         self.addressings._task_addressing = self.addr_task_addressing
@@ -250,6 +264,9 @@ class Host(object):
     def __del__(self):
         self.msg_callback("stop")
         self.close_jack()
+
+    def jack_bufsize_changed(self, bufSize):
+        self.msg_callback("bufsize %i" % bufSize)
 
     def jack_port_appeared(self, name, isOutput):
         name = charPtrToString(name)
@@ -349,9 +366,6 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            if data is None:
-                return self.hmi.control_clean(actuator[0], actuator[1], actuator[2], actuator[3], callback)
-
             return self.hmi.control_add(data['instance_id'],
                                         data['port'],
                                         data['label'],
@@ -444,15 +458,13 @@ class Host(object):
         return
 
     def addr_task_get_plugin_data(self, instance_id):
-        if instance_id == PEDALBOARD_INSTANCE_ID:
-            return self.pedalboard_pdata
         return self.plugins[instance_id]
 
     def addr_task_get_plugin_presets(self, uri):
         if uri == PEDALBOARD_URI:
             if self.pedalboard_preset < 0 or len(self.pedalboard_presets) == 0:
                 return []
-            self.pedalboard_pdata['preset'] = "file:///%i" % self.pedalboard_preset
+            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % self.pedalboard_preset
             presets = self.pedalboard_presets
             presets = [{'uri': 'file:///%i'%i,
                         'label': presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
@@ -461,9 +473,14 @@ class Host(object):
 
     def addr_task_get_port_value(self, instance_id, portsymbol):
         if instance_id == PEDALBOARD_INSTANCE_ID:
-            pluginData = self.pedalboard_pdata
-        else:
-            pluginData = self.plugins[instance_id]
+            if portsymbol == ":bpb":
+                return self.transport_bpb
+            if portsymbol == ":bpm":
+                return self.transport_bpm
+            if portsymbol == ":rolling":
+                return 1.0 if self.transport_rolling else 0.0
+
+        pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             return 1.0 if pluginData['bypassed'] else 0.0
@@ -476,15 +493,14 @@ class Host(object):
         return pluginData['ports'][portsymbol]
 
     def addr_task_store_address_data(self, instance_id, portsymbol, data):
-        if instance_id == PEDALBOARD_INSTANCE_ID:
-            pluginData = self.pedalboard_pdata
-        else:
-            pluginData = self.plugins[instance_id]
-
+        pluginData = self.plugins[instance_id]
         pluginData['addressings'][portsymbol] = data
 
-    def addr_task_hw_added(self, dev_uri, label, version):
-        self.msg_callback("hw_add %s %s %s" % (dev_uri, label.replace(" ","_"), version))
+    def addr_task_hw_added(self, dev_uri, label, labelsuffix, version):
+        self.msg_callback("hw_add %s %s %s %s" % (dev_uri,
+                                                  label.replace(" ","_"),
+                                                  labelsuffix.replace(" ","_"),
+                                                  version))
 
     def addr_task_hw_removed(self, dev_uri, label, version):
         self.msg_callback("hw_rem %s %s %s" % (dev_uri, label.replace(" ","_"), version))
@@ -513,16 +529,34 @@ class Host(object):
         self.init_jack()
         self.open_connection_if_needed(None)
 
+        # Disable plugin processing while initializing
+        yield gen.Task(self.send_notmodified, "feature_enable processing 0", datatype='boolean')
+
+        # Remove all plugins, non-waiting
+        self.send_notmodified("remove -1")
+
+        # get current transport data
+        data = get_jack_data(True)
+        self.transport_rolling = data['rolling']
+        self.transport_bpm     = data['bpm']
+        self.transport_bpb     = data['bpb']
+
+        # load user prefs
+        if self.prefs.get("transport-rolling-at-boot", "false") == "true":
+            self.first_transport_rolling = True
+
+        link_enabled = self.prefs.get("link-enabled-at-boot", "false") == "true"
+        self.set_link_enabled(link_enabled)
+
+        # load everything
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        yield gen.Task(self.send_notmodified, "remove -1", datatype='boolean')
-
         # FIXME: ensure HMI is initialized by now
 
-        if pedalboard:
+        if pedalboard and os.path.exists(pedalboard):
             self.bank_id = bank_id
             self.load(pedalboard)
 
@@ -532,16 +566,22 @@ class Host(object):
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
 
+        # Setup MIDI program navigation
+        navigateFootswitches = False
+        navigateChannel      = 15
+
         if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
             bank = self.banks[self.bank_id-1]
             navigateFootswitches = bank['navigateFootswitches']
-            navigateChannel      = int(bank['navigateChannel'])-1 if "navigateChannel" in bank.keys() and not navigateFootswitches else 15
-        else:
-            navigateFootswitches = False
-            navigateChannel      = 15
+            if "navigateChannel" in bank.keys() and not navigateFootswitches:
+                navigateChannel  = int(bank['navigateChannel'])-1
 
         self.send_notmodified("midi_program_listen %d %d" % (int(not navigateFootswitches), navigateChannel))
-        self.send_notmodified("output_data_ready")
+
+        # Wait for all mod-host messages to be processed
+        yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
+
+        # All set, disable HW bypass now
         init_bypass()
 
     def init_jack(self):
@@ -559,6 +599,24 @@ class Host(object):
 
     def close_jack(self):
         close_jack()
+
+    def init_plugins_data(self):
+        self.plugins = {
+            PEDALBOARD_INSTANCE_ID: {
+                "instance"    : PEDALBOARD_INSTANCE,
+                "uri"         : PEDALBOARD_URI,
+                "addressings" : {},
+                "midiCCs"     : {
+                    ":bpb"    : (-1,-1,0.0,1.0),
+                    ":bpm"    : (-1,-1,0.0,1.0),
+                    ":rolling": (-1,-1,0.0,1.0),
+                },
+                "ports"       : {},
+                "designations": (None,None,None,None,None),
+                "preset"      : "",
+                "mapPresets"  : []
+            }
+        }
 
     def open_connection_if_needed(self, websocket):
         if self.readsock is not None and self.writesock is not None:
@@ -708,18 +766,22 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
 
-    @gen.coroutine
     def process_read_message(self, msg):
         msg = msg[:-1].decode("utf-8", errors="ignore")
         if LOG: logging.info("[host] received <- %s" % repr(msg))
 
-        msg = msg.split()
-        cmd = msg[0]
+        self.process_read_message_body(msg)
+        self.process_read_queue()
+
+    @gen.coroutine
+    def process_read_message_body(self, msg):
+        cmd = msg.split(" ",1)[0]
 
         if cmd == "param_set":
-            instance_id = int(msg[1])
-            portsymbol  = msg[2]
-            value       = float(msg[3])
+            msg_data    = msg[len(cmd)+1:].split(" ",3)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            value       = float(msg_data[2])
 
             try:
                 instance   = self.mapper.get_instance(instance_id)
@@ -734,7 +796,6 @@ class Host(object):
                     print("presets changed by backend", value)
                     value = int(value)
                     if value < 0 or value >= len(pluginData['mapPresets']):
-                        self.process_read_queue()
                         return
 
                     if instance_id == PEDALBOARD_INSTANCE_ID:
@@ -746,13 +807,17 @@ class Host(object):
                 else:
                     pluginData['ports'][portsymbol] = value
 
+                    if instance_id == PEDALBOARD_INSTANCE_ID:
+                        self.process_read_message_pedal_changed(portsymbol, value)
+
                 self.pedalboard_modified = True
                 self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
         elif cmd == "output_set":
-            instance_id = int(msg[1])
-            portsymbol  = msg[2]
-            value       = float(msg[3])
+            msg_data    = msg[len(cmd)+1:].split(" ",3)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            value       = float(msg_data[2])
 
             if instance_id == TUNER_INSTANCE_ID:
                 self.set_tuner_value(value)
@@ -767,14 +832,30 @@ class Host(object):
                     pluginData['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
+        elif cmd == "atom":
+            msg_data    = msg[len(cmd)+1:].split(" ",3)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            atomjson    = msg_data[2]
+
+            try:
+                instance   = self.mapper.get_instance(instance_id)
+                pluginData = self.plugins[instance_id]
+            except:
+                pass
+            else:
+                #pluginData['outputs'][portsymbol] = atomjson
+                self.msg_callback("output_atom %s %s %s" % (instance, portsymbol, atomjson))
+
         elif cmd == "midi_mapped":
-            instance_id = int(msg[1])
-            portsymbol  = msg[2]
-            channel     = int(msg[3])
-            controller  = int(msg[4])
-            value       = float(msg[5])
-            minimum     = float(msg[6])
-            maximum     = float(msg[7])
+            msg_data    = msg[len(cmd)+1:].split(" ",7)
+            instance_id = int(msg_data[0])
+            portsymbol  = msg_data[1]
+            channel     = int(msg_data[2])
+            controller  = int(msg_data[3])
+            value       = float(msg_data[4])
+            minimum     = float(msg_data[5])
+            maximum     = float(msg_data[6])
 
             instance   = self.mapper.get_instance(instance_id)
             pluginData = self.plugins[instance_id]
@@ -798,8 +879,9 @@ class Host(object):
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
         elif cmd == "midi_program":
-            program = int(msg[1])
-            bank_id = self.bank_id
+            msg_data = msg[len(cmd)+1:].split(" ",1)
+            program  = int(msg_data[0])
+            bank_id  = self.bank_id
 
             if self.bank_id > 0 and self.bank_id <= len(self.banks):
                 pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -812,27 +894,91 @@ class Host(object):
                 def load_callback(ok):
                     self.bank_id = bank_id
                     self.load(bundlepath)
+                    self.send_notmodified("feature_enable processing 1")
 
                 def hmi_clear_callback(ok):
                     self.hmi.clear(load_callback)
 
+                self.send_notmodified("feature_enable processing 0")
                 self.reset(hmi_clear_callback)
 
+        elif cmd == "transport":
+            msg_data = msg[len(cmd)+1:].split(" ",3)
+            rolling  = bool(int(msg_data[0]))
+            bpb      = float(msg_data[1])
+            bpm      = float(msg_data[2])
+            speed    = 1.0 if rolling else 0.0
+
+            for pluginData in self.plugins.values():
+                _, _2, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
+
+                if bpb_symbol is not None:
+                    pluginData['ports'][bpb_symbol] = bpb
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+
+                elif bpm_symbol is not None:
+                    pluginData['ports'][bpm_symbol] = bpm
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+
+                elif speed_symbol is not None:
+                    pluginData['ports'][speed_symbol] = speed
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+
+            self.transport_rolling = rolling
+            self.transport_bpb     = bpb
+            self.transport_bpm     = bpm
+
+            self.msg_callback("transport %i %f %f %s" % (rolling, bpb, bpm, self.transport_sync))
+
         elif cmd == "data_finish":
-            self.send_output_data_ready()
+            now  = time.clock()
+            diff = now-self.last_data_finish_msg
+
+            if diff >= 0.5:
+                self.send_output_data_ready(now)
+
+            else:
+                diff = (0.5-diff)/0.5*0.064
+                ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
 
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
 
-        self.process_read_queue()
+    def process_read_message_pedal_changed(self, portsymbol, value):
+        if portsymbol == ":bpb":
+            self.transport_bpb = value
+            designation_index  = self.DESIGNATIONS_INDEX_BPB
 
+        elif portsymbol == ":bpm":
+            self.transport_bpm = value
+            designation_index  = self.DESIGNATIONS_INDEX_BPM
+
+        elif portsymbol == ":rolling":
+            self.transport_rolling = bool(int(value))
+            designation_index      = self.DESIGNATIONS_INDEX_SPEED
+
+        else:
+            return
+
+        for pluginData in self.plugins.values():
+            des_symbol = pluginData['designations'][designation_index]
+            if des_symbol is None:
+                continue
+            pluginData['ports'][des_symbol] = value
+            self.msg_callback("param_set %s %s %f" % (pluginData['instance'], des_symbol, value))
+
+        self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                     self.transport_bpb,
+                                                     self.transport_bpm,
+                                                     self.transport_sync))
     def process_read_queue(self):
         if self.readsock is None:
             return
         self.readsock.read_until(b"\0", self.process_read_message)
 
     @gen.coroutine
-    def send_output_data_ready(self):
+    def send_output_data_ready(self, now = None):
+        self.last_data_finish_msg = time.clock() if now is None else now
         yield gen.Task(self.send_notmodified, "output_data_ready", datatype='boolean')
 
     def process_write_queue(self):
@@ -903,22 +1049,33 @@ class Host(object):
         if websocket is None:
             return
 
-        data = get_jack_data()
+        data = get_jack_data(False)
         websocket.write_message("mem_load " + self.get_free_memory_value())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
+        websocket.write_message("transport %i %f %f %s" % (self.transport_rolling,
+                                                           self.transport_bpb,
+                                                           self.transport_bpm,
+                                                           self.transport_sync))
         websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
-        for dev_uri, label, version in self.addressings.cchain.hw_versions.values():
-            websocket.write_message("hw_add %s %s %s" % (dev_uri, label, version))
+        for dev_uri, label, labelsuffix, version in self.addressings.cchain.hw_versions.values():
+            websocket.write_message("hw_add %s %s %s %s" % (dev_uri,
+                                                            label.replace(" ","_"),
+                                                            labelsuffix.replace(" ","_"),
+                                                            version))
 
         crashed = self.crashed
         self.crashed = False
 
         if crashed:
             self.init_jack()
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
+
+            if self.transport_sync == "link":
+                self.set_link_enabled(True)
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -978,49 +1135,53 @@ class Host(object):
             title = title.replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
-        instances = {
+        rinstances = {
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
-        for instance_id, plugin in self.plugins.items():
-            instances[instance_id] = plugin['instance']
+        for instance_id, pluginData in self.plugins.items():
+            if instance_id == PEDALBOARD_INSTANCE_ID:
+                continue
 
-            websocket.write_message("add %s %s %.1f %.1f %d" % (plugin['instance'], plugin['uri'],
-                                                                plugin['x'], plugin['y'], int(plugin['bypassed'])))
+            rinstances[instance_id] = pluginData['instance']
 
-            if -1 not in plugin['bypassCC']:
-                mchnnl, mctrl = plugin['bypassCC']
-                websocket.write_message("midi_map %s :bypass %i %i 0.0 1.0" % (plugin['instance'], mchnnl, mctrl))
+            websocket.write_message("add %s %s %.1f %.1f %d" % (pluginData['instance'], pluginData['uri'],
+                                                                pluginData['x'], pluginData['y'],
+                                                                int(pluginData['bypassed'])))
 
-            if plugin['preset']:
-                websocket.write_message("preset %s %s" % (plugin['instance'], plugin['preset']))
+            if -1 not in pluginData['bypassCC']:
+                mchnnl, mctrl = pluginData['bypassCC']
+                websocket.write_message("midi_map %s :bypass %i %i 0.0 1.0" % (pluginData['instance'], mchnnl, mctrl))
+
+            if pluginData['preset']:
+                websocket.write_message("preset %s %s" % (pluginData['instance'], pluginData['preset']))
 
             if crashed:
-                self.send_notmodified("add %s %d" % (plugin['uri'], instance_id))
-                if plugin['bypassed']:
+                self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
+                if pluginData['bypassed']:
                     self.send_notmodified("bypass %d 1" % (instance_id,))
-                if -1 not in plugin['bypassCC']:
-                    mchnnl, mctrl = plugin['bypassCC']
+                if -1 not in pluginData['bypassCC']:
+                    mchnnl, mctrl = pluginData['bypassCC']
                     self.send_notmodified("midi_map %d :bypass %i %i 0.0 1.0" % (instance_id, mchnnl, mctrl))
-                if plugin['preset']:
-                    self.send_notmodified("preset_load %d %s" % (instance_id, plugin['preset']))
+                if pluginData['preset']:
+                    self.send_notmodified("preset_load %d %s" % (instance_id, pluginData['preset']))
 
-            for symbol, value in plugin['ports'].items():
-                websocket.write_message("param_set %s %s %f" % (plugin['instance'], symbol, value))
+            for symbol, value in pluginData['ports'].items():
+                websocket.write_message("param_set %s %s %f" % (pluginData['instance'], symbol, value))
 
                 if crashed:
                     self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
 
-            for symbol, value in plugin['outputs'].items():
+            for symbol, value in pluginData['outputs'].items():
                 if value is None:
                     continue
-                websocket.write_message("output_set %s %s %f" % (plugin['instance'], symbol, value))
+                websocket.write_message("output_set %s %s %f" % (pluginData['instance'], symbol, value))
 
                 if crashed:
                     self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))
 
             if crashed:
-                for symbol, data in plugin['midiCCs'].items():
+                for symbol, data in pluginData['midiCCs'].items():
                     mchnnl, mctrl, minimum, maximum = data
                     if -1 not in (mchnnl, mctrl):
                         self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
@@ -1033,7 +1194,7 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
-        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), "", instances)
+        self.addressings.registerMappings(lambda msg: websocket.write_message(msg), rinstances)
 
         # TODO: restore HMI and CC addressings if crashed
 
@@ -1074,6 +1235,19 @@ class Host(object):
 
         self.send_notmodified("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
+    def refresh_bundle(self, bundlepath, plugin_uri):
+        if not is_bundle_loaded(bundlepath):
+            return (False, "Bundle not loaded")
+
+        plugins = list_plugins_in_bundle(bundlepath)
+
+        if plugin_uri not in plugins:
+            return (False, "Requested plugin URI does not exist inside the bundle")
+
+        remove_bundle_from_lilv_world(bundlepath)
+        add_bundle_to_lilv_world(bundlepath)
+        return (True, "")
+
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
@@ -1083,7 +1257,6 @@ class Host(object):
             callback(ok)
 
         self.bank_id = 0
-        self.plugins = {}
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
@@ -1095,14 +1268,8 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
 
-        self.pedalboard_pdata = {
-            "uri"        : PEDALBOARD_URI,
-            "addressings": {},
-            "preset"     : "",
-            "mapPresets" : []
-        }
-
         save_last_bank_and_pedalboard(0, "")
+        self.init_plugins_data()
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def add_plugin(self, instance, uri, x, y, callback):
@@ -1120,6 +1287,9 @@ class Host(object):
 
             enabled_symbol = None
             freewheel_symbol = None
+            bpb_symbol = None
+            bpm_symbol = None
+            speed_symbol = None
 
             for port in allports['inputs']:
                 symbol = port['symbol']
@@ -1140,6 +1310,21 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerBar":
+                    bpb_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpb
+
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
+
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
+                    speed_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 1.0 if self.transport_rolling else 0.0
+
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -1151,7 +1336,7 @@ class Host(object):
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
                 "badports"    : badports,
-                "designations": (enabled_symbol, freewheel_symbol),
+                "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : "",
                 "mapPresets"  : []
@@ -1234,7 +1419,7 @@ class Host(object):
         pluginData['bypassed'] = bypassed
         self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
-        enabled_symbol = pluginData['designations'][0]
+        enabled_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_ENABLED]
         if enabled_symbol is None:
             return
 
@@ -1266,9 +1451,14 @@ class Host(object):
 
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
+        current_pedal = self.pedalboard_path
 
         def preset_callback(state):
             if not state:
+                callback(False)
+                return
+            if self.pedalboard_path != current_pedal:
+                print("WARNING: Pedalboard changed during preset_show request")
                 callback(False)
                 return
 
@@ -1277,17 +1467,13 @@ class Host(object):
             pluginData['preset'] = uri
             self.msg_callback("preset %s %s" % (instance, uri))
 
-            portValues = get_state_port_values(state)
-            pluginData['ports'].update(portValues)
-
             used_actuators = []
-            enabled_symbol, freewheel_symbol = pluginData['designations']
 
-            for symbol, value in pluginData['ports'].items():
-                if symbol == enabled_symbol:
-                    value = 0.0 if pluginData['bypassed'] else 1.0
-                elif symbol == freewheel_symbol:
-                    value = 0.0
+            for symbol, value in get_state_port_values(state).items():
+                if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
+                    continue
+
+                pluginData['ports'][symbol] = value
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
@@ -1297,11 +1483,15 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            self.addressings.load_current(used_actuators)
+            self.addressings.load_current(used_actuators, (instance_id, ":presets"))
             callback(True)
 
         def host_callback(ok):
             if not ok:
+                callback(False)
+                return
+            if self.pedalboard_path != current_pedal:
+                print("WARNING: Pedalboard changed during preset_load request")
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -1318,7 +1508,9 @@ class Host(object):
         if os.path.exists(presetbundle):
             # if presetbundle already exists, generate a new random bundle path
             while True:
-                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1), symbolname, randint(1,99999)))
+                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1),
+                                                                           symbolname,
+                                                                           randint(1,99999)))
                 if os.path.exists(presetbundle):
                     continue
                 break
@@ -1328,6 +1520,7 @@ class Host(object):
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
 
+            os.sync()
             callback({
                 'ok'    : True,
                 'bundle': presetbundle,
@@ -1336,6 +1529,7 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
+                os.sync()
                 callback({
                     'ok': False,
                 })
@@ -1363,6 +1557,7 @@ class Host(object):
         def add_bundle_callback(ok):
             preseturi = "file://%s.ttl" % os.path.join(bundlepath, symbolname)
             pluginData['preset'] = preseturi
+            os.sync()
             callback({
                 'ok'    : True,
                 'bundle': bundlepath,
@@ -1371,6 +1566,7 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
+                os.sync()
                 callback({
                     'ok': False,
                 })
@@ -1418,6 +1614,8 @@ class Host(object):
         }
 
         for instance_id, pluginData in self.plugins.items():
+            if instance_id == PEDALBOARD_INSTANCE_ID:
+                continue
             instance = pluginData['instance'].replace("/graph/","",1)
             pedalpreset['data'][instance] = {
                 "bypassed": pluginData['bypassed'],
@@ -1539,7 +1737,7 @@ class Host(object):
                         used_actuators.append(addressing['actuator_uri'])
 
             for symbol, value in data['ports'].items():
-                if value == pluginData['ports'][symbol]:
+                if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
                     continue
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
@@ -1556,7 +1754,7 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
-        self.addressings.load_current(used_actuators)
+        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
         self.msg_callback("pedal_preset %d" % idx)
@@ -1614,7 +1812,6 @@ class Host(object):
 
             if not ok:
                 print("ERROR: disconnect '%s' => '%s' failed" % (port_from, port_to))
-                return
 
             self.pedalboard_modified = True
 
@@ -1731,13 +1928,79 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
+        skippedPortAddressings = []
+        if self.transport_sync == "link":
+            skippedPortAddressings.append(PEDALBOARD_INSTANCE+"/:bpm")
+
+        timeAvailable = pb['timeInfo']['available']
+        if timeAvailable != 0:
+            pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
+            if timeAvailable & kPedalboardTimeAvailableBPB:
+                ccData = pb['timeInfo']['bpbCC']
+                if ccData['channel'] >= 0 and ccData['channel'] < 16:
+                    if ccData['hasRanges'] and ccData['maximum'] > ccData['minimum']:
+                        minimum = ccData['minimum']
+                        maximum = ccData['maximum']
+                    else:
+                        minimum = 1
+                        maximum = 16
+                    pluginData['midiCCs'][':bpb'] = (ccData['channel'], ccData['control'], minimum, maximum)
+                    pluginData['addressings'][':bpb'] = self.addressings.add_midi(PEDALBOARD_INSTANCE_ID,
+                                                                                  ':bpb',
+                                                                                  ccData['channel'],
+                                                                                  ccData['control'],
+                                                                                  minimum, maximum)
+                self.set_transport_bpb(pb['timeInfo']['bpb'], False)
+
+            if timeAvailable & kPedalboardTimeAvailableBPM:
+                ccData = pb['timeInfo']['bpmCC']
+                if ccData['channel'] >= 0 and ccData['channel'] < 16:
+                    if ccData['hasRanges'] and ccData['maximum'] > ccData['minimum']:
+                        minimum = ccData['minimum']
+                        maximum = ccData['maximum']
+                    else:
+                        minimum = 20
+                        maximum = 280
+                    pluginData['midiCCs'][':bpm'] = (ccData['channel'], ccData['control'], minimum, maximum)
+                    pluginData['addressings'][':bpm'] = self.addressings.add_midi(PEDALBOARD_INSTANCE_ID,
+                                                                                  ':bpm',
+                                                                                  ccData['channel'],
+                                                                                  ccData['control'],
+                                                                                  minimum, maximum)
+                self.set_transport_bpm(pb['timeInfo']['bpm'], False)
+
+            if timeAvailable & kPedalboardTimeAvailableRolling:
+                ccData = pb['timeInfo']['rollingCC']
+                if ccData['channel'] >= 0 and ccData['channel'] < 16:
+                    pluginData['midiCCs'][':rolling'] = (ccData['channel'], ccData['control'], 0.0, 1.0)
+                    pluginData['addressings'][':rolling'] = self.addressings.add_midi(PEDALBOARD_INSTANCE_ID,
+                                                                                      ':rolling',
+                                                                                      ccData['channel'],
+                                                                                      ccData['control'],
+                                                                                      0.0, 1.0)
+                self.set_transport_rolling(pb['timeInfo']['rolling'] or self.first_transport_rolling, False)
+
+        elif self.first_transport_rolling:
+            self.set_transport_rolling(True, False)
+
+        self.first_transport_rolling = False
+
+        self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                      self.transport_bpb,
+                                                      self.transport_bpm))
+
+        self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                     self.transport_bpb,
+                                                     self.transport_bpm,
+                                                     self.transport_sync))
+
         self.load_pb_presets(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
-        self.addressings.load(bundlepath, instances)
-        self.addressings.registerMappings(self.msg_callback, "/graph/", rinstances)
+        self.addressings.load(bundlepath, instances, skippedPortAddressings)
+        self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.pedalboard_preset)
 
@@ -1759,6 +2022,8 @@ class Host(object):
                 save_last_bank_and_pedalboard(self.bank_id, bundlepath)
             else:
                 save_last_bank_and_pedalboard(0, "")
+
+            os.sync()
 
         return self.pedalboard_name
 
@@ -1800,7 +2065,7 @@ class Host(object):
             instance_id = self.mapper.get_id(instance)
 
             instances[p['instance']] = (instance_id, p['uri'])
-            rinstances[instance_id]  = p['instance']
+            rinstances[instance_id]  = instance
 
             badports = []
             valports = {}
@@ -1808,6 +2073,9 @@ class Host(object):
 
             enabled_symbol = None
             freewheel_symbol = None
+            bpb_symbol = None
+            bpm_symbol = None
+            speed_symbol = None
 
             for port in allports['inputs']:
                 symbol = port['symbol']
@@ -1829,6 +2097,21 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 0.0
 
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerBar":
+                    bpb_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpb
+
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
+
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
+                    speed_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = 1.0 if self.transport_rolling else 0.0
+
             self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,
                 "uri"         : p['uri'],
@@ -1840,7 +2123,7 @@ class Host(object):
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
                 "badports"    : badports,
-                "designations": (enabled_symbol, freewheel_symbol),
+                "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : p['preset'],
                 "mapPresets"  : []
@@ -1879,8 +2162,8 @@ class Host(object):
                 mchnnl = port['midiCC']['channel']
                 mctrl  = port['midiCC']['control']
 
-                if mchnnl >= 0 and mctrl >= 0:
-                    if port['midiCC']['hasRanges']:
+                if mchnnl >= 0 and mchnnl < 16:
+                    if port['midiCC']['hasRanges'] and port['midiCC']['maximum'] > port['midiCC']['minimum']:
                         minimum = port['midiCC']['minimum']
                         maximum = port['midiCC']['maximum']
                     else:
@@ -1976,6 +2259,7 @@ class Host(object):
         self.save_state_to_ttl(bundlepath, title, titlesym)
 
         save_last_bank_and_pedalboard(0, bundlepath)
+        os.sync()
 
         return bundlepath
 
@@ -1987,7 +2271,7 @@ class Host(object):
 
     def save_state_manifest(self, bundlepath, titlesym):
         # Write manifest.ttl
-        with open(os.path.join(bundlepath, "manifest.ttl"), 'w') as fh:
+        with TextFileFlusher(os.path.join(bundlepath, "manifest.ttl")) as fh:
             fh.write("""\
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
@@ -2039,7 +2323,7 @@ class Host(object):
                     }
 
             presets = [p for p in self.pedalboard_presets if p is not None]
-            with open(presets_path, 'w') as fh:
+            with TextFileFlusher(presets_path) as fh:
                 json.dump(presets, fh)
 
         elif os.path.exists(presets_path):
@@ -2079,9 +2363,12 @@ _:b%i
 
         # Blocks (plugins)
         blocks = ""
-        for plugin in self.plugins.values():
-            info = get_plugin_info(plugin['uri'])
-            instance = plugin['instance'].replace("/graph/","",1)
+        for instance_id, pluginData in self.plugins.items():
+            if instance_id == PEDALBOARD_INSTANCE_ID:
+                continue
+
+            info = get_plugin_info(pluginData['uri'])
+            instance = pluginData['instance'].replace("/graph/","",1)
             blocks += """
 <%s>
     ingen:canvasX %.1f ;
@@ -2096,7 +2383,7 @@ _:b%i
     lv2:prototype <%s> ;
     pedal:preset <%s> ;
     a ingen:Block .
-""" % (instance, plugin['x'], plugin['y'], "false" if plugin['bypassed'] else "true",
+""" % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
        info['microVersion'], info['minorVersion'], info['builder'], info['release'],
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
@@ -2107,8 +2394,8 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
-       plugin['uri'],
-       plugin['preset'])
+       pluginData['uri'],
+       pluginData['preset'])
 
             # audio input
             for port in info['ports']['audio']['input']:
@@ -2163,7 +2450,7 @@ _:b%i
 """ % (instance, port['symbol'])
 
             # control input, save values
-            for symbol, value in plugin['ports'].items():
+            for symbol, value in pluginData['ports'].items():
                 blocks += """
 <%s/%s>
     ingen:value %f ;%s
@@ -2177,7 +2464,7 @@ _:b%i
         lv2:minimum %f ;
         lv2:maximum %f ;
         a midi:Controller ;
-    ] ;""" % plugin['midiCCs'][symbol]) if -1 not in plugin['midiCCs'][symbol][0:2] else "")
+    ] ;""" % pluginData['midiCCs'][symbol]) if -1 not in pluginData['midiCCs'][symbol][0:2] else "")
 
             # control output
             for port in info['ports']['control']['output']:
@@ -2192,19 +2479,72 @@ _:b%i
     ingen:value %i ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
-""" % (instance, 1 if plugin['bypassed'] else 0,
+""" % (instance, 1 if pluginData['bypassed'] else 0,
        ("""
     midi:binding [
         midi:channel %i ;
         midi:controllerNumber %i ;
         a midi:Controller ;
-    ] ;""" % plugin['bypassCC']) if -1 not in plugin['bypassCC'] else "")
+    ] ;""" % pluginData['bypassCC']) if -1 not in pluginData['bypassCC'] else "")
 
-        # Ports
+        # Globak Ports
+        pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
+
+        # BeatsPerBar
         ports = """
+<:bpb>
+    ingen:value %f ;%s
+    lv2:index 0 ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (self.transport_bpb,
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        lv2:minimum %f ;
+        lv2:maximum %f ;
+        a midi:Controller ;
+    ] ;""" % pluginData['midiCCs'][':bpb']) if -1 not in pluginData['midiCCs'][':bpb'][0:2] else "")
+
+        # BeatsPerMinute
+        index += 1
+        ports += """
+<:bpm>
+    ingen:value %f ;%s
+    lv2:index 1 ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (self.transport_bpm,
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        lv2:minimum %f ;
+        lv2:maximum %f ;
+        a midi:Controller ;
+    ] ;""" % pluginData['midiCCs'][':bpm']) if -1 not in pluginData['midiCCs'][':bpm'][0:2] else "")
+
+        # Rolling
+        ports += """
+<:rolling>
+    ingen:value %i ;%s
+    lv2:index 2 ;
+    a lv2:ControlPort ,
+        lv2:InputPort .
+""" % (int(self.transport_rolling),
+       ("""
+    midi:binding [
+        midi:channel %i ;
+        midi:controllerNumber %i ;
+        a midi:Controller ;
+    ] ;""" % pluginData['midiCCs'][':rolling'][0:2]) if -1 not in pluginData['midiCCs'][':rolling'][0:2] else "")
+
+        # Control In/Out
+        ports += """
 <control_in>
     atom:bufferType atom:Sequence ;
-    lv2:index 0 ;
+    lv2:index 3 ;
     lv2:name "Control In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_in" ;
@@ -2214,7 +2554,7 @@ _:b%i
 
 <control_out>
     atom:bufferType atom:Sequence ;
-    lv2:index 1 ;
+    lv2:index 4 ;
     lv2:name "Control Out" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "control_out" ;
@@ -2222,7 +2562,7 @@ _:b%i
     a atom:AtomPort ,
         lv2:OutputPort .
 """
-        index = 1
+        index = 4
 
         # Ports (Audio In)
         for port in self.audioportsIn:
@@ -2339,14 +2679,16 @@ _:b%i
 
         # Arcs (connections)
         if len(self.connections) > 0:
-            pbdata += "    ingen:arc _:b%s ;\n" % (" ,\n              _:b".join(tuple(str(i+1) for i in range(len(self.connections)))))
+            args = (" ,\n              _:b".join(tuple(str(i+1) for i in range(len(self.connections)))))
+            pbdata += "    ingen:arc _:b%s ;\n" % args
 
         # Blocks (plugins)
         if len(self.plugins) > 0:
-            pbdata += "    ingen:block <%s> ;\n" % ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for p in self.plugins.values())))
+            args = ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for i, p in self.plugins.items() if i != PEDALBOARD_INSTANCE_ID)))
+            pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = ["control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:
@@ -2364,7 +2706,7 @@ _:b%i
 """
 
         # Write the main pedalboard file
-        with open(os.path.join(bundlepath, "%s.ttl" % titlesym), 'w') as fh:
+        with TextFileFlusher(os.path.join(bundlepath, "%s.ttl" % titlesym)) as fh:
             fh.write(pbdata)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -2373,11 +2715,68 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
+    def set_link_enabled(self, enabled, saveConfig = False):
+        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+            print("ERROR: link enabled while BPM is still addressed")
+
+        self.transport_sync = "link" if enabled else "none"
+        self.send_notmodified("feature_enable link %i" % int(enabled))
+
+    def set_transport_bpb(self, bpb, sendMsg, callback=None, datatype='int'):
+        self.transport_bpb = bpb
+
+        if sendMsg:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
+
+        for pluginData in self.plugins.values():
+            bpb_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPB]
+
+            if bpb_symbol is not None:
+                pluginData['ports'][bpb_symbol] = bpb
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+
+    def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
+        self.transport_bpm = bpm
+
+        if sendMsg:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
+
+        for pluginData in self.plugins.values():
+            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+
+    def set_transport_rolling(self, rolling, sendMsg, callback=None, datatype='int'):
+        self.transport_rolling = rolling
+
+        if sendMsg:
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm), callback, datatype)
+
+        speed = 1.0 if rolling else 0.0
+
+        for pluginData in self.plugins.values():
+            speed_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_SPEED]
+
+            if speed_symbol is not None:
+                pluginData['ports'][speed_symbol] = speed
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
 
     def statstimer_callback(self):
-        data = get_jack_data()
+        data = get_jack_data(False)
         self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
 
     def get_free_memory_value(self):
@@ -2385,21 +2784,21 @@ _:b%i
             return "??"
 
         self.memfile.seek(self.memfseek_free)
-        memfree = float(int(self.memfile.readline().replace("MemFree:","",1).replace("kB","",1).strip()))
+        memfree = float(int(self.memfile.readline().replace("kB","",1).strip()))
 
         self.memfile.seek(self.memfseek_buffers)
-        memcached  = float(int(self.memfile.readline().replace("Buffers:","",1).replace("kB","",1).strip()))
+        memcached  = int(self.memfile.readline().replace("kB","",1).strip())
 
         self.memfile.seek(self.memfseek_cached)
-        memcached += float(int(self.memfile.readline().replace("Cached:","",1).replace("kB","",1).strip()))
+        memcached += int(self.memfile.readline().replace("kB","",1).strip())
 
         self.memfile.seek(self.memfseek_shmmem)
-        memcached -= float(int(self.memfile.readline().replace("Shmem:","",1).replace("kB","",1).strip()))
+        memcached -= int(self.memfile.readline().replace("kB","",1).strip())
 
         self.memfile.seek(self.memfseek_reclaim)
-        memcached += float(int(self.memfile.readline().replace("SReclaimable:","",1).replace("kB","",1).strip()))
+        memcached += int(self.memfile.readline().replace("kB","",1).strip())
 
-        return "%0.1f" % ((self.memtotal-memfree-memcached)/self.memtotal*100.0)
+        return "%0.1f" % ((self.memtotal-memfree-float(memcached))/self.memtotal*100.0)
 
     def memtimer_callback(self):
         self.msg_callback("mem_load " + self.get_free_memory_value())
@@ -2410,11 +2809,7 @@ _:b%i
     @gen.coroutine
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, callback):
         instance_id = self.mapper.get_id(instance)
-
-        if instance_id == PEDALBOARD_INSTANCE_ID:
-            pluginData = self.pedalboard_pdata
-        else:
-            pluginData = self.plugins.get(instance_id, None)
+        pluginData  = self.plugins.get(instance_id, None)
 
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
@@ -2429,36 +2824,47 @@ _:b%i
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
 
         if old_addressing is not None:
+            # Need to remove old addressings first
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
 
-            # Changing ranges without changing MIDI CC
-            if old_actuator_type == Addressings.ADDRESSING_TYPE_MIDI and actuator_uri == old_actuator_uri:
-                channel, controller = self.addressings.get_midi_cc_from_uri(actuator_uri)
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_MIDI:
+                channel, controller = self.addressings.get_midi_cc_from_uri(old_actuator_uri)
 
-                if -1 in (channel, controller):
-                    # error
-                    actuator_uri = None
+                if actuator_uri != old_actuator_uri:
+                    # Removing MIDI addressing
+                    if portsymbol == ":bypass":
+                        pluginData['bypassCC'] = (-1, -1)
+                    else:
+                        pluginData['midiCCs'][portsymbol] = (-1, -1, 0.0, 1.0)
 
                 else:
-                    if portsymbol == ":bypass":
-                        pluginData['bypassCC'] = (channel, controller)
+                    # Changing ranges without changing MIDI CC
+                    if -1 in (channel, controller):
+                        # error
+                        actuator_uri = None
+
                     else:
-                        pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
+                        if portsymbol == ":bypass":
+                            pluginData['bypassCC'] = (channel, controller)
+                        else:
+                            pluginData['midiCCs'][portsymbol] = (channel, controller, minimum, maximum)
 
-                    pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
-                                                                                      portsymbol,
-                                                                                      channel, controller,
-                                                                                      minimum, maximum)
+                        pluginData['addressings'][portsymbol] = self.addressings.add_midi(instance_id,
+                                                                                          portsymbol,
+                                                                                          channel, controller,
+                                                                                          minimum, maximum)
 
-                    return self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
-                                                                              portsymbol,
-                                                                              channel,
-                                                                              controller,
-                                                                              minimum,
-                                                                              maximum), callback, datatype='boolean')
+                        return self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
+                                                                                  portsymbol,
+                                                                                  channel,
+                                                                                  controller,
+                                                                                  minimum,
+                                                                                  maximum), callback, datatype='boolean')
 
             self.addressings.remove(old_addressing)
+            self.pedalboard_modified = True
+
             yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                         old_addressing['instance_id'],
                                                         old_addressing['port'])
@@ -2479,11 +2885,23 @@ _:b%i
                                                                      minimum,
                                                                      maximum), callback, datatype='boolean')
 
+        if value < minimum:
+            value = minimum
+            needsValueChange = True
+        elif value > maximum:
+            value = maximum
+            needsValueChange = True
+        else:
+            needsValueChange = False
+
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value)
         if addressing is None:
             callback(False)
             return
+
+        if needsValueChange:
+            yield gen.Task(self.hmi_parameter_set, instance_id, portsymbol, value)
 
         pluginData['addressings'][portsymbol] = addressing
 
@@ -2623,6 +3041,9 @@ _:b%i
 
             if next_pedalboard != (bank_id, pedalboard_id):
                 self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], loaded2_callback)
+            else:
+                self.processing_pending_flag = False
+                self.send_notmodified("feature_enable processing 1")
 
         def load_callback(ok):
             self.bank_id = bank_id
@@ -2636,6 +3057,10 @@ _:b%i
         def hmi_clear_callback(ok):
             self.hmi.clear(footswitch_callback)
 
+        if not self.processing_pending_flag:
+            self.processing_pending_flag = True
+            self.send_notmodified("feature_enable processing 0")
+
         self.reset(hmi_clear_callback)
 
     def hmi_parameter_get(self, instance_id, portsymbol, callback):
@@ -2644,12 +3069,14 @@ _:b%i
 
     def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
         logging.info("hmi parameter set")
-        instance = self.mapper.get_instance(instance_id)
+        try:
+            instance = self.mapper.get_instance(instance_id)
+        except KeyError:
+            print("WARNING: hmi_parameter_set requested for non-existing plugin")
+            callback(False)
+            return
 
-        if instance_id == PEDALBOARD_INSTANCE_ID:
-            pluginData = self.pedalboard_pdata
-        else:
-            pluginData = self.plugins[instance_id]
+        pluginData = self.plugins[instance_id]
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -2658,7 +3085,7 @@ _:b%i
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
 
-            enabled_symbol = pluginData['designations'][0]
+            enabled_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_ENABLED]
             if enabled_symbol is None:
                 return
 
@@ -2677,7 +3104,30 @@ _:b%i
             else:
                 self.preset_load(instance, pluginData['mapPresets'][value], callback)
 
+        elif instance_id == PEDALBOARD_INSTANCE_ID:
+            if portsymbol == ":bpb":
+                self.set_transport_bpb(value, True, callback)
+            elif portsymbol == ":bpm":
+                self.set_transport_bpm(value, True, callback)
+            elif portsymbol == ":rolling":
+                rolling = bool(value > 0.5)
+                self.set_transport_rolling(rolling, True, callback)
+            else:
+                print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
+                callback(False)
+                return
+
+            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                         self.transport_bpb,
+                                                         self.transport_bpm,
+                                                         self.transport_sync))
+
         else:
+            oldvalue = pluginData['ports'].get(portsymbol, None)
+            if oldvalue is None:
+                print("WARNING: hmi_parameter_set requested for non-existing port", portsymbol)
+                callback(False)
+                return
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
@@ -2691,6 +3141,7 @@ _:b%i
         logging.info("hmi save current pedalboard")
         titlesym = symbolify(self.pedalboard_name)[:16]
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
+        os.sync()
         callback(True)
 
     def hmi_reset_current_pedalboard(self, callback):
@@ -2705,34 +3156,38 @@ _:b%i
             instance_id = self.mapper.get_id(instance)
             pluginData  = self.plugins[instance_id]
 
-            bypassed = bool(p['bypassed'])
-            pluginData['bypassed'] = bypassed
+            bypassed    = bool(p['bypassed'])
+            diffBypass  = pluginData['bypassed'] != p['bypassed']
 
-            self.send_notmodified("bypass %d %d" % (instance_id, 1 if bypassed else 0))
-            #self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
+            if diffBypass:
+                addressing = pluginData['addressings'].get(":bypass", None)
+                if addressing is not None:
+                    addressing['value'] = 1.0 if bypassed else 0.0
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
-            addressing = pluginData['addressings'].get(":bypass", None)
-            if addressing is not None:
-                addressing['value'] = 1.0 if bypassed else 0.0
-                if addressing['actuator_uri'] not in used_actuators:
-                    used_actuators.append(addressing['actuator_uri'])
+            # if bypassed, do it now
+            if diffBypass and bypassed:
+                self.bypass(instance, True, None)
+                #self.msg_callback("param_set %s :bypass 1.0" % (instance,))
 
-            addressing = pluginData['addressings'].get(":presets", None)
-            if addressing is not None:
-                if p['preset']:
+            if p['preset'] and pluginData['preset'] != p['preset']:
+                pluginData['preset'] = p['preset']
+                self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
+                #self.msg_callback("preset %s %s" % (instance, p['preset']))
+
+                addressing = pluginData['addressings'].get(":presets", None)
+                if addressing is not None:
                     addressing['value'] = pluginData['mapPresets'].index(p['preset'])
-                if addressing['actuator_uri'] not in used_actuators:
-                    used_actuators.append(addressing['actuator_uri'])
-
-            if p['preset']:
-                preset = p['preset']
-                pluginData['preset'] = preset
-                self.send_notmodified("preset_load %d %s" % (instance_id, preset))
-                #self.msg_callback("preset %s %s" % (instance, preset))
+                    if addressing['actuator_uri'] not in used_actuators:
+                        used_actuators.append(addressing['actuator_uri'])
 
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
+
+                if pluginData['ports'][symbol] == value:
+                    continue
 
                 pluginData['ports'][symbol] = value
                 self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
@@ -2744,8 +3199,13 @@ _:b%i
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
+            # if not bypassed (enabled), do it at the end
+            if diffBypass and not bypassed:
+                self.bypass(instance, False, None)
+                #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
+
         self.pedalboard_modified = False
-        self.addressings.load_current(used_actuators)
+        self.addressings.load_current(used_actuators, (None, None))
 
     def hmi_tuner(self, status, callback):
         if status == "on":
@@ -2763,7 +3223,9 @@ _:b%i
                 callback(False)
                 return
 
-            self.mute()
+            if self.prefs.get("tuner-mutes-outputs", "true") != "false":
+                self.mute()
+
             callback(True)
 
         def tuner_added(ok):

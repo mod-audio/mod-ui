@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, json
-from mod import safe_json_load
+from mod import safe_json_load, TextFileFlusher
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
@@ -68,7 +68,7 @@ def list_banks(brokenpedals = []):
 
 # save banks to disk
 def save_banks(banks):
-    with open(BANKS_JSON_FILE, 'w') as fh:
+    with TextFileFlusher(BANKS_JSON_FILE) as fh:
         json.dump(banks, fh)
 
 # save last bank id and pedalboard path to disk
@@ -77,7 +77,7 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
         return
 
     try:
-        with open(LAST_STATE_JSON_FILE, 'w') as fh:
+        with TextFileFlusher(LAST_STATE_JSON_FILE) as fh:
             json.dump({
                 'bank': bank-1,
                 'pedalboard': pedalboard
@@ -90,7 +90,7 @@ def get_last_bank_and_pedalboard():
     data = safe_json_load(LAST_STATE_JSON_FILE, dict)
     keys = data.keys()
 
-    if "bank" not in keys or "pedalboard" not in keys or not isinstance(data['bank'], int):
+    if len(keys) == 0 or "bank" not in keys or "pedalboard" not in keys or not isinstance(data['bank'], int):
         print("last state file does not exist or is corrupt")
         return (-1, None)
 

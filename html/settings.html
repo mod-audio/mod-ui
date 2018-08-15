@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<title>MOD Settings</title>
+
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
+
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+
+<style type="text/css" media="screen">
+    .settings-page {
+        bottom: 0px;
+    }
+    .settings-page-content {
+        background: #111;
+        left: 245px;
+        height: calc(100% - 50px);
+        margin: 0;
+        padding: 0;
+        position: fixed;
+        text-align: left;
+        top: 45px;
+        width: 50%;
+        overflow-y: auto;
+    }
+    .settings-page-content h1 {
+        font-size: 2.2em;
+        padding: 0em;
+        max-height: 2em;
+        display: block;
+        margin: 0.5em 0.8em 0 0.8em;
+        padding-bottom: 0.2em;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    #settings-page-device-updates h2 {
+        color: #BBB;
+    }
+    .settings-page-content form {
+        margin: 0 2em;
+        color: #666;
+    }
+    .settings-page-content form label,
+    .settings-page-content form p {
+        color: #999;
+        font-size: 1.1em;
+    }
+    .settings-page-content form label input {
+        color: #555;
+    }
+
+    #bank-library {
+        bottom: 0px;
+    }
+    #bank-library #bank-list {
+        bottom: 5px;
+        left: 5px;
+        width: 200px;
+    }
+
+    #bank-library #bank-list div.add-bank {
+        padding-left: 5px;
+        padding-right: 5px;
+        text-align: center;
+    }
+
+    #bank-pedalboards-search #bank-pedalboards-result {
+        background: none;
+        top: 30px;
+    }
+    #bank-pedalboards-search #bank-pedalboards-result h2 {
+        margin: 20px;
+        width: 90px;
+    }
+    #bank-pedalboards-search #bank-pedalboards-result .form {
+        min-height: 50px;
+        color: #AAA;
+    }
+</style>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.ba-resize.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/mustache.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.svg.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/sprintf-0.6.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/jquery.mousewheel.min.js?v={{version}}"></script>
+
+<script type="text/javascript">
+    {% autoescape None %}
+    SITEURL          = '{{cloud_url}}'
+    CONTROLCHAIN_URL = '{{controlchain_url}}'
+    VERSION          = '{{version}}'
+    var TEMPLATES    = {}
+    var NOTIFICATIONS_ENABLED = true
+    var PREFERENCES = {{preferences}}
+
+    var INFO = {
+        "hwname": "",
+        "sysdate": "",
+        "python": {},
+        "uname": {}
+    }
+
+function bool2str(ok) {
+    return ok ? "true" : "false"
+}
+
+function refresh_sysinfo() {
+    $.ajax({
+        url: '/system/info',
+        method: 'GET',
+        success: function (info) {
+            INFO = info
+            $("#info-system-unit").text(INFO.hwname)
+            $("#info-system-date").text(INFO.sysdate)
+            $("#info-kernel-machine").text(INFO.uname.machine)
+            $("#info-kernel-release").text(INFO.uname.release)
+            $("#info-kernel-version").text(INFO.uname.version)
+        },
+        cache: false,
+        global: false,
+        dataType: 'json'
+    })
+}
+
+function refresh_sysprefs() {
+    $.ajax({
+        url: '/system/prefs',
+        method: 'GET',
+        success: function (resp) {
+            if (resp.bluetooth_name != null)
+            {
+                $("#prefs-bluetooth-custom").prop("checked", true)
+                $("#prefs-bluetooth-name").prop("disabled", false).val(resp.bluetooth_name)
+            }
+            else
+            {
+                $("#prefs-bluetooth-custom").prop("checked", false)
+                $("#prefs-bluetooth-name").prop("disabled", true)
+            }
+
+            $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
+            $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
+            $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
+            $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
+            $("#prefs-service-mod-sdk").prop("checked", resp.service_mod_sdk)
+            $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
+        },
+        cache: false,
+        global: false,
+        dataType: 'json'
+    })
+}
+
+function refresh_device_updates(respDev, respVer) {
+    if (!respDev || !respVer) {
+        return
+    }
+    if (respDev.api_version != 1 || respVer.api_version != 1) {
+        return
+    }
+
+    var elem = $('#settings-page-device-updates').find('form')
+
+    for (var i in respDev.devices) {
+        var dev = respDev.devices[i],
+            text = "",
+            note = ""
+
+        if (dev.label) {
+            var dev2 = respVer.devices[dev.uri]
+            if (dev2) {
+                dev.version = dev2.latest
+            } else {
+                dev.label = ""
+            }
+        }
+        if (! dev.label) {
+            note = "<br/>Note: Updates for this device need to be done manually."
+        }
+
+        text += "<h2>" + dev.name + "</h2>"
+        text += "<p>" + dev.description.replace(/\n/g,"<br/>") + note + "</p>"
+
+        if (dev.label) {
+            var labelcl = 'button-action-update-firmware'
+            var labelid = 'button-action-update-firmware-'+i
+            text += "<label>"
+            text += "<input type='button' class='" + labelcl + "' id='" + labelid + "' value='Update firmware'></input>"
+            text += " &nbsp; Latest version: v" + dev.version
+            text += "</label>"
+        }
+
+        elem.append(text)
+    }
+
+    $("#tab-device-updates").show()
+
+    $(".button-action-update-firmware").click(function () {
+        var self = $(this)
+        if (self.hasClass("disabled")) {
+            return
+        }
+
+        var dev_id = parseInt(this.id.replace("button-action-update-firmware-","")),
+            dev = respDev.devices[dev_id]
+
+        if (!dev || !dev.label) {
+            new Bug("Couldn't download firmware, wrong Id")
+            return
+        }
+
+        self.addClass("disabled")
+
+        var url = CONTROLCHAIN_URL + "/file/" + dev.label + dev.version + ".bin"
+        var transfer = new SimpleTransference(url, '/controlchain/download/')
+
+        transfer.reportFinished = function () {
+            self.removeClass("disabled")
+            $('#cc-device-update-window').show()
+        }
+
+        transfer.reportError = function (error) {
+            self.removeClass("disabled")
+            new Bug("Couldn't download firmware, reason:<br/>" + error)
+        }
+
+        transfer.start()
+    })
+}
+
+function config_set(key, value) {
+    $.ajax({
+        url: '/config/set',
+        method: 'POST',
+        data: {
+          key: key,
+          value: value,
+        },
+        success: function (resp) {
+            console.log("success", resp)
+        },
+        error: function (resp) {
+            console.log("error", resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
+function system_exechange(data, callback) {
+    $.ajax({
+        url: '/system/exechange',
+        method: 'POST',
+        data: data,
+        success: function (resp) {
+            console.log("success", resp)
+            if (callback) {
+                callback(resp)
+            }
+        },
+        error: function (resp) {
+            console.log("error", resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
+function enable_service(name, enable) {
+    system_exechange({
+        'type'  : 'service',
+        'name'  : name,
+        'enable': enable ? 1 : 0,
+    })
+}
+
+function run_custom_command(cmd, callback) {
+    system_exechange({
+        'type': 'command',
+        'cmd' : cmd,
+    }, callback)
+}
+
+function write_file_contents(path, content) {
+    system_exechange({
+        'type'   : 'filewrite',
+        'path'   : path,
+        'content': content,
+    })
+}
+
+function create_or_delete_file(path, create) {
+    system_exechange({
+        'type'  : 'filecreate',
+        'path'  : path,
+        'create': create ? 1 : 0,
+    })
+}
+
+$('document').ready(function() {
+    var self = this
+
+    var cached_cpuLoad
+    var ws = new WebSocket("ws://" + window.location.host + "/websocket")
+
+    ws.onclose = function (evt) {
+        if ($('body').find('.screen-disconnected').length != 0) {
+            return
+        }
+
+        var block = $('<div class="screen-disconnected blocker">')
+        block.html('<p>Disconnected</p>')
+
+        var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+        re.css("background-image", "url(img/icons/25/reload.png)");
+        re.click(function () { location.reload(); });
+
+        $('body').append(block).css('overflow', 'hidden')
+        $('#wrapper').css('z-index', -1)
+        $('#bank-library').css('z-index', -1)
+    }
+
+    ws.onmessage = function (evt) {
+        var data = evt.data
+        var cmd  = data.split(" ",1)
+
+        if (!cmd.length) {
+            return
+        }
+
+        var cmd = cmd[0]
+
+        if (cmd == "stats") {
+            var cpuLoad = parseFloat(data.substr(cmd.length+1).split(" ",2)[0])
+
+            if (cpuLoad != cached_cpuLoad) {
+                cached_cpuLoad = cpuLoad
+                $("#info-dsp-load").text(""+cpuLoad.toString()+"%")
+            }
+            return
+        }
+
+        if (cmd == "ping") {
+            ws.send("pong")
+            return
+        }
+
+        if (cmd == "stop") {
+            ws.close()
+            return
+        }
+
+        if (cmd == "bufsize") {
+            var bufsize = data.substr(cmd.length+1)
+            $("#info-dsp-buffer-size").html(bufsize)
+            $("#prefs-audio-256-frames").prop("checked", bufsize == "256")
+            return
+        }
+
+        if (cmd == "cc-device-updated") {
+            $('#cc-device-update-window').hide()
+            new Notification("info", "Control Chain device firmware update complete!")
+            return
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+
+    $("#tab-basic").click(function () {
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
+        // show basic
+        $("#tab-basic").addClass("selected")
+        $("#settings-page-basic").show()
+    })
+
+    $("#tab-advanced").click(function () {
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
+        // show advanced
+        $("#tab-advanced").addClass("selected")
+        $("#settings-page-advanced").show()
+    })
+
+    $("#tab-device-updates").click(function () {
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
+        // show dangerous
+        $("#tab-device-updates").addClass("selected")
+        $("#settings-page-device-updates").show()
+    })
+
+    $("#tab-dangerous").click(function () {
+        // hide all
+        $(".add-bank").removeClass("selected")
+        $(".settings-page").hide()
+        // show dangerous
+        $("#tab-dangerous").addClass("selected")
+        $("#settings-page-dangerous").show()
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+
+    $('#cc-device-update-window').find('.js-cancel').click(function () {
+        $.ajax({
+            url: '/controlchain/cancel/',
+            type: 'POST',
+            success: function () {
+                $('#cc-device-update-window').hide()
+            },
+            error: function () {
+                $('#cc-device-update-window').hide()
+            },
+            cache: false,
+            dataType: 'json'
+        })
+        return false
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+
+    refresh_sysinfo()
+    refresh_sysprefs()
+
+    if (PREFERENCES['transport-rolling-at-boot'] == "true") {
+        $("#prefs-prefs-autostart-playback").prop("checked", true)
+    }
+    if (PREFERENCES['prefs-prefs-autostart-link'] == "true") {
+        $("#prefs-prefs-autostart-link").prop("checked", true)
+    }
+    if (PREFERENCES['tuner-mutes-outputs'] != "false") {
+        $("#prefs-prefs-muted-tuner").prop("checked", true)
+    }
+
+    if (PREFERENCES['dev-mode'] == "on") {
+        $("#prefs-ui-developer-mode").prop("checked", true)
+    }
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#prefs-ui-unstable-plugins").prop("checked", true)
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Personal :: Bluetooth custom name
+
+    this.last_bluetooth_timeout = null
+    this.set_bluetooth_name = function() {
+
+        if (self.last_bluetooth_timeout != null) {
+            clearTimeout(self.last_bluetooth_timeout)
+            self.last_bluetooth_timeout = null
+        }
+
+        var name
+        if ($("#prefs-bluetooth-name").prop("checked")) {
+            name = $("#prefs-bluetooth-name").val()
+        } else {
+            name = ""
+        }
+
+        write_file_contents("bluetooth/name", name)
+    }
+
+    $("#prefs-bluetooth-custom").click(function () {
+        var elem_btname = $("#prefs-bluetooth-name")
+
+        if ($(this).prop("checked")) {
+            // give it a default name if one was not set before
+            if (! elem_btname.val()) {
+                elem_btname.val(INFO.hwname)
+            }
+            // enable text input
+            elem_btname.prop("disabled", false)
+
+        } else {
+            // disable text input
+            elem_btname.prop("disabled", true)
+        }
+
+        // set name
+        self.set_bluetooth_name()
+    })
+
+    $("#prefs-bluetooth-name")
+    .keydown(function (e) {
+        if (e.keyCode == 13) {
+            // detect enter
+            self.set_bluetooth_name()
+            return false
+        } else if (e.keyCode == 8 || e.keyCode == 46) {
+            if (self.last_bluetooth_timeout != null) {
+                clearTimeout(self.last_bluetooth_timeout)
+            }
+            // detect delete and backspace
+            self.last_bluetooth_timeout = setTimeout(function () {
+                self.set_bluetooth_name()
+            }, 400)
+        }
+    })
+    .keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
+        if (e.which == 13) {
+            return
+        }
+        if (self.last_bluetooth_timeout != null) {
+            clearTimeout(self.last_bluetooth_timeout)
+        }
+        self.last_bluetooth_timeout = setTimeout(function () {
+            self.set_bluetooth_name()
+        }, 400)
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Preferences
+
+    $("#prefs-prefs-autostart-playback").click(function () {
+        config_set("transport-rolling-at-boot", bool2str($(this).prop("checked")))
+    })
+
+    $("#prefs-prefs-autostart-link").click(function () {
+        config_set("link-enabled-at-boot", bool2str($(this).prop("checked")))
+    })
+
+    $("#prefs-prefs-muted-tuner").click(function () {
+        config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Backup & Restore
+
+    function show_blocker (exporting) {
+        var block = $('<div class="screen-disconnected blocker">')
+
+        if (exporting) {
+            block.html('<p>Exporting data, please wait...</p>')
+        } else {
+            block.html('<p>Import data, please wait...<br/>This might take a few minutes.</p>')
+        }
+        block.css('overflow', 'hidden')
+
+        $('body').append(block)
+        return block
+    }
+
+    $("#button-action-backup-export").click(function () {
+        var block = show_blocker(true),
+            pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
+            pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
+
+        run_custom_command("backup-export " + pConfigs + "," + pPlugins, function (resp) {
+            block.remove()
+            if (resp.ok) {
+                new Notification("info", "Backup to USB stick complete!<br>You can now safely remove the USB stick.")
+            } else {
+                new Notification("error", "Backup to USB stick failed!<br>" + resp.error)
+            }
+        })
+    })
+
+    $("#button-action-backup-import").click(function () {
+        if (!confirm("Restoring data from USB stick will erase the current data inside the MOD.\n"
+                    +"Are you sure you want to continue?")) {
+            return
+        }
+
+        var block = show_blocker(false),
+            pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
+            pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
+
+        run_custom_command("backup-import " + pConfigs + "," + pPlugins, function (resp) {
+            if (resp.ok) {
+                setTimeout(function () {
+                    block.html('<p>Import from USB stick complete!</p>')
+
+                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                    re.css("background-image", "url(img/icons/25/reload.png)");
+                    re.click(function () { location.reload(); });
+                }, 1000)
+            } else {
+                block.html('<p>Importing from USB stick failed!<br/>' + resp.error + '</p>')
+            }
+        })
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Boot & Restore
+
+    $("#button-action-poweroff").click(function () {
+        run_custom_command("poweroff")
+    })
+
+    $("#button-action-reboot").click(function () {
+        ws.close()
+        run_custom_command("reboot")
+    })
+
+    $("#button-action-restore").click(function () {
+        run_custom_command("restore")
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Audio Server
+
+    $("#prefs-audio-256-frames").click(function () {
+        var using256 = $(this).prop("checked")
+        create_or_delete_file("using-256-frames", using256)
+
+        $.ajax({
+            url: '/set_buffersize/' + (using256 ? '256' : '128'),
+            method: 'POST',
+            cache: false,
+            success: function () {},
+            error: function () {},
+        })
+    })
+    $("#prefs-audio-mono-copy").click(function () {
+        create_or_delete_file("jack-mono-copy", $(this).prop("checked"))
+    })
+    $("#prefs-audio-sync-mode").click(function () {
+        create_or_delete_file("jack-sync-mode", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- User Interface
+
+    $("#prefs-ui-developer-mode").click(function () {
+        config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
+    })
+
+    $("#prefs-ui-unstable-plugins").click(function () {
+        config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Services
+
+    $("#prefs-service-mixserver").click(function () {
+        enable_service("mixserver", $(this).prop("checked"))
+    })
+
+    $("#prefs-service-mod-sdk").click(function () {
+        enable_service("mod-sdk", $(this).prop("checked"))
+    })
+
+    $("#prefs-service-netmanager").click(function () {
+        enable_service("netmanager", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Device Updates
+
+    var respDev, respVer
+
+    $.ajax({
+        method: 'GET',
+        url: CONTROLCHAIN_URL + '/devices',
+        success: function (resp) {
+            respDev = resp
+            refresh_device_updates(respDev, respVer)
+        },
+        error: function () {
+            console.log("Error: failed to get devices information")
+        },
+        cache: false,
+        dataType: 'json'
+    })
+
+    $.ajax({
+        method: 'GET',
+        url: CONTROLCHAIN_URL + '/versions',
+        success: function (resp) {
+            respVer = resp
+            refresh_device_updates(respDev, respVer)
+        },
+        error: function () {
+        },
+        cache: false,
+        dataType: 'json'
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+
+    // start code for ajax loading bar
+
+    NProgress.configure({
+      template: '<div class="bar" role="bar"><div class="peg"></div></div><div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
+    });
+
+    $(document)
+    .ajaxStart(function(data) {
+        NProgress.start();
+    })
+    .ajaxComplete(function() {
+        NProgress.done();
+    });
+
+    // end code for ajax loading bar
+})
+</script>
+
+<script type="text/javascript" src="js/templates.js?v={{version}}"></script>
+<script type="text/javascript" src="js/common.js?v={{version}}"></script>
+<script type="text/javascript" src="js/file_transfer.js?v={{version}}"></script>
+<script type="text/javascript" src="js/window.js?v={{version}}"></script>
+<script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
+<script type="text/javascript" src="js/notification.js?v={{version}}"></script>
+<script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
+
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark">
+
+<!-- PRELOAD -->
+<div class="mod-hidden">
+    <img src="img/icons/blocked.svg" alt=""/>
+    <img src="img/icons/25/reload.png" width="25px" height="25px" alt=""/>
+</div>
+<!-- END PRELOAD -->
+
+<!-- NOTIFICATIONS -->
+<div id="notifications" class="mod-hidden"></div>
+<!-- END NOTIFICATIONS -->
+
+<!-- WRAPPER -->
+<div id="wrapper">
+
+    <!-- BANKS|SETTINGS -->
+    <div id="bank-library">
+        <div class="box clearfix">
+            <header>
+                <h1 class="bottom top">MOD Settings</h1>
+            </header>
+            <div class="pedalboards clearfix js-pedalboards"></div>
+        </div>
+
+        <!-- BANK|SETTINGS-LIST -->
+        <div id="bank-list">
+            <div id="tab-basic" class="add-bank selected">Basic</div>
+            <div id="tab-advanced" class="add-bank">Advanced</div>
+            <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
+            <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
+            <a href="/" id="go-back"><span class="icon-return"></span>Go back</a>
+        </div>
+        <!-- END BANK|SETTINGS-LIST -->
+
+        <!-- SETTINGS PAGE (BASIC) -->
+        <div class="settings-page" id="settings-page-basic">
+            <div class="settings-page-content">
+                <h1>Personal</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-bluetooth-custom">
+                            Use custom Bluetooth device name: &nbsp;
+                        </input>
+                        <input type="text" value="" id="prefs-bluetooth-name" disabled></input>
+                    </label>
+                </form>
+
+                <h1>Preferences</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-playback">
+                            Always start with playback/transport rolling
+                        </input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-link">
+                            Always start with Link support enabled
+                        </input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
+                            Mute audio outputs when Tuner is enabled
+                        </input>
+                    </label>
+                </form>
+
+                <h1>Backup &amp; Restore</h1>
+                <form class="form">
+                    <p>
+                        <b>Backup and restore user data using a USB stick</b>.<br/>
+                        Make sure the USB stick has enough disk space, preferably with fat32 file system.<br/>
+                        User configuration, banks and pedalboards are always saved and overwritten.<br/>
+                        Note that current user data will be deleted during restore!
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-backup-configs">
+                            Also backup/restore device configs (audio gains, bluetooth config, etc)
+                        </input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-backup-plugins">
+                            Also backup/restore LV2 plugins
+                        </input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="button" id="button-action-backup-export" value="Backup user data..."></input>
+                    </label>
+                    <label>
+                        <input type="button" id="button-action-backup-import" value="Restore user data..."></input>
+                    </label>
+                </form>
+
+                <h1>Reboot &amp; Update</h1>
+                <form class="form">
+                    <!--
+                    <p>
+                        <b>Power off the MOD</b>.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-poweroff" value="Power off MOD"></input>
+                    </label>
+                    <br/><br/>
+                    -->
+                    <p>
+                        <b>Reboot the MOD</b>.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-reboot" value="Reboot MOD"></input>
+                    </label>
+                    <br/><br/>
+                    <p>
+                        <b>Start the MOD's restore/update mode</b>, where you can manually update the MOD via
+                            USB Mass Storage mode.<br/>
+                        Note that all unsaved pedalboard changes will be lost.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-restore" value="Start update mode"></input>
+                    </label>
+                </form>
+            </div>
+        </div>
+        <!-- END SETTINGS PAGE (BASIC) -->
+
+        <!-- SETTINGS PAGE (ADVANCED) -->
+        <div class="settings-page mod-hidden" id="settings-page-advanced">
+            <div class="settings-page-content">
+                <h1>Audio Server</h1>
+                <form class="form">
+                    <!--
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-audio-sync-mode">
+                            Run JACK in Sync Mode
+                        </input>
+                    </label>
+                    <p>
+                        Do not use an additional audio cycle, instead wait for all plugins to finish processing.<br/>
+                        This reduces latency, but bad plugins will cause issues just by being loaded.<br/>
+                        Note that changing this option requires a reboot for changes to take effect.
+                    </p>
+                    -->
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-audio-mono-copy">
+                            Copy mono output buffer to unused channel
+                        </input>
+                    </label>
+                    <p>
+                        Automatically copy the audio data from an unconnected output to another.<br/>
+                        With this enabled, the 2 outputs will receive the same data if one of them is unconnected.<br/>
+                        Note that changing this option requires a reboot for changes to take effect.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
+                            Use 256 frames as Buffer Size
+                        </input>
+                    </label>
+                    <p>
+                        MOD runs at 128 frames by default, enable this option to run JACK with 256 frames instead.<br/>
+                        Useful if you need the extra time for more plugin processing.<br/>
+                        Obviously this doubles the latency, so only enable it if really necessary.
+                    </p>
+                </form>
+
+                <h1>Services</h1>
+                <form class="form">
+                    <p>
+                        Note: Each additional service you enable consumes a small amount of CPU.<br/>
+                        Only enable services that you absolutely need.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
+                    </label>
+                    <br/>
+                    <!--
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-mod-sdk"> MOD SDK</input>
+                    </label>
+                    <br/>
+                    -->
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                    </label>
+                </form>
+
+                <h1>User Interface</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-developer-mode">
+                            Developer Mode
+                        </input>
+                    </label>
+                    <p>
+                        Show a few more options on the Web Interface, useful for developers.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
+                            Show beta plugins in the Store
+                        </input>
+                    </label>
+                    <p>
+                        Show option to list 'beta' plugins in the Plugin Store.<br/>
+                        Note that beta plugins can be unstable and cause crashes. If you share a pedalboard containing beta plugins, it will only
+						be available to users that explicitly accept pedalboards with beta plugins.<br/>
+                        Just remember: things can break!
+                    </p>
+                </form>
+            </div>
+        </div>
+        <!-- SETTINGS PAGE (ADVANCED) -->
+
+        <!-- SETTINGS PAGE (DEVICES) -->
+        <div class="settings-page mod-hidden" id="settings-page-device-updates">
+            <div class="settings-page-content">
+                <h1>Supported Control Chain Devices</h1>
+                <form class="form">
+                </form>
+            </div>
+        </div>
+        <!-- SETTINGS PAGE (ADVANCED) -->
+
+        <!-- SETTINGS PAGE (DANGEROUS) -->
+        <div class="settings-page mod-hidden" id="settings-page-dangerous">
+            <div class="settings-page-content">
+                <h1>Cleanup</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Banks</input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Pedalboards</input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Plugins</input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="button" id="button-action-delete" value="Delete"></input>
+                    </label>
+                </form>
+            </div>
+        </div>
+        <!-- SETTINGS PAGE (DANGEROUS) -->
+
+        <!-- BANK-PEDALBOARDS-SEARCH|SYSTEM-INFORMATION -->
+        <div id="bank-pedalboards-search"><div class="box">
+            <!-- FORM HORIZONTAL -->
+            <div class="filter clearfix"><div class="clearfix">
+                <div class="form-group">
+                    <label>System Information</label>
+                </div>
+            </div></div>
+            <!-- END FORM-HORIZONTAL -->
+
+            <!-- BANK-PEDALBOARDS-RESULT|SYSTEM-INFORMATION -->
+            <div id="bank-pedalboards-result">
+                <hr style="border:1px solid #444;"/>
+
+                <h2>Audio</h2>
+                <form class="form">
+                    <b>Buffer Size:</b> <span id="info-dsp-buffer-size">{{bufferSize}}</span> frames<br/>
+                    <b>Sample Rate:</b> {{sampleRate}} Hz<br/>
+                    <b>DSP Load:</b> <span id="info-dsp-load">--.- %</span><br/>
+                </form>
+
+                <hr style="border:1px solid #333;"/>
+
+                <h2>System</h2>
+                <form class="form">
+                    <b>Unit:</b> <span id="info-system-unit">---</span><br/>
+                    <b>Build Date:</b> <span id="info-system-date">---</span><br/>
+                    <b>OS Version:</b> {{version}}<br/>
+                </form>
+
+                <hr style="border:1px solid #333;"/>
+
+                <h2>Kernel</h2>
+                <form class="form">
+                    <b>Machine:</b> <span id="info-kernel-machine">---</span><br/>
+                    <b>Release:</b> <span id="info-kernel-release">---</span><br/>
+                    <b>Version:</b> <span id="info-kernel-version">---</span><br/>
+                </form>
+
+                <hr style="border:1px solid #444;"/>
+            </div>
+            <!-- END BANK-PEDALBOARDS-RESULT|SYSTEM-INFORMATION -->
+
+        </div></div>
+        <!-- END BANK-PEDALBOARDS-SEARCH|SYSTEM-INFORMATION -->
+
+        <!-- CC DEVICE UPDATE WINDOW -->
+        <div id="cc-device-update-window" class="save-popup mod-hidden">
+            <div class="mod-box" style="width: 600px; margin:-150px -280px">
+                <h1 class="pull-left">Control Chain Device Update</h1><span class="js-cancel close">&times;</span>
+                <form class="bottom">
+                    <div class="clearfix"></div>
+                    <div id="cc-device-update-text">
+                        <p>
+                            Your Control Chain device firmware is ready to be updated.
+                        </p>
+                        <p>
+                            To begin, follow these steps:
+                        </p>
+                        <ul>
+                            <li>Disconnect the device from the Control Chain/Ethernet port</li>
+                            <li>Hold down the first footswitch on the Control Chain device</li>
+                            <li>While the first footswitch is down, connect the device to the MOD Duo via USB</li>
+                            <li>Wait for the "update completed" message</li>
+                            <li>Disconnect the device from the USB port</li>
+                            <li>Connect it to the Control Chain/Ethernet port once again</li>
+                        </ul>
+                        <p>
+                            Note: The update should only take a few seconds.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END CC DEVICE UPDATE WINDOW -->
+
+    </div>
+    <!-- END BANKS|SETTINGS -->
+
+<!-- END WRAPPER -->
+</div>
+
+</body>
+<!-- END BODY -->
+
+</html>

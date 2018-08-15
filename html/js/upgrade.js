@@ -32,6 +32,7 @@ JqueryClass('upgradeWindow', {
         self.data('updatedata', null)
         self.data('updaterequired', false)
         self.data('updatesystem', false)
+        self.data('eggshown', false)
 
         options.icon.statusTooltip()
         options.icon.statusTooltip('message', 'Checking for updates...', true)
@@ -102,6 +103,7 @@ JqueryClass('upgradeWindow', {
         $(p[0]).html(html)
 
         self.find('a').attr('href', data['release-url'])
+        self.find('button.js-upgrade').text("Download")
 
         self.show()
     },
@@ -194,7 +196,8 @@ JqueryClass('upgradeWindow', {
         var d = date.getDay(),
             m = date.getMonth();
 
-        if (m == 12 && (d == 24 || d == 25)) {
+        if (m == 12 && (d == 24 || d == 25) && ! self.data('eggshown')) {
+            self.data('eggshown', true)
             setTimeout(function() {
                 new Notification('warn', 'The MOD Team wishes you happy holidays!', 8000)
             }, 5000)

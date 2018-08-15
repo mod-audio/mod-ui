@@ -258,6 +258,10 @@ function HardwareManager(options) {
             // hide ranges
             form.find('.range').hide()
 
+        } else if (port.properties.indexOf("enumeration") >= 0) {
+            // hide ranges
+            form.find('.range').hide()
+
         } else if (port.properties.indexOf("integer") < 0) {
             // float, allow non-integer stepping
             var step = (maxv-minv)/100
@@ -464,6 +468,11 @@ function HardwareManager(options) {
         var instanceAndSymbol = instance+"/"+portSymbol
         var actuator_uri = create_midi_cc_uri(channel, control)
 
+        if (self.addressingsByPortSymbol[instanceAndSymbol] == kMidiLearnURI) {
+            var controlstr = (control == MIDI_PITCHBEND_AS_CC) ? "Pitchbend" : ("Controller #" + control)
+            new Notification('info', "Parameter mapped to MIDI " + controlstr + ", Channel " + (channel+1), 8000)
+        }
+
         self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
         self.addressingsData        [instanceAndSymbol] = {
@@ -540,11 +549,15 @@ function HardwareManager(options) {
     // don't use it for normal operations, as it skips setEnabled()
     this.removeHardwareMappping = function (instanceAndSymbol) {
         var actuator_uri = self.addressingsByPortSymbol[instanceAndSymbol]
-        if (actuator_uri && actuator_uri != kNullAddressURI) {
-            remove_from_array(self.addressingsByActuator[actuator_uri], instanceAndSymbol)
-        }
 
         delete self.addressingsByPortSymbol[instanceAndSymbol]
         delete self.addressingsData        [instanceAndSymbol]
+
+        if (actuator_uri && actuator_uri != kNullAddressURI) {
+            remove_from_array(self.addressingsByActuator[actuator_uri], instanceAndSymbol)
+            return true
+        }
+
+        return false
     }
 }

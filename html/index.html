@@ -31,6 +31,8 @@
 <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -68,6 +70,7 @@
 <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
 
 <script type="text/javascript">
     {% autoescape None %}
@@ -126,6 +129,12 @@ $('document').ready(function() {
         presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
         presetManageButton: $('#pedalboard-info .js-preset-manage'),
         presetDisableButton: $('#pedalboard-info .js-preset-disable'),
+        transportButton: $('#mod-transport-icon'),
+        transportWindow: $('#mod-transport-window'),
+        transportPlay: $('#mod-switch-transport-play'),
+        transportBPB: $('#mod-knob-transport-bpb'),
+        transportBPM: $('#mod-knob-transport-bpm'),
+        transportSyncMode: $('#mod-enum-transport-sync-mode'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
         cloudPluginBox: $('#cloud-plugins-library'),
@@ -135,12 +144,13 @@ $('document').ready(function() {
         bankBox: $('#bank-library'),
         bankBoxTrigger: $('#main-menu #mod-bank'),
         bankList: $('#bank-list'),
-        shareButton: $('#pedalboard-info .js-share'),
+        shareButton: $('#pedalboard-info .js-cloud'),
         shareWindow: $('#share-window'),
         presetSaveBox: $('#save-preset'),
         devicesIcon: $('#mod-devices'),
         devicesWindow: $('#mod-devices-window'),
         statusIcon: $('#mod-status'),
+        settingsIcon: $('#mod-settings'),
         upgradeIcon: $('#mod-update'),
         upgradeWindow: $('#mod-upgrade'),
         bypassLeftButton: $("#mod-bypassLeft"),
@@ -177,7 +187,7 @@ $('document').ready(function() {
         $('#mod-bypassRight').hide()
         $('#mod-cloud-plugins').hide()
         $('#mod-update').hide()
-        $('#pedalboard-info').find('.js-share').hide()
+        $('#pedalboard-info').find('.js-cloud').hide()
 
         // show other stuff to make it less empty
         $('#mod-xruns').show()
@@ -189,6 +199,9 @@ $('document').ready(function() {
     }
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
+    }
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#cloud-plugins-stable").parent().show()
     }
 
     // start code for ajax loading bar
@@ -245,6 +258,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/upgrade.js?v={{version}}"></script>
 <script type="text/javascript" src="js/host.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cc-manager.js?v={{version}}"></script>
+<script type="text/javascript" src="js/transport.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 
 </head>
@@ -350,6 +364,9 @@ $('document').ready(function() {
         <div id="share-window" class="save-popup mod-hidden">
             <div class="box">
                 <h1 class="pull-left">SHARE</h1><span class="js-cancel close">&times;</span>
+                <div class="unstable-warning mod-hidden">
+                  <b>Warning:</b> This pedalboard contains beta plugins and won't be available to most users
+                </div>
                 <form>
                     <div class="clearfix"></div>
                     <div class="form-group" id="share-window-form">
@@ -407,7 +424,7 @@ $('document').ready(function() {
                         </div>
                         <div class="textleft mod-hidden" id="share-window-links">
                             <small>&nbsp;</small>
-                            <h3>Uploaded completed!</h3>
+                            <h3>Upload completed!</h3>
                             <div class="btn-group">
                                 <div class="tooltip top" role="tooltip" id="share-tooltip">
                                     <div class="tooltip-arrow"></div>
@@ -464,7 +481,7 @@ $('document').ready(function() {
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>
-                    <button class="js-share">Share</button>
+                    <button class="js-cloud">Share</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
@@ -553,14 +570,15 @@ $('document').ready(function() {
 
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
-        <div id="mod-plugins" class="icon selected"></div>
-        <div id="mod-pedalboard" class="icon"></div>
-        <div id="mod-bank" class="icon"></div>
-        <div id="mod-cloud-plugins" class="icon"></div>
+        <div id="mod-plugins" class="icon selected" data-message="Constructor"></div>
+        <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
+        <div id="mod-bank" class="icon" data-message="Banks"></div>
+        <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>
         <div id="mod-devices" class="status icon"></div>
+        <div id="mod-settings" class="status icon mod-settings" data-message="Go to settings screen"></div>
         <div id="mod-ram" class="icon">
             <div class="progress" id="ram-bar" style="width: 100%;">
                 <div class="bar"></div> <!-- not sure if this is needed -->
@@ -578,6 +596,9 @@ $('document').ready(function() {
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass 2</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass 1</div>
         <div id="mod-show-midi-port" class="icon">MIDI Ports</div>
+        <div id="mod-transport-icon" class="icon">
+            <span>---.-- BPM</span>
+        </div>
     </div>
     <!-- END MAIN MENU-->
 
@@ -600,6 +621,7 @@ $('document').ready(function() {
             <li id="effect-tab-Spatial">Spatial</li>
             <li id="effect-tab-Spectral">Spectral</li>
             <li id="effect-tab-Utility">Utility</li>
+            <li id="effect-tab-MaxGen" style="display:none;">Max gen~</li>
         </ul>
         <span class="js-settings-trigger settings selected"></span>
         <span class="js-effects-fold fold"></span>
@@ -634,6 +656,7 @@ $('document').ready(function() {
                     <div id="effect-content-Spatial" class="plugins-wrapper"></div>
                     <div id="effect-content-Spectral" class="plugins-wrapper"></div>
                     <div id="effect-content-Utility" class="plugins-wrapper"></div>
+                    <div id="effect-content-MaxGen" class="plugins-wrapper"></div>
                 </div>
             </div>
             <div class="nav nav-right"></div>
@@ -659,8 +682,8 @@ $('document').ready(function() {
                     <label for="cloud-plugins-installed">Installed only</label>
                 </div>
                 <div class="control-group mod-hidden">
-                    <input type="checkbox" name="stable" id="cloud-plugins-stable" />
-                    <label for="cloud-plugins-stable">Stable only</label>
+                    <input type="checkbox" name="unstable" id="cloud-plugins-stable" />
+                    <label for="cloud-plugins-stable">Show beta plugins</label>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
@@ -683,7 +706,12 @@ $('document').ready(function() {
             </div>
 
             <div class="cloud-plugins clearfix js-cloud-plugins">
-                <div id="cloudplugin-results-wrapper">
+              <div id="cloudplugin-results-wrapper">
+				    <div class="featured-plugins">
+					  <h2>Featured plugins</h2>
+					  <div class="carousel"></div>
+					</div>
+					<h2>Filtered results</h2>
                     <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>
@@ -825,6 +853,46 @@ $('document').ready(function() {
         </div>
     </div>
     <!-- END CONTROL CHAIN DEVICES BOX -->
+
+    <!-- TRANSPORT BOX -->
+    <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
+        <div class="mod-controls clearfix">
+            <div class="mod-control-group clearfix">
+                <div class="mod-switch" id="mod-switch-transport-play">
+                    <span class="mod-switch-title">Playing</span>
+                    <div class="mod-switch-image" mod-widget="switch"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-knob" id="mod-knob-transport-bpm">
+                    <span class="mod-knob-title">Beats Per Minute</span>
+                    <span class="mod-knob-min-value">20 BPM</span>
+                    <span class="mod-knob-max-value">280 BPM</span>
+                    <span class="mod-knob-current-value">---.-- BPM</span>
+                    <div class="mod-knob-image" mod-widget="film"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-knob" id="mod-knob-transport-bpb">
+                    <span class="mod-knob-title">Beats Per Bar</span>
+                    <span class="mod-knob-min-value">1/4</span>
+                    <span class="mod-knob-max-value">16/4</span>
+                    <span class="mod-knob-current-value">-/4</span>
+                    <div class="mod-knob-image" mod-widget="film"></div>
+                    <div class="mod-address"></div>
+                </div>
+
+                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
+                    <span class="mod-enumerated-title">Sync Mode</span>
+                    <div class="mod-enumerated-list">
+                        <div mod-sync-mode="none">None / Addressings</div>
+                        <div mod-sync-mode="link">Ableton&trade; Link</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TRANSPORT BOX -->
 
 <!-- END WRAPPER -->
 </div>

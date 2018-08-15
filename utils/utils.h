@@ -155,6 +155,7 @@ typedef struct {
     int builder;
     int licensed;
     PluginGUI_Mini gui;
+    bool needsDealloc;
 } PluginInfo_Mini;
 
 typedef struct {
@@ -213,12 +214,29 @@ typedef struct {
     bool serial_midi_out;
 } PedalboardHardware;
 
+typedef enum {
+    kPedalboardTimeAvailableBPB     = 0x1,
+    kPedalboardTimeAvailableBPM     = 0x2,
+    kPedalboardTimeAvailableRolling = 0x4,
+} PedalboardTimeInfoAvailableBits;
+
+typedef struct {
+    unsigned int available;
+    float bpb;
+    PedalboardMidiControl bpbCC;
+    float bpm;
+    PedalboardMidiControl bpmCC;
+    bool rolling;
+    PedalboardMidiControl rollingCC;
+} PedalboardTimeInfo;
+
 typedef struct {
     const char* title;
     int width, height;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
+    PedalboardTimeInfo timeInfo;
 } PedalboardInfo;
 
 typedef struct {
@@ -246,8 +264,12 @@ typedef struct {
 typedef struct {
     float cpuLoad;
     unsigned xruns;
+    bool rolling;
+    double bpb;
+    double bpm;
 } JackData;
 
+typedef void (*JackBufSizeChanged)(unsigned bufsize);
 typedef void (*JackPortAppeared)(const char* name, bool isOutput);
 typedef void (*JackPortDeleted)(const char* name);
 typedef void (*TrueBypassStateChanged)(bool left, bool right);
@@ -325,7 +347,7 @@ MOD_API const char* file_uri_parse(const char* fileuri);
 // jack stuff
 MOD_API bool init_jack(void);
 MOD_API void close_jack(void);
-MOD_API JackData* get_jack_data(void);
+MOD_API JackData* get_jack_data(bool withTransport);
 MOD_API unsigned get_jack_buffer_size(void);
 MOD_API unsigned set_jack_buffer_size(unsigned size);
 MOD_API float get_jack_sample_rate(void);
@@ -343,7 +365,8 @@ MOD_API bool get_truebypass_value(bool right);
 MOD_API bool set_truebypass_value(bool right, bool bypassed);
 
 // callbacks
-MOD_API void set_util_callbacks(JackPortAppeared portAppeared,
+MOD_API void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
+                                JackPortAppeared portAppeared,
                                 JackPortDeleted portDeleted,
                                 TrueBypassStateChanged trueBypassChanged);
 

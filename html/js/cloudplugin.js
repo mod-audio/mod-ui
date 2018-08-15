@@ -27,6 +27,7 @@ function getDummyPluginData() {
     })
 }
 
+
 JqueryClass('cloudPluginBox', {
     init: function (options) {
         var self = $(this)
@@ -87,7 +88,7 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('search')
         })
 
-        self.find('input:checkbox[name=stable]').click(function (e) {
+        self.find('input:checkbox[name=unstable]').click(function (e) {
             self.cloudPluginBox('search')
         })
 
@@ -106,8 +107,8 @@ JqueryClass('cloudPluginBox', {
 
         var results = {}
         self.data('results', results)
-
         self.data('category', null)
+        self.data('firstLoad', true)
         self.find('ul.categories li').click(function () {
             var category = $(this).attr('id').replace(/^cloud-plugin-tab-/, '')
             self.cloudPluginBox('setCategory', category)
@@ -116,11 +117,15 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategory', "All")
 
         options.open = function () {
-            var stablecb = self.find('input:checkbox[name=stable]')
-            if (stablecb.is(':checked')) {
+            self.data('firstLoad', true)
+            $('#cloud_install_all').addClass("disabled").css({color:'#444'})
+            $('#cloud_update_all').addClass("disabled").css({color:'#444'})
+
+            var unstablecb = self.find('input:checkbox[name=unstable]')
+            if (!unstablecb.is(':checked')) {
                 self.cloudPluginBox('search')
             } else {
-                stablecb.click()
+                unstablecb.click()
             }
             return false
         }
@@ -177,7 +182,7 @@ JqueryClass('cloudPluginBox', {
             summary: "true",
             image_version: VERSION,
         }
-        if (self.find('input:checkbox[name=stable]:checked').length > 0) {
+        if (self.find('input:checkbox[name=unstable]:checked').length == 0) {
             query.stable = "true"
         }
         if (self.find('input:checkbox[name=installed]:checked').length)
@@ -199,6 +204,8 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
+                if (results.featured)
+                    cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (lplugin) {
@@ -248,6 +255,12 @@ JqueryClass('cloudPluginBox', {
             } else {
                 self.cloudPluginBox('showPlugins', plugins, cloudReached)
             }
+
+            if (self.data('firstLoad')) {
+                self.data('firstLoad', false)
+                $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                $('#cloud_update_all').removeClass("disabled").css({color:'white'})
+            }
         }
 
         // cloud search
@@ -258,15 +271,28 @@ JqueryClass('cloudPluginBox', {
             success: function (plugins) {
                 cloudReached = true
                 results.cloud = plugins
-                if (results.local != null) {
-                    renderResults()
-                }
             },
             error: function () {
                 results.cloud = []
-                if (results.local != null) {
-                    renderResults()
-                }
+            },
+            complete: function () {
+                $.ajax({
+                    method: 'GET',
+                    url: SITEURL + "/lv2/plugins/featured",
+                    success: function (featured) {
+                        results.featured = featured
+                    },
+                    error: function () {
+                        results.featured = []
+                    },
+                    complete: function () {
+                        if (results.local != null) {
+                            renderResults()
+                        }
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             },
             cache: false,
             dataType: 'json'
@@ -370,6 +396,12 @@ JqueryClass('cloudPluginBox', {
             } else {
                 self.cloudPluginBox('showPlugins', plugins, cloudReached)
             }
+
+            if (self.data('firstLoad')) {
+                self.data('firstLoad', false)
+                $('#cloud_install_all').removeClass("disabled").css({color:'white'})
+                $('#cloud_update_all').removeClass("disabled").css({color:'white'})
+            }
         }
 
         // cloud search
@@ -445,10 +477,27 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
 
+        var featured = plugins.filter(function(p) {
+            return p.featured;
+        })
+
         // sort plugins by label
         plugins.sort(function (a, b) {
             a = a.label.toLowerCase()
             b = b.label.toLowerCase()
+            if (a > b) {
+                return 1
+            }
+            if (a < b) {
+                return -1
+            }
+            return 0
+        })
+
+        // sort featured plugins by priority
+        featured.sort(function (a, b) {
+            a = a.featured.priority
+            b = b.featured.priority
             if (a > b) {
                 return 1
             }
@@ -479,15 +528,42 @@ JqueryClass('cloudPluginBox', {
         }
         var pluginsDict = {}
 
+        var getCategory = function(plugin) {
+            category = plugin.category[0]
+            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
+                return 'MIDI';
+            }
+            return category
+        }
+
         var plugin, render
+		var factory = function(img) {
+			return function() {
+				img.css('padding-top', (parseInt((img.parent().height()-img.height())/2))+'px');
+				img.css('opacity', 1)
+			};
+		}
+		if (!self.data('featuredInitialized')) {
+			var featuredCanvas = $('.carousel')
+			for (var i in featured) {
+				plugin = featured[i]
+				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
+				render.appendTo(featuredCanvas)
+				render.find('img').on('load', factory(render.find('img')));
+			}
+			var columns = $(window).width() >= 1650 ? 5 : 3;
+			featuredCanvas.slick({
+				slidesToShow: Math.min(columns, plugins.length),
+				centerPadding: '60px',
+				centerMode: true,
+			});
+			self.data('featuredInitialized', true)
+		}
+
         for (var i in plugins) {
             plugin   = plugins[i]
-            category = plugin.category[0]
+            category = getCategory(plugin)
             render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached)
-
-            if (category == 'Utility' && plugin.category.length == 2 && plugin.category[1] == 'MIDI') {
-                category = 'MIDI'
-            }
 
             pluginsDict[plugin.uri] = plugin
 
@@ -513,7 +589,10 @@ JqueryClass('cloudPluginBox', {
         self.data('categoryCount', categories)
 
         for (var category in categories) {
-            var tab     = self.find('#cloud-plugin-tab-' + category)
+            var tab = self.find('#cloud-plugin-tab-' + category)
+            if (tab.length == 0) {
+                continue
+            }
             var content = tab.html().split(/\s/)
 
             if (content.length >= 2 && content[1] == "Utility") {
@@ -525,7 +604,7 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    renderPlugin: function (plugin, cloudReached) {
+    renderPlugin: function (plugin, cloudReached, featured) {
         var self = $(this)
         var uri = escape(plugin.uri)
         var comment = plugin.comment.trim()
@@ -543,10 +622,12 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            demo: !!plugin.demo // FIXME
+            demo: !!plugin.demo, // FIXME
+			featured: plugin.featured
         }
 
-        var rendered = $(Mustache.render(TEMPLATES.cloudplugin, plugin_data))
+        var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
+        var rendered = $(Mustache.render(template, plugin_data))
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin)
         })

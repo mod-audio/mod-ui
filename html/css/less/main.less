@@ -342,8 +342,7 @@ hr.dotted {
     color: #666;
     display: none;
   }
-  #mod-show-midi-port,
-  .mod-bypass,
+  #mod-show-midi-port, #mod-transport-icon, .mod-bypass,
   #mod-cpu, #mod-ram, #mod-xruns, #mod-buffersize {
     background-position: 8px 50%;
     background-repeat: no-repeat;
@@ -366,6 +365,15 @@ hr.dotted {
   }
   #mod-show-midi-port {
     background-image: url(../img/icons/25/midi.png);
+  }
+  #mod-transport-icon {
+    background-image: url(../img/icons/25/transport.png);
+    font-family: monospace;
+    width: 10.5em !important;
+    text-align: right;
+    &.playing {
+      background-color: @brand-primary;
+    }
   }
   .mod-bypass {
     background-image: url(../img/icons/25/bypass.png);
@@ -434,6 +442,25 @@ hr.dotted {
     border-width: 0 0 0 1px;
     float: right;
   }
+
+  #mod-settings {
+	  font-family: fontello !important;
+	  font-size: 28px;
+	  padding-top: 3px;
+	  padding-left: 5px;
+	  position: relative
+	  color: #fff;
+	  opacity: 0.66;
+	  cursor: pointer;
+      transition: all 0.33s;
+	  &:after {
+		  content: '\e800';
+	  }
+	  &:hover {
+		  opacity: 1;
+	  }
+  }
+
 
   #mod-update {
     background-image: url(../img/icons/36/update.png);
@@ -584,7 +611,7 @@ header#pedalboard-actions,
             background-color: @brand-primary;
         }
     }
-    &.js-share {
+    &.js-cloud {
       background-image: url(../img/icn-share.png);
       background-size: 32px;
       background-position: 5px center;
@@ -648,7 +675,7 @@ header#pedalboard-actions {
   }
   .progressbar {
     background-color: #8888ff;
-    height: 20px;
+    height: 18px;
   }
 }
 
@@ -660,6 +687,15 @@ header#pedalboard-actions {
 #mod-upgrade {
   max-width: 450px;
   min-width: 350px;
+}
+
+#mod-transport-window {
+  bottom: 48px;
+  right: 310px;
+  top: initial;
+  left: initial;
+  background: rgba(17, 17, 17, 0.9);
+  padding: 50px 40px 15px 40px;
 }
 
 #plugins-library {
@@ -1436,4 +1472,31 @@ header#pedalboard-actions {
 }
 .alert-danger {
     border-color: #c00;
+}
+
+#go-back {
+	width: 200px;
+	text-align: left;
+	margin: 20px 0 0 0;
+	background: none;
+	border: none;
+	font-size: 15px;
+	padding: 5px;
+	color: #fff !important;
+	span {
+		&:before {
+			content: '\e803';
+		}
+		font-family: fontello !important;
+	}
+	&:hover {
+		text-decoration: none;
+	}
+}
+
+.unstable-warning {
+	float: left;
+	background-color: #ffebb1;
+	padding: 5px;
+	border-radius: 10px;
 }

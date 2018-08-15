@@ -7,7 +7,6 @@ from shutil import copyfile
 from glob import glob
 
 import os
-import sys
 
 class mod_utils_builder(build):
     def run(self):
@@ -18,7 +17,7 @@ class mod_utils_installer(install):
     def run(self):
         install.run(self)
         source = "utils/libmod_utils.so"
-        target = os.path.join(self.install_lib, "mod", "libmod_utils.so")
+        target = os.path.join(self.install_lib, "modtools", "libmod_utils.so")
         print("Copying %s to %s" % (source, target))
         copyfile(source, target)
 
@@ -110,11 +109,17 @@ setup(name = 'mod',
                     (('share/mod/html/include'), glob('html/include/*.html')),
                     (('share/mod/html/js'), glob('html/js/*.js')),
                     (('share/mod/html/js/lib'), glob('html/js/lib/*.js')),
+                    (('share/mod/html/js/lib/slick'), glob('html/js/lib/slick/*.js')),
+                    (('share/mod/html/js/lib/slick'), glob('html/js/lib/slick/*.css')),
+                    (('share/mod/html/js/lib/slick'), glob('html/js/lib/slick/*.gif')),
+                    (('share/mod/html/js/lib/slick/fonts'), glob('html/js/lib/slick/fonts/*.eot')),
+                    (('share/mod/html/js/lib/slick/fonts'), glob('html/js/lib/slick/fonts/*.svg')),
+                    (('share/mod/html/js/lib/slick/fonts'), glob('html/js/lib/slick/fonts/*.ttf')),
+                    (('share/mod/html/js/lib/slick/fonts'), glob('html/js/lib/slick/fonts/*.woff')),
                     (('share/mod/html/resources'), glob('html/resources/*.html')),
                     (('share/mod/html/resources/pedals'), glob('html/resources/pedals/*.png')),
                     (('share/mod/html/resources/pedals'), glob('html/resources/pedals/*.css')),
                     (('share/mod/html/resources/templates'), glob('html/resources/templates/*.html')),
-                    (('share/mod'), ['screenshot.js']),
       ],
       install_requires = ['tornado'],
 

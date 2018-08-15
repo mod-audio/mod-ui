@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <string>
 #include <vector>
 
 #define ALSA_SOUNDCARD_ID         "hw:MODDUO"
@@ -38,6 +39,7 @@
 // --------------------------------------------------------------------------------------------------------
 
 static jack_client_t* gClient = nullptr;
+static volatile unsigned gNewBufSize = 0;
 static volatile unsigned gXrunCount = 0;
 static const char** gPortListRet = nullptr;
 
@@ -53,9 +55,10 @@ static snd_mixer_elem_t* gAlsaControlRight = nullptr;
 static bool gLastAlsaValueLeft  = false;
 static bool gLastAlsaValueRight = false;
 
-static JackPortAppeared       jack_port_appeared_cb  = nullptr;
-static JackPortDeleted        jack_port_deleted_cb   = nullptr;
-static TrueBypassStateChanged true_bypass_changed_cb = nullptr;
+static JackBufSizeChanged     jack_bufsize_changed_cb = nullptr;
+static JackPortAppeared       jack_port_appeared_cb   = nullptr;
+static JackPortDeleted        jack_port_deleted_cb    = nullptr;
+static TrueBypassStateChanged true_bypass_changed_cb  = nullptr;
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -67,6 +70,12 @@ static bool _get_alsa_switch_value(snd_mixer_elem_t* const elem)
 }
 
 // --------------------------------------------------------------------------------------------------------
+
+static int JackBufSize(jack_nframes_t frames, void*)
+{
+    gNewBufSize = frames;
+    return 0;
+}
 
 static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 {
@@ -86,7 +95,7 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
 
     if (const jack_port_t* const port = jack_port_by_id(gClient, port_id))
     {
-        if ((jack_port_flags(port) & JackPortIsPhysical) == 0x0)
+        if ((jack_port_flags(port) & JackPortIsPhysical) == 0x0 && reg != 0)
             return;
 
         if (const char* const port_name = jack_port_name(port))
@@ -101,12 +110,22 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
             if (reg)
             {
                 const std::lock_guard<std::mutex> clg(gPortRegisterMutex);
-                gRegisteredPorts.push_back(portName);
+
+                if (std::find(gRegisteredPorts.begin(), gRegisteredPorts.end(), portName) == gRegisteredPorts.end())
+                    gRegisteredPorts.push_back(portName);
             }
             else
             {
-                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
-                gUnregisteredPorts.push_back(portName);
+                const std::lock_guard<std::mutex> clgr(gPortRegisterMutex);
+                const std::lock_guard<std::mutex> clgu(gPortUnregisterMutex);
+
+                if (std::find(gUnregisteredPorts.begin(), gUnregisteredPorts.end(), portName) == gUnregisteredPorts.end())
+                    gUnregisteredPorts.push_back(portName);
+
+                const std::vector<std::string>::iterator portNameItr =
+                    std::find(gRegisteredPorts.begin(), gRegisteredPorts.end(), portName);
+                if (portNameItr != gRegisteredPorts.end())
+                    gRegisteredPorts.erase(portNameItr);
             }
         }
     }
@@ -172,11 +191,13 @@ bool init_jack(void)
     if (client == nullptr)
         return false;
 
+    jack_set_buffer_size_callback(client, JackBufSize, nullptr);
     jack_set_port_registration_callback(client, JackPortRegistration, nullptr);
     jack_set_xrun_callback(client, JackXRun, nullptr);
     jack_on_shutdown(client, JackShutdown, nullptr);
 
     gClient = client;
+    gNewBufSize = 0;
     gXrunCount = 0;
     jack_activate(client);
 
@@ -217,15 +238,52 @@ void close_jack(void)
 
 // --------------------------------------------------------------------------------------------------------
 
-JackData* get_jack_data(void)
+JackData* get_jack_data(bool withTransport)
 {
-    static JackData data;
+    static JackData data = { 0.0f, 0, false, 4.0, 120.0 };
     static std::vector<std::string> localPorts;
 
     if (gClient != nullptr)
     {
-        data.cpuLoad = jack_cpu_load(gClient);
-        data.xruns   = gXrunCount;
+        if (gXrunCount != 0 && data.xruns != gXrunCount)
+            data.cpuLoad = 100.0f;
+        else
+            data.cpuLoad = jack_cpu_load(gClient);
+
+        data.xruns = gXrunCount;
+
+        if (withTransport)
+        {
+            jack_position_t pos;
+            data.rolling = jack_transport_query(gClient, &pos) == JackTransportRolling;
+
+            if (pos.valid & JackTransportBBT)
+            {
+                data.bpb = pos.beats_per_bar;
+                data.bpm = pos.beats_per_minute;
+            }
+            else
+            {
+                data.bpb = 4.0;
+                data.bpm = 120.0;
+            }
+        }
+
+        if (jack_port_deleted_cb != nullptr)
+        {
+            // See if any new ports have been unregistered
+            {
+                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
+
+                if (gUnregisteredPorts.size() > 0)
+                    gUnregisteredPorts.swap(localPorts);
+            }
+
+            for (const std::string& portName : localPorts)
+                jack_port_deleted_cb(portName.c_str());
+
+            localPorts.clear();
+        }
 
         if (jack_port_appeared_cb != nullptr)
         {
@@ -248,27 +306,22 @@ JackData* get_jack_data(void)
 
             localPorts.clear();
         }
-
-        if (jack_port_deleted_cb != nullptr)
-        {
-            // See if any new ports have been unregistered
-            {
-                const std::lock_guard<std::mutex> clg(gPortUnregisterMutex);
-
-                if (gUnregisteredPorts.size() > 0)
-                    gUnregisteredPorts.swap(localPorts);
-            }
-
-            for (const std::string& portName : localPorts)
-                jack_port_deleted_cb(portName.c_str());
-
-            localPorts.clear();
-        }
     }
     else
     {
         data.cpuLoad = 0.0f;
         data.xruns   = 0;
+        data.rolling = false;
+        data.bpb     = 4.0;
+        data.bpm     = 120.0;
+    }
+
+    if (gNewBufSize > 0 && jack_bufsize_changed_cb != nullptr)
+    {
+        const unsigned int bufsize = gNewBufSize;
+        gNewBufSize = 0;
+
+        jack_bufsize_changed_cb(bufsize);
     }
 
     if (gAlsaMixer != nullptr && true_bypass_changed_cb != nullptr)
@@ -340,8 +393,10 @@ const char* get_jack_port_alias(const char* portname)
         aliases[1]
     };
 
-    if (gClient != nullptr && jack_port_get_aliases(jack_port_by_name(gClient, portname), aliasesptr) > 0)
-        return aliases[0];
+    if (gClient != nullptr)
+        if (jack_port_t* const port = jack_port_by_name(gClient, portname))
+            if (jack_port_get_aliases(port, aliasesptr) > 0)
+                return aliases[0];
 
     return nullptr;
 }
@@ -483,13 +538,15 @@ bool set_truebypass_value(bool right, bool bypassed)
 
 // --------------------------------------------------------------------------------------------------------
 
-void set_util_callbacks(JackPortAppeared portAppeared,
+void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
+                        JackPortAppeared portAppeared,
                         JackPortDeleted portDeleted,
                         TrueBypassStateChanged trueBypassChanged)
 {
-    jack_port_appeared_cb  = portAppeared;
-    jack_port_deleted_cb   = portDeleted;
-    true_bypass_changed_cb = trueBypassChanged;
+    jack_bufsize_changed_cb = bufSizeChanged;
+    jack_port_appeared_cb   = portAppeared;
+    jack_port_deleted_cb    = portDeleted;
+    true_bypass_changed_cb  = trueBypassChanged;
 }
 
 // --------------------------------------------------------------------------------------------------------
