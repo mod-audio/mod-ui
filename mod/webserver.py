@@ -993,6 +993,11 @@ class PedalboardList(JsonRequestHandler):
     def get(self):
         self.write(get_all_pedalboards())
 
+class PedalboardCurrent(JsonRequestHandler):
+    def get(self):
+        self.write(SESSION.host.pedalboard_path)
+        #self.write(get_all_pedalboards())
+
 class PedalboardSave(JsonRequestHandler):
     def post(self):
         title = self.get_argument('title')
@@ -1749,6 +1754,7 @@ application = web.Application(
 
             # pedalboard stuff
             (r"/pedalboard/list", PedalboardList),
+            (r"/pedalboard/current", PedalboardCurrent),
             (r"/pedalboard/save", PedalboardSave),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),

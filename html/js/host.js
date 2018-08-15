@@ -340,6 +340,11 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "resetConnections") {
+            desktop.pedalboard.pedalboard("resetConnections")
+            return
+        }
+
         if (cmd == "hw_add") {
             data        = data.substr(cmd.length+1).split(" ",4)
             var dev_uri = data[0]

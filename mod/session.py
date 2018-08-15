@@ -300,9 +300,12 @@ class Session(object):
             bundlepath = ""
             title = ""
         self.pedalboard_changed_callback(True, bundlepath, title)
+        self.host.msg_callback("resetConnections")
         return title
 
     def reset(self, callback):
+        #self.host.msg_callback("resetConnections")
+
         self.host.send_notmodified("feature_enable processing 0")
 
         def host_callback(resp):

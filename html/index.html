@@ -4,7 +4,7 @@
 <!-- HEAD -->
 <head>
 <meta charset="UTF-8">
-<title>MOD</title>
+<title>MODEP</title>
 
 <link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
 <link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
@@ -42,6 +42,22 @@
     .loadingcircle { animation: loadingcircle 0.5s linear infinite; }
     @keyframes loadingcircle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 </style>
+
+<!-- MODEP CSS -->
+<style type="text/css">
+    #pedalboards-library .pedalboards, #bank-library #bank-edit {background-image: none;}
+    #main-menu #mod-devices {display: none;}
+    header a {display: none !important;}
+    header#pedalboard-actions, #bank-library header, #cloud-plugins-library header,
+    #pedalboards-library header {background-image: none; padding-left: 10px;}
+    .plugin-info .online-button-href {display: none;}
+    #pedalboard-info {left: 10px;}
+    path.loadinglogo {display: none !important;}
+    #bank-edit #bank-addressings form.form {display: none;}
+    #bank-library #bank-pedalboards {top: 110px !important;}
+    #js-preset-enabler {display: none;}
+</style>
+    
 
 <script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js?v={{version}}"></script>
