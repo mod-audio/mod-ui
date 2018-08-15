@@ -2012,7 +2012,7 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
-        self.load_pb_presets(pb['plugins'], bundlepath)
+        self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -2045,22 +2045,22 @@ class Host(object):
 
         return self.pedalboard_name
 
-    def load_pb_presets(self, plugins, bundlepath):
+    def load_pb_snapshots(self, plugins, bundlepath):
         self.snapshot_clear()
 
         # NOTE: keep the filename "presets.json" for backwards compatibility.
-        pedal_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
+        snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
 
-        if len(pedal_presets) == 0:
+        if len(snapshots) == 0:
             return
 
         self.current_pedalboard_snapshot_id = 0
-        self.pedalboard_snapshots = pedal_presets
+        self.pedalboard_snapshots = snapshots
 
-        init_pedal_preset = pedal_presets[0]['data']
+        initial_snapshot = snapshots[0]['data']
 
         for p in plugins:
-            pdata = init_pedal_preset.get(p['instance'], None)
+            pdata = initial_snapshot.get(p['instance'], None)
 
             if pdata is None:
                 print("WARNING: Pedalboard preset missing data for instance name '%s'" % p['instance'])
