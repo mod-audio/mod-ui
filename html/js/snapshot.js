@@ -84,7 +84,7 @@ function SnapshotsManager(options) {
         var selectId = selected.val()
 
         if (options.presetCount <= 1) {
-            return self.prevent(e, "Cannot delete last remaining preset")
+            return self.prevent(e, "Cannot delete last remaining snapshot")
         } else if (options.currentlyAddressed) {
             return self.prevent(e)
         }
@@ -124,7 +124,7 @@ function SnapshotsManager(options) {
         self.hideRenameOverlay()
 
         if ($(this).hasClass("disabled")) {
-            return self.prevent(e, "Cannot assign list with only 1 preset")
+            return self.prevent(e, "Cannot assign list with only 1 snapshot")
         }
 
         var port = {
@@ -158,7 +158,7 @@ function SnapshotsManager(options) {
             options.presetCount = Object.keys(presets).length
 
             if (options.presetCount == 0) {
-                return new Notification("error", "No pedalboard presets available")
+                return new Notification("error", "No pedalboard snapshots available")
             }
 
             if (options.presetCount <= 1) {
@@ -210,7 +210,7 @@ function SnapshotsManager(options) {
         setTimeout(function () {
             img.remove()
         }, 500)
-        new Notification("warn", customMessage || "Cannot change presets while addressed to hardware", 3000)
+        new Notification("warn", customMessage || "Cannot change snapshots while addressed to hardware", 3000)
         return false
     }
 
@@ -232,7 +232,7 @@ function SnapshotsManager(options) {
                 id: selectId,
             },
             success: function () {
-                new Notification("info", "Preset " + prtitle + " loaded", 2000)
+                new Notification("info", "Snapshot " + prtitle + " loaded", 2000)
             },
             error: function () {},
             cache: false,
@@ -286,7 +286,7 @@ function SnapshotsManager(options) {
                 callback(resp)
             },
             error: function () {
-                new Bug("Failed to get pedalboard preset list")
+                new Bug("Failed to get pedalboard snapshot list")
             },
             cache: false,
             dataType: 'json'
