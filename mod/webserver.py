@@ -1200,24 +1200,24 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
-class PedalboardPresetEnable(JsonRequestHandler):
+class SnapshotEnable(JsonRequestHandler):
     def post(self):
         SESSION.host.snapshot_init()
         self.write(True)
 
-class PedalboardPresetDisable(JsonRequestHandler):
+class SnapshotDisable(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
         yield gen.Task(SESSION.host.snapshot_disable)
         self.write(True)
 
-class PedalboardPresetSave(JsonRequestHandler):
+class SnapshotSave(JsonRequestHandler):
     def post(self):
         ok = SESSION.host.snapshot_save()
         self.write(ok)
 
-class PedalboardPresetSaveAs(JsonRequestHandler):
+class SnapshotSaveAs(JsonRequestHandler):
     def get(self):
         title = self.get_argument('title')
         idx   = SESSION.host.snapshot_saveas(title)
@@ -1227,26 +1227,26 @@ class PedalboardPresetSaveAs(JsonRequestHandler):
             'id': idx
         })
 
-class PedalboardPresetRename(JsonRequestHandler):
+class SnapshotRename(JsonRequestHandler):
     def get(self):
         idx   = int(self.get_argument('id'))
         title = self.get_argument('title')
         ok    = SESSION.host.snapshot_rename(idx, title)
         self.write(ok)
 
-class PedalboardPresetRemove(JsonRequestHandler):
+class SnapshotRemove(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
         ok  = SESSION.host.snapshot_remove(idx)
         self.write(ok)
 
-class PedalboardPresetList(JsonRequestHandler):
+class SnapshotList(JsonRequestHandler):
     def get(self):
         snapshots = SESSION.host.pedalboard_snapshots
         snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
         self.write(snapshots)
 
-class PedalboardPresetName(JsonRequestHandler):
+class SnapshotName(JsonRequestHandler):
     def get(self):
         idx  = int(self.get_argument('id'))
         name = SESSION.host.snapshot_name(idx) or ""
@@ -1255,7 +1255,7 @@ class PedalboardPresetName(JsonRequestHandler):
             'name': name
         })
 
-class PedalboardPresetLoad(JsonRequestHandler):
+class SnapshotLoad(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
@@ -1773,15 +1773,15 @@ application = web.Application(
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
             # Pedalboard Snapshot handling
-            (r"/snapshot/enable", PedalboardPresetEnable),
-            (r"/snapshot/disable", PedalboardPresetDisable),
-            (r"/snapshot/save", PedalboardPresetSave),
-            (r"/snapshot/saveas", PedalboardPresetSaveAs),
-            (r"/snapshot/rename", PedalboardPresetRename),
-            (r"/snapshot/remove", PedalboardPresetRemove),
-            (r"/snapshot/list", PedalboardPresetList),
-            (r"/snapshot/name", PedalboardPresetName),
-            (r"/snapshot/load", PedalboardPresetLoad),
+            (r"/snapshot/enable", SnapshotEnable),
+            (r"/snapshot/disable", SnapshotDisable),
+            (r"/snapshot/save", SnapshotSave),
+            (r"/snapshot/saveas", SnapshotSaveAs),
+            (r"/snapshot/rename", SnapshotRename),
+            (r"/snapshot/remove", SnapshotRemove),
+            (r"/snapshot/list", SnapshotList),
+            (r"/snapshot/name", SnapshotName),
+            (r"/snapshot/load", SnapshotLoad),
 
             # bank stuff
             (r"/banks/?", BankLoad),
