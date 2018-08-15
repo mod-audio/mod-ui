@@ -1772,16 +1772,16 @@ application = web.Application(
             (r"/pedalboard/image/check", PedalboardImageCheck),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
-            # pedalboard stuff
-            (r"/pedalpreset/enable", PedalboardPresetEnable),
-            (r"/pedalpreset/disable", PedalboardPresetDisable),
-            (r"/pedalpreset/save", PedalboardPresetSave),
-            (r"/pedalpreset/saveas", PedalboardPresetSaveAs),
-            (r"/pedalpreset/rename", PedalboardPresetRename),
-            (r"/pedalpreset/remove", PedalboardPresetRemove),
-            (r"/pedalpreset/list", PedalboardPresetList),
-            (r"/pedalpreset/name", PedalboardPresetName),
-            (r"/pedalpreset/load", PedalboardPresetLoad),
+            # Pedalboard Snapshot handling
+            (r"/snapshot/enable", PedalboardPresetEnable),
+            (r"/snapshot/disable", PedalboardPresetDisable),
+            (r"/snapshot/save", PedalboardPresetSave),
+            (r"/snapshot/saveas", PedalboardPresetSaveAs),
+            (r"/snapshot/rename", PedalboardPresetRename),
+            (r"/snapshot/remove", PedalboardPresetRemove),
+            (r"/snapshot/list", PedalboardPresetList),
+            (r"/snapshot/name", PedalboardPresetName),
+            (r"/snapshot/load", PedalboardPresetLoad),
 
             # bank stuff
             (r"/banks/?", BankLoad),

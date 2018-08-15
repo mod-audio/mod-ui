@@ -90,7 +90,7 @@ function PedalboardPresetsManager(options) {
         }
 
         $.ajax({
-            url: '/pedalpreset/remove',
+            url: '/snapshot/remove',
             type: 'GET',
             data: {
                 id: selectId,
@@ -226,7 +226,7 @@ function PedalboardPresetsManager(options) {
         }
 
         $.ajax({
-            url: '/pedalpreset/load',
+            url: '/snapshot/load',
             type: 'GET',
             data: {
                 id: selectId,
@@ -261,7 +261,7 @@ function PedalboardPresetsManager(options) {
         }
 
         $.ajax({
-            url: '/pedalpreset/rename',
+            url: '/snapshot/rename',
             type: 'GET',
             data: {
                 id   : prId,
@@ -280,7 +280,7 @@ function PedalboardPresetsManager(options) {
 
     this.getPedalPresetList = function (callback) {
         $.ajax({
-            url: '/pedalpreset/list',
+            url: '/snapshot/list',
             type: 'GET',
             success: function (resp) {
                 callback(resp)

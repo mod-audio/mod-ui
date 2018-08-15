@@ -888,7 +888,7 @@ function Desktop(elements) {
         new Notification('info', 'Pedalboard presets have been activated', 8000)
 
         $.ajax({
-            url: '/pedalpreset/enable',
+            url: '/snapshot/enable',
             method: 'POST',
             success: function () {
                 $('#js-preset-enabler').hide()
@@ -911,7 +911,7 @@ function Desktop(elements) {
         self.hardwareManager.removeHardwareMappping("/pedalboard/:presets")
 
         $.ajax({
-            url: '/pedalpreset/disable',
+            url: '/snapshot/disable',
             method: 'POST',
             success: function () {
                 self.pedalboardPresetId = -1
@@ -932,7 +932,7 @@ function Desktop(elements) {
         }
 
         $.ajax({
-            url: '/pedalpreset/save',
+            url: '/snapshot/save',
             method: 'POST',
             success: function () {
                 self.pedalboardModified = true
@@ -953,7 +953,7 @@ function Desktop(elements) {
 
         desktop.openPresetSaveWindow("", function (newName) {
             $.ajax({
-                url: '/pedalpreset/saveas',
+                url: '/snapshot/saveas',
                 data: {
                     title: newName,
                 },
