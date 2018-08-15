@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function PedalboardPresetsManager(options) {
+function SnapshotsManager(options) {
     var self = this;
 
     options = $.extend({

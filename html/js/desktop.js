@@ -195,7 +195,7 @@ function Desktop(elements) {
         }
     })
 
-    this.pedalPresets = new PedalboardPresetsManager({
+    this.pedalPresets = new SnapshotsManager({
         pedalPresetsWindow: elements.pedalPresetsWindow,
         pedalPresetsList: elements.pedalPresetsList,
         pedalPresetsOverlay: elements.pedalPresetsOverlay,
