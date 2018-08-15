@@ -1242,9 +1242,9 @@ class PedalboardPresetRemove(JsonRequestHandler):
 
 class PedalboardPresetList(JsonRequestHandler):
     def get(self):
-        presets = SESSION.host.pedalboard_presets
-        presets = dict((i, presets[i]['name']) for i in range(len(presets)) if presets[i] is not None)
-        self.write(presets)
+        snapshots = SESSION.host.pedalboard_snapshots
+        snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
+        self.write(snapshots)
 
 class PedalboardPresetName(JsonRequestHandler):
     def get(self):

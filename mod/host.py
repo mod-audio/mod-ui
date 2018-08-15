@@ -167,8 +167,8 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
-        self.pedalboard_preset   = -1
-        self.pedalboard_presets  = []
+        self.current_pedalboard_snapshot_id = -1
+        self.pedalboard_snapshots  = []
         self.next_hmi_pedalboard = None
         self.transport_rolling   = False
         self.transport_bpb       = 4.0
@@ -467,10 +467,10 @@ class Host(object):
 
     def addr_task_get_plugin_presets(self, uri):
         if uri == PEDALBOARD_URI:
-            if self.pedalboard_preset < 0 or len(self.pedalboard_presets) == 0:
+            if self.current_pedalboard_snapshot_id < 0 or len(self.pedalboard_snapshots) == 0:
                 return []
-            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % self.pedalboard_preset
-            presets = self.pedalboard_presets
+            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % self.current_pedalboard_snapshot_id
+            presets = self.pedalboard_snapshots
             presets = [{'uri': 'file:///%i'%i,
                         'label': presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
             return presets
@@ -1215,7 +1215,7 @@ class Host(object):
 
         # TODO: restore HMI and CC addressings if crashed
 
-        websocket.write_message("loading_end %d" % self.pedalboard_preset)
+        websocket.write_message("loading_end %d" % self.current_pedalboard_snapshot_id)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
@@ -1362,7 +1362,7 @@ class Host(object):
             for output in allports['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
-            if len(self.pedalboard_presets) > 0:
+            if len(self.pedalboard_snapshots) > 0:
                 self.plugins_added.append(instance_id)
 
             callback(True)
@@ -1380,7 +1380,7 @@ class Host(object):
             callback(False)
             return
 
-        if len(self.pedalboard_presets) > 0:
+        if len(self.pedalboard_snapshots) > 0:
             self.plugins_removed.append(instance)
             if instance_id in self.plugins_added:
                 self.plugins_added.remove(instance_id)
@@ -1620,12 +1620,12 @@ class Host(object):
         self.remove_bundle(bundlepath, False, start)
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Host stuff - pedalboard presets
+    # Host stuff - pedalboard snapshots
 
     def snapshot_make(self, name):
         self.pedalboard_modified = True
 
-        pedalpreset = {
+        snapshot = {
             "name": name,
             "data": {},
         }
@@ -1634,33 +1634,33 @@ class Host(object):
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 continue
             instance = pluginData['instance'].replace("/graph/","",1)
-            pedalpreset['data'][instance] = {
+            snapshot['data'][instance] = {
                 "bypassed": pluginData['bypassed'],
                 "ports"   : pluginData['ports'].copy(),
                 "preset"  : pluginData['preset'],
             }
 
-        return pedalpreset
+        return snapshot
 
     def snapshot_name(self, idx=None):
         if idx is None:
-            idx = self.pedalboard_preset
-        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
+            idx = self.current_pedalboard_snapshot_id
+        if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return None
-        return self.pedalboard_presets[idx]['name']
+        return self.pedalboard_snapshots[idx]['name']
 
     def snapshot_init(self):
-        preset = self.snapshot_make("Default")
+        snapshot = self.snapshot_make("Default")
         self.plugins_added   = []
         self.plugins_removed = []
-        self.pedalboard_preset = 0
-        self.pedalboard_presets = [preset]
+        self.current_pedalboard_snapshot_id = 0
+        self.pedalboard_snapshots = [snapshot]
 
     def snapshot_clear(self):
         self.plugins_added   = []
         self.plugins_removed = []
-        self.pedalboard_preset = -1
-        self.pedalboard_presets = []
+        self.current_pedalboard_snapshot_id = -1
+        self.pedalboard_snapshots = []
 
     def snapshot_disable(self, callback):
         self.snapshot_clear()
@@ -1668,60 +1668,60 @@ class Host(object):
         self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, callback)
 
     def snapshot_save(self):
-        idx = self.pedalboard_preset
+        idx = self.current_pedalboard_snapshot_id
 
-        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
+        if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
-        name   = self.pedalboard_presets[idx]['name']
-        preset = self.snapshot_make(name)
-        self.pedalboard_presets[idx] = preset
+        name   = self.pedalboard_snapshots[idx]['name']
+        snapshot = self.snapshot_make(name)
+        self.pedalboard_snapshots[idx] = snapshot
         return True
 
     def snapshot_saveas(self, name):
-        if len(self.pedalboard_presets) == 0:
+        if len(self.pedalboard_snapshots) == 0:
             self.snapshot_init()
 
         preset = self.snapshot_make(name)
-        self.pedalboard_presets.append(preset)
+        self.pedalboard_snapshots.append(preset)
 
-        self.pedalboard_preset = len(self.pedalboard_presets)-1
-        return self.pedalboard_preset
+        self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
+        return self.current_pedalboard_snapshot_id
 
     def snapshot_rename(self, idx, title):
-        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
+        if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
         self.pedalboard_modified = True
-        self.pedalboard_presets[idx]['name'] = title
+        self.pedalboard_snapshots[idx]['name'] = title
         return True
 
     def snapshot_remove(self, idx):
-        if idx < 0 or idx >= len(self.pedalboard_presets) or self.pedalboard_presets[idx] is None:
+        if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
         self.pedalboard_modified = True
-        self.pedalboard_presets[idx] = None
+        self.pedalboard_snapshots[idx] = None
         return True
 
     @gen.coroutine
     def snapshot_load(self, idx, callback=lambda r:None):
-        if idx < 0 or idx >= len(self.pedalboard_presets):
+        if idx < 0 or idx >= len(self.pedalboard_snapshots):
             callback(False)
             return
 
-        pedalpreset = self.pedalboard_presets[idx]
+        snapshot = self.pedalboard_snapshots[idx]
 
-        if pedalpreset is None:
+        if snapshot is None:
             print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
             callback(False)
             return
 
-        self.pedalboard_preset = idx
+        self.current_pedalboard_snapshot_id = idx
 
         used_actuators = []
 
-        for instance, data in pedalpreset['data'].items():
+        for instance, data in snapshot['data'].items():
             instance = "/graph/%s" % instance
 
             if instance in self.plugins_removed:
@@ -1774,6 +1774,7 @@ class Host(object):
         self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
+        # TODO: change to pedal_snapshot?
         self.msg_callback("pedal_preset %d" % idx)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -2019,7 +2020,7 @@ class Host(object):
         self.addressings.load(bundlepath, instances, skippedPortAddressings)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
-        self.msg_callback("loading_end %d" % self.pedalboard_preset)
+        self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
 
         if isDefault:
             self.pedalboard_empty    = True
@@ -2047,13 +2048,14 @@ class Host(object):
     def load_pb_presets(self, plugins, bundlepath):
         self.snapshot_clear()
 
+        # NOTE: keep the filename "presets.json" for backwards compatibility.
         pedal_presets = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
 
         if len(pedal_presets) == 0:
             return
 
-        self.pedalboard_preset  = 0
-        self.pedalboard_presets = pedal_presets
+        self.current_pedalboard_snapshot_id = 0
+        self.pedalboard_snapshots = pedal_presets
 
         init_pedal_preset = pedal_presets[0]['data']
 
@@ -2314,37 +2316,38 @@ class Host(object):
         self.addressings.save(bundlepath, instances)
 
     def save_state_presets(self, bundlepath):
-        # Write presets.json
-        presets_path = os.path.join(bundlepath, "presets.json")
+        # Write presets.json. NOTE: keep the filename for backwards
+        # compatibility. TODO: Add to global settings.
+        snapshots_filepath = os.path.join(bundlepath, "presets.json")
 
-        if len(self.pedalboard_presets) > 1:
+        if len(self.pedalboard_snapshots) > 1:
             for instance in self.plugins_removed:
-                for pedalpreset in self.pedalboard_presets:
-                    if pedalpreset is None:
+                for snapshot in self.pedalboard_snapshots:
+                    if snapshot is None:
                         continue
                     try:
-                        pedalpreset['data'].pop(instance.replace("/graph/","",1))
+                        snapshot['data'].pop(instance.replace("/graph/","",1))
                     except KeyError:
                         pass
 
             for instance_id in self.plugins_added:
-                for pedalpreset in self.pedalboard_presets:
-                    if pedalpreset is None:
+                for snapshot in self.pedalboard_snapshots:
+                    if snapshot is None:
                         continue
                     pluginData = self.plugins[instance_id]
                     instance   = pluginData['instance'].replace("/graph/","",1)
-                    pedalpreset['data'][instance] = {
+                    snapshot['data'][instance] = {
                         "bypassed": pluginData['bypassed'],
                         "ports"   : pluginData['ports'].copy(),
                         "preset"  : pluginData['preset'],
                     }
 
-            presets = [p for p in self.pedalboard_presets if p is not None]
-            with TextFileFlusher(presets_path) as fh:
-                json.dump(presets, fh)
+            snapshots = [p for p in self.pedalboard_snapshots if p is not None]
+            with TextFileFlusher(snapshots_filepath) as fh:
+                json.dump(snapshots, fh)
 
-        elif os.path.exists(presets_path):
-            os.remove(presets_path)
+        elif os.path.exists(snapshots_filepath):
+            os.remove(snapshots_filepath)
 
         self.plugins_added   = []
         self.plugins_removed = []
