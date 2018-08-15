@@ -571,18 +571,7 @@ class Host(object):
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
 
-        # # Setup MIDI program navigation
-        # navigateFootswitches = False
-        # bankNavigateChannel      = 15
-
-        # if self.bank_id > 0 and pedalboard and self.bank_id <= len(self.banks):
-        #     bank = self.banks[self.bank_id-1]
-        #     navigateFootswitches = bank['navigateFootswitches']
-        #     if "navigateChannel" in bank.keys() and not navigateFootswitches:
-        #         bankNavigateChannel  = int(bank['navigateChannel'])-1
-
-        # self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), bankNavigateChannel))
-
+        # Setup MIDI program navigation
         self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_bank_channel))
         self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
         
@@ -2793,16 +2782,13 @@ _:b%i
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
     def set_midi_program_change_pedalboard_bank_channel(self, channel):
-        if 0 <= channel and channel < 16:
-            self.profile.midi_prgch_bank_channel = channel
+        if self.profile.set_midi_prgch_bank_channel(channel):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
-        pass
 
     def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
-        if 0 <= channel and channel < 16:
-            self.profile.midi_prgch_snapshot_channel = channel
+        if self.profile.set_midi_prgch_snapshot_channel(channel):
             self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
-        pass
+
 
                     
     # -----------------------------------------------------------------------------------------------------------------
