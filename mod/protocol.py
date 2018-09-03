@@ -98,6 +98,9 @@ class Protocol(object):
         "pedalboard_save": [],
         "pedalboard_reset": [],
         "jack_cpu_load": [],
+        
+        "get_truebypass_value": [int],
+        "set_truebypass_value": [int, int],
     }
 
     COMMANDS_FUNC = {}

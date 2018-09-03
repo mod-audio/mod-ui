@@ -259,6 +259,9 @@ class Host(object):
         Protocol.register_cmd_callback("tuner", self.hmi_tuner)
         Protocol.register_cmd_callback("tuner_input", self.hmi_tuner_input)
 
+        Protocol.register_cmd_callback("get_truebypass_value", self.hmi_get_truebypass_value)
+        Protocol.register_cmd_callback("set_truebypass_value", self.hmi_set_truebypass_value)
+
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
     def __del__(self):
@@ -3269,6 +3272,24 @@ _:b%i
         freq, note, cents = find_freqnotecents(value)
         yield gen.Task(self.hmi.tuner, freq, note, cents)
 
+    def hmi_get_truebypass_value(self, right, callback):
+        """Query the True Bypass setting of the given channel."""
+        logging.info("hmi true bypass get ({0})".format(right))
+        
+        bypassed = get_truebypass_value(right)
+        callback(True, bypassed)
+
+
+    def hmi_set_truebypass_value(self, right, bypassed, callback):
+        """Change the True Bypass setting of the given channel."""
+        logging.info("hmi true bypass set to ({0}, {1})".format(right, bypassed))
+
+        set_truebypass_value(right, bypassed)
+        
+        # TODO should it return some more status?
+        callback(True)
+
+        
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
 
