@@ -17,8 +17,8 @@ class Profile:
     midi_prgch_bank_channel = 15
     midi_prgch_snapshot_channel = 14
 
-    offer_bank_footswitch_navigation = False
-    offer_snapshot_footswitch_navigation = False
+    bank_footswitch_navigation = False
+    snapshot_footswitch_navigation = False
     
     def set_midi_prgch_bank_channel(self, channel):
         result = False

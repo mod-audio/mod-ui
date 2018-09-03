@@ -688,11 +688,12 @@ class Host(object):
         if bank_id > 0 and pedalboard and bank_id <= len(self.banks):
             bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
-            navigateFootswitches = bank['navigateFootswitches']
-            if "navigateChannel" in bank.keys() and not navigateFootswitches:
-                bankNavigateChannel = int(bank['navigateChannel'])-1
-            else:
-                bankNavigateChannel = 15
+            
+            # navigateFootswitches = bank['navigateFootswitches']
+            # if "navigateChannel" in bank.keys() and not navigateFootswitches:
+            #     bankNavigateChannel = int(bank['navigateChannel'])-1
+            # else:
+            #     bankNavigateChannel = 15
 
         else:
             if self.allpedalboards is None:
@@ -700,8 +701,9 @@ class Host(object):
             bank_id = 0
             pedalboard = DEFAULT_PEDALBOARD
             pedalboards = self.allpedalboards
-            navigateFootswitches = False
-            bankNavigateChannel = 15
+            
+            # navigateFootswitches = False
+            # bankNavigateChannel = 15
 
         num = 0
         for pb in pedalboards:
@@ -724,7 +726,8 @@ class Host(object):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.midi_prgch_bank_channel, callback, datatype='boolean')
 
         def initial_state_callback(ok):
-            cb = footswitch_callback if navigateFootswitches else midi_prog_callback
+            # TODO: not mutually exclusive.
+            cb = footswitch_callback if self.profile.bank_footswitch_navigation else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         logging.info("[host] JUST A TEST")
@@ -3067,10 +3070,11 @@ _:b%i
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not navigateFootswitches), profile.midi_prgch_bank_channel), loaded_callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.bank_footswitch_navigation), profile.midi_prgch_bank_channel), loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
-            self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
+            #self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
+            self.setNavigateWithFootswitches(self.profile.bank_footswitch_navigation, load_callback)
 
         def hmi_clear_callback(ok):
             self.hmi.clear(footswitch_callback)
