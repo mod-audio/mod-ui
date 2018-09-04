@@ -3303,7 +3303,8 @@ _:b%i
         """Set the Jack BPM."""
         logging.info("hmi tempo bpm set to {0}".format(bpm))
 
-        # TODO
+        # TODO assert 20 <= bpm <= 280
+        # TODO forward to modhost or implement C-binding.
         
         callback(True)
 
@@ -3317,7 +3318,8 @@ _:b%i
         """Set the Jack Beats Per Bar."""
         logging.info("hmi tempo bpb set to {0}".format(bpb))
 
-        # TODO
+        # TODO assert 1 <= bpb <= 4
+        # TODO forward to modhost or implement C-binding.
         
         callback(True)
         
