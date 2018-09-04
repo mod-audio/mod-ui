@@ -101,6 +101,13 @@ class Protocol(object):
         
         "get_truebypass_value": [int],
         "set_truebypass_value": [int, int],
+
+        # Beats per minute
+        "get_tempo_bpm": [],
+        "set_tempo_bpm": [int],
+        # Beats per bar
+        "get_tempo_bpb": [],
+        "set_tempo_bpb": [int],
     }
 
     COMMANDS_FUNC = {}

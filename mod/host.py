@@ -262,6 +262,11 @@ class Host(object):
         Protocol.register_cmd_callback("get_truebypass_value", self.hmi_get_truebypass_value)
         Protocol.register_cmd_callback("set_truebypass_value", self.hmi_set_truebypass_value)
 
+        Protocol.register_cmd_callback("get_tempo_bpm", self.hmi_get_tempo_bpm)
+        Protocol.register_cmd_callback("set_tempo_bpm", self.hmi_set_tempo_bpm)
+        Protocol.register_cmd_callback("get_tempo_bpb", self.hmi_get_tempo_bpb)
+        Protocol.register_cmd_callback("set_tempo_bpb", self.hmi_set_tempo_bpb)
+        
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
     def __del__(self):
@@ -3279,7 +3284,6 @@ _:b%i
         bypassed = get_truebypass_value(right)
         callback(True, bypassed)
 
-
     def hmi_set_truebypass_value(self, right, bypassed, callback):
         """Change the True Bypass setting of the given channel."""
         logging.info("hmi true bypass set to ({0}, {1})".format(right, bypassed))
@@ -3289,6 +3293,34 @@ _:b%i
         # TODO should it return some more status?
         callback(True)
 
+    def hmi_get_tempo_bpm(self, callback):
+        """Get the Jack BPM."""
+        logging.info("hmi tempo bpm get")
+        bpm = get_jack_data(withTransport)['bpm']       
+        callback(True, bpm)
+        
+    def hmi_set_tempo_bpm(self, bpm, callback):
+        """Set the Jack BPM."""
+        logging.info("hmi tempo bpm set to {0}".format(bpm))
+
+        # TODO
+        
+        callback(True)
+
+    def hmi_get_tempo_bpb(self, callback):
+        """Get the Jack Beats Per Bar."""
+        logging.info("hmi tempo bpb get")
+        bpb = get_jack_data(withTransport)['bpb']
+        callback(True, bpb)
+        
+    def hmi_set_tempo_bpb(self, bpb, callback):
+        """Set the Jack Beats Per Bar."""
+        logging.info("hmi tempo bpb set to {0}".format(bpb))
+
+        # TODO
+        
+        callback(True)
+        
         
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
