@@ -266,6 +266,11 @@ class Host(object):
         Protocol.register_cmd_callback("set_tempo_bpm", self.hmi_set_tempo_bpm)
         Protocol.register_cmd_callback("get_tempo_bpb", self.hmi_get_tempo_bpb)
         Protocol.register_cmd_callback("set_tempo_bpb", self.hmi_set_tempo_bpb)
+
+        Protocol.register_cmd_callback("get_snapshot_prgch", self.hmi_get_snapshot_prgch)
+        Protocol.register_cmd_callback("set_snapshot_prgch", self.hmi_set_snapshot_prgch)
+        Protocol.register_cmd_callback("get_bank_prgch", self.hmi_get_bank_prgch)
+        Protocol.register_cmd_callback("set_bank_prgch", self.hmi_set_bank_prgch)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3320,6 +3325,40 @@ _:b%i
         # Forward to mod-host. It will check assertions.
         self.send_notmodified("set_bpb {:f}".format(bpb))
         callback(True)
+
+    def hmi_get_snapshot_prgch(self, callback):
+        """Query the MIDI channel for selecting a snapshot via Program Change."""
+        logging.info("hmi get snapshot channel")
+        
+        channel = 13 # TODO: code in another git branch
+        callback(True, channel)
+
+    def hmi_set_snapshot_prgch(self, channel, callback):
+        """Set the MIDI channel for selecting a snapshot via Program Change."""
+        logging.info("hmi set snapshot channel {0}".format(channel))
+
+        if (0 <= channel) and (channel <= 16):
+            # TODO: code in another git branch
+            callback(True)
+        else:
+            callback(False)
+
+    def hmi_get_bank_prgch(self, callback):
+        """Query the MIDI channel for selecting a pedalboard in a bank via Program Change."""
+        logging.info("hmi get bank channel")
+        
+        channel = 14 # TODO: code in another git branch
+        callback(True, channel)
+
+    def hmi_set_bank_prgch(self, channel, callback):
+        """Set the MIDI channel for selecting a pedalboard in a bank via Program Change."""
+        logging.info("hmi set bank channel {0}".format(channel))
+
+        if (0 <= channel) and (channel <= 16):            
+            # TODO: code in another git branch
+            callback(True)
+        else:
+            callback(False)       
         
         
     # -----------------------------------------------------------------------------------------------------------------

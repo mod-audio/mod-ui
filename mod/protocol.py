@@ -108,6 +108,13 @@ class Protocol(object):
         # Beats per bar
         "get_tempo_bpb": [],
         "set_tempo_bpb": [float],
+
+        # MIDI program change channel for switching snapshots
+        "get_snapshot_prgch": [],
+        "set_snapshot_prgch": [int],
+        # MIDI program change channel for switching pedalboard banks
+        "get_bank_prgch": [],
+        "set_bank_prgch": [int],
     }
 
     COMMANDS_FUNC = {}
