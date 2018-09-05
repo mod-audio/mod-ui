@@ -274,6 +274,9 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_clk_src", self.hmi_get_clk_src)
         Protocol.register_cmd_callback("set_clk_src", self.hmi_set_clk_src)
+
+        Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
+        Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3375,6 +3378,23 @@ _:b%i
         logging.info("hmi set clock source {0}".format(mode))
 
         if mode in [0, 1, 2]:
+            # TODO: communicate with mod host.
+            callback(True)
+        else:
+            callback(False)
+
+    def hmi_get_send_midi_clk(self, callback):
+        """Query the status of sending MIDI Beat Clock."""
+        logging.info("hmi get midi beat clock status")
+        
+        onoff = 1 # TODO: communicate with mod-host
+        callback(True, int(onoff))
+
+    def hmi_set_send_midi_clk(self, onoff, callback):
+        """Query the status of sending MIDI Beat Clock."""
+        logging.info("hmi set midi beat clock status to {0}".format(onoff))
+
+        if onoff in [0, 1]:
             # TODO: communicate with mod host.
             callback(True)
         else:

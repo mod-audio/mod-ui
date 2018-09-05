@@ -119,6 +119,10 @@ class Protocol(object):
         # Transport and tempo sync mode
         "get_clk_src": [],
         "set_clk_src": [int],
+
+        # MIDI Beat Clock sending
+        "get_send_midi_clk": [],
+        "set_send_midi_clk": [int],
     }
 
     COMMANDS_FUNC = {}
