@@ -271,6 +271,9 @@ class Host(object):
         Protocol.register_cmd_callback("set_snapshot_prgch", self.hmi_set_snapshot_prgch)
         Protocol.register_cmd_callback("get_bank_prgch", self.hmi_get_bank_prgch)
         Protocol.register_cmd_callback("set_bank_prgch", self.hmi_set_bank_prgch)
+
+        Protocol.register_cmd_callback("get_clk_src", self.hmi_get_clk_src)
+        Protocol.register_cmd_callback("set_clk_src", self.hmi_set_clk_src)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3359,7 +3362,25 @@ _:b%i
             callback(True)
         else:
             callback(False)       
+
+    def hmi_get_clk_src(self, callback):
+        """Query the tempo and transport sync mode."""
+        logging.info("hmi get clock source")
         
+        mode = 1 # TODO: communicate with mod-host
+        callback(True, int(mode))
+
+    def hmi_set_clk_src(self, mode, callback):
+        """Set the tempo and transport sync mode."""
+        logging.info("hmi set clock source {0}".format(mode))
+
+        if mode in [0, 1, 2]:
+            # TODO: communicate with mod host.
+            callback(True)
+        else:
+            callback(False)
+
+            
         
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

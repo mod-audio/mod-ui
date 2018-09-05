@@ -115,6 +115,10 @@ class Protocol(object):
         # MIDI program change channel for switching pedalboard banks
         "get_bank_prgch": [],
         "set_bank_prgch": [int],
+
+        # Transport and tempo sync mode
+        "get_clk_src": [],
+        "set_clk_src": [int],
     }
 
     COMMANDS_FUNC = {}
