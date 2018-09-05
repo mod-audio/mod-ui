@@ -104,10 +104,10 @@ class Protocol(object):
 
         # Beats per minute
         "get_tempo_bpm": [],
-        "set_tempo_bpm": [int],
+        "set_tempo_bpm": [float],
         # Beats per bar
         "get_tempo_bpb": [],
-        "set_tempo_bpb": [int],
+        "set_tempo_bpb": [float],
     }
 
     COMMANDS_FUNC = {}
