@@ -44,7 +44,7 @@ from modtools.utils import (
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
-    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
+    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from mod.settings import (
@@ -3282,7 +3282,7 @@ _:b%i
         logging.info("hmi true bypass get ({0})".format(right))
         
         bypassed = get_truebypass_value(right)
-        callback(True, bypassed)
+        callback(True, int(bypassed))
 
     def hmi_set_truebypass_value(self, right, bypassed, callback):
         """Change the True Bypass setting of the given channel."""
