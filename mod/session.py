@@ -78,6 +78,7 @@ class Session(object):
 
         if not hmiOpened:
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
+            print("Using FakeHMI =>", self.hmi)
 
         self.host = Host(self.hmi, self.prefs, self.msg_callback)
 

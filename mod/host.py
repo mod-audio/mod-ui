@@ -3296,16 +3296,15 @@ _:b%i
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
         logging.info("hmi tempo bpm get")
-        bpm = get_jack_data(withTransport)['bpm']       
+        bpm = get_jack_data(withTransport)['bpm']
         callback(True, bpm)
         
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
         logging.info("hmi tempo bpm set to {0}".format(bpm))
 
-        # TODO assert 20 <= bpm <= 280
-        # TODO forward to modhost or implement C-binding.
-        
+        # Forward to mod-host. It will check assertions.
+        self.send_notmodified("set_bpm {:f}".format(bpm))
         callback(True)
 
     def hmi_get_tempo_bpb(self, callback):
@@ -3318,9 +3317,8 @@ _:b%i
         """Set the Jack Beats Per Bar."""
         logging.info("hmi tempo bpb set to {0}".format(bpb))
 
-        # TODO assert 1 <= bpb <= 4
-        # TODO forward to modhost or implement C-binding.
-        
+        # Forward to mod-host. It will check assertions.
+        self.send_notmodified("set_bpm {:f}".format(bpb))
         callback(True)
         
         
