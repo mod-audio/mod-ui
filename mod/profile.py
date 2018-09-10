@@ -19,6 +19,17 @@ class Profile:
 
     bank_footswitch_navigation = False
     snapshot_footswitch_navigation = False
+
+    stereo_link_input = False
+    stereo_link_output = False
+
+    send_midi_beat_clock = False
+    sync_mode = None # internal, MBC slave, Ableton Link
+
+    # gain stages
+    # expression pedal/control voltage input selection
+    # headphone/control voltage output selection
+    # headphone volume
     
     def set_midi_prgch_bank_channel(self, channel):
         result = False
