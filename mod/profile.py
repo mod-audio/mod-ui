@@ -26,10 +26,15 @@ class Profile:
     send_midi_beat_clock = False
     sync_mode = None # internal, MBC slave, Ableton Link
 
-    # gain stages
-    # expression pedal/control voltage input selection
-    # headphone/control voltage output selection
-    # headphone volume
+    # gain stages # Unit?
+    gain_stage_in_1 = 0 
+    gain_stage_in_2 = 0
+    gain_stage_out_1 = 0
+    gain_stage_out_2 = 0
+    headphone_volume = 0 # Unit?
+    
+    # expression pedal/control voltage input selection, toggle?
+    # headphone/control voltage output selection, toggle?
     
     def set_midi_prgch_bank_channel(self, channel):
         result = False
