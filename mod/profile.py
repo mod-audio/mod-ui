@@ -12,8 +12,7 @@ class Profile:
 
     name = "Default"
     
-    # MIDI channels range in [0,15]
-    # TODO: None when not used? Or -1?
+    # MIDI channels. Range in [0,15] -1 when off.
     midi_prgch_bank_channel = 15
     midi_prgch_snapshot_channel = 14
 
@@ -23,18 +22,22 @@ class Profile:
     stereo_link_input = False
     stereo_link_output = False
 
-    send_midi_beat_clock = False
-    sync_mode = None # internal, MBC slave, Ableton Link
+    send_midi_beat_clock = 0 # 0=off, 1=clock, 2=clock+transport
+    sync_mode = 0 # 0=internal, 1=MBC slave, 2=Ableton Link
 
-    # gain stages # Unit?
-    gain_stage_in_1 = 0 
-    gain_stage_in_2 = 0
-    gain_stage_out_1 = 0
-    gain_stage_out_2 = 0
-    headphone_volume = 0 # Unit?
+    # In hardware we have a gain stage and fine level parameters. For
+    # the user it should be just one continuous value range.  The
+    # function to translate between the two domains must be bijective,
+    # so we can store just the value form the user domain.    
+    gain_in_1 = 0
+    gain_in_2 = 0
+    gain_out_1 = 0
+    gain_out_2 = 0
     
-    # expression pedal/control voltage input selection, toggle?
-    # headphone/control voltage output selection, toggle?
+    headphone_volume = 0 # percentage 0-100
+    
+    additional_input_type = 0 # 0 expression pedal, 1 control voltage input
+    additional_output_type = 0 # 0 headphone, 1 control voltage
     
     def set_midi_prgch_bank_channel(self, channel):
         result = False
