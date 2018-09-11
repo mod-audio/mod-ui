@@ -123,6 +123,10 @@ class Protocol(object):
         # MIDI Beat Clock sending
         "get_send_midi_clk": [],
         "set_send_midi_clk": [int],
+        
+        # User Profile handling
+        "retrieve_profile": [int],
+        "store_profile": [int],
     }
 
     COMMANDS_FUNC = {}

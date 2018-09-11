@@ -245,7 +245,7 @@ class Host(object):
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
 
-        # Register HMI protocol callbacks
+        # Register HMI protocol callbacks (they are without arguments here)
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
         Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
         Protocol.register_cmd_callback("banks", self.hmi_list_banks)
@@ -277,6 +277,9 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
         Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
+
+        Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
+        Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3400,6 +3403,17 @@ _:b%i
         else:
             callback(False)
 
+    def hmi_retrieve_profile(self, index, callback):
+        """Trigger loading profile with `index`."""
+        logging.info("hmi retrieve profile")
+        # TODO self.profile.retrieve(index)
+        callback(True)
+        
+    def hmi_store_profile(self, index, callback):
+        """Trigger storing current profile to `index`."""
+        logging.info("hmi store profile")
+        # TODO self.profile.store(index)
+        callback(True)
             
         
     # -----------------------------------------------------------------------------------------------------------------
