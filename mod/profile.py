@@ -76,8 +76,8 @@ class Profile:
             "gain_out_1": self.gain_out_1,
             "gain_out_2": self.gain_out_2,
             "headphone_volume": self.headphone_volume,
-            "additional_input_mode": self.additional_input_mode,
-            "additional_output_mode": self.additional_output_mode,
+            "configurable_input_mode": self.configurable_input_mode,
+            "configurable_output_mode": self.configurable_output_mode,
         }
         result = False
         try:
@@ -111,8 +111,8 @@ class Profile:
             self.gain_out_1 = data["gain_out_1"]
             self.gain_out_2 = data["gain_out_2"]
             self.headphone_volume = data["headphone_volume"]
-            self.additional_input_mode = data["additional_input_mode"]
-            self.additional_output_mode = data["additional_output_mode"]
+            self.configurable_input_mode = data["configurable_input_mode"]
+            self.configurable_output_mode = data["configurable_output_mode"]
             result = True
             
         except FileNotFoundError as e:
