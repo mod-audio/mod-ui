@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import json
+from mod.settings import DATA_DIR
+
+def index_to_filepath(index):
+    return DATA_DIR + "/profile{0}.json".format(index)
 
 # The user profile models environmental context. That is all settings that
 # are related to the physical hookup of the device. For example the
@@ -53,11 +57,8 @@ class Profile:
                 midi_prgch_snapshot_channel = channel
                 result = True
         return result
-
-    def index_to_filepath(index):
-        return "~/data/profile{0}.json".format(index)
     
-    def store_profile(self, index):
+    def store(self, index):
         """Serialize the profile to JSON and store it on harddisk."""
         data = {
             "index": self.index,
@@ -78,10 +79,10 @@ class Profile:
             "additional_input_mode": self.additional_input_mode,
             "additional_output_mode": self.additional_output_mode,
         }
-        with open(index_to_filepath(index), 'w') as outfile:
+        with open(index_to_filepath(index), 'w+') as outfile:
             json.dump(data, outfile)
 
-    def retrieve_profile(self, index):
+    def retrieve(self, index):
         """Deserialize the profile from JSON stored on harddisk."""
         data = None
         with open(index_to_filepath(index), 'r') as infile:
