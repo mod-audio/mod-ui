@@ -127,6 +127,12 @@ class Protocol(object):
         # User Profile handling
         "retrieve_profile": [int],
         "store_profile": [int],
+
+        # Configurable in- and output
+        "get_exp_cv": [],
+        "set_exp_cv": [int],
+        "get_hp_cv": [],
+        "set_hp_cv": [int],
     }
 
     COMMANDS_FUNC = {}

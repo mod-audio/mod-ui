@@ -285,6 +285,11 @@ class Host(object):
 
         Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
         Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
+
+        Protocol.register_cmd_callback("get_exp_cv", self.hmi_get_exp_cv)
+        Protocol.register_cmd_callback("set_exp_cv", self.hmi_set_exp_cv)
+        Protocol.register_cmd_callback("get_hp_cv", self.hmi_get_hp_cv)
+        Protocol.register_cmd_callback("set_hp_cv", self.hmi_set_hp_cv)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3436,8 +3441,38 @@ _:b%i
         logging.info("hmi store profile")
         result = self.profile.store(index)
         callback(result)
-            
+
+    def hmi_get_exp_cv(self, callback):
+        """Get the mode of the configurable input."""
+        logging.info("hmi get exp/cv mode")
+        mode = self.profile.configurable_input_mode
+        callback(True, mode)
         
+    def hmi_set_exp_cv(self, mode, callback):
+        """Set the Jack BPM."""
+        logging.info("hmi set exp/cv mode to {0}".format(mode))
+        if mode in [0, 1]:
+            self.profile.configurable_input_mode = mode
+            callback(True)
+        else:
+            callback(False)
+
+    def hmi_get_hp_cv(self, callback):
+        """Get the mode of the configurable input."""
+        logging.info("hmi get hp/cv mode")
+        mode = self.profile.configurable_output_mode
+        callback(True, mode)
+        
+    def hmi_set_hp_cv(self, mode, callback):
+        """Set the Jack BPM."""
+        logging.info("hmi set hp/cv mode to {0}".format(mode))
+        if mode in [0, 1]:
+            self.profile.configurable_output_mode = mode
+            callback(True)
+        else:
+            callback(False)
+
+            
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
 

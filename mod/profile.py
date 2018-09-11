@@ -39,8 +39,8 @@ class Profile:
     
     headphone_volume = 0 # percentage 0-100
     
-    additional_input_mode = 0 # 0 expression pedal, 1 control voltage input
-    additional_output_mode = 0 # 0 headphone, 1 control voltage
+    configurable_input_mode = 0 # 0 expression pedal, 1 control voltage input
+    configurable_output_mode = 0 # 0 headphone, 1 control voltage
     
     def set_midi_prgch_bank_channel(self, channel):
         result = False
