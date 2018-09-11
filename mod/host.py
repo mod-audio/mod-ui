@@ -3361,7 +3361,7 @@ _:b%i
         """Query the MIDI channel for selecting a snapshot via Program Change."""
         logging.info("hmi get snapshot channel")
         
-        channel = 13 # TODO: code in another git branch
+        channel = self.profile.midi_prgch_snapshot_channel
         callback(True, channel)
 
     def hmi_set_snapshot_prgch(self, channel, callback):
@@ -3369,7 +3369,7 @@ _:b%i
         logging.info("hmi set snapshot channel {0}".format(channel))
 
         if (0 <= channel) and (channel <= 16):
-            # TODO: code in another git branch
+            self.profile.midi_prgch_snapshot_channel = channel
             callback(True)
         else:
             callback(False)
@@ -3378,7 +3378,7 @@ _:b%i
         """Query the MIDI channel for selecting a pedalboard in a bank via Program Change."""
         logging.info("hmi get bank channel")
         
-        channel = 14 # TODO: code in another git branch
+        channel = self.profile.midi_prgch_bank_channel
         callback(True, channel)
 
     def hmi_set_bank_prgch(self, channel, callback):
@@ -3386,10 +3386,10 @@ _:b%i
         logging.info("hmi set bank channel {0}".format(channel))
 
         if (0 <= channel) and (channel <= 16):            
-            # TODO: code in another git branch
+            self.profile.midi_prgch_bank_channel = channel
             callback(True)
         else:
-            callback(False)       
+            callback(False)
 
     def hmi_get_clk_src(self, callback):
         """Query the tempo and transport sync mode."""
@@ -3428,14 +3428,14 @@ _:b%i
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
         logging.info("hmi retrieve profile")
-        # TODO self.profile.retrieve(index)
-        callback(True)
+        result = self.profile.retrieve(index)
+        callback(result)
         
     def hmi_store_profile(self, index, callback):
         """Trigger storing current profile to `index`."""
         logging.info("hmi store profile")
-        # TODO self.profile.store(index)
-        callback(True)
+        result = self.profile.store(index)
+        callback(result)
             
         
     # -----------------------------------------------------------------------------------------------------------------

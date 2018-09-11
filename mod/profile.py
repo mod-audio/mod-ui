@@ -79,29 +79,43 @@ class Profile:
             "additional_input_mode": self.additional_input_mode,
             "additional_output_mode": self.additional_output_mode,
         }
-        with open(index_to_filepath(index), 'w+') as outfile:
-            json.dump(data, outfile)
+        result = False
+        try:
+            with open(index_to_filepath(index), 'w+') as outfile:
+                json.dump(data, outfile)
+            result = True                
+        except FileNotFoundError as e:
+            pass
+        return result
 
     def retrieve(self, index):
         """Deserialize the profile from JSON stored on harddisk."""
         data = None
-        with open(index_to_filepath(index), 'r') as infile:
-            data = json.load(infile)
+        result = False
+        try:
+            with open(index_to_filepath(index), 'r') as infile:
+                data = json.load(infile)
 
-        self.index = data["index"]
-        self.headphone_volume = data["headphone_volume"]
-        self.midi_prgch_bank_channel = data["midi_prgch_bank_channel"]
-        self.midi_prgch_snapshot_channel = data["midi_prgch_snapshot_channel"]
-        self.bank_footswitch_navigation = data["bank_footswitch_navigation"]
-        self.snapshot_footswitch_navigation = data["snapshot_footswitch_navigation"]
-        self.stereo_link_input = data["stereo_link_input"]
-        self.stereo_link_output = data["stereo_link_output"]
-        self.send_midi_beat_clock = data["send_midi_beat_clock"]
-        self.sync_mode = data["sync_mode"]
-        self.gain_in_1 = data["gain_in_1"]
-        self.gain_in_2 = data["gain_in_2"]
-        self.gain_out_1 = data["gain_out_1"]
-        self.gain_out_2 = data["gain_out_2"]
-        self.headphone_volume = data["headphone_volume"]
-        self.additional_input_mode = data["additional_input_mode"]
-        self.additional_output_mode = data["additional_output_mode"]
+            self.index = data["index"]
+            self.headphone_volume = data["headphone_volume"]
+            self.midi_prgch_bank_channel = data["midi_prgch_bank_channel"]
+            self.midi_prgch_snapshot_channel = data["midi_prgch_snapshot_channel"]
+            self.bank_footswitch_navigation = data["bank_footswitch_navigation"]
+            self.snapshot_footswitch_navigation = data["snapshot_footswitch_navigation"]
+            self.stereo_link_input = data["stereo_link_input"]
+            self.stereo_link_output = data["stereo_link_output"]
+            self.send_midi_beat_clock = data["send_midi_beat_clock"]
+            self.sync_mode = data["sync_mode"]
+            self.gain_in_1 = data["gain_in_1"]
+            self.gain_in_2 = data["gain_in_2"]
+            self.gain_out_1 = data["gain_out_1"]
+            self.gain_out_2 = data["gain_out_2"]
+            self.headphone_volume = data["headphone_volume"]
+            self.additional_input_mode = data["additional_input_mode"]
+            self.additional_output_mode = data["additional_output_mode"]
+            result = True
+            
+        except FileNotFoundError as e:
+            pass
+        
+        return result
