@@ -981,6 +981,24 @@ class Host(object):
                 diff = (0.5-diff)/0.5*0.064
                 ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
 
+        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
+            msg_data = msg[len(cmd)+1:].split(" ", 2)
+            enable = int(msg_data[0])
+            channel  = int(msg_data[1])
+            if enable == 1:
+                self.profile.set_midi_prgch_bank_channel(channel)
+            else:
+                self.profile.midi_prgch_bank_channel = -1 # off
+
+        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
+            msg_data = msg[len(cmd)+1:].split(" ", 2)
+            enable = int(msg_data[0])
+            channel  = int(msg_data[1])
+            if enable == 1:
+                self.profile.set_midi_prgch_snapshot_channel(channel)
+            else:
+                self.profile.midi_prgch_snapshot_channel = -1 # off
+        
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
 
