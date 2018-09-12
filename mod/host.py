@@ -3405,7 +3405,10 @@ _:b%i
         """Query the tempo and transport sync mode."""
         logging.info("hmi get clock source")
         
-        mode = 1 # TODO: communicate with mod-host
+        mode = self.profile.sync_mode
+        # NOTE: We assume the state in mod-host will only change if
+        # `hmi_set_clk_src()` is called!
+        
         callback(True, int(mode))
 
     def hmi_set_clk_src(self, mode, callback):
@@ -3413,7 +3416,18 @@ _:b%i
         logging.info("hmi set clock source {0}".format(mode))
 
         if mode in [0, 1, 2]:
-            # TODO: communicate with mod host.
+            # Communicate with mod host.
+            if mode == 0: # Internal
+                self.send_notmodified("feature_enable link 0")
+                self.send_notmodified("feature_enable midi_clock_slave 0")
+            if mode == 1: # MIDI Beat Clock
+                self.send_notmodified("feature_enable link 0")
+                self.send_notmodified("feature_enable midi_clock_slave 1")
+            if mode == 2: # Ableton Link
+                self.send_notmodified("feature_enable link 1")
+                self.send_notmodified("feature_enable midi_clock_slave 0")
+
+            self.profile.sync_mode = mode
             callback(True)
         else:
             callback(False)
