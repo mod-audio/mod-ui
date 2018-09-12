@@ -133,6 +133,12 @@ class Protocol(object):
         "set_exp_cv": [int],
         "get_hp_cv": [],
         "set_hp_cv": [int],
+
+        # Stereo Link for inputs and outputs
+        "get_in_chan_link": [int],
+        "set_in_chan_link": [int, int],
+        "get_out_chan_link": [int],
+        "set_out_chan_link": [int, int],
     }
 
     COMMANDS_FUNC = {}

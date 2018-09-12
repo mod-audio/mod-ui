@@ -290,7 +290,12 @@ class Host(object):
         Protocol.register_cmd_callback("set_exp_cv", self.hmi_set_exp_cv)
         Protocol.register_cmd_callback("get_hp_cv", self.hmi_get_hp_cv)
         Protocol.register_cmd_callback("set_hp_cv", self.hmi_set_hp_cv)
-        
+
+        Protocol.register_cmd_callback("get_in_chan_link", self.hmi_get_in_chan_link)
+        Protocol.register_cmd_callback("set_in_chan_link", self.hmi_set_in_chan_link)
+        Protocol.register_cmd_callback("get_out_chan_link", self.hmi_get_out_chan_link)
+        Protocol.register_cmd_callback("set_out_chan_link", self.hmi_set_out_chan_link)
+
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
     def __del__(self):
@@ -3449,7 +3454,7 @@ _:b%i
         callback(True, mode)
         
     def hmi_set_exp_cv(self, mode, callback):
-        """Set the Jack BPM."""
+        """Set the mode of the configurable input."""
         logging.info("hmi set exp/cv mode to {0}".format(mode))
         if mode in [0, 1]:
             self.profile.configurable_input_mode = mode
@@ -3458,13 +3463,13 @@ _:b%i
             callback(False)
 
     def hmi_get_hp_cv(self, callback):
-        """Get the mode of the configurable input."""
+        """Get the mode of the configurable output."""
         logging.info("hmi get hp/cv mode")
         mode = self.profile.configurable_output_mode
         callback(True, mode)
         
     def hmi_set_hp_cv(self, mode, callback):
-        """Set the Jack BPM."""
+        """Set the mode of the configurable output."""
         logging.info("hmi set hp/cv mode to {0}".format(mode))
         if mode in [0, 1]:
             self.profile.configurable_output_mode = mode
@@ -3472,6 +3477,59 @@ _:b%i
         else:
             callback(False)
 
+    # Given a odd channel number `oddch` it returns if the following
+    # even channel is linked to it or not as "resp 0" or "resp -1".
+    def hmi_get_in_chan_link(self, oddch, callback):
+        """Get the link state of a channel pair."""
+        logging.info("hmi get input channel link state")
+        if oddch in [1]:
+            if self.profile.input_stereo_link:
+                link = 1
+            else:
+                link = 0
+            callback(True, link)
+        else:
+            callback(False)
+            
+    # Given a odd channel number `oddch` the link state with the
+    # following even channel is setlinked to `link`. Returns "resp -1"
+    # on error, else "resp 0".
+    def hmi_set_in_chan_link(self, oddch, link, callback):
+        """Set the link state of a channel pair."""
+        logging.info("hmi get input channel {0} link state to {1}".format(oddch, link))
+        if oddch in [1] and link in [0,1]:
+            self.profile.input_stereo_link = link
+            callback(True)
+        else:
+            callback(False)
+
+
+    # Given a odd channel number `oddch` it returns if the following
+    # even channel is linked to it or not as "resp 0" or "resp -1".
+    def hmi_get_out_chan_link(self, oddch, callback):
+        """Get the link state of a channel pair."""
+        logging.info("hmi get output channel link state")
+        if oddch in [1]:
+            if self.profile.output_stereo_link:
+                link = 1
+            else:
+                link = 0
+            callback(True, link)
+        else:
+            callback(False)
+            
+    # Given a odd channel number `oddch` the link state with the
+    # following even channel is setlinked to `link`. Returns "resp -1"
+    # on error, else "resp 0".
+    def hmi_set_out_chan_link(self, oddch, link, callback):
+        """Set the link state of a channel pair."""
+        logging.info("hmi get output channel {0} link state to {1}".format(oddch, link))
+        if oddch in [1] and link in [0,1]:
+            self.profile.output_stereo_link = link
+            callback(True)
+        else:
+            callback(False)
+            
             
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

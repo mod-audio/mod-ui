@@ -22,8 +22,8 @@ class Profile:
     bank_footswitch_navigation = False
     snapshot_footswitch_navigation = False
 
-    stereo_link_input = False
-    stereo_link_output = False
+    input_stereo_link = False
+    output_stereo_link = False
 
     send_midi_beat_clock = 0 # 0=off, 1=clock, 2=clock+transport
     sync_mode = 0 # 0=internal, 1=MBC slave, 2=Ableton Link
@@ -67,8 +67,8 @@ class Profile:
             "midi_prgch_snapshot_channel": self.midi_prgch_snapshot_channel,
             "bank_footswitch_navigation": self.bank_footswitch_navigation,
             "snapshot_footswitch_navigation": self.snapshot_footswitch_navigation,
-            "stereo_link_input": self.stereo_link_input,
-            "stereo_link_output": self.stereo_link_output,
+            "input_stereo_link": self.input_stereo_link,
+            "output_stereo_link": self.output_stereo_link,
             "send_midi_beat_clock": self.send_midi_beat_clock,
             "sync_mode": self.sync_mode,
             "gain_in_1": self.gain_in_1,
@@ -102,8 +102,8 @@ class Profile:
             self.midi_prgch_snapshot_channel = data["midi_prgch_snapshot_channel"]
             self.bank_footswitch_navigation = data["bank_footswitch_navigation"]
             self.snapshot_footswitch_navigation = data["snapshot_footswitch_navigation"]
-            self.stereo_link_input = data["stereo_link_input"]
-            self.stereo_link_output = data["stereo_link_output"]
+            self.input_stereo_link = data["input_stereo_link"]
+            self.output_stereo_link = data["output_stereo_link"]
             self.send_midi_beat_clock = data["send_midi_beat_clock"]
             self.sync_mode = data["sync_mode"]
             self.gain_in_1 = data["gain_in_1"]
