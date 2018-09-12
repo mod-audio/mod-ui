@@ -3372,14 +3372,16 @@ _:b%i
         logging.info("hmi get snapshot channel")
         
         channel = self.profile.midi_prgch_snapshot_channel
+        # NOTE: Assume this value is always the same as in mod-host.
+        
         callback(True, channel)
 
     def hmi_set_snapshot_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a snapshot via Program Change."""
         logging.info("hmi set snapshot channel {0}".format(channel))
-
-        if (0 <= channel) and (channel <= 16):
-            self.profile.midi_prgch_snapshot_channel = channel
+        
+        if self.profile.set_midi_prgch_snapshot_channel(channel):
+            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
             callback(True)
         else:
             callback(False)
@@ -3395,8 +3397,8 @@ _:b%i
         """Set the MIDI channel for selecting a pedalboard in a bank via Program Change."""
         logging.info("hmi set bank channel {0}".format(channel))
 
-        if (0 <= channel) and (channel <= 16):            
-            self.profile.midi_prgch_bank_channel = channel
+        if self.profile.set_midi_prgch_bank_channel(channel):
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
             callback(True)
         else:
             callback(False)
