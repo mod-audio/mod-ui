@@ -7,7 +7,7 @@
 */
     z-index:100;
 }
-#pedalboard-dashboard > .mod-pedal > div:first-child {
+#pedalboard-dashboard > .mod-pedal > div:first-child:not(.mod-no-shadow) {
     box-shadow:  2px  8px  7px rgba(0,0,0,0.2),
                  4px 16px  7px rgba(0,0,0,0.2),
                  6px 24px  7px rgba(0,0,0,0.2),
