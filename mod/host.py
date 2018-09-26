@@ -1763,9 +1763,15 @@ class Host(object):
     # Host stuff - connections
 
     def _fix_host_connection_port(self, port):
+        """Map URL style port names to Jack port names."""
+
         data = port.split("/")
+        # For example, "/graph/capture_2" becomes ['', 'graph',
+        # 'capture_2']. Plugin paths can be longer, e.g.  ['', 'graph',
+        # 'BBCstereo', 'inR']
 
         if len(data) == 3:
+            # Handle special cases
             if data[2] == "serial_midi_in":
                 return "ttymidi:MIDI_in"
             if data[2] == "serial_midi_out":
@@ -1779,8 +1785,18 @@ class Host(object):
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
-            return "system:%s" % data[2]
 
+            # Handle the Control Voltage faker
+            if data[2].startswith("cv_capture_"):
+                num = data[2].replace("cv_capture_", "", 1)
+                return "mod-fake-control-voltage:cv_capture_{0}".format(num)
+            if data[2].startswith("cv_playback_"):
+                num = data[2].replace("cv_playback_", "", 1)
+                return "mod-fake-control-voltage:cv_playback_{0}".format(num)
+            
+            # Default guess
+            return "system:%s" % data[2]
+        
         instance    = "/graph/%s" % data[2]
         portsymbol  = data[3]
         instance_id = self.mapper.get_id_without_creating(instance)
