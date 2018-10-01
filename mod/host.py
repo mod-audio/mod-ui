@@ -274,7 +274,14 @@ class Host(object):
 
         if name.startswith(self.jack_slave_prefix+":"):
             name  = name.replace(self.jack_slave_prefix+":","")
-            ptype = "midi" if name.startswith("midi_") else "audio"
+            if name.startswith("midi_"):
+                ptype = "midi"
+            else:
+                if name.startswith("cv_"):
+                    ptype = "cv"
+                else:
+                    ptype = "audio"
+            
             index = 100 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
@@ -1089,17 +1096,23 @@ class Host(object):
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
 
-        # Audio In
+        # Control Voltage or Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
             title = name.title().replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
+            if name.startswith("cv_"):
+                websocket.write_message("add_hw_port /graph/%s cv 0 %s %i" % (name, title, i+1))
+            else:
+                websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
-        # Audio Out
+        # Control Voltage or Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
             title = name.title().replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
+            if name.startswith("cv_"):
+                websocket.write_message("add_hw_port /graph/%s cv 1 %s %i" % (name, title, i+1))
+            else:
+                websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # MIDI In
         if self.hasSerialMidiIn:
