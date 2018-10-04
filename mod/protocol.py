@@ -98,6 +98,47 @@ class Protocol(object):
         "pedalboard_save": [],
         "pedalboard_reset": [],
         "jack_cpu_load": [],
+        
+        "get_truebypass_value": [int],
+        "set_truebypass_value": [int, int],
+
+        # Beats per minute
+        "get_tempo_bpm": [],
+        "set_tempo_bpm": [float],
+        # Beats per bar
+        "get_tempo_bpb": [],
+        "set_tempo_bpb": [float],
+
+        # MIDI program change channel for switching snapshots
+        "get_snapshot_prgch": [],
+        "set_snapshot_prgch": [int],
+        # MIDI program change channel for switching pedalboard banks
+        "get_bank_prgch": [],
+        "set_bank_prgch": [int],
+
+        # Transport and tempo sync mode
+        "get_clk_src": [],
+        "set_clk_src": [int],
+
+        # MIDI Beat Clock sending
+        "get_send_midi_clk": [],
+        "set_send_midi_clk": [int],
+        
+        # User Profile handling
+        "retrieve_profile": [int],
+        "store_profile": [int],
+
+        # Configurable in- and output
+        "get_exp_cv": [],
+        "set_exp_cv": [int],
+        "get_hp_cv": [],
+        "set_hp_cv": [int],
+
+        # Stereo Link for inputs and outputs
+        "get_in_chan_link": [int],
+        "set_in_chan_link": [int, int],
+        "get_out_chan_link": [int],
+        "set_out_chan_link": [int, int],
     }
 
     COMMANDS_FUNC = {}

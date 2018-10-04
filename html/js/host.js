@@ -135,7 +135,7 @@ $('document').ready(function() {
             var index = parseInt(data.substr(cmd.length+1))
 
             $.ajax({
-                url: '/pedalpreset/name',
+                url: '/snapshot/name',
                 type: 'GET',
                 data: {
                     id: index,
@@ -373,7 +373,7 @@ $('document').ready(function() {
             var presetId = parseInt(data.substr(cmd.length+1))
 
             $.ajax({
-                url: '/pedalpreset/name',
+                url: '/snapshot/name',
                 type: 'GET',
                 data: {
                     id: presetId,

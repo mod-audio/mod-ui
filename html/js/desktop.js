@@ -195,7 +195,7 @@ function Desktop(elements) {
         }
     })
 
-    this.pedalPresets = new PedalboardPresetsManager({
+    this.pedalPresets = new SnapshotsManager({
         pedalPresetsWindow: elements.pedalPresetsWindow,
         pedalPresetsList: elements.pedalPresetsList,
         pedalPresetsOverlay: elements.pedalPresetsOverlay,
@@ -885,10 +885,10 @@ function Desktop(elements) {
         })
     })
     elements.pedalboardPresetsEnabler.click(function () {
-        new Notification('info', 'Pedalboard presets have been activated', 8000)
+        new Notification('info', 'Pedalboard snapshots have been activated', 8000)
 
         $.ajax({
-            url: '/pedalpreset/enable',
+            url: '/snapshot/enable',
             method: 'POST',
             success: function () {
                 $('#js-preset-enabler').hide()
@@ -898,20 +898,20 @@ function Desktop(elements) {
                 self.pedalboardModified = true
             },
             error: function () {
-                new Bug("Failed to activate pedalboard presets")
+                new Bug("Failed to activate pedalboard snapshots")
             },
             cache: false,
         })
     })
     elements.presetDisableButton.click(function () {
-        if (!confirm("This action will delete all current pedalboard presets. Continue?")) {
+        if (!confirm("This action will delete all current pedalboard snapshots. Continue?")) {
             return
         }
 
         self.hardwareManager.removeHardwareMappping("/pedalboard/:presets")
 
         $.ajax({
-            url: '/pedalpreset/disable',
+            url: '/snapshot/disable',
             method: 'POST',
             success: function () {
                 self.pedalboardPresetId = -1
@@ -921,7 +921,7 @@ function Desktop(elements) {
                 $('#js-preset-enabler').show()
             },
             error: function () {
-                new Bug("Failed to disable pedalboard presets")
+                new Bug("Failed to disable pedalboard snapshots")
             },
             cache: false,
         })
@@ -932,14 +932,14 @@ function Desktop(elements) {
         }
 
         $.ajax({
-            url: '/pedalpreset/save',
+            url: '/snapshot/save',
             method: 'POST',
             success: function () {
                 self.pedalboardModified = true
-                new Notification('info', 'Pedalboard preset saved', 2000)
+                new Notification('info', 'Pedalboard snapshot saved', 2000)
             },
             error: function () {
-                new Bug("Failed to save pedalboard preset")
+                new Bug("Failed to save pedalboard snapshot")
             },
             cache: false,
             dataType: 'json',
@@ -948,12 +948,12 @@ function Desktop(elements) {
     elements.presetSaveAsButton.click(function () {
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
         if (addressed) {
-            return new Notification("warn", "Cannot change presets while addressed to hardware", 3000)
+            return new Notification("warn", "Cannot change snapshot while addressed to hardware", 3000)
         }
 
         desktop.openPresetSaveWindow("", function (newName) {
             $.ajax({
-                url: '/pedalpreset/saveas',
+                url: '/snapshot/saveas',
                 data: {
                     title: newName,
                 },
@@ -964,10 +964,10 @@ function Desktop(elements) {
                     self.pedalboardPresetId = resp.id
                     self.pedalboardModified = true
                     self.titleBox.text((self.title || 'Untitled') + " - " + newName)
-                    new Notification('info', 'Pedalboard preset saved', 2000)
+                    new Notification('info', 'Pedalboard snapshot saved', 2000)
                 },
                 error: function () {
-                    new Bug("Failed to save pedalboard preset")
+                    new Bug("Failed to save pedalboard snapshot")
                 },
                 cache: false,
                 dataType: 'json',
@@ -976,7 +976,7 @@ function Desktop(elements) {
     })
     elements.presetManageButton.click(function () {
         if (self.pedalboardPresetId < 0) {
-            return new Notification('warn', 'Pedalboard presets are not enabled', 1500)
+            return new Notification('warn', 'Pedalboard snapshots are not enabled', 1500)
         }
 
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']

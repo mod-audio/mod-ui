@@ -940,6 +940,17 @@ class ServerWebSocket(websocket.WebSocketHandler):
             rolling = bool(int(data[1]))
             SESSION.host.set_transport_rolling(rolling, True)
 
+        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
+            channel = int(data[2])
+            SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
+
+        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
+            channel = int(data[2])
+            SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
+            
+        else:
+            print("Unexpected command received over websocket")
+            
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1189,68 +1200,68 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
-class PedalboardPresetEnable(JsonRequestHandler):
+class SnapshotEnable(JsonRequestHandler):
     def post(self):
-        SESSION.host.pedalpreset_init()
+        SESSION.host.snapshot_init()
         self.write(True)
 
-class PedalboardPresetDisable(JsonRequestHandler):
+class SnapshotDisable(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        yield gen.Task(SESSION.host.pedalpreset_disable)
+        yield gen.Task(SESSION.host.snapshot_disable)
         self.write(True)
 
-class PedalboardPresetSave(JsonRequestHandler):
+class SnapshotSave(JsonRequestHandler):
     def post(self):
-        ok = SESSION.host.pedalpreset_save()
+        ok = SESSION.host.snapshot_save()
         self.write(ok)
 
-class PedalboardPresetSaveAs(JsonRequestHandler):
+class SnapshotSaveAs(JsonRequestHandler):
     def get(self):
         title = self.get_argument('title')
-        idx   = SESSION.host.pedalpreset_saveas(title)
+        idx   = SESSION.host.snapshot_saveas(title)
 
         self.write({
             'ok': idx is not None,
             'id': idx
         })
 
-class PedalboardPresetRename(JsonRequestHandler):
+class SnapshotRename(JsonRequestHandler):
     def get(self):
         idx   = int(self.get_argument('id'))
         title = self.get_argument('title')
-        ok    = SESSION.host.pedalpreset_rename(idx, title)
+        ok    = SESSION.host.snapshot_rename(idx, title)
         self.write(ok)
 
-class PedalboardPresetRemove(JsonRequestHandler):
+class SnapshotRemove(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
-        ok  = SESSION.host.pedalpreset_remove(idx)
+        ok  = SESSION.host.snapshot_remove(idx)
         self.write(ok)
 
-class PedalboardPresetList(JsonRequestHandler):
+class SnapshotList(JsonRequestHandler):
     def get(self):
-        presets = SESSION.host.pedalboard_presets
-        presets = dict((i, presets[i]['name']) for i in range(len(presets)) if presets[i] is not None)
-        self.write(presets)
+        snapshots = SESSION.host.pedalboard_snapshots
+        snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
+        self.write(snapshots)
 
-class PedalboardPresetName(JsonRequestHandler):
+class SnapshotName(JsonRequestHandler):
     def get(self):
         idx  = int(self.get_argument('id'))
-        name = SESSION.host.pedalpreset_name(idx) or ""
+        name = SESSION.host.snapshot_name(idx) or ""
         self.write({
             'ok'  : bool(name),
             'name': name
         })
 
-class PedalboardPresetLoad(JsonRequestHandler):
+class SnapshotLoad(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
         idx = int(self.get_argument('id'))
         # FIXME: callback invalid?
-        ok  = yield gen.Task(SESSION.host.pedalpreset_load, idx)
+        ok  = yield gen.Task(SESSION.host.snapshot_load, idx)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
@@ -1367,7 +1378,7 @@ class TemplateHandler(TimelessRequestHandler):
             default_settings_template = squeeze(fh.read().replace("'", "\\'"))
 
         pbname = SESSION.host.pedalboard_name
-        prname = SESSION.host.pedalpreset_name()
+        prname = SESSION.host.snapshot_name()
 
         fullpbname = pbname or "Untitled"
         if prname:
@@ -1761,16 +1772,16 @@ application = web.Application(
             (r"/pedalboard/image/check", PedalboardImageCheck),
             (r"/pedalboard/image/wait", PedalboardImageWait),
 
-            # pedalboard stuff
-            (r"/pedalpreset/enable", PedalboardPresetEnable),
-            (r"/pedalpreset/disable", PedalboardPresetDisable),
-            (r"/pedalpreset/save", PedalboardPresetSave),
-            (r"/pedalpreset/saveas", PedalboardPresetSaveAs),
-            (r"/pedalpreset/rename", PedalboardPresetRename),
-            (r"/pedalpreset/remove", PedalboardPresetRemove),
-            (r"/pedalpreset/list", PedalboardPresetList),
-            (r"/pedalpreset/name", PedalboardPresetName),
-            (r"/pedalpreset/load", PedalboardPresetLoad),
+            # Pedalboard Snapshot handling
+            (r"/snapshot/enable", SnapshotEnable),
+            (r"/snapshot/disable", SnapshotDisable),
+            (r"/snapshot/save", SnapshotSave),
+            (r"/snapshot/saveas", SnapshotSaveAs),
+            (r"/snapshot/rename", SnapshotRename),
+            (r"/snapshot/remove", SnapshotRemove),
+            (r"/snapshot/list", SnapshotList),
+            (r"/snapshot/name", SnapshotName),
+            (r"/snapshot/load", SnapshotLoad),
 
             # bank stuff
             (r"/banks/?", BankLoad),
@@ -1883,6 +1894,13 @@ def prepare(isModApp = False):
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:
+
+            if SESSION.host.readsock is None:
+                print("Readsock none")
+                
+            if SESSION.host.writesock is None:
+                print("Writesock none")
+                
             print("Host failed to initialize, is the backend running?")
             SESSION.host.close_jack()
             sys.exit(1)
