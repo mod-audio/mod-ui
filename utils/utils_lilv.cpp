@@ -414,6 +414,8 @@ static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr 
 static const char* const kCategoryMIDIPlugin[] = { "MIDI", "Utility", nullptr };
 static const char* const kCategoryMIDIPluginMOD[] = { "MIDI", nullptr };
 static const char* const kCategoryMaxGenPluginMOD[] = { "MaxGen", nullptr };
+static const char* const kCategoryCamomilePluginMOD[] = { "Camomile", nullptr };
+static const char* const kCategoryControlVoltagePluginMOD[] = { "ControlVoltage", nullptr };
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -851,6 +853,10 @@ const char* const* _get_plugin_categories(const LilvPlugin* const p,
                     category = kCategoryMIDIPluginMOD;
                 else if (strcmp(cat2, "MaxGenPlugin") == 0)
                     category = kCategoryMaxGenPluginMOD;
+		else if (strcmp(cat2, "CamomilePlugin") == 0)
+		  category = kCategoryCamomilePluginMOD;
+		else if (strcmp(cat2, "ControlVoltagePlugin") == 0)
+		  category = kCategoryControlVoltagePluginMOD;
                 else
                     continue; // invalid mod category
 

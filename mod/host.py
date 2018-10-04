@@ -311,7 +311,14 @@ class Host(object):
 
         if name.startswith(self.jack_slave_prefix+":"):
             name  = name.replace(self.jack_slave_prefix+":","")
-            ptype = "midi" if name.startswith("midi_") else "audio"
+            if name.startswith("midi_"):
+                ptype = "midi"
+            else:
+                if name.startswith("cv_"):
+                    ptype = "cv"
+                else:
+                    ptype = "audio"
+            
             index = 100 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
@@ -1148,17 +1155,23 @@ class Host(object):
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
 
-        # Audio In
+        # Control Voltage or Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
             title = name.title().replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
+            if name.startswith("cv_"):
+                websocket.write_message("add_hw_port /graph/%s cv 0 %s %i" % (name, title, i+1))
+            else:
+                websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
-        # Audio Out
+        # Control Voltage or Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
             title = name.title().replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
+            if name.startswith("cv_"):
+                websocket.write_message("add_hw_port /graph/%s cv 1 %s %i" % (name, title, i+1))
+            else:
+                websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # MIDI In
         if self.hasSerialMidiIn:
@@ -1823,9 +1836,15 @@ class Host(object):
     # Host stuff - connections
 
     def _fix_host_connection_port(self, port):
+        """Map URL style port names to Jack port names."""
+
         data = port.split("/")
+        # For example, "/graph/capture_2" becomes ['', 'graph',
+        # 'capture_2']. Plugin paths can be longer, e.g.  ['', 'graph',
+        # 'BBCstereo', 'inR']
 
         if len(data) == 3:
+            # Handle special cases
             if data[2] == "serial_midi_in":
                 return "ttymidi:MIDI_in"
             if data[2] == "serial_midi_out":
@@ -1839,8 +1858,18 @@ class Host(object):
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
-            return "system:%s" % data[2]
 
+            # Handle the Control Voltage faker
+            if data[2].startswith("cv_capture_"):
+                num = data[2].replace("cv_capture_", "", 1)
+                return "mod-fake-control-voltage:cv_capture_{0}".format(num)
+            if data[2].startswith("cv_playback_"):
+                num = data[2].replace("cv_playback_", "", 1)
+                return "mod-fake-control-voltage:cv_playback_{0}".format(num)
+            
+            # Default guess
+            return "system:%s" % data[2]
+        
         instance    = "/graph/%s" % data[2]
         portsymbol  = data[3]
         instance_id = self.mapper.get_id_without_creating(instance)
