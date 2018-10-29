@@ -442,6 +442,26 @@ bool has_serial_midi_output_port(void)
     return (jack_port_by_name(gClient, "ttymidi:MIDI_out") != nullptr);
 }
 
+/**
+ * Ask the JACK server if there is the midi-merger client available.
+ */
+bool has_midi_merger_input_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "mod-midi-merger:in") != nullptr);
+}
+
+bool has_midi_merger_output_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr);
+}
+
+
 // --------------------------------------------------------------------------------------------------------
 
 bool connect_jack_ports(const char* port1, const char* port2)

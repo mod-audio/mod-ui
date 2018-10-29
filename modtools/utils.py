@@ -337,6 +337,8 @@ class PedalboardHardware(Structure):
         ("midi_outs", POINTER(PedalboardHardwareMidiPort)),
         ("serial_midi_in", c_bool),
         ("serial_midi_out", c_bool),
+        ("midi_merger_in", c_bool),
+        ("midi_merger_out", c_bool),
     ]
 
 kPedalboardTimeAvailableBPB     = 0x1
