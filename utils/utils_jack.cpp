@@ -450,7 +450,8 @@ bool has_midi_merger_input_port(void)
     if (gClient == nullptr)
         return false;
 
-    return (jack_port_by_name(gClient, "mod-midi-merger:in") != nullptr);
+    return (jack_port_by_name(gClient, "mod-midi-merger:in") != nullptr) ||
+      (jack_port_by_name(gClient, "midi-merger:in") != nullptr);
 }
 
 bool has_midi_merger_output_port(void)
@@ -458,7 +459,8 @@ bool has_midi_merger_output_port(void)
     if (gClient == nullptr)
         return false;
 
-    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr);
+    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr) ||
+      (jack_port_by_name(gClient, "midi-merger:out") != nullptr);
 }
 
 
