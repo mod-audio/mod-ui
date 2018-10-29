@@ -43,7 +43,7 @@ from modtools.utils import (
     charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
-    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_input_port, has_midi_merger_output_port,
     connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
@@ -157,6 +157,8 @@ class Host(object):
         self.midiports = [] # [symbol, alias, pending-connections]
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
+        self.hasMidiMergerIn = False
+        self.hasMidiMergerOut = False
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
@@ -1088,7 +1090,9 @@ class Host(object):
 
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
-
+        self.hasMidiMergerIn  = has_midi_merger_input_port()
+        self.hasMidiMergerOut = has_midi_merger_output_port()
+        
         # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
@@ -1105,6 +1109,14 @@ class Host(object):
         if self.hasSerialMidiIn:
             websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
+        if self.hasMidiMergerIn:
+            # Explained:             add_hw_port instance              type isOutput name    index
+            websocket.write_message("add_hw_port /graph/midi_merger_in midi 0 All_MIDI_In 1")
+            # TODO: Is that instance name special or random?
+            #   2018-10-29, Jakob thinks: random.
+            # TODO: Is that name special or used at all?
+            #   2018-10-29, Jakob thinks: not used.
+            
         ports = get_jack_hardware_ports(False, False)
         for i in range(len(ports)):
             name = ports[i]
@@ -1122,6 +1134,10 @@ class Host(object):
         if self.hasSerialMidiOut:
             websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
+        if self.hasMidiMergerOut:
+            websocket.write_message("add_hw_port /graph/midi_merger_out midi 1 All_MIDI_Out 1")
+
+            
         ports = get_jack_hardware_ports(False, True)
         for i in range(len(ports)):
             name = ports[i]
