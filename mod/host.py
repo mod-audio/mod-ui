@@ -1090,9 +1090,8 @@ class Host(object):
 
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
-        if MIDI_PORT_MODE == "aggregate":
-            self.hasMidiMergerIn  = has_midi_merger_input_port()
-            self.hasMidiMergerOut = has_midi_merger_output_port()            
+        self.hasMidiMergerIn  = has_midi_merger_input_port()
+        #self.hasMidiBroadcasterOut = has_midi_broadcaster_output_port()
         
         # Audio In
         for i in range(len(self.audioportsIn)):
@@ -1115,6 +1114,8 @@ class Host(object):
                 #   2018-10-29, Jakob thinks: random.
                 # TODO: Is that name special or used at all?
                 #   2018-10-29, Jakob thinks: not used.
+
+            # NOTE: The midi-merger automatically connects to available hardware ports.
             
         else: # 'legacy' mode until version 1.6
             if self.hasSerialMidiIn:
@@ -1136,8 +1137,9 @@ class Host(object):
 
         # MIDI Out
         if MIDI_PORT_MODE == "aggregate":
-            if self.hasMidiMergerOut:
-                websocket.write_message("add_hw_port /graph/midi_merger_out midi 1 All_MIDI_Out 1")
+            #if self.hasMidiBroadcasterOut:
+            #    websocket.write_message("add_hw_port /graph/midi_broadcaster_out midi 1 All_MIDI_Out 1")
+            pass
 
         else:
             if self.hasSerialMidiOut:
