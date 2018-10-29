@@ -49,7 +49,7 @@ from modtools.utils import (
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, MIDI_PORT_MODE
 )
 from mod.tuner import find_freqnotecents
 
@@ -1090,8 +1090,9 @@ class Host(object):
 
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
-        self.hasMidiMergerIn  = has_midi_merger_input_port()
-        self.hasMidiMergerOut = has_midi_merger_output_port()
+        if MIDI_PORT_MODE == "aggregate":
+            self.hasMidiMergerIn  = has_midi_merger_input_port()
+            self.hasMidiMergerOut = has_midi_merger_output_port()            
         
         # Audio In
         for i in range(len(self.audioportsIn)):
@@ -1106,50 +1107,54 @@ class Host(object):
             websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # MIDI In
-        if self.hasSerialMidiIn:
-            websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
-
-        if self.hasMidiMergerIn:
-            # Explained:             add_hw_port instance              type isOutput name    index
-            websocket.write_message("add_hw_port /graph/midi_merger_in midi 0 All_MIDI_In 1")
-            # TODO: Is that instance name special or random?
-            #   2018-10-29, Jakob thinks: random.
-            # TODO: Is that name special or used at all?
-            #   2018-10-29, Jakob thinks: not used.
+        if MIDI_PORT_MODE == "aggregate":
+            if self.hasMidiMergerIn:
+                # Explained:             add_hw_port instance              type isOutput name    index
+                websocket.write_message("add_hw_port /graph/midi_merger_in midi 0 All_MIDI_In 1")
+                # TODO: Is that instance name special or random?
+                #   2018-10-29, Jakob thinks: random.
+                # TODO: Is that name special or used at all?
+                #   2018-10-29, Jakob thinks: not used.
             
-        ports = get_jack_hardware_ports(False, False)
-        for i in range(len(ports)):
-            name = ports[i]
-            if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                continue
-            alias = get_jack_port_alias(name)
-            if alias:
-                title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-            else:
-                title = name.split(":",1)[-1].title()
-            title = title.replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
+        else: # 'legacy' mode until version 1.6
+            if self.hasSerialMidiIn:
+                websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+                
+            ports = get_jack_hardware_ports(False, False)
+            for i in range(len(ports)):
+                name = ports[i]
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                    continue
+                alias = get_jack_port_alias(name)
+
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                else:
+                    title = name.split(":",1)[-1].title()
+                title = title.replace(" ","_")
+                websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         # MIDI Out
-        if self.hasSerialMidiOut:
-            websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+        if MIDI_PORT_MODE == "aggregate":
+            if self.hasMidiMergerOut:
+                websocket.write_message("add_hw_port /graph/midi_merger_out midi 1 All_MIDI_Out 1")
 
-        if self.hasMidiMergerOut:
-            websocket.write_message("add_hw_port /graph/midi_merger_out midi 1 All_MIDI_Out 1")
-
-            
-        ports = get_jack_hardware_ports(False, True)
-        for i in range(len(ports)):
-            name = ports[i]
-            if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                continue
-            alias = get_jack_port_alias(name)
-            if alias:
-                title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-            else:
-                title = name.split(":",1)[-1].title()
-            title = title.replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
+        else:
+            if self.hasSerialMidiOut:
+                websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+          
+            ports = get_jack_hardware_ports(False, True)
+            for i in range(len(ports)):
+                name = ports[i]
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                    continue
+                alias = get_jack_port_alias(name)
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                else:
+                    title = name.split(":",1)[-1].title()
+                title = title.replace(" ","_")
+                websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         rinstances = {
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
