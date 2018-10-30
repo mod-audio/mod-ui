@@ -337,8 +337,8 @@ class PedalboardHardware(Structure):
         ("midi_outs", POINTER(PedalboardHardwareMidiPort)),
         ("serial_midi_in", c_bool),
         ("serial_midi_out", c_bool),
-        ("midi_merger_in", c_bool),
         ("midi_merger_out", c_bool),
+        ("midi_broadcaster_in", c_bool),
     ]
 
 kPedalboardTimeAvailableBPB     = 0x1
@@ -517,12 +517,11 @@ utils.has_serial_midi_input_port.restype  = c_bool
 utils.has_serial_midi_output_port.argtypes = None
 utils.has_serial_midi_output_port.restype  = c_bool
 
-utils.has_midi_merger_input_port.argtypes = None
-utils.has_midi_merger_input_port.restype  = c_bool
-
 utils.has_midi_merger_output_port.argtypes = None
 utils.has_midi_merger_output_port.restype  = c_bool
 
+utils.has_midi_broadcaster_input_port.argtypes = None
+utils.has_midi_broadcaster_input_port.restype  = c_bool
 
 utils.get_jack_hardware_ports.argtypes = [c_bool, c_bool]
 utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
@@ -717,12 +716,11 @@ def has_serial_midi_input_port():
 def has_serial_midi_output_port():
     return bool(utils.has_serial_midi_output_port())
 
-def has_midi_merger_input_port():
-    return bool(utils.has_midi_merger_input_port())
-
 def has_midi_merger_output_port():
     return bool(utils.has_midi_merger_output_port())
 
+def has_midi_broadcaster_input_port():
+    return bool(utils.has_midi_broadcaster_input_port())
 
 def get_jack_hardware_ports(isAudio, isOutput):
     return charPtrPtrToStringList(utils.get_jack_hardware_ports(isAudio, isOutput))

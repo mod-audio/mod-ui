@@ -445,15 +445,6 @@ bool has_serial_midi_output_port(void)
 /**
  * Ask the JACK server if there is the midi-merger client available.
  */
-bool has_midi_merger_input_port(void)
-{
-    if (gClient == nullptr)
-        return false;
-
-    return (jack_port_by_name(gClient, "mod-midi-merger:in") != nullptr) ||
-      (jack_port_by_name(gClient, "midi-merger:in") != nullptr);
-}
-
 bool has_midi_merger_output_port(void)
 {
     if (gClient == nullptr)
@@ -461,6 +452,18 @@ bool has_midi_merger_output_port(void)
 
     return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr) ||
       (jack_port_by_name(gClient, "midi-merger:out") != nullptr);
+}
+
+/**
+ * Ask the JACK server if there is the midi-broadcaster client available.
+ */
+bool has_midi_broadcaster_input_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr) ||
+      (jack_port_by_name(gClient, "midi-broadcaster:in") != nullptr);
 }
 
 

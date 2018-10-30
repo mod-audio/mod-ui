@@ -1091,7 +1091,7 @@ class Host(object):
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
         self.hasMidiMergerIn  = has_midi_merger_input_port()
-        #self.hasMidiBroadcasterOut = has_midi_broadcaster_output_port()
+        self.hasMidiBroadcasterOut = has_midi_broadcaster_output_port()
         
         # Audio In
         for i in range(len(self.audioportsIn)):
@@ -1137,8 +1137,8 @@ class Host(object):
 
         # MIDI Out
         if MIDI_PORT_MODE == "aggregate":
-            #if self.hasMidiBroadcasterOut:
-            #    websocket.write_message("add_hw_port /graph/midi_broadcaster_out midi 1 All_MIDI_Out 1")
+            if self.hasMidiBroadcasterOut:
+                websocket.write_message("add_hw_port /graph/midi_broadcaster_out midi 1 All_MIDI_Out 1")
             pass
 
         else:
