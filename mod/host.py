@@ -43,7 +43,7 @@ from modtools.utils import (
     charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
-    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_input_port, has_midi_merger_output_port,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
     connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
@@ -157,8 +157,8 @@ class Host(object):
         self.midiports = [] # [symbol, alias, pending-connections]
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
-        self.hasMidiMergerIn = False
         self.hasMidiMergerOut = False
+        self.hasMidiBroadcasterIn = False        
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
@@ -1090,8 +1090,8 @@ class Host(object):
 
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
-        self.hasMidiMergerIn  = has_midi_merger_input_port()
-        self.hasMidiBroadcasterOut = has_midi_broadcaster_output_port()
+        self.hasMidiMergerOut  = has_midi_merger_output_port()
+        self.hasMidiBroadcasterIn = has_midi_broadcaster_input_port()
         
         # Audio In
         for i in range(len(self.audioportsIn)):
@@ -1107,13 +1107,14 @@ class Host(object):
 
         # MIDI In
         if MIDI_PORT_MODE == "aggregate":
-            if self.hasMidiMergerIn:
+            if self.hasMidiMergerOut:
                 # Explained:             add_hw_port instance              type isOutput name    index
-                websocket.write_message("add_hw_port /graph/midi_merger_in midi 0 All_MIDI_In 1")
+                websocket.write_message("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
                 # TODO: Is that instance name special or random?
-                #   2018-10-29, Jakob thinks: random.
+                #   2018-10-31, Jakob thinks: random but has to match
+                #   in function _fix_host_connection_port()                
                 # TODO: Is that name special or used at all?
-                #   2018-10-29, Jakob thinks: not used.
+                #   2018-10-31, Jakob thinks: used in <div/>.
 
             # NOTE: The midi-merger automatically connects to available hardware ports.
             
@@ -1137,8 +1138,8 @@ class Host(object):
 
         # MIDI Out
         if MIDI_PORT_MODE == "aggregate":
-            if self.hasMidiBroadcasterOut:
-                websocket.write_message("add_hw_port /graph/midi_broadcaster_out midi 1 All_MIDI_Out 1")
+            if self.hasMidiBroadcasterIn:
+                websocket.write_message("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
             pass
 
         else:
@@ -1793,6 +1794,19 @@ class Host(object):
                 return "ttymidi:MIDI_in"
             if data[2] == "serial_midi_out":
                 return "ttymidi:MIDI_out"
+            if data[2] == "midi_merger_out":
+                if APP == 1:
+                    # The standalone development client and the
+                    # internal client (on the Duo) have different port
+                    # names.
+                    return "midi-merger:out"
+                else:
+                    return "mod-midi-merger:out"
+            if data[2] == "midi_broadcaster_in":
+                if APP == 1:
+                    return "midi-broadcaster:in"
+                else:
+                    return "mod-midi-broadcaster:in"
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
