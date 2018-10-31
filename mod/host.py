@@ -43,13 +43,13 @@ from modtools.utils import (
     charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
-    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port,
-    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
+    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, MIDI_PORT_MODE
 )
 from mod.tuner import find_freqnotecents
 
@@ -162,6 +162,8 @@ class Host(object):
         self.midiports = [] # [symbol, alias, pending-connections]
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
+        self.hasMidiMergerOut = False
+        self.hasMidiBroadcasterIn = False        
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
@@ -1154,6 +1156,8 @@ class Host(object):
 
         self.hasSerialMidiIn  = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
+        self.hasMidiMergerOut  = has_midi_merger_output_port()
+        self.hasMidiBroadcasterIn = has_midi_broadcaster_input_port()
 
         # Control Voltage or Audio In
         for i in range(len(self.audioportsIn)):
@@ -1174,38 +1178,58 @@ class Host(object):
                 websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # MIDI In
-        if self.hasSerialMidiIn:
-            websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+        if MIDI_PORT_MODE == "aggregate":
+            if self.hasMidiMergerOut:
+                # Explained:             add_hw_port instance              type isOutput name    index
+                websocket.write_message("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+                # TODO: Is that instance name special or random?
+                #   2018-10-31, Jakob thinks: random but has to match
+                #   in function _fix_host_connection_port()                
+                # TODO: Is that name special or used at all?
+                #   2018-10-31, Jakob thinks: used in <div/>.
 
-        ports = get_jack_hardware_ports(False, False)
-        for i in range(len(ports)):
-            name = ports[i]
-            if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                continue
-            alias = get_jack_port_alias(name)
-            if alias:
-                title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-            else:
-                title = name.split(":",1)[-1].title()
-            title = title.replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
+            # NOTE: The midi-merger automatically connects to available hardware ports.
+            
+        else: # 'legacy' mode until version 1.6
+            if self.hasSerialMidiIn:
+                websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+                
+            ports = get_jack_hardware_ports(False, False)
+            for i in range(len(ports)):
+                name = ports[i]
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                    continue
+                alias = get_jack_port_alias(name)
+
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                else:
+                    title = name.split(":",1)[-1].title()
+                title = title.replace(" ","_")
+                websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         # MIDI Out
-        if self.hasSerialMidiOut:
-            websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+        if MIDI_PORT_MODE == "aggregate":
+            if self.hasMidiBroadcasterIn:
+                websocket.write_message("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+            pass
 
-        ports = get_jack_hardware_ports(False, True)
-        for i in range(len(ports)):
-            name = ports[i]
-            if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                continue
-            alias = get_jack_port_alias(name)
-            if alias:
-                title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-            else:
-                title = name.split(":",1)[-1].title()
-            title = title.replace(" ","_")
-            websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
+        else:
+            if self.hasSerialMidiOut:
+                websocket.write_message("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+          
+            ports = get_jack_hardware_ports(False, True)
+            for i in range(len(ports)):
+                name = ports[i]
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                    continue
+                alias = get_jack_port_alias(name)
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                else:
+                    title = name.split(":",1)[-1].title()
+                title = title.replace(" ","_")
+                websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         rinstances = {
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
@@ -1849,6 +1873,19 @@ class Host(object):
                 return "ttymidi:MIDI_in"
             if data[2] == "serial_midi_out":
                 return "ttymidi:MIDI_out"
+            if data[2] == "midi_merger_out":
+                if APP == 1:
+                    # The standalone development client and the
+                    # internal client (on the Duo) have different port
+                    # names.
+                    return "midi-merger:out"
+                else:
+                    return "mod-midi-merger:out"
+            if data[2] == "midi_broadcaster_in":
+                if APP == 1:
+                    return "midi-broadcaster:in"
+                else:
+                    return "mod-midi-broadcaster:in"
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):

@@ -479,6 +479,14 @@ JqueryClass('pedalboard', {
                     var hw = $('<div class="hardware-input" mod-port-index="1" title="Hardware Serial MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/serial_midi_out', 'midi')
                 }
+                if (data.hardware.midi_merger_in) {
+                    var hw = $('<div class="hardware-output" mod-port-index="2" title="All MIDI In">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/midi_merger_in', 'midi')
+                }
+                if (data.hardware.midi_merger_out) {
+                    var hw = $('<div class="hardware-input" mod-port-index="2" title="All MIDI Out">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/midi_merger_out', 'midi')
+                }		
                 var portdata, pindex
                 for (var i in data.hardware.midi_ins) {
                     portdata = data.hardware.midi_ins[i]
