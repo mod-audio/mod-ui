@@ -296,6 +296,9 @@ class Host(object):
         Protocol.register_cmd_callback("get_out_chan_link", self.hmi_get_out_chan_link)
         Protocol.register_cmd_callback("set_out_chan_link", self.hmi_set_out_chan_link)
 
+        Protocol.register_cmd_callback("get_display_brightness", self.hmi_get_display_brightness)
+        Protocol.register_cmd_callback("set_display_brightness", self.hmi_set_display_brightness)
+        
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
     def __del__(self):
@@ -3560,6 +3563,21 @@ _:b%i
         logging.info("hmi get output channel {0} link state to {1}".format(oddch, link))
         if oddch in [1] and link in [0,1]:
             self.profile.output_stereo_link = link
+            callback(True)
+        else:
+            callback(False)
+
+    def hmi_get_display_brightness(self, callback):
+        """Get the brightness of the display."""
+        logging.info("hmi get display brightness")
+        value = self.profile.display_brightness
+        callback(True, value)
+        
+    def hmi_set_display_brightness(self, brightness, callback):
+        """Set the display_brightness."""
+        logging.info("hmi set display brightness to {0}".format(brightness))
+        if brightness in [0, 25, 50, 75, 100]:
+            self.profile.display_brightness = brightness
             callback(True)
         else:
             callback(False)

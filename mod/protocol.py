@@ -139,6 +139,10 @@ class Protocol(object):
         "set_in_chan_link": [int, int],
         "get_out_chan_link": [int],
         "set_out_chan_link": [int, int],
+
+        # Display brightness
+        "get_display_brightness": [],
+        "set_display_brightness": [int],
     }
 
     COMMANDS_FUNC = {}
