@@ -143,6 +143,10 @@ class Protocol(object):
         # Display brightness
         "get_display_brightness": [],
         "set_display_brightness": [int],
+
+        # Master volume channel mode
+        "get_master_volume_channel_mode": [],
+        "set_master_volume_channel_mode": [int],
     }
 
     COMMANDS_FUNC = {}

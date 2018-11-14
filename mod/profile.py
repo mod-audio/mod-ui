@@ -43,7 +43,12 @@ class Profile:
     configurable_output_mode = 0 # 0 headphone, 1 control voltage
 
     display_brightness = 50 # percentage in [0,25,50,75,100]
-    
+
+    master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
+                                   # for master linked to out 2; 2 for
+                                   # master linked to both out 1 and
+                                   # out 2.
+
     def set_midi_prgch_bank_channel(self, channel):
         result = False
         if 0 <= channel and channel < 16:

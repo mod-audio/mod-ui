@@ -298,6 +298,9 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_display_brightness", self.hmi_get_display_brightness)
         Protocol.register_cmd_callback("set_display_brightness", self.hmi_set_display_brightness)
+
+        Protocol.register_cmd_callback("get_master_volume_channel_mode", self.hmi_get_master_volume_channel_mode)
+        Protocol.register_cmd_callback("set_master_volume_channel_mode", self.hmi_set_master_volume_channel_mode)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3578,6 +3581,21 @@ _:b%i
         logging.info("hmi set display brightness to {0}".format(brightness))
         if brightness in [0, 25, 50, 75, 100]:
             self.profile.display_brightness = brightness
+            callback(True)
+        else:
+            callback(False)
+
+    def hmi_get_master_volume_channel_mode(self, callback):
+        """Get the mode how the master volume is linked to the channel output volumes."""
+        logging.info("hmi get master volume channel mode")
+        value = self.profile.master_volume_channel_mode
+        callback(True, value)
+        
+    def hmi_set_master_volume_channel_mode(self, mode, callback):
+        """Set the mode how the master volume is linked to the channel output volumes."""
+        logging.info("hmi set master volume channel mode to {0}".format(mode))
+        if mode in [0, 1, 2]:
+            self.profile.master_volume_channel_mode = mode
             callback(True)
         else:
             callback(False)
