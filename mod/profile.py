@@ -41,7 +41,14 @@ class Profile:
     
     configurable_input_mode = 0 # 0 expression pedal, 1 control voltage input
     configurable_output_mode = 0 # 0 headphone, 1 control voltage
-    
+
+    display_brightness = 50 # percentage in [0,25,50,75,100]
+
+    master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
+                                   # for master linked to out 2; 2 for
+                                   # master linked to both out 1 and
+                                   # out 2.
+
     def set_midi_prgch_bank_channel(self, channel):
         result = False
         if 0 <= channel and channel < 16:
@@ -78,6 +85,7 @@ class Profile:
             "headphone_volume": self.headphone_volume,
             "configurable_input_mode": self.configurable_input_mode,
             "configurable_output_mode": self.configurable_output_mode,
+            "display_brightness": self.display_brightness,
         }
         result = False
         try:
@@ -113,6 +121,7 @@ class Profile:
             self.headphone_volume = data["headphone_volume"]
             self.configurable_input_mode = data["configurable_input_mode"]
             self.configurable_output_mode = data["configurable_output_mode"]
+            self.display_brightness = data["display_brightness"]
             result = True
             
         except FileNotFoundError as e:
