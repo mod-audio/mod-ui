@@ -22,6 +22,7 @@ HMI_ADDRESSING_TYPE_INTEGER      = 128
 
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
+HMI_ACTUATOR_TYPE_POTENTIOMETER = 3
 
 # use pitchbend as midi cc, with an invalid MIDI controller number
 MIDI_PITCHBEND_AS_CC = 131
@@ -88,16 +89,23 @@ class Addressings(object):
         self.hmi_hw2uri_map = {}
         self.hmi_uri2hw_map = {}
 
+        # TODO: Why 4?
         for i in range(0, 4):
             knob_hw  = (0, 0, HMI_ACTUATOR_TYPE_KNOB,       i)
             foot_hw  = (0, 0, HMI_ACTUATOR_TYPE_FOOTSWITCH, i)
+            poti_hw  = (0, 0, HMI_ACTUATOR_TYPE_POTENTIOMETER, i)
+            
             knob_uri = "/hmi/knob%i"       % (i+1)
             foot_uri = "/hmi/footswitch%i" % (i+1)
+            poti_uri = "/hmi/potentiometer%i" % (i+1)
 
             self.hmi_hw2uri_map[knob_hw]  = knob_uri
             self.hmi_hw2uri_map[foot_hw]  = foot_uri
+            self.hmi_hw2uri_map[poti_hw]  = poti_uri
+            
             self.hmi_uri2hw_map[knob_uri] = knob_hw
             self.hmi_uri2hw_map[foot_uri] = foot_hw
+            self.hmi_uri2hw_map[poti_uri] = poti_hw
 
     # clear all addressings, leaving metadata intact
     def clear(self):
