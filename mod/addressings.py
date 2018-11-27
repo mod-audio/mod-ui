@@ -97,7 +97,8 @@ class Addressings(object):
             
             knob_uri = "/hmi/knob%i"       % (i+1)
             foot_uri = "/hmi/footswitch%i" % (i+1)
-            poti_uri = "/hmi/potentiometer%i" % (i+1)
+            poti_uri = "/hmi/poti%i" % (i+1)
+            # Note: These have to match the strings in `/etc/mod-hardware-descriptor.json`
 
             self.hmi_hw2uri_map[knob_hw]  = knob_uri
             self.hmi_hw2uri_map[foot_hw]  = foot_uri
