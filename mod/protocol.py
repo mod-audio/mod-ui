@@ -150,9 +150,13 @@ class Protocol(object):
 
         "get_play_status": [],
         "set_play_status": [int],
+
+        "get_master_volume_channel": [],
         "set_master_volume_channel": [int],
 
         "get_tuner_mute": [],
+        "set_tuner_mute": [int],
+
         "get_pb_name": [],
     }
 
