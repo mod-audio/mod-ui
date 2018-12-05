@@ -3540,23 +3540,23 @@ _:b%i
         else:
             callback(False)
 
-    ## There is a plug-in for that! Don't use.
-    # def hmi_get_send_midi_clk(self, callback):
-    #     """Query the status of sending MIDI Beat Clock."""
-    #     logging.info("hmi get midi beat clock status")
+    # There is a plug-in for that. But Jesse does not find it usable.
+    def hmi_get_send_midi_clk(self, callback):
+        """Query the status of sending MIDI Beat Clock."""
+        logging.info("hmi get midi beat clock status")
         
-    #     onoff = 1 # TODO: communicate with mod-host
-    #     callback(True, int(onoff))
+        onoff = 1 # TODO: communicate with mod-host
+        callback(True, int(onoff))
 
-    # def hmi_set_send_midi_clk(self, onoff, callback):
-    #     """Query the status of sending MIDI Beat Clock."""
-    #     logging.info("hmi set midi beat clock status to {0}".format(onoff))
+    def hmi_set_send_midi_clk(self, onoff, callback):
+        """Query the status of sending MIDI Beat Clock."""
+        logging.info("hmi set midi beat clock status to {0}".format(onoff))
 
-    #     if onoff in [0, 1]:
-    #         # TODO: communicate with mod host.
-    #         callback(True)
-    #     else:
-    #         callback(False)
+        if onoff in [0, 1]:
+            # TODO: communicate with mod host.
+            callback(True)
+        else:
+            callback(False)
 
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
