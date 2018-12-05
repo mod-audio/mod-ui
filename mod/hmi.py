@@ -54,6 +54,7 @@ class SerialIOStream(BaseIOStream):
 
 class HMI(object):
     def __init__(self, port, baud_rate, callback):
+        logging.basicConfig(level=logging.DEBUG)
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
@@ -67,7 +68,7 @@ class HMI(object):
     def init(self, callback):
         try:
             print("{0}, {1}".format(self.port, self.baud_rate))
-            sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:
@@ -96,6 +97,7 @@ class HMI(object):
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
                 logging.error('[hmi] error parsing msg %s' % repr(data))
+                logging.error('[hmi]   error code %s' % e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:
                 if msg.is_resp():
