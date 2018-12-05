@@ -3524,6 +3524,7 @@ _:b%i
 
         if mode in [0, 1, 2]:
             # Communicate with mod host.
+            # Note: First disable all unchoosen options.
             if mode == 0: # Internal
                 self.send_notmodified("feature_enable link 0")
                 self.send_notmodified("feature_enable midi_clock_slave 0")
@@ -3531,30 +3532,31 @@ _:b%i
                 self.send_notmodified("feature_enable link 0")
                 self.send_notmodified("feature_enable midi_clock_slave 1")
             if mode == 2: # Ableton Link
-                self.send_notmodified("feature_enable link 1")
                 self.send_notmodified("feature_enable midi_clock_slave 0")
-
+                self.send_notmodified("feature_enable link 1")
+                
             self.profile.sync_mode = mode
             callback(True)
         else:
             callback(False)
 
-    def hmi_get_send_midi_clk(self, callback):
-        """Query the status of sending MIDI Beat Clock."""
-        logging.info("hmi get midi beat clock status")
+    ## There is a plug-in for that! Don't use.
+    # def hmi_get_send_midi_clk(self, callback):
+    #     """Query the status of sending MIDI Beat Clock."""
+    #     logging.info("hmi get midi beat clock status")
         
-        onoff = 1 # TODO: communicate with mod-host
-        callback(True, int(onoff))
+    #     onoff = 1 # TODO: communicate with mod-host
+    #     callback(True, int(onoff))
 
-    def hmi_set_send_midi_clk(self, onoff, callback):
-        """Query the status of sending MIDI Beat Clock."""
-        logging.info("hmi set midi beat clock status to {0}".format(onoff))
+    # def hmi_set_send_midi_clk(self, onoff, callback):
+    #     """Query the status of sending MIDI Beat Clock."""
+    #     logging.info("hmi set midi beat clock status to {0}".format(onoff))
 
-        if onoff in [0, 1]:
-            # TODO: communicate with mod host.
-            callback(True)
-        else:
-            callback(False)
+    #     if onoff in [0, 1]:
+    #         # TODO: communicate with mod host.
+    #         callback(True)
+    #     else:
+    #         callback(False)
 
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
