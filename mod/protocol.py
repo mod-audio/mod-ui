@@ -147,6 +147,13 @@ class Protocol(object):
         # Master volume channel mode
         "get_master_volume_channel_mode": [],
         "set_master_volume_channel_mode": [int],
+
+        "get_play_status": [],
+        "set_play_status": [int],
+        "set_master_volume_channel": [int],
+
+        "get_tuner_mute": [],
+        "get_pb_name": [],
     }
 
     COMMANDS_FUNC = {}

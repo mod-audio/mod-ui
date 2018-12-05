@@ -303,6 +303,12 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_master_volume_channel_mode", self.hmi_get_master_volume_channel_mode)
         Protocol.register_cmd_callback("set_master_volume_channel_mode", self.hmi_set_master_volume_channel_mode)
+
+        Protocol.register_cmd_callback("get_play_status", self.hmi_get_play_status)
+        Protocol.register_cmd_callback("set_play_status", self.hmi_set_play_status)
+        Protocol.register_cmd_callback("set_master_volume_channel", self.hmi_set_master_volume_channel)
+        Protocol.register_cmd_callback("get_tuner_mute", self.hmi_get_tuner_mute)
+        Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3437,7 +3443,7 @@ _:b%i
         """Get the Jack BPM."""
         logging.info("hmi tempo bpm get")
         bpm = get_jack_data(True)['bpm']
-        callback(True, bpm)
+        callback(bpm)
         
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
@@ -3669,8 +3675,27 @@ _:b%i
             callback(True)
         else:
             callback(False)
-            
-            
+
+    def hmi_get_play_status(self, callback):
+        """TODO."""
+        callback(True)
+
+    def hmi_set_play_status(self, state, callback):
+        """TODO."""
+        callback(True)
+
+    def hmi_set_master_volume_channel(self, value, callback):
+        """TODO."""
+        callback(True)
+
+    def hmi_get_tuner_mute(self, callback):
+        """TODO."""
+        callback(True)
+
+    def hmi_get_pb_name(self, callback):
+        """TODO."""
+        callback(True)
+
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
 
