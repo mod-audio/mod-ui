@@ -2722,6 +2722,10 @@ _:b%i
         self.transport_sync = "link" if enabled else "none"
         self.send_notmodified("feature_enable link %i" % int(enabled))
 
+    def set_midi_clock_slave_enabled(self, enabled):
+        self.transport_sync = "midi_clock_slave" if enabled else "none"
+        self.send_notmodified("feature_enable midi_clock_slave %i" % int(enabled))
+
     def set_transport_bpb(self, bpb, sendMsg, callback=None, datatype='int'):
         self.transport_bpb = bpb
 

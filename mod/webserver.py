@@ -928,6 +928,10 @@ class ServerWebSocket(websocket.WebSocketHandler):
             on = bool(int(data[1]))
             SESSION.host.set_link_enabled(on, True)
 
+        elif cmd == "midi_clock_slave_enable":
+            on = bool(int(data[1]))
+            SESSION.host.set_midi_clock_slave_enabled(on)
+
         elif cmd == "transport-bpb":
             bpb = float(data[1])
             SESSION.host.set_transport_bpb(bpb, True)

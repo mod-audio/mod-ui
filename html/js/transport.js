@@ -233,7 +233,7 @@ function TransportControls(options) {
         var opt = $(this)
         opt.click(function (e) {
             var newSyncMode = opt.attr('mod-sync-mode')
-            if (newSyncMode == "link") {
+            if (newSyncMode === "link") {
                 options.unaddressPort(":bpm", function (ok) {
                     if (! ok) {
                         return
@@ -242,8 +242,13 @@ function TransportControls(options) {
                     self.setControlEnabled(":bpm", true)
                     self.setSyncMode(newSyncMode)
                 })
+            } else if (newSyncMode === "midi-clock-slave") {
+                ws.send("link_enable 0")
+                ws.send("midi_clock_slave_enable 1")
+                self.setSyncMode(newSyncMode)
             } else {
                 ws.send("link_enable 0")
+                ws.send("midi_clock_slave_enable 0")
                 self.setSyncMode(newSyncMode)
             }
         })
