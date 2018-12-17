@@ -167,7 +167,7 @@ function TransportControls(options) {
         }
     })
     options.transportBPM.find(".mod-address").click(function (e) {
-        if ($(this).hasClass('link-enabled')) {
+        if ($(this).hasClass('link-enabled') || $(this).hasClass('midi-clock-slave-enabled')) {
             var img = $('<img>').attr('src', 'img/icn-blocked.png')
             $('body').append(img)
             img.css({
@@ -179,7 +179,13 @@ function TransportControls(options) {
             setTimeout(function () {
                 img.remove()
             }, 500)
-            new Notification("warn", "Cannot address BPM parameter with Link enabled", 5000)
+            var message
+            if ($(this).hasClass('link-enabled')) {
+              message = "Cannot address BPM parameter with Link enabled"
+            } else if ($(this).hasClass('midi-clock-slave-enabled')) {
+              message = "Cannot address BPM parameter with MIDI Clock Slave enabled"
+            }
+            new Notification("warn", message, 5000)
             return false
         }
         options.openAddressingDialog(self.beatsPerMinutePort, "Global-BPM")
@@ -239,13 +245,23 @@ function TransportControls(options) {
                         return
                     }
                     ws.send("link_enable 1")
+                    ws.send("midi_clock_slave_enable 0")
                     self.setControlEnabled(":bpm", true)
                     self.setSyncMode(newSyncMode)
                 })
             } else if (newSyncMode === "midi-clock-slave") {
-                ws.send("link_enable 0")
-                ws.send("midi_clock_slave_enable 1")
-                self.setSyncMode(newSyncMode)
+                options.unaddressPort(":bpm", function (ok) {
+                    if (! ok) {
+                        return
+                    }
+                    // Send commands to host to disable link if needed and enable MIDI clock slave
+                    ws.send("link_enable 0")
+                    ws.send("midi_clock_slave_enable 1")
+                    // Disabled BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
+                    self.setControlEnabled(":bpm", false)
+                    // Set new sync mode to disable addressing from mod-ui
+                    self.setSyncMode(newSyncMode)
+                })
             } else {
                 ws.send("link_enable 0")
                 ws.send("midi_clock_slave_enable 0")
@@ -349,6 +365,12 @@ function TransportControls(options) {
             options.transportBPM.find(".mod-address").addClass('link-enabled')
         } else {
             options.transportBPM.find(".mod-address").removeClass('link-enabled')
+        }
+
+        if (newSyncMode == "midi-clock-slave") {
+          options.transportBPM.find(".mod-address").addClass('midi-clock-slave-enabled')
+        } else {
+          options.transportBPM.find(".mod-address").removeClass('midi-clock-slave-enabled')
         }
     }
 
