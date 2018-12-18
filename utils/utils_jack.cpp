@@ -387,7 +387,7 @@ float get_jack_sample_rate(void)
 
 const char* get_jack_port_alias(const char* portname)
 {
-    static char  aliases[0xff][2];
+    static char  aliases[2][0xff];
     static char* aliasesptr[2] = {
         aliases[0],
         aliases[1]

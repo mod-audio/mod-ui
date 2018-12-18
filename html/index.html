@@ -842,10 +842,15 @@ $('document').ready(function() {
     <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
         <div class="mod-controls clearfix">
             <div class="mod-control-group clearfix">
-                <div class="mod-switch" id="mod-switch-transport-play">
-                    <span class="mod-switch-title">Playing</span>
-                    <div class="mod-switch-image" mod-widget="switch"></div>
-                    <div class="mod-address"></div>
+                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
+                    <span class="mod-enumerated-title">Sync Mode</span>
+                    <div class="mod-enumerated-list">
+                        <div mod-sync-mode="none">None / Addressings</div>
+                        <div class="mod-midi-icon" mod-sync-mode="midi-clock-slave">
+                          Clock Slave
+                        </div>
+                        <div mod-sync-mode="link">Ableton&trade; Link</div>
+                    </div>
                 </div>
 
                 <div class="mod-knob" id="mod-knob-transport-bpm">
@@ -866,13 +871,13 @@ $('document').ready(function() {
                     <div class="mod-address"></div>
                 </div>
 
-                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
-                    <span class="mod-enumerated-title">Sync Mode</span>
-                    <div class="mod-enumerated-list">
-                        <div mod-sync-mode="none">None / Addressings</div>
-                        <div mod-sync-mode="link">Ableton&trade; Link</div>
-                    </div>
+                <div class="mod-switch" id="mod-switch-transport-play">
+                    <span class="mod-switch-title">Transport</span>
+                    <div class="mod-switch-image stop" mod-widget="switch"></div>
+                    <div class="mod-switch-image play" mod-widget="switch"></div>
+                    <div class="mod-address"></div>
                 </div>
+
             </div>
         </div>
     </div>

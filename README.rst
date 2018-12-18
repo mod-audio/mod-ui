@@ -42,8 +42,18 @@ Before running the server, you need to activate your virtualenv
 
     $ source modui-env/bin/activate
 
-Run the server::
+Mod-ui depends on mod-host and the JACK server running. So run::
+  
+    $ jack_control start  # or your prefered way to get JACK running
+ 
+Then in another terminal::
+ 
+    $ ./mod-host -n -p 5555 -f 5556
 
-    $ ./server.py
+And now you are ready to start the webserver:
+  
+    $ MOD_APP=1 MOD_LIVE_ISO=1 MOD_DEV_ENVIRONMENT=0 ./server.py
 
-Open your webkit based browser (I use Chromium) and point to http://localhost:8888
+Setting the environment variables is needed when developing on a PC.
+Open your webkit based browser (I use Chromium) and point to
+http://localhost:8888.

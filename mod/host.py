@@ -1150,6 +1150,8 @@ class Host(object):
 
             if self.transport_sync == "link":
                 self.set_link_enabled(True)
+            # if self.transport_sync == "midi_clock_slave":
+            #     self.set_midi_clock_slave_enabled(True)
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -2855,6 +2857,13 @@ _:b%i
 
         self.transport_sync = "link" if enabled else "none"
         self.send_notmodified("feature_enable link %i" % int(enabled))
+
+    def set_midi_clock_slave_enabled(self, enabled):
+        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+            print("ERROR: MIDI Clock Slave enabled while BPM is still addressed")
+
+        self.transport_sync = "midi_clock_slave" if enabled else "none"
+        self.send_notmodified("feature_enable midi_clock_slave %i" % int(enabled))
 
     def set_transport_bpb(self, bpb, sendMsg, callback=None, datatype='int'):
         self.transport_bpb = bpb
