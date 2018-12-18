@@ -257,7 +257,7 @@ function TransportControls(options) {
                     // Send commands to host to disable link if needed and enable MIDI clock slave
                     ws.send("link_enable 0")
                     ws.send("midi_clock_slave_enable 1")
-                    // Disabled BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
+                    // Disable BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
                     self.setControlEnabled(":bpm", false)
                     // Set new sync mode to disable addressing from mod-ui
                     self.setSyncMode(newSyncMode)
@@ -265,6 +265,7 @@ function TransportControls(options) {
             } else {
                 ws.send("link_enable 0")
                 ws.send("midi_clock_slave_enable 0")
+                self.setControlEnabled(":bpm", true)
                 self.setSyncMode(newSyncMode)
             }
         })
