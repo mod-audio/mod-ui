@@ -243,6 +243,11 @@ function HardwareManager(options) {
             }
         }
 
+        // Hide Tempo section if the ControlPort has the property lv2:designation time:beatsPerMinute
+        if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
+          form.find('.tempo').css({display: "none"})
+        }
+
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
         var maxv  = currentAddressing.maximum != null ? currentAddressing.maximum : port.ranges.maximum
@@ -268,18 +273,23 @@ function HardwareManager(options) {
             min.attr("step", step)
             max.attr("step", step)
 
-            // Hide sensibility options for MIDI
+            // Hide sensibility and tempo options for MIDI
             var act = actuatorSelect.val()
             if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                form.find('.sensibility').css({visibility:"hidden"})
+                form.find('.sensibility').css({display:"none"})
+                form.find('.tempo').css({display:"none"})
             }
 
             actuatorSelect.bind('change keyup', function () {
                 var act = $(this).val()
                 if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.sensibility').css({visibility:"hidden"})
+                    form.find('.sensibility').css({display:"none"})
+                    form.find('.tempo').css({display: "none"})
                 } else {
-                    form.find('.sensibility').css({visibility:"visible"})
+                    form.find('.sensibility').css({display:"block"})
+                    if (port.designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
+                      form.find('.tempo').css({display: "block"})
+                    }
                 }
             })
         }
