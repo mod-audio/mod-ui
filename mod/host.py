@@ -419,7 +419,8 @@ class Host(object):
 
             return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s %s" % (data['instance_id'],
                                                                                       data['port'],
-                                                                                      actuator[0], actuator[1],
+                                                                                      actuator[0], # device id
+                                                                                      actuator[1], # actuator id
                                                                                       label,
                                                                                       rvalue,
                                                                                       data['minimum'],
@@ -437,6 +438,9 @@ class Host(object):
                                                                          data['minimum'],
                                                                          data['maximum'],
                                                                          ), callback, datatype='boolean')
+        if atype == Addressings.ADDRESSING_TYPE_BPM: # XXX do something here?
+            callback(True)
+            return
 
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)

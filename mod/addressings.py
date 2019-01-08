@@ -34,6 +34,9 @@ kMidiLearnURI = "/midi-learn"
 kMidiUnmapURI = "/midi-unmap"
 kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
+# URI for BPM sync (for non-addressed control ports)
+kBpmURI ="/bpm"
+
 # Limits
 kMaxAddressableScalepoints = 100
 
@@ -42,6 +45,7 @@ class Addressings(object):
     ADDRESSING_TYPE_HMI  = 1
     ADDRESSING_TYPE_CC   = 2
     ADDRESSING_TYPE_MIDI = 3
+    ADDRESSING_TYPE_BPM = 4
 
     def __init__(self):
         self.init()
@@ -376,7 +380,7 @@ class Addressings(object):
     def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value):
         actuator_type = self.get_actuator_type(actuator_uri)
 
-        if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC):
+        if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
             print("ERROR: Trying to address the wrong way, stop!")
             return None
 
@@ -762,6 +766,8 @@ class Addressings(object):
             return self.ADDRESSING_TYPE_HMI
         if actuator_uri.startswith(kMidiCustomPrefixURI):
             return self.ADDRESSING_TYPE_MIDI
+        if actuator_uri == kBpmURI:
+            return self.ADDRESSING_TYPE_BPM
         return self.ADDRESSING_TYPE_CC
 
     def get_presets_as_options(self, instance_id):

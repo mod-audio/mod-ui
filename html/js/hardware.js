@@ -23,6 +23,9 @@ var kMidiLearnURI = "/midi-learn"
 var kMidiUnlearnURI = "/midi-unlearn"
 var kMidiCustomPrefixURI = "/midi-custom_" // to show current one, ignored on save
 
+// URI for BPM sync (for non-addressed control ports)
+var kBpmURI ="/bpm"
+
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 
@@ -78,6 +81,7 @@ function HardwareManager(options) {
             }
         }
         self.addressingsByActuator[kMidiLearnURI] = []
+        self.addressingsByActuator[kBpmURI] = []
     }
 
     this.reset()
@@ -163,6 +167,29 @@ function HardwareManager(options) {
         return available
     }
 
+    this.buildDividerOptions = function (select, port, curStep) {
+        select.children().remove()
+        var b = 120 // TODO get global tempo
+        // First, convert min and max port values to equivalent in seconds
+        // var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port)
+        // var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port)
+        var min = convertPortValueToSecondsEquivalent(0, port)
+        var max = convertPortValueToSecondsEquivalent(20, port)
+
+        // Then, compute min and max subdividers
+        var s1 = getDividerValue(b, min)
+        var s2 = getDividerValue(b, max)
+        var sMin = s1 < s2 ? s1 : s2
+        var sMax = s1 < s2 ? s2 : s1
+
+        // Finally, filter options s such as sMin <= s <= sMax
+        var filteredDividers = getFilteredDividers(sMin, sMax)
+
+        for (i = 0; i < filteredDividers.length; i++) {
+          $('<option>').attr('value', filteredDividers[i].value).html(filteredDividers[i].label).appendTo(select)
+        }
+    }
+
     this.buildSensibilityOptions = function (select, port, curStep) {
         select.children().remove()
 
@@ -243,17 +270,22 @@ function HardwareManager(options) {
             }
         }
 
-        // Hide Tempo section if the ControlPort has the property lv2:designation time:beatsPerMinute
-        if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
-          form.find('.tempo').css({display: "none"})
-        }
-
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
         var maxv  = currentAddressing.maximum != null ? currentAddressing.maximum : port.ranges.maximum
         var min   = form.find('input[name=min]').val(minv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
         var max   = form.find('input[name=max]').val(maxv).attr("min", port.ranges.minimum).attr("max", port.ranges.maximum)
         var label = form.find('input[name=label]').val(currentAddressing.label || pname)
+        var tempo = form.find('input[name=tempo]').prop("checked", currentAddressing.tempo || false)
+        var divider = form.find('select[name=divider]')
+
+        // Hide Tempo section if the ControlPort has the property lv2:designation time:beatsPerMinute
+        if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
+          form.find('.tempo').css({visibility:"hidden"})
+        // Else, build filtered list of divider values based on bpm and ControlPort min/max values
+        } else {
+          self.buildDividerOptions(divider, port, currentAddressing.divider)
+        }
 
         if (port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
             // boolean, always min or max value
@@ -276,19 +308,19 @@ function HardwareManager(options) {
             // Hide sensibility and tempo options for MIDI
             var act = actuatorSelect.val()
             if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                form.find('.sensibility').css({display:"none"})
-                form.find('.tempo').css({display:"none"})
+                form.find('.sensibility').css({visibility:"hidden"})
+                form.find('.tempo').css({visibility:"hidden"})
             }
 
             actuatorSelect.bind('change keyup', function () {
                 var act = $(this).val()
                 if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.sensibility').css({display:"none"})
-                    form.find('.tempo').css({display: "none"})
+                    form.find('.sensibility').css({visibility:"hidden"})
+                    form.find('.tempo').css({visibility:"hidden"})
                 } else {
-                    form.find('.sensibility').css({display:"block"})
+                    form.find('.sensibility').css({visibility:"visible"})
                     if (port.designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
-                      form.find('.tempo').css({display: "block"})
+                      form.find('.tempo').css({visibility:"visible"})
                     }
                 }
             })
@@ -305,6 +337,8 @@ function HardwareManager(options) {
                 maximum: maxv,
                 value  : port.value,
                 steps  : sensibility.val(),
+                tempo  : tempo.prop("checked"),
+                divider: divider.val()
             }
 
             options.address(instanceAndSymbol, addressing, function (ok) {
@@ -324,7 +358,7 @@ function HardwareManager(options) {
                 }
 
                 // We're addressing
-                if (actuator.uri && actuator.uri != kNullAddressURI)
+                if (actuator.uri && actuator.uri != kNullAddressURI )
                 {
                     var actuator_uri = actuator.uri
                     if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
@@ -359,11 +393,25 @@ function HardwareManager(options) {
 
                 form.remove()
                 form = null
+
+                console.log("self.addressingsByActuator", self.addressingsByActuator)
+                console.log("self.addressingsByPortSymbol", self.addressingsByPortSymbol)
+                console.log("self.addressingsData", self.addressingsData)
             })
         }
 
         var saveAddressing = function () {
             var actuator = actuators[actuatorSelect.val()] || {}
+
+            // Virtual bpm actuator
+            if (actuatorSelect.val() === kNullAddressURI && tempo.prop("checked")) {
+              actuator = {
+                  uri  : kBpmURI,
+                  modes: ":float:integer:",
+                  steps: [],
+                  max_assigns: 99
+              }
+            }
 
             // no actuator selected or old one exists, do nothing
             if (actuator.uri == null && currentAddressing.uri == null) {
@@ -396,6 +444,8 @@ function HardwareManager(options) {
                     maximum: maxv,
                     value  : port.value,
                     steps  : sensibility.val(),
+                    tempo  : tempo.prop("checked"),
+                    divider: divider.val()
                 }
                 options.address(instanceAndSymbol, addressing, function (ok) {
                     if (!ok) {
