@@ -192,7 +192,7 @@ function Desktop(elements) {
                 name: port.shortName
             }
             return Mustache.render(TEMPLATES.addressing, context)
-        }
+        },
     })
 
     this.pedalPresets = new PedalboardPresetsManager({
@@ -500,6 +500,9 @@ function Desktop(elements) {
         transportSyncMode: elements.transportSyncMode,
         openAddressingDialog: function (port, label) {
             self.hardwareManager.open("/pedalboard", port, label)
+        },
+        setHardwareManagerBeatsPerMinuteValue: function (bpm) {
+          self.hardwareManager.setBeatsPerMinuteValue(bpm)
         },
         unaddressPort: function (portSymbol, callback) {
             var addressing = {

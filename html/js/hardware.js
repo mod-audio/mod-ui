@@ -53,6 +53,15 @@ function HardwareManager(options) {
         renderForm: function (instance, port) {},
     }, options)
 
+    this.beatsPerMinuteValue = null
+
+    this.setBeatsPerMinuteValue = function (bpm) {
+      if (self.beatsPerMinuteValue === bpm) {
+          return
+      }
+      self.beatsPerMinuteValue = bpm
+    }
+
     this.reset = function () {
        /* All adressings indexed by actuator
            key  : "/actuator-uri"
@@ -169,7 +178,7 @@ function HardwareManager(options) {
 
     this.buildDividerOptions = function (select, port, curStep) {
         select.children().remove()
-        var b = 120 // TODO get global tempo
+
         // First, convert min and max port values to equivalent in seconds
         // var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port)
         // var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port)
@@ -177,16 +186,23 @@ function HardwareManager(options) {
         var max = convertPortValueToSecondsEquivalent(20, port)
 
         // Then, compute min and max subdividers
-        var s1 = getDividerValue(b, min)
-        var s2 = getDividerValue(b, max)
+        var s1 = getDividerValue(this.beatsPerMinuteValue, min)
+        var s2 = getDividerValue(this.beatsPerMinuteValue, max)
         var sMin = s1 < s2 ? s1 : s2
         var sMax = s1 < s2 ? s2 : s1
 
         // Finally, filter options s such as sMin <= s <= sMax
         var filteredDividers = getFilteredDividers(sMin, sMax)
 
+        // And build html select options
         for (i = 0; i < filteredDividers.length; i++) {
           $('<option>').attr('value', filteredDividers[i].value).html(filteredDividers[i].label).appendTo(select)
+        }
+
+        // Select previously saved divider or set first divider as default
+        if (filteredDividers.length > 0) {
+          var def = (curStep !== null && curStep !== undefined) ? curStep : filteredDividers[0].value
+          select.val(def)
         }
     }
 
@@ -393,23 +409,26 @@ function HardwareManager(options) {
 
                 form.remove()
                 form = null
-
-                console.log("self.addressingsByActuator", self.addressingsByActuator)
-                console.log("self.addressingsByPortSymbol", self.addressingsByPortSymbol)
-                console.log("self.addressingsData", self.addressingsData)
             })
         }
 
         var saveAddressing = function () {
             var actuator = actuators[actuatorSelect.val()] || {}
 
-            // Virtual bpm actuator
-            if (actuatorSelect.val() === kNullAddressURI && tempo.prop("checked")) {
-              actuator = {
-                  uri  : kBpmURI,
-                  modes: ":float:integer:",
-                  steps: [],
-                  max_assigns: 99
+            // Sync port value to bpm
+            if (tempo.prop("checked")) {
+              var dividerValue = divider.val()
+              if (dividerValue) {
+                port.value = getPortValue(self.beatsPerMinuteValue, dividerValue)
+              }
+              // Virtual bpm actuator
+              if (actuatorSelect.val() === kNullAddressURI) {
+                actuator = {
+                    uri  : kBpmURI,
+                    modes: ":float:integer:",
+                    steps: [],
+                    max_assigns: 99
+                }
               }
             }
 
