@@ -32,6 +32,7 @@ API_KEY = os.environ.pop('MOD_API_KEY', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
+DEVICE_ARCHITECTURE = 'duo'
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
