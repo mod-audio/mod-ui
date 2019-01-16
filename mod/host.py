@@ -3708,8 +3708,9 @@ _:b%i
         callback(True)
         
     def hmi_get_pb_name(self, callback):
-        """TODO."""
-        callback(True, "tmp") # string
+        """Return the name of the currently loaded pedalboard."""
+        name = str(self.pedalboard_name)
+        callback(True, name) # string
 
         
     # -----------------------------------------------------------------------------------------------------------------
