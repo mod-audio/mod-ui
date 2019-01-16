@@ -3684,8 +3684,9 @@ _:b%i
             callback(False)
 
     def hmi_get_play_status(self, callback):
-        """TODO."""
-        callback(True, 0) # 0, 1
+        """Get the status of the Jack transport. Returns 0 when stopped or 1 when playing."""
+        status = int(self.transport_rolling)
+        callback(True, status)
 
     def hmi_set_play_status(self, state, callback):
         """TODO."""
