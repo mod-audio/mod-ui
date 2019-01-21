@@ -89,8 +89,8 @@ class Addressings(object):
         self.hmi_hw2uri_map = {}
         self.hmi_uri2hw_map = {}
 
-        # TODO: Why 4?
-        for i in range(0, 4):
+        # TODO: Why 8? FIXME: get rid of hardcoded values!
+        for i in range(0, 8):
             knob_hw  = (0, 0, HMI_ACTUATOR_TYPE_KNOB,       i)
             foot_hw  = (0, 0, HMI_ACTUATOR_TYPE_FOOTSWITCH, i)
             pot_hw  = (0, 0, HMI_ACTUATOR_TYPE_POTENTIOMETER, i)
@@ -528,7 +528,11 @@ class Addressings(object):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
-            actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+            try:
+                actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+            except KeyError:
+                print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
+                
             # HMI specific
             addressings = self.hmi_addressings[actuator_uri]
             addressing_data['addrs_idx'] = addressings['idx']+1
