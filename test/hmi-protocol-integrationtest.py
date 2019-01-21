@@ -30,46 +30,46 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # ##    Check end-to-end
-    # def test_set_tempo_bpm(self):
-    #     # Depends on get_tempo_bpm!
-    #     current_tempo = None
+    ##    Check end-to-end
+    def test_set_tempo_bpm(self):
+        # Depends on get_tempo_bpm!
+        current_tempo = None
         
-    #     # Get the current tempo
-    #     msg = ("get_tempo_bpm\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         tmpstr = resp.decode("utf-8").split(' ')
-    #         current_tempo = float(tmpstr[2].strip('\x00'))            
-    #     else:
-    #         self.fail("No response")
+        # Get the current tempo
+        msg = ("get_tempo_bpm\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            tmpstr = resp.decode("utf-8").split(' ')
+            current_tempo = float(tmpstr[2].strip('\x00'))            
+        else:
+            self.fail("No response")
 
-    #     # Increase the current tempo by 5 BPM
-    #     msg = ("set_tempo_bpm {0}\00").format(current_tempo+5).encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush();
+        # Increase the current tempo by 5 BPM
+        msg = ("set_tempo_bpm {0}\00").format(current_tempo+5).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
-    #     # Check the new tempo
-    #     msg = ("get_tempo_bpm\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         tmpstr = resp.decode("utf-8").split(' ')
-    #         current_tempo = float(tmpstr[2].strip('\x00'))
-    #         self.assertEqual(current_tempo, 125.0) ## still 120?
-    #     else:
-    #         self.fail("No response")
+        # Check the new tempo
+        msg = ("get_tempo_bpm\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            tmpstr = resp.decode("utf-8").split(' ')
+            current_tempo = float(tmpstr[2].strip('\x00'))
+            self.assertEqual(current_tempo, 125.0) ## still 120?
+        else:
+            self.fail("No response")
 
-    #     ## TODO: This fails here, because Jack is not updated on the tempo, yet.
+        ## TODO: This fails here, because Jack is not updated on the tempo, yet.
 
         
     # def test_get_tempo_bpb(self):
@@ -195,16 +195,16 @@ class TestHMIProtocol(unittest.TestCase):
     #     else:
     #         self.fail("No response")
 
-    # def test_get_play_status(self):
-    #     msg = ("get_play_status\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_get_play_status(self):
+        msg = ("get_play_status\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
 
     # def test_get_master_volume_channel(self):
     #     msg = ("get_master_volume_channel\00").encode("utf-8")
@@ -425,18 +425,53 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
             
-    # def test_set_truebypass_value(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_set_truebypass_value01(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
 
+    def test_set_truebypass_value02(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
+
+    def test_set_truebypass_value03(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
+            
+    def test_set_truebypass_value04(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
 
 
 
