@@ -377,7 +377,7 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo, dividers):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
@@ -428,6 +428,9 @@ class Addressings(object):
             if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
+            if tempo:
+                options = [(o["value"], o["label"]) for o in dividers["options"]]
+
         # TODO do something with spreset
 
         addressing_data = {
@@ -441,6 +444,8 @@ class Addressings(object):
             'steps'       : steps,
             'unit'        : unit,
             'options'     : options,
+            'tempo'       : tempo,
+            'divider'     : float(dividers["value"]) if dividers["value"] is not None else None
         }
 
         # -------------------------------------------------------------------------------------------------------------
@@ -468,7 +473,7 @@ class Addressings(object):
                 if "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
                     hmitype |= HMI_ADDRESSING_TYPE_TAP_TEMPO
 
-                if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
+                if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                     hmitype |= HMI_ADDRESSING_TYPE_ENUMERATION
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:

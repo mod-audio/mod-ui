@@ -23,6 +23,7 @@ from tornado import ioloop
 from mod.protocol import Protocol, ProtocolError
 
 import serial, logging
+# logging.basicConfig(filename='/tmp/debug.log',level=logging.DEBUG)
 import time
 
 class SerialIOStream(BaseIOStream):
@@ -193,8 +194,27 @@ class HMI(object):
     def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-    def control_add(self, instance_id, port, label, var_type, unit, value, min, max, steps,
-                    hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
+    def control_add(self, data, actuator, callback):
+        instance_id = data['instance_id']
+        port = data['port']
+        label = data['label']
+        var_type = data['hmitype']
+        unit = data['unit']
+        value = data['value']
+        min = data['minimum']
+        max = data['maximum']
+        steps = data['steps']
+        n_controllers = data['addrs_max']
+        index = data['addrs_idx']
+        options = data['options']
+        tempo = data['tempo']
+        divider = data['divider']
+
+        hw_type = actuator[0]
+        hw_id = actuator[1]
+        actuator_type = actuator[2]
+        actuator_id = actuator[3]
+
         label = '"%s"' % label.upper().replace('"', "")
         unit = '"%s"' % unit.replace('"', '')
         optionsData = []

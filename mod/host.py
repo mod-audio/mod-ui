@@ -366,20 +366,7 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            return self.hmi.control_add(data['instance_id'],
-                                        data['port'],
-                                        data['label'],
-                                        data['hmitype'],
-                                        data['unit'],
-                                        data['value'],
-                                        data['minimum'],
-                                        data['maximum'],
-                                        data['steps'],
-                                        actuator[0], actuator[1], actuator[2], actuator[3],
-                                        data['addrs_max'], # num controllers
-                                        data['addrs_idx'], # index
-                                        data['options'],
-                                        callback)
+            return self.hmi.control_add(data, actuator, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
@@ -2811,7 +2798,7 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, callback):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
@@ -2899,7 +2886,7 @@ _:b%i
             needsValueChange = False
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value)
+                                          label, minimum, maximum, steps, value, tempo, dividers)
         if addressing is None:
             callback(False)
             return

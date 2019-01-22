@@ -204,6 +204,8 @@ function HardwareManager(options) {
           var def = (curStep !== null && curStep !== undefined) ? curStep : filteredDividers[0].value
           select.val(def)
         }
+
+        return filteredDividers
     }
 
     this.buildSensibilityOptions = function (select, port, curStep) {
@@ -295,12 +297,14 @@ function HardwareManager(options) {
         var tempo = form.find('input[name=tempo]').prop("checked", currentAddressing.tempo || false)
         var divider = form.find('select[name=divider]')
 
+        var dividerOptions = [];
+
         // Hide Tempo section if the ControlPort has the property lv2:designation time:beatsPerMinute
-        if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
+        if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute" && port.designation !== "http://lv2plug.in/ns/ext/time#beatsPerMinute") {
           form.find('.tempo').css({visibility:"hidden"})
         // Else, build filtered list of divider values based on bpm and ControlPort min/max values
         } else {
-          self.buildDividerOptions(divider, port, currentAddressing.divider)
+          dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.divider)
         }
 
         if (port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
@@ -354,7 +358,10 @@ function HardwareManager(options) {
                 value  : port.value,
                 steps  : sensibility.val(),
                 tempo  : tempo.prop("checked"),
-                divider: divider.val()
+                dividers: {
+                  value: divider.val(),
+                  options: dividerOptions
+                }
             }
 
             options.address(instanceAndSymbol, addressing, function (ok) {
@@ -409,6 +416,10 @@ function HardwareManager(options) {
 
                 form.remove()
                 form = null
+
+                console.log("self.addressingsByActuator", self.addressingsByActuator)
+                console.log("self.addressingsByPortSymbol", self.addressingsByPortSymbol)
+                console.log("self.addressingsData", self.addressingsData)
             })
         }
 
@@ -463,8 +474,8 @@ function HardwareManager(options) {
                     maximum: maxv,
                     value  : port.value,
                     steps  : sensibility.val(),
-                    tempo  : tempo.prop("checked"),
-                    divider: divider.val()
+                    // tempo  : tempo.prop("checked"),
+                    // divider: divider.val()
                 }
                 options.address(instanceAndSymbol, addressing, function (ok) {
                     if (!ok) {
