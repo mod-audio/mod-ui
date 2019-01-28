@@ -88,6 +88,10 @@ $('document').ready(function() {
             var instance = data[0]
             var symbol   = data[1]
             var value    = parseFloat(data[2])
+            console.log(instance)
+            console.log(symbol)
+            console.log(value)
+
             desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
             return
         }

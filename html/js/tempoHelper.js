@@ -135,7 +135,7 @@ function getDividerValue(b, v) {
  * Compute Control Port value if BPM addressed
  * @param  {float} b BPM s-1
  * @param  {float} s divider
- * @return  {float} Control Port value
+ * @return  {float} Control Port value in seconds
  */
 function getPortValue(b, s) {
   return 240 / (b*s);
@@ -196,4 +196,24 @@ function convertPortValueToSecondsEquivalent(value, port) {
   }
   var conversionFactor = unit.to;
   return convertEquivalent(value, conversionFactor, port);
+}
+
+/**
+ * Get list of possible port values based on bpm and list of dividers
+ * @param  {object} port     Port object with unit info
+ * @param  {float} b        bpm
+ * @param  {array} dividerOptions array of objects { value: dividerValue, label: dividerLabel}
+ * @return {array}          array of objects { value: portValue, label: dividerLabel}
+ */
+function getOptionsPortValues(port, b, dividerOptions) {
+  if (!dividerOptions) {
+    return;
+  }
+  var portValuesWithDividerLabels = [];
+  for (i = 0; i < dividerOptions.length; i++) {
+    var portValueSec = getPortValue(b, dividerOptions[i].value);
+    var portValue = convertSecondsToPortValueEquivalent(portValueSec, port);
+    portValuesWithDividerLabels.push({ value: portValue, label: dividerOptions[i].label });
+  }
+  return portValuesWithDividerLabels;
 }

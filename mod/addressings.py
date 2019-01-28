@@ -126,6 +126,7 @@ class Addressings(object):
 
         return actuators
 
+    # Not used (?)
     def get_addressings(self):
         addressings = {}
 
@@ -139,7 +140,7 @@ class Addressings(object):
                     'label'      : addr['label'],
                     'minimum'    : addr['minimum'],
                     'maximum'    : addr['maximum'],
-                    'steps'      : addr['steps'],
+                    'steps'      : addr['steps']
                 })
             addressings[uri] = addrs2
 
@@ -210,7 +211,7 @@ class Addressings(object):
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
-                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
+                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,  addr['tempo'], addr['dividers'])
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
@@ -445,7 +446,8 @@ class Addressings(object):
             'unit'        : unit,
             'options'     : options,
             'tempo'       : tempo,
-            'divider'     : float(dividers["value"]) if dividers["value"] is not None else None
+            # 'divider'     : float(dividers["value"]) if dividers["value"] is not None else None
+            'dividers'     : dividers
         }
 
         # -------------------------------------------------------------------------------------------------------------

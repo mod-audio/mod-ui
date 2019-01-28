@@ -207,8 +207,8 @@ class HMI(object):
         n_controllers = data['addrs_max']
         index = data['addrs_idx']
         options = data['options']
-        tempo = data['tempo']
-        divider = data['divider']
+        # tempo = data['tempo']
+        # dividers = data['dividers']
 
         hw_type = actuator[0]
         hw_id = actuator[1]

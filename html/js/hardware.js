@@ -350,6 +350,7 @@ function HardwareManager(options) {
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
         var addressNow = function (actuator) {
+            var portValuesWithDividerLabels = getOptionsPortValues(port, self.beatsPerMinuteValue, dividerOptions);
             var addressing = {
                 uri    : actuator.uri || kNullAddressURI,
                 label  : label.val() || pname,
@@ -360,7 +361,7 @@ function HardwareManager(options) {
                 tempo  : tempo.prop("checked"),
                 dividers: {
                   value: divider.val(),
-                  options: dividerOptions
+                  options: portValuesWithDividerLabels
                 }
             }
 
@@ -430,7 +431,7 @@ function HardwareManager(options) {
             if (tempo.prop("checked")) {
               var dividerValue = divider.val()
               if (dividerValue) {
-                port.value = getPortValue(self.beatsPerMinuteValue, dividerValue)
+                port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinuteValue, dividerValue), port);
               }
               // Virtual bpm actuator
               if (actuatorSelect.val() === kNullAddressURI) {
