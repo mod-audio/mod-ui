@@ -176,7 +176,7 @@ function HardwareManager(options) {
         return available
     }
 
-    this.buildDividerOptions = function (select, port, curStep) {
+    this.buildDividerOptions = function (select, port, curDividers) {
         select.children().remove()
 
         // First, convert min and max port values to equivalent in seconds
@@ -200,8 +200,9 @@ function HardwareManager(options) {
         }
 
         // Select previously saved divider or set first divider as default
+        //  TODO verify that curDividers.value is part of filteredDividers
         if (filteredDividers.length > 0) {
-          var def = (curStep !== null && curStep !== undefined) ? curStep : filteredDividers[0].value
+          var def = (curDividers !== null && curDividers !== undefined) ? curDividers.value : filteredDividers[0].value
           select.val(def)
         }
 
@@ -254,7 +255,7 @@ function HardwareManager(options) {
     this.open = function (instance, port, pluginLabel) {
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
-
+        console.log("currentAddressing", currentAddressing)
         // Renders the window
         var form = $(options.renderForm(instance, port))
 
@@ -299,12 +300,12 @@ function HardwareManager(options) {
 
         var dividerOptions = [];
 
-        // Hide Tempo section if the ControlPort has the property lv2:designation time:beatsPerMinute
+        // Hide Tempo section TODO change: if the ControlPort has the property lv2:designation time:beatsPerMinute
         if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute" && port.designation !== "http://lv2plug.in/ns/ext/time#beatsPerMinute") {
           form.find('.tempo').css({visibility:"hidden"})
         // Else, build filtered list of divider values based on bpm and ControlPort min/max values
         } else {
-          dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.divider)
+          dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
         }
 
         if (port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
@@ -538,17 +539,18 @@ function HardwareManager(options) {
         actuatorSelect.focus()
     }
 
-    this.addHardwareMapping = function (instance, portSymbol, actuator_uri, label, minimum, maximum, steps) {
+    this.addHardwareMapping = function (instance, portSymbol, actuator_uri, label, minimum, maximum, steps, tempo, dividers) {
         var instanceAndSymbol = instance+"/"+portSymbol
-
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
         self.addressingsData        [instanceAndSymbol] = {
-            uri    : actuator_uri,
-            label  : label,
-            minimum: minimum,
-            maximum: maximum,
-            steps  : steps,
+            uri     : actuator_uri,
+            label   : label,
+            minimum : minimum,
+            maximum : maximum,
+            steps   : steps,
+            tempo   : tempo,
+            dividers: dividers
         }
 
         // disable this control

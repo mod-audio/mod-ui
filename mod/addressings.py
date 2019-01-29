@@ -211,7 +211,7 @@ class Addressings(object):
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
-                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,  addr['tempo'], addr['dividers'])
+                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue, addr.get('tempo'), addr.get('dividers'))
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
@@ -322,6 +322,8 @@ class Addressings(object):
                     'minimum' : addr['minimum'],
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
+                    'tempo'   : addr.get('tempo'),
+                    'dividers': addr.get('dividers')
                 })
             addressings[uri] = addrs2
 
@@ -345,15 +347,19 @@ class Addressings(object):
 
     def registerMappings(self, msg_callback, instances):
         # HMI
+
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
-                msg_callback("hw_map %s %s %s %f %f %d %s" % (instances[addr['instance_id']],
+                dividers = "%s" % addr.get('dividers', "{}")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s" % (instances[addr['instance_id']],
                                                               addr['port'],
                                                               uri,
                                                               addr['minimum'],
                                                               addr['maximum'],
                                                               addr['steps'],
-                                                              addr['label'].replace(" ","_")))
+                                                              addr['label'].replace(" ","_"),
+                                                              addr.get('tempo'),
+                                                              dividers.replace(" ", "")))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
