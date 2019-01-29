@@ -359,7 +359,7 @@ class Addressings(object):
                                                               addr['steps'],
                                                               addr['label'].replace(" ","_"),
                                                               addr.get('tempo'),
-                                                              dividers.replace(" ", "")))
+                                                              dividers.replace(" ", "").replace("None", "null")))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():

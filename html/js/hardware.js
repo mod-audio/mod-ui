@@ -255,7 +255,7 @@ function HardwareManager(options) {
     this.open = function (instance, port, pluginLabel) {
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
-        console.log("currentAddressing", currentAddressing)
+
         // Renders the window
         var form = $(options.renderForm(instance, port))
 
@@ -418,10 +418,6 @@ function HardwareManager(options) {
 
                 form.remove()
                 form = null
-
-                console.log("self.addressingsByActuator", self.addressingsByActuator)
-                console.log("self.addressingsByPortSymbol", self.addressingsByPortSymbol)
-                console.log("self.addressingsData", self.addressingsData)
             })
         }
 

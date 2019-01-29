@@ -2891,7 +2891,7 @@ _:b%i
             callback(False)
             return
 
-        if needsValueChange:
+        if needsValueChange or tempo:
             yield gen.Task(self.hmi_parameter_set, instance_id, portsymbol, value)
 
         pluginData['addressings'][portsymbol] = addressing
