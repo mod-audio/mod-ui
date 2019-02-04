@@ -425,7 +425,7 @@ class Host(object):
                                                                          data['minimum'],
                                                                          data['maximum'],
                                                                          ), callback, datatype='boolean')
-        if atype == Addressings.ADDRESSING_TYPE_BPM: # XXX do something here?
+        if atype == Addressings.ADDRESSING_TYPE_BPM: # XXX nothing to do here (?)
             callback(True)
             return
 
@@ -902,7 +902,8 @@ class Host(object):
 
             for pluginData in self.plugins.values():
                 _, _2, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
-
+                logging.info("transport pluginData")
+                logging.info(pluginData)
                 if bpb_symbol is not None:
                     pluginData['ports'][bpb_symbol] = bpb
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
@@ -2738,6 +2739,8 @@ _:b%i
                                                        self.transport_bpm), callback, datatype)
 
         for pluginData in self.plugins.values():
+            logging.info("pluginData")
+            logging.info(pluginData)
             bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
 
             if bpm_symbol is not None:
