@@ -1,5 +1,16 @@
 // List of all subdividers' values and labels
 var dividers = [{
+    value: 0.333,
+    label: "2T"
+  },
+  {
+    value: 0.5,
+    label: "2"
+  },
+  {
+    value: 0.75,
+    label: "2."
+  },{
     value: 0.666,
     label: "1T"
   },

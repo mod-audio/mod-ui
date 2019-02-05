@@ -53,13 +53,19 @@ function HardwareManager(options) {
         renderForm: function (instance, port) {},
     }, options)
 
-    this.beatsPerMinuteValue = null
+    this.beatsPerMinutePort = {
+      ranges: { // XXX would be good to have a centralized place for this data, currently it's also in transport.js and others
+          minimum: 20.0,
+          maximum: 280.0
+      },
+      value: null
+    }
 
     this.setBeatsPerMinuteValue = function (bpm) {
-      if (self.beatsPerMinuteValue === bpm) {
+      if (self.beatsPerMinutePort.value === bpm) {
           return
       }
-      self.beatsPerMinuteValue = bpm
+      self.beatsPerMinutePort.value = bpm
     }
 
     this.reset = function () {
@@ -180,16 +186,22 @@ function HardwareManager(options) {
         select.children().remove()
 
         // First, convert min and max port values to equivalent in seconds
-        // var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port)
-        // var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port)
-        var min = convertPortValueToSecondsEquivalent(0, port)
-        var max = convertPortValueToSecondsEquivalent(20, port)
+        var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port)
+        var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port)
 
         // Then, compute min and max subdividers
-        var s1 = getDividerValue(this.beatsPerMinuteValue, min)
-        var s2 = getDividerValue(this.beatsPerMinuteValue, max)
-        var sMin = s1 < s2 ? s1 : s2
-        var sMax = s1 < s2 ? s2 : s1
+        // var s1 = getDividerValue(this.beatsPerMinutePort.value, min)
+        // var s2 = getDividerValue(this.beatsPerMinutePort.value, max)
+        // var sMin = s1 < s2 ? s1 : s2
+        // var sMax = s1 < s2 ? s2 : s1
+
+        var s1minBpm = getDividerValue(this.beatsPerMinutePort.ranges.minimum, min)
+        var s2minBpm = getDividerValue(this.beatsPerMinutePort.ranges.minimum, max)
+        var s1maxBpm = getDividerValue(this.beatsPerMinutePort.ranges.maximum, min)
+        var s2maxBpm = getDividerValue(this.beatsPerMinutePort.ranges.maximum, max)
+
+        var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm)
+        var sMax = s1minBpm < s2minBpm ? Math.min(s2minBpm, s2maxBpm) : Math.min(s1minBpm, s1maxBpm)
 
         // Finally, filter options s such as sMin <= s <= sMax
         var filteredDividers = getFilteredDividers(sMin, sMax)
@@ -351,7 +363,7 @@ function HardwareManager(options) {
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
         var addressNow = function (actuator) {
-            var portValuesWithDividerLabels = getOptionsPortValues(port, self.beatsPerMinuteValue, dividerOptions);
+            var portValuesWithDividerLabels = getOptionsPortValues(port, self.beatsPerMinutePort.value, dividerOptions);
             var addressing = {
                 uri    : actuator.uri || kNullAddressURI,
                 label  : label.val() || pname,
@@ -428,7 +440,7 @@ function HardwareManager(options) {
             if (tempo.prop("checked")) {
               var dividerValue = divider.val()
               if (dividerValue) {
-                port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinuteValue, dividerValue), port);
+                port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port);
               }
               // Virtual bpm actuator
               if (actuatorSelect.val() === kNullAddressURI) {
