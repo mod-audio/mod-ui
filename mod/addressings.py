@@ -108,6 +108,7 @@ class Addressings(object):
     def clear(self):
         self.hmi_addressings  = dict((key, {'addrs': [], 'idx': -1}) for key in self.hmi_addressings.keys())
         self.cc_addressings   = dict((key, []) for key in self.cc_addressings.keys())
+        self.virtual_addressings   = dict((key, []) for key in self.virtual_addressings.keys())
         self.midi_addressings = {}
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -629,6 +630,10 @@ class Addressings(object):
 
         elif actuator_type == self.ADDRESSING_TYPE_MIDI:
             addressings = self.midi_addressings[actuator_uri]
+            addressings.remove(addressing_data)
+
+        elif actuator_type == self.ADDRESSING_TYPE_BPM:
+            addressings = self.virtual_addressings[actuator_uri]
             addressings.remove(addressing_data)
 
     # -----------------------------------------------------------------------------------------------------------------

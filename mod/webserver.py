@@ -851,7 +851,7 @@ class EffectParameterAddress(JsonRequestHandler):
         value   = float(data['value'])
         steps   = int(data.get('steps', 33))
         tempo   = data.get('tempo', False)
-        dividers = data['dividers']
+        dividers = data.get('dividers', None)
 
         ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers)
 
