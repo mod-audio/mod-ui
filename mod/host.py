@@ -2738,15 +2738,21 @@ _:b%i
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
 
-        for pluginData in self.plugins.values():
-            logging.info("pluginData")
-            logging.info(pluginData)
-            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+        # for actuator_uri in self.addressings.hmi_addressings:
+        #     addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
+        #     for addr in addrs:
+        #         if addr.get('tempo', False):
+        #             logging.info(addr)
+        #             logging.info("\n")
+                    # self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
-            if bpm_symbol is not None:
-                pluginData['ports'][bpm_symbol] = bpm
-                if sendMsg:
-                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+        # for pluginData in self.plugins.values():
+        #     bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+        #
+        #     if bpm_symbol is not None:
+        #         pluginData['ports'][bpm_symbol] = bpm
+        #         if sendMsg:
+        #             self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
     def set_transport_rolling(self, rolling, sendMsg, callback=None, datatype='int'):
         self.transport_rolling = rolling

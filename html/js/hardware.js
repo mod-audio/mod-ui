@@ -51,6 +51,7 @@ function HardwareManager(options) {
 
         // Renders the address html template
         renderForm: function (instance, port) {},
+
     }, options)
 
     this.beatsPerMinutePort = {
@@ -61,11 +62,44 @@ function HardwareManager(options) {
       value: null
     }
 
-    this.setBeatsPerMinuteValue = function (bpm) {
+    this.setBeatsPerMinuteValue = function (bpm, pluginsData) {
       if (self.beatsPerMinutePort.value === bpm) {
           return
       }
       self.beatsPerMinutePort.value = bpm
+
+      // Loop through addressingsData to update dividers and value for ports that are sync to tempo
+      for (var instanceAndSymbol in self.addressingsData) {
+        if (self.addressingsData[instanceAndSymbol].hasOwnProperty('tempo') && self.addressingsData[instanceAndSymbol].tempo) {
+          var instanceAddressingsData = self.addressingsData[instanceAndSymbol]
+
+          // unchanged
+          var minv = instanceAddressingsData.minimum
+          var maxv = instanceAddressingsData.maximum
+          var labelValue = instanceAddressingsData.label
+          var sensibilityValue = instanceAddressingsData.steps
+          var tempoValue = instanceAddressingsData.tempo
+          var dividerValue = instanceAddressingsData.dividers && instanceAddressingsData.dividers.value
+          var actuator = { uri: instanceAddressingsData.uri }
+          // no need to update divider options since they are valid for all bpm and all port values between min and max
+          var dividerOptions = instanceAddressingsData.dividers && instanceAddressingsData.dividers.options
+
+          // get port info
+          var splitted = instanceAndSymbol.split("/")
+          var symbol = splitted[splitted.length - 1]
+          var instance = instanceAndSymbol.split("/" + symbol)[0]
+          var controlPortsData = pluginsData[instance].data('ports').control.input
+          var port = controlPortsData.find(function (port) {
+            return port.symbol === symbol;
+          })
+
+          // Update port value
+          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port)
+          console.log("port", port)
+
+          self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions)
+        }
+      }
     }
 
     this.reset = function () {
@@ -185,26 +219,7 @@ function HardwareManager(options) {
     this.buildDividerOptions = function (select, port, curDividers) {
         select.children().remove()
 
-        // First, convert min and max port values to equivalent in seconds
-        var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port)
-        var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port)
-
-        // Then, compute min and max subdividers
-        // var s1 = getDividerValue(this.beatsPerMinutePort.value, min)
-        // var s2 = getDividerValue(this.beatsPerMinutePort.value, max)
-        // var sMin = s1 < s2 ? s1 : s2
-        // var sMax = s1 < s2 ? s2 : s1
-
-        var s1minBpm = getDividerValue(this.beatsPerMinutePort.ranges.minimum, min)
-        var s2minBpm = getDividerValue(this.beatsPerMinutePort.ranges.minimum, max)
-        var s1maxBpm = getDividerValue(this.beatsPerMinutePort.ranges.maximum, min)
-        var s2maxBpm = getDividerValue(this.beatsPerMinutePort.ranges.maximum, max)
-
-        var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm)
-        var sMax = s1minBpm < s2minBpm ? Math.min(s2minBpm, s2maxBpm) : Math.min(s1minBpm, s1maxBpm)
-
-        // Finally, filter options s such as sMin <= s <= sMax
-        var filteredDividers = getFilteredDividers(sMin, sMax)
+        var filteredDividers = getDividerOptions(port, this.beatsPerMinutePort)
 
         // And build html select options
         for (i = 0; i < filteredDividers.length; i++) {
@@ -212,7 +227,6 @@ function HardwareManager(options) {
         }
 
         // Select previously saved divider or set first divider as default
-        //  TODO verify that curDividers.value is part of filteredDividers
         if (filteredDividers.length > 0) {
           var def = (curDividers !== null && curDividers !== undefined) ? curDividers.value : filteredDividers[0].value
           select.val(def)
@@ -265,6 +279,8 @@ function HardwareManager(options) {
 
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
+      console.log("self.addressingsData")
+      console.log(self.addressingsData)
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
@@ -312,7 +328,7 @@ function HardwareManager(options) {
 
         var dividerOptions = [];
 
-        // Hide Tempo section TODO change: if the ControlPort has the property lv2:designation time:beatsPerMinute
+        // Hide Tempo section if the ControlPort does not have the property lv2:designation time:beatsPerMinute
         if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute" && port.designation !== "http://lv2plug.in/ns/ext/time#beatsPerMinute") {
           form.find('.tempo').css({visibility:"hidden"})
         // Else, build filtered list of divider values based on bpm and ControlPort min/max values
@@ -362,164 +378,8 @@ function HardwareManager(options) {
         var sensibility = form.find('select[name=steps]')
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
-        var addressNow = function (actuator) {
-            var portValuesWithDividerLabels = getOptionsPortValues(port, self.beatsPerMinutePort.value, dividerOptions);
-            var addressing = {
-                uri    : actuator.uri || kNullAddressURI,
-                label  : label.val() || pname,
-                minimum: minv,
-                maximum: maxv,
-                value  : port.value,
-                steps  : sensibility.val(),
-                tempo  : tempo.prop("checked"),
-                dividers: {
-                  value: divider.val(),
-                  options: portValuesWithDividerLabels
-                }
-            }
-
-            options.address(instanceAndSymbol, addressing, function (ok) {
-                if (!ok) {
-                    console.log("Addressing failed for port " + port.symbol);
-                    return;
-                }
-
-                // remove old one first
-                var unaddressing = false
-                if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI) {
-                    unaddressing = true
-                    if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
-                        currentAddressing.uri = kMidiLearnURI
-                    }
-                    remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
-                }
-
-                // We're addressing
-                if (actuator.uri && actuator.uri != kNullAddressURI )
-                {
-                    var actuator_uri = actuator.uri
-                    if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
-                        actuator_uri = kMidiLearnURI
-                    }
-                    // add new one, print and error if already there
-                    if (self.addressingsByActuator[actuator_uri].indexOf(instanceAndSymbol) < 0) {
-                        self.addressingsByActuator[actuator_uri].push(instanceAndSymbol)
-                    } else {
-                        console.log("ERROR HERE, please fix!")
-                    }
-
-                    // remove data needed by the server, useless for us
-                    delete addressing.value
-
-                    // now save
-                    self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
-                    self.addressingsData        [instanceAndSymbol] = addressing
-
-                    // disable this control
-                    options.setEnabled(instance, port.symbol, false)
-                }
-                // We're unaddressing
-                else if (unaddressing)
-                {
-                    delete self.addressingsByPortSymbol[instanceAndSymbol]
-                    delete self.addressingsData        [instanceAndSymbol]
-
-                    // enable this control
-                    options.setEnabled(instance, port.symbol, true)
-                }
-
-                form.remove()
-                form = null
-            })
-        }
-
-        var saveAddressing = function () {
-            var actuator = actuators[actuatorSelect.val()] || {}
-
-            // Sync port value to bpm
-            if (tempo.prop("checked")) {
-              var dividerValue = divider.val()
-              if (dividerValue) {
-                port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port);
-              }
-              // Virtual bpm actuator
-              if (actuatorSelect.val() === kNullAddressURI) {
-                actuator = {
-                    uri  : kBpmURI,
-                    modes: ":float:integer:",
-                    steps: [],
-                    max_assigns: 99
-                }
-              }
-            }
-
-            // no actuator selected or old one exists, do nothing
-            if (actuator.uri == null && currentAddressing.uri == null) {
-                console.log("Nothing to do")
-                form.remove()
-                form = null
-                return
-            }
-
-            // Check values
-            minv = min.val()
-            if (minv == undefined || minv == "")
-                minv = port.ranges.minimum
-
-            maxv = max.val()
-            if (maxv == undefined || maxv == "")
-                maxv = port.ranges.maximum
-
-            if (parseFloat(minv) >= parseFloat(maxv)) {
-                alert("The minimum value is equal or higher than the maximum. We cannot address a control like this!")
-                return
-            }
-
-            // if changing from midi-learn, unlearn first
-            if (currentAddressing.uri == kMidiLearnURI) {
-                var addressing = {
-                    uri    : kMidiUnlearnURI,
-                    label  : label.val() || pname,
-                    minimum: minv,
-                    maximum: maxv,
-                    value  : port.value,
-                    steps  : sensibility.val(),
-                    // tempo  : tempo.prop("checked"),
-                    // divider: divider.val()
-                }
-                options.address(instanceAndSymbol, addressing, function (ok) {
-                    if (!ok) {
-                        console.log("Failed to unmap for port " + port.symbol);
-                        return;
-                    }
-
-                    // remove old one
-                    remove_from_array(self.addressingsByActuator[kMidiLearnURI], instanceAndSymbol)
-
-                    delete self.addressingsByPortSymbol[instanceAndSymbol]
-                    delete self.addressingsData        [instanceAndSymbol]
-
-                    // enable this control
-                    options.setEnabled(instance, port.symbol, true)
-
-                    // now we can address if needed
-                    if (actuator.uri) {
-                        addressNow(actuator)
-                    // if not, just close the form
-                    } else {
-                        form.remove()
-                        form = null
-                    }
-                })
-            }
-            // otherwise just address it now
-            else {
-                addressNow(actuator)
-            }
-        }
-
         form.find('.js-save').click(function () {
-            saveAddressing()
+            self.saveAddressing(instance, port, actuators, actuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
         })
 
         form.find('.js-close').click(function () {
@@ -536,7 +396,7 @@ function HardwareManager(options) {
         })
         form.keydown(function (e) {
             if (e.keyCode == 13) {
-                saveAddressing()
+                self.saveAddressing(instance, port, actuators, actuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
                 return false
             }
         })
@@ -545,6 +405,174 @@ function HardwareManager(options) {
 
         form.focus()
         actuatorSelect.focus()
+    }
+
+    this.addressNow = function (instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, form) {
+        var instanceAndSymbol = instance+"/"+port.symbol;
+        var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
+
+        // Sync port value to bpm
+        if (tempoValue && dividerValue) {
+          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port);
+        }
+
+        var portValuesWithDividerLabels = getOptionsPortValues(port, self.beatsPerMinutePort.value, dividerOptions);
+        var addressing = {
+            uri    : actuator.uri || kNullAddressURI,
+            label  : labelValue,
+            minimum: minv,
+            maximum: maxv,
+            value  : port.value,
+            steps  : sensibilityValue,
+            tempo  : tempoValue,
+            dividers: {
+              value: dividerValue,
+              options: portValuesWithDividerLabels
+            }
+        }
+
+        options.address(instanceAndSymbol, addressing, function (ok) {
+            if (!ok) {
+                console.log("Addressing failed for port " + port.symbol);
+                return;
+            }
+
+            // remove old one first
+            var unaddressing = false
+            if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI) {
+                unaddressing = true
+                if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                    currentAddressing.uri = kMidiLearnURI
+                }
+                remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
+            }
+
+            // We're addressing
+            if (actuator.uri && actuator.uri != kNullAddressURI )
+            {
+                var actuator_uri = actuator.uri
+                if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                    actuator_uri = kMidiLearnURI
+                }
+                // add new one, print and error if already there
+                if (self.addressingsByActuator[actuator_uri].indexOf(instanceAndSymbol) < 0) {
+                    self.addressingsByActuator[actuator_uri].push(instanceAndSymbol)
+                } else {
+                    console.log("ERROR HERE, please fix!")
+                }
+
+                // remove data needed by the server, useless for us
+                delete addressing.value
+
+                // now save
+                self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
+                self.addressingsData        [instanceAndSymbol] = addressing
+
+                // disable this control
+                options.setEnabled(instance, port.symbol, false)
+            }
+            // We're unaddressing
+            else if (unaddressing)
+            {
+                delete self.addressingsByPortSymbol[instanceAndSymbol]
+                delete self.addressingsData        [instanceAndSymbol]
+
+                // enable this control
+                options.setEnabled(instance, port.symbol, true)
+            }
+
+            if (form !== undefined) {
+              form.remove()
+              form = null
+            }
+        })
+    }
+
+    this.saveAddressing = function (instance, port, actuators, actuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form) {
+        var instanceAndSymbol = instance+"/"+port.symbol
+        var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
+        var actuator = actuators[actuatorSelect.val()] || {}
+
+        var tempoValue = tempo.prop("checked")
+        // Sync port value to bpm with virtual bpm actuator
+        if (tempoValue && actuatorSelect.val() === kNullAddressURI) {
+          actuator = {
+            uri  : kBpmURI,
+            modes: ":float:integer:",
+            steps: [],
+            max_assigns: 99
+          }
+        }
+
+        // no actuator selected or old one exists, do nothing
+        if (actuator.uri == null && currentAddressing.uri == null) {
+            console.log("Nothing to do")
+            if (form !== undefined) {
+              form.remove()
+              form = null
+            }
+            return
+        }
+
+        // Check values
+        var minv = min.val()
+        if (minv == undefined || minv == "")
+            minv = port.ranges.minimum
+
+        var maxv = max.val()
+        if (maxv == undefined || maxv == "")
+            maxv = port.ranges.maximum
+
+        if (parseFloat(minv) >= parseFloat(maxv)) {
+            alert("The minimum value is equal or higher than the maximum. We cannot address a control like this!")
+            return
+        }
+
+        var labelValue = label.val() || pname
+        var sensibilityValue = sensibility.val()
+        var dividerValue = divider.val()
+
+        // if changing from midi-learn, unlearn first
+        if (currentAddressing.uri == kMidiLearnURI) {
+            var addressing = {
+                uri    : kMidiUnlearnURI,
+                label  : labelValue,
+                minimum: minv,
+                maximum: maxv,
+                value  : port.value,
+                steps  : sensibilityValue,
+                // tempo  : tempo.prop("checked"),
+                // divider: divider.val()
+            }
+            options.address(instanceAndSymbol, addressing, function (ok) {
+                if (!ok) {
+                    console.log("Failed to unmap for port " + port.symbol);
+                    return;
+                }
+
+                // remove old one
+                remove_from_array(self.addressingsByActuator[kMidiLearnURI], instanceAndSymbol)
+
+                delete self.addressingsByPortSymbol[instanceAndSymbol]
+                delete self.addressingsData        [instanceAndSymbol]
+
+                // enable this control
+                options.setEnabled(instance, port.symbol, true)
+
+                // now we can address if needed
+                if (actuator.uri) {
+                    self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, form)
+                // if not, just close the form
+                } else if (form !== undefined) {
+                    form.remove()
+                    form = null
+                }
+            })
+        }
+        // otherwise just address it now
+        else {
+            self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, form)
+        }
     }
 
     this.addHardwareMapping = function (instance, portSymbol, actuator_uri, label, minimum, maximum, steps, tempo, dividers) {

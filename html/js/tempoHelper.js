@@ -118,7 +118,7 @@ var unitConversionFactors = {
  * Get list of filtered dividers s such as sMin <= s <= sMax
  * @param  {float} sMin min divider value
  * @param  {float} sMax max divider value
- * @return {array}      array of filtered dividers as objects with value and label
+ * @return {array}      array of filtered dividers as objects with subdivider value and label
  */
 function getFilteredDividers(sMin, sMax) {
   var filteredDividers = [];
@@ -227,4 +227,34 @@ function getOptionsPortValues(port, b, dividerOptions) {
     portValuesWithDividerLabels.push({ value: portValue, label: dividerOptions[i].label });
   }
   return portValuesWithDividerLabels;
+}
+
+/**
+ * Get dividers options for given port and bpmPort min and max
+ * @param  {object} port Port info
+ * @param  {object} bpmPort    bpm port with { ranges: {min, max}, value }
+ * @return {array}      array of all available dividers as objects with subdivider value and label
+ */
+function getDividerOptions(port, bpmPort) {
+  // First, convert min and max port values to equivalent in seconds
+  var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port);
+  var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port);
+
+  // OLD
+  // var s1 = getDividerValue(bpmPort.value, min)
+  // var s2 = getDividerValue(bpmPort.value, max)
+  // var sMin = s1 < s2 ? s1 : s2
+  // var sMax = s1 < s2 ? s2 : s1
+
+  // Then, compute min and max subdividers that will fit all bpms
+  var s1minBpm = getDividerValue(bpmPort.ranges.minimum, min);
+  var s2minBpm = getDividerValue(bpmPort.ranges.minimum, max);
+  var s1maxBpm = getDividerValue(bpmPort.ranges.maximum, min);
+  var s2maxBpm = getDividerValue(bpmPort.ranges.maximum, max);
+
+  var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm);
+  var sMax = s1minBpm < s2minBpm ? Math.min(s2minBpm, s2maxBpm) : Math.min(s1minBpm, s1maxBpm);
+
+  // Finally, filter options s such as sMin <= s <= sMax
+  return getFilteredDividers(sMin, sMax);
 }

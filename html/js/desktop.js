@@ -216,6 +216,7 @@ function Desktop(elements) {
     this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
+
     elements.zoomIn.click(function () {
         self.pedalboard.pedalboard('zoomIn')
     })
@@ -501,8 +502,8 @@ function Desktop(elements) {
         openAddressingDialog: function (port, label) {
             self.hardwareManager.open("/pedalboard", port, label)
         },
-        setHardwareManagerBeatsPerMinuteValue: function (bpm) {
-          self.hardwareManager.setBeatsPerMinuteValue(bpm)
+        setNewBeatsPerMinuteValue: function (bpm) {
+          self.hardwareManager.setBeatsPerMinuteValue(bpm, self.pedalboard.data('plugins'))
         },
         unaddressPort: function (portSymbol, callback) {
             var addressing = {

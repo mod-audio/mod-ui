@@ -1275,6 +1275,7 @@ JqueryClass('pedalboard', {
             preset_list: preset_list
         }, pluginData)
         var pluginGui = new GUI(pluginData, options)
+
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
 
@@ -1289,6 +1290,7 @@ JqueryClass('pedalboard', {
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
             icon.data('instance', instance)
+            icon.data('ports', pluginData.ports)
 
             var address, symbol, port
             /*

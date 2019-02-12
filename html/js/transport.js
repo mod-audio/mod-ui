@@ -321,7 +321,7 @@ function TransportControls(options) {
             text = "&nbsp;" + text
         }
         self.beatsPerMinutePort.value = bpm
-        options.setHardwareManagerBeatsPerMinuteValue(bpm)
+        options.setNewBeatsPerMinuteValue(bpm)
 
         if (set_control) {
             self.beatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
