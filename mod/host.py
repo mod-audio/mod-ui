@@ -2907,10 +2907,11 @@ _:b%i
             callback(True)
             return
 
-        if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
-            print("WARNING: Cannot address to HMI at this point")
-            callback(False)
-            return
+        # if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
+        #     print("WARNING: Cannot address to HMI at this point")
+        #     callback(False)
+        #     return
+
 
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
