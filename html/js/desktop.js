@@ -503,7 +503,7 @@ function Desktop(elements) {
             self.hardwareManager.open("/pedalboard", port, label)
         },
         setNewBeatsPerMinuteValue: function (bpm) {
-          self.hardwareManager.setBeatsPerMinuteValue(bpm, self.pedalboard.data('plugins'))
+          self.hardwareManager.setBeatsPerMinuteValue(bpm)
         },
         unaddressPort: function (portSymbol, callback) {
             var addressing = {

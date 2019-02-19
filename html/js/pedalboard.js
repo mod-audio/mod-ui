@@ -1290,7 +1290,6 @@ JqueryClass('pedalboard', {
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
             icon.data('instance', instance)
-            icon.data('ports', pluginData.ports)
 
             var address, symbol, port
             /*

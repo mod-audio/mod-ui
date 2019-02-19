@@ -62,14 +62,14 @@ function HardwareManager(options) {
       value: null
     }
 
-    this.setBeatsPerMinuteValue = function (bpm, pluginsData) {
+    this.setBeatsPerMinuteValue = function (bpm) {
       if (self.beatsPerMinutePort.value === bpm) {
           return
       }
       self.beatsPerMinutePort.value = bpm
 
       // Loop through addressingsData to update dividers and value for ports that are sync to tempo
-      for (var instanceAndSymbol in self.addressingsData) {
+      /*for (var instanceAndSymbol in self.addressingsData) {
         if (self.addressingsData[instanceAndSymbol].hasOwnProperty('tempo') && self.addressingsData[instanceAndSymbol].tempo) {
           var instanceAddressingsData = self.addressingsData[instanceAndSymbol]
 
@@ -94,12 +94,12 @@ function HardwareManager(options) {
           })
 
           // Update port value
-          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port)
+          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol)
           console.log("port", port)
 
           self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions)
         }
-      }
+      }*/
     }
 
     this.reset = function () {
@@ -219,7 +219,7 @@ function HardwareManager(options) {
     this.buildDividerOptions = function (select, port, curDividers) {
         select.children().remove()
 
-        var filteredDividers = getDividerOptions(port, this.beatsPerMinutePort)
+        var filteredDividers = getDividerOptions(port, self.beatsPerMinutePort.ranges.minimum, self.beatsPerMinutePort.ranges.maximum)
 
         // And build html select options
         for (i = 0; i < filteredDividers.length; i++) {
@@ -279,8 +279,6 @@ function HardwareManager(options) {
 
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
-      console.log("self.addressingsData")
-      console.log(self.addressingsData)
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
@@ -413,10 +411,10 @@ function HardwareManager(options) {
 
         // Sync port value to bpm
         if (tempoValue && dividerValue) {
-          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port);
+          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol);
         }
 
-        var portValuesWithDividerLabels = getOptionsPortValues(port, self.beatsPerMinutePort.value, dividerOptions);
+        var portValuesWithDividerLabels = getOptionsPortValues(port.units.symbol, self.beatsPerMinutePort.value, dividerOptions);
         var addressing = {
             uri    : actuator.uri || kNullAddressURI,
             label  : labelValue,

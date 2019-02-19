@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
+import os, logging
 
 from tornado import gen
 from mod import get_hardware_actuators, safe_json_load, TextFileFlusher
@@ -485,7 +485,7 @@ class Addressings(object):
         }
 
         # -------------------------------------------------------------------------------------------------------------
-
+        logging.info("ADDRESSING")
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             if portsymbol == ":bypass":
                 hmitype = HMI_ADDRESSING_TYPE_BYPASS

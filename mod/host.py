@@ -47,6 +47,14 @@ from modtools.utils import (
     connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
+
+from modtools.tempo import (
+    convert_seconds_to_port_value_equivalent,
+    get_port_value,
+    get_options_port_values,
+    get_divider_options
+)
+
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
@@ -902,8 +910,7 @@ class Host(object):
 
             for pluginData in self.plugins.values():
                 _, _2, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
-                logging.info("transport pluginData")
-                logging.info(pluginData)
+
                 if bpb_symbol is not None:
                     pluginData['ports'][bpb_symbol] = bpb
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
@@ -2737,14 +2744,41 @@ _:b%i
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
+        for actuator_uri in self.addressings.hmi_addressings:
+            addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
+            for addr in addrs:
+                if addr.get('tempo', False):
+                    instance_id = addr['instance_id']
+                    instance = self.mapper.get_instance(instance_id)
+                    portsymbol = addr['port']
+                    actuator_uri = addr['actuator_uri']
+                    label = addr['label']
+                    minimum = addr['minimum']
+                    maximum = addr['maximum']
+                    steps = addr['steps']
+                    tempo = addr['tempo']
 
-        # for actuator_uri in self.addressings.hmi_addressings:
-        #     addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
-        #     for addr in addrs:
-        #         if addr.get('tempo', False):
-        #             logging.info(addr)
-        #             logging.info("\n")
-                    # self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
+                    pluginData  = self.plugins.get(instance_id, None)
+
+                    if pluginData:
+                        pluginInfo = get_plugin_info(pluginData['uri'])
+                        controlPorts = pluginInfo['ports']['control']['input']
+                        ports = [p for p in controlPorts if p['symbol'] == portsymbol]
+
+                        if ports:
+                            port = ports[0]
+                            value = convert_seconds_to_port_value_equivalent(
+                                get_port_value(bpm, float(addr['dividers']['value'])),
+                                port['units']['symbol']
+                            )
+                            dividerOptions = get_options_port_values(
+                                port['units']['symbol'],
+                                bpm,
+                                get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+                            )
+                            dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
+
+                            self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
         # for pluginData in self.plugins.values():
         #     bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
