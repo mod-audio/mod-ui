@@ -40,7 +40,7 @@ function InstallationQueue() {
             success: function (data) {
                 var targetfiles = null
                 for (var i in data.files) {
-                    if (data.files[i].arch == ARCHITECTURE) {
+                    if (data.files[i].arch.toUpperCase() == ARCHITECTURE.toUpperCase()) {
                         targetfiles = data.files[i];
                         break;
                     }
