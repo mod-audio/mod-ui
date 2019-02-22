@@ -38,9 +38,9 @@ from mod.settings import (APP, LOG,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST, DEVICE_ARCHITECTURE)
+                          DEV_HOST)
 
-from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
+from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from modtools.utils import (
@@ -338,6 +338,7 @@ class SystemInfo(JsonRequestHandler):
 
         info = {
             "hwname": hwdesc.get('name',"Unknown"),
+            "architecture": hwdesc.get('architecture', "Unknown"),
             "sysdate": sysdate,
             "python": {
                 "version" : sys.version
@@ -1383,7 +1384,7 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
-            'architecture': DEVICE_ARCHITECTURE,
+            'architecture': get_hardware_descriptor().get('architecture', 'Unknown'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),

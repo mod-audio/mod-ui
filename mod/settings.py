@@ -17,7 +17,6 @@
 
 import os, sys
 from os.path import join
-from mod import get_hardware_descriptor
 
 DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
 DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
@@ -33,11 +32,6 @@ API_KEY = os.environ.pop('MOD_API_KEY', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
-DEVICE_ARCHITECTURE = os.environ.get('MOD_DEVICE_ARCHITECTURE', None)
-
-if not DEVICE_ARCHITECTURE:
-    DEVICE_ARCHITECTURE = get_hardware_descriptor().get('architecture', 'duo')
-
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
