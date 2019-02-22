@@ -327,7 +327,7 @@ class MultiPartFileReceiver(JsonRequestHandler):
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
-        hwdesc = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+        hwdesc = get_hardware_descriptor()
         uname  = os.uname()
 
         if os.path.exists("/etc/mod-release/system"):
@@ -337,7 +337,7 @@ class SystemInfo(JsonRequestHandler):
             sysdate = "Unknown"
 
         info = {
-            "hwname": hwdesc.get('name',"Unknown"),
+            "hwname": hwdesc.get('name', "Unknown"),
             "architecture": hwdesc.get('architecture', "Unknown"),
             "sysdate": sysdate,
             "python": {
