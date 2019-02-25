@@ -138,7 +138,7 @@ function getFilteredDividers(sMin, sMax) {
  * @return  {float} Divider value
  */
 function getDividerValue(b, v) {
-  return 240 / (b * v);
+  return parseFloat(240 / (b * v), 3);
 }
 
 /**
@@ -149,7 +149,8 @@ function getDividerValue(b, v) {
  * @return  {float} Control Port value in seconds
  */
 function getPortValue(b, s) {
-  return 240 / (b * v);
+  var v = 240 / (b * s);
+  return parseFloat(v.toFixed(6));
 }
 
 /**
@@ -164,12 +165,14 @@ function getPortValue(b, s) {
 function convertEquivalent(value, conversionFactor, portUnitSymbol) {
   // var portUnitSymbol = port.units.symbol;
   if (portUnitSymbol === "s" || portUnitSymbol === "ms" || portUnitSymbol === "min") {
-    return conversionFactor * value;
+    var v = conversionFactor * value;
+    return  parseFloat(v.toFixed(6));
   } else if (portUnitSymbol === "Hz" || portUnitSymbol === "MHz" || portUnitSymbol === "kHz") {
     if (value === 0) { // avoid division by zero
       value = 0.001;
     }
-    return conversionFactor / value;
+    var v = conversionFactor / value;
+    return parseFloat(v.toFixed(6));
   } else {
     return;
   }
@@ -258,4 +261,12 @@ function getDividerOptions(port, minBpm, maxBpm) {
 
   // Finally, filter options s such as sMin <= s <= sMax
   return getFilteredDividers(sMin, sMax);
+}
+/**
+ * Check if port designation is lv2:designation  time:beatsPerMinute;
+ * @param  {string}  designation port designation
+ * @return {Boolean}
+ */
+function hasBpmDesignation(designation) {
+  return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
 }

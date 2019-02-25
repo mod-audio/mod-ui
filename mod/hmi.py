@@ -23,7 +23,6 @@ from tornado import ioloop
 from mod.protocol import Protocol, ProtocolError
 
 import serial, logging
-# logging.basicConfig(filename='/tmp/debug.log',level=logging.DEBUG)
 import time
 
 class SerialIOStream(BaseIOStream):
@@ -220,8 +219,6 @@ class HMI(object):
         optionsData = []
 
         rmax = max
-        logging.info(options)
-        logging.info("after")
         if options:
             currentNum = 0
             numBytesFree = 1024-128
@@ -249,7 +246,6 @@ class HMI(object):
 
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
-        logging.info(options)
         self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
                   ( instance_id,
                     port,

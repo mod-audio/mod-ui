@@ -67,39 +67,6 @@ function HardwareManager(options) {
           return
       }
       self.beatsPerMinutePort.value = bpm
-
-      // Loop through addressingsData to update dividers and value for ports that are sync to tempo
-      /*for (var instanceAndSymbol in self.addressingsData) {
-        if (self.addressingsData[instanceAndSymbol].hasOwnProperty('tempo') && self.addressingsData[instanceAndSymbol].tempo) {
-          var instanceAddressingsData = self.addressingsData[instanceAndSymbol]
-
-          // unchanged
-          var minv = instanceAddressingsData.minimum
-          var maxv = instanceAddressingsData.maximum
-          var labelValue = instanceAddressingsData.label
-          var sensibilityValue = instanceAddressingsData.steps
-          var tempoValue = instanceAddressingsData.tempo
-          var dividerValue = instanceAddressingsData.dividers && instanceAddressingsData.dividers.value
-          var actuator = { uri: instanceAddressingsData.uri }
-          // no need to update divider options since they are valid for all bpm and all port values between min and max
-          var dividerOptions = instanceAddressingsData.dividers && instanceAddressingsData.dividers.options
-
-          // get port info
-          var splitted = instanceAndSymbol.split("/")
-          var symbol = splitted[splitted.length - 1]
-          var instance = instanceAndSymbol.split("/" + symbol)[0]
-          var controlPortsData = pluginsData[instance].data('ports').control.input
-          var port = controlPortsData.find(function (port) {
-            return port.symbol === symbol;
-          })
-
-          // Update port value
-          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol)
-          console.log("port", port)
-
-          self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions)
-        }
-      }*/
     }
 
     this.reset = function () {
@@ -327,7 +294,7 @@ function HardwareManager(options) {
         var dividerOptions = [];
 
         // Hide Tempo section if the ControlPort does not have the property lv2:designation time:beatsPerMinute
-        if (port.designation !== "http://lv2plug.in/ns/ext/time/#beatsPerMinute" && port.designation !== "http://lv2plug.in/ns/ext/time#beatsPerMinute") {
+        if (!hasBpmDesignation(port.designation)) {
           form.find('.tempo').css({visibility:"hidden"})
         // Else, build filtered list of divider values based on bpm and ControlPort min/max values
         } else {
@@ -366,7 +333,7 @@ function HardwareManager(options) {
                     form.find('.tempo').css({visibility:"hidden"})
                 } else {
                     form.find('.sensibility').css({visibility:"visible"})
-                    if (port.designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute") {
+                    if (hasBpmDesignation(port.designation)) {
                       form.find('.tempo').css({visibility:"visible"})
                     }
                 }

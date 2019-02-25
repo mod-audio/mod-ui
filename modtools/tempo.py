@@ -139,7 +139,7 @@ def get_divider_value(b, v):
     Returns:
         float: divider value
     """
-    return 240 / (b * v)
+    return round(240 / (b * v), 3)
 
 def get_port_value(b, s):
     """Compute Control Port value if BPM addressed
@@ -151,7 +151,7 @@ def get_port_value(b, s):
     Returns:
         float: control port value in seconds
     """
-    return 240 / (b * s)
+    return round(240 / (b * s), 6)
 
 def convert_equivalent(value, conversion_factor, port_unit_symbol):
     """Convert value in any of the listed units to equivalent in seconds or value in seconds to any of the listed units
@@ -165,11 +165,11 @@ def convert_equivalent(value, conversion_factor, port_unit_symbol):
         float: output value
     """
     if port_unit_symbol == "s" or port_unit_symbol == "ms" or port_unit_symbol == "min":
-        return conversion_factor * value
+        return round(conversion_factor * value, 6)
     elif port_unit_symbol == "Hz" or port_unit_symbol == "MHz" or port_unit_symbol == "kHz":
         if value == 0: # avoid division by zero
             value = 0.001
-        return conversion_factor / value
+        return round(conversion_factor / value, 6)
     else:
         return None
 
