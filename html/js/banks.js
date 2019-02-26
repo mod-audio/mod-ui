@@ -220,9 +220,10 @@ JqueryClass('bankBox', {
         bank.data('pedalboards', $('<div>'))
         bank.data('title', bankData.title)
 
-        var i, pedalboardData, rendered
+        var i, pedalboardData, rendered, index
         for (i = 0; i < bankData.pedalboards.length; i++) {
-            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i])
+            index = i + 1
+            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], index.toString())
             rendered.find('.js-remove').show()
             rendered.appendTo(bank.data('pedalboards'))
         }
@@ -344,11 +345,11 @@ JqueryClass('bankBox', {
         })
     },
 
-    renderPedalboard: function (pedalboard) {
+    renderPedalboard: function (pedalboard, index = "") {
         var self = $(this)
 
         var metadata = {
-            title: pedalboard.title,
+            title: index ? index + ". " + pedalboard.title : pedalboard.title,
             image: "/img/loading-pedalboard.gif",
         }
 
