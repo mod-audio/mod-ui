@@ -178,6 +178,7 @@ JqueryClass('bankBox', {
         self.data('save')(serialized, function (ok) {
             if (ok)
                 self.data('saving').html('Auto saving banks... Done!').show()
+              
             else {
                 self.data('saving').html('Auto saving banks... Error!').show()
                 new Notification('error', 'Error saving banks!')
@@ -349,7 +350,8 @@ JqueryClass('bankBox', {
         var self = $(this)
 
         var metadata = {
-            title: index ? index + ". " + pedalboard.title : pedalboard.title,
+            index: index ? index + ". " : index,
+            title: pedalboard.title,
             image: "/img/loading-pedalboard.gif",
         }
 
