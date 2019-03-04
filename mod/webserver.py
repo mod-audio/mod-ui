@@ -947,10 +947,10 @@ class ServerWebSocket(websocket.WebSocketHandler):
         elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
             channel = int(data[2])
             SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
-            
+
         else:
             print("Unexpected command received over websocket")
-            
+
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1566,8 +1566,10 @@ class JackGetMidiDevices(JsonRequestHandler):
 
 class JackSetMidiDevices(JsonRequestHandler):
     def post(self):
-        devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        SESSION.web_set_midi_devices(devs)
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        devs = data['devs']
+        midi_aggregated_mode = data['midiAggregatedMode']
+        SESSION.web_set_midi_devices(devs, midi_aggregated_mode)
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):
@@ -1897,10 +1899,10 @@ def prepare(isModApp = False):
 
             if SESSION.host.readsock is None:
                 print("Readsock none")
-                
+
             if SESSION.host.writesock is None:
                 print("Writesock none")
-                
+
             print("Host failed to initialize, is the backend running?")
             SESSION.host.close_jack()
             sys.exit(1)

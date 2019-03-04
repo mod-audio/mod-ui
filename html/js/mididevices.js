@@ -31,6 +31,8 @@ function MidiPortsWindow(options) {
     options.midiPortsWindow.find('.js-submit').click(function () {
         var devs = []
 
+        var midiAggregatedMode = $('input[name=midi-mode]:checked').val() === "aggregated";
+
         $.each(options.midiPortsList.find('input'), function (index, input) {
             var input = $(input)
             if (input.is(':checked')) {
@@ -38,7 +40,7 @@ function MidiPortsWindow(options) {
             }
         })
 
-        self.selectDevices(devs)
+        self.selectDevices(devs, midiAggregatedMode)
         options.midiPortsWindow.hide()
         return false
     })
@@ -86,11 +88,11 @@ function MidiPortsWindow(options) {
         })
     }
 
-    this.selectDevices = function (devs) {
+    this.selectDevices = function (devs, midiAggregatedMode) {
         $.ajax({
             url: '/jack/set_midi_devices',
             type: 'POST',
-            data: JSON.stringify(devs),
+            data: JSON.stringify({ devs: devs, midiAggregatedMode: midiAggregatedMode}),
             error: function () {
                 new Bug("Failed to enable some MIDI devices")
             },

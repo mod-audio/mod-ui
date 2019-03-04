@@ -1200,7 +1200,7 @@ class Host(object):
                 websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # MIDI In
-        if MIDI_PORT_MODE == "aggregate":
+        if self.midi_aggregated_mode:
             if self.hasMidiMergerOut:
                 # Explained:             add_hw_port instance              type isOutput name    index
                 websocket.write_message("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
@@ -1231,7 +1231,7 @@ class Host(object):
                 websocket.write_message("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         # MIDI Out
-        if MIDI_PORT_MODE == "aggregate":
+        if self.midi_aggregated_mode:
             if self.hasMidiBroadcasterIn:
                 websocket.write_message("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
             pass
@@ -1996,6 +1996,8 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
+        self.midi_aggregated_mode = pb.get('midi_aggregated_mode', False)
+
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
         mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
@@ -2159,6 +2161,7 @@ class Host(object):
             self.pedalboard_name     = ""
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
+            self.midi_aggregated_mode = False
             #save_last_bank_and_pedalboard(0, "")
         else:
             self.pedalboard_empty    = False
@@ -3788,7 +3791,7 @@ _:b%i
 
     # Set the selected MIDI devices
     # Will remove or add new JACK ports (in mod-ui) as needed
-    def set_midi_devices(self, newDevs):
+    def set_midi_devices(self, newDevs, midi_aggregated_mode):
         def add_port(name, title, isOutput):
             index = int(name[-1])
             title = title.replace("-","_").replace(" ","_")
@@ -3849,4 +3852,7 @@ _:b%i
 
             self.midiports.append([port_symbol, title, []])
 
+        # MIDI mode
+        self.midi_aggregated_mode = midi_aggregated_mode
+        # TODO send as in l. 1203
     # -----------------------------------------------------------------------------------------------------------------
