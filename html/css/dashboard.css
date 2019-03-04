@@ -717,7 +717,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     text-align:right;
 }
 
-.save-popup label {
+.save-popup:not(#midi-ports-window) label {
     display:inline-block;
     float:left;
     line-height:2;

@@ -1354,11 +1354,13 @@ header#pedalboard-actions {
   position: absolute;
   top: 50%;
   width: 300px;
-  label {
-    display: inline-block;
-    float: left;
-    line-height: 2;
-    width: 96px;
+  &:not(#midi-ports-box) {
+    label {
+      display: inline-block;
+      float: left;
+      line-height: 2;
+      width: 96px;
+    }
   }
   .mod-controls {
     float: left;

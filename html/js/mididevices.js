@@ -54,6 +54,10 @@ function MidiPortsWindow(options) {
             }
 
             // add new ones
+            // XXX testing
+            // devList = ["system:midi_capture_1", "system:midi_capture_2"]
+            // names = {"system:midi_capture_1": "USB MIDI 1", "system:midi_capture_2": "USB MIDI 2"}
+            // devsInUse = ["system:midi_capture_1"]
             for (var i in devList) {
                 var dev  = devList[i]
                 var name = names[dev]
