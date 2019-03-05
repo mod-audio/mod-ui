@@ -74,6 +74,13 @@ JqueryClass('bankBox', {
             cursor: "webkit-grabbing !important",
             revert: true,
             update: function (e, ui) {
+                // Update displayed indexes
+                // self.data('pedalboardCanvas').children().each(function (i) {
+                //   var pedalboard = $(this)
+                //   var index = pedalboard.find(".js-index")
+                //   index.html(i + 1 + ".")
+                // })
+
                 if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
                     ui.item.data('pedalboardBundle', self.droppedBundle)
                 }
@@ -178,7 +185,7 @@ JqueryClass('bankBox', {
         self.data('save')(serialized, function (ok) {
             if (ok)
                 self.data('saving').html('Auto saving banks... Done!').show()
-              
+
             else {
                 self.data('saving').html('Auto saving banks... Error!').show()
                 new Notification('error', 'Error saving banks!')
@@ -191,6 +198,12 @@ JqueryClass('bankBox', {
                 self.data('saving').hide()
             }, 500)
             self.data('savingTimeout', timeout)
+        })
+        // Update displayed indexes
+        self.data('pedalboardCanvas').children().each(function (i) {
+          var pedalboard = $(this)
+          var index = pedalboard.find(".js-index")
+          index.html(i + 1 + ".")
         })
     },
 
