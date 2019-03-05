@@ -54,7 +54,7 @@ from mod.settings import (
 from mod.tuner import find_freqnotecents
 
 from mod.profile import Profile
-
+logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
 BANK_CONFIG_PEDALBOARD_UP   = 2
@@ -3855,15 +3855,14 @@ _:b%i
         # MIDI mode
         if self.midi_aggregated_mode == midi_aggregated_mode:
             return
-        self.midi_aggregated_mode = midi_aggregated_mode
 
         # MIDI In
         if midi_aggregated_mode:
             if self.hasMidiMergerOut:
-                self.send_modified("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+                self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
         else:
             if self.hasSerialMidiIn:
-                self.send_modified("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
             ports = get_jack_hardware_ports(False, False)
             for i in range(len(ports)):
@@ -3877,17 +3876,17 @@ _:b%i
                 else:
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
-                self.send_modified("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
+                self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         # MIDI Out
         if midi_aggregated_mode:
             if self.hasMidiBroadcasterIn:
-                self.send_modified("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+                self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
             pass
 
         else:
             if self.hasSerialMidiOut:
-                self.send_modified("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
             ports = get_jack_hardware_ports(False, True)
             for i in range(len(ports)):
@@ -3900,5 +3899,8 @@ _:b%i
                 else:
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
-                self.send_modified("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
+                self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
+
+        self.midi_aggregated_mode = midi_aggregated_mode
+
     # -----------------------------------------------------------------------------------------------------------------
