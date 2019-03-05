@@ -50,16 +50,16 @@ function MidiPortsWindow(options) {
         options.midiPortsList.find('input').remove()
         options.midiPortsList.find('span').remove()
 
-        self.getDeviceList(function (devsInUse, devList, names) {
-            // if (devList.length == 0) {
-            //     return new Notification("info", "No MIDI devices available")
-            // }
+        self.getDeviceList(function (devsInUse, devList, names, midiAggregatedMode) {
+            if (devList.length == 0) {
+                return new Notification("info", "No MIDI devices available")
+            }
 
             // add new ones
             // XXX testing
-            devList = ["system:midi_capture_1", "system:midi_capture_2"]
-            names = {"system:midi_capture_1": "USB MIDI 1", "system:midi_capture_2": "USB MIDI 2"}
-            devsInUse = ["system:midi_capture_1"]
+            // devList = ["system:midi_capture_1", "system:midi_capture_2"]
+            // names = {"system:midi_capture_1": "USB MIDI 1", "system:midi_capture_2": "USB MIDI 2"}
+            // devsInUse = ["system:midi_capture_1"]
             for (var i in devList) {
                 var dev  = devList[i]
                 var name = names[dev]
@@ -67,6 +67,14 @@ function MidiPortsWindow(options) {
                          + (devsInUse.indexOf(dev) >= 0 ? 'checked="checked"' : '') + '/><span>' + name + '<br/></span>')
 
                 elem.appendTo(options.midiPortsList)
+            }
+
+            // Check midi mode
+            var midiModeRadios = $('input:radio[name=midi-mode]');
+            if(midiAggregatedMode) {
+                midiModeRadios.filter('[value=aggregated]').prop('checked', true);
+            } else {
+              midiModeRadios.filter('[value=legacy]').prop('checked', true);
             }
 
             options.midiPortsWindow.show()
@@ -78,7 +86,7 @@ function MidiPortsWindow(options) {
             url: '/jack/get_midi_devices',
             type: 'GET',
             success: function (resp) {
-                callback(resp.devsInUse, resp.devList, resp.names)
+                callback(resp.devsInUse, resp.devList, resp.names, resp.midiAggregatedMode)
             },
             error: function () {
                 new Bug("Failed to get list of MIDI devices")

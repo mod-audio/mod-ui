@@ -1557,11 +1557,12 @@ class SaveUserId(JsonRequestHandler):
 
 class JackGetMidiDevices(JsonRequestHandler):
     def get(self):
-        devsInUse, devList, names = SESSION.web_get_midi_device_list()
+        devsInUse, devList, names, midi_aggregated_mode = SESSION.web_get_midi_device_list()
         self.write({
             "devsInUse": devsInUse,
             "devList"  : devList,
             "names"    : names,
+            "midiAggregatedMode": midi_aggregated_mode
         })
 
 class JackSetMidiDevices(JsonRequestHandler):

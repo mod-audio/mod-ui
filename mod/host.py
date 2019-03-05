@@ -3731,7 +3731,7 @@ _:b%i
     # JACK stuff
 
     # Get list of Hardware MIDI devices
-    # returns (devsInUse, devList, names)
+    # returns (devsInUse, devList, names, midi_aggregated_mode)
     def get_midi_ports(self):
         out_ports = {}
         full_ports = {}
@@ -3779,7 +3779,7 @@ _:b%i
             names[port_id] = port_alias + (" (in+out)" if port_alias in out_ports else " (in)")
 
         devList.sort()
-        return (devsInUse, devList, names)
+        return (devsInUse, devList, names, self.midi_aggregated_mode)
 
     def get_port_name_alias(self, portname):
         alias = get_jack_port_alias(portname)

@@ -163,7 +163,7 @@ class Session(object):
         return bundlepath
 
     # Get list of Hardware MIDI devices
-    # returns (devsInUse, devList)
+    # returns (devsInUse, devList, names, midi_aggregated_mode)
     def web_get_midi_device_list(self):
         return self.host.get_midi_ports()
 
