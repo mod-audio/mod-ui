@@ -54,7 +54,7 @@ from mod.settings import (
 from mod.tuner import find_freqnotecents
 
 from mod.profile import Profile
-logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+# logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
 BANK_CONFIG_PEDALBOARD_UP   = 2
@@ -3818,7 +3818,10 @@ _:b%i
             self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
 
         midiportIds = tuple(i[0] for i in self.midiports)
-
+        logging.info("self.midiports")
+        logging.info(self.midiports)
+        logging.info("midiportIds")
+        logging.info(midiportIds)
         # remove
         for i in reversed(range(len(self.midiports))):
             port_symbol, port_alias, _ = self.midiports[i]
@@ -3860,46 +3863,21 @@ _:b%i
         if midi_aggregated_mode:
             if self.hasMidiMergerOut:
                 self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-        else:
-            if self.hasSerialMidiIn:
-                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
-
-            ports = get_jack_hardware_ports(False, False)
-            for i in range(len(ports)):
-                name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                    continue
-                alias = get_jack_port_alias(name)
-
-                if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-                else:
-                    title = name.split(":",1)[-1].title()
-                title = title.replace(" ","_")
-                self.msg_callback("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
-
-        # MIDI Out
-        if midi_aggregated_mode:
             if self.hasMidiBroadcasterIn:
                 self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-            pass
 
+            # Remove Serial MIDI ports
+            self.msg_callback("remove_hw_port /graph/serial_midi_in")
+            self.msg_callback("remove_hw_port /graph/serial_midi_out")
         else:
+            if self.hasMidiMergerOut:
+                self.msg_callback("remove_hw_port /graph/midi_merger_out")
+            if self.hasMidiBroadcasterIn:
+                self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
+            if self.hasSerialMidiIn:
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
             if self.hasSerialMidiOut:
                 self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
-
-            ports = get_jack_hardware_ports(False, True)
-            for i in range(len(ports)):
-                name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                    continue
-                alias = get_jack_port_alias(name)
-                if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-                else:
-                    title = name.split(":",1)[-1].title()
-                title = title.replace(" ","_")
-                self.msg_callback("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         self.midi_aggregated_mode = midi_aggregated_mode
 
