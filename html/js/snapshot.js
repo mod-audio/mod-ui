@@ -65,6 +65,8 @@ function SnapshotsManager(options) {
         }
 
         var selected = options.editingElem = options.pedalPresetsList.find('option:selected')
+        var selectedHtml = selected.html()
+        var name = selectedHtml.substring(selectedHtml.indexOf(".") + 1);
 
         options.pedalPresetsOverlay.css({
             position: "absolute",
@@ -72,7 +74,7 @@ function SnapshotsManager(options) {
             height: selected.height()+2,
             top: selected.position().top,
             left: selected.position().left
-        }).prop("value", selected.html()).show().focus()
+        }).prop("value", name).show().focus()
 
         return false
     })
@@ -104,6 +106,11 @@ function SnapshotsManager(options) {
                     options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
                     options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
                 }
+
+                options.pedalPresetsList.children().each(function(i) {
+                  console.log(i)
+                  console.log($(this).html())
+                })
             },
             error: function () {},
             cache: false,
@@ -181,7 +188,8 @@ function SnapshotsManager(options) {
 
             // add new ones
             for (var i in presets) {
-                var elem = $('<option value="'+i+'">'+presets[i]+'</option>')
+                var index = parseInt(i) + 1
+                var elem = $('<option value="'+i+'">'+index + "."+ presets[i]+'</option>')
 
                 if (currentId == i && ! options.currentlyAddressed) {
                     elem.prop('selected', 'selected')
@@ -253,7 +261,6 @@ function SnapshotsManager(options) {
         var text = options.pedalPresetsOverlay.hide().val()
         var elem = options.editingElem
         var prId = elem.val()
-
         options.editingElem = null
 
         if (text == "") {
@@ -268,7 +275,8 @@ function SnapshotsManager(options) {
                 title: text,
             },
             success: function () {
-                elem.html(text)
+                var index = parseInt(prId) + 1
+                elem.html(index + "." + text)
                 options.renamedCallback(text)
             },
             error: function () {},

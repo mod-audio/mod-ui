@@ -74,13 +74,6 @@ JqueryClass('bankBox', {
             cursor: "webkit-grabbing !important",
             revert: true,
             update: function (e, ui) {
-                // Update displayed indexes
-                // self.data('pedalboardCanvas').children().each(function (i) {
-                //   var pedalboard = $(this)
-                //   var index = pedalboard.find(".js-index")
-                //   index.html(i + 1 + ".")
-                // })
-
                 if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
                     ui.item.data('pedalboardBundle', self.droppedBundle)
                 }
