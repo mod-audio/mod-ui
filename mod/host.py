@@ -1199,6 +1199,7 @@ class Host(object):
             else:
                 websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
+
         # MIDI In
         if self.midi_aggregated_mode:
             if self.hasMidiMergerOut:
@@ -1991,8 +1992,7 @@ class Host(object):
 
     def load(self, bundlepath, isDefault=False):
         pb = get_pedalboard_info(bundlepath)
-        logging.info("PEDALBOARD")
-        logging.info(pb)
+
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
@@ -3853,6 +3853,52 @@ _:b%i
             self.midiports.append([port_symbol, title, []])
 
         # MIDI mode
+        if self.midi_aggregated_mode == midi_aggregated_mode:
+            return
         self.midi_aggregated_mode = midi_aggregated_mode
-        # TODO send as in l. 1203
+
+        # MIDI In
+        if midi_aggregated_mode:
+            if self.hasMidiMergerOut:
+                self.send_modified("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+        else:
+            if self.hasSerialMidiIn:
+                self.send_modified("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+
+            ports = get_jack_hardware_ports(False, False)
+            for i in range(len(ports)):
+                name = ports[i]
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                    continue
+                alias = get_jack_port_alias(name)
+
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                else:
+                    title = name.split(":",1)[-1].title()
+                title = title.replace(" ","_")
+                self.send_modified("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
+
+        # MIDI Out
+        if midi_aggregated_mode:
+            if self.hasMidiBroadcasterIn:
+                self.send_modified("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+            pass
+
+        else:
+            if self.hasSerialMidiOut:
+                self.send_modified("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+
+            ports = get_jack_hardware_ports(False, True)
+            for i in range(len(ports)):
+                name = ports[i]
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                    continue
+                alias = get_jack_port_alias(name)
+                if alias:
+                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                else:
+                    title = name.split(":",1)[-1].title()
+                title = title.replace(" ","_")
+                self.send_modified("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
     # -----------------------------------------------------------------------------------------------------------------
