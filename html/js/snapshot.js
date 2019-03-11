@@ -107,9 +107,14 @@ function SnapshotsManager(options) {
                     options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
                 }
 
-                options.pedalPresetsList.children().each(function(i) {
-                  console.log(i)
-                  console.log($(this).html())
+                // Replace options value and text so we can a sequential list 0, 1, 2, etc.
+                var i = 0
+                options.pedalPresetsList.children().each(function(option) {
+                  var optionHtml = $(this).html()
+                  var prtitle = optionHtml.substring(optionHtml.indexOf(".") + 1)
+                  $(this).html(i + "." + prtitle)
+                  $(this).val(i)
+                  i++
                 })
             },
             error: function () {},
@@ -188,8 +193,7 @@ function SnapshotsManager(options) {
 
             // add new ones
             for (var i in presets) {
-                var index = parseInt(i)
-                var elem = $('<option value="'+i+'">'+index + "."+ presets[i]+'</option>')
+                var elem = $('<option value="'+i+'">'+i + "."+ presets[i]+'</option>')
 
                 if (currentId == i && ! options.currentlyAddressed) {
                     elem.prop('selected', 'selected')
@@ -277,8 +281,7 @@ function SnapshotsManager(options) {
                 title: text,
             },
             success: function () {
-                var index = parseInt(prId)
-                elem.html(index + "." + text)
+                elem.html(prId + "." + text)
                 options.renamedCallback(text)
             },
             error: function () {},
