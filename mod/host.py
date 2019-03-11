@@ -54,7 +54,9 @@ from mod.settings import (
 from mod.tuner import find_freqnotecents
 
 from mod.profile import Profile
+
 # logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
 BANK_CONFIG_PEDALBOARD_UP   = 2
@@ -2786,7 +2788,7 @@ _:b%i
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
     lv2:index %i ;
-    lv2:name "Serial MIDI In" ;
+    lv2:name "DIN MIDI In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "serial_midi_in" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -2802,7 +2804,7 @@ _:b%i
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
     lv2:index %i ;
-    lv2:name "Serial MIDI In" ;
+    lv2:name "DIN MIDI In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "serial_midi_out" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -3818,10 +3820,7 @@ _:b%i
             self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
 
         midiportIds = tuple(i[0] for i in self.midiports)
-        logging.info("self.midiports")
-        logging.info(self.midiports)
-        logging.info("midiportIds")
-        logging.info(midiportIds)
+
         # remove
         for i in reversed(range(len(self.midiports))):
             port_symbol, port_alias, _ = self.midiports[i]
@@ -3839,7 +3838,7 @@ _:b%i
 
         # add
         for port_symbol in newDevs:
-            if port_symbol in midiportIds:
+            if not(self.midi_aggregated_mode and not(midi_aggregated_mode)) and port_symbol in midiportIds:
                 continue
 
             if ";" in port_symbol:
@@ -3847,11 +3846,13 @@ _:b%i
                 title_in  = self.get_port_name_alias(inp)
                 title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
-                add_port(inp, title_in, False)
-                add_port(outp, title_out, True)
+                if not midi_aggregated_mode:
+                    add_port(inp, title_in, False)
+                    add_port(outp, title_out, True)
             else:
                 title = self.get_port_name_alias(port_symbol)
-                add_port(port_symbol, title, False)
+                if not midi_aggregated_mode:
+                    add_port(port_symbol, title, False)
 
             self.midiports.append([port_symbol, title, []])
 
@@ -3859,8 +3860,9 @@ _:b%i
         if self.midi_aggregated_mode == midi_aggregated_mode:
             return
 
-        # MIDI In
+        # from legacy to aggregated mode
         if midi_aggregated_mode:
+            # Add "All MIDI In/Out" ports
             if self.hasMidiMergerOut:
                 self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
             if self.hasMidiBroadcasterIn:
@@ -3869,11 +3871,28 @@ _:b%i
             # Remove Serial MIDI ports
             self.msg_callback("remove_hw_port /graph/serial_midi_in")
             self.msg_callback("remove_hw_port /graph/serial_midi_out")
+
+            # Remove USB MIDI ports
+            for i in reversed(range(len(self.midiports))):
+                port_symbol, port_alias, _ = self.midiports[i]
+
+                if ";" in port_symbol:
+                    inp, outp = port_symbol.split(";",1)
+                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
+                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
+                else:
+                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
+
+
+        # from aggregated to legacy mode
         else:
+            # Remove "All MIDI In/Out" ports
             if self.hasMidiMergerOut:
                 self.msg_callback("remove_hw_port /graph/midi_merger_out")
             if self.hasMidiBroadcasterIn:
                 self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
+
+            # Add Serial MIDI ports
             if self.hasSerialMidiIn:
                 self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
             if self.hasSerialMidiOut:
