@@ -1532,7 +1532,7 @@ JqueryClass('film', baseWidget, {
         self.data('dragged', true)
 
         var vdiff = (self.data('lastY') - e.pageY) / self.data('dragPrecisionVertical')
-        var hdiff = (e.pageX - self.data('lastX')) / self.data('dragPrecisionHorizontal')
+        var hdiff = (e.pageX - self.data('lastX')) / self.data('dragPrecisionVertical') // same precision as vertical to move horizontal sliders easily
         var portSteps = self.data("portSteps")
 
         if (Math.abs(vdiff) > 0) {
