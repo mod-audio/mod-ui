@@ -188,7 +188,7 @@ function SnapshotsManager(options) {
 
             // add new ones
             for (var i in presets) {
-                var index = parseInt(i) + 1
+                var index = parseInt(i)
                 var elem = $('<option value="'+i+'">'+index + "."+ presets[i]+'</option>')
 
                 if (currentId == i && ! options.currentlyAddressed) {
@@ -226,7 +226,9 @@ function SnapshotsManager(options) {
         self.hideRenameOverlay()
 
         var selectId = $(this).val()
-        var prtitle  = $(this).html()
+
+        var selectedHtml = $(this).html()
+        var prtitle = selectedHtml.substring(selectedHtml.indexOf(".") + 1)
 
         if (options.currentlyAddressed) {
             options.pedalPresetsList.find('option:selected').removeProp('selected')
@@ -275,7 +277,7 @@ function SnapshotsManager(options) {
                 title: text,
             },
             success: function () {
-                var index = parseInt(prId) + 1
+                var index = parseInt(prId)
                 elem.html(index + "." + text)
                 options.renamedCallback(text)
             },
