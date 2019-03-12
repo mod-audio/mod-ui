@@ -244,6 +244,12 @@ function HardwareManager(options) {
         select.val(curStep != null ? curStep : def)
     }
 
+    this.disableMinMaxSteps = function (form, disabled) {
+      form.find('select[name=steps]').prop('disabled', disabled)
+      form.find('input[name=min]').prop('disabled', disabled)
+      form.find('input[name=max]').prop('disabled', disabled)
+    }
+
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
         var instanceAndSymbol = instance+"/"+port.symbol
@@ -295,9 +301,19 @@ function HardwareManager(options) {
 
         // Hide Tempo section if the ControlPort does not have the property lv2:designation time:beatsPerMinute
         if (!hasBpmDesignation(port.designation)) {
-          form.find('.tempo').css({visibility:"hidden"})
+          form.find('.tempo').css({display:"none"})
         // Else, build filtered list of divider values based on bpm and ControlPort min/max values
         } else {
+          if (tempo.prop("checked")) {
+            self.disableMinMaxSteps(form, true)
+          }
+          form.find('input[name=tempo]').bind('change', function() {
+            if(this.checked) {
+              self.disableMinMaxSteps(form, true)
+            } else {
+              self.disableMinMaxSteps(form, false)
+            }
+          })
           dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
         }
 
@@ -323,18 +339,22 @@ function HardwareManager(options) {
             var act = actuatorSelect.val()
             if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 form.find('.sensibility').css({visibility:"hidden"})
-                form.find('.tempo').css({visibility:"hidden"})
+                form.find('.tempo').css({display:"none"})
             }
 
             actuatorSelect.bind('change keyup', function () {
                 var act = $(this).val()
                 if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                     form.find('.sensibility').css({visibility:"hidden"})
-                    form.find('.tempo').css({visibility:"hidden"})
+                    form.find('.tempo').css({display:"none"})
+                    self.disableMinMaxSteps(form, false)
                 } else {
                     form.find('.sensibility').css({visibility:"visible"})
                     if (hasBpmDesignation(port.designation)) {
-                      form.find('.tempo').css({visibility:"visible"})
+                      form.find('.tempo').css({display:"block"})
+                    }
+                    if(tempo.prop("checked")) {
+                      self.disableMinMaxSteps(form, true)
                     }
                 }
             })
