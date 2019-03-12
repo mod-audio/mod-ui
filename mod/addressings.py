@@ -22,6 +22,7 @@ HMI_ADDRESSING_TYPE_INTEGER      = 128
 
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
+HMI_ACTUATOR_TYPE_POTENTIOMETER = 3
 
 # use pitchbend as midi cc, with an invalid MIDI controller number
 MIDI_PITCHBEND_AS_CC = 131
@@ -88,16 +89,24 @@ class Addressings(object):
         self.hmi_hw2uri_map = {}
         self.hmi_uri2hw_map = {}
 
-        for i in range(0, 4):
+        # TODO: Why 8? FIXME: get rid of hardcoded values!
+        for i in range(0, 8):
             knob_hw  = (0, 0, HMI_ACTUATOR_TYPE_KNOB,       i)
             foot_hw  = (0, 0, HMI_ACTUATOR_TYPE_FOOTSWITCH, i)
+            pot_hw  = (0, 0, HMI_ACTUATOR_TYPE_POTENTIOMETER, i)
+            
             knob_uri = "/hmi/knob%i"       % (i+1)
             foot_uri = "/hmi/footswitch%i" % (i+1)
+            pot_uri = "/hmi/potentiometer%i" % (i+1)
+            # Note: These have to match the strings in `/etc/mod-hardware-descriptor.json`
 
             self.hmi_hw2uri_map[knob_hw]  = knob_uri
             self.hmi_hw2uri_map[foot_hw]  = foot_uri
+            self.hmi_hw2uri_map[pot_hw]  = pot_uri
+            
             self.hmi_uri2hw_map[knob_uri] = knob_hw
             self.hmi_uri2hw_map[foot_uri] = foot_hw
+            self.hmi_uri2hw_map[pot_uri] = pot_hw
 
     # clear all addressings, leaving metadata intact
     def clear(self):
@@ -519,7 +528,11 @@ class Addressings(object):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
-            actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+            try:
+                actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+            except KeyError:
+                print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
+                
             # HMI specific
             addressings = self.hmi_addressings[actuator_uri]
             addressing_data['addrs_idx'] = addressings['idx']+1

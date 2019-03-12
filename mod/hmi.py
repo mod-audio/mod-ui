@@ -54,6 +54,7 @@ class SerialIOStream(BaseIOStream):
 
 class HMI(object):
     def __init__(self, port, baud_rate, callback):
+        logging.basicConfig(level=logging.DEBUG)
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
@@ -96,6 +97,7 @@ class HMI(object):
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
                 logging.error('[hmi] error parsing msg %s' % repr(data))
+                logging.error('[hmi]   error code %s' % e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:
                 if msg.is_resp():
@@ -112,8 +114,10 @@ class HMI(object):
                 else:
                     def _callback(resp, resp_args=None):
                         if resp_args is None:
+                            logging.info('[hmi]     sent "resp {0}"'.format(resp))
                             self.send("resp %d" % (0 if resp else -1))
                         else:
+                            logging.info('[hmi]     sent "resp {0} {1}"'.format(resp, resp_args))
                             self.send("resp %d %s" % (0 if resp else -1, resp_args))
 
                     msg.run_cmd(_callback)

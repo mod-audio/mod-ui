@@ -44,7 +44,7 @@ from modtools.utils import (
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
-    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
+    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from mod.settings import (
@@ -303,6 +303,17 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_master_volume_channel_mode", self.hmi_get_master_volume_channel_mode)
         Protocol.register_cmd_callback("set_master_volume_channel_mode", self.hmi_set_master_volume_channel_mode)
+
+        Protocol.register_cmd_callback("get_play_status", self.hmi_get_play_status)
+        Protocol.register_cmd_callback("set_play_status", self.hmi_set_play_status)
+
+        Protocol.register_cmd_callback("get_master_volume_channel", self.hmi_get_master_volume_channel)
+        Protocol.register_cmd_callback("set_master_volume_channel", self.hmi_set_master_volume_channel)
+        
+        Protocol.register_cmd_callback("get_tuner_mute", self.hmi_get_tuner_mute)
+        Protocol.register_cmd_callback("set_tuner_mute", self.hmi_set_tuner_mute)
+        
+        Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
         
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -624,6 +635,10 @@ class Host(object):
         
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
+
+        # DEBUG: For Ievgen developing a looper
+        yield gen.Task(self.send_notmodified, "feature_enable midi_clock_slave 1", datatype='boolean')
+        yield gen.Task(self.send_notmodified, "feature_enable link 0", datatype='boolean')
 
         # All set, disable HW bypass now
         init_bypass()
@@ -3440,8 +3455,8 @@ _:b%i
 
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
-        logging.info("hmi tempo bpm get")
         bpm = get_jack_data(True)['bpm']
+        logging.info("hmi get tempo bpm: {0}".format(bpm))
         callback(True, bpm)
         
     def hmi_set_tempo_bpm(self, bpm, callback):
@@ -3518,6 +3533,7 @@ _:b%i
 
         if mode in [0, 1, 2]:
             # Communicate with mod host.
+            # Note: First disable all unchoosen options.
             if mode == 0: # Internal
                 self.send_notmodified("feature_enable link 0")
                 self.send_notmodified("feature_enable midi_clock_slave 0")
@@ -3525,14 +3541,15 @@ _:b%i
                 self.send_notmodified("feature_enable link 0")
                 self.send_notmodified("feature_enable midi_clock_slave 1")
             if mode == 2: # Ableton Link
-                self.send_notmodified("feature_enable link 1")
                 self.send_notmodified("feature_enable midi_clock_slave 0")
-
+                self.send_notmodified("feature_enable link 1")
+                
             self.profile.sync_mode = mode
             callback(True)
         else:
             callback(False)
 
+    # There is a plug-in for that. But Jesse does not find it usable.
     def hmi_get_send_midi_clk(self, callback):
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi get midi beat clock status")
@@ -3674,8 +3691,38 @@ _:b%i
             callback(True)
         else:
             callback(False)
-            
-            
+
+    def hmi_get_play_status(self, callback):
+        """Get the status of the Jack transport. Returns 0 when stopped or 1 when playing."""
+        status = int(self.transport_rolling)
+        callback(True, status)
+
+    def hmi_set_play_status(self, state, callback):
+        """TODO."""
+        callback(True)
+
+    def hmi_get_master_volume_channel(self, callback):
+        """TODO."""
+        callback(True, 0) # integer 0, 1, 2
+        
+    def hmi_set_master_volume_channel(self, value, callback):
+        """TODO."""
+        callback(True)
+
+    def hmi_get_tuner_mute(self, callback):
+        """TODO."""
+        callback(True, 0) # 0, 1
+
+    def hmi_set_tuner_mute(self, value, callback):
+        """TODO."""
+        callback(True)
+        
+    def hmi_get_pb_name(self, callback):
+        """Return the name of the currently loaded pedalboard."""
+        name = str(self.pedalboard_name)
+        callback(True, name) # string
+
+        
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
 

@@ -74,7 +74,7 @@ class Session(object):
             self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
             hmiOpened = self.hmi.sp is not None
 
-        print("Using HMI =>", hmiOpened)
+        #print("Using HMI =>", hmiOpened)
 
         if not hmiOpened:
             self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
