@@ -88,6 +88,7 @@ $('document').ready(function() {
             var instance = data[0]
             var symbol   = data[1]
             var value    = parseFloat(data[2])
+
             desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
             return
         }
@@ -154,7 +155,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_map") {
-            data         = data.substr(cmd.length+1).split(" ",7)
+            data         = data.substr(cmd.length+1).split(" ", 9)
             var instance = data[0]
             var symbol   = data[1]
             var actuator = data[2]
@@ -162,7 +163,10 @@ $('document').ready(function() {
             var maximum  = parseFloat(data[4])
             var steps    = parseInt(data[5])
             var label    = data[6].replace(/_/g," ")
-            desktop.hardwareManager.addHardwareMapping(instance, symbol, actuator, label, minimum, maximum, steps)
+            var tempo    = data[7] === "True" ? true : false
+            var dividers = JSON.parse(data[8].replace(/'/g, '"'))
+
+            desktop.hardwareManager.addHardwareMapping(instance, symbol, actuator, label, minimum, maximum, steps, tempo, dividers)
             return
         }
 

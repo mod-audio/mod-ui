@@ -192,7 +192,7 @@ function Desktop(elements) {
                 name: port.shortName
             }
             return Mustache.render(TEMPLATES.addressing, context)
-        }
+        },
     })
 
     this.pedalPresets = new SnapshotsManager({
@@ -216,6 +216,7 @@ function Desktop(elements) {
     this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
+
     elements.zoomIn.click(function () {
         self.pedalboard.pedalboard('zoomIn')
     })
@@ -500,6 +501,9 @@ function Desktop(elements) {
         transportSyncMode: elements.transportSyncMode,
         openAddressingDialog: function (port, label) {
             self.hardwareManager.open("/pedalboard", port, label)
+        },
+        setNewBeatsPerMinuteValue: function (bpm) {
+          self.hardwareManager.setBeatsPerMinuteValue(bpm)
         },
         unaddressPort: function (portSymbol, callback) {
             var addressing = {

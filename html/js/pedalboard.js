@@ -1283,6 +1283,7 @@ JqueryClass('pedalboard', {
             preset_list: preset_list
         }, pluginData)
         var pluginGui = new GUI(pluginData, options)
+
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
 
