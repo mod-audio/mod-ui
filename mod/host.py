@@ -2776,7 +2776,7 @@ _:b%i
                     dividerOptions = get_options_port_values(
                         port['units']['symbol'],
                         bpm,
-                        get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+                        get_divider_options(port, 40.0, 280.0) # XXX min and max bpm hardcoded
                     )
                     dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 

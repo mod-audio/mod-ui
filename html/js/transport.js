@@ -142,7 +142,7 @@ function TransportControls(options) {
         shortName: 'Beats Per Minute',
         symbol: ':bpm',
         ranges: {
-            minimum: 20.0,
+            minimum: 40.0,
             maximum: 280.0,
             default: 120.0,
         },
