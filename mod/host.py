@@ -62,7 +62,7 @@ from mod.settings import (
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
 )
 from mod.tuner import find_freqnotecents
-# logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
@@ -924,9 +924,9 @@ class Host(object):
                     pluginData['ports'][bpb_symbol] = bpb
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
-                # elif bpm_symbol is not None:
-                #     pluginData['ports'][bpm_symbol] = bpm
-                #     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+                elif bpm_symbol is not None:
+                    pluginData['ports'][bpm_symbol] = bpm
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
                 elif speed_symbol is not None:
                     pluginData['ports'][speed_symbol] = speed
@@ -1324,10 +1324,10 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = self.transport_bpb
 
-                # elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
-                #     bpm_symbol = symbol
-                #     badports.append(symbol)
-                #     valports[symbol] = self.transport_bpm
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
 
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
                     speed_symbol = symbol
@@ -2111,10 +2111,10 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = self.transport_bpb
 
-                # elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
-                #     bpm_symbol = symbol
-                #     badports.append(symbol)
-                #     valports[symbol] = self.transport_bpm
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
 
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
                     speed_symbol = symbol
@@ -2799,13 +2799,13 @@ _:b%i
             for addr in addrs:
                 self.readdress(addr, bpm, callback)
 
-        # for pluginData in self.plugins.values():
-        #     bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
-        #
-        #     if bpm_symbol is not None:
-        #         pluginData['ports'][bpm_symbol] = bpm
-        #         if sendMsg:
-        #             self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+        for pluginData in self.plugins.values():
+            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
     def set_transport_rolling(self, rolling, sendMsg, callback=None, datatype='int'):
         self.transport_rolling = rolling

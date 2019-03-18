@@ -263,10 +263,11 @@ function getDividerOptions(port, minBpm, maxBpm) {
   return getFilteredDividers(sMin, sMax);
 }
 /**
- * Check if port designation is lv2:designation  time:beatsPerMinute;
- * @param  {string}  designation port designation
+ * Check if port designation is lv2:property  mod:tempoRelatedScalePoints;
+ * @param  {string}  port port infos
  * @return {Boolean}
  */
-function hasBpmDesignation(designation) {
-  return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
+function hasTempoRelatedScalePoints(port) {
+  return port.properties.indexOf("tempoRelatedScalePoints") > -1
+  // return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
 }
