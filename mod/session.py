@@ -163,14 +163,14 @@ class Session(object):
         return bundlepath
 
     # Get list of Hardware MIDI devices
-    # returns (devsInUse, devList)
+    # returns (devsInUse, devList, names, midi_aggregated_mode)
     def web_get_midi_device_list(self):
         return self.host.get_midi_ports()
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
-    def web_set_midi_devices(self, newDevs):
-        return self.host.set_midi_devices(newDevs)
+    def web_set_midi_devices(self, newDevs, midi_aggregated_mode):
+        return self.host.set_midi_devices(newDevs, midi_aggregated_mode)
 
     # Send a ping to HMI and Websockets
     def web_ping(self, callback):

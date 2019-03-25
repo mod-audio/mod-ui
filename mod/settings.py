@@ -101,6 +101,3 @@ PLAYBACK_PATH='/tmp/playback.ogg'
 UPDATE_MOD_OS_FILE='/data/modduo.tar'
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
-
-# 'aggregate' or not set. No effect if set to another string.
-MIDI_PORT_MODE = os.environ.pop('MOD_MIDI_PORT_MODE', "aggregate")

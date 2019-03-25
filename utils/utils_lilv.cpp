@@ -3980,6 +3980,17 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
             }
 #endif
 
+            if (strcmp(portsym, "midi_aggregated_mode") == 0)
+            {
+                if (LilvNode* const aggregated = lilv_world_get(w, hwport, ingen_value, nullptr))
+                {
+                    info.midi_aggregated_mode = lilv_node_as_int(aggregated) != 0;
+                    lilv_node_free(aggregated);
+                }
+                lilv_free(portsym);
+                continue;
+            }
+
             int isTimePort = 0;
             /**/ if (strcmp(portsym, ":bpb") == 0)
                 isTimePort = 1;
