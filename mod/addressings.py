@@ -560,7 +560,7 @@ class Addressings(object):
 
         return addressing_data
 
-    def load_addr(self, actuator_uri, addressing_data, callback):
+    def load_addr(self, actuator_uri, addressing_data, callback, not_param_set=False):
         addressing_data = addressing_data.copy()
 
         actuator_hw   = actuator_uri
@@ -576,7 +576,7 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback)
+        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, not_param_set)
 
     @gen.coroutine
     def load_current(self, actuator_uris, skippedPort):

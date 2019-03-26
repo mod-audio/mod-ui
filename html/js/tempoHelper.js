@@ -138,7 +138,7 @@ function getFilteredDividers(sMin, sMax) {
  * @return  {float} Divider value
  */
 function getDividerValue(b, v) {
-  return parseFloat(240 / (b * v), 3);
+  return 240 / (b * v);
 }
 
 /**
@@ -149,8 +149,7 @@ function getDividerValue(b, v) {
  * @return  {float} Control Port value in seconds
  */
 function getPortValue(b, s) {
-  var v = 240 / (b * s);
-  return parseFloat(v.toFixed(6));
+  return 240 / (b * s);
 }
 
 /**
@@ -166,13 +165,13 @@ function convertEquivalent(value, conversionFactor, portUnitSymbol) {
   // var portUnitSymbol = port.units.symbol;
   if (portUnitSymbol === "s" || portUnitSymbol === "ms" || portUnitSymbol === "min") {
     var v = conversionFactor * value;
-    return  parseFloat(v.toFixed(6));
+    return  parseFloat(v.toFixed(3));
   } else if (portUnitSymbol === "Hz" || portUnitSymbol === "MHz" || portUnitSymbol === "kHz") {
     if (value === 0) { // avoid division by zero
       value = 0.001;
     }
     var v = conversionFactor / value;
-    return parseFloat(v.toFixed(6));
+    return parseFloat(v.toFixed(3));
   } else {
     return;
   }
@@ -263,11 +262,11 @@ function getDividerOptions(port, minBpm, maxBpm) {
   return getFilteredDividers(sMin, sMax);
 }
 /**
- * Check if port designation is lv2:property  mod:tempoRelatedScalePoints;
+ * Check if port designation is lv2:property  mod:tempoRelatedDynamicScalePoints;
  * @param  {string}  port port infos
  * @return {Boolean}
  */
-function hasTempoRelatedScalePoints(port) {
-  return port.properties.indexOf("tempoRelatedScalePoints") > -1
+function hasTempoRelatedDynamicScalePoints(port) {
+  return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1
   // return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
 }

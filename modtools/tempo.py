@@ -139,7 +139,7 @@ def get_divider_value(b, v):
     Returns:
         float: divider value
     """
-    return round(240 / (b * v), 3)
+    return 240 / (b * v)
 
 def get_port_value(b, s):
     """Compute Control Port value if BPM addressed
@@ -151,7 +151,7 @@ def get_port_value(b, s):
     Returns:
         float: control port value in seconds
     """
-    return round(240 / (b * s), 6)
+    return 240 / (b * s)
 
 def convert_equivalent(value, conversion_factor, port_unit_symbol):
     """Convert value in any of the listed units to equivalent in seconds or value in seconds to any of the listed units
@@ -165,11 +165,11 @@ def convert_equivalent(value, conversion_factor, port_unit_symbol):
         float: output value
     """
     if port_unit_symbol == "s" or port_unit_symbol == "ms" or port_unit_symbol == "min":
-        return round(conversion_factor * value, 6)
+        return round(conversion_factor * value, 3)
     elif port_unit_symbol == "Hz" or port_unit_symbol == "MHz" or port_unit_symbol == "kHz":
         if value == 0: # avoid division by zero
             value = 0.001
-        return round(conversion_factor / value, 6)
+        return round(conversion_factor / value, 3)
     else:
         return None
 
@@ -225,6 +225,28 @@ def get_options_port_values(port_unit_symbol, b, divider_options):
         port_values_with_divider_labels.append({'value': port_value, 'label': option['label']})
     return port_values_with_divider_labels
 
+def get_value_from_options(options, divider_value):
+    """Get value from options list where label corresponds to divider_value
+
+    Args:
+        options: list of dicts { value: portValue, label: dividerLabel }
+        divider_value (float): subdivider value
+
+    Returns:
+        value (flat): corresponding port value
+    """
+    divider_label = None
+    value = None
+    for i, divider in enumerate(dividers):
+        if divider['value'] == divider_value:
+            divider_label = divider['label']
+    if divider_label:
+        for i, option in enumerate(options):
+            if option['label'] == divider_label:
+                value = option['value']
+    return value
+
+
 def get_divider_options(port, min_bpm, max_bpm):
     """Get dividers options for given port and bpmPort min and max
 
@@ -247,6 +269,6 @@ def get_divider_options(port, min_bpm, max_bpm):
     s2_max_bpm = get_divider_value(max_bpm, max_value)
 
     smin = max(s1_min_bpm, s1_max_bpm) if s1_min_bpm < s2_min_bpm else max(s2_min_bpm, s2_max_bpm)
-    smax = min(s2_min_bpm, s2_max_bpm) if s1_min_bpm < s2_min_bpm else max(s1_min_bpm, s1_max_bpm)
+    smax = min(s2_min_bpm, s2_max_bpm) if s1_min_bpm < s2_min_bpm else min(s1_min_bpm, s1_max_bpm)
 
     return get_filtered_dividers(smin, smax)

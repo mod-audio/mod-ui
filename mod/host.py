@@ -50,11 +50,13 @@ from modtools.utils import (
 
 from modtools.tempo import (
     convert_port_value_to_seconds_equivalent,
-    convert_seconds_to_port_value_equivalent,
-    get_port_value,
+    # convert_seconds_to_port_value_equivalent,
+    # get_port_value,
     get_options_port_values,
     get_divider_options,
-    get_divider_value
+    get_divider_value,
+    get_value_from_options,
+    dividers as all_dividers
 )
 
 from mod.settings import (
@@ -62,7 +64,7 @@ from mod.settings import (
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
 )
 from mod.tuner import find_freqnotecents
-logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+# logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
@@ -375,9 +377,16 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
-    def addr_task_addressing(self, atype, actuator, data, callback):
+    def addr_task_addressing(self, atype, actuator, data, callback, not_param_set=False):
+        logging.info("addr_task_addressing not_param_set")
+        logging.info(not_param_set)
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            return self.hmi.control_add(data, actuator, callback)
+            if not not_param_set:
+                return self.hmi.control_add(data, actuator, callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
@@ -445,10 +454,17 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, not_param_set=False):
+        logging.info("addr_task_unaddressing not_param_set")
+        logging.info(not_param_set)
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
-            return self.hmi.control_rm(instance_id, portsymbol, callback)
+            if not not_param_set:
+                return self.hmi.control_rm(instance_id, portsymbol, callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
@@ -2769,15 +2785,21 @@ _:b%i
 
                 if ports:
                     port = ports[0]
-                    value = convert_seconds_to_port_value_equivalent(
-                        get_port_value(bpm, float(addr['dividers']['value'])),
-                        port['units']['symbol']
-                    )
+                    # value = convert_seconds_to_port_value_equivalent(
+                    #     get_port_value(bpm, float(addr['dividers']['value'])),
+                    #     port['units']['symbol']
+                    # )
+
                     dividerOptions = get_options_port_values(
                         port['units']['symbol'],
                         bpm,
                         get_divider_options(port, 40.0, 280.0) # XXX min and max bpm hardcoded
                     )
+                    logging.info("dividerOptions")
+                    logging.info(dividerOptions)
+                    value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
+                    logging.info("value")
+                    logging.info(value)
                     dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
@@ -2863,7 +2885,8 @@ _:b%i
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
-
+        logging.info("address not_param_set")
+        logging.info(not_param_set)
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -2920,7 +2943,7 @@ _:b%i
 
             yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                         old_addressing['instance_id'],
-                                                        old_addressing['port'])
+                                                        old_addressing['port'], not_param_set=not_param_set)
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -2930,7 +2953,6 @@ _:b%i
             print("WARNING: Cannot address to HMI at this point")
             callback(False)
             return
-
 
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
@@ -2948,10 +2970,12 @@ _:b%i
             needsValueChange = False
 
         if tempo and not not_param_set:
+        # if tempo:
             needsValueChange = True
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value, tempo, dividers)
+
         if addressing is None:
             callback(False)
             return
@@ -2962,7 +2986,7 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        self.addressings.load_addr(actuator_uri, addressing, callback)
+        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
@@ -3190,9 +3214,15 @@ _:b%i
             if port_addressing:
                 if port_addressing.get('tempo', None):
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
-                    new_divider = get_divider_value(self.transport_bpm, value_secs)
-                    port_addressing['dividers']['value'] = new_divider
+                    new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
+                    # make sure new_divider is in our list of supported dividers (in case of calculation precision issue)
+                    all_dividers_values = [d['value'] for d in all_dividers]
+                    if new_divider not in all_dividers_values:
+                        new_divider = min(all_dividers_values, key=lambda x:abs(x-new_divider))
 
+                    port_addressing['dividers']['value'] = new_divider
+                    logging.info("new_divider")
+                    logging.info(new_divider)
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
                     minimum = port_addressing['minimum']

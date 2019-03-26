@@ -299,8 +299,8 @@ function HardwareManager(options) {
 
         var dividerOptions = [];
 
-        // Hide Tempo section if the ControlPort does not have the property mod:tempoRelatedScalePoints
-        if (!hasTempoRelatedScalePoints(port)) {
+        // Hide Tempo section if the ControlPort does not have the property mod:tempoRelatedDynamicScalePoints
+        if (!hasTempoRelatedDynamicScalePoints(port)) {
           form.find('.tempo').css({display:"none"})
         // Else, build filtered list of divider values based on bpm and ControlPort min/max values
         } else {
@@ -350,7 +350,7 @@ function HardwareManager(options) {
                     self.disableMinMaxSteps(form, false)
                 } else {
                     form.find('.sensibility').css({visibility:"visible"})
-                    if (hasTempoRelatedScalePoints(port)) {
+                    if (hasTempoRelatedDynamicScalePoints(port)) {
                       form.find('.tempo').css({display:"block"})
                     }
                     if(tempo.prop("checked")) {
