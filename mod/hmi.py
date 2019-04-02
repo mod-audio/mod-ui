@@ -249,6 +249,17 @@ class HMI(object):
                   ),
                   callback, datatype='boolean')
 
+    def control_set(self, data, actuator, callback):
+        """Set a plug-in's control port value on the HMI."""
+        instance_id = data['instance_id']
+        port = data['port'] # port==symbol
+        value = data['value']
+
+        # control_set <effect_instance> <symbol> <value>"""
+        self.send('control_set %d %s %s' %
+                  (instance_id, port, value),
+                  callback, datatype='boolean')
+
     def control_rm(self, instance_id, port, callback):
         """
         removes an addressing
