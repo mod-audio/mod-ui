@@ -255,18 +255,34 @@ function getDividerOptions(port, minBpm, maxBpm) {
   var s1maxBpm = getDividerValue(maxBpm, min);
   var s2maxBpm = getDividerValue(maxBpm, max);
 
-  var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm);
-  var sMax = s1minBpm < s2minBpm ? Math.min(s2minBpm, s2maxBpm) : Math.min(s1minBpm, s1maxBpm);
+  if (hasStrictBounds(port)) {
+    var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm);
+    var sMax = s1minBpm < s2minBpm ? Math.min(s2minBpm, s2maxBpm) : Math.min(s1minBpm, s1maxBpm);
+  } else { // all possible dividers
+    var sMin = Math.min(s1minBpm, s2minBpm, s1maxBpm, s2maxBpm);
+    var sMax = Math.max(s1minBpm, s2minBpm, s1maxBpm, s2maxBpm);
+  }
+
 
   // Finally, filter options s such as sMin <= s <= sMax
   return getFilteredDividers(sMin, sMax);
 }
+
 /**
- * Check if port designation is lv2:property  mod:tempoRelatedDynamicScalePoints;
+ * Check if port has lv2:portProperty  mod:tempoRelatedDynamicScalePoints;
  * @param  {string}  port port infos
  * @return {Boolean}
  */
 function hasTempoRelatedDynamicScalePoints(port) {
   return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1
   // return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
+}
+
+/**
+ * Check if port has lv2:portProperty  mod:hasStrictBounds;
+ * @param  {string}  port port infos
+ * @return {Boolean}
+ */
+function hasStrictBounds(port) {
+  return port.properties.indexOf("hasStrictBounds") > -1
 }

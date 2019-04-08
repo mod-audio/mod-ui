@@ -268,7 +268,11 @@ def get_divider_options(port, min_bpm, max_bpm):
     s1_max_bpm = get_divider_value(max_bpm, min_value)
     s2_max_bpm = get_divider_value(max_bpm, max_value)
 
-    smin = max(s1_min_bpm, s1_max_bpm) if s1_min_bpm < s2_min_bpm else max(s2_min_bpm, s2_max_bpm)
-    smax = min(s2_min_bpm, s2_max_bpm) if s1_min_bpm < s2_min_bpm else min(s1_min_bpm, s1_max_bpm)
+    if "hasStrictBounds" in port['properties']:
+        smin = max(s1_min_bpm, s1_max_bpm) if s1_min_bpm < s2_min_bpm else max(s2_min_bpm, s2_max_bpm)
+        smax = min(s2_min_bpm, s2_max_bpm) if s1_min_bpm < s2_min_bpm else min(s1_min_bpm, s1_max_bpm)
+    else:
+        smin = min(s1_min_bpm, s2_min_bpm, s1_max_bpm, s2_max_bpm)
+        smax = max(s1_min_bpm, s2_min_bpm, s1_max_bpm, s2_max_bpm)
 
     return get_filtered_dividers(smin, smax)

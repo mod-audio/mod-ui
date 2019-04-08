@@ -50,8 +50,6 @@ from modtools.utils import (
 
 from modtools.tempo import (
     convert_port_value_to_seconds_equivalent,
-    # convert_seconds_to_port_value_equivalent,
-    # get_port_value,
     get_options_port_values,
     get_divider_options,
     get_divider_value,
@@ -378,8 +376,6 @@ class Host(object):
     # Addressing callbacks
 
     def addr_task_addressing(self, atype, actuator, data, callback, not_param_set=False):
-        logging.info("addr_task_addressing not_param_set")
-        logging.info(not_param_set)
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if not not_param_set:
                 return self.hmi.control_add(data, actuator, callback)
@@ -455,8 +451,6 @@ class Host(object):
         return
 
     def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, not_param_set=False):
-        logging.info("addr_task_unaddressing not_param_set")
-        logging.info(not_param_set)
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if not not_param_set:
@@ -2789,20 +2783,15 @@ _:b%i
                     #     get_port_value(bpm, float(addr['dividers']['value'])),
                     #     port['units']['symbol']
                     # )
-
                     dividerOptions = get_options_port_values(
                         port['units']['symbol'],
                         bpm,
                         get_divider_options(port, 40.0, 280.0) # XXX min and max bpm hardcoded
                     )
-                    logging.info("dividerOptions")
-                    logging.info(dividerOptions)
                     value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
-                    logging.info("value")
-                    logging.info(value)
                     dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, keep_hmi_index=True)
 
     def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
         self.transport_bpm = bpm
@@ -2811,6 +2800,7 @@ _:b%i
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
+        logging.info(self.addressings.virtual_addressings)
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
@@ -2882,11 +2872,10 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False, keep_hmi_index=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
-        logging.info("address not_param_set")
-        logging.info(not_param_set)
+
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -2898,7 +2887,7 @@ _:b%i
             return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
-
+        old_hmi_index = None
         if old_addressing is not None:
             # Need to remove old addressings first
             old_actuator_uri  = old_addressing['actuator_uri']
@@ -2938,7 +2927,7 @@ _:b%i
                                                                                   minimum,
                                                                                   maximum), callback, datatype='boolean')
 
-            self.addressings.remove(old_addressing)
+            old_hmi_index = self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
             yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
@@ -2960,21 +2949,39 @@ _:b%i
                                                                      portsymbol,
                                                                      minimum,
                                                                      maximum), callback, datatype='boolean')
-        if value < minimum:
-            value = minimum
-            needsValueChange = True
-        elif value > maximum:
-            value = maximum
-            needsValueChange = True
-        else:
-            needsValueChange = False
+
+        needsValueChange = False
+        has_strict_bounds = True
+
+        # Retrieve port infos
+        if instance_id != PEDALBOARD_INSTANCE_ID:
+            pluginInfo = get_plugin_info(pluginData['uri'])
+            if pluginInfo:
+                controlPorts = pluginInfo['ports']['control']['input']
+                ports = [p for p in controlPorts if p['symbol'] == portsymbol]
+                if ports:
+                    port = ports[0]
+                    has_strict_bounds = "hasStrictBounds" in port['properties']
+
+        if not tempo and has_strict_bounds:
+            if value < minimum:
+                value = minimum
+                needsValueChange = True
+            elif value > maximum:
+                value = maximum
+                needsValueChange = True
 
         if tempo and not not_param_set:
-        # if tempo:
             needsValueChange = True
 
+        # Set min and max to min and max value among dividers
+        if tempo and not has_strict_bounds:
+            options_list = [opt['value'] for opt in dividers['options']]
+            minimum = min(options_list)
+            maximum = max(options_list)
+
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value, tempo, dividers)
+                                          label, minimum, maximum, steps, value, tempo, dividers, keep_hmi_index and old_hmi_index)
 
         if addressing is None:
             callback(False)
@@ -2986,7 +2993,7 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
+        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set, keep_hmi_index and old_hmi_index)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

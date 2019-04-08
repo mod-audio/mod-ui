@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
+import os, logging
 
 from tornado import gen
 from mod import get_hardware_actuators, safe_json_load, TextFileFlusher
@@ -412,7 +412,9 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo, dividers):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo, dividers, old_hmi_index=False):
+        logging.info("old_hmi_index")
+        logging.info(old_hmi_index)
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
@@ -480,7 +482,6 @@ class Addressings(object):
             'unit'        : unit,
             'options'     : options,
             'tempo'       : tempo,
-            # 'divider'     : float(dividers["value"]) if dividers["value"] is not None else None
             'dividers'     : dividers
         }
 
@@ -520,9 +521,13 @@ class Addressings(object):
             addressing_data['hmitype'] = hmitype
 
             addressings = self.hmi_addressings[actuator_uri]
-            addressings['idx'] = len(addressings['addrs'])
-            addressings['addrs'].append(addressing_data)
-
+            if old_hmi_index is False:
+                addressings['idx'] = len(addressings['addrs'])
+                addressings['addrs'].append(addressing_data)
+            else:
+                addressings['addrs'].insert(old_hmi_index, addressing_data)
+            logging.info("addressings")
+            logging.info(addressings)
         elif actuator_type == self.ADDRESSING_TYPE_BPM:
             addressings = self.virtual_addressings[actuator_uri]
             addressings.append(addressing_data)
@@ -560,7 +565,7 @@ class Addressings(object):
 
         return addressing_data
 
-    def load_addr(self, actuator_uri, addressing_data, callback, not_param_set=False):
+    def load_addr(self, actuator_uri, addressing_data, callback, not_param_set=False, old_hmi_index=False):
         addressing_data = addressing_data.copy()
 
         actuator_hw   = actuator_uri
@@ -570,7 +575,12 @@ class Addressings(object):
             actuator_hw = self.hmi_uri2hw_map[actuator_uri]
             # HMI specific
             addressings = self.hmi_addressings[actuator_uri]
+            # if old_hmi_index is False:
+            logging.info("load_addr addressings['idx']")
+            logging.info(addressings['idx'])
             addressing_data['addrs_idx'] = addressings['idx']+1
+            # else:
+            #     addressing_data['addrs_idx'] = addressings['idx']
             addressing_data['addrs_max'] = len(addressings['addrs'])
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
@@ -616,12 +626,15 @@ class Addressings(object):
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             addressings       = self.hmi_addressings[actuator_uri]
             addressings_addrs = addressings['addrs']
-
             index = addressings_addrs.index(addressing_data)
             addressings_addrs.pop(index)
-
+            logging.info("rm idx before")
+            logging.info(addressings['idx'])
             if addressings['idx'] == index:
                 addressings['idx'] -= 1
+            logging.info("rm idx after")
+            logging.info(addressings['idx'])
+            return index
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]
