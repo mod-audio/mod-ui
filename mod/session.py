@@ -314,9 +314,9 @@ class Session(object):
             self.host.reset(host_callback)
 
         if self.hmi.initialized:
-            def clear_hmi(ok):
-                self.hmi.clear(reset_host)
-            self.host.setNavigateWithFootswitches(False, clear_hmi)
+            # def clear_hmi(ok):
+            #     self.hmi.clear(reset_host)
+            self.host.setNavigateWithFootswitches(False, reset_host)
         else:
             reset_host(True)
 

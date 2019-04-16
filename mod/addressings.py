@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json
+import json, logging
 import os
 
 from tornado import gen
@@ -94,24 +94,16 @@ class Addressings(object):
         self.hmi_hw2uri_map = {}
         self.hmi_uri2hw_map = {}
 
-        # TODO: Why 8? FIXME: get rid of hardcoded values!
-        for i in range(0, 8):
-            knob_hw  = (0, 0, HMI_ACTUATOR_TYPE_KNOB,       i)
-            foot_hw  = (0, 0, HMI_ACTUATOR_TYPE_FOOTSWITCH, i)
-            pot_hw  = (0, 0, HMI_ACTUATOR_TYPE_POTENTIOMETER, i)
-            
-            knob_uri = "/hmi/knob%i"       % (i+1)
-            foot_uri = "/hmi/footswitch%i" % (i+1)
-            pot_uri = "/hmi/potentiometer%i" % (i+1)
-            # Note: These have to match the strings in `/etc/mod-hardware-descriptor.json`
+        i = 0
+        for actuator in self.hw_actuators:
+            uri = actuator['uri']
+            hw_id = i # XXX temporary work around, we should get id from /etc/mod-hardware-descriptor.json
+            # hw_id = actuator['id']
 
-            self.hmi_hw2uri_map[knob_hw]  = knob_uri
-            self.hmi_hw2uri_map[foot_hw]  = foot_uri
-            self.hmi_hw2uri_map[pot_hw]  = pot_uri
-            
-            self.hmi_uri2hw_map[knob_uri] = knob_hw
-            self.hmi_uri2hw_map[foot_uri] = foot_hw
-            self.hmi_uri2hw_map[pot_uri] = pot_hw
+            self.hmi_hw2uri_map[hw_id] = uri
+            self.hmi_uri2hw_map[uri] = hw_id
+
+            i = i+1
 
     # clear all addressings, leaving metadata intact
     def clear(self):
@@ -580,7 +572,7 @@ class Addressings(object):
                 actuator_hw = self.hmi_uri2hw_map[actuator_uri]
             except KeyError:
                 print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
-                
+
             # HMI specific
             addressings = self.hmi_addressings[actuator_uri]
             addressing_data['addrs_idx'] = addressings['idx']+1
@@ -635,6 +627,7 @@ class Addressings(object):
 
             if addressings['idx'] == index:
                 addressings['idx'] -= 1
+            return addressings['idx'] == index
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]
@@ -707,8 +700,8 @@ class Addressings(object):
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
 
-    def hmi_load_next_hw(self, actuator_hmi, callback):
-        actuator_uri    = self.hmi_hw2uri_map[actuator_hmi]
+    def hmi_load_next_hw(self, hw_id, callback):
+        actuator_uri    = self.hmi_hw2uri_map[hw_id]
         addressings     = self.hmi_addressings[actuator_uri]
         addressings_len = len(addressings['addrs'])
 

@@ -83,7 +83,8 @@ class HMI(object):
         # calls ping until ok is received
         def ping_callback(ok):
             if ok:
-                self.clear(clear_callback)
+                clear_callback(ok)
+                # self.clear(clear_callback)
             else:
                 self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
 
@@ -199,8 +200,8 @@ class HMI(object):
         self.send("ui_dis", callback, datatype='boolean')
 
     def control_add(self, data, actuator, callback):
-        instance_id = data['instance_id']
-        port = data['port']
+        # instance_id = data['instance_id']
+        # port = data['port']
         label = data['label']
         var_type = data['hmitype']
         unit = data['unit']
@@ -214,10 +215,10 @@ class HMI(object):
         # tempo = data['tempo']
         # dividers = data['dividers']
 
-        hw_type = actuator[0]
-        hw_id = actuator[1]
-        actuator_type = actuator[2]
-        actuator_id = actuator[3]
+        # hw_type = actuator[0]
+        # hw_id = actuator[1]
+        # actuator_type = actuator[2]
+        # actuator_id = actuator[3]
 
         label = '"%s"' % label.upper().replace('"', "")
         unit = '"%s"' % unit.replace('"', '')
@@ -251,9 +252,12 @@ class HMI(object):
 
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
-        self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
-                  ( instance_id,
-                    port,
+
+        def control_add_callback(ok):
+            self.send('control_set_index %d %d %d' % (actuator, index, n_controllers), callback, datatype='boolean')
+
+        self.send('control_add %d %s %d %s %f %f %f %d %s' %
+                  ( actuator,
                     label,
                     var_type,
                     unit,
@@ -261,24 +265,36 @@ class HMI(object):
                     rmax,
                     min,
                     steps,
-                    hw_type,
-                    hw_id,
-                    actuator_type,
-                    actuator_id,
-                    n_controllers,
-                    index,
                     options,
                   ),
-                  callback, datatype='boolean')
+                  control_add_callback, datatype='boolean')
 
-    def control_rm(self, instance_id, port, callback):
+    def control_rm(self, hw_ids, callback):
         """
         removes an addressing
-
-        if instance_id is -1 will remove all addressings
-        if symbol == ":all" will remove every addressing for the instance_id
         """
-        self.send('control_rm %d %s' % (instance_id, port), callback, datatype='boolean')
+        # if instance_id is -1 will remove all addressings
+        # if symbol == ":all" will remove every addressing for the instance_id
+
+        idsData = []
+        currentNum = 0
+        numBytesFree = 1024-128
+
+        for id in hw_ids:
+            data    = '%d' % (id)
+            dataLen = len(data)
+
+            if numBytesFree-dataLen-2 < 0:
+                print("ERROR: Controller out of memory when sending hw_ids (stopped at %i)" % currentNum)
+                break
+
+            currentNum += 1
+            numBytesFree -= dataLen+1
+            idsData.append(data)
+
+        ids = "%s" % (" ".join(idsData))
+        ids = ids.strip()
+        self.send('control_rm %s' % (ids), callback, datatype='boolean')
 
     def ping(self, callback):
         self.send('ping', callback, datatype='boolean')
@@ -289,7 +305,7 @@ class HMI(object):
     def xrun(self, callback):
         self.send('xrun', callback)
 
-    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback):
+    def bank_config(self, hw_id, action, callback):
         """
         configures bank addressings
 
@@ -299,9 +315,9 @@ class HMI(object):
             2: Pedalboard UP
             3: Pedalboard DOWN
         """
-        self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
+        self.send('bank_config %d %d' % (hw_id, action), callback, datatype='boolean')
 
     # new messages
 
-    def clear(self, callback):
-        self.send("control_rm -1 :all", callback)
+    # def clear(self, callback):
+    #     self.send("control_rm -1 :all", callback)

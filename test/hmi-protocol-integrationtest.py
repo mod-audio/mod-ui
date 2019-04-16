@@ -8,7 +8,7 @@ import serial
 
 class TestHMIProtocol(unittest.TestCase):
     serial_path = ''
- 
+
     def setUp(self):
         # TODO: Jack, mod-host, socat and mod-ui must be
         # running...probably easier to run by hand
@@ -19,12 +19,12 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("get_tempo_bpm\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         # Read until terminating \x00 byte
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 120.0\x00')        
-            
+            self.assertEqual(resp, b'resp 0 120.0\x00')
+
             #raise Exception('Manually raised exception') # raise ERROR
             #self.fail("conditions not met") # raise FAIL
         else:
@@ -34,7 +34,7 @@ class TestHMIProtocol(unittest.TestCase):
     def test_set_tempo_bpm(self):
         # Depends on get_tempo_bpm!
         current_tempo = None
-        
+
         # Get the current tempo
         msg = ("get_tempo_bpm\00").encode("utf-8")
         self.ser.write(msg)
@@ -42,7 +42,7 @@ class TestHMIProtocol(unittest.TestCase):
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             tmpstr = resp.decode("utf-8").split(' ')
-            current_tempo = float(tmpstr[2].strip('\x00'))            
+            current_tempo = float(tmpstr[2].strip('\x00'))
         else:
             self.fail("No response")
 
@@ -50,7 +50,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("set_tempo_bpm {0}\00").format(current_tempo+5).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush();
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00')
@@ -71,12 +71,12 @@ class TestHMIProtocol(unittest.TestCase):
 
         ## TODO: This fails here, because Jack is not updated on the tempo, yet.
 
-        
+
     # def test_get_tempo_bpb(self):
     #     msg = ("get_tempo_bpb\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 4.0\x00')
@@ -87,7 +87,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_snapshot_prgch\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 14\x00')
@@ -98,7 +98,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_bank_prgch\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 15\x00')
@@ -109,7 +109,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_clk_src\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 0\x00')
@@ -120,7 +120,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("retrieve_profile 0\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp -1\x00') # Profile not existing?
@@ -131,7 +131,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_exp_cv\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 0\x00')
@@ -142,7 +142,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_hp_cv\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 0\x00')
@@ -154,7 +154,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_in_chan_link 0\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp -1\x00')
@@ -166,7 +166,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_out_chan_link 0\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp -1\x00')
@@ -177,7 +177,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_display_brightness\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 50\x00')
@@ -188,7 +188,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_master_volume_channel_mode\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 0\x00')
@@ -199,7 +199,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("get_play_status\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 0\x00')
@@ -210,7 +210,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("get_master_volume_channel\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 0\x00')
@@ -221,7 +221,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("get_tuner_mute\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 0\x00') # 0 means what?
@@ -232,7 +232,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("get_pb_name\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 Foobar\x00')
@@ -243,7 +243,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("banks\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0 All 0 "Test" 1\x00')
@@ -251,27 +251,27 @@ class TestHMIProtocol(unittest.TestCase):
     #         self.fail("No response")
 
 
-            
+
     # # Note: plural
     # def test_pedalboards(self):
     #     """pedalboards: [int]"""
     #     msg = ("pedalboards\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness
     #     else:
     #         self.fail("No response")
 
-    # # Note: singular            
+    # # Note: singular
     # def test_pedalboard(self):
     #     """pedalboard: [int, str]"""
     #     msg = ("pedalboard\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness, is this default?
@@ -283,7 +283,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("hw_con\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness! [int, int]
@@ -295,7 +295,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("hw_dis\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness! [int, int]
@@ -307,7 +307,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("control_set\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -319,7 +319,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("control_get\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -327,23 +327,23 @@ class TestHMIProtocol(unittest.TestCase):
     #         self.fail("No response")
 
     # def test_control_next(self):
-    #     """control_next: [int, int, int, int]"""
+    #     """control_next: [int]"""
     #     msg = ("control_next\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness
     #     else:
     #         self.fail("No response")
-            
+
     def test_tuner(self):
         """tuner: [str]"""
         msg = ("tuner\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # returns -1003. Not testable?
@@ -355,19 +355,19 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("tuner_input 0\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
         else:
             self.fail("No response")
-            
+
     # def test_pedalboard_save(self):
     #     """pedalboard_save: []"""
     #     msg = ("pedalboard_save\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -379,7 +379,7 @@ class TestHMIProtocol(unittest.TestCase):
     #     msg = ("pedalboard_reset\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
+
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
     #         self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -391,21 +391,21 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("jack_cpu_load\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # Wrong!
         else:
             self.fail("No response")
 
-    
+
     ## TODO: Wrong protocol usage results in no error but OK!
     def test_get_truebypass_value01(self):
         """get_truebypass_value: [int]"""
         msg = ("get_truebypass_value 0\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 0\x00') # left
@@ -413,24 +413,24 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
     def test_get_truebypass_value02(self):
-        """get_truebypass_value: [int]"""            
+        """get_truebypass_value: [int]"""
         msg = ("get_truebypass_value 1\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 0\x00') # right
         else:
             self.fail("No response")
 
-            
+
     def test_set_truebypass_value01(self):
         """set_truebypass_value: [int, int]"""
         msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -442,7 +442,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -454,19 +454,19 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
         else:
             self.fail("No response")
-            
+
     def test_set_truebypass_value04(self):
         """set_truebypass_value: [int, int]"""
         msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -476,49 +476,49 @@ class TestHMIProtocol(unittest.TestCase):
 
 
 
-# # Beats per minute                                                
+# # Beats per minute
 #         "get_tempo_bpm": [],
 #         "set_tempo_bpm": [float],
-# 	# Beats per bar                                                   
+# 	# Beats per bar
 #         "get_tempo_bpb": [],
 #         "set_tempo_bpb": [float],
 
-#         # MIDI program change channel for switching snapshots             
+#         # MIDI program change channel for switching snapshots
 # 	"get_snapshot_prgch": [],
 # 	"set_snapshot_prgch": [int],
-#         # MIDI program change channel for switching pedalboard banks      
+#         # MIDI program change channel for switching pedalboard banks
 #         "get_bank_prgch": [],
 # 	"set_bank_prgch": [int],
 
-# 	# Transport and tempo sync mode                                   
+# 	# Transport and tempo sync mode
 # 	"get_clk_src": [],
 # 	"set_clk_src": [int],
 
-#         # MIDI Beat Clock sending                                         
+#         # MIDI Beat Clock sending
 # 	"get_send_midi_clk": [],
 #         "set_send_midi_clk": [int],
 
-#         # User Profile handling                                           
+#         # User Profile handling
 # 	"retrieve_profile": [int],
 # 	"store_profile": [int],
 
-#         # Configurable in- and output                                     
+#         # Configurable in- and output
 #         "get_exp_cv": [],
 # 	"set_exp_cv": [int],
 # 	"get_hp_cv": [],
 #         "set_hp_cv": [int],
 
-# 	# Stereo Link for inputs and outputs                              
+# 	# Stereo Link for inputs and outputs
 # 	"get_in_chan_link": [int],
 # 	"set_in_chan_link": [int, int],
 # 	"get_out_chan_link": [int],
 # 	"set_out_chan_link": [int, int],
 
-#         # Display brightness                                              
+#         # Display brightness
 # 	"get_display_brightness": [],
 #         "set_display_brightness": [int],
 
-#         # Master volume channel mode                                      
+#         # Master volume channel mode
 # 	"get_master_volume_channel_mode": [],
 # 	"set_master_volume_channel_mode": [int],
 
@@ -531,16 +531,16 @@ class TestHMIProtocol(unittest.TestCase):
 #         "get_tuner_mute": [],
 #         "set_tuner_mute": [int],
 
-        
-            
-            
-        
+
+
+
+
 if __name__ == '__main__':
     # Handle command line arguments
     parser = argparse.ArgumentParser(description='Test the HMI protocol implemented in mod-ui.')
     parser.add_argument('-d', '--device', nargs=1, required=True,
                         help='serial device, e.g. /dev/pts/5')
-    parser.add_argument('unittest_args', nargs='*')    
+    parser.add_argument('unittest_args', nargs='*')
     args = parser.parse_args()
 
     # Configure the serial device path
