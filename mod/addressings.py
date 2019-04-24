@@ -97,8 +97,9 @@ class Addressings(object):
         i = 0
         for actuator in self.hw_actuators:
             uri = actuator['uri']
-            hw_id = i # XXX temporary work around, we should get id from /etc/mod-hardware-descriptor.json
-            # hw_id = actuator['id']
+            # hw_id = i # XXX temporary work around, we should get id from /etc/mod-hardware-descriptor.json
+            hw_id = actuator['id']
+            # actuator['id'] = hw_id # XXX remove
 
             self.hmi_hw2uri_map[hw_id] = uri
             self.hmi_uri2hw_map[uri] = hw_id
@@ -627,7 +628,6 @@ class Addressings(object):
 
             if addressings['idx'] == index:
                 addressings['idx'] -= 1
-            return addressings['idx'] == index
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]

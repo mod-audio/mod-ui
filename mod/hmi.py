@@ -199,7 +199,8 @@ class HMI(object):
     def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-    def control_add(self, data, actuator, callback):
+
+    def control_add(self, data, hw_id, actuator_uri, callback):
         # instance_id = data['instance_id']
         # port = data['port']
         label = data['label']
@@ -254,10 +255,14 @@ class HMI(object):
         options = options.strip()
 
         def control_add_callback(ok):
-            self.send('control_set_index %d %d %d' % (actuator, index, n_controllers), callback, datatype='boolean')
+            self.control_set_index(hw_id, index, n_controllers, callback)
 
+        cb = callback
+        if not actuator_uri.startswith("/hmi/footswitch"):
+            cb = control_add_callback
+            
         self.send('control_add %d %s %d %s %f %f %f %d %s' %
-                  ( actuator,
+                  ( hw_id,
                     label,
                     var_type,
                     unit,
@@ -267,14 +272,15 @@ class HMI(object):
                     steps,
                     options,
                   ),
-                  control_add_callback, datatype='boolean')
+                  cb, datatype='boolean')
+
+    def control_set_index(self, hw_id, index, n_controllers, callback):
+        self.send('control_set_index %d %d %d' % (hw_id, index, n_controllers), callback, datatype='boolean')
 
     def control_rm(self, hw_ids, callback):
         """
         removes an addressing
         """
-        # if instance_id is -1 will remove all addressings
-        # if symbol == ":all" will remove every addressing for the instance_id
 
         idsData = []
         currentNum = 0
