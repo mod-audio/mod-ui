@@ -335,7 +335,7 @@ function HardwareManager(options) {
                     self.addressingsData        [instanceAndSymbol] = addressing
 
                     // disable this control
-                    options.setEnabled(instance, port.symbol, false)
+                    //options.setEnabled(instance, port.symbol, false)
                 }
                 // We're unaddressing
                 else if (unaddressing)
@@ -461,7 +461,7 @@ function HardwareManager(options) {
         }
 
         // disable this control
-        options.setEnabled(instance, portSymbol, false)
+        // options.setEnabled(instance, portSymbol, false)
     }
 
     this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {

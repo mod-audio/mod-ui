@@ -1272,6 +1272,14 @@ class Host(object):
         self.init_plugins_data()
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
+    def paramhmi_set(self, instance, portsymbol, value, callback):
+        if (instance == 'pedalboard'):
+            test = '/' + instance
+        else:
+            test =  '/graph/' + instance
+        instance_id = self.mapper.get_id_without_creating(test)
+        self.hmi.control_set(instance_id, portsymbol, value, callback)
+
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
 
@@ -2811,6 +2819,8 @@ _:b%i
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
+        instance, portsymbol, actuator_uri, label, minimum, maximum, value,
+        steps)
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)

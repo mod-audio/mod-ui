@@ -66,7 +66,7 @@ class HMI(object):
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
         try:
-            sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            sp = serial.Serial(self.port, self.baud_rate, timeout=0)
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:
@@ -249,12 +249,8 @@ class HMI(object):
                   ),
                   callback, datatype='boolean')
 
-    def control_set(self, data, actuator, callback):
+    def control_set(self, instance_id, port, value, callback):
         """Set a plug-in's control port value on the HMI."""
-        instance_id = data['instance_id']
-        port = data['port'] # port==symbol
-        value = data['value']
-
         # control_set <effect_instance> <symbol> <value>"""
         self.send('control_set %d %s %s' %
                   (instance_id, port, value),

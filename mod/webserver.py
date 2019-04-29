@@ -863,6 +863,15 @@ class EffectPresetLoad(JsonRequestHandler):
         ok  = yield gen.Task(SESSION.host.preset_load, instance, uri)
         self.write(ok)
 
+class EffectParameterSet(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        symbol, instance, portsymbol, value = data.rsplit("/",3)
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, portsymbol, value)
+        self.write(True)
+
 class EffectPresetSaveNew(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1732,6 +1741,7 @@ application = web.Application(
 
             # plugin parameters
             (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/parameter/set/?", EffectParameterSet),
 
             # plugin presets
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),

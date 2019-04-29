@@ -243,6 +243,25 @@ function Desktop(elements) {
 
     this.titleBox = elements.titleBox
 
+    this.ParameterSet = function (paramchange){
+        $.ajax({
+            url: '/effect/parameter/set/' ,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(paramchange),
+            success: function (resp) {
+                if (!resp) {
+                    new Bug("Couldn't address parameter, not allowed")
+                }
+            },
+            error: function () {
+                new Bug ("Couldn't address parameter, server error")
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    }
+
     this.cloudPluginListFunction = function (callback) {
         $.ajax({
             method: 'GET',
