@@ -2819,8 +2819,6 @@ _:b%i
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
-        instance, portsymbol, actuator_uri, label, minimum, maximum, value,
-        steps)
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
