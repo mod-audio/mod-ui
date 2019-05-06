@@ -397,19 +397,41 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
     
-    def test_retrieve_profile(self):
-        #       "retrieve_profile": [int],        
-        msg = ("retrieve_profile 0\00").encode("utf-8")
+    def test_retrieve_non_existing_profile(self):
+        #       "retrieve_profile": [str],        
+        msg = ("retrieve_profile Non-Existent\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp -1\x00') # TODO: Profile not existing?
+            self.assertEqual(resp, b'resp -1\x00')
         else:
             self.fail("No response")
 
-    # TODO "store_profile": [int]
+    def test_store_profile(self):
+        #      "store_profile": [str]
+        msg = ("store_profile Foobar\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+            
+    def test_retrieve_profile(self):
+        #      "retrieve_profile": [str]
+        msg = ("retrieve_profile {0}\00".format("Foobar")).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
             
     def test_get_mv_channel_mode(self):
         #      "get_mv_channel": []
