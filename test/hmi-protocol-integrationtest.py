@@ -645,7 +645,19 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # TODO: "set_display_brightness": [int]
+    def test_set_display_brightness_full(self):
+        #      "set_display_brightness": [int]
+        msg = ("set_display_brightness {0}\00".format(100)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+            
+
             
     # TODO: Deprecated?
     def test_get_pb_name(self):
