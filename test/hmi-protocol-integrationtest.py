@@ -10,10 +10,156 @@ class TestHMIProtocol(unittest.TestCase):
     serial_path = ''
  
     def setUp(self):
-        # TODO: Jack, mod-host, socat and mod-ui must be
+        # NOTE: Jack, mod-host, socat and mod-ui must be
         # running...probably easier to run by hand
         self.ser = serial.Serial(self.serial_path, 31250, timeout=0.1)
+
+    ## Note: Try to keep the same order as in Protocol.COMMANDS!
         
+    def test_banks(self):
+        msg = ("banks\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 All 0 "Test" 1\x00')
+        else:
+            self.fail("No response")
+            
+    # Note: plural
+    def test_pedalboards(self):
+        """pedalboards: [int]"""
+        msg = ("pedalboards\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
+
+    # Note: singular            
+    def test_pedalboard(self):
+        """pedalboard: [int, str]"""
+        msg = ("pedalboard\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness, is this default?
+        else:
+            self.fail("No response")
+
+
+    # TODO "pedalboard_save": [],
+    # TODO "pedalboard_reset": [],
+
+    # ## TODO: Wrong protocol usage results in NO error!
+    # def test_get_truebypass_value01(self):
+    #     """get_truebypass_value: [int]"""
+    #     msg = ("get_truebypass_value 0\00").encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0 0\x00') # left
+    #     else:
+    #         self.fail("No response")
+
+    # def test_get_truebypass_value02(self):
+    #     """get_truebypass_value: [int]"""            
+    #     msg = ("get_truebypass_value 1\00").encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0 0\x00') # right
+    #     else:
+    #         self.fail("No response")
+
+            
+    # def test_set_truebypass_value01(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
+
+    # def test_set_truebypass_value02(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
+
+    # def test_set_truebypass_value03(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
+            
+    # def test_set_truebypass_value04(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
+
+    # TODO: Test if this changes something
+    def test_set_q_bypass(self):        
+        # First set this to the default value!
+        default = 0
+        #      "set_q_bypass": [int],
+        msg = ("set_q_bypass {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
+
+            
+    def test_get_q_bypass(self):
+        #      "get_q_bypass": [],
+        msg = ("get_q_bypass\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+
     def test_get_tempo_bpm(self):
         # \x00 terminated!
         #      "get_tempo_bpm": [],
@@ -96,7 +242,7 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
             
 
-
+    # TODO: Does this have an effect?
     def test_set_tempo_bpb(self):
         # Set it back to 4.0 BPB as a baseline.
         msg = ("set_tempo_bpb {0}\00").format(4.0).encode("utf-8")
@@ -109,7 +255,7 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")            
         
-    ## Fails because `set_*` does not work!
+    ## TODO Fails because `set_*` does not work!
     # def test_get_tempo_bpb(self):
     #     #      "get_tempo_bpb": [],
     #     msg = ("get_tempo_bpb\00").encode("utf-8")
@@ -187,11 +333,187 @@ class TestHMIProtocol(unittest.TestCase):
     #     else:
     #         self.fail("No response")
 
+
+    # # TODO "tuner": [str], test more possible strings!
+    # def test_tuner(self):
+    #     """tuner: [str]"""
+    #     msg = ("tuner\00").encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
+        
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # TODO returns -1003. Not testable?
+    #     else:
+    #         self.fail("No response")
+
+    def test_tuner_input(self):
+        """tuner_input: [int]"""
+        msg = ("tuner_input 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
+                
+    def test_get_tuner_mute(self):
+        #      "get_tuner_mute": []
+        msg = ("get_tuner_mute\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00') # TODO 0 means what?
+        else:
+            self.fail("No response")
+
+    def test_set_tuner_mute(self):
+        #      "set_tuner_mute": [int]
+        msg = ("set_tuner_mute 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO 0 means what?
+        else:
+            self.fail("No response")
             
 
+    def test_current_profile(self):
+        #      "get_current_profile"
+        msg = ("get_current_profile\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 Default\x00') # TODO: Profile not existing?
+        else:
+            self.fail("No response")
+
+    
+    def test_retrieve_profile(self):
+        #       "retrieve_profile": [int],        
+        msg = ("retrieve_profile 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00') # TODO: Profile not existing?
+        else:
+            self.fail("No response")
+
+    # TODO "store_profile": [int]
             
+    def test_get_mv_channel_mode(self):
+        #      "get_mv_channel": []
+        msg = ("get_mv_channel\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+    # TODO: "set_mv_channel_mode": [int]
 
 
+    def test_get_in_chan_link(self): #TODO check resp
+        """get_in_chan_link: [int]"""
+        msg = ("get_in_chan_link 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")
+
+    def test_get_out_chan_link(self): #TODO check resp
+        """get_out_chan_link: [int]"""
+        msg = ("get_out_chan_link 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")
+
+
+# TODO 	"set_in_chan_link": [int, int],
+# TODO	"set_out_chan_link": [int, int],
+
+    def test_get_exp_cv(self):
+        #      "get_exp_cv": []
+        msg = ("get_exp_cv\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+    # 	"set_exp_cv": [int]
+
+    def test_get_hp_cv(self):
+        #      "get_hp_cv": []
+        msg = ("get_hp_cv\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+# TODO         "set_hp_cv": [int],
+        # TODO "get_exp_mode": [],
+        # TODO "set_exp_mode": [int],
+        # TODO "get_cv_bias": [],
+        # TODO "set_cv_bias": [int],
+
+    def test_get_clk_src(self):
+        #      "get_clk_src": [],        
+        msg = ("get_clk_src\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+
+    # TODO: Test if this changes something
+    def test_set_clk_src_01(self):
+        # First set this to the default value!
+        default = 0        
+        #      "set_clk_src": [int],        
+        msg = ("set_clk_src {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+       
 
     def test_get_snapshot_prgch(self):
         #      "get_snapshot_prgch": [],
@@ -220,6 +542,33 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
     
+    def test_get_send_midi_clk(self):
+        #      "get_send_midi_clk": []
+        msg = ("get_clk_src\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00') # TODO check value!
+        else:
+            self.fail("No response")
+
+
+    # TODO: Test if this changes something
+    def test_set_midi_clk(self):
+        # First set this to the default value!
+        default = 0
+        #      "set_send_midi_clk": [int],
+        msg = ("set_send_midi_clk {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
     def test_get_pb_prgch(self):
         #      "get_pedalboard_prgch": [],
@@ -247,174 +596,7 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")            
-
-            
-    def test_get_clk_src(self):
-        #      "get_clk_src": [],        
-        msg = ("get_clk_src\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
-        else:
-            self.fail("No response")
-
-
-    # TODO: Test if this changes something
-    def test_set_clk_src_01(self):
-        # First set this to the default value!
-        default = 0        
-        #      "set_clk_src": [int],        
-        msg = ("set_clk_src {0}\00").format(default).encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush();
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
-        else:
-            self.fail("No response")            
-
-            
-
-
-
-
-
-            
-
-    def test_get_send_midi_clk(self):
-        #      "get_send_midi_clk": []
-        msg = ("get_clk_src\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # TODO check value!
-        else:
-            self.fail("No response")
-
-
-    # TODO: Test if this changes something
-    def test_set_clk_src_01(self):
-        # First set this to the default value!
-        default = 0
-        #      "set_send_midi_clk": [int],
-        msg = ("set_send_midi_clk {0}\00").format(default).encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush();
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
-        else:
-            self.fail("No response")            
-            
-            
-    def test_retrieve_profile(self):
-        #       "retrieve_profile": [int],        
-        msg = ("retrieve_profile 0\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp -1\x00') # TODO: Profile not existing?
-        else:
-            self.fail("No response")
-
-    
-    def test_get_exp_cv(self):
-        #      "get_exp_cv": []
-        msg = ("get_exp_cv\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
-        else:
-            self.fail("No response")
-
-    # 	"set_exp_cv": [int]
-
-    def test_get_hp_cv(self):
-        #      "get_hp_cv": []
-        msg = ("get_hp_cv\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
-        else:
-            self.fail("No response")
-
-#         # Configurable in- and output
-#         "set_hp_cv": [int],
-            
-    def test_get_in_chan_link(self): #TODO check resp
-        """get_in_chan_link: [int]"""
-        msg = ("get_in_chan_link 0\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp -1\x00')
-        else:
-            self.fail("No response")
-
-    def test_get_out_chan_link(self): #TODO check resp
-        """get_out_chan_link: [int]"""
-        msg = ("get_out_chan_link 0\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp -1\x00')
-        else:
-            self.fail("No response")
-
-
-# 	# Stereo Link for inputs and outputs                              
-# 	"set_in_chan_link": [int, int],
-# 	"set_out_chan_link": [int, int],
-
-
-            
-    def test_get_display_brightness(self):
-        #      "get_display_brightness": [],        
-        msg = ("get_display_brightness\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 50\x00')
-        else:
-            self.fail("No response")
-
-    #         "set_display_brightness": [int]
-            
-    def test_get_mv_channel_mode(self):
-        #      "get_mv_channel": []
-        msg = ("get_mv_channel\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
-        else:
-            self.fail("No response")
-
-    # TODO: "set_mv_channel_mode": [int]
-            
+           
     def test_get_play_status(self):
         #      "get_play_status": []        
         msg = ("get_play_status\00").encode("utf-8")
@@ -427,39 +609,23 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-
     # TODO: "set_play_status": [int],
 
-            
-    def test_get_mv_channel(self):
-        msg = ("get_mv_channel\00").encode("utf-8")
+    def test_get_display_brightness(self):
+        #      "get_display_brightness": [],        
+        msg = ("get_display_brightness\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
+            self.assertEqual(resp, b'resp 0 50\x00')
         else:
             self.fail("No response")
+
+    # TODO: "set_display_brightness": [int]
             
-    def test_get_tuner_mute(self):
-        #      "get_tuner_mute": []
-        msg = ("get_tuner_mute\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # TODO 0 means what?
-        else:
-            self.fail("No response")
-
-    # TODO  "set_tuner_mute": [int],
-
-
-#         "get_mv_channel": [],
-#         "set_mv_channel": [int],
-    
+    # TODO: Deprecated?
     def test_get_pb_name(self):
         msg = ("get_pb_name\00").encode("utf-8")
         self.ser.write(msg)
@@ -472,46 +638,7 @@ class TestHMIProtocol(unittest.TestCase):
             #print(resp)
         else:
             self.fail("No response")
-
-    def test_banks(self):
-        msg = ("banks\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 All 0 "Test" 1\x00')
-        else:
-            self.fail("No response")
-
-
             
-    # Note: plural
-    def test_pedalboards(self):
-        """pedalboards: [int]"""
-        msg = ("pedalboards\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
-        else:
-            self.fail("No response")
-
-    # Note: singular            
-    def test_pedalboard(self):
-        """pedalboard: [int, str]"""
-        msg = ("pedalboard\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness, is this default?
-        else:
-            self.fail("No response")
-
     def test_hw_con(self):
         """hw_con: [int, int]"""
         msg = ("hw_con\00").encode("utf-8")
@@ -571,31 +698,7 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
         else:
             self.fail("No response")
-            
-    def test_tuner(self):
-        """tuner: [str]"""
-        msg = ("tuner\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # TODO returns -1003. Not testable?
-        else:
-            self.fail("No response")
-
-    def test_tuner_input(self):
-        """tuner_input: [int]"""
-        msg = ("tuner_input 0\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
-        else:
-            self.fail("No response")
-            
+                        
     def test_pedalboard_save(self):
         """pedalboard_save: []"""
         msg = ("pedalboard_save\00").encode("utf-8")
@@ -620,161 +723,21 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    ## TODO: If the response code is -1003 it does not get here somehow!
-    def test_jack_cpu_load(self):
-        msg = ("jack_cpu_load\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
+    # ## TODO: If the response code is -1003 it does not get here somehow!
+    # def test_jack_cpu_load(self):
+    #     msg = ("jack_cpu_load\00").encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # Wrong!
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # Wrong!
+    #     else:
+    #         self.fail("No response")
 
     
-    # ## TODO: Wrong protocol usage results in no error but OK!
-    # def test_get_truebypass_value01(self):
-    #     """get_truebypass_value: [int]"""
-    #     msg = ("get_truebypass_value 0\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00') # left
-    #     else:
-    #         self.fail("No response")
-
-    # def test_get_truebypass_value02(self):
-    #     """get_truebypass_value: [int]"""            
-    #     msg = ("get_truebypass_value 1\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00') # right
-    #     else:
-    #         self.fail("No response")
-
-            
-    # def test_set_truebypass_value01(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
-
-    # def test_set_truebypass_value02(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
-
-    # def test_set_truebypass_value03(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
-            
-    # def test_set_truebypass_value04(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
 
 
-    # TODO: Test if this changes something
-    def test_set_q_bypass(self):        
-        # First set this to the default value!
-        default = 0
-        #      "set_q_bypass": [int],
-        msg = ("set_q_bypass {0}\00").format(default).encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush();
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
-        else:
-            self.fail("No response")            
-
-            
-    def test_get_q_bypass(self):
-        #      "get_q_bypass": [],
-        msg = ("get_q_bypass\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
-        else:
-            self.fail("No response")
-
-    
-# Traceback (most recent call last):
-#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/ioloop.py", line 568, in _run_callback
-#     ret = callback()
-#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/stack_context.py", line 275, in null_wrapper
-#     return fn(*args, **kwargs)
-#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/iostream.py", line 537, in wrapper
-#     return callback(*args)
-#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/stack_context.py", line 275, in null_wrapper
-#     return fn(*args, **kwargs)
-#   File "/home/jakob/Downloads/github/mod-ui/mod/hmi.py", line 123, in checker
-#     msg.run_cmd(_callback)
-#   File "/home/jakob/Downloads/github/mod-ui/mod/protocol.py", line 200, in run_cmd
-#     cmd(*args)
-#   File "/home/jakob/Downloads/github/mod-ui/mod/host.py", line 3540, in hmi_set_truebypass_value
-#     set_truebypass_value(right, bypassed)
-# NameError: name 'set_truebypass_value' is not defined
-
-
-# Traceback (most recent call last):
-#   File "hmi-protocol-integrationtest.py", line 412, in test_get_mv_channel_mode
-#     self.assertEqual(resp, b'resp 0 0\x00')
-# AssertionError: b'resp -1\x00' != b'resp 0 0\x00'
-
-# ======================================================================
-# FAIL: test_get_pedalboard_prgch (__main__.TestHMIProtocol)
-# ----------------------------------------------------------------------
-# Traceback (most recent call last):
-#   File "hmi-protocol-integrationtest.py", line 232, in test_get_pedalboard_prgch
-#     self.assertEqual(resp, b'resp 0 15\x00')
-# AssertionError: b'resp -1\x00' != b'resp 0 15\x00'
-
-# ======================================================================
-# FAIL: test_set_pedalboard_prgch_01 (__main__.TestHMIProtocol)
-# ----------------------------------------------------------------------
-# Traceback (most recent call last):
-#   File "hmi-protocol-integrationtest.py", line 247, in test_set_pedalboard_prgch_01
-#     self.assertEqual(resp, b'resp 0\x00')
-# AssertionError: b'resp -1\x00' != b'resp 0\x00'
             
         
 if __name__ == '__main__':
