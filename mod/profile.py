@@ -16,7 +16,7 @@ class Profile:
     index = "Default"
     
     # MIDI channels. Range in [0,15] -1 when off.
-    midi_prgch_bank_channel = 15
+    midi_prgch_pedalboard_channel = 15
     midi_prgch_snapshot_channel = 14
 
     bank_footswitch_navigation = False
@@ -49,18 +49,21 @@ class Profile:
                                    # master linked to both out 1 and
                                    # out 2.
 
-    def set_midi_prgch_bank_channel(self, channel):
+    quick_bypass_mode = 0 # 0 for "change both 1&2", 1 for "change
+                          # channel 1" and 2 for "change channel 2".
+
+    def set_midi_prgch_pedalboard_channel(self, channel):
         result = False
         if 0 <= channel and channel < 16:
             if (channel != self.midi_prgch_snapshot_channel):
-                midi_prgch_bank_channel = channel
+                midi_prgch_pedalboard_channel = channel
                 result = True                
         return result
 
     def set_midi_prgch_snapshot_channel(self, channel):
         result = False
         if 0 <= channel and channel < 16:
-            if (channel != self.midi_prgch_bank_channel):
+            if (channel != self.midi_prgch_pedalboard_channel):
                 midi_prgch_snapshot_channel = channel
                 result = True
         return result
@@ -70,7 +73,7 @@ class Profile:
         data = {
             "index": self.index,
             "headphone_volume": self.headphone_volume,
-            "midi_prgch_bank_channel": self.midi_prgch_bank_channel,
+            "midi_prgch_pedalboard_channel": self.midi_prgch_pedalboard_channel,
             "midi_prgch_snapshot_channel": self.midi_prgch_snapshot_channel,
             "bank_footswitch_navigation": self.bank_footswitch_navigation,
             "snapshot_footswitch_navigation": self.snapshot_footswitch_navigation,
@@ -86,6 +89,7 @@ class Profile:
             "configurable_input_mode": self.configurable_input_mode,
             "configurable_output_mode": self.configurable_output_mode,
             "display_brightness": self.display_brightness,
+            "quick_bypass_mode": self.quick_bypass_mode,
         }
         result = False
         try:
@@ -106,7 +110,7 @@ class Profile:
 
             self.index = data["index"]
             self.headphone_volume = data["headphone_volume"]
-            self.midi_prgch_bank_channel = data["midi_prgch_bank_channel"]
+            self.midi_prgch_pedalboard_channel = data["midi_prgch_pedalboard_channel"]
             self.midi_prgch_snapshot_channel = data["midi_prgch_snapshot_channel"]
             self.bank_footswitch_navigation = data["bank_footswitch_navigation"]
             self.snapshot_footswitch_navigation = data["snapshot_footswitch_navigation"]
@@ -122,6 +126,7 @@ class Profile:
             self.configurable_input_mode = data["configurable_input_mode"]
             self.configurable_output_mode = data["configurable_output_mode"]
             self.display_brightness = data["display_brightness"]
+            self.quick_bypass_mode = data["quick_bypass_mode"]
             result = True
             
         except FileNotFoundError as e:

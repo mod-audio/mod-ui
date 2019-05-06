@@ -93,7 +93,10 @@ class Protocol(object):
                
         "get_truebypass_value": [int],
         "set_truebypass_value": [int, int],
-
+        # Quick Bypass Mode
+        "get_q_bypass": [],
+        "set_q_bypass": [int],
+        
         # Beats per minute
         "get_tempo_bpm": [],
         "set_tempo_bpm": [float],
@@ -106,12 +109,14 @@ class Protocol(object):
         "set_tuner_mute": [int],
 
         # User Profile handling
+        "get_current_profile": [int],
         "retrieve_profile": [int],
         "store_profile": [int],
 
         # Master volume channel mode
-        "get_master_volume_channel": [],
-        "set_master_volume_channel": [int],
+        "get_mv_channel": [],
+        "set_mv_channel": [int],
+        
         # Stereo Link for inputs and outputs
         "get_in_chan_link": [int],
         "set_in_chan_link": [int, int],
@@ -123,22 +128,23 @@ class Protocol(object):
         "set_exp_cv": [int],
         "get_hp_cv": [],
         "set_hp_cv": [int],
+        "get_exp_mode": [],
+        "set_exp_mode": [int],
+        "get_cv_bias": [],
+        "set_cv_bias": [int],
 
         # Transport and tempo sync mode
         "get_clk_src": [],
         "set_clk_src": [int],
-
         # MIDI program change channel for switching snapshots
         "get_snapshot_prgch": [],
         "set_snapshot_prgch": [int],
-
         # MIDI Beat Clock sending
         "get_send_midi_clk": [],
         "set_send_midi_clk": [int],
-
-        # MIDI program change channel for switching pedalboard banks
-        "get_bank_prgch": [],
-        "set_bank_prgch": [int],
+        # MIDI program change channel for switching pedalboards in a bank
+        "get_pb_prgch": [],
+        "set_pb_prgch": [int],
         
         "get_play_status": [],
         "set_play_status": [int],
@@ -146,9 +152,6 @@ class Protocol(object):
         "get_display_brightness": [],
         "set_display_brightness": [int],
         
-        
-        "get_master_volume_channel_mode": [],
-        "set_master_volume_channel_mode": [int],
         "get_pb_name": [],
         
         "hw_con": [int, int],

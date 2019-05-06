@@ -280,6 +280,8 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_truebypass_value", self.hmi_get_truebypass_value)
         Protocol.register_cmd_callback("set_truebypass_value", self.hmi_set_truebypass_value)
+        Protocol.register_cmd_callback("get_q_bypass", self.hmi_get_quick_bypass_mode)
+        Protocol.register_cmd_callback("set_q_bypass", self.hmi_set_quick_bypass_mode)
 
         Protocol.register_cmd_callback("get_tempo_bpm", self.hmi_get_tempo_bpm)
         Protocol.register_cmd_callback("set_tempo_bpm", self.hmi_set_tempo_bpm)
@@ -288,8 +290,8 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_snapshot_prgch", self.hmi_get_snapshot_prgch)
         Protocol.register_cmd_callback("set_snapshot_prgch", self.hmi_set_snapshot_prgch)
-        Protocol.register_cmd_callback("get_bank_prgch", self.hmi_get_bank_prgch)
-        Protocol.register_cmd_callback("set_bank_prgch", self.hmi_set_bank_prgch)
+        Protocol.register_cmd_callback("get_pb_prgch", self.hmi_get_pedalboard_prgch)
+        Protocol.register_cmd_callback("set_pb_prgch", self.hmi_set_pedalboard_prgch)
 
         Protocol.register_cmd_callback("get_clk_src", self.hmi_get_clk_src)
         Protocol.register_cmd_callback("set_clk_src", self.hmi_set_clk_src)
@@ -313,14 +315,11 @@ class Host(object):
         Protocol.register_cmd_callback("get_display_brightness", self.hmi_get_display_brightness)
         Protocol.register_cmd_callback("set_display_brightness", self.hmi_set_display_brightness)
 
-        Protocol.register_cmd_callback("get_master_volume_channel_mode", self.hmi_get_master_volume_channel_mode)
-        Protocol.register_cmd_callback("set_master_volume_channel_mode", self.hmi_set_master_volume_channel_mode)
+        Protocol.register_cmd_callback("get_mv_channel", self.hmi_get_master_volume_channel_mode)
+        Protocol.register_cmd_callback("set_mv_channel", self.hmi_set_master_volume_channel_mode)
 
         Protocol.register_cmd_callback("get_play_status", self.hmi_get_play_status)
         Protocol.register_cmd_callback("set_play_status", self.hmi_set_play_status)
-
-        Protocol.register_cmd_callback("get_master_volume_channel", self.hmi_get_master_volume_channel)
-        Protocol.register_cmd_callback("set_master_volume_channel", self.hmi_set_master_volume_channel)
 
         Protocol.register_cmd_callback("get_tuner_mute", self.hmi_get_tuner_mute)
         Protocol.register_cmd_callback("set_tuner_mute", self.hmi_set_tuner_mute)
@@ -639,7 +638,7 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_bank_channel))
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_pedalboard_channel))
         self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
 
         # Wait for all mod-host messages to be processed
@@ -957,7 +956,7 @@ class Host(object):
             program  = int(msg_data[0])
             channel  = int(msg_data[1])
 
-            if channel == self.profile.midi_prgch_bank_channel:
+            if channel == self.profile.midi_prgch_pedalboard_channel:
                 bank_id  = self.bank_id
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
                     pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -1025,9 +1024,9 @@ class Host(object):
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
             if enable == 1:
-                self.profile.set_midi_prgch_bank_channel(channel)
+                self.profile.set_midi_prgch_pedalboard_channel(channel)
             else:
-                self.profile.midi_prgch_bank_channel = -1 # off
+                self.profile.midi_prgch_pedalboard_channel = -1 # off
 
         elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
             msg_data = msg[len(cmd)+1:].split(" ", 2)
@@ -3542,6 +3541,20 @@ _:b%i
         # TODO should it return some more status?
         callback(True)
 
+    def hmi_get_quick_bypass_mode(self, callback):
+        """Query the Quick Bypass Mode setting."""
+        logging.info("hmi quick bypass mode get.")
+
+        result = self.profile.quick_bypass_mode
+        callback(True, int(result))
+
+    def hmi_set_quick_bypass_mode(self, mode, callback):
+        """Change the Quick Bypass Mode setting to `mode`."""
+        logging.info("hmi quick bypass mode set to `{0}`".format(mode))
+
+        self.profile.quick_bypass_mode = mode
+        callback(True)
+        
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
         bpm = get_jack_data(True)['bpm']
@@ -3589,18 +3602,18 @@ _:b%i
         else:
             callback(False)
 
-    def hmi_get_bank_prgch(self, callback):
+    def hmi_get_pedalboard_prgch(self, callback):
         """Query the MIDI channel for selecting a pedalboard in a bank via Program Change."""
-        logging.info("hmi get bank channel")
+        logging.info("hmi get pedalboard channel")
 
-        channel = self.profile.midi_prgch_bank_channel
+        channel = self.profile.midi_prgch_pedalboard_channel
         callback(True, channel)
 
-    def hmi_set_bank_prgch(self, channel, callback):
+    def hmi_set_pedalboard_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a pedalboard in a bank via Program Change."""
-        logging.info("hmi set bank channel {0}".format(channel))
+        logging.info("hmi set pedalboard channel {0}".format(channel))
 
-        if self.profile.set_midi_prgch_bank_channel(channel):
+        if self.profile.set_midi_prgch_pedalboard_channel(channel):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
             callback(True)
         else:
