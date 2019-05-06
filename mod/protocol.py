@@ -88,17 +88,9 @@ class Protocol(object):
         "banks": [],
         "pedalboards": [int],
         "pedalboard": [int, str],
-        "hw_con": [int, int],
-        "hw_dis": [int, int],
-        "control_set": [int, str, float],
-        "control_get": [int, str],
-        "control_next": [int, int, int, int],
-        "tuner": [str],
-        "tuner_input": [int],
         "pedalboard_save": [],
         "pedalboard_reset": [],
-        "jack_cpu_load": [],
-        
+               
         "get_truebypass_value": [int],
         "set_truebypass_value": [int, int],
 
@@ -109,24 +101,22 @@ class Protocol(object):
         "get_tempo_bpb": [],
         "set_tempo_bpb": [float],
 
-        # MIDI program change channel for switching snapshots
-        "get_snapshot_prgch": [],
-        "set_snapshot_prgch": [int],
-        # MIDI program change channel for switching pedalboard banks
-        "get_bank_prgch": [],
-        "set_bank_prgch": [int],
+        "tuner": [str],
+        "get_tuner_mute": [],
+        "set_tuner_mute": [int],
 
-        # Transport and tempo sync mode
-        "get_clk_src": [],
-        "set_clk_src": [int],
-
-        # MIDI Beat Clock sending
-        "get_send_midi_clk": [],
-        "set_send_midi_clk": [int],
-        
         # User Profile handling
         "retrieve_profile": [int],
         "store_profile": [int],
+
+        # Master volume channel mode
+        "get_master_volume_channel": [],
+        "set_master_volume_channel": [int],
+        # Stereo Link for inputs and outputs
+        "get_in_chan_link": [int],
+        "set_in_chan_link": [int, int],
+        "get_out_chan_link": [int],
+        "set_out_chan_link": [int, int],
 
         # Configurable in- and output
         "get_exp_cv": [],
@@ -134,30 +124,40 @@ class Protocol(object):
         "get_hp_cv": [],
         "set_hp_cv": [int],
 
-        # Stereo Link for inputs and outputs
-        "get_in_chan_link": [int],
-        "set_in_chan_link": [int, int],
-        "get_out_chan_link": [int],
-        "set_out_chan_link": [int, int],
+        # Transport and tempo sync mode
+        "get_clk_src": [],
+        "set_clk_src": [int],
 
+        # MIDI program change channel for switching snapshots
+        "get_snapshot_prgch": [],
+        "set_snapshot_prgch": [int],
+
+        # MIDI Beat Clock sending
+        "get_send_midi_clk": [],
+        "set_send_midi_clk": [int],
+
+        # MIDI program change channel for switching pedalboard banks
+        "get_bank_prgch": [],
+        "set_bank_prgch": [int],
+        
+        "get_play_status": [],
+        "set_play_status": [int],
         # Display brightness
         "get_display_brightness": [],
         "set_display_brightness": [int],
-
-        # Master volume channel mode
+        
+        
         "get_master_volume_channel_mode": [],
         "set_master_volume_channel_mode": [int],
-
-        "get_play_status": [],
-        "set_play_status": [int],
-
-        "get_master_volume_channel": [],
-        "set_master_volume_channel": [int],
-
-        "get_tuner_mute": [],
-        "set_tuner_mute": [int],
-
         "get_pb_name": [],
+        
+        "hw_con": [int, int],
+        "hw_dis": [int, int],
+        "control_set": [int, str, float],
+        "control_get": [int, str],
+        "control_next": [int, int, int, int],
+        "tuner_input": [int],
+        "jack_cpu_load": [],
     }
 
     COMMANDS_FUNC = {}
