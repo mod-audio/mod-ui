@@ -221,9 +221,9 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
     
 
-    def test_get_bank_prgch(self):
-        #      "get_bank_prgch": [],
-        msg = ("get_bank_prgch\00").encode("utf-8")
+    def test_get_pb_prgch(self):
+        #      "get_pedalboard_prgch": [],
+        msg = ("get_pb_prgch\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
@@ -234,11 +234,11 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
     # TODO: Test if this changes something
-    def test_set_bank_prgch_01(self):
+    def test_set_pb_prgch_01(self):
         # First set this to the default value!
         default_channel = 15
-        #      "set_bank_prgch": [int],
-        msg = ("set_bank_prgch {0}\00").format(default_channel).encode("utf-8")
+        #      "set_pb_prgch": [int],
+        msg = ("set_pb_prgch {0}\00").format(default_channel).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush();
         
@@ -276,8 +276,14 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")            
+
             
 
+
+
+
+
+            
 
     def test_get_send_midi_clk(self):
         #      "get_send_midi_clk": []
@@ -309,6 +315,7 @@ class TestHMIProtocol(unittest.TestCase):
             
             
     def test_retrieve_profile(self):
+        #       "retrieve_profile": [int],        
         msg = ("retrieve_profile 0\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -319,7 +326,9 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+    
     def test_get_exp_cv(self):
+        #      "get_exp_cv": []
         msg = ("get_exp_cv\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -330,7 +339,10 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+    # 	"set_exp_cv": [int]
+
     def test_get_hp_cv(self):
+        #      "get_hp_cv": []
         msg = ("get_hp_cv\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -341,6 +353,9 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+#         # Configurable in- and output
+#         "set_hp_cv": [int],
+            
     def test_get_in_chan_link(self): #TODO check resp
         """get_in_chan_link: [int]"""
         msg = ("get_in_chan_link 0\00").encode("utf-8")
@@ -365,7 +380,15 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+
+# 	# Stereo Link for inputs and outputs                              
+# 	"set_in_chan_link": [int, int],
+# 	"set_out_chan_link": [int, int],
+
+
+            
     def test_get_display_brightness(self):
+        #      "get_display_brightness": [],        
         msg = ("get_display_brightness\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -376,8 +399,11 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    def test_get_master_volume_channel_mode(self):
-        msg = ("get_master_volume_channel_mode\00").encode("utf-8")
+    #         "set_display_brightness": [int]
+            
+    def test_get_mv_channel_mode(self):
+        #      "get_mv_channel": []
+        msg = ("get_mv_channel\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
@@ -387,7 +413,10 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+    # TODO: "set_mv_channel_mode": [int]
+            
     def test_get_play_status(self):
+        #      "get_play_status": []        
         msg = ("get_play_status\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -398,8 +427,12 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    def test_get_master_volume_channel(self):
-        msg = ("get_master_volume_channel\00").encode("utf-8")
+
+    # TODO: "set_play_status": [int],
+
+            
+    def test_get_mv_channel(self):
+        msg = ("get_mv_channel\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
@@ -408,8 +441,9 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0 0\x00')
         else:
             self.fail("No response")
-
+            
     def test_get_tuner_mute(self):
+        #      "get_tuner_mute": []
         msg = ("get_tuner_mute\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -420,6 +454,12 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+    # TODO  "set_tuner_mute": [int],
+
+
+#         "get_mv_channel": [],
+#         "set_mv_channel": [int],
+    
     def test_get_pb_name(self):
         msg = ("get_pb_name\00").encode("utf-8")
         self.ser.write(msg)
@@ -668,43 +708,35 @@ class TestHMIProtocol(unittest.TestCase):
     #         self.fail("No response")
 
 
+    # TODO: Test if this changes something
+    def test_set_q_bypass(self):        
+        # First set this to the default value!
+        default = 0
+        #      "set_q_bypass": [int],
+        msg = ("set_q_bypass {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
 
+            
+    def test_get_q_bypass(self):
+        #      "get_q_bypass": [],
+        msg = ("get_q_bypass\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
 
-
-
-#         # User Profile handling                                           
-# 	"retrieve_profile": [int],
-# 	"store_profile": [int],
-
-#         # Configurable in- and output                                     
-#         "get_exp_cv": [],
-# 	"set_exp_cv": [int],
-# 	"get_hp_cv": [],
-#         "set_hp_cv": [int],
-
-# 	# Stereo Link for inputs and outputs                              
-# 	"get_in_chan_link": [int],
-# 	"set_in_chan_link": [int, int],
-# 	"get_out_chan_link": [int],
-# 	"set_out_chan_link": [int, int],
-
-#         # Display brightness                                              
-# 	"get_display_brightness": [],
-#         "set_display_brightness": [int],
-
-#         # Master volume channel mode                                      
-# 	"get_master_volume_channel_mode": [],
-# 	"set_master_volume_channel_mode": [int],
-
-#         "get_play_status": [],
-#         "set_play_status": [int],
-
-#         "get_master_volume_channel": [],
-#         "set_master_volume_channel": [int],
-
-#         "get_tuner_mute": [],
-#         "set_tuner_mute": [int],
-
+    
 # Traceback (most recent call last):
 #   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/ioloop.py", line 568, in _run_callback
 #     ret = callback()
@@ -722,7 +754,27 @@ class TestHMIProtocol(unittest.TestCase):
 #     set_truebypass_value(right, bypassed)
 # NameError: name 'set_truebypass_value' is not defined
 
-            
+
+# Traceback (most recent call last):
+#   File "hmi-protocol-integrationtest.py", line 412, in test_get_mv_channel_mode
+#     self.assertEqual(resp, b'resp 0 0\x00')
+# AssertionError: b'resp -1\x00' != b'resp 0 0\x00'
+
+# ======================================================================
+# FAIL: test_get_pedalboard_prgch (__main__.TestHMIProtocol)
+# ----------------------------------------------------------------------
+# Traceback (most recent call last):
+#   File "hmi-protocol-integrationtest.py", line 232, in test_get_pedalboard_prgch
+#     self.assertEqual(resp, b'resp 0 15\x00')
+# AssertionError: b'resp -1\x00' != b'resp 0 15\x00'
+
+# ======================================================================
+# FAIL: test_set_pedalboard_prgch_01 (__main__.TestHMIProtocol)
+# ----------------------------------------------------------------------
+# Traceback (most recent call last):
+#   File "hmi-protocol-integrationtest.py", line 247, in test_set_pedalboard_prgch_01
+#     self.assertEqual(resp, b'resp 0\x00')
+# AssertionError: b'resp -1\x00' != b'resp 0\x00'
             
         
 if __name__ == '__main__':
