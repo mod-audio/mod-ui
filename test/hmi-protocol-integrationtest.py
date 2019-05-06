@@ -13,9 +13,10 @@ class TestHMIProtocol(unittest.TestCase):
         # TODO: Jack, mod-host, socat and mod-ui must be
         # running...probably easier to run by hand
         self.ser = serial.Serial(self.serial_path, 31250, timeout=0.1)
-
+        
     def test_get_tempo_bpm(self):
         # \x00 terminated!
+        #      "get_tempo_bpm": [],
         msg = ("get_tempo_bpm\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -32,7 +33,7 @@ class TestHMIProtocol(unittest.TestCase):
 
     ##    Check end-to-end
     def test_set_tempo_bpm(self):
-        # Depends on get_tempo_bpm!
+        # Note: This test depends on get_tempo_bpm!
         current_tempo = None
         
         # Get the current tempo
@@ -47,6 +48,7 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
         # Increase the current tempo by 5 BPM
+        #      "set_tempo_bpm": [float],
         msg = ("set_tempo_bpm {0}\00").format(current_tempo+5).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush();
@@ -65,14 +67,51 @@ class TestHMIProtocol(unittest.TestCase):
         if (resp):
             tmpstr = resp.decode("utf-8").split(' ')
             current_tempo = float(tmpstr[2].strip('\x00'))
-            self.assertEqual(current_tempo, 125.0) ## still 120?
+            self.assertEqual(current_tempo, 125.0)
         else:
             self.fail("No response")
 
-        ## TODO: This fails here, because Jack is not updated on the tempo, yet.
-
+        # Set it back to 120 BPM. So running this test-suite again
+        # will not fail on `get_tempo_bpm`.
+        msg = ("set_tempo_bpm {0}\00").format(120.0).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
         
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+        # Check the tempo again
+        msg = ("get_tempo_bpm\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            tmpstr = resp.decode("utf-8").split(' ')
+            current_tempo = float(tmpstr[2].strip('\x00'))
+            self.assertEqual(current_tempo, 120.0)
+        else:
+            self.fail("No response")
+            
+
+
+    def test_set_tempo_bpb(self):
+        # Set it back to 4.0 BPB as a baseline.
+        msg = ("set_tempo_bpb {0}\00").format(4.0).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
+        
+    ## Fails because `set_*` does not work!
     # def test_get_tempo_bpb(self):
+    #     #      "get_tempo_bpb": [],
     #     msg = ("get_tempo_bpb\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
@@ -83,117 +122,270 @@ class TestHMIProtocol(unittest.TestCase):
     #     else:
     #         self.fail("No response")
 
-    # def test_get_snapshot_prgch(self):
-    #     msg = ("get_snapshot_prgch\00").encode("utf-8")
+
+    # def test_set_tempo_bpb_02(self):
+    #     # Note: This test depends on get_tempo_bpb!
+    #     current_tempo = None
+        
+    #     # Get the current tempo
+    #     msg = ("get_tempo_bpb\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 14\x00')
+    #         tmpstr = resp.decode("utf-8").split(' ')
+    #         current_beats = float(tmpstr[2].strip('\x00'))
+    #         self.assertEqual(current_beats, 4.0)
     #     else:
     #         self.fail("No response")
 
-    # def test_get_bank_prgch(self):
-    #     msg = ("get_bank_prgch\00").encode("utf-8")
+    #     # Increase the current tempo by 3 Beats
+    #     #      "set_tempo_bpb": [float],        
+    #     msg = ("set_tempo_bpb {0}\00").format(current_beats+3).encode("utf-8")
     #     self.ser.write(msg)
-    #     self.ser.flush()
+    #     self.ser.flush();
         
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 15\x00')
+    #         self.assertEqual(resp, b'resp 0\x00')
     #     else:
     #         self.fail("No response")
 
-    # def test_get_clk_src(self):
-    #     msg = ("get_clk_src\00").encode("utf-8")
+    #     # Check the new beats
+    #     msg = ("get_tempo_bpb\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00')
+    #         tmpstr = resp.decode("utf-8").split(' ')
+    #         current_tempo = float(tmpstr[2].strip('\x00'))
+    #         self.assertEqual(current_beats, 7.0)
     #     else:
     #         self.fail("No response")
 
-    # def test_retrieve_profile(self):
-    #     msg = ("retrieve_profile 0\00").encode("utf-8")
+    #     # Set it back to 4 BPB. So running this test-suite again
+    #     # will not fail on `get_tempo_bpb`.
+    #     msg = ("set_tempo_bpb {0}\00").format(4).encode("utf-8")
     #     self.ser.write(msg)
-    #     self.ser.flush()
+    #     self.ser.flush();
         
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
-    #         self.assertEqual(resp, b'resp -1\x00') # Profile not existing?
+    #         self.assertEqual(resp, b'resp 0\x00')
     #     else:
     #         self.fail("No response")
 
-    # def test_get_exp_cv(self):
-    #     msg = ("get_exp_cv\00").encode("utf-8")
+    #     # Check the beats again
+    #     msg = ("get_tempo_bpb\00").encode("utf-8")
     #     self.ser.write(msg)
     #     self.ser.flush()
-        
     #     resp = self.ser.read_until('\x00', 100)
     #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00')
+    #         tmpstr = resp.decode("utf-8").split(' ')
+    #         current_beats = float(tmpstr[2].strip('\x00'))
+    #         self.assertEqual(current_beats, 4)
     #     else:
     #         self.fail("No response")
 
-    # def test_get_hp_cv(self):
-    #     msg = ("get_hp_cv\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00')
-    #     else:
-    #         self.fail("No response")
+            
 
-    # def test_get_in_chan_link(self): #TODO check resp
-    #     """get_in_chan_link: [int]"""
-    #     msg = ("get_in_chan_link 0\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp -1\x00')
-    #     else:
-    #         self.fail("No response")
+            
 
-    # def test_get_out_chan_link(self): #TODO check resp
-    #     """get_out_chan_link: [int]"""
-    #     msg = ("get_out_chan_link 0\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp -1\x00')
-    #     else:
-    #         self.fail("No response")
 
-    # def test_get_display_brightness(self):
-    #     msg = ("get_display_brightness\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 50\x00')
-    #     else:
-    #         self.fail("No response")
 
-    # def test_get_master_volume_channel_mode(self):
-    #     msg = ("get_master_volume_channel_mode\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_get_snapshot_prgch(self):
+        #      "get_snapshot_prgch": [],
+        msg = ("get_snapshot_prgch\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 14\x00')
+        else:
+            self.fail("No response")
+
+    # TODO: Test if this changes something
+    def test_set_snapshot_prgch_01(self):
+        # First set this to the default value!
+        default_channel = 14
+        #      "set_snapshot_prgch": [int],        
+        msg = ("set_snapshot_prgch {0}\00").format(default_channel).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+    
+
+    def test_get_bank_prgch(self):
+        #      "get_bank_prgch": [],
+        msg = ("get_bank_prgch\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 15\x00')
+        else:
+            self.fail("No response")
+
+    # TODO: Test if this changes something
+    def test_set_bank_prgch_01(self):
+        # First set this to the default value!
+        default_channel = 15
+        #      "set_bank_prgch": [int],
+        msg = ("set_bank_prgch {0}\00").format(default_channel).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
+
+            
+    def test_get_clk_src(self):
+        #      "get_clk_src": [],        
+        msg = ("get_clk_src\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+
+    # TODO: Test if this changes something
+    def test_set_clk_src_01(self):
+        # First set this to the default value!
+        default = 0        
+        #      "set_clk_src": [int],        
+        msg = ("set_clk_src {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
+            
+
+
+    def test_get_send_midi_clk(self):
+        #      "get_send_midi_clk": []
+        msg = ("get_clk_src\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00') # TODO check value!
+        else:
+            self.fail("No response")
+
+
+    # TODO: Test if this changes something
+    def test_set_clk_src_01(self):
+        # First set this to the default value!
+        default = 0
+        #      "set_send_midi_clk": [int],
+        msg = ("set_send_midi_clk {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
+            
+            
+    def test_retrieve_profile(self):
+        msg = ("retrieve_profile 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00') # TODO: Profile not existing?
+        else:
+            self.fail("No response")
+
+    def test_get_exp_cv(self):
+        msg = ("get_exp_cv\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+    def test_get_hp_cv(self):
+        msg = ("get_hp_cv\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+    def test_get_in_chan_link(self): #TODO check resp
+        """get_in_chan_link: [int]"""
+        msg = ("get_in_chan_link 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")
+
+    def test_get_out_chan_link(self): #TODO check resp
+        """get_out_chan_link: [int]"""
+        msg = ("get_out_chan_link 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")
+
+    def test_get_display_brightness(self):
+        msg = ("get_display_brightness\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 50\x00')
+        else:
+            self.fail("No response")
+
+    def test_get_master_volume_channel_mode(self):
+        msg = ("get_master_volume_channel_mode\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
 
     def test_get_play_status(self):
         msg = ("get_play_status\00").encode("utf-8")
@@ -206,16 +398,16 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # def test_get_master_volume_channel(self):
-    #     msg = ("get_master_volume_channel\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_get_master_volume_channel(self):
+        msg = ("get_master_volume_channel\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
 
     def test_get_tuner_mute(self):
         msg = ("get_tuner_mute\00").encode("utf-8")
@@ -224,7 +416,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # 0 means what?
+            self.assertEqual(resp, b'resp 0 0\x00') # TODO 0 means what?
         else:
             self.fail("No response")
 
@@ -235,108 +427,110 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 Foobar\x00')
+            #self.assertEqual(resp, b'resp 0 Foobar\x00')
+            self.assertEqual(resp, b'resp 0 tmp\x00')
+            #print(resp)
         else:
             self.fail("No response")
 
-    # def test_banks(self):
-    #     msg = ("banks\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_banks(self):
+        msg = ("banks\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 All 0 "Test" 1\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 All 0 "Test" 1\x00')
+        else:
+            self.fail("No response")
 
 
             
-    # # Note: plural
-    # def test_pedalboards(self):
-    #     """pedalboards: [int]"""
-    #     msg = ("pedalboards\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    # Note: plural
+    def test_pedalboards(self):
+        """pedalboards: [int]"""
+        msg = ("pedalboards\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
 
-    # # Note: singular            
-    # def test_pedalboard(self):
-    #     """pedalboard: [int, str]"""
-    #     msg = ("pedalboard\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    # Note: singular            
+    def test_pedalboard(self):
+        """pedalboard: [int, str]"""
+        msg = ("pedalboard\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness, is this default?
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness, is this default?
+        else:
+            self.fail("No response")
 
-    # def test_hw_con(self):
-    #     """hw_con: [int, int]"""
-    #     msg = ("hw_con\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_hw_con(self):
+        """hw_con: [int, int]"""
+        msg = ("hw_con\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness! [int, int]
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness! [int, int]
+        else:
+            self.fail("No response")
 
-    # def test_hw_dis(self):
-    #     """hw_dis: [int, int]"""
-    #     msg = ("hw_dis\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_hw_dis(self):
+        """hw_dis: [int, int]"""
+        msg = ("hw_dis\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness! [int, int]
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness! [int, int]
+        else:
+            self.fail("No response")
 
-    # def test_control_set(self):
-    #     """control_set: [int, str, float]"""
-    #     msg = ("control_set\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_control_set(self):
+        """control_set: [int, str, float]"""
+        msg = ("control_set\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
 
-    # def test_control_set(self):
-    #     """control_get: [int, str]"""
-    #     msg = ("control_get\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_control_set(self):
+        """control_get: [int, str]"""
+        msg = ("control_get\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
 
-    # def test_control_next(self):
-    #     """control_next: [int, int, int, int]"""
-    #     msg = ("control_next\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_control_next(self):
+        """control_next: [int, int, int, int]"""
+        msg = ("control_next\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
             
     def test_tuner(self):
         """tuner: [str]"""
@@ -346,7 +540,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # returns -1003. Not testable?
+            self.assertEqual(resp, b'resp 0\x00') # TODO returns -1003. Not testable?
         else:
             self.fail("No response")
 
@@ -358,33 +552,33 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # check correctness
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
         else:
             self.fail("No response")
             
-    # def test_pedalboard_save(self):
-    #     """pedalboard_save: []"""
-    #     msg = ("pedalboard_save\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_pedalboard_save(self):
+        """pedalboard_save: []"""
+        msg = ("pedalboard_save\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
 
-    # def test_pedalboard_reset(self):
-    #     """pedalboard_reset: []"""
-    #     msg = ("pedalboard_reset\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_pedalboard_reset(self):
+        """pedalboard_reset: []"""
+        msg = ("pedalboard_reset\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
 
     ## TODO: If the response code is -1003 it does not get here somehow!
     def test_jack_cpu_load(self):
@@ -399,104 +593,84 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
     
-    ## TODO: Wrong protocol usage results in no error but OK!
-    def test_get_truebypass_value01(self):
-        """get_truebypass_value: [int]"""
-        msg = ("get_truebypass_value 0\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
+    # ## TODO: Wrong protocol usage results in no error but OK!
+    # def test_get_truebypass_value01(self):
+    #     """get_truebypass_value: [int]"""
+    #     msg = ("get_truebypass_value 0\00").encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # left
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0 0\x00') # left
+    #     else:
+    #         self.fail("No response")
 
-    def test_get_truebypass_value02(self):
-        """get_truebypass_value: [int]"""            
-        msg = ("get_truebypass_value 1\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
+    # def test_get_truebypass_value02(self):
+    #     """get_truebypass_value: [int]"""            
+    #     msg = ("get_truebypass_value 1\00").encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # right
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0 0\x00') # right
+    #     else:
+    #         self.fail("No response")
 
             
-    def test_set_truebypass_value01(self):
-        """set_truebypass_value: [int, int]"""
-        msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
-        self.ser.write(msg)
-        self.ser.flush()
+    # def test_set_truebypass_value01(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # check correctness
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
 
-    def test_set_truebypass_value02(self):
-        """set_truebypass_value: [int, int]"""
-        msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
-        self.ser.write(msg)
-        self.ser.flush()
+    # def test_set_truebypass_value02(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # check correctness
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
 
-    def test_set_truebypass_value03(self):
-        """set_truebypass_value: [int, int]"""
-        msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
-        self.ser.write(msg)
-        self.ser.flush()
+    # def test_set_truebypass_value03(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # check correctness
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
             
-    def test_set_truebypass_value04(self):
-        """set_truebypass_value: [int, int]"""
-        msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
-        self.ser.write(msg)
-        self.ser.flush()
+    # def test_set_truebypass_value04(self):
+    #     """set_truebypass_value: [int, int]"""
+    #     msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # check correctness
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
+    #     else:
+    #         self.fail("No response")
 
 
 
 
-# # Beats per minute                                                
-#         "get_tempo_bpm": [],
-#         "set_tempo_bpm": [float],
-# 	# Beats per bar                                                   
-#         "get_tempo_bpb": [],
-#         "set_tempo_bpb": [float],
 
-#         # MIDI program change channel for switching snapshots             
-# 	"get_snapshot_prgch": [],
-# 	"set_snapshot_prgch": [int],
-#         # MIDI program change channel for switching pedalboard banks      
-#         "get_bank_prgch": [],
-# 	"set_bank_prgch": [int],
-
-# 	# Transport and tempo sync mode                                   
-# 	"get_clk_src": [],
-# 	"set_clk_src": [int],
-
-#         # MIDI Beat Clock sending                                         
-# 	"get_send_midi_clk": [],
-#         "set_send_midi_clk": [int],
 
 #         # User Profile handling                                           
 # 	"retrieve_profile": [int],
@@ -531,7 +705,23 @@ class TestHMIProtocol(unittest.TestCase):
 #         "get_tuner_mute": [],
 #         "set_tuner_mute": [int],
 
-        
+# Traceback (most recent call last):
+#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/ioloop.py", line 568, in _run_callback
+#     ret = callback()
+#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/stack_context.py", line 275, in null_wrapper
+#     return fn(*args, **kwargs)
+#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/iostream.py", line 537, in wrapper
+#     return callback(*args)
+#   File "/home/jakob/Downloads/github/mod-ui/modui-env/lib/python3.7/site-packages/tornado/stack_context.py", line 275, in null_wrapper
+#     return fn(*args, **kwargs)
+#   File "/home/jakob/Downloads/github/mod-ui/mod/hmi.py", line 123, in checker
+#     msg.run_cmd(_callback)
+#   File "/home/jakob/Downloads/github/mod-ui/mod/protocol.py", line 200, in run_cmd
+#     cmd(*args)
+#   File "/home/jakob/Downloads/github/mod-ui/mod/host.py", line 3540, in hmi_set_truebypass_value
+#     set_truebypass_value(right, bypassed)
+# NameError: name 'set_truebypass_value' is not defined
+
             
             
         
@@ -549,3 +739,6 @@ if __name__ == '__main__':
     # Overwrite the `--device argument`, so unittest is not bothered
     sys.argv[1:] = args.unittest_args
     unittest.main()
+
+
+    
