@@ -299,6 +299,7 @@ class Host(object):
         Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
         Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
 
+        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)        
         Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
         Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
 
@@ -3669,6 +3670,12 @@ _:b%i
         else:
             callback(False)
 
+    def hmi_get_current_profile(self, callback):
+        """Return the index of the currently loaded profile. This is a string."""
+        logging.info("hmi get current profile")
+        index = self.profile.current()
+        callback(True, index)
+            
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
         logging.info("hmi retrieve profile")

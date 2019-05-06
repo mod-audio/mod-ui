@@ -109,9 +109,9 @@ class Protocol(object):
         "set_tuner_mute": [int],
 
         # User Profile handling
-        "get_current_profile": [int],
-        "retrieve_profile": [int],
-        "store_profile": [int],
+        "get_current_profile": [],
+        "retrieve_profile": [str],
+        "store_profile": [str],
 
         # Master volume channel mode
         "get_mv_channel": [],

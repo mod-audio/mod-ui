@@ -67,7 +67,11 @@ class Profile:
                 midi_prgch_snapshot_channel = channel
                 result = True
         return result
-    
+
+    def current(self):
+        """Return the current profile index."""
+        return self.index
+        
     def store(self, index):
         """Serialize the profile to JSON and store it on harddisk."""
         data = {
