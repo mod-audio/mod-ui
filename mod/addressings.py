@@ -626,8 +626,11 @@ class Addressings(object):
             index = addressings_addrs.index(addressing_data)
             addressings_addrs.pop(index)
 
-            if addressings['idx'] == index:
+            old_idx = addressings['idx']
+            # if addressings['idx'] == index:
+            if old_idx != 0 or (old_idx == 0 and not len(addressings_addrs)):
                 addressings['idx'] -= 1
+            return old_idx == index
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]

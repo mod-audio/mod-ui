@@ -1501,6 +1501,7 @@ class Host(object):
                 self.plugins_added.remove(instance_id)
 
         used_hmi_actuators = []
+        used_hw_ids = []
 
         for symbol in [symbol for symbol in pluginData['addressings'].keys()]:
             addressing    = pluginData['addressings'].pop(symbol)
@@ -1512,17 +1513,13 @@ class Host(object):
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
                     used_hmi_actuators.append(actuator_uri)
+                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                    used_hw_ids.append(hw_id)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 yield gen.Task(self.addr_task_unaddressing, actuator_type,
                                                             addressing['instance_id'],
                                                             addressing['port'])
-
-        used_hw_ids = []
-        for actuator_uri in used_hmi_actuators:
-            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-            used_hw_ids.append(hw_id)
-            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
         def host_callback(ok):
             callback(ok)
@@ -1539,9 +1536,13 @@ class Host(object):
         def hmi_callback(ok):
             self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
+        def hmi_control_rm_callback(ok):
+            for actuator_uri in used_hmi_actuators:
+                self.addressings.hmi_load_current(actuator_uri, hmi_callback)
+
         if self.hmi.initialized and len(used_hw_ids) > 0:
             # Remove active addressed port from HMI
-            self.hmi.control_rm(used_hw_ids, hmi_callback)
+            self.hmi.control_rm(used_hw_ids, hmi_control_rm_callback)
         else:
             hmi_callback(True)
 
