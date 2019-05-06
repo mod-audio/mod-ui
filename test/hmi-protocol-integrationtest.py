@@ -627,23 +627,22 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
+            self.assertEqual(resp, b'resp 0 0\x00') # Assume ist stopped?
         else:
             self.fail("No response")
 
-    # TODO: "set_play_status": [int],
-
-    def test_get_display_brightness(self):
-        #      "get_display_brightness": [],        
-        msg = ("get_display_brightness\00").encode("utf-8")
+    # TODO: Test all states of playing!
+    def test_set_play_status(self):
+        #      "set_play_status": [int]
+        msg = ("set_play_status {0}\00".format(0)).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 50\x00')
+            self.assertEqual(resp, b'resp 0\x00')
         else:
-            self.fail("No response")
+            self.fail("No response")    
 
     def test_set_display_brightness_full(self):
         #      "set_display_brightness": [int]
@@ -656,7 +655,31 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")
-            
+
+    def test_set_display_brightness_half(self):
+        #      "set_display_brightness": [int]
+        msg = ("set_display_brightness {0}\00".format(50)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+    # TODO: depends on the previous test!
+    def test_get_display_brightness(self):
+        #      "get_display_brightness": [],        
+        msg = ("get_display_brightness\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 50\x00')
+        else:
+            self.fail("No response")            
 
             
     # TODO: Deprecated?
