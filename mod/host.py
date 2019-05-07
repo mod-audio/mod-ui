@@ -3662,7 +3662,7 @@ _:b%i
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi get midi beat clock status")
 
-        onoff = 1 # TODO: communicate with mod-host
+        onoff = 1 # TODO: communicate with mod-host. This is not implemented in mod-host yet!
         callback(True, int(onoff))
 
     def hmi_set_send_midi_clk(self, onoff, callback):
@@ -3670,7 +3670,7 @@ _:b%i
         logging.info("hmi set midi beat clock status to {0}".format(onoff))
 
         if onoff in [0, 1]:
-            # TODO: communicate with mod host.
+            # TODO: communicate with mod host. This is not implemented in mod-host yet!
             callback(True)
         else:
             callback(False)
@@ -3775,7 +3775,7 @@ _:b%i
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.info("hmi set display brightness to {0}".format(brightness))
-        if brightness in [0, 25, 50, 75, 100]:
+        if brightness in [0, 1, 2, 3, 4]:
             self.profile.display_brightness = brightness
             callback(True)
         else:

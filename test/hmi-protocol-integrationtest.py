@@ -781,7 +781,7 @@ class TestHMIProtocol(unittest.TestCase):
 
     def test_set_display_brightness_full(self):
         #      "set_display_brightness": [int]
-        msg = ("set_display_brightness {0}\00".format(100)).encode("utf-8")
+        msg = ("set_display_brightness {0}\00".format(4)).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
@@ -793,7 +793,7 @@ class TestHMIProtocol(unittest.TestCase):
 
     def test_set_display_brightness_half(self):
         #      "set_display_brightness": [int]
-        msg = ("set_display_brightness {0}\00".format(50)).encode("utf-8")
+        msg = ("set_display_brightness {0}\00".format(2)).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
@@ -812,7 +812,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 50\x00')
+            self.assertEqual(resp, b'resp 0 4\x00')
         else:
             self.fail("No response")            
 
