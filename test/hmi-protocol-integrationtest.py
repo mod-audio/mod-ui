@@ -54,8 +54,31 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
 
-    # TODO "pedalboard_save": [],
-    # TODO "pedalboard_reset": [],
+    def test_pedalboard_save(self):
+        """pedalboard_save: []"""
+        msg = ("pedalboard_save\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
+
+
+    def test_pedalboard_reset(self):
+        """pedalboard_reset: []"""
+        msg = ("pedalboard_reset\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
 
     # ## TODO: Wrong protocol usage results in NO error!
     # def test_get_truebypass_value01(self):
@@ -360,7 +383,7 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
                 
     def test_get_tuner_mute(self):
-        #      "get_tuner_mute": []
+        """get_tuner_mute: []"""
         msg = ("get_tuner_mute\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -432,7 +455,22 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")            
+
+
+    def test_set_mv_channel_mode(self):
+        """set_mv_channel: [int]"""
+        default = 0
+        msg = ("set_mv_channel {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
             
+
     def test_get_mv_channel_mode(self):
         #      "get_mv_channel": []
         msg = ("get_mv_channel\00").encode("utf-8")
@@ -445,37 +483,72 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # TODO: "set_mv_channel_mode": [int]
-
-
-    def test_get_in_chan_link(self): #TODO check resp
-        """get_in_chan_link: [int]"""
-        msg = ("get_in_chan_link 0\00").encode("utf-8")
+    def test_set_in_chan_link(self):
+        """set_in_chan_link: [int]"""
+        default = 0
+        msg = ("set_in_chan_link {0}\00".format(default)).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp -1\x00')
+            self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")
 
-    def test_get_out_chan_link(self): #TODO check resp
-        """get_out_chan_link: [int]"""
-        msg = ("get_out_chan_link 0\00").encode("utf-8")
+    def test_get_in_chan_link(self):
+        """get_in_chan_link: []"""
+        msg = ("get_in_chan_link\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp -1\x00')
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+    def test_set_out_chan_link(self):
+        """set_out_chan_link: [int]"""
+        default = 0
+        msg = ("set_out_chan_link {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+            
+            
+    def test_get_out_chan_link(self):
+        """get_out_chan_link: []"""
+        msg = ("get_out_chan_link\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
         else:
             self.fail("No response")
 
 
-# TODO 	"set_in_chan_link": [int, int],
-# TODO	"set_out_chan_link": [int, int],
+    def test_get_exp_cv(self):
+        """set_exp_cv: [int]"""
+        default = 0
+        msg = ("set_exp_cv {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
+    
     def test_get_exp_cv(self):
         #      "get_exp_cv": []
         msg = ("get_exp_cv\00").encode("utf-8")
@@ -488,10 +561,23 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # 	"set_exp_cv": [int]
 
+    def test_set_hp_cv(self):
+        """set_hp_cv: []"""
+        default = 0
+        msg = ("set_hp_cv {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+    
     def test_get_hp_cv(self):
-        #      "get_hp_cv": []
+        """get_hp_cv: []"""
         msg = ("get_hp_cv\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -502,12 +588,61 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-# TODO         "set_hp_cv": [int],
-        # TODO "get_exp_mode": [],
-        # TODO "set_exp_mode": [int],
-        # TODO "get_cv_bias": [],
-        # TODO "set_cv_bias": [int],
+            
+    def test_set_exp_mode(self):
+        """set_exp_mode: [int]"""
+        default = 0
+        msg = ("set_exp_mode {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
 
+            
+    def test_get_exp_mode(self):
+        """get_exp_mode: []"""
+        msg = ("get_exp_mode\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+
+    def test_set_cv_bias(self):
+        """set_cv_bias: [int]"""
+        default = 0
+        msg = ("set_cv_bias {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")            
+
+
+    def test_get_cv_bias(self):
+        """get_cv_bias: []"""
+        msg = ("get_cv_bias\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+        
     def test_get_clk_src(self):
         #      "get_clk_src": [],        
         msg = ("get_clk_src\00").encode("utf-8")
@@ -572,7 +707,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # TODO check value!
+            self.assertEqual(resp, b'resp 0 0\x00')
         else:
             self.fail("No response")
 
