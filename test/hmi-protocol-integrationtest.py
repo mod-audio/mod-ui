@@ -80,79 +80,79 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
 
-    # ## TODO: Wrong protocol usage results in NO error!
-    # def test_get_truebypass_value01(self):
-    #     """get_truebypass_value: [int]"""
-    #     msg = ("get_truebypass_value 0\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    ## TODO: Wrong protocol usage results in NO error!
+    def test_get_truebypass_value01(self):
+        """get_truebypass_value: [int]"""
+        msg = ("get_truebypass_value 0\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00') # left
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00') # left
+        else:
+            self.fail("No response")
 
-    # def test_get_truebypass_value02(self):
-    #     """get_truebypass_value: [int]"""            
-    #     msg = ("get_truebypass_value 1\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_get_truebypass_value02(self):
+        """get_truebypass_value: [int]"""            
+        msg = ("get_truebypass_value 1\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 0\x00') # right
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00') # right
+        else:
+            self.fail("No response")
 
             
-    # def test_set_truebypass_value01(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_set_truebypass_value01(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
 
-    # def test_set_truebypass_value02(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_set_truebypass_value02(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
 
-    # def test_set_truebypass_value03(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_set_truebypass_value03(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
             
-    # def test_set_truebypass_value04(self):
-    #     """set_truebypass_value: [int, int]"""
-    #     msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_set_truebypass_value04(self):
+        """set_truebypass_value: [int, int]"""
+        msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00') # check correctness
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # check correctness
+        else:
+            self.fail("No response")
 
     # TODO: Test if this changes something
     def test_set_q_bypass(self):        
@@ -791,17 +791,17 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    def test_set_display_brightness_half(self):
-        #      "set_display_brightness": [int]
-        msg = ("set_display_brightness {0}\00".format(2)).encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
+    # def test_set_display_brightness_half(self):
+    #     #      "set_display_brightness": [int]
+    #     msg = ("set_display_brightness {0}\00".format(2)).encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush()
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00')
+    #     else:
+    #         self.fail("No response")
 
     # TODO: depends on the previous test!
     def test_get_display_brightness(self):
