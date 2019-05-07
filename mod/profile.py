@@ -52,6 +52,8 @@ class Profile:
     quick_bypass_mode = 0 # 0 for "change both 1&2", 1 for "change
                           # channel 1" and 2 for "change channel 2".
 
+    control_voltage_bias = 0 # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
+
     def set_midi_prgch_pedalboard_channel(self, channel):
         result = False
         if 0 <= channel and channel < 16:
@@ -94,6 +96,7 @@ class Profile:
             "configurable_output_mode": self.configurable_output_mode,
             "display_brightness": self.display_brightness,
             "quick_bypass_mode": self.quick_bypass_mode,
+            "control_voltage_bias": self.control_voltage_bias,
         }
         result = False
         try:
@@ -131,6 +134,7 @@ class Profile:
             self.configurable_output_mode = data["configurable_output_mode"]
             self.display_brightness = data["display_brightness"]
             self.quick_bypass_mode = data["quick_bypass_mode"]
+            self.control_voltage_bias = data["control_voltage_bias"]
             result = True
             
         except FileNotFoundError as e:

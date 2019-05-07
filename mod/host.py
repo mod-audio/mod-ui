@@ -3835,12 +3835,17 @@ _:b%i
         callback(True)
 
     def hmi_get_control_voltage_bias(self, callback):
-        """TODO."""
-        callback(True, 0) # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
+        """Get the setting of the control voltage bias."""
+        bias_mode = self.profile.control_voltage_bias  # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
+        callback(True, bias_mode)
 
     def hmi_set_control_voltage_bias(self, bias_mode, callback):
-        """TODO."""
-        callback(True)
+        """Set the setting of the control voltage bias."""
+        if bias_mode in [0, 1]:
+            self.profile.control_voltage_bias = bias_mode
+            callback(True)
+        else:
+            callback(False)
 
 
     # -----------------------------------------------------------------------------------------------------------------
