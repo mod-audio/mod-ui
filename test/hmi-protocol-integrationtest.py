@@ -388,7 +388,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00') # TODO 0 means what?
+            self.assertEqual(resp, b'resp 0 0\x00')
         else:
             self.fail("No response")
 
@@ -400,7 +400,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0\x00') # TODO 0 means what?
+            self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")
             
@@ -965,6 +965,3 @@ if __name__ == '__main__':
     # Overwrite the `--device argument`, so unittest is not bothered
     sys.argv[1:] = args.unittest_args
     unittest.main()
-
-
-    

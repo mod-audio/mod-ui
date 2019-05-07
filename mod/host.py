@@ -3814,12 +3814,24 @@ _:b%i
 
     def hmi_get_tuner_mute(self, callback):
         """Return if the tuner lets audio through or not."""
-        # TODO: implement
-        callback(True, 0) # 0, 1
+        default = "true"
+        mute = self.prefs.get("tuner-mutes-outputs", default)
+        result = 0
+        if mute == "true":
+            result = 1
 
-    def hmi_set_tuner_mute(self, value, callback):
+        callback(True, result)
+
+    def hmi_set_tuner_mute(self, mute, callback):
         """Set if the tuner lets audio through or not."""
-        callback(True)
+        if mute in [0, 1]:
+            value = "false"
+            if mute == 1:
+                value = "true"
+            self.prefs.setAndSave("tuner-mutes-outputs", value)
+            callback(True)
+        else:
+            callback(False)
 
     def hmi_get_pb_name(self, callback):
         """Return the name of the currently loaded pedalboard."""
