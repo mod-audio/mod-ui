@@ -308,6 +308,11 @@ class Host(object):
         Protocol.register_cmd_callback("get_hp_cv", self.hmi_get_hp_cv)
         Protocol.register_cmd_callback("set_hp_cv", self.hmi_set_hp_cv)
 
+        Protocol.register_cmd_callback("get_exp_mode", self.hmi_get_exp_mode)
+        Protocol.register_cmd_callback("set_exp_mode", self.hmi_set_exp_mode)
+        Protocol.register_cmd_callback("get_cv_bias", self.hmi_get_control_voltage_bias)
+        Protocol.register_cmd_callback("set_cv_bias", self.hmi_set_control_voltage_bias)
+
         Protocol.register_cmd_callback("get_in_chan_link", self.hmi_get_in_chan_link)
         Protocol.register_cmd_callback("set_in_chan_link", self.hmi_set_in_chan_link)
         Protocol.register_cmd_callback("get_out_chan_link", self.hmi_get_out_chan_link)
@@ -3828,6 +3833,23 @@ _:b%i
     def hmi_get_pb_name(self, callback):
         """TODO."""
         callback(True, "tmp") # string
+
+    def hmi_get_exp_mode(self, callback):
+        """TODO."""
+        callback(True, 0) # 0= singnal on tip, 1= signal on sleeve
+
+    def hmi_set_exp_mode(self, mode, callback):
+        """TODO."""
+        # 0= singnal on tip, 1= signal on sleeve
+        callback(True)
+
+    def hmi_get_control_voltage_bias(self, callback):
+        """TODO."""
+        callback(True, 0) # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
+
+    def hmi_set_control_voltage_bias(self, bias_mode, callback):
+        """TODO."""
+        callback(True)
 
 
     # -----------------------------------------------------------------------------------------------------------------
