@@ -25,7 +25,7 @@ class Profile:
     input_stereo_link = False
     output_stereo_link = False
 
-    send_midi_beat_clock = 0 # 0=off, 1=clock, 2=clock+transport
+    send_midi_beat_clock = 0 # 0=off, 1=MIDI clock, 2=MIDI clock + Start + Stop
     sync_mode = 0 # 0=internal, 1=MBC slave, 2=Ableton Link
 
     # In hardware we have a gain stage and fine level parameters. For
