@@ -3638,7 +3638,7 @@ _:b%i
 
         if mode in [0, 1, 2]:
             # Communicate with mod host.
-            # Note: First disable all unchoosen options.
+            # Note: _First_ disable all unchoosen options.
             if mode == 0: # Internal
                 self.send_notmodified("feature_enable link 0")
                 self.send_notmodified("feature_enable midi_clock_slave 0")
@@ -3794,8 +3794,12 @@ _:b%i
             callback(False)
 
     def hmi_get_play_status(self, callback):
-        """TODO."""
-        callback(True, 0) # 0, 1
+        """Return if the transport is rolling (1) or not (0)."""        
+        state = get_jack_data(True)['rolling']
+        if state in [0, 1]:
+            callback(True, int(state))
+        else:
+            callback(False)
 
     def hmi_set_play_status(self, state, callback):
         """TODO."""

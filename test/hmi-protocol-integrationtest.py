@@ -766,10 +766,10 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # TODO: Test all states of playing!
-    def test_set_play_status(self):
-        #      "set_play_status": [int]
-        msg = ("set_play_status {0}\00".format(0)).encode("utf-8")
+    def test_set_play_status_stop(self):
+        """set_play_status: [int]"""
+        stop = 0
+        msg = ("set_play_status {0}\00".format(stop)).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
         
@@ -778,6 +778,19 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")    
+
+    def test_set_play_status_run(self):
+        """set_play_status: [int]"""
+        run = 1
+        msg = ("set_play_status {0}\00".format(run)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
     def test_set_display_brightness_full(self):
         #      "set_display_brightness": [int]
