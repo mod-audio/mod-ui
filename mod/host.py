@@ -3803,44 +3803,43 @@ _:b%i
 
     def hmi_set_play_status(self, state, callback):
         """TODO."""
-        callback(True)
-
-    def hmi_get_master_volume_channel(self, callback):
-        """TODO."""
-        callback(True, 0) # integer 0, 1, 2
-
-    def hmi_set_master_volume_channel(self, value, callback):
-        """TODO."""
+        # TODO: implement
         callback(True)
 
     def hmi_get_tuner_mute(self, callback):
-        """TODO."""
+        """Return if the tuner lets audio through or not."""
+        # TODO: implement
         callback(True, 0) # 0, 1
 
     def hmi_set_tuner_mute(self, value, callback):
-        """TODO."""
+        """Set if the tuner lets audio through or not."""
         callback(True)
 
     def hmi_get_pb_name(self, callback):
-        """TODO."""
+        """Return the name of the currently loaded pedalboard."""
+        # TODO
         callback(True, "tmp") # string
 
     def hmi_get_exp_mode(self, callback):
-        """TODO."""
+        """Return, if the input is set to expression pedal or control voltage."""
+        # TODO ALSA?
         callback(True, 0) # 0= singnal on tip, 1= signal on sleeve
 
     def hmi_set_exp_mode(self, mode, callback):
         """TODO."""
+        # TODO ALSA?
         # 0= singnal on tip, 1= signal on sleeve
         callback(True)
 
     def hmi_get_control_voltage_bias(self, callback):
         """Get the setting of the control voltage bias."""
+        # TODO ALSA!
         bias_mode = self.profile.control_voltage_bias  # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
         callback(True, bias_mode)
 
     def hmi_set_control_voltage_bias(self, bias_mode, callback):
         """Set the setting of the control voltage bias."""
+        # TODO ALSA!
         if bias_mode in [0, 1]:
             self.profile.control_voltage_bias = bias_mode
             callback(True)
