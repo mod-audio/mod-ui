@@ -790,6 +790,18 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+        # Stop again
+        stop = 0
+        msg = ("set_play_status {0}\00".format(stop)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
     def test_set_display_brightness_full(self):
         #      "set_display_brightness": [int]
         msg = ("set_display_brightness {0}\00".format(4)).encode("utf-8")

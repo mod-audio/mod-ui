@@ -3801,10 +3801,16 @@ _:b%i
         else:
             callback(False)
 
-    def hmi_set_play_status(self, state, callback):
-        """TODO."""
-        # TODO: implement
-        callback(True)
+    def hmi_set_play_status(self, play_status, callback):
+        """Set the transport state."""
+        if play_status in [True, False]:
+            self.transport_rolling = play_status
+            self.send_notmodified(
+                "transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm)
+            )
+            callback(True)
+        else:
+            callback(False)
 
     def hmi_get_tuner_mute(self, callback):
         """Return if the tuner lets audio through or not."""
