@@ -316,8 +316,7 @@ class Session(object):
 
         if self.hmi.initialized:
             def clear_hmi(ok):
-                self.host.hmi_clear(reset_host)
-                # self.hmi.clear(reset_host)
+                self.hmi.clear(reset_host)
             self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:
             reset_host(True)

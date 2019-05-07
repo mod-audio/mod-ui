@@ -63,6 +63,8 @@ class HMI(object):
         self.queue_idle = True
         self.initialized = False
         self.ioloop = ioloop.IOLoop.instance()
+        hw_actuators = get_hardware_actuators()
+        self.hw_ids = [actuator['id'] for actuator in hw_actuators]
         self.init(callback)
 
     # this can be overriden by subclasses to avoid any connection in DEV mode
@@ -326,6 +328,4 @@ class HMI(object):
     # new messages
 
     def clear(self, callback):
-        hw_actuators = get_hardware_actuators()
-        hw_ids = [actuator['id'] for actuator in hw_actuators]
-        self.control_rm(hw_ids, callback)
+        self.control_rm(self.hw_ids, callback)

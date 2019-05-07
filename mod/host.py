@@ -975,8 +975,7 @@ class Host(object):
                         self.send_notmodified("feature_enable processing 1")
 
                     def hmi_clear_callback(ok):
-                        # self.hmi.clear(load_callback)
-                        self.hmi_clear(load_callback)
+                        self.hmi.clear(load_callback)
 
                     self.reset(hmi_clear_callback)
             elif channel == self.profile.midi_prgch_snapshot_channel:
@@ -3163,10 +3162,6 @@ _:b%i
         self.pedalboard_modified = True
         self.addressings.load_addr(actuator_uri, addressing, callback)
 
-    def hmi_clear(self, callback):
-        hw_ids = [actuator['id'] for actuator in self.addressings.hw_actuators]
-        self.hmi.control_rm(hw_ids, callback)
-
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
@@ -3314,8 +3309,7 @@ _:b%i
             self.setNavigateWithFootswitches(self.profile.bank_footswitch_navigation, load_callback)
 
         def hmi_clear_callback(ok):
-            self.hmi_clear(footswitch_callback)
-            # self.hmi.clear(footswitch_callback)
+            self.hmi.clear(footswitch_callback)
 
         if not self.processing_pending_flag:
             self.processing_pending_flag = True
