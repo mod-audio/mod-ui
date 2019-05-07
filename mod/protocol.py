@@ -118,10 +118,10 @@ class Protocol(object):
         "set_mv_channel": [int],
         
         # Stereo Link for inputs and outputs
-        "get_in_chan_link": [int],
-        "set_in_chan_link": [int, int],
-        "get_out_chan_link": [int],
-        "set_out_chan_link": [int, int],
+        "get_in_chan_link": [],
+        "set_in_chan_link": [int],
+        "get_out_chan_link": [],
+        "set_out_chan_link": [int],
 
         # Configurable in- and output
         "get_exp_cv": [],

@@ -3723,58 +3723,48 @@ _:b%i
         else:
             callback(False)
 
-    # Given a odd channel number `oddch` it returns if the following
-    # even channel is linked to it or not as "resp 0" or "resp -1".
-    def hmi_get_in_chan_link(self, oddch, callback):
-        """Get the link state of a channel pair."""
-        logging.info("hmi get input channel link state")
-        if oddch in [1]:
-            if self.profile.input_stereo_link:
-                link = 1
-            else:
-                link = 0
-            callback(True, link)
-        else:
-            callback(False)
 
-    # Given a odd channel number `oddch` the link state with the
-    # following even channel is setlinked to `link`. Returns "resp -1"
-    # on error, else "resp 0".
-    def hmi_set_in_chan_link(self, oddch, link, callback):
-        """Set the link state of a channel pair."""
-        logging.info("hmi get input channel {0} link state to {1}".format(oddch, link))
-        if oddch in [1] and link in [0,1]:
-            self.profile.input_stereo_link = link
+    def hmi_get_in_chan_link(self, callback):
+        """Get the link state of the input channel pair."""
+        if self.profile.input_stereo_link:
+            link = 1
+        else:
+            link = 0
+        callback(True, link)
+
+        
+    def hmi_set_in_chan_link(self, link_mode, callback):
+        """Set the link state of the input channel pair."""
+        if link_mode in [0,1]:
+            if link_mode == 1:
+                self.profile.input_stereo_link = True
+            else:
+                self.profile.input_stereo_link = False
             callback(True)
         else:
             callback(False)
 
 
-    # Given a odd channel number `oddch` it returns if the following
-    # even channel is linked to it or not as "resp 0" or "resp -1".
-    def hmi_get_out_chan_link(self, oddch, callback):
-        """Get the link state of a channel pair."""
-        logging.info("hmi get output channel link state")
-        if oddch in [1]:
-            if self.profile.output_stereo_link:
-                link = 1
-            else:
-                link = 0
-            callback(True, link)
+    def hmi_get_out_chan_link(self, callback):
+        """Get the link state of the output channel pair."""
+        if self.profile.output_stereo_link:
+            link = 1
         else:
-            callback(False)
+            link = 0
+        callback(True, link)
 
-    # Given a odd channel number `oddch` the link state with the
-    # following even channel is setlinked to `link`. Returns "resp -1"
-    # on error, else "resp 0".
-    def hmi_set_out_chan_link(self, oddch, link, callback):
-        """Set the link state of a channel pair."""
-        logging.info("hmi get output channel {0} link state to {1}".format(oddch, link))
-        if oddch in [1] and link in [0,1]:
-            self.profile.output_stereo_link = link
+
+    def hmi_set_out_chan_link(self, link, callback):
+        """Set the link state of the output channel pair."""
+        if link in [0,1]:
+            if link == 1:
+                self.profile.output_stereo_link = True
+            else:
+                self.profile.output_stereo_link = False
             callback(True)
         else:
             callback(False)
+
 
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
