@@ -3823,8 +3823,7 @@ _:b%i
 
     def hmi_get_pb_name(self, callback):
         """Return the name of the currently loaded pedalboard."""
-        # TODO
-        callback(True, "tmp") # string
+        callback(True, self.pedalboard_name)
 
     def hmi_get_exp_mode(self, callback):
         """Return, if the input is set to expression pedal or control voltage."""

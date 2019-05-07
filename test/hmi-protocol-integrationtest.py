@@ -839,8 +839,6 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")            
 
-            
-    # TODO: Deprecated?
     def test_get_pb_name(self):
         msg = ("get_pb_name\00").encode("utf-8")
         self.ser.write(msg)
@@ -848,9 +846,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            #self.assertEqual(resp, b'resp 0 Foobar\x00')
-            self.assertEqual(resp, b'resp 0 tmp\x00')
-            #print(resp)
+            self.assertEqual(resp, b'resp 0 Foobar\x00')
         else:
             self.fail("No response")
             
