@@ -21,6 +21,7 @@ from tornado.iostream import BaseIOStream
 from tornado import ioloop
 
 from mod.protocol import Protocol, ProtocolError
+from mod import get_hardware_actuators
 
 import serial, logging
 import time
@@ -83,8 +84,7 @@ class HMI(object):
         # calls ping until ok is received
         def ping_callback(ok):
             if ok:
-                clear_callback(ok)
-                # self.clear(clear_callback)
+                self.clear(clear_callback)
             else:
                 self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
 
@@ -260,7 +260,7 @@ class HMI(object):
         cb = callback
         if not actuator_uri.startswith("/hmi/footswitch"):
             cb = control_add_callback
-            
+
         self.send('control_add %d %s %d %s %f %f %f %d %s' %
                   ( hw_id,
                     label,
@@ -325,5 +325,7 @@ class HMI(object):
 
     # new messages
 
-    # def clear(self, callback):
-    #     self.send("control_rm -1 :all", callback)
+    def clear(self, callback):
+        hw_actuators = get_hardware_actuators()
+        hw_ids = [actuator['id'] for actuator in hw_actuators]
+        self.control_rm(hw_ids, callback)
