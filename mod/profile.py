@@ -42,7 +42,7 @@ class Profile:
     configurable_input_mode = 0 # 0 expression pedal, 1 control voltage input
     configurable_output_mode = 0 # 0 headphone, 1 control voltage
 
-    display_brightness = 50 # percentage in [0,25,50,75,100]
+    display_brightness = 4 # percentage in dict{0: 0%, 1: 25%, 2: 50%, 3:75% , 4:100%}
 
     master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
                                    # for master linked to out 2; 2 for
