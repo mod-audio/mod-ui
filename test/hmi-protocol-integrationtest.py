@@ -278,83 +278,81 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")            
         
-    ## TODO Fails because `set_*` does not work!
-    # def test_get_tempo_bpb(self):
-    #     #      "get_tempo_bpb": [],
-    #     msg = ("get_tempo_bpb\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
+    def test_get_tempo_bpb(self):
+        #      "get_tempo_bpb": [],
+        msg = ("get_tempo_bpb\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 4.0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 4.0\x00')
+        else:
+            self.fail("No response")
 
 
-    # def test_set_tempo_bpb_02(self):
-    #     # Note: This test depends on get_tempo_bpb!
-    #     current_tempo = None
+    def test_set_tempo_bpb_02(self):
+        # Note: This test depends on get_tempo_bpb!
         
-    #     # Get the current tempo
-    #     msg = ("get_tempo_bpb\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         tmpstr = resp.decode("utf-8").split(' ')
-    #         current_beats = float(tmpstr[2].strip('\x00'))
-    #         self.assertEqual(current_beats, 4.0)
-    #     else:
-    #         self.fail("No response")
+        msg = ("get_tempo_bpb\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            tmpstr = resp.decode("utf-8").split(' ')
+            current_beats = float(tmpstr[2].strip('\x00'))
+            self.assertEqual(current_beats, 4.0)
+        else:
+            self.fail("No response")
 
-    #     # Increase the current tempo by 3 Beats
-    #     #      "set_tempo_bpb": [float],        
-    #     msg = ("set_tempo_bpb {0}\00").format(current_beats+3).encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush();
+        #      "set_tempo_bpb": [float]
+        new_beat_count = 7
+        msg = ("set_tempo_bpb {0}\00").format(new_beat_count).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
-    #     # Check the new beats
-    #     msg = ("get_tempo_bpb\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         tmpstr = resp.decode("utf-8").split(' ')
-    #         current_tempo = float(tmpstr[2].strip('\x00'))
-    #         self.assertEqual(current_beats, 7.0)
-    #     else:
-    #         self.fail("No response")
+        # Check the new beats
+        msg = ("get_tempo_bpb\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            tmpstr = resp.decode("utf-8").split(' ')
+            current_beats = float(tmpstr[2].strip('\x00'))
+            self.assertEqual(current_beats, new_beat_count)
+        else:
+            self.fail("No response")
 
-    #     # Set it back to 4 BPB. So running this test-suite again
-    #     # will not fail on `get_tempo_bpb`.
-    #     msg = ("set_tempo_bpb {0}\00").format(4).encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush();
+        # Set it back to 4 BPB. So running this test-suite again
+        # will not fail on `get_tempo_bpb`.
+        beats = 4
+        msg = ("set_tempo_bpb {0}\00").format(beats).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
         
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00')
-    #     else:
-    #         self.fail("No response")
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
-    #     # Check the beats again
-    #     msg = ("get_tempo_bpb\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         tmpstr = resp.decode("utf-8").split(' ')
-    #         current_beats = float(tmpstr[2].strip('\x00'))
-    #         self.assertEqual(current_beats, 4)
-    #     else:
-    #         self.fail("No response")
+        # Check the beats again
+        msg = ("get_tempo_bpb\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            tmpstr = resp.decode("utf-8").split(' ')
+            current_beats = float(tmpstr[2].strip('\x00'))
+            self.assertEqual(current_beats, beats)
+        else:
+            self.fail("No response")
 
 
     # # TODO "tuner": [str], test more possible strings!
