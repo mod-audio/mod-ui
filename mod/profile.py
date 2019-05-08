@@ -31,7 +31,9 @@ class Profile:
     # In hardware we have a gain stage and fine level parameters. For
     # the user it should be just one continuous value range.  The
     # function to translate between the two domains must be bijective,
-    # so we can store just the value form the user domain.    
+    # so we can store just the value form the user domain.
+    #
+    # 0: "0dB", 1: "6dB", 2: "15dB", 3: "20dB"
     gain_in_1 = 0
     gain_in_2 = 0
     gain_out_1 = 0
@@ -41,8 +43,6 @@ class Profile:
     
     configurable_input_mode = 0 # 0 expression pedal, 1 control voltage input
     configurable_output_mode = 0 # 0 headphone, 1 control voltage
-
-    display_brightness = 4 # percentage in dict{0: 0%, 1: 25%, 2: 50%, 3:75% , 4:100%}
 
     master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
                                    # for master linked to out 2; 2 for

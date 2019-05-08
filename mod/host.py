@@ -3766,14 +3766,14 @@ _:b%i
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.info("hmi get display brightness")
-        value = self.profile.display_brightness
+        value = 0 # TODO
         callback(True, value)
 
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.info("hmi set display brightness to {0}".format(brightness))
         if brightness in [0, 1, 2, 3, 4]:
-            self.profile.display_brightness = brightness
+            # TODO = brightness
             callback(True)
         else:
             callback(False)
