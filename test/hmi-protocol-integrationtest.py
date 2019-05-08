@@ -15,7 +15,20 @@ class TestHMIProtocol(unittest.TestCase):
         self.ser = serial.Serial(self.serial_path, 31250, timeout=0.1)
 
     ## Note: Try to keep the same order as in Protocol.COMMANDS!
+
+    def test_store_default_profile(self):
+        #      "store_profile": [str]
+        msg = ("store_profile Default\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
         
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+    
     def test_banks(self):
         msg = ("banks\00").encode("utf-8")
         self.ser.write(msg)
@@ -406,6 +419,16 @@ class TestHMIProtocol(unittest.TestCase):
             
 
     def test_current_profile(self):
+        # The profile has state. Reset the state by calling `retrieve`.
+        msg = ("store_profile CurrentProfileTest\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+        
         #      "get_current_profile"
         msg = ("get_current_profile\00").encode("utf-8")
         self.ser.write(msg)
@@ -413,7 +436,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0 Default\x00') # TODO: Profile not existing?
+            self.assertEqual(resp, b'resp 0 0 1\x00') # TOOD: Why does that fail on first run?
         else:
             self.fail("No response")
 
@@ -464,7 +487,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
+            self.assertEqual(resp, b'resp -1\x00')
         else:
             self.fail("No response")
             
@@ -490,7 +513,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
+            self.assertEqual(resp, b'resp -1\x00')
         else:
             self.fail("No response")
 
@@ -515,7 +538,7 @@ class TestHMIProtocol(unittest.TestCase):
         
         resp = self.ser.read_until('\x00', 100)
         if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
+            self.assertEqual(resp, b'resp -1\x00')
         else:
             self.fail("No response")
             
@@ -616,7 +639,28 @@ class TestHMIProtocol(unittest.TestCase):
 
     def test_set_cv_bias(self):
         """set_cv_bias: [int]"""
+        # The profile has state. Reset the state by calling `retrieve`.
+        msg = ("retrieve_profile Default\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
         default = 0
+        msg = ("set_cv_bias {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")            
+
+        default = 1
         msg = ("set_cv_bias {0}\00".format(default)).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
@@ -627,6 +671,16 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")            
 
+        default = 0
+        msg = ("set_cv_bias {0}\00".format(default)).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
 
     def test_get_cv_bias(self):
         """get_cv_bias: []"""
@@ -656,8 +710,31 @@ class TestHMIProtocol(unittest.TestCase):
 
     # TODO: Test if this changes something
     def test_set_clk_src_01(self):
+        # The profile has state. Reset the state by calling `retrieve`.
+        msg = ("retrieve_profile Default\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
         # First set this to the default value!
-        default = 0        
+        default = 0
+        #      "set_clk_src": [int],        
+        msg = ("set_clk_src {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")
+
+        # Change it
+        default = 1
         #      "set_clk_src": [int],        
         msg = ("set_clk_src {0}\00").format(default).encode("utf-8")
         self.ser.write(msg)
@@ -668,7 +745,20 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")
-       
+
+        # Change it back
+        default = 0
+        #      "set_clk_src": [int],        
+        msg = ("set_clk_src {0}\00").format(default).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+            
 
     def test_get_snapshot_prgch(self):
         #      "get_snapshot_prgch": [],
@@ -684,7 +774,43 @@ class TestHMIProtocol(unittest.TestCase):
 
     # TODO: Test if this changes something
     def test_set_snapshot_prgch_01(self):
+        # The profile has state. Reset the state by calling `store`.
+        msg = ("retrieve_profile Default\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+        
         # First set this to the default value!
+        default_channel = 14
+        #      "set_snapshot_prgch": [int],        
+        msg = ("set_snapshot_prgch {0}\00").format(default_channel).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00') # Because it was not changed!
+        else:
+            self.fail("No response")
+
+        # Now change it
+        default_channel = 2
+        #      "set_snapshot_prgch": [int],        
+        msg = ("set_snapshot_prgch {0}\00").format(default_channel).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+        # Change it back
         default_channel = 14
         #      "set_snapshot_prgch": [int],        
         msg = ("set_snapshot_prgch {0}\00").format(default_channel).encode("utf-8")
@@ -696,6 +822,7 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00')
         else:
             self.fail("No response")
+            
     
     def test_get_send_midi_clk(self):
         #      "get_send_midi_clk": []
@@ -726,6 +853,16 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
     def test_get_pb_prgch(self):
+        # The profile has state. Reset the state by calling `store`.
+        msg = ("retrieve_profile Foobar\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+        
         #      "get_pedalboard_prgch": [],
         msg = ("get_pb_prgch\00").encode("utf-8")
         self.ser.write(msg)
@@ -737,9 +874,45 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # TODO: Test if this changes something
+
     def test_set_pb_prgch_01(self):
+        # The profile has state. Reset the state by calling `store`.
+        msg = ("retrieve_profile Foobar\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
         # First set this to the default value!
+        default_channel = 15
+        #      "set_pb_prgch": [int],
+        msg = ("set_pb_prgch {0}\00").format(default_channel).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp -1\x00')
+        else:
+            self.fail("No response")    
+
+        # Change it.
+        default_channel = 12
+        #      "set_pb_prgch": [int],
+        msg = ("set_pb_prgch {0}\00").format(default_channel).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")    
+
+        # Change it back.
         default_channel = 15
         #      "set_pb_prgch": [int],
         msg = ("set_pb_prgch {0}\00").format(default_channel).encode("utf-8")
@@ -750,8 +923,9 @@ class TestHMIProtocol(unittest.TestCase):
         if (resp):
             self.assertEqual(resp, b'resp 0\x00')
         else:
-            self.fail("No response")            
-           
+            self.fail("No response")    
+            
+            
     def test_get_play_status(self):
         #      "get_play_status": []        
         msg = ("get_play_status\00").encode("utf-8")
@@ -947,10 +1121,6 @@ class TestHMIProtocol(unittest.TestCase):
     #         self.fail("No response")
 
     
-
-
-            
-        
 if __name__ == '__main__':
     # Handle command line arguments
     parser = argparse.ArgumentParser(description='Test the HMI protocol implemented in mod-ui.')
