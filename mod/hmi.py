@@ -21,7 +21,7 @@ from tornado.iostream import BaseIOStream
 from tornado import ioloop
 
 from mod.protocol import Protocol, ProtocolError
-from mod import get_hardware_actuators
+from mod import get_hardware_actuators, get_hardware_descriptor
 
 import serial, logging
 import time
@@ -260,7 +260,9 @@ class HMI(object):
             self.control_set_index(hw_id, index, n_controllers, callback)
 
         cb = callback
-        if not actuator_uri.startswith("/hmi/footswitch"):
+        architecture = get_hardware_descriptor().get('architecture', 'Unknown')
+
+        if not actuator_uri.startswith("/hmi/footswitch") and architecture == 'duo':
             cb = control_add_callback
 
         self.send('control_add %d %s %d %s %f %f %f %d %s' %
