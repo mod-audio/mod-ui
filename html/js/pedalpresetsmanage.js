@@ -220,11 +220,6 @@ function PedalboardPresetsManager(options) {
         var selectId = $(this).val()
         var prtitle  = $(this).html()
 
-        if (options.currentlyAddressed) {
-            options.pedalPresetsList.find('option:selected').removeProp('selected')
-            return self.prevent(e)
-        }
-
         $.ajax({
             url: '/pedalpreset/load',
             type: 'GET',
