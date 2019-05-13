@@ -1275,6 +1275,8 @@ class Host(object):
     def paramhmi_set(self, instance, portsymbol, value, callback):
         if (instance == 'pedalboard'):
             test = '/' + instance
+        elif (instance.startswith('/graph')):
+            test = instance
         else:
             test =  '/graph/' + instance
         instance_id = self.mapper.get_id_without_creating(test)
@@ -1762,6 +1764,7 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
+        self.paramhmi_set('pedalboard', ':presets', idx, None)
         self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
