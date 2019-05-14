@@ -1041,7 +1041,7 @@ class Host(object):
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
             if enable == 1:
-                self.profile.set_midi_prgch_snapshot_channel(channel)
+                self.profile.set_midi_prgch_channel("snapshot", channel)
             else:
                 self.profile.set_midi_prgch_channel("snapshot", -1) # off
 
