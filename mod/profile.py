@@ -61,7 +61,7 @@ class Profile:
     def get_footswitch_navigation(self, what):
         result = None
         if what in ["bank", "snapshot"]:
-            result = __footswitch_navigation[what]
+            result = self.__footswitch_navigation[what]
         return result
     
     __stereo_link = dict()
