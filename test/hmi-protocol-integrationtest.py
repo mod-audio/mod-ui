@@ -976,43 +976,6 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-    # def test_set_display_brightness_full(self):
-    #     #      "set_display_brightness": [int]
-    #     msg = ("set_display_brightness {0}\00".format(4)).encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00')
-    #     else:
-    #         self.fail("No response")
-
-    # def test_set_display_brightness_half(self):
-    #     #      "set_display_brightness": [int]
-    #     msg = ("set_display_brightness {0}\00".format(2)).encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0\x00')
-    #     else:
-    #         self.fail("No response")
-
-    # # TODO: depends on the previous test!
-    # def test_get_display_brightness(self):
-    #     #      "get_display_brightness": [],        
-    #     msg = ("get_display_brightness\00").encode("utf-8")
-    #     self.ser.write(msg)
-    #     self.ser.flush()
-        
-    #     resp = self.ser.read_until('\x00', 100)
-    #     if (resp):
-    #         self.assertEqual(resp, b'resp 0 4\x00')
-    #     else:
-    #         self.fail("No response")            
-
     def test_get_pb_name(self):
         msg = ("get_pb_name\00").encode("utf-8")
         self.ser.write(msg)
@@ -1120,6 +1083,18 @@ class TestHMIProtocol(unittest.TestCase):
     #     else:
     #         self.fail("No response")
 
+    def test_pedalboard_reset(self):
+        """pedalboard_reset: []"""
+        msg = ("pedalboard_reset\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
+        else:
+            self.fail("No response")
+    
     
 if __name__ == '__main__':
     # Handle command line arguments

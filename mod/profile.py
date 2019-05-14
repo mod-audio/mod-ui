@@ -225,22 +225,21 @@ class Profile:
         data = {
             "index": index,
             "headphone_volume": self.__headphone_volume,
-            "midi_prgch_pedalboard_channel": self.__midi_prgch_pedalboard_channel,
-            "midi_prgch_snapshot_channel": self.__midi_prgch_snapshot_channel,
-            "bank_footswitch_navigation": self.__bank_footswitch_navigation,
-            "snapshot_footswitch_navigation": self.__snapshot_footswitch_navigation,
-            "input_stereo_link": self.__input_stereo_link,
-            "output_stereo_link": self.__output_stereo_link,
+            "midi_prgch_pedalboard_channel": self.__midi_prgch_channel["pedalboard"],
+            "midi_prgch_snapshot_channel": self.__midi_prgch_channel["snapshot"],
+            "bank_footswitch_navigation": self.__footswitch_navigation["bank"],
+            "snapshot_footswitch_navigation": self.__footswitch_navigation["snapshot"],
+            "input_stereo_link": self.__stereo_link["input"],
+            "output_stereo_link": self.__stereo_link["output"],
             "send_midi_beat_clock": self.__send_midi_beat_clock,
             "sync_mode": self.__sync_mode,
-            "gain_in_1": self.__gain_in_1,
-            "gain_in_2": self.__gain_in_2,
-            "gain_out_1": self.__gain_out_1,
-            "gain_out_2": self.__gain_out_2,
+            "gain_in_1": self.__gain["input"][0],
+            "gain_in_2": self.__gain["input"][1],
+            "gain_out_1": self.__gain["output"][0],
+            "gain_out_2": self.__gain["output"][1],
             "headphone_volume": self.__headphone_volume,
             "configurable_input_mode": self.__configurable_input_mode,
             "configurable_output_mode": self.__configurable_output_mode,
-            "display_brightness": self.__display_brightness,
             "quick_bypass_mode": self.__quick_bypass_mode,
             "control_voltage_bias": self.__control_voltage_bias,
         }
@@ -263,22 +262,21 @@ class Profile:
 
             self.__index = data["index"]
             self.__headphone_volume = data["headphone_volume"]
-            self.__midi_prgch_pedalboard_channel = data["midi_prgch_pedalboard_channel"]
-            self.__midi_prgch_snapshot_channel = data["midi_prgch_snapshot_channel"]
-            self.__bank_footswitch_navigation = data["bank_footswitch_navigation"]
-            self.__snapshot_footswitch_navigation = data["snapshot_footswitch_navigation"]
-            self.__input_stereo_link = data["input_stereo_link"]
-            self.__output_stereo_link = data["output_stereo_link"]
+            self.__midi_prgch_channel["pedalboard"] = data["midi_prgch_pedalboard_channel"]
+            self.__midi_prgch_channel["snapshot"] = data["midi_prgch_snapshot_channel"]
+            self.__footswitch_navigation["bank"] = data["bank_footswitch_navigation"]
+            self.__footswitch_navigation["snapshot"] = data["snapshot_footswitch_navigation"]
+            self.__stereo_link["input"] = data["input_stereo_link"]
+            self.__stereo_link["output"] = data["output_stereo_link"]
             self.__send_midi_beat_clock = data["send_midi_beat_clock"]
             self.__sync_mode = data["sync_mode"]
-            self.__gain_in_1 = data["gain_in_1"]
-            self.__gain_in_2 = data["gain_in_2"]
-            self.__gain_out_1 = data["gain_out_1"]
-            self.__gain_out_2 = data["gain_out_2"]
+            self.__gain["input"][0] = data["gain_in_1"]
+            self.__gain["input"][1] = data["gain_in_2"]
+            self.__gain["output"][0] = data["gain_out_1"]
+            self.__gain["output"][1] = data["gain_out_2"]
             self.__headphone_volume = data["headphone_volume"]
             self.__configurable_input_mode = data["configurable_input_mode"]
             self.__configurable_output_mode = data["configurable_output_mode"]
-            self.__display_brightness = data["display_brightness"]
             self.__quick_bypass_mode = data["quick_bypass_mode"]
             self.__control_voltage_bias = data["control_voltage_bias"]
 
