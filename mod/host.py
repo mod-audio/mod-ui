@@ -1076,8 +1076,8 @@ class Host(object):
 
             if self.transport_sync == "link":
                 self.set_link_enabled(True)
-            # if self.transport_sync == "midi_clock_slave":
-            #     self.set_midi_clock_slave_enabled(True)
+            if self.transport_sync == "midi_clock_slave":
+                self.set_midi_clock_slave_enabled(True)
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
