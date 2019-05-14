@@ -66,6 +66,8 @@ from mod.tuner import find_freqnotecents
 
 from mod.profile import Profile
 
+# logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
 BANK_CONFIG_PEDALBOARD_UP   = 2
@@ -2802,7 +2804,7 @@ _:b%i
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
     lv2:index %i ;
-    lv2:name "Serial MIDI In" ;
+    lv2:name "DIN MIDI In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "serial_midi_in" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -2818,7 +2820,7 @@ _:b%i
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
     lv2:index %i ;
-    lv2:name "Serial MIDI In" ;
+    lv2:name "DIN MIDI In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "serial_midi_out" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -3947,7 +3949,7 @@ _:b%i
 
         # add
         for port_symbol in newDevs:
-            if port_symbol in midiportIds:
+            if not(self.midi_aggregated_mode and not(midi_aggregated_mode)) and port_symbol in midiportIds:
                 continue
 
             if ";" in port_symbol:
@@ -3955,61 +3957,58 @@ _:b%i
                 title_in  = self.get_port_name_alias(inp)
                 title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
-                add_port(inp, title_in, False)
-                add_port(outp, title_out, True)
+                if not midi_aggregated_mode:
+                    add_port(inp, title_in, False)
+                    add_port(outp, title_out, True)
             else:
                 title = self.get_port_name_alias(port_symbol)
-                add_port(port_symbol, title, False)
+                if not midi_aggregated_mode:
+                    add_port(port_symbol, title, False)
 
             self.midiports.append([port_symbol, title, []])
 
         # MIDI mode
         if self.midi_aggregated_mode == midi_aggregated_mode:
             return
+
+        # from legacy to aggregated mode
+        if midi_aggregated_mode:
+            # Add "All MIDI In/Out" ports
+            if self.hasMidiMergerOut:
+                self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+            if self.hasMidiBroadcasterIn:
+                self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+
+            # Remove Serial MIDI ports
+            self.msg_callback("remove_hw_port /graph/serial_midi_in")
+            self.msg_callback("remove_hw_port /graph/serial_midi_out")
+
+            # Remove USB MIDI ports
+            for i in reversed(range(len(self.midiports))):
+                port_symbol, port_alias, _ = self.midiports[i]
+
+                if ";" in port_symbol:
+                    inp, outp = port_symbol.split(";",1)
+                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
+                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
+                else:
+                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
+
+
+        # from aggregated to legacy mode
+        else:
+            # Remove "All MIDI In/Out" ports
+            if self.hasMidiMergerOut:
+                self.msg_callback("remove_hw_port /graph/midi_merger_out")
+            if self.hasMidiBroadcasterIn:
+                self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
+
+            # Add Serial MIDI ports
+            if self.hasSerialMidiIn:
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+            if self.hasSerialMidiOut:
+                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+
         self.midi_aggregated_mode = midi_aggregated_mode
 
-        # MIDI In
-        if midi_aggregated_mode:
-            if self.hasMidiMergerOut:
-                self.send_modified("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-        else:
-            if self.hasSerialMidiIn:
-                self.send_modified("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
-
-            ports = get_jack_hardware_ports(False, False)
-            for i in range(len(ports)):
-                name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                    continue
-                alias = get_jack_port_alias(name)
-
-                if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-                else:
-                    title = name.split(":",1)[-1].title()
-                title = title.replace(" ","_")
-                self.send_modified("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
-
-        # MIDI Out
-        if midi_aggregated_mode:
-            if self.hasMidiBroadcasterIn:
-                self.send_modified("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-            pass
-
-        else:
-            if self.hasSerialMidiOut:
-                self.send_modified("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
-
-            ports = get_jack_hardware_ports(False, True)
-            for i in range(len(ports)):
-                name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                    continue
-                alias = get_jack_port_alias(name)
-                if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-                else:
-                    title = name.split(":",1)[-1].title()
-                title = title.replace(" ","_")
-                self.send_modified("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
     # -----------------------------------------------------------------------------------------------------------------
