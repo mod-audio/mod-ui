@@ -400,6 +400,18 @@ function GUI(effect, options) {
         }
     }
 
+    this.addressPort = function (symbol) {
+      console.log("address")
+      console.log(symbol)
+      var port = self.controls[symbol]
+      if (symbol !== ":presets") {
+        // add "addressed" class to all related widgets
+        for (var i in port.widgets) {
+            port.widgets[i].controlWidget('address')
+        }
+      }
+    }
+
     this.disable = function (symbol) {
         var port = self.controls[symbol]
         port.enabled = false
@@ -1279,7 +1291,10 @@ var baseWidget = {
         $(this).addClass('disabled').data('enabled', false)
     },
     enable: function () {
-        $(this).removeClass('disabled').data('enabled', true)
+        $(this).removeClass('addressed').data('enabled', true)
+    },
+    address: function () {
+        $(this).addClass('addressed').data('enabled', true)
     },
 
     valueFromSteps: function (steps) {

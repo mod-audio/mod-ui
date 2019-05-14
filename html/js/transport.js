@@ -259,13 +259,13 @@ function TransportControls(options) {
 
     this.setControlEnabled = function (portSymbol, enabled) {
         if (portSymbol == ":bpb") {
-            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
-            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', enabled)
+            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'address')
+            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', true)
         } else if (portSymbol == ":bpm") {
-            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
-            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', enabled)
+            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'address')
+            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', true)
         } else if (portSymbol == ":rolling") {
-            self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'disable')
+            self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'address')
         }
     }
 
