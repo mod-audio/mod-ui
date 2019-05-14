@@ -284,12 +284,11 @@ function TransportControls(options) {
 
         if (set_control) {
             self.rollingPort.widget.controlWidget('setValue', value, true)
-        } else {
-            portSymbol = '/pedalboard/:rolling'
-            if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
-                paramchange = (portSymbol + '/' + value)
-                desktop.ParameterSet(paramchange)
-            }
+        }
+        portSymbol = '/pedalboard/:rolling'
+        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+            paramchange = (portSymbol + '/' + value)
+            desktop.ParameterSet(paramchange)
         }
 
         if (playing) {
@@ -313,15 +312,14 @@ function TransportControls(options) {
 
         if (set_control) {
             self.beatsPerBarPort.widget.controlWidget('setValue', bpb, true)
-        } else {
-            portSymbol = '/pedalboard/:bpb'
-            if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
-                paramchange = (portSymbol + '/' + bpb)
-                desktop.ParameterSet(paramchange)
-            }
+        }
+        portSymbol = '/pedalboard/:bpb'
+        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+            paramchange = (portSymbol + '/' + bpb)
+            desktop.ParameterSet(paramchange)
         }
 
-        options.transportBPB.find(".mod-knob-current-value").html(text)
+      options.transportBPB.find(".mod-knob-current-value").html(text)
     }
 
     this.setBeatsPerMinuteValue = function (bpm, set_control) {
@@ -336,12 +334,11 @@ function TransportControls(options) {
 
         if (set_control) {
             self.beatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
-        } else {
-            portSymbol = '/pedalboard/:bpm'
-            if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
-                paramchange = (portSymbol + '/' + bpm)
-                desktop.ParameterSet(paramchange)
-            }
+        }
+        portSymbol = '/pedalboard/:bpm'
+        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+            paramchange = (portSymbol + '/' + bpm)
+            desktop.ParameterSet(paramchange)
         }
 
         options.transportButton.find('span').html(text)
