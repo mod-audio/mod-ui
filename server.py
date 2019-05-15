@@ -43,6 +43,7 @@ os.environ['MOD_DEVICE_KEY'] = join(DATA_DIR, 'rsa')
 os.environ['MOD_DEVICE_TAG'] = join(DATA_DIR, 'tag')
 os.environ['MOD_DEVICE_UID'] = join(DATA_DIR, 'uid')
 os.environ['MOD_API_KEY'] = join(DATA_DIR, 'mod_api_key.pub')
+os.environ['MOD_DEVICE_ARCHITECTURE'] = 'x86_64'
 
 create_dummy_credentials()
 

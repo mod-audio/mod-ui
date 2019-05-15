@@ -15,8 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var kTargetArchitecture = "duo"
-
 function InstallationQueue() {
     var self = this
 
@@ -42,7 +40,7 @@ function InstallationQueue() {
             success: function (data) {
                 var targetfiles = null
                 for (var i in data.files) {
-                    if (data.files[i].arch == kTargetArchitecture) {
+                    if (data.files[i].arch.toUpperCase() == ARCHITECTURE.toUpperCase()) {
                         targetfiles = data.files[i];
                         break;
                     }

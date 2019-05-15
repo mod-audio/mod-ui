@@ -44,7 +44,7 @@ from modtools.utils import (
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
-    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
+    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 
@@ -65,6 +65,8 @@ from mod.tuner import find_freqnotecents
 # logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 
 from mod.profile import Profile
+
+# logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
@@ -280,6 +282,8 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_truebypass_value", self.hmi_get_truebypass_value)
         Protocol.register_cmd_callback("set_truebypass_value", self.hmi_set_truebypass_value)
+        Protocol.register_cmd_callback("get_q_bypass", self.hmi_get_quick_bypass_mode)
+        Protocol.register_cmd_callback("set_q_bypass", self.hmi_set_quick_bypass_mode)
 
         Protocol.register_cmd_callback("get_tempo_bpm", self.hmi_get_tempo_bpm)
         Protocol.register_cmd_callback("set_tempo_bpm", self.hmi_set_tempo_bpm)
@@ -288,8 +292,8 @@ class Host(object):
 
         Protocol.register_cmd_callback("get_snapshot_prgch", self.hmi_get_snapshot_prgch)
         Protocol.register_cmd_callback("set_snapshot_prgch", self.hmi_set_snapshot_prgch)
-        Protocol.register_cmd_callback("get_bank_prgch", self.hmi_get_bank_prgch)
-        Protocol.register_cmd_callback("set_bank_prgch", self.hmi_set_bank_prgch)
+        Protocol.register_cmd_callback("get_pb_prgch", self.hmi_get_pedalboard_prgch)
+        Protocol.register_cmd_callback("set_pb_prgch", self.hmi_set_pedalboard_prgch)
 
         Protocol.register_cmd_callback("get_clk_src", self.hmi_get_clk_src)
         Protocol.register_cmd_callback("set_clk_src", self.hmi_set_clk_src)
@@ -297,6 +301,7 @@ class Host(object):
         Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
         Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
 
+        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)        
         Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
         Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
 
@@ -304,6 +309,11 @@ class Host(object):
         Protocol.register_cmd_callback("set_exp_cv", self.hmi_set_exp_cv)
         Protocol.register_cmd_callback("get_hp_cv", self.hmi_get_hp_cv)
         Protocol.register_cmd_callback("set_hp_cv", self.hmi_set_hp_cv)
+
+        Protocol.register_cmd_callback("get_exp_mode", self.hmi_get_exp_mode)
+        Protocol.register_cmd_callback("set_exp_mode", self.hmi_set_exp_mode)
+        Protocol.register_cmd_callback("get_cv_bias", self.hmi_get_control_voltage_bias)
+        Protocol.register_cmd_callback("set_cv_bias", self.hmi_set_control_voltage_bias)
 
         Protocol.register_cmd_callback("get_in_chan_link", self.hmi_get_in_chan_link)
         Protocol.register_cmd_callback("set_in_chan_link", self.hmi_set_in_chan_link)
@@ -313,14 +323,11 @@ class Host(object):
         Protocol.register_cmd_callback("get_display_brightness", self.hmi_get_display_brightness)
         Protocol.register_cmd_callback("set_display_brightness", self.hmi_set_display_brightness)
 
-        Protocol.register_cmd_callback("get_master_volume_channel_mode", self.hmi_get_master_volume_channel_mode)
-        Protocol.register_cmd_callback("set_master_volume_channel_mode", self.hmi_set_master_volume_channel_mode)
+        Protocol.register_cmd_callback("get_mv_channel", self.hmi_get_master_volume_channel_mode)
+        Protocol.register_cmd_callback("set_mv_channel", self.hmi_set_master_volume_channel_mode)
 
         Protocol.register_cmd_callback("get_play_status", self.hmi_get_play_status)
         Protocol.register_cmd_callback("set_play_status", self.hmi_set_play_status)
-
-        Protocol.register_cmd_callback("get_master_volume_channel", self.hmi_get_master_volume_channel)
-        Protocol.register_cmd_callback("set_master_volume_channel", self.hmi_set_master_volume_channel)
 
         Protocol.register_cmd_callback("get_tuner_mute", self.hmi_get_tuner_mute)
         Protocol.register_cmd_callback("set_tuner_mute", self.hmi_set_tuner_mute)
@@ -640,8 +647,8 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.midi_prgch_bank_channel))
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.midi_prgch_snapshot_channel))
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.get_midi_prgch_channel("pedalboard")))
+        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.get_midi_prgch_channel("snapshot")))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -795,11 +802,11 @@ class Host(object):
 
         def midi_prog_callback(ok):
             logging.info("[host] midi_prog_callback called")
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.midi_prgch_bank_channel, callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"), callback, datatype='boolean')
 
         def initial_state_callback(ok):
             # TODO: not mutually exclusive.
-            cb = footswitch_callback if self.profile.bank_footswitch_navigation else midi_prog_callback
+            cb = footswitch_callback if self.profile.get_footswitch_navigation("bank") else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         logging.info("[host] JUST A TEST")
@@ -958,7 +965,7 @@ class Host(object):
             program  = int(msg_data[0])
             channel  = int(msg_data[1])
 
-            if channel == self.profile.midi_prgch_bank_channel:
+            if channel == self.profile.get_midi_prgch_channel("pedalboard"):
                 bank_id  = self.bank_id
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
                     pedalboards = self.banks[self.bank_id-1]['pedalboards']
@@ -978,7 +985,7 @@ class Host(object):
                         self.hmi.clear(load_callback)
 
                     self.reset(hmi_clear_callback)
-            elif channel == self.profile.midi_prgch_snapshot_channel:
+            elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 yield gen.Task(self.snapshot_load, program)
                 pass
 
@@ -1026,18 +1033,18 @@ class Host(object):
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
             if enable == 1:
-                self.profile.set_midi_prgch_bank_channel(channel)
+                self.profile.set_midi_prgch_channel("pedalboard", channel)
             else:
-                self.profile.midi_prgch_bank_channel = -1 # off
+                self.profile.set_midi_prgch_channel("pedalboard", -1) # off
 
         elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
             if enable == 1:
-                self.profile.set_midi_prgch_snapshot_channel(channel)
+                self.profile.set_midi_prgch_channel("snapshot", channel)
             else:
-                self.profile.midi_prgch_snapshot_channel = -1 # off
+                self.profile.set_midi_prgch_channel("snapshot", -1) # off
 
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
@@ -1176,8 +1183,8 @@ class Host(object):
 
             if self.transport_sync == "link":
                 self.set_link_enabled(True)
-            # if self.transport_sync == "midi_clock_slave":
-            #     self.set_midi_clock_slave_enabled(True)
+            if self.transport_sync == "midi_clock_slave":
+                self.set_midi_clock_slave_enabled(True)
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -2803,7 +2810,7 @@ _:b%i
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
     lv2:index %i ;
-    lv2:name "Serial MIDI In" ;
+    lv2:name "DIN MIDI In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "serial_midi_in" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -2819,7 +2826,7 @@ _:b%i
     atom:bufferType atom:Sequence ;
     atom:supports midi:MidiEvent ;
     lv2:index %i ;
-    lv2:name "Serial MIDI In" ;
+    lv2:name "DIN MIDI In" ;
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "serial_midi_out" ;
     <http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
@@ -3005,11 +3012,11 @@ _:b%i
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
     def set_midi_program_change_pedalboard_bank_channel(self, channel):
-        if self.profile.set_midi_prgch_bank_channel(channel):
+        if self.profile.set_midi_prgch_channel("bank", channel):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
 
     def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
-        if self.profile.set_midi_prgch_snapshot_channel(channel):
+        if self.profile.set_midi_prgch_channel("snapshot", channel):
             self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
 
 
@@ -3302,11 +3309,12 @@ _:b%i
         def load_callback(ok):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.bank_footswitch_navigation), profile.midi_prgch_bank_channel), loaded_callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
+                                                                                             self.profile.get_midi_prgch_channel("bank")), loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             #self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
-            self.setNavigateWithFootswitches(self.profile.bank_footswitch_navigation, load_callback)
+            self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
 
         def hmi_clear_callback(ok):
             self.hmi.clear(footswitch_callback)
@@ -3567,17 +3575,28 @@ _:b%i
     def hmi_set_truebypass_value(self, right, bypassed, callback):
         """Change the True Bypass setting of the given channel."""
         logging.info("hmi true bypass set to ({0}, {1})".format(right, bypassed))
-
         set_truebypass_value(right, bypassed)
-
-        # TODO should it return some more status?
         callback(True)
 
+    def hmi_get_quick_bypass_mode(self, callback):
+        """Query the Quick Bypass Mode setting."""
+        logging.info("hmi quick bypass mode get.")
+
+        result = self.profile.get_quick_bypass_mode()
+        callback(True, int(result))
+
+    def hmi_set_quick_bypass_mode(self, mode, callback):
+        """Change the Quick Bypass Mode setting to `mode`."""
+        logging.info("hmi quick bypass mode set to `{0}`".format(mode))
+
+        self.profile.set_quick_bypass_mode(mode)
+        callback(True)
+        
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
         bpm = get_jack_data(True)['bpm']
         logging.info("hmi get tempo bpm: {0}".format(bpm))
-        callback(True, bpm)
+        callback(True, float(bpm))
 
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
@@ -3591,7 +3610,7 @@ _:b%i
         """Get the Jack Beats Per Bar."""
         logging.info("hmi tempo bpb get")
         bpb = get_jack_data(True)['bpb']
-        callback(True, bpb)
+        callback(True, float(bpb))
 
     def hmi_set_tempo_bpb(self, bpb, callback):
         """Set the Jack Beats Per Bar."""
@@ -3605,33 +3624,33 @@ _:b%i
         """Query the MIDI channel for selecting a snapshot via Program Change."""
         logging.info("hmi get snapshot channel")
 
-        channel = self.profile.midi_prgch_snapshot_channel
+        channel = self.profile.get_midi_prgch_channel("snapshot")
         # NOTE: Assume this value is always the same as in mod-host.
 
-        callback(True, channel)
+        callback(True, int(channel))
 
     def hmi_set_snapshot_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a snapshot via Program Change."""
         logging.info("hmi set snapshot channel {0}".format(channel))
 
-        if self.profile.set_midi_prgch_snapshot_channel(channel):
+        if self.profile.set_midi_prgch_channel("snapshot", channel):
             self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
             callback(True)
         else:
             callback(False)
 
-    def hmi_get_bank_prgch(self, callback):
+    def hmi_get_pedalboard_prgch(self, callback):
         """Query the MIDI channel for selecting a pedalboard in a bank via Program Change."""
-        logging.info("hmi get bank channel")
+        logging.info("hmi get pedalboard channel")
 
-        channel = self.profile.midi_prgch_bank_channel
-        callback(True, channel)
+        channel = self.profile.get_midi_prgch_channel("pedalboard")
+        callback(True, int(channel))
 
-    def hmi_set_bank_prgch(self, channel, callback):
+    def hmi_set_pedalboard_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a pedalboard in a bank via Program Change."""
-        logging.info("hmi set bank channel {0}".format(channel))
+        logging.info("hmi set pedalboard channel {0}".format(channel))
 
-        if self.profile.set_midi_prgch_bank_channel(channel):
+        if self.profile.set_midi_prgch_channel("pedalboard", channel):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
             callback(True)
         else:
@@ -3641,7 +3660,7 @@ _:b%i
         """Query the tempo and transport sync mode."""
         logging.info("hmi get clock source")
 
-        mode = self.profile.sync_mode
+        mode = self.profile.get_sync_mode()
         # NOTE: We assume the state in mod-host will only change if
         # `hmi_set_clk_src()` is called!
 
@@ -3653,7 +3672,7 @@ _:b%i
 
         if mode in [0, 1, 2]:
             # Communicate with mod host.
-            # Note: First disable all unchoosen options.
+            # Note: _First_ disable all unchoosen options.
             if mode == 0: # Internal
                 self.send_notmodified("feature_enable link 0")
                 self.send_notmodified("feature_enable midi_clock_slave 0")
@@ -3664,8 +3683,8 @@ _:b%i
                 self.send_notmodified("feature_enable midi_clock_slave 0")
                 self.send_notmodified("feature_enable link 1")
 
-            self.profile.sync_mode = mode
-            callback(True)
+            result = self.profile.set_sync_mode(mode)
+            callback(result)
         else:
             callback(False)
 
@@ -3674,7 +3693,7 @@ _:b%i
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi get midi beat clock status")
 
-        onoff = 1 # TODO: communicate with mod-host
+        onoff = 1 # TODO: communicate with mod-host. This is not implemented in mod-host yet!
         callback(True, int(onoff))
 
     def hmi_set_send_midi_clk(self, onoff, callback):
@@ -3682,11 +3701,18 @@ _:b%i
         logging.info("hmi set midi beat clock status to {0}".format(onoff))
 
         if onoff in [0, 1]:
-            # TODO: communicate with mod host.
+            # TODO: communicate with mod host. This is not implemented in mod-host yet!
             callback(True)
         else:
             callback(False)
 
+    def hmi_get_current_profile(self, callback):
+        """Return the index of the currently loaded profile. This is a string."""
+        logging.info("hmi get current profile")
+        (index, changed) = self.profile.get_last_stored_profile_index()
+        # TODO: This is bad, because it is not decoupled from the protocol syntax
+        callback(True, "{0} {1}".format(str(index), int(changed)))
+            
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
         logging.info("hmi retrieve profile")
@@ -3702,14 +3728,14 @@ _:b%i
     def hmi_get_exp_cv(self, callback):
         """Get the mode of the configurable input."""
         logging.info("hmi get exp/cv mode")
-        mode = self.profile.configurable_input_mode
-        callback(True, mode)
+        mode = self.profile.get_configurable_input_mode()
+        callback(True, int(mode))
 
     def hmi_set_exp_cv(self, mode, callback):
         """Set the mode of the configurable input."""
         logging.info("hmi set exp/cv mode to {0}".format(mode))
         if mode in [0, 1]:
-            self.profile.configurable_input_mode = mode
+            self.profile.set_configurable_input_mode(mode)
             callback(True)
         else:
             callback(False)
@@ -3717,82 +3743,51 @@ _:b%i
     def hmi_get_hp_cv(self, callback):
         """Get the mode of the configurable output."""
         logging.info("hmi get hp/cv mode")
-        mode = self.profile.configurable_output_mode
-        callback(True, mode)
+        mode = self.profile.get_configurable_output_mode()
+        callback(True, int(mode))
 
     def hmi_set_hp_cv(self, mode, callback):
         """Set the mode of the configurable output."""
         logging.info("hmi set hp/cv mode to {0}".format(mode))
         if mode in [0, 1]:
-            self.profile.configurable_output_mode = mode
-            callback(True)
-        else:
-            callback(False)
-
-    # Given a odd channel number `oddch` it returns if the following
-    # even channel is linked to it or not as "resp 0" or "resp -1".
-    def hmi_get_in_chan_link(self, oddch, callback):
-        """Get the link state of a channel pair."""
-        logging.info("hmi get input channel link state")
-        if oddch in [1]:
-            if self.profile.input_stereo_link:
-                link = 1
-            else:
-                link = 0
-            callback(True, link)
-        else:
-            callback(False)
-
-    # Given a odd channel number `oddch` the link state with the
-    # following even channel is setlinked to `link`. Returns "resp -1"
-    # on error, else "resp 0".
-    def hmi_set_in_chan_link(self, oddch, link, callback):
-        """Set the link state of a channel pair."""
-        logging.info("hmi get input channel {0} link state to {1}".format(oddch, link))
-        if oddch in [1] and link in [0,1]:
-            self.profile.input_stereo_link = link
+            self.profile.set_configurable_output_mode(mode)
             callback(True)
         else:
             callback(False)
 
 
-    # Given a odd channel number `oddch` it returns if the following
-    # even channel is linked to it or not as "resp 0" or "resp -1".
-    def hmi_get_out_chan_link(self, oddch, callback):
-        """Get the link state of a channel pair."""
-        logging.info("hmi get output channel link state")
-        if oddch in [1]:
-            if self.profile.output_stereo_link:
-                link = 1
-            else:
-                link = 0
-            callback(True, link)
-        else:
-            callback(False)
+    def hmi_get_in_chan_link(self, callback):
+        """Get the link state of the input channel pair."""
+        callback(True, int(self.profile.get_stereo_link("input")))
 
-    # Given a odd channel number `oddch` the link state with the
-    # following even channel is setlinked to `link`. Returns "resp -1"
-    # on error, else "resp 0".
-    def hmi_set_out_chan_link(self, oddch, link, callback):
-        """Set the link state of a channel pair."""
-        logging.info("hmi get output channel {0} link state to {1}".format(oddch, link))
-        if oddch in [1] and link in [0,1]:
-            self.profile.output_stereo_link = link
-            callback(True)
-        else:
-            callback(False)
+        
+    def hmi_set_in_chan_link(self, link_mode, callback):
+        """Set the link state of the input channel pair."""
+        result = self.profile.set_stereo_link("input", link_mode)
+        callback(result)
+
+    def hmi_get_out_chan_link(self, callback):
+        """Get the link state of the output channel pair."""
+        result = self.profile.get_stereo_link("output")
+        callback(True, int(result))
+
+
+    def hmi_set_out_chan_link(self, link, callback):
+        """Set the link state of the output channel pair."""
+        result = self.profile.get_stereo_link("output")
+        callback(result)
 
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.info("hmi get display brightness")
-        value = self.profile.display_brightness
-        callback(True, value)
+        value = -1 # TODO
+        callback(True, int(value))
 
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.info("hmi set display brightness to {0}".format(brightness))
-        if brightness in [0, 25, 50, 75, 100]:
-            self.profile.display_brightness = brightness
+        if brightness in [0, 1, 2, 3, 4]:
+            # TODO = brightness
             callback(True)
         else:
             callback(False)
@@ -3800,46 +3795,81 @@ _:b%i
     def hmi_get_master_volume_channel_mode(self, callback):
         """Get the mode how the master volume is linked to the channel output volumes."""
         logging.info("hmi get master volume channel mode")
-        value = self.profile.master_volume_channel_mode
-        callback(True, value)
+        value = self.profile.get_master_volume_channel_mode()
+        callback(True, int(value))
 
     def hmi_set_master_volume_channel_mode(self, mode, callback):
         """Set the mode how the master volume is linked to the channel output volumes."""
         logging.info("hmi set master volume channel mode to {0}".format(mode))
-        if mode in [0, 1, 2]:
-            self.profile.master_volume_channel_mode = mode
+        result = self.profile.set_master_volume_channel_mode(mode)
+        callback(result)
+
+    def hmi_get_play_status(self, callback):
+        """Return if the transport is rolling (1) or not (0)."""        
+        state = get_jack_data(True)['rolling']
+        if state in [0, 1]:
+            callback(True, int(state))
+        else:
+            callback(False)
+
+    def hmi_set_play_status(self, play_status, callback):
+        """Set the transport state."""
+        if play_status in [True, False]:
+            self.transport_rolling = play_status
+            self.send_notmodified(
+                "transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm)
+            )
             callback(True)
         else:
             callback(False)
 
-    def hmi_get_play_status(self, callback):
-        """TODO."""
-        callback(True, 0) # 0, 1
-
-    def hmi_set_play_status(self, state, callback):
-        """TODO."""
-        callback(True)
-
-    def hmi_get_master_volume_channel(self, callback):
-        """TODO."""
-        callback(True, 0) # integer 0, 1, 2
-
-    def hmi_set_master_volume_channel(self, value, callback):
-        """TODO."""
-        callback(True)
-
     def hmi_get_tuner_mute(self, callback):
-        """TODO."""
-        callback(True, 0) # 0, 1
+        """Return if the tuner lets audio through or not."""
+        default = "true"
+        mute = self.prefs.get("tuner-mutes-outputs", default)
+        result = 0
+        if mute == "true":
+            result = 1
 
-    def hmi_set_tuner_mute(self, value, callback):
-        """TODO."""
-        callback(True)
+        callback(True, int(result))
+
+    def hmi_set_tuner_mute(self, mute, callback):
+        """Set if the tuner lets audio through or not."""
+        if mute in [0, 1]:
+            value = "false"
+            if mute == 1:
+                value = "true"
+            self.prefs.setAndSave("tuner-mutes-outputs", value)
+            callback(True)
+        else:
+            callback(False)
 
     def hmi_get_pb_name(self, callback):
-        """TODO."""
-        callback(True, "tmp") # string
+        """Return the name of the currently loaded pedalboard."""
+        callback(True, str(self.pedalboard_name))
 
+    def hmi_get_exp_mode(self, callback):
+        """Return, if the input is set to expression pedal or control voltage."""
+        # TODO ALSA?
+        callback(True, int(0)) # 0= singnal on tip, 1= signal on sleeve
+
+    def hmi_set_exp_mode(self, mode, callback):
+        """TODO."""
+        # TODO ALSA?
+        # 0= singnal on tip, 1= signal on sleeve
+        callback(True)
+
+    def hmi_get_control_voltage_bias(self, callback):
+        """Get the setting of the control voltage bias."""
+        # TODO ALSA!
+        bias_mode = self.profile.get_control_voltage_bias()  # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
+        callback(True, int(bias_mode))
+
+    def hmi_set_control_voltage_bias(self, bias_mode, callback):
+        """Set the setting of the control voltage bias."""
+        # TODO ALSA!
+        result = self.profile.set_control_voltage_bias(bias_mode)
+        callback(result)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
@@ -3950,7 +3980,7 @@ _:b%i
 
         # add
         for port_symbol in newDevs:
-            if port_symbol in midiportIds:
+            if not(self.midi_aggregated_mode and not(midi_aggregated_mode)) and port_symbol in midiportIds:
                 continue
 
             if ";" in port_symbol:
@@ -3958,61 +3988,58 @@ _:b%i
                 title_in  = self.get_port_name_alias(inp)
                 title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
-                add_port(inp, title_in, False)
-                add_port(outp, title_out, True)
+                if not midi_aggregated_mode:
+                    add_port(inp, title_in, False)
+                    add_port(outp, title_out, True)
             else:
                 title = self.get_port_name_alias(port_symbol)
-                add_port(port_symbol, title, False)
+                if not midi_aggregated_mode:
+                    add_port(port_symbol, title, False)
 
             self.midiports.append([port_symbol, title, []])
 
         # MIDI mode
         if self.midi_aggregated_mode == midi_aggregated_mode:
             return
+
+        # from legacy to aggregated mode
+        if midi_aggregated_mode:
+            # Add "All MIDI In/Out" ports
+            if self.hasMidiMergerOut:
+                self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+            if self.hasMidiBroadcasterIn:
+                self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+
+            # Remove Serial MIDI ports
+            self.msg_callback("remove_hw_port /graph/serial_midi_in")
+            self.msg_callback("remove_hw_port /graph/serial_midi_out")
+
+            # Remove USB MIDI ports
+            for i in reversed(range(len(self.midiports))):
+                port_symbol, port_alias, _ = self.midiports[i]
+
+                if ";" in port_symbol:
+                    inp, outp = port_symbol.split(";",1)
+                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
+                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
+                else:
+                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
+
+
+        # from aggregated to legacy mode
+        else:
+            # Remove "All MIDI In/Out" ports
+            if self.hasMidiMergerOut:
+                self.msg_callback("remove_hw_port /graph/midi_merger_out")
+            if self.hasMidiBroadcasterIn:
+                self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
+
+            # Add Serial MIDI ports
+            if self.hasSerialMidiIn:
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+            if self.hasSerialMidiOut:
+                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+
         self.midi_aggregated_mode = midi_aggregated_mode
 
-        # MIDI In
-        if midi_aggregated_mode:
-            if self.hasMidiMergerOut:
-                self.send_modified("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-        else:
-            if self.hasSerialMidiIn:
-                self.send_modified("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
-
-            ports = get_jack_hardware_ports(False, False)
-            for i in range(len(ports)):
-                name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                    continue
-                alias = get_jack_port_alias(name)
-
-                if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-                else:
-                    title = name.split(":",1)[-1].title()
-                title = title.replace(" ","_")
-                self.send_modified("add_hw_port /graph/%s midi 0 %s %i" % (name.split(":",1)[-1], title, i+1))
-
-        # MIDI Out
-        if midi_aggregated_mode:
-            if self.hasMidiBroadcasterIn:
-                self.send_modified("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-            pass
-
-        else:
-            if self.hasSerialMidiOut:
-                self.send_modified("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
-
-            ports = get_jack_hardware_ports(False, True)
-            for i in range(len(ports)):
-                name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
-                    continue
-                alias = get_jack_port_alias(name)
-                if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
-                else:
-                    title = name.split(":",1)[-1].title()
-                title = title.replace(" ","_")
-                self.send_modified("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
     # -----------------------------------------------------------------------------------------------------------------

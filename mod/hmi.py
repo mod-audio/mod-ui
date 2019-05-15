@@ -71,7 +71,11 @@ class HMI(object):
     def init(self, callback):
         try:
             print("{0}, {1}".format(self.port, self.baud_rate))
-            sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            sp = None
+            try:
+                sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            except:
+                sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:

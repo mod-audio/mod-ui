@@ -127,12 +127,15 @@ def symbolify(name):
         name = "_" + name
     return name
 
+
 def get_hardware_descriptor():
     mod_hw = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
     return mod_hw
 
+
 def get_hardware_actuators():
     return get_hardware_descriptor().get('actuators', [])
+
 
 class TextFileFlusher(object):
     def __init__(self, filename):
