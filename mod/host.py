@@ -801,7 +801,7 @@ class Host(object):
 
         def midi_prog_callback(ok):
             logging.info("[host] midi_prog_callback called")
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("bank"), callback, datatype='boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"), callback, datatype='boolean')
 
         def initial_state_callback(ok):
             # TODO: not mutually exclusive.
