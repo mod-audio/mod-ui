@@ -88,9 +88,18 @@ class Protocol(object):
         "banks": [],
         "pedalboards": [int],
         "pedalboard": [int, str],
+
+        "hw_con": [int, int],
+        "hw_dis": [int, int],
+        "control_set": [int, float],
+        "control_get": [int],
+        "control_next": [int],
+        "tuner": [str],
+        "tuner_input": [int],
         "pedalboard_save": [],
         "pedalboard_reset": [],
-               
+        "jack_cpu_load": [],
+
         "get_truebypass_value": [int],
         "set_truebypass_value": [int, int],
         # Quick Bypass Mode
@@ -112,6 +121,14 @@ class Protocol(object):
         "get_current_profile": [],
         "retrieve_profile": [str],
         "store_profile": [str],
+
+        # MIDI Beat Clock sending
+        "get_send_midi_clk": [],
+        "set_send_midi_clk": [int],
+
+        # User Profile handling
+        "retrieve_profile": [int],
+        "store_profile": [int],
 
         # Master volume channel mode
         "get_mv_channel": [],

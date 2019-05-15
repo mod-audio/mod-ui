@@ -33,7 +33,7 @@ from collections import OrderedDict
 from random import randint
 from shutil import rmtree
 from tornado import gen, iostream, ioloop
-import os, json, socket, time, logging
+import os, json, socket, time, logging, copy
 
 from mod import safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
@@ -448,7 +448,8 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            return self.hmi.control_add(data, actuator, callback)
+            actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
+            return self.hmi.control_add(data, actuator, actuator_uri, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
@@ -516,10 +517,10 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, hw_id=None):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
-            return self.hmi.control_rm(instance_id, portsymbol, callback)
+            return self.hmi.control_rm([hw_id], callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
@@ -748,11 +749,11 @@ class Host(object):
         def foot2_callback(ok):
             acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch2"]
             cfgact = BANK_CONFIG_PEDALBOARD_UP if enabled else BANK_CONFIG_NOTHING
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, callback)
+            self.hmi.bank_config(acthw, cfgact, callback)
 
         acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch1"]
         cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
-        self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
+        self.hmi.bank_config(acthw, cfgact, foot2_callback)
 
     def initialize_hmi(self, uiConnected, callback):
         # If UI is already connected, do nothing
@@ -1506,25 +1507,25 @@ class Host(object):
                 self.plugins_added.remove(instance_id)
 
         used_hmi_actuators = []
+        used_hw_ids = []
 
         for symbol in [symbol for symbol in pluginData['addressings'].keys()]:
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
-            self.addressings.remove(addressing)
+            was_active = self.addressings.remove(addressing)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                if actuator_uri not in used_hmi_actuators:
+                if actuator_uri not in used_hmi_actuators and was_active:
                     used_hmi_actuators.append(actuator_uri)
+                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                    used_hw_ids.append(hw_id)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 yield gen.Task(self.addr_task_unaddressing, actuator_type,
                                                             addressing['instance_id'],
                                                             addressing['port'])
-
-        for actuator_uri in used_hmi_actuators:
-            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
         def host_callback(ok):
             callback(ok)
@@ -1541,8 +1542,13 @@ class Host(object):
         def hmi_callback(ok):
             self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
-        if self.hmi.initialized:
-            self.hmi.control_rm(instance_id, ":all", hmi_callback)
+        def hmi_control_rm_callback(ok):
+            for actuator_uri in used_hmi_actuators:
+                self.addressings.hmi_load_current(actuator_uri, hmi_callback)
+
+        if self.hmi.initialized and len(used_hw_ids) > 0:
+            # Remove active addressed port from HMI
+            self.hmi.control_rm(used_hw_ids, hmi_control_rm_callback)
         else:
             hmi_callback(True)
 
@@ -3067,7 +3073,7 @@ _:b%i
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
 
         if old_addressing is not None:
-            # Need to remove old addressings first
+            # Need to remove old addressings for that port first
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
 
@@ -3108,9 +3114,17 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
-            yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                        old_addressing['instance_id'],
-                                                        old_addressing['port'])
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                old_hw_id = self.addressings.hmi_uri2hw_map[old_actuator_uri]
+                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                            old_addressing['instance_id'],
+                                                            old_addressing['port'],
+                                                            hw_id=old_hw_id)
+                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
+            else:
+                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                            old_addressing['instance_id'],
+                                                            old_addressing['port'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -3147,7 +3161,8 @@ _:b%i
             return
 
         if needsValueChange:
-            yield gen.Task(self.hmi_parameter_set, instance_id, portsymbol, value)
+            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+            yield gen.Task(self.hmi_parameter_set, hw_id, value)
 
         pluginData['addressings'][portsymbol] = addressing
 
@@ -3310,12 +3325,29 @@ _:b%i
 
         self.reset(hmi_clear_callback)
 
-    def hmi_parameter_get(self, instance_id, portsymbol, callback):
+    def get_addressed_port_info(self, hw_id):
+        actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
+        addressings = self.addressings.hmi_addressings[actuator_uri]
+        addressings_addrs = addressings['addrs']
+        addressings_idx   = addressings['idx']
+
+        addressing_data = addressings_addrs[addressings_idx]
+        instance_id = addressing_data['instance_id']
+        portsymbol = addressing_data['port']
+
+        return instance_id, portsymbol
+
+    def hmi_parameter_get(self, hw_id, callback):
         logging.info("hmi parameter get")
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         callback(self.addr_task_get_port_value(instance_id, portsymbol))
 
-    def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
+    # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
+    def hmi_parameter_set(self, hw_id, value, callback):
         logging.info("hmi parameter set")
+
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
+
         try:
             instance = self.mapper.get_instance(instance_id)
         except KeyError:
@@ -3397,10 +3429,9 @@ _:b%i
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-    def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
+    def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.info("hmi parameter addressing next")
-        actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
-        self.addressings.hmi_load_next_hw(actuator_hw, callback)
+        self.addressings.hmi_load_next_hw(hw_id, callback)
 
     def hmi_save_current_pedalboard(self, callback):
         logging.info("hmi save current pedalboard")

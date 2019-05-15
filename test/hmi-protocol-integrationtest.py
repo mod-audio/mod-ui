@@ -8,11 +8,12 @@ import serial
 
 class TestHMIProtocol(unittest.TestCase):
     serial_path = ''
- 
+
     def setUp(self):
         # NOTE: Jack, mod-host, socat and mod-ui must be
         # running...probably easier to run by hand
         self.ser = serial.Serial(self.serial_path, 31250, timeout=0.1)
+
 
     ## Note: Try to keep the same order as in Protocol.COMMANDS!
 
@@ -28,12 +29,14 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+
     
     def test_banks(self):
         msg = ("banks\00").encode("utf-8")
+
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 All 0 "Test" 1\x00')
@@ -44,9 +47,10 @@ class TestHMIProtocol(unittest.TestCase):
     def test_pedalboards(self):
         """pedalboards: [int]"""
         msg = ("pedalboards\00").encode("utf-8")
+
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
@@ -59,7 +63,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("pedalboard\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # TODO check correctness, is this default?
@@ -72,7 +76,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("pedalboard_save\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
@@ -85,7 +89,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("pedalboard_reset\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00')
@@ -99,7 +103,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("get_truebypass_value 0\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 0\x00') # left
@@ -107,24 +111,24 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
 
     def test_get_truebypass_value02(self):
-        """get_truebypass_value: [int]"""            
+        """get_truebypass_value: [int]"""
         msg = ("get_truebypass_value 1\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0 0\x00') # right
         else:
             self.fail("No response")
 
-            
+
     def test_set_truebypass_value01(self):
         """set_truebypass_value: [int, int]"""
         msg = ("set_truebypass_value 0 0\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -136,7 +140,7 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("set_truebypass_value 0 1\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -148,19 +152,19 @@ class TestHMIProtocol(unittest.TestCase):
         msg = ("set_truebypass_value 1 0\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
         else:
             self.fail("No response")
-            
+
     def test_set_truebypass_value04(self):
         """set_truebypass_value: [int, int]"""
         msg = ("set_truebypass_value 1 1\00").encode("utf-8") ## Not existing?
         self.ser.write(msg)
         self.ser.flush()
-        
+
         resp = self.ser.read_until('\x00', 100)
         if (resp):
             self.assertEqual(resp, b'resp 0\x00') # check correctness
@@ -772,6 +776,7 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+
     # TODO: Test if this changes something
     def test_set_snapshot_prgch_01(self):
         # The profile has state. Reset the state by calling `store`.
@@ -1095,13 +1100,13 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
     
-    
+
 if __name__ == '__main__':
     # Handle command line arguments
     parser = argparse.ArgumentParser(description='Test the HMI protocol implemented in mod-ui.')
     parser.add_argument('-d', '--device', nargs=1, required=True,
                         help='serial device, e.g. /dev/pts/5')
-    parser.add_argument('unittest_args', nargs='*')    
+    parser.add_argument('unittest_args', nargs='*')
     args = parser.parse_args()
 
     # Configure the serial device path
