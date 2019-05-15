@@ -88,15 +88,78 @@ class Protocol(object):
         "banks": [],
         "pedalboards": [int],
         "pedalboard": [int, str],
+        "pedalboard_save": [],
+        "pedalboard_reset": [],
+               
+        "get_truebypass_value": [int],
+        "set_truebypass_value": [int, int],
+        # Quick Bypass Mode
+        "get_q_bypass": [],
+        "set_q_bypass": [int],
+        
+        # Beats per minute
+        "get_tempo_bpm": [],
+        "set_tempo_bpm": [float],
+        # Beats per bar
+        "get_tempo_bpb": [],
+        "set_tempo_bpb": [float],
+
+        "tuner": [str],
+        "get_tuner_mute": [],
+        "set_tuner_mute": [int],
+
+        # User Profile handling
+        "get_current_profile": [],
+        "retrieve_profile": [str],
+        "store_profile": [str],
+
+        # Master volume channel mode
+        "get_mv_channel": [],
+        "set_mv_channel": [int],
+        
+        # Stereo Link for inputs and outputs
+        "get_in_chan_link": [],
+        "set_in_chan_link": [int],
+        "get_out_chan_link": [],
+        "set_out_chan_link": [int],
+
+        # Configurable in- and output
+        "get_exp_cv": [],
+        "set_exp_cv": [int],
+        "get_hp_cv": [],
+        "set_hp_cv": [int],
+        "get_exp_mode": [],
+        "set_exp_mode": [int],
+        "get_cv_bias": [],
+        "set_cv_bias": [int],
+
+        # Transport and tempo sync mode
+        "get_clk_src": [],
+        "set_clk_src": [int],
+        # MIDI program change channel for switching snapshots
+        "get_snapshot_prgch": [],
+        "set_snapshot_prgch": [int],
+        # MIDI Beat Clock sending
+        "get_send_midi_clk": [],
+        "set_send_midi_clk": [int],
+        # MIDI program change channel for switching pedalboards in a bank
+        "get_pb_prgch": [],
+        "set_pb_prgch": [int],
+        
+        "get_play_status": [],
+        "set_play_status": [int],
+        # Display brightness
+        "get_display_brightness": [],
+        "set_display_brightness": [int],
+        
+        "get_pb_name": [],
+        
         "hw_con": [int, int],
         "hw_dis": [int, int],
         "control_set": [int, str, float],
         "control_get": [int, str],
         "control_next": [int, int, int, int],
-        "tuner": [str],
         "tuner_input": [int],
-        "pedalboard_save": [],
-        "pedalboard_reset": [],
         "jack_cpu_load": [],
     }
 

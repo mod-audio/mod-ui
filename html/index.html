@@ -236,7 +236,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cloudplugin.js?v={{version}}"></script>
 <script type="text/javascript" src="js/mididevices.js?v={{version}}"></script>
-<script type="text/javascript" src="js/pedalpresetsmanage.js?v={{version}}"></script>
+<script type="text/javascript" src="js/snapshot.js?v={{version}}"></script>
 <script type="text/javascript" src="js/hardware.js?v={{version}}"></script>
 <script type="text/javascript" src="js/share.js?v={{version}}"></script>
 <script type="text/javascript" src="js/networkstatus.js?v={{version}}"></script>
@@ -245,6 +245,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/cc-manager.js?v={{version}}"></script>
 <script type="text/javascript" src="js/transport.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
+<script type="text/javascript" src="js/tempoHelper.js?v={{version}}"></script>
 
 </head>
 <!-- END HEAD -->
@@ -326,10 +327,10 @@ $('document').ready(function() {
         </div>
         <!-- END SAVE PEDALBOARD WINDOW -->
 
-        <!-- SAVE PRESET WINDOW -->
+        <!-- SAVE SNAPSHOTS WINDOW -->
         <div id="save-preset" class="save-popup mod-hidden" style="z-index:1001;">
             <div class="mod-box">
-                <h1 class="pull-left">Saving Preset</h1><span class="js-cancel-saving close">&times;</span>
+                <h1 class="pull-left">Saving Snapshot</h1><span class="js-cancel-saving close">&times;</span>
                 <form class="bottom">
                     <div class="clearfix"></div>
                     <div class="controls">
@@ -343,7 +344,7 @@ $('document').ready(function() {
                 </form>
             </div>
         </div>
-        <!-- END SAVE PRESET WINDOW -->
+        <!-- END SAVE SNAPSHOT WINDOW -->
 
         <!-- PEDALBOARD SHARE WINDOW -->
         <div id="share-window" class="save-popup mod-hidden">
@@ -450,8 +451,8 @@ $('document').ready(function() {
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
-                    <button class="js-preset" id="js-preset-enabler">Presets</button>
-                    <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Presets</button>
+                    <button class="js-preset" id="js-preset-enabler">Snapshots</button>
+                    <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Snapshots</button>
                     <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
                         <li class="js-preset-save">Save</li>
                         <li class="js-preset-save-as">Save as</li>
@@ -487,23 +488,39 @@ $('document').ready(function() {
 
         <!-- MIDI DEVICE LIST WINDOW -->
         <div id="midi-ports-window" class="save-popup mod-hidden">
-            <div class="mod-box">
+            <div class="mod-box" id="midi-ports-box">
                 <h1>MIDI Ports List</h1>
                 <form class="bottom">
+                  <fieldset>
+                    <div>
+                      <label>
+                        <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
+                            Aggregated Mode
+                        </input>
+                      </label>
+                    </div>
+                    <div>
+                      <label>
+                          <input type="radio" autocomplete="off" name="midi-mode" value="legacy" id="midi-mode-legacy">
+                              Legacy mode
+                          </input>
+                      </label>
+                    <div>
                     <div class="controls clearfix" id="midi-ports-list"></div>
                     <div class="controls actions">
                         <button class="js-cancel btn btn-danger">Cancel</button>
                         <button class="js-submit btn btn-success">Save</button>
                     </div>
+                    </fieldset>
                 </form>
             </div>
         </div>
         <!-- MIDI DEVICE LIST WINDOW -->
 
-        <!-- PEDALBOARD PRESETS -->
+        <!-- PEDALBOARD SNAPSHOTS -->
         <div id="pedal-presets-window" class="save-popup mod-hidden">
             <div class="mod-box" style="width: 400px">
-                <h1 class="pull-left">Load / Manage presets</h1><span class="js-cancel close">&times;</span>
+                <h1 class="pull-left">Load / Manage snapshots</h1><span class="js-cancel close">&times;</span>
                 <form class="bottom">
                     <div class="controls clearfix">
                         <input type="text" name="pedal-presets-list" value="" id="pedal-presets-list-input"/>
@@ -518,7 +535,7 @@ $('document').ready(function() {
                 </form>
             </div>
         </div>
-        <!-- END PEDALBOARD PRESETS -->
+        <!-- END PEDALBOARD SNAPSHOTS -->
 
         <!-- CC DEVICE UPDATE WINDOW -->
         <div id="cc-device-update-window" class="save-popup mod-hidden">
@@ -606,7 +623,9 @@ $('document').ready(function() {
             <li id="effect-tab-Spatial">Spatial</li>
             <li id="effect-tab-Spectral">Spectral</li>
             <li id="effect-tab-Utility">Utility</li>
-            <li id="effect-tab-MaxGen" style="display:none;">Max gen~</li>
+            <li id="effect-tab-MaxGen" style="display:none;">Max&nbsp;gen~</li>
+            <li id="effect-tab-Camomile" style="display:none;">Camomile</li>
+	    <li id="effect-tab-ControlVoltage">Control&nbsp;Voltage</li>
         </ul>
         <span class="js-settings-trigger settings selected"></span>
         <span class="js-effects-fold fold"></span>
@@ -642,6 +661,8 @@ $('document').ready(function() {
                     <div id="effect-content-Spectral" class="plugins-wrapper"></div>
                     <div id="effect-content-Utility" class="plugins-wrapper"></div>
                     <div id="effect-content-MaxGen" class="plugins-wrapper"></div>
+                    <div id="effect-content-Camomile" class="plugins-wrapper"></div>
+                    <div id="effect-content-ControlVoltage" class="plugins-wrapper"></div>
                 </div>
             </div>
             <div class="nav nav-right"></div>
@@ -684,6 +705,9 @@ $('document').ready(function() {
                     <li id="cloud-plugin-tab-Spatial">Spatial</li>
                     <li id="cloud-plugin-tab-Spectral">Spectral</li>
                     <li id="cloud-plugin-tab-Utility">Utility</li>
+                    <!-- <li id="cloud-plugin-tab-MaxGen">Max&nbsp;gen~</li> -->
+                    <!-- <li id="cloud-plugin-tab-Camomile">Camomile</li> -->
+                    <!-- <li id="cloud-plugin-tab-ControlVoltage">Control&nbsp;Voltage</li> -->
                 </ul>
                 <div class="form-group">
                     <input class="form-control" placeholder="Filter by keyword(s)" type="search"/>
@@ -710,6 +734,9 @@ $('document').ready(function() {
                     <div id="cloud-plugin-content-Spatial" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Spectral" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Utility" class="plugins-wrapper"></div>
+                    <!-- <div id="cloud-plugin-content-MaxGen" class="plugins-wrapper"></div> -->
+                    <!-- <div id="cloud-plugin-content-Camomile" class="plugins-wrapper"></div> -->
+                    <!-- <div id="cloud-plugin-content-ControlVoltage" class="plugins-wrapper"></div> -->
                 </div>
             </div>
 
@@ -753,19 +780,9 @@ $('document').ready(function() {
 
         <!-- BANK-PEDALBOARDS -->
         <div id="bank-edit">
-            <div id="bank-addressings" class="mod-hidden">
+            <div id="bank-title" class="mod-hidden">
                 <h1>Untitled</h1>
-                <form class="form">
-                    <label>
-                        <input type="radio" name="bank-navigation" autocomplete="off" id="js-navigate-footswitches" /> Navigate pedalboards using footswitches
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="radio" name="bank-navigation" autocomplete="off" checked="checked" id="js-navigate-midi" /> Navigate pedalboards using MIDI program, channel: &nbsp;
-                        <input type="number" id="js-navigate-midi-channel" value="1" min="1" max="16" step="1" style="box-sizing:border-box;width:40px;" />
-                    </label>
-                </form>
-            </div>
+	    </div>
             <div id="bank-pedalboards" class="grid-selected"></div>
         </div>
         <!-- END BANK-PEDALBOARDS -->
@@ -843,10 +860,15 @@ $('document').ready(function() {
     <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
         <div class="mod-controls clearfix">
             <div class="mod-control-group clearfix">
-                <div class="mod-switch" id="mod-switch-transport-play">
-                    <span class="mod-switch-title">Playing</span>
-                    <div class="mod-switch-image" mod-widget="switch"></div>
-                    <div class="mod-address"></div>
+                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
+                    <span class="mod-enumerated-title">Sync Mode</span>
+                    <div class="mod-enumerated-list">
+                        <div mod-sync-mode="none">Internal</div>
+                        <div class="mod-midi-icon" mod-sync-mode="midi-clock-slave">
+                          Clock Slave
+                        </div>
+                        <div mod-sync-mode="link">Ableton&trade; Link</div>
+                    </div>
                 </div>
 
                 <div class="mod-knob" id="mod-knob-transport-bpm">
@@ -867,13 +889,13 @@ $('document').ready(function() {
                     <div class="mod-address"></div>
                 </div>
 
-                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
-                    <span class="mod-enumerated-title">Sync Mode</span>
-                    <div class="mod-enumerated-list">
-                        <div mod-sync-mode="none">None / Addressings</div>
-                        <div mod-sync-mode="link">Ableton&trade; Link</div>
-                    </div>
+                <div class="mod-switch" id="mod-switch-transport-play">
+                    <span class="mod-switch-title">Transport</span>
+                    <div class="mod-switch-image stop" mod-widget="switch"></div>
+                    <div class="mod-switch-image play" mod-widget="switch"></div>
+                    <div class="mod-address"></div>
                 </div>
+
             </div>
         </div>
     </div>

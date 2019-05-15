@@ -414,6 +414,8 @@ static const char* const kCategoryMixerPlugin[] = { "Utility", "Mixer", nullptr 
 static const char* const kCategoryMIDIPlugin[] = { "MIDI", "Utility", nullptr };
 static const char* const kCategoryMIDIPluginMOD[] = { "MIDI", nullptr };
 static const char* const kCategoryMaxGenPluginMOD[] = { "MaxGen", nullptr };
+static const char* const kCategoryCamomilePluginMOD[] = { "Camomile", nullptr };
+static const char* const kCategoryControlVoltagePluginMOD[] = { "ControlVoltage", nullptr };
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -851,6 +853,10 @@ const char* const* _get_plugin_categories(const LilvPlugin* const p,
                     category = kCategoryMIDIPluginMOD;
                 else if (strcmp(cat2, "MaxGenPlugin") == 0)
                     category = kCategoryMaxGenPluginMOD;
+		else if (strcmp(cat2, "CamomilePlugin") == 0)
+		  category = kCategoryCamomilePluginMOD;
+		else if (strcmp(cat2, "ControlVoltagePlugin") == 0)
+		  category = kCategoryControlVoltagePluginMOD;
                 else
                     continue; // invalid mod category
 
@@ -3973,6 +3979,17 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 handled_port_uris.push_back(portsym_s);
             }
 #endif
+
+            if (strcmp(portsym, "midi_aggregated_mode") == 0)
+            {
+                if (LilvNode* const aggregated = lilv_world_get(w, hwport, ingen_value, nullptr))
+                {
+                    info.midi_aggregated_mode = lilv_node_as_int(aggregated) != 0;
+                    lilv_node_free(aggregated);
+                }
+                lilv_free(portsym);
+                continue;
+            }
 
             int isTimePort = 0;
             /**/ if (strcmp(portsym, ":bpb") == 0)

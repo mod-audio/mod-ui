@@ -266,6 +266,8 @@ JqueryClass('effectBox', {
             'Spectral': 0,
             'Utility': 0,
             'MaxGen': 0,
+	    'Camomile': 0,
+	    'ControlVoltage': 0,
         }
         var category
         for (i in plugins) {

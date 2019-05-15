@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function PedalboardPresetsManager(options) {
+function SnapshotsManager(options) {
     var self = this;
 
     options = $.extend({
@@ -84,13 +84,13 @@ function PedalboardPresetsManager(options) {
         var selectId = selected.val()
 
         if (options.presetCount <= 1) {
-            return self.prevent(e, "Cannot delete last remaining preset")
+            return self.prevent(e, "Cannot delete last remaining snapshot")
         } else if (options.currentlyAddressed) {
             return self.prevent(e)
         }
 
         $.ajax({
-            url: '/pedalpreset/remove',
+            url: '/snapshot/remove',
             type: 'GET',
             data: {
                 id: selectId,
@@ -124,7 +124,7 @@ function PedalboardPresetsManager(options) {
         self.hideRenameOverlay()
 
         if ($(this).hasClass("disabled")) {
-            return self.prevent(e, "Cannot assign list with only 1 preset")
+            return self.prevent(e, "Cannot assign list with only 1 snapshot")
         }
 
         var port = {
@@ -158,7 +158,7 @@ function PedalboardPresetsManager(options) {
             options.presetCount = Object.keys(presets).length
 
             if (options.presetCount == 0) {
-                return new Notification("error", "No pedalboard presets available")
+                return new Notification("error", "No pedalboard snapshots available")
             }
 
             if (options.presetCount <= 1) {
@@ -210,7 +210,7 @@ function PedalboardPresetsManager(options) {
         setTimeout(function () {
             img.remove()
         }, 500)
-        new Notification("warn", customMessage || "Cannot change presets while addressed to hardware", 3000)
+        new Notification("warn", customMessage || "Cannot change snapshots while addressed to hardware", 3000)
         return false
     }
 
@@ -226,13 +226,13 @@ function PedalboardPresetsManager(options) {
         }
 
         $.ajax({
-            url: '/pedalpreset/load',
+            url: '/snapshot/load',
             type: 'GET',
             data: {
                 id: selectId,
             },
             success: function () {
-                new Notification("info", "Preset " + prtitle + " loaded", 2000)
+                new Notification("info", "Snapshot " + prtitle + " loaded", 2000)
             },
             error: function () {},
             cache: false,
@@ -261,7 +261,7 @@ function PedalboardPresetsManager(options) {
         }
 
         $.ajax({
-            url: '/pedalpreset/rename',
+            url: '/snapshot/rename',
             type: 'GET',
             data: {
                 id   : prId,
@@ -280,13 +280,13 @@ function PedalboardPresetsManager(options) {
 
     this.getPedalPresetList = function (callback) {
         $.ajax({
-            url: '/pedalpreset/list',
+            url: '/snapshot/list',
             type: 'GET',
             success: function (resp) {
                 callback(resp)
             },
             error: function () {
-                new Bug("Failed to get pedalboard preset list")
+                new Bug("Failed to get pedalboard snapshot list")
             },
             cache: false,
             dataType: 'json'

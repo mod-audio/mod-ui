@@ -367,12 +367,12 @@ hr.dotted {
     background-image: url(../img/icons/25/midi.png);
   }
   #mod-transport-icon {
-    background-image: url(../img/icons/25/transport.png);
+    background-image: url(../img/icons/25/stop.png);
     font-family: monospace;
     width: 10.5em !important;
     text-align: right;
     &.playing {
-      background-color: @brand-primary;
+      background-image: url(../img/icons/25/transport.png);
     }
   }
   .mod-bypass {
@@ -696,6 +696,14 @@ header#pedalboard-actions {
   left: initial;
   background: rgba(17, 17, 17, 0.9);
   padding: 50px 40px 15px 40px;
+  .mod-midi-icon {
+    width: auto !important;
+    padding-left: 25px;
+    background-position: 5% 45% !important;
+    background-image: url(../img/icons/25/midi.png);
+    background-size: 15px;
+    background-repeat: no-repeat;
+  }
 }
 
 #plugins-library {
@@ -1354,11 +1362,13 @@ header#pedalboard-actions {
   position: absolute;
   top: 50%;
   width: 300px;
-  label {
-    display: inline-block;
-    float: left;
-    line-height: 2;
-    width: 96px;
+  &:not(#midi-ports-box) {
+    label {
+      display: inline-block;
+      float: left;
+      line-height: 2;
+      width: 96px;
+    }
   }
   .mod-controls {
     float: left;

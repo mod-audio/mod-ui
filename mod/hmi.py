@@ -54,6 +54,7 @@ class SerialIOStream(BaseIOStream):
 
 class HMI(object):
     def __init__(self, port, baud_rate, callback):
+        logging.basicConfig(level=logging.DEBUG)
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
@@ -66,7 +67,12 @@ class HMI(object):
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
         try:
-            sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            print("{0}, {1}".format(self.port, self.baud_rate))
+            sp = None
+            try:
+                sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            except:
+                sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:
@@ -95,6 +101,7 @@ class HMI(object):
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
                 logging.error('[hmi] error parsing msg %s' % repr(data))
+                logging.error('[hmi]   error code %s' % e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:
                 if msg.is_resp():
@@ -111,8 +118,10 @@ class HMI(object):
                 else:
                     def _callback(resp, resp_args=None):
                         if resp_args is None:
+                            logging.info('[hmi]     sent "resp {0}"'.format(resp))
                             self.send("resp %d" % (0 if resp else -1))
                         else:
+                            logging.info('[hmi]     sent "resp {0} {1}"'.format(resp, resp_args))
                             self.send("resp %d %s" % (0 if resp else -1, resp_args))
 
                     msg.run_cmd(_callback)
@@ -193,14 +202,32 @@ class HMI(object):
     def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-    def control_add(self, instance_id, port, label, var_type, unit, value, min, max, steps,
-                    hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
+    def control_add(self, data, actuator, callback):
+        instance_id = data['instance_id']
+        port = data['port']
+        label = data['label']
+        var_type = data['hmitype']
+        unit = data['unit']
+        value = data['value']
+        min = data['minimum']
+        max = data['maximum']
+        steps = data['steps']
+        n_controllers = data['addrs_max']
+        index = data['addrs_idx']
+        options = data['options']
+        # tempo = data['tempo']
+        # dividers = data['dividers']
+
+        hw_type = actuator[0]
+        hw_id = actuator[1]
+        actuator_type = actuator[2]
+        actuator_id = actuator[3]
+
         label = '"%s"' % label.upper().replace('"', "")
         unit = '"%s"' % unit.replace('"', '')
         optionsData = []
 
         rmax = max
-
         if options:
             currentNum = 0
             numBytesFree = 1024-128
@@ -228,7 +255,6 @@ class HMI(object):
 
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
-
         self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
                   ( instance_id,
                     port,
