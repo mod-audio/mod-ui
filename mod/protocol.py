@@ -84,21 +84,19 @@ def process_resp(resp, datatype):
     return resp
 
 class Protocol(object):
+    # Make sure this is free of duplicates!
     COMMANDS = {
         "banks": [],
         "pedalboards": [int],
         "pedalboard": [int, str],
-
+        
         "hw_con": [int, int],
         "hw_dis": [int, int],
         "control_set": [int, float],
         "control_get": [int],
         "control_next": [int],
-        "tuner": [str],
-        "tuner_input": [int],
         "pedalboard_save": [],
         "pedalboard_reset": [],
-        "jack_cpu_load": [],
 
         "get_truebypass_value": [int],
         "set_truebypass_value": [int, int],
@@ -114,6 +112,7 @@ class Protocol(object):
         "set_tempo_bpb": [float],
 
         "tuner": [str],
+        "tuner_input": [int],        
         "get_tuner_mute": [],
         "set_tuner_mute": [int],
 
@@ -121,14 +120,6 @@ class Protocol(object):
         "get_current_profile": [],
         "retrieve_profile": [str],
         "store_profile": [str],
-
-        # MIDI Beat Clock sending
-        "get_send_midi_clk": [],
-        "set_send_midi_clk": [int],
-
-        # User Profile handling
-        "retrieve_profile": [int],
-        "store_profile": [int],
 
         # Master volume channel mode
         "get_mv_channel": [],
@@ -153,12 +144,15 @@ class Protocol(object):
         # Transport and tempo sync mode
         "get_clk_src": [],
         "set_clk_src": [int],
+
         # MIDI program change channel for switching snapshots
         "get_snapshot_prgch": [],
         "set_snapshot_prgch": [int],
+
         # MIDI Beat Clock sending
         "get_send_midi_clk": [],
         "set_send_midi_clk": [int],
+
         # MIDI program change channel for switching pedalboards in a bank
         "get_pb_prgch": [],
         "set_pb_prgch": [int],
@@ -171,12 +165,6 @@ class Protocol(object):
         
         "get_pb_name": [],
         
-        "hw_con": [int, int],
-        "hw_dis": [int, int],
-        "control_set": [int, str, float],
-        "control_get": [int, str],
-        "control_next": [int, int, int, int],
-        "tuner_input": [int],
         "jack_cpu_load": [],
     }
 

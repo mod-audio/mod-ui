@@ -29,8 +29,6 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
-
-    
     def test_banks(self):
         msg = ("banks\00").encode("utf-8")
 
@@ -423,7 +421,7 @@ class TestHMIProtocol(unittest.TestCase):
             
 
     def test_current_profile(self):
-        # The profile has state. Reset the state by calling `retrieve`.
+        # The profile has state. Reset the state by storing it.
         msg = ("store_profile CurrentProfileTest\00").encode("utf-8")
         self.ser.write(msg)
         self.ser.flush()        
