@@ -127,6 +127,7 @@ static size_t HOMElen = strlen(HOME);
 
 // Blacklisted plugins, which don't work properly on MOD for various reasons
 static const std::vector<std::string> BLACKLIST = {
+    "urn:mod:mclk",
     "urn:mod:gxtuner",
     "urn:mod:tuna",
     "http://calf.sourceforge.net/plugins/Analyzer",
