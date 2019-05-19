@@ -22,6 +22,7 @@ HMI_ADDRESSING_TYPE_INTEGER      = 128
 
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
+HMI_ACTUATOR_TYPE_POTENTIOMETER = 3
 
 # use pitchbend as midi cc, with an invalid MIDI controller number
 MIDI_PITCHBEND_AS_CC = 131
@@ -34,6 +35,9 @@ kMidiLearnURI = "/midi-learn"
 kMidiUnmapURI = "/midi-unmap"
 kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 
+# URI for BPM sync (for non-addressed control ports)
+kBpmURI ="/bpm"
+
 # Limits
 kMaxAddressableScalepoints = 100
 
@@ -42,6 +46,7 @@ class Addressings(object):
     ADDRESSING_TYPE_HMI  = 1
     ADDRESSING_TYPE_CC   = 2
     ADDRESSING_TYPE_MIDI = 3
+    ADDRESSING_TYPE_BPM = 4
 
     def __init__(self):
         self.init()
@@ -83,26 +88,36 @@ class Addressings(object):
         self.cc_addressings = {}
         self.cc_metadata = {}
         self.midi_addressings = {}
+        self.virtual_addressings = {kBpmURI: []}
 
         # Store all possible HMI hardcoded values
         self.hmi_hw2uri_map = {}
         self.hmi_uri2hw_map = {}
 
-        for i in range(0, 4):
+        # TODO: Why 8? FIXME: get rid of hardcoded values!
+        for i in range(0, 8):
             knob_hw  = (0, 0, HMI_ACTUATOR_TYPE_KNOB,       i)
             foot_hw  = (0, 0, HMI_ACTUATOR_TYPE_FOOTSWITCH, i)
+            pot_hw  = (0, 0, HMI_ACTUATOR_TYPE_POTENTIOMETER, i)
+            
             knob_uri = "/hmi/knob%i"       % (i+1)
             foot_uri = "/hmi/footswitch%i" % (i+1)
+            pot_uri = "/hmi/potentiometer%i" % (i+1)
+            # Note: These have to match the strings in `/etc/mod-hardware-descriptor.json`
 
             self.hmi_hw2uri_map[knob_hw]  = knob_uri
             self.hmi_hw2uri_map[foot_hw]  = foot_uri
+            self.hmi_hw2uri_map[pot_hw]  = pot_uri
+            
             self.hmi_uri2hw_map[knob_uri] = knob_hw
             self.hmi_uri2hw_map[foot_uri] = foot_hw
+            self.hmi_uri2hw_map[pot_uri] = pot_hw
 
     # clear all addressings, leaving metadata intact
     def clear(self):
         self.hmi_addressings  = dict((key, {'addrs': [], 'idx': -1}) for key in self.hmi_addressings.keys())
         self.cc_addressings   = dict((key, []) for key in self.cc_addressings.keys())
+        self.virtual_addressings   = dict((key, []) for key in self.virtual_addressings.keys())
         self.midi_addressings = {}
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -122,6 +137,7 @@ class Addressings(object):
 
         return actuators
 
+    # Not used (?)
     def get_addressings(self):
         addressings = {}
 
@@ -135,7 +151,7 @@ class Addressings(object):
                     'label'      : addr['label'],
                     'minimum'    : addr['minimum'],
                     'maximum'    : addr['maximum'],
-                    'steps'      : addr['steps'],
+                    'steps'      : addr['steps']
                 })
             addressings[uri] = addrs2
 
@@ -189,7 +205,6 @@ class Addressings(object):
                 has_cc_addrs = True
                 if not cc_initialized:
                     continue
-
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
@@ -206,7 +221,7 @@ class Addressings(object):
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
-                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
+                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue, addr.get('tempo'), addr.get('dividers'))
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
@@ -317,6 +332,8 @@ class Addressings(object):
                     'minimum' : addr['minimum'],
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
+                    'tempo'   : addr.get('tempo'),
+                    'dividers': addr.get('dividers')
                 })
             addressings[uri] = addrs2
 
@@ -334,6 +351,22 @@ class Addressings(object):
                 })
             addressings[uri] = addrs2
 
+        # Virtual actuator (only /bpm for now)
+        for uri, addrs in self.virtual_addressings.items():
+            addrs2 = []
+            for addr in addrs:
+                addrs2.append({
+                    'instance': instances[addr['instance_id']],
+                    'port'    : addr['port'],
+                    'label'   : addr['label'],
+                    'minimum' : addr['minimum'],
+                    'maximum' : addr['maximum'],
+                    'steps'   : addr['steps'],
+                    'tempo'   : addr.get('tempo'),
+                    'dividers': addr.get('dividers')
+                })
+            addressings[uri] = addrs2
+
         # Write addressings to disk
         with TextFileFlusher(os.path.join(bundlepath, "addressings.json")) as fh:
             json.dump(addressings, fh)
@@ -342,14 +375,29 @@ class Addressings(object):
         # HMI
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
-                msg_callback("hw_map %s %s %s %f %f %d %s" % (instances[addr['instance_id']],
+                dividers = "%s" % addr.get('dividers', "{}")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s" % (instances[addr['instance_id']],
                                                               addr['port'],
                                                               uri,
                                                               addr['minimum'],
                                                               addr['maximum'],
                                                               addr['steps'],
-                                                              addr['label'].replace(" ","_")))
-
+                                                              addr['label'].replace(" ","_"),
+                                                              addr.get('tempo'),
+                                                              dividers.replace(" ", "").replace("None", "null")))
+        # Virtual addressings (/bpm)
+        for uri, addrs in self.virtual_addressings.items():
+            for addr in addrs:
+                dividers = "%s" % addr.get('dividers', "{}")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s" % (instances[addr['instance_id']],
+                                                              addr['port'],
+                                                              uri,
+                                                              addr['minimum'],
+                                                              addr['maximum'],
+                                                              addr['steps'],
+                                                              addr['label'].replace(" ","_"),
+                                                              addr.get('tempo'),
+                                                              dividers.replace(" ", "").replace("None", "null")))
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
             for addr in addrs:
@@ -373,10 +421,10 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo, dividers):
         actuator_type = self.get_actuator_type(actuator_uri)
 
-        if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC):
+        if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
             print("ERROR: Trying to address the wrong way, stop!")
             return None
 
@@ -424,6 +472,9 @@ class Addressings(object):
             if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
+            if tempo:
+                options = [(o["value"], o["label"]) for o in dividers["options"]]
+
         # TODO do something with spreset
 
         addressing_data = {
@@ -437,10 +488,12 @@ class Addressings(object):
             'steps'       : steps,
             'unit'        : unit,
             'options'     : options,
+            'tempo'       : tempo,
+            # 'divider'     : float(dividers["value"]) if dividers["value"] is not None else None
+            'dividers'     : dividers
         }
 
         # -------------------------------------------------------------------------------------------------------------
-
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             if portsymbol == ":bypass":
                 hmitype = HMI_ADDRESSING_TYPE_BYPASS
@@ -464,7 +517,7 @@ class Addressings(object):
                 if "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
                     hmitype |= HMI_ADDRESSING_TYPE_TAP_TEMPO
 
-                if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
+                if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                     hmitype |= HMI_ADDRESSING_TYPE_ENUMERATION
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
@@ -478,6 +531,10 @@ class Addressings(object):
             addressings = self.hmi_addressings[actuator_uri]
             addressings['idx'] = len(addressings['addrs'])
             addressings['addrs'].append(addressing_data)
+
+        elif actuator_type == self.ADDRESSING_TYPE_BPM:
+            addressings = self.virtual_addressings[actuator_uri]
+            addressings.append(addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             if actuator_uri not in self.cc_addressings.keys():
@@ -519,7 +576,11 @@ class Addressings(object):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
-            actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+            try:
+                actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+            except KeyError:
+                print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
+                
             # HMI specific
             addressings = self.hmi_addressings[actuator_uri]
             addressing_data['addrs_idx'] = addressings['idx']+1
@@ -581,6 +642,10 @@ class Addressings(object):
 
         elif actuator_type == self.ADDRESSING_TYPE_MIDI:
             addressings = self.midi_addressings[actuator_uri]
+            addressings.remove(addressing_data)
+
+        elif actuator_type == self.ADDRESSING_TYPE_BPM:
+            addressings = self.virtual_addressings[actuator_uri]
             addressings.remove(addressing_data)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -762,6 +827,8 @@ class Addressings(object):
             return self.ADDRESSING_TYPE_HMI
         if actuator_uri.startswith(kMidiCustomPrefixURI):
             return self.ADDRESSING_TYPE_MIDI
+        if actuator_uri == kBpmURI:
+            return self.ADDRESSING_TYPE_BPM
         return self.ADDRESSING_TYPE_CC
 
     def get_presets_as_options(self, instance_id):

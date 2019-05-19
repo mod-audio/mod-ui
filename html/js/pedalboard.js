@@ -474,12 +474,20 @@ JqueryClass('pedalboard', {
                     self.pedalboard('addHardwareInput', hw, '/graph/cv_playback_' + i + '_out', 'cv')
                 }
                 if (data.hardware.serial_midi_in) {
-                    var hw = $('<div class="hardware-output" mod-port-index="1" title="Hardware Serial MIDI In">')
+                    var hw = $('<div class="hardware-output" mod-port-index="1" title="Hardware DIN MIDI In">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/serial_midi_in', 'midi')
                 }
                 if (data.hardware.serial_midi_out) {
-                    var hw = $('<div class="hardware-input" mod-port-index="1" title="Hardware Serial MIDI Out">')
+                    var hw = $('<div class="hardware-input" mod-port-index="1" title="Hardware DIN MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/serial_midi_out', 'midi')
+                }
+                if (data.hardware.midi_merger_in) {
+                    var hw = $('<div class="hardware-output" mod-port-index="2" title="All MIDI In">')
+                    self.pedalboard('addHardwareOutput', hw, '/graph/midi_merger_in', 'midi')
+                }
+                if (data.hardware.midi_merger_out) {
+                    var hw = $('<div class="hardware-input" mod-port-index="2" title="All MIDI Out">')
+                    self.pedalboard('addHardwareInput', hw, '/graph/midi_merger_out', 'midi')
                 }
                 var portdata, pindex
                 for (var i in data.hardware.midi_ins) {
@@ -1277,6 +1285,7 @@ JqueryClass('pedalboard', {
             preset_list: preset_list
         }, pluginData)
         var pluginGui = new GUI(pluginData, options)
+
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
             icon.attr('mod-uri', escape(pluginData.uri));

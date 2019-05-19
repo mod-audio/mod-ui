@@ -568,6 +568,27 @@ body > .mod-settings.mod-window-visible {
     width:100px;
 }
 
+.mod-pedal-settings #mod-switch-transport-play .mod-switch-image {
+  width: 50px;
+  height: 50px;
+  background-size: auto 50px;
+}
+
+.mod-pedal-settings #mod-switch-transport-play .mod-switch-image.stop.off,
+.mod-pedal-settings #mod-switch-transport-play .mod-switch-image.play.on {
+  background-color: #883996;
+}
+
+.mod-pedal-settings #mod-switch-transport-play .mod-switch-image.stop {
+  background-image:url(../img/icons/stop.png);
+  left: 30px;
+}
+
+.mod-pedal-settings #mod-switch-transport-play .mod-switch-image.play {
+  background-image:url(../img/icons/transport.png);
+  left: 80px;
+}
+
 .mod-pedal-settings .mod-switch .mod-footswitch-image {
     background-image:url(../img/footswitch.png);
     background-position:left center;

@@ -212,6 +212,8 @@ typedef struct {
     const PedalboardHardwareMidiPort* midi_outs;
     bool serial_midi_in;
     bool serial_midi_out;
+    bool midi_merger_out;
+    bool midi_broadcaster_in;
 } PedalboardHardware;
 
 typedef enum {
@@ -233,6 +235,7 @@ typedef struct {
 typedef struct {
     const char* title;
     int width, height;
+    bool midi_aggregated_mode;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
@@ -355,6 +358,8 @@ MOD_API const char* get_jack_port_alias(const char* portname);
 MOD_API const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput);
 MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
+MOD_API bool has_midi_merger_output_port(void);
+MOD_API bool has_midi_broadcaster_input_port(void);
 MOD_API bool connect_jack_ports(const char* port1, const char* port2);
 MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);
 MOD_API void reset_xruns(void);
