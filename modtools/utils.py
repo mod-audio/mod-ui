@@ -512,6 +512,9 @@ utils.get_jack_sample_rate.restype  = c_float
 utils.get_jack_port_alias.argtypes = [c_char_p]
 utils.get_jack_port_alias.restype  = c_char_p
 
+utils.has_midi_beat_clock_sender_port.argtypes = None
+utils.has_midi_beat_clock_sender_port.restype  = c_bool
+
 utils.has_serial_midi_input_port.argtypes = None
 utils.has_serial_midi_input_port.restype  = c_bool
 
@@ -710,6 +713,9 @@ def get_jack_sample_rate():
 
 def get_jack_port_alias(portname):
     return charPtrToString(utils.get_jack_port_alias(portname.encode("utf-8")))
+
+def has_midi_beat_clock_sender_port():
+    return bool(utils.has_midi_beat_clock_sender_port())
 
 def has_serial_midi_input_port():
     return bool(utils.has_serial_midi_input_port())

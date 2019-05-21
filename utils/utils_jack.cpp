@@ -426,6 +426,15 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
 
 // --------------------------------------------------------------------------------------------------------
 
+bool has_midi_beat_clock_sender_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    // TODO: This must be the same as in `settings.py`!
+    return (jack_port_by_name(gClient, "effect_9993:mclk") != nullptr);
+}
+
 bool has_serial_midi_input_port(void)
 {
     if (gClient == nullptr)

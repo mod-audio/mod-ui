@@ -826,26 +826,11 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
             
-    
-    def test_get_send_midi_clk(self):
-        #      "get_send_midi_clk": []
-        msg = ("get_clk_src\00").encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush()
-        
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0 0\x00')
-        else:
-            self.fail("No response")
 
-
-    # TODO: Test if this changes something
-    def test_set_midi_clk(self):
-        # First set this to the default value!
-        default = 0
-        #      "set_send_midi_clk": [int],
-        msg = ("set_send_midi_clk {0}\00").format(default).encode("utf-8")
+    def test_set_midi_clk_off_01(self):
+        off = 0
+        ##     "set_send_midi_clk": [int],
+        msg = ("set_send_midi_clk {0}\00").format(off).encode("utf-8")
         self.ser.write(msg)
         self.ser.flush();
         
@@ -855,6 +840,60 @@ class TestHMIProtocol(unittest.TestCase):
         else:
             self.fail("No response")
 
+    def test_get_send_midi_clk_01(self):
+        ## First set it to off!
+        self.test_set_midi_clk_off_01()
+       
+        ##     "get_send_midi_clk": []
+        msg = ("get_send_midi_clk\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 0\x00')
+        else:
+            self.fail("No response")
+
+    def test_set_midi_clk_on_01(self):
+        on = 1
+        ##     "set_send_midi_clk": [int],
+        msg = ("set_send_midi_clk {0}\00").format(on).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+        ## Check the value!
+        ##     "get_send_midi_clk": []
+        msg = ("get_send_midi_clk\00").encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush()
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0 1\x00')
+        else:
+            self.fail("No response")
+            
+        ## Set the value back to default
+        off = 0
+        ##     "set_send_midi_clk": [int],
+        msg = ("set_send_midi_clk {0}\00").format(off).encode("utf-8")
+        self.ser.write(msg)
+        self.ser.flush();
+        
+        resp = self.ser.read_until('\x00', 100)
+        if (resp):
+            self.assertEqual(resp, b'resp 0\x00')
+        else:
+            self.fail("No response")
+
+            
     def test_get_pb_prgch(self):
         # The profile has state. Reset the state by calling `store`.
         msg = ("retrieve_profile Foobar\00").encode("utf-8")

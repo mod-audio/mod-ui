@@ -43,7 +43,7 @@ from modtools.utils import (
     charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
-    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_midi_beat_clock_sender_port, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
     connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
@@ -3694,8 +3694,9 @@ _:b%i
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi get midi beat clock status")
 
-        onoff = 1 # TODO: communicate with mod-host. This is not implemented in mod-host yet!
-        callback(True, int(onoff))
+        # TODO: This uses the `utils/utils_jack.cpp` module with
+        # hardcoded values for instance ID and port symbol!
+        callback(True, int(has_midi_beat_clock_sender_port()))
 
     def hmi_set_send_midi_clk_on(self, set_send_midi_clk_on_callback):
         # Define the callback we use below
