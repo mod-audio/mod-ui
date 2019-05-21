@@ -350,12 +350,13 @@ function HardwareManager(options) {
                     self.disableMinMaxSteps(form, false)
                 } else {
                     form.find('.sensibility').css({visibility:"visible"})
-                    if (hasTempoRelatedDynamicScalePoints(port)) {
-                      form.find('.tempo').css({display:"block"})
-                    }
-                    if(tempo.prop("checked")) {
-                      self.disableMinMaxSteps(form, true)
-                    }
+                    // Feature disabled for 1.7 initial release
+                    // if (hasTempoRelatedDynamicScalePoints(port)) {
+                    //   form.find('.tempo').css({display:"block"})
+                    // }
+                    // if(tempo.prop("checked")) {
+                    //   self.disableMinMaxSteps(form, true)
+                    // }
                 }
             })
         }

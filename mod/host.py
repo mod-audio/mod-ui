@@ -2791,7 +2791,8 @@ _:b%i
                     value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
                     dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, keep_hmi_index=True)
+                    # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
     def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
         self.transport_bpm = bpm
@@ -2800,7 +2801,7 @@ _:b%i
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
-        logging.info(self.addressings.virtual_addressings)
+
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
@@ -2872,7 +2873,7 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False, keep_hmi_index=False):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
@@ -2887,7 +2888,7 @@ _:b%i
             return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
-        old_hmi_index = None
+
         if old_addressing is not None:
             # Need to remove old addressings first
             old_actuator_uri  = old_addressing['actuator_uri']
@@ -2927,7 +2928,7 @@ _:b%i
                                                                                   minimum,
                                                                                   maximum), callback, datatype='boolean')
 
-            old_hmi_index = self.addressings.remove(old_addressing)
+            self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
             yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
@@ -2981,7 +2982,7 @@ _:b%i
             maximum = max(options_list)
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value, tempo, dividers, keep_hmi_index and old_hmi_index)
+                                          label, minimum, maximum, steps, value, tempo, dividers)
 
         if addressing is None:
             callback(False)
@@ -2993,7 +2994,7 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set, keep_hmi_index and old_hmi_index)
+        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
@@ -3222,14 +3223,14 @@ _:b%i
                 if port_addressing.get('tempo', None):
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
                     new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
+
                     # make sure new_divider is in our list of supported dividers (in case of calculation precision issue)
                     all_dividers_values = [d['value'] for d in all_dividers]
                     if new_divider not in all_dividers_values:
                         new_divider = min(all_dividers_values, key=lambda x:abs(x-new_divider))
 
                     port_addressing['dividers']['value'] = new_divider
-                    logging.info("new_divider")
-                    logging.info(new_divider)
+
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
                     minimum = port_addressing['minimum']
