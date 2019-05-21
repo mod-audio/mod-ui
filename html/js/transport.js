@@ -249,7 +249,7 @@ function TransportControls(options) {
                     self.setControlEnabled(":bpm", true)
                     self.setSyncMode(newSyncMode)
                 })
-            } else if (newSyncMode === "midi-clock-slave") {
+            } else if (newSyncMode === "midi_clock_slave") {
                 options.unaddressPort(":bpm", function (ok) {
                     if (! ok) {
                         return
@@ -368,7 +368,7 @@ function TransportControls(options) {
             options.transportBPM.find(".mod-address").removeClass('link-enabled')
         }
 
-        if (newSyncMode == "midi-clock-slave") {
+        if (newSyncMode == "midi_clock_slave") {
           options.transportBPM.find(".mod-address").addClass('midi-clock-slave-enabled')
         } else {
           options.transportBPM.find(".mod-address").removeClass('midi-clock-slave-enabled')
