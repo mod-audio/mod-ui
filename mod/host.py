@@ -3731,10 +3731,14 @@ _:b%i
         if onoff in [0, 1]:
             if onoff == 0:
                 self.hmi_set_send_midi_clk_off(callback)
-                pass
                 
             if onoff == 1:
                 self.hmi_set_send_midi_clk_on(callback)
+                
+                # `sync` defaults to 0, thus Host Sync is off. Enable it by setting `sync` to 1.
+                self.send_notmodified("param_set %d %s %f" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, "sync", 1),
+                                      callback, datatype='boolean') # TODO: send_modified or send_notmodified?
+
         else:
             callback(False)
             
