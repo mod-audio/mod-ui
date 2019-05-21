@@ -162,7 +162,7 @@ class Host(object):
         self.audioportsIn = []
         self.audioportsOut = []
         self.midiports = [] # [symbol, alias, pending-connections]
-        self.midi_aggregated_mode = False
+        self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
         self.hasMidiMergerOut = False
@@ -1998,7 +1998,7 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        self.midi_aggregated_mode = pb.get('midi_aggregated_mode', False)
+        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', False)
 
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
@@ -2163,7 +2163,7 @@ class Host(object):
             self.pedalboard_name     = ""
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
-            self.midi_aggregated_mode = False
+            self.midi_aggregated_mode = True
             #save_last_bank_and_pedalboard(0, "")
         else:
             self.pedalboard_empty    = False
@@ -2815,12 +2815,12 @@ _:b%i
         # MIDI Aggregated Mode
         index += 1
         ports += """
-<midi_aggregated_mode>
+<midi_legacy_mode>
     ingen:value %i ;
     lv2:index %i ;
     a atom:AtomPort ,
         lv2:InputPort .
-""" % (int(self.midi_aggregated_mode), index)
+""" % (int(not self.midi_aggregated_mode), index)
 
         # Write the main pedalboard file
         pbdata = """\
@@ -2854,7 +2854,7 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = [":bpb",":bpm",":rolling","midi_aggregated_mode","control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","midi_legacy_mode","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:
@@ -3642,7 +3642,6 @@ _:b%i
             callback(True)
         else:
             callback(False)
-
 
     # Given a odd channel number `oddch` it returns if the following
     # even channel is linked to it or not as "resp 0" or "resp -1".
