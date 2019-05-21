@@ -59,7 +59,8 @@ from modtools.tempo import (
 
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT,
+    MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
 )
 from mod.tuner import find_freqnotecents
 # logging.basicConfig(filename='debug.log', level=logging.DEBUG)
@@ -3696,16 +3697,46 @@ _:b%i
         onoff = 1 # TODO: communicate with mod-host. This is not implemented in mod-host yet!
         callback(True, int(onoff))
 
+    def hmi_set_send_midi_clk_on(self, set_send_midi_clk_on_callback):
+        # Define the callback we use below
+        def midi_beat_clock_sender_added(ok):
+            if ok == MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID:
+                # Connect the plug-in to the MIDI output.
+                jack_output_port = "midi-broadcaster:in" # TODO: In legacy mode this would be "ttymidi:MIDI_in" or any USB MIDI device
+                result = connect_jack_ports("effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT),
+                                             jack_output_port)
+                logging.info("connect result: {0}".format(result))
+                if result:
+                    set_send_midi_clk_on_callback(True)
+                else:
+                    # Since something went wrong, remove the plug-in
+                    self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID)
+                    set_send_midi_clk_on_callback(False)
+            else:
+                set_send_midi_clk_on_callback(False)
+
+        self.send_notmodified("add %s %d" % (MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID), midi_beat_clock_sender_added)
+
+    def hmi_set_send_midi_clk_off(self, set_send_midi_clk_off_callback):
+        logging.info("hmi set midi beat clock OFF")
+        # Just remove the plug-in without disconnecting gracefully
+        self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID)
+        set_send_midi_clk_off_callback(True)        
+        
     def hmi_set_send_midi_clk(self, onoff, callback):
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi set midi beat clock status to {0}".format(onoff))
 
         if onoff in [0, 1]:
-            # TODO: communicate with mod host. This is not implemented in mod-host yet!
-            callback(True)
+            if onoff == 0:
+                self.hmi_set_send_midi_clk_off(callback)
+                pass
+                
+            if onoff == 1:
+                self.hmi_set_send_midi_clk_on(callback)
         else:
             callback(False)
-
+            
     def hmi_get_current_profile(self, callback):
         """Return the index of the currently loaded profile. This is a string."""
         logging.info("hmi get current profile")
