@@ -244,8 +244,9 @@ function TransportControls(options) {
                     if (! ok) {
                         return
                     }
-                    ws.send("link_enable 1")
                     ws.send("midi_clock_slave_enable 0")
+                    ws.send("link_enable 1")
+                    
                     self.setControlEnabled(":bpm", true)
                     self.setSyncMode(newSyncMode)
                 })
