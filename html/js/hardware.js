@@ -56,7 +56,7 @@ function HardwareManager(options) {
 
     this.beatsPerMinutePort = {
       ranges: { // XXX would be good to have a centralized place for this data, currently it's also in transport.js and others
-          minimum: 40.0,
+          minimum: 20.0,
           maximum: 280.0
       },
       value: null

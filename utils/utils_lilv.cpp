@@ -4026,7 +4026,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                     case 2:
                         value = lilv_node_as_float(portvalue);
-                        if (value >= 40.0f && value <= 280.0f)
+                        if (value >= 20.0f && value <= 280.0f)
                         {
                             info.timeInfo.bpm = value;
                             info.timeInfo.bpmCC = { mchan, mctrl, false, 0.0f, 0.0f };
