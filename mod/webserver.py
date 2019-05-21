@@ -338,9 +338,7 @@ class SystemInfo(JsonRequestHandler):
 
         info = {
             "hwname": hwdesc.get('name', "Unknown"),
-            "model": hwdesc.get('model', "Unknown")
             "architecture": hwdesc.get('architecture', "Unknown"),
-            "platform": hwdesc.get('platform', "Unknown"),
             "sysdate": sysdate,
             "python": {
                 "version" : sys.version
