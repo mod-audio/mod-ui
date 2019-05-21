@@ -78,6 +78,10 @@ PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v1")
 
+MIDI_BEAT_CLOCK_SENDER_URI = "http://gareus.org/oss/lv2/mclk"
+MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
+MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort
+    
 TUNER = os.environ.get('MOD_TUNER_PLUGIN', "gxtuner")
 TUNER_INSTANCE_ID = 9994
 
@@ -89,7 +93,7 @@ else:
     TUNER_URI = "urn:mod:gxtuner"
     TUNER_INPUT_PORT = "in"
     TUNER_MONITOR_PORT = "FREQ"
-
+    
 PEDALBOARD_INSTANCE = "/pedalboard"
 PEDALBOARD_INSTANCE_ID = 9995
 PEDALBOARD_URI = "urn:mod:pedalboard"
