@@ -654,10 +654,8 @@ class Host(object):
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
-        # DEBUG: For Ievgen developing a looper
-        yield gen.Task(self.send_notmodified, "feature_enable midi_clock_slave 1", datatype='boolean')
-        yield gen.Task(self.send_notmodified, "feature_enable link 0", datatype='boolean')
-
+        # TODO: Initialize sync mode here?
+        
         # All set, disable HW bypass now
         init_bypass()
 
