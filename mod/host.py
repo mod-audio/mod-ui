@@ -61,6 +61,7 @@ from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
+    DEFAULT_DISPLAY_BRIGHTNESS
 )
 from mod.tuner import find_freqnotecents
 # logging.basicConfig(filename='debug.log', level=logging.DEBUG)
@@ -336,6 +337,8 @@ class Host(object):
         Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
+
+        
 
     def __del__(self):
         self.msg_callback("stop")
@@ -654,7 +657,11 @@ class Host(object):
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
-        # TODO: Initialize sync mode here?
+        # After all is set, update the HMI        
+        display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
+        self.hmi.send("boot {0} {1} {2}".format(display_brightness,
+                                                self.profile.get_master_volume_channel_mode(),
+                                                self.pedalboard_name))
         
         # All set, disable HW bypass now
         init_bypass()
@@ -3802,14 +3809,14 @@ _:b%i
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.info("hmi get display brightness")
-        value = -1 # TODO
+        value = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
         callback(True, int(value))
 
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.info("hmi set display brightness to {0}".format(brightness))
         if brightness in [0, 1, 2, 3, 4]:
-            # TODO = brightness
+            self.prefs.setAndSave("display_brightness", brightness)
             callback(True)
         else:
             callback(False)

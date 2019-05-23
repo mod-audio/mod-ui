@@ -104,3 +104,6 @@ PLAYBACK_PATH='/tmp/playback.ogg'
 UPDATE_MOD_OS_FILE='/data/modduo.tar'
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
+
+# This is used if the key value pair does not exist in the preference JSON file
+DEFAULT_DISPLAY_BRIGHTNESS=3
