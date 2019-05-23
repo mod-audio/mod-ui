@@ -3693,10 +3693,13 @@ _:b%i
         # Define the callback we use below
         def midi_beat_clock_sender_added(ok):
             if ok == MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID:
-                # Connect the plug-in to the MIDI output.
-                jack_output_port = "midi-broadcaster:in" # TODO: In legacy mode this would be "ttymidi:MIDI_in" or any USB MIDI device
-                result = connect_jack_ports("effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT),
-                                             jack_output_port)
+                # Connect the plug-in to the MIDI output.  TODO: In
+                # legacy mode this would be "ttymidi:MIDI_in" or any
+                # USB MIDI device
+                jack_output_port = "mod-midi-broadcaster:in" 
+                result = connect_jack_ports("effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID,
+                                                              MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT),
+                                            jack_output_port)
                 logging.info("connect result: {0}".format(result))
                 if result:
                     set_send_midi_clk_on_callback(True)
@@ -3722,14 +3725,8 @@ _:b%i
         if onoff in [0, 1]:
             if onoff == 0:
                 self.hmi_set_send_midi_clk_off(callback)
-                
             if onoff == 1:
                 self.hmi_set_send_midi_clk_on(callback)
-                
-                # `sync` defaults to 0, thus Host Sync is off. Enable it by setting `sync` to 1.
-                self.send_notmodified("param_set %d %s %f" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, "sync", 1),
-                                      callback, datatype='boolean') # TODO: send_modified or send_notmodified?
-
         else:
             callback(False)
             
