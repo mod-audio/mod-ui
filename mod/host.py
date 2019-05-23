@@ -1922,18 +1922,9 @@ class Host(object):
             if data[2] == "serial_midi_out":
                 return "ttymidi:MIDI_out"
             if data[2] == "midi_merger_out":
-                if APP == 1:
-                    # The standalone development client and the
-                    # internal client (on the Duo) have different port
-                    # names.
-                    return "midi-merger:out"
-                else:
-                    return "mod-midi-merger:out"
+                return "mod-midi-merger:out"
             if data[2] == "midi_broadcaster_in":
-                if APP == 1:
-                    return "midi-broadcaster:in"
-                else:
-                    return "mod-midi-broadcaster:in"
+                return "mod-midi-broadcaster:in"
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
