@@ -339,6 +339,10 @@ class SystemInfo(JsonRequestHandler):
         info = {
             "hwname": hwdesc.get('name', "Unknown"),
             "architecture": hwdesc.get('architecture', "Unknown"),
+            "cpu": hwdesc.get('cpu', "Unknown"),
+            "platform": hwdesc.get('platform', "Unknown"),
+            "bin_compat": hwdesc.get('bin-compat', "Unknown"),
+            "model": hwdesc.get('model', "Unknown"),
             "sysdate": sysdate,
             "python": {
                 "version" : sys.version
@@ -1402,7 +1406,7 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
-            'architecture': get_hardware_descriptor().get('architecture', 'Unknown'),
+            'bin_compat': get_hardware_descriptor().get('bin-compat', 'Unknown'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),
