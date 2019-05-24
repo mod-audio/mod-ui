@@ -45,7 +45,7 @@ function InstallationQueue() {
                         break;
                     }
                 }
-                if (targetfiles == null) {
+                if (targetfiles == null || targetfiles.file_href === undefined) {
                     new Notification('error', "Can't find bundle to install", 5000)
                     if (queue.length == 0) {
                         notification.closeAfter(3000)
