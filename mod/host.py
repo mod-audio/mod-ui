@@ -3878,25 +3878,21 @@ _:b%i
         callback(True, str(self.pedalboard_name))
 
     def hmi_get_exp_mode(self, callback):
-        """Return, if the input is set to expression pedal or control voltage."""
-        # TODO ALSA?
-        callback(True, int(0)) # 0= singnal on tip, 1= signal on sleeve
+        """Return, if the expression pedal signal is on tip or sleeve."""
+        mode = self.profile.get_exp_mode()
+        callback(True, int(mode))
 
     def hmi_set_exp_mode(self, mode, callback):
-        """TODO."""
-        # TODO ALSA?
-        # 0= singnal on tip, 1= signal on sleeve
+        """Set the mode mode for the expression pedal input. That is, if the signal is on tip or sleeve."""
         callback(True)
 
     def hmi_get_control_voltage_bias(self, callback):
         """Get the setting of the control voltage bias."""
-        # TODO ALSA!
         bias_mode = self.profile.get_control_voltage_bias()  # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
         callback(True, int(bias_mode))
 
     def hmi_set_control_voltage_bias(self, bias_mode, callback):
         """Set the setting of the control voltage bias."""
-        # TODO ALSA!
         result = self.profile.set_control_voltage_bias(bias_mode)
         callback(result)
 
