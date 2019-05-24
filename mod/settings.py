@@ -101,7 +101,7 @@ PEDALBOARD_URI = "urn:mod:pedalboard"
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
-UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('RESTORE_TAR_FILE_NAME', 'modduo.tar').replace('*',''))
+UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
 
