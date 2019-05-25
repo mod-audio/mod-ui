@@ -33,6 +33,7 @@ DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
+HARDWARE_DESC_FILE = os.environ.pop('MOD_HARDWARE_DESC_FILE', '/etc/mod-hardware-descriptor.json')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
     with open(IMAGE_VERSION_PATH, 'r') as fh:

@@ -22,6 +22,8 @@ import shutil
 from datetime import datetime
 from functools import wraps
 
+from mod.settings import HARDWARE_DESC_FILE
+
 
 def jsoncall(method):
     @wraps(method)
@@ -129,7 +131,7 @@ def symbolify(name):
 
 
 def get_hardware_descriptor():
-    mod_hw = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+    mod_hw = safe_json_load(HARDWARE_DESC_FILE, dict)
     return mod_hw
 
 
