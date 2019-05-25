@@ -33,6 +33,7 @@ DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
+HARDWARE_DESC_FILE = os.environ.pop('MOD_HARDWARE_DESC_FILE', '/etc/mod-hardware-descriptor.json')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
     with open(IMAGE_VERSION_PATH, 'r') as fh:
@@ -93,7 +94,7 @@ else:
     TUNER_URI = "urn:mod:gxtuner"
     TUNER_INPUT_PORT = "in"
     TUNER_MONITOR_PORT = "FREQ"
-    
+
 PEDALBOARD_INSTANCE = "/pedalboard"
 PEDALBOARD_INSTANCE_ID = 9995
 PEDALBOARD_URI = "urn:mod:pedalboard"
@@ -101,7 +102,7 @@ PEDALBOARD_URI = "urn:mod:pedalboard"
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
-UPDATE_MOD_OS_FILE='/data/modduo.tar'
+UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
 
