@@ -19,8 +19,7 @@ import os, sys
 from os.path import join
 
 DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
-#DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
-DEV_HMI = False
+DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
 DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 
 APP = bool(int(os.environ.get('MOD_APP', False)))
@@ -34,6 +33,7 @@ DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
+HARDWARE_DESC_FILE = os.environ.pop('MOD_HARDWARE_DESC_FILE', '/etc/mod-hardware-descriptor.json')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
     with open(IMAGE_VERSION_PATH, 'r') as fh:
@@ -87,6 +87,10 @@ PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v1")
 
+MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
+MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
+MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort
+    
 TUNER = os.environ.get('MOD_TUNER_PLUGIN', "gxtuner")
 TUNER_INSTANCE_ID = 9994
 
@@ -106,6 +110,9 @@ PEDALBOARD_URI = "urn:mod:pedalboard"
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
-UPDATE_MOD_OS_FILE='/data/modduo.tar'
+UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
+
+# This is used if the key value pair does not exist in the preference JSON file
+DEFAULT_DISPLAY_BRIGHTNESS=3

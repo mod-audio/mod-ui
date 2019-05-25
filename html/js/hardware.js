@@ -376,12 +376,13 @@ function HardwareManager(options) {
         var instanceAndSymbol = instance+"/"+port.symbol;
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
+        var portValuesWithDividerLabels = []
         // Sync port value to bpm
-        if (tempoValue && dividerValue) {
+        if (tempoValue && dividerValue && port.units && port.units.symbol) {
           port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol);
+          portValuesWithDividerLabels = getOptionsPortValues(port.units.symbol, self.beatsPerMinutePort.value, dividerOptions);
         }
 
-        var portValuesWithDividerLabels = getOptionsPortValues(port.units.symbol, self.beatsPerMinutePort.value, dividerOptions);
         var addressing = {
             uri    : actuator.uri || kNullAddressURI,
             label  : labelValue,

@@ -40,7 +40,7 @@ from mod.settings import (APP, LOG,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST)
 
-from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
+from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
@@ -328,7 +328,7 @@ class MultiPartFileReceiver(JsonRequestHandler):
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
-        hwdesc = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+        hwdesc = get_hardware_descriptor()
         uname  = os.uname()
 
         if os.path.exists("/etc/mod-release/system"):
@@ -338,7 +338,12 @@ class SystemInfo(JsonRequestHandler):
             sysdate = "Unknown"
 
         info = {
-            "hwname": hwdesc.get('name',"Unknown"),
+            "hwname": hwdesc.get('name', "Unknown"),
+            "architecture": hwdesc.get('architecture', "Unknown"),
+            "cpu": hwdesc.get('cpu', "Unknown"),
+            "platform": hwdesc.get('platform', "Unknown"),
+            "bin_compat": hwdesc.get('bin-compat', "Unknown"),
+            "model": hwdesc.get('model', "Unknown"),
             "sysdate": sysdate,
             "python": {
                 "version" : sys.version
@@ -1434,6 +1439,7 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
+            'bin_compat': get_hardware_descriptor().get('bin-compat', 'Unknown'),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),

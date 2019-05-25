@@ -304,6 +304,7 @@ class Session(object):
         return title
 
     def reset(self, callback):
+        logging.info("SESSION RESET")
         self.host.send_notmodified("feature_enable processing 0")
 
         def host_callback(resp):

@@ -22,9 +22,10 @@ from mod.host import Host
 
 class FakeHMI(HMI):
     def init(self, callback):
-        pass
+        self.initialized = False
+        ioloop.IOLoop.instance().add_callback(callback)
 
-    def send(self, msg, callback=None, datatype=None):
+    def send(self, msg, callback=None, datatype='int'):
         logging.info(msg)
         if callback is None:
             return

@@ -33,7 +33,7 @@ from collections import OrderedDict
 from random import randint
 from shutil import rmtree
 from tornado import gen, iostream, ioloop
-import os, json, socket, time, logging
+import os, json, socket, time, logging, copy
 
 from mod import safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
@@ -43,7 +43,7 @@ from modtools.utils import (
     charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
-    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_midi_beat_clock_sender_port, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
     connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
@@ -59,7 +59,9 @@ from modtools.tempo import (
 
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT,
+    MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
+    DEFAULT_DISPLAY_BRIGHTNESS
 )
 from mod.tuner import find_freqnotecents
 # logging.basicConfig(filename='debug.log', level=logging.DEBUG)
@@ -336,6 +338,8 @@ class Host(object):
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
+        
+
     def __del__(self):
         self.msg_callback("stop")
         self.close_jack()
@@ -448,7 +452,8 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            return self.hmi.control_add(data, actuator, callback)
+            actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
+            return self.hmi.control_add(data, actuator, actuator_uri, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
@@ -516,10 +521,10 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, hw_id=None):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
-            return self.hmi.control_rm(instance_id, portsymbol, callback)
+            return self.hmi.control_rm([hw_id], callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
@@ -652,10 +657,12 @@ class Host(object):
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
-        # DEBUG: For Ievgen developing a looper
-        yield gen.Task(self.send_notmodified, "feature_enable midi_clock_slave 1", datatype='boolean')
-        yield gen.Task(self.send_notmodified, "feature_enable link 0", datatype='boolean')
-
+        # After all is set, update the HMI        
+        display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
+        self.hmi.send("boot {0} {1} {2}".format(display_brightness,
+                                                self.profile.get_master_volume_channel_mode(),
+                                                self.pedalboard_name))
+        
         # All set, disable HW bypass now
         init_bypass()
 
@@ -748,11 +755,11 @@ class Host(object):
         def foot2_callback(ok):
             acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch2"]
             cfgact = BANK_CONFIG_PEDALBOARD_UP if enabled else BANK_CONFIG_NOTHING
-            self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, callback)
+            self.hmi.bank_config(acthw, cfgact, callback)
 
         acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch1"]
         cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
-        self.hmi.bank_config(acthw[0], acthw[1], acthw[2], acthw[3], cfgact, foot2_callback)
+        self.hmi.bank_config(acthw, cfgact, foot2_callback)
 
     def initialize_hmi(self, uiConnected, callback):
         # If UI is already connected, do nothing
@@ -1182,8 +1189,8 @@ class Host(object):
 
             if self.transport_sync == "link":
                 self.set_link_enabled(True)
-            # if self.transport_sync == "midi_clock_slave":
-            #     self.set_midi_clock_slave_enabled(True)
+            if self.transport_sync == "midi_clock_slave":
+                self.set_midi_clock_slave_enabled(True)
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -1506,25 +1513,25 @@ class Host(object):
                 self.plugins_added.remove(instance_id)
 
         used_hmi_actuators = []
+        used_hw_ids = []
 
         for symbol in [symbol for symbol in pluginData['addressings'].keys()]:
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
-            self.addressings.remove(addressing)
+            was_active = self.addressings.remove(addressing)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                if actuator_uri not in used_hmi_actuators:
+                if actuator_uri not in used_hmi_actuators and was_active:
                     used_hmi_actuators.append(actuator_uri)
+                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                    used_hw_ids.append(hw_id)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 yield gen.Task(self.addr_task_unaddressing, actuator_type,
                                                             addressing['instance_id'],
                                                             addressing['port'])
-
-        for actuator_uri in used_hmi_actuators:
-            yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
 
         def host_callback(ok):
             callback(ok)
@@ -1541,8 +1548,13 @@ class Host(object):
         def hmi_callback(ok):
             self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
-        if self.hmi.initialized:
-            self.hmi.control_rm(instance_id, ":all", hmi_callback)
+        def hmi_control_rm_callback(ok):
+            for actuator_uri in used_hmi_actuators:
+                self.addressings.hmi_load_current(actuator_uri, hmi_callback)
+
+        if self.hmi.initialized and len(used_hw_ids) > 0:
+            # Remove active addressed port from HMI
+            self.hmi.control_rm(used_hw_ids, hmi_control_rm_callback)
         else:
             hmi_callback(True)
 
@@ -1937,18 +1949,9 @@ class Host(object):
             if data[2] == "serial_midi_out":
                 return "ttymidi:MIDI_out"
             if data[2] == "midi_merger_out":
-                if APP == 1:
-                    # The standalone development client and the
-                    # internal client (on the Duo) have different port
-                    # names.
-                    return "midi-merger:out"
-                else:
-                    return "mod-midi-merger:out"
+                return "mod-midi-merger:out"
             if data[2] == "midi_broadcaster_in":
-                if APP == 1:
-                    return "midi-broadcaster:in"
-                else:
-                    return "mod-midi-broadcaster:in"
+                return "mod-midi-broadcaster:in"
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
@@ -3089,7 +3092,7 @@ _:b%i
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
 
         if old_addressing is not None:
-            # Need to remove old addressings first
+            # Need to remove old addressings for that port first
             old_actuator_uri  = old_addressing['actuator_uri']
             old_actuator_type = self.addressings.get_actuator_type(old_actuator_uri)
 
@@ -3130,9 +3133,17 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
-            yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                        old_addressing['instance_id'],
-                                                        old_addressing['port'])
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                old_hw_id = self.addressings.hmi_uri2hw_map[old_actuator_uri]
+                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                            old_addressing['instance_id'],
+                                                            old_addressing['port'],
+                                                            hw_id=old_hw_id)
+                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
+            else:
+                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                            old_addressing['instance_id'],
+                                                            old_addressing['port'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -3169,7 +3180,8 @@ _:b%i
             return
 
         if needsValueChange:
-            yield gen.Task(self.hmi_parameter_set, instance_id, portsymbol, value)
+            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+            yield gen.Task(self.hmi_parameter_set, hw_id, value)
 
         pluginData['addressings'][portsymbol] = addressing
 
@@ -3332,12 +3344,29 @@ _:b%i
 
         self.reset(hmi_clear_callback)
 
-    def hmi_parameter_get(self, instance_id, portsymbol, callback):
+    def get_addressed_port_info(self, hw_id):
+        actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
+        addressings = self.addressings.hmi_addressings[actuator_uri]
+        addressings_addrs = addressings['addrs']
+        addressings_idx   = addressings['idx']
+
+        addressing_data = addressings_addrs[addressings_idx]
+        instance_id = addressing_data['instance_id']
+        portsymbol = addressing_data['port']
+
+        return instance_id, portsymbol
+
+    def hmi_parameter_get(self, hw_id, callback):
         logging.info("hmi parameter get")
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         callback(self.addr_task_get_port_value(instance_id, portsymbol))
 
-    def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
+    # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
+    def hmi_parameter_set(self, hw_id, value, callback):
         logging.info("hmi parameter set")
+
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
+
         try:
             instance = self.mapper.get_instance(instance_id)
         except KeyError:
@@ -3419,10 +3448,9 @@ _:b%i
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-    def hmi_parameter_addressing_next(self, hardware_type, hardware_id, actuator_type, actuator_id, callback):
+    def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.info("hmi parameter addressing next")
-        actuator_hw = (hardware_type, hardware_id, actuator_type, actuator_id)
-        self.addressings.hmi_load_next_hw(actuator_hw, callback)
+        self.addressings.hmi_load_next_hw(hw_id, callback)
 
     def hmi_save_current_pedalboard(self, callback):
         logging.info("hmi save current pedalboard")
@@ -3684,19 +3712,51 @@ _:b%i
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi get midi beat clock status")
 
-        onoff = 1 # TODO: communicate with mod-host. This is not implemented in mod-host yet!
-        callback(True, int(onoff))
+        # TODO: This uses the `utils/utils_jack.cpp` module with
+        # hardcoded values for instance ID and port symbol!
+        callback(True, int(has_midi_beat_clock_sender_port()))
 
+    def hmi_set_send_midi_clk_on(self, set_send_midi_clk_on_callback):
+        # Define the callback we use below
+        def midi_beat_clock_sender_added(ok):
+            if ok == MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID:
+                # Connect the plug-in to the MIDI output.  TODO: In
+                # legacy mode this would be "ttymidi:MIDI_in" or any
+                # USB MIDI device
+                jack_output_port = "mod-midi-broadcaster:in" 
+                result = connect_jack_ports("effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID,
+                                                              MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT),
+                                            jack_output_port)
+                logging.info("connect result: {0}".format(result))
+                if result:
+                    set_send_midi_clk_on_callback(True)
+                else:
+                    # Since something went wrong, remove the plug-in
+                    self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID)
+                    set_send_midi_clk_on_callback(False)
+            else:
+                set_send_midi_clk_on_callback(False)
+
+        self.send_notmodified("add %s %d" % (MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID), midi_beat_clock_sender_added)
+
+    def hmi_set_send_midi_clk_off(self, set_send_midi_clk_off_callback):
+        logging.info("hmi set midi beat clock OFF")
+        # Just remove the plug-in without disconnecting gracefully
+        self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID)
+        set_send_midi_clk_off_callback(True)        
+        
     def hmi_set_send_midi_clk(self, onoff, callback):
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi set midi beat clock status to {0}".format(onoff))
 
         if onoff in [0, 1]:
-            # TODO: communicate with mod host. This is not implemented in mod-host yet!
-            callback(True)
+            if onoff == 0:
+                self.hmi_set_send_midi_clk_off(callback)
+            if onoff == 1:
+                self.hmi_set_send_midi_clk_on(callback)
         else:
             callback(False)
-
+            
     def hmi_get_current_profile(self, callback):
         """Return the index of the currently loaded profile. This is a string."""
         logging.info("hmi get current profile")
@@ -3771,14 +3831,14 @@ _:b%i
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.info("hmi get display brightness")
-        value = -1 # TODO
+        value = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
         callback(True, int(value))
 
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.info("hmi set display brightness to {0}".format(brightness))
         if brightness in [0, 1, 2, 3, 4]:
-            # TODO = brightness
+            self.prefs.setAndSave("display_brightness", brightness)
             callback(True)
         else:
             callback(False)
@@ -3840,25 +3900,21 @@ _:b%i
         callback(True, str(self.pedalboard_name))
 
     def hmi_get_exp_mode(self, callback):
-        """Return, if the input is set to expression pedal or control voltage."""
-        # TODO ALSA?
-        callback(True, int(0)) # 0= singnal on tip, 1= signal on sleeve
+        """Return, if the expression pedal signal is on tip or sleeve."""
+        mode = self.profile.get_exp_mode()
+        callback(True, int(mode))
 
     def hmi_set_exp_mode(self, mode, callback):
-        """TODO."""
-        # TODO ALSA?
-        # 0= singnal on tip, 1= signal on sleeve
+        """Set the mode mode for the expression pedal input. That is, if the signal is on tip or sleeve."""
         callback(True)
 
     def hmi_get_control_voltage_bias(self, callback):
         """Get the setting of the control voltage bias."""
-        # TODO ALSA!
         bias_mode = self.profile.get_control_voltage_bias()  # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
         callback(True, int(bias_mode))
 
     def hmi_set_control_voltage_bias(self, bias_mode, callback):
         """Set the setting of the control voltage bias."""
-        # TODO ALSA!
         result = self.profile.set_control_voltage_bias(bias_mode)
         callback(result)
 

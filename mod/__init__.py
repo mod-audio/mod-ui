@@ -22,6 +22,8 @@ import shutil
 from datetime import datetime
 from functools import wraps
 
+from mod.settings import HARDWARE_DESC_FILE
+
 
 def jsoncall(method):
     @wraps(method)
@@ -128,10 +130,13 @@ def symbolify(name):
     return name
 
 
-def get_hardware_actuators():
-    mod_hw = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+def get_hardware_descriptor():
+    mod_hw = safe_json_load(HARDWARE_DESC_FILE, dict)
+    return mod_hw
 
-    return mod_hw.get('actuators', [])
+
+def get_hardware_actuators():
+    return get_hardware_descriptor().get('actuators', [])
 
 
 class TextFileFlusher(object):

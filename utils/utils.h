@@ -356,6 +356,7 @@ MOD_API unsigned set_jack_buffer_size(unsigned size);
 MOD_API float get_jack_sample_rate(void);
 MOD_API const char* get_jack_port_alias(const char* portname);
 MOD_API const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput);
+MOD_API bool has_midi_beat_clock_sender_port(void);
 MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
 MOD_API bool has_midi_merger_output_port(void);
