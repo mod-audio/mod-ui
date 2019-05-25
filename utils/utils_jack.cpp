@@ -152,10 +152,14 @@ bool init_jack(void)
         {
             snd_mixer_selem_id_t* sid;
 
-            const char* soundcard = getenv("MOD_SOUNDCARD");
+            char soundcard[32] = "hw:";
 
-            if (soundcard == nullptr)
-                soundcard = "hw:" ALSA_SOUNDCARD_DEFAULT_ID;
+            if (const char* const cardname = getenv("MOD_SOUNDCARD"))
+                strncat(soundcard, cardname, 28);
+            else
+                strncat(soundcard, ALSA_SOUNDCARD_DEFAULT_ID, 28);
+
+            soundcard[31] = '\0';
 
             if (snd_mixer_attach(gAlsaMixer, soundcard) == 0 &&
                 snd_mixer_selem_register(gAlsaMixer, nullptr, nullptr) == 0 &&
