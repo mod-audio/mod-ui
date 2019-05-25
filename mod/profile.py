@@ -208,6 +208,18 @@ class Profile:
     def get_control_voltage_bias(self):
         return self.__control_voltage_bias
 
+    __exp_mode = 0 # 0="singnal on tip", 1="signal on sleeve"
+    def set_exp_mode(self, value):
+        result = False
+        if value in [0, 1]:
+            if value != self.__exp_mode:
+                self.__exp_mode = value
+                result = self.__changed()
+        return result
+
+    def get_exp_mode(self):
+        return self.__exp_mode    
+    
     def get_last_stored_profile_index(self):
         """Return the profile index that was stored latest and if it was changed since."""
         return self.__last_stored_profile_index, self.__state_changed
@@ -242,6 +254,7 @@ class Profile:
             "configurable_output_mode": self.__configurable_output_mode,
             "quick_bypass_mode": self.__quick_bypass_mode,
             "control_voltage_bias": self.__control_voltage_bias,
+            "expression_pedal_mode": self.__exp_mode,
         }
         result = False
         try:
@@ -279,6 +292,7 @@ class Profile:
             self.__configurable_output_mode = data["configurable_output_mode"]
             self.__quick_bypass_mode = data["quick_bypass_mode"]
             self.__control_voltage_bias = data["control_voltage_bias"]
+            self.__exp_mode = data["expression_pedal_mode"]
 
             self.__state_changed == False
             result = True

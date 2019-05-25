@@ -827,18 +827,19 @@ class TestHMIProtocol(unittest.TestCase):
             self.fail("No response")
             
 
-    def test_set_midi_clk_off_01(self):
-        off = 0
-        ##     "set_send_midi_clk": [int],
-        msg = ("set_send_midi_clk {0}\00").format(off).encode("utf-8")
-        self.ser.write(msg)
-        self.ser.flush();
+    ## TODO missing the plug-in on PC...
+    # def test_set_midi_clk_off_01(self):
+    #     off = 0
+    #     ##     "set_send_midi_clk": [int],
+    #     msg = ("set_send_midi_clk {0}\00").format(off).encode("utf-8")
+    #     self.ser.write(msg)
+    #     self.ser.flush();
         
-        resp = self.ser.read_until('\x00', 100)
-        if (resp):
-            self.assertEqual(resp, b'resp 0\x00')
-        else:
-            self.fail("No response")
+    #     resp = self.ser.read_until('\x00', 100)
+    #     if (resp):
+    #         self.assertEqual(resp, b'resp 0\x00')
+    #     else:
+    #         self.fail("No response")
 
     def test_get_send_midi_clk_01(self):
         ## First set it to off!
@@ -1136,7 +1137,8 @@ class TestHMIProtocol(unittest.TestCase):
             self.assertEqual(resp, b'resp 0\x00') # TODO check correctness
         else:
             self.fail("No response")
-    
+            
+            
 
 if __name__ == '__main__':
     # Handle command line arguments

@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2019 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#define ALSA_SOUNDCARD_ID         "hw:MODDUO"
+#define ALSA_SOUNDCARD_DEFAULT_ID "MODDUO"
 #define ALSA_CONTROL_BYPASS_LEFT  "Left True-Bypass"
 #define ALSA_CONTROL_BYPASS_RIGHT "Right True-Bypass"
 #define ALSA_CONTROL_LOOPBACK     "LOOPBACK"
@@ -152,7 +152,16 @@ bool init_jack(void)
         {
             snd_mixer_selem_id_t* sid;
 
-            if (snd_mixer_attach(gAlsaMixer, ALSA_SOUNDCARD_ID) == 0 &&
+            char soundcard[32] = "hw:";
+
+            if (const char* const cardname = getenv("MOD_SOUNDCARD"))
+                strncat(soundcard, cardname, 28);
+            else
+                strncat(soundcard, ALSA_SOUNDCARD_DEFAULT_ID, 28);
+
+            soundcard[31] = '\0';
+
+            if (snd_mixer_attach(gAlsaMixer, soundcard) == 0 &&
                 snd_mixer_selem_register(gAlsaMixer, nullptr, nullptr) == 0 &&
                 snd_mixer_load(gAlsaMixer) == 0 &&
                 snd_mixer_selem_id_malloc(&sid) == 0)
