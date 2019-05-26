@@ -31,7 +31,8 @@
 #define ALSA_SOUNDCARD_DEFAULT_ID "MODDUO"
 #define ALSA_CONTROL_BYPASS_LEFT  "Left True-Bypass"
 #define ALSA_CONTROL_BYPASS_RIGHT "Right True-Bypass"
-#define ALSA_CONTROL_LOOPBACK     "LOOPBACK"
+#define ALSA_CONTROL_LOOPBACK1    "LOOPBACK"
+#define ALSA_CONTROL_LOOPBACK2    "Loopback Switch"
 
 #define JACK_SLAVE_PREFIX     "mod-slave"
 #define JACK_SLAVE_PREFIX_LEN 9
@@ -546,7 +547,13 @@ void init_bypass(void)
     if (snd_mixer_selem_id_malloc(&sid) == 0)
     {
         snd_mixer_selem_id_set_index(sid, 0);
-        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK1);
+
+        if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+            snd_mixer_selem_set_playback_switch_all(elem, 0);
+
+        snd_mixer_selem_id_set_index(sid, 0);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK2);
 
         if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
             snd_mixer_selem_set_playback_switch_all(elem, 0);
