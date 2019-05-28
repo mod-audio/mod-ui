@@ -659,9 +659,12 @@ class Host(object):
 
         # After all is set, update the HMI        
         display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
+        pb_name = self.pedalboard_name
+        if pb_name == "":
+            pb_name = "UNTITLED" # NOTE: In MOD UI this is grayed out but visible
         self.hmi.send("boot {0} {1} {2}".format(display_brightness,
                                                 self.profile.get_master_volume_channel_mode(),
-                                                self.pedalboard_name))
+                                                pb_name))
         
         # All set, disable HW bypass now
         init_bypass()
