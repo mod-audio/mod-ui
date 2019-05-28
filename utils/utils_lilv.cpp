@@ -3981,12 +3981,12 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
             }
 #endif
 
-            if (strcmp(portsym, "midi_aggregated_mode") == 0)
+            if (strcmp(portsym, "midi_legacy_mode") == 0)
             {
-                if (LilvNode* const aggregated = lilv_world_get(w, hwport, ingen_value, nullptr))
+                if (LilvNode* const legacy = lilv_world_get(w, hwport, ingen_value, nullptr))
                 {
-                    info.midi_aggregated_mode = lilv_node_as_int(aggregated) != 0;
-                    lilv_node_free(aggregated);
+                    info.midi_legacy_mode = lilv_node_as_int(legacy) != 0;
+                    lilv_node_free(legacy);
                 }
                 lilv_free(portsym);
                 continue;

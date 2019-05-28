@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+
 from base64 import b64decode, b64encode
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
@@ -896,8 +897,24 @@ class EffectPresetLoad(JsonRequestHandler):
     @gen.engine
     def get(self, instance):
         uri = self.get_argument('uri')
+
         ok  = yield gen.Task(SESSION.host.preset_load, instance, uri)
+
+        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
+        data = SESSION.host.addressings.get_presets_as_options(instance_id)
+        value, maximum, options, spreset = data
+
+        ok  = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value) 
         self.write(ok)
+
+class EffectParameterSet(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        symbol, instance, portsymbol, value = data.rsplit("/",3)
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, portsymbol, value)
+        self.write(True)
 
 class EffectPresetSaveNew(JsonRequestHandler):
     @web.asynchronous
@@ -906,6 +923,20 @@ class EffectPresetSaveNew(JsonRequestHandler):
         name = self.get_argument('name')
         resp = yield gen.Task(SESSION.host.preset_save_new, instance, name)
         self.write(resp)
+        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
+        addressings = SESSION.host.plugins[instance_id]['addressings']
+        if ':presets' in addressings:
+            presets = addressings[':presets']
+            data = SESSION.host.addressings.get_presets_as_options(instance_id)
+            if data:
+                value, maximum, options, spreset = data
+                port = instance + '/' + presets['port']
+                minimum = presets['minimum']
+                label = presets['label']
+                steps = presets['steps']
+                actuator_uri = presets['actuator_uri']
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps)
+
 
 class EffectPresetSaveReplace(JsonRequestHandler):
     @web.asynchronous
@@ -916,6 +947,20 @@ class EffectPresetSaveReplace(JsonRequestHandler):
         name   = self.get_argument('name')
         resp   = yield gen.Task(SESSION.host.preset_save_replace, instance, uri, bundle, name)
         self.write(resp)
+        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
+        addressings = SESSION.host.plugins[instance_id]['addressings']
+        if ':presets' in addressings:
+            presets = addressings[':presets']
+            data = SESSION.host.addressings.get_presets_as_options(instance_id)
+            if data:
+                value, maximum, options, spreset = data
+                port = instance + '/' + presets['port']
+                minimum = presets['minimum']
+                label = presets['label']
+                steps = presets['steps']
+                actuator_uri = presets['actuator_uri']
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps)
+
 
 class EffectPresetDelete(JsonRequestHandler):
     @web.asynchronous
@@ -1790,6 +1835,7 @@ application = web.Application(
 
             # plugin parameters
             (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/parameter/set/?", EffectParameterSet),
 
             # plugin presets
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),

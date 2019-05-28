@@ -50,11 +50,11 @@ from modtools.utils import (
 
 from modtools.tempo import (
     convert_port_value_to_seconds_equivalent,
-    convert_seconds_to_port_value_equivalent,
-    get_port_value,
     get_options_port_values,
     get_divider_options,
-    get_divider_value
+    get_divider_value,
+    get_value_from_options,
+    dividers as all_dividers
 )
 
 from mod.settings import (
@@ -175,7 +175,7 @@ class Host(object):
         self.audioportsIn = []
         self.audioportsOut = []
         self.midiports = [] # [symbol, alias, pending-connections]
-        self.midi_aggregated_mode = False
+        self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
         self.hasMidiMergerOut = False
@@ -303,7 +303,7 @@ class Host(object):
         Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
         Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
 
-        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)        
+        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)
         Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
         Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
 
@@ -338,7 +338,7 @@ class Host(object):
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
-        
+
 
     def __del__(self):
         self.msg_callback("stop")
@@ -450,10 +450,15 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
-    def addr_task_addressing(self, atype, actuator, data, callback):
+    def addr_task_addressing(self, atype, actuator, data, callback, not_param_set=False):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
-            return self.hmi.control_add(data, actuator, actuator_uri, callback)
+            if not not_param_set:
+                actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
+                return self.hmi.control_add(data, actuator, actuator_uri, callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
@@ -521,10 +526,15 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, hw_id=None):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, not_param_set=False, hw_id=None):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
-            return self.hmi.control_rm([hw_id], callback)
+            if not not_param_set:
+                return self.hmi.control_rm([hw_id], callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
@@ -657,12 +667,15 @@ class Host(object):
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
-        # After all is set, update the HMI        
+        # After all is set, update the HMI
         display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
+        pb_name = self.pedalboard_name
+        if pb_name == "":
+            pb_name = "UNTITLED" # NOTE: In MOD UI this is grayed out but visible
         self.hmi.send("boot {0} {1} {2}".format(display_brightness,
                                                 self.profile.get_master_volume_channel_mode(),
-                                                self.pedalboard_name))
-        
+                                                pb_name))
+
         # All set, disable HW bypass now
         init_bypass()
 
@@ -815,7 +828,6 @@ class Host(object):
             cb = footswitch_callback if self.profile.get_footswitch_navigation("bank") else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
-        logging.info("[host] JUST A TEST")
         self.setNavigateWithFootswitches(False, initial_state_callback)
 
     def start_session(self, callback):
@@ -1009,9 +1021,9 @@ class Host(object):
                     pluginData['ports'][bpb_symbol] = bpb
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
-                # elif bpm_symbol is not None:
-                #     pluginData['ports'][bpm_symbol] = bpm
-                #     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+                elif bpm_symbol is not None:
+                    pluginData['ports'][bpm_symbol] = bpm
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
                 elif speed_symbol is not None:
                     pluginData['ports'][speed_symbol] = speed
@@ -1416,6 +1428,51 @@ class Host(object):
         self.init_plugins_data()
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
+    def paramhmi_set(self, instance, portsymbol, value, callback):
+        if (instance == 'pedalboard'):
+            test = '/' + instance
+        elif (instance.startswith('/graph')):
+            test = instance
+        else:
+            test =  '/graph/' + instance
+        instance_id = self.mapper.get_id_without_creating(test)
+        plugin_data  = self.plugins.get(instance_id, None)
+
+        if plugin_data is None:
+            print("ERROR: Trying to set param for non-existing plugin instance %i: '%s'" % (instance_id, instance))
+            if callback is not None:
+                callback(False)
+            return
+
+        current_addressing = plugin_data['addressings'].get(portsymbol, None)
+        # Not addressed, not need to send control_set to the HMI
+        if current_addressing is None:
+            if callback is not None:
+                callback(True)
+            return
+
+        actuator_uri = current_addressing['actuator_uri']
+        actuator_type = self.addressings.get_actuator_type(actuator_uri)
+        if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+            addressings = self.addressings.hmi_addressings[actuator_uri]
+            addressings_addrs = addressings['addrs']
+
+            current_index = addressings['idx']
+            current_port_index = addressings_addrs.index(current_addressing)
+
+            # If currently displayed on HMI screen, then we need to set the new value on the screen
+            if current_index == current_port_index:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                self.hmi.control_set(hw_id, float(value), callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
+        else:
+            if callback is not None:
+                callback(True)
+            return
+
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
 
@@ -1459,10 +1516,10 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = self.transport_bpb
 
-                # elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
-                #     bpm_symbol = symbol
-                #     badports.append(symbol)
-                #     valports[symbol] = self.transport_bpm
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
 
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
                     speed_symbol = symbol
@@ -1925,6 +1982,7 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
+        self.paramhmi_set('pedalboard', ':presets', idx, None)
         self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
@@ -2039,7 +2097,7 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        self.midi_aggregated_mode = pb.get('midi_aggregated_mode', False)
+        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', False)
 
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
@@ -2204,7 +2262,7 @@ class Host(object):
             self.pedalboard_name     = ""
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
-            self.midi_aggregated_mode = False
+            self.midi_aggregated_mode = True
             #save_last_bank_and_pedalboard(0, "")
         else:
             self.pedalboard_empty    = False
@@ -2298,10 +2356,10 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = self.transport_bpb
 
-                # elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
-                #     bpm_symbol = symbol
-                #     badports.append(symbol)
-                #     valports[symbol] = self.transport_bpm
+                elif port['designation'] == "http://lv2plug.in/ns/ext/time#beatsPerMinute":
+                    bpm_symbol = symbol
+                    badports.append(symbol)
+                    valports[symbol] = self.transport_bpm
 
                 elif port['designation'] == "http://lv2plug.in/ns/ext/time#speed":
                     speed_symbol = symbol
@@ -2856,12 +2914,12 @@ _:b%i
         # MIDI Aggregated Mode
         index += 1
         ports += """
-<midi_aggregated_mode>
+<midi_legacy_mode>
     ingen:value %i ;
     lv2:index %i ;
     a atom:AtomPort ,
         lv2:InputPort .
-""" % (int(self.midi_aggregated_mode), index)
+""" % (int(not self.midi_aggregated_mode), index)
 
         # Write the main pedalboard file
         pbdata = """\
@@ -2895,7 +2953,7 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = [":bpb",":bpm",":rolling","midi_aggregated_mode","control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","midi_legacy_mode","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:
@@ -2974,17 +3032,19 @@ _:b%i
 
                 if ports:
                     port = ports[0]
-                    value = convert_seconds_to_port_value_equivalent(
-                        get_port_value(bpm, float(addr['dividers']['value'])),
-                        port['units']['symbol']
-                    )
+                    # value = convert_seconds_to_port_value_equivalent(
+                    #     get_port_value(bpm, float(addr['dividers']['value'])),
+                    #     port['units']['symbol']
+                    # )
                     dividerOptions = get_options_port_values(
                         port['units']['symbol'],
                         bpm,
                         get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
                     )
+                    value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
                     dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 
+                    # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
     def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
@@ -2994,6 +3054,7 @@ _:b%i
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
+
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
@@ -3004,13 +3065,13 @@ _:b%i
             for addr in addrs:
                 self.readdress(addr, bpm, callback)
 
-        # for pluginData in self.plugins.values():
-        #     bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
-        #
-        #     if bpm_symbol is not None:
-        #         pluginData['ports'][bpm_symbol] = bpm
-        #         if sendMsg:
-        #             self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
+        for pluginData in self.plugins.values():
+            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                if sendMsg:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
     def set_transport_rolling(self, rolling, sendMsg, callback=None, datatype='int'):
         self.transport_rolling = rolling
@@ -3138,12 +3199,14 @@ _:b%i
                 yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                             old_addressing['instance_id'],
                                                             old_addressing['port'],
+                                                            not_param_set=not_param_set,
                                                             hw_id=old_hw_id)
                 yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
             else:
                 yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                             old_addressing['instance_id'],
-                                                            old_addressing['port'])
+                                                            old_addressing['port'],
+                                                            not_param_set=not_param_set)
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -3154,27 +3217,46 @@ _:b%i
             callback(False)
             return
 
-
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
             return self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
                                                                      portsymbol,
                                                                      minimum,
                                                                      maximum), callback, datatype='boolean')
-        if value < minimum:
-            value = minimum
-            needsValueChange = True
-        elif value > maximum:
-            value = maximum
-            needsValueChange = True
-        else:
-            needsValueChange = False
+
+        needsValueChange = False
+        has_strict_bounds = True
+
+        # Retrieve port infos
+        if instance_id != PEDALBOARD_INSTANCE_ID:
+            pluginInfo = get_plugin_info(pluginData['uri'])
+            if pluginInfo:
+                controlPorts = pluginInfo['ports']['control']['input']
+                ports = [p for p in controlPorts if p['symbol'] == portsymbol]
+                if ports:
+                    port = ports[0]
+                    has_strict_bounds = "hasStrictBounds" in port['properties']
+
+        if not tempo and has_strict_bounds:
+            if value < minimum:
+                value = minimum
+                needsValueChange = True
+            elif value > maximum:
+                value = maximum
+                needsValueChange = True
 
         if tempo and not not_param_set:
             needsValueChange = True
 
+        # Set min and max to min and max value among dividers
+        if tempo and not has_strict_bounds:
+            options_list = [opt['value'] for opt in dividers['options']]
+            minimum = min(options_list)
+            maximum = max(options_list)
+
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                           label, minimum, maximum, steps, value, tempo, dividers)
+
         if addressing is None:
             callback(False)
             return
@@ -3186,7 +3268,7 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        self.addressings.load_addr(actuator_uri, addressing, callback)
+        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
@@ -3432,7 +3514,13 @@ _:b%i
             if port_addressing:
                 if port_addressing.get('tempo', None):
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
-                    new_divider = get_divider_value(self.transport_bpm, value_secs)
+                    new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
+
+                    # make sure new_divider is in our list of supported dividers (in case of calculation precision issue)
+                    all_dividers_values = [d['value'] for d in all_dividers]
+                    if new_divider not in all_dividers_values:
+                        new_divider = min(all_dividers_values, key=lambda x:abs(x-new_divider))
+
                     port_addressing['dividers']['value'] = new_divider
 
                     actuator_uri = port_addressing['actuator_uri']
@@ -3610,7 +3698,7 @@ _:b%i
 
         self.profile.set_quick_bypass_mode(mode)
         callback(True)
-        
+
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
         bpm = get_jack_data(True)['bpm']
@@ -3723,7 +3811,7 @@ _:b%i
                 # Connect the plug-in to the MIDI output.  TODO: In
                 # legacy mode this would be "ttymidi:MIDI_in" or any
                 # USB MIDI device
-                jack_output_port = "mod-midi-broadcaster:in" 
+                jack_output_port = "mod-midi-broadcaster:in"
                 result = connect_jack_ports("effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID,
                                                               MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT),
                                             jack_output_port)
@@ -3743,8 +3831,8 @@ _:b%i
         logging.info("hmi set midi beat clock OFF")
         # Just remove the plug-in without disconnecting gracefully
         self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID)
-        set_send_midi_clk_off_callback(True)        
-        
+        set_send_midi_clk_off_callback(True)
+
     def hmi_set_send_midi_clk(self, onoff, callback):
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi set midi beat clock status to {0}".format(onoff))
@@ -3756,14 +3844,14 @@ _:b%i
                 self.hmi_set_send_midi_clk_on(callback)
         else:
             callback(False)
-            
+
     def hmi_get_current_profile(self, callback):
         """Return the index of the currently loaded profile. This is a string."""
         logging.info("hmi get current profile")
         (index, changed) = self.profile.get_last_stored_profile_index()
         # TODO: This is bad, because it is not decoupled from the protocol syntax
         callback(True, "{0} {1}".format(str(index), int(changed)))
-            
+
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
         logging.info("hmi retrieve profile")
@@ -3811,7 +3899,7 @@ _:b%i
         """Get the link state of the input channel pair."""
         callback(True, int(self.profile.get_stereo_link("input")))
 
-        
+
     def hmi_set_in_chan_link(self, link_mode, callback):
         """Set the link state of the input channel pair."""
         result = self.profile.set_stereo_link("input", link_mode)
@@ -3856,7 +3944,7 @@ _:b%i
         callback(result)
 
     def hmi_get_play_status(self, callback):
-        """Return if the transport is rolling (1) or not (0)."""        
+        """Return if the transport is rolling (1) or not (0)."""
         state = get_jack_data(True)['rolling']
         if state in [0, 1]:
             callback(True, int(state))

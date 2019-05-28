@@ -219,8 +219,6 @@ class HMI(object):
         n_controllers = data['addrs_max']
         index = data['addrs_idx']
         options = data['options']
-        # tempo = data['tempo']
-        # dividers = data['dividers']
 
         # hw_type = actuator[0]
         # hw_id = actuator[1]
@@ -284,6 +282,13 @@ class HMI(object):
 
     def control_set_index(self, hw_id, index, n_controllers, callback):
         self.send('control_set_index %d %d %d' % (hw_id, index, n_controllers), callback, datatype='boolean')
+
+    def control_set(self, hw_id, value, callback):
+        """Set a plug-in's control port value on the HMI."""
+        # control_set <hw_id> <value>"""
+        self.send('control_set %d %f' %
+                  (hw_id, value),
+                  callback, datatype='boolean')
 
     def control_rm(self, hw_ids, callback):
         """
