@@ -495,17 +495,17 @@ $('document').ready(function() {
                     <div>
                       <label>
                         <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
-                            Aggregated Mode
+                            Aggregated mode
                         </input>
                       </label>
                     </div>
-                    <div>
+                    <div class="mod-hidden"> <!-- Temporally hidden -->
                       <label>
                           <input type="radio" autocomplete="off" name="midi-mode" value="legacy" id="midi-mode-legacy">
                               Legacy mode
                           </input>
                       </label>
-                    <div>
+                    </div>
                     <div class="controls clearfix" id="midi-ports-list"></div>
                     <div class="controls actions">
                         <button class="js-cancel btn btn-danger">Cancel</button>
