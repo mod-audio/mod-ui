@@ -303,7 +303,7 @@ class Host(object):
         Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
         Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
 
-        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)        
+        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)
         Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
         Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
 
@@ -338,7 +338,7 @@ class Host(object):
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
-        
+
 
     def __del__(self):
         self.msg_callback("stop")
@@ -657,7 +657,7 @@ class Host(object):
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
-        # After all is set, update the HMI        
+        # After all is set, update the HMI
         display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
         pb_name = self.pedalboard_name
         if pb_name == "":
@@ -665,7 +665,7 @@ class Host(object):
         self.hmi.send("boot {0} {1} {2}".format(display_brightness,
                                                 self.profile.get_master_volume_channel_mode(),
                                                 pb_name))
-        
+
         # All set, disable HW bypass now
         init_bypass()
 
@@ -2020,7 +2020,7 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        self.midi_aggregated_mode = pb.get('midi_aggregated_mode', True)
+        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', False)
 
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
@@ -2837,12 +2837,12 @@ _:b%i
         # MIDI Aggregated Mode
         index += 1
         ports += """
-<midi_aggregated_mode>
+<midi_legacy_mode>
     ingen:value %i ;
     lv2:index %i ;
     a atom:AtomPort ,
         lv2:InputPort .
-""" % (int(self.midi_aggregated_mode), index)
+""" % (int(not self.midi_aggregated_mode), index)
 
         # Write the main pedalboard file
         pbdata = """\
@@ -2876,7 +2876,7 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = [":bpb",":bpm",":rolling","midi_aggregated_mode","control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","midi_legacy_mode","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:
@@ -3591,7 +3591,7 @@ _:b%i
 
         self.profile.set_quick_bypass_mode(mode)
         callback(True)
-        
+
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
         bpm = get_jack_data(True)['bpm']
@@ -3704,7 +3704,7 @@ _:b%i
                 # Connect the plug-in to the MIDI output.  TODO: In
                 # legacy mode this would be "ttymidi:MIDI_in" or any
                 # USB MIDI device
-                jack_output_port = "mod-midi-broadcaster:in" 
+                jack_output_port = "mod-midi-broadcaster:in"
                 result = connect_jack_ports("effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID,
                                                               MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT),
                                             jack_output_port)
@@ -3724,8 +3724,8 @@ _:b%i
         logging.info("hmi set midi beat clock OFF")
         # Just remove the plug-in without disconnecting gracefully
         self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID)
-        set_send_midi_clk_off_callback(True)        
-        
+        set_send_midi_clk_off_callback(True)
+
     def hmi_set_send_midi_clk(self, onoff, callback):
         """Query the status of sending MIDI Beat Clock."""
         logging.info("hmi set midi beat clock status to {0}".format(onoff))
@@ -3737,14 +3737,14 @@ _:b%i
                 self.hmi_set_send_midi_clk_on(callback)
         else:
             callback(False)
-            
+
     def hmi_get_current_profile(self, callback):
         """Return the index of the currently loaded profile. This is a string."""
         logging.info("hmi get current profile")
         (index, changed) = self.profile.get_last_stored_profile_index()
         # TODO: This is bad, because it is not decoupled from the protocol syntax
         callback(True, "{0} {1}".format(str(index), int(changed)))
-            
+
     def hmi_retrieve_profile(self, index, callback):
         """Trigger loading profile with `index`."""
         logging.info("hmi retrieve profile")
@@ -3792,7 +3792,7 @@ _:b%i
         """Get the link state of the input channel pair."""
         callback(True, int(self.profile.get_stereo_link("input")))
 
-        
+
     def hmi_set_in_chan_link(self, link_mode, callback):
         """Set the link state of the input channel pair."""
         result = self.profile.set_stereo_link("input", link_mode)
@@ -3837,7 +3837,7 @@ _:b%i
         callback(result)
 
     def hmi_get_play_status(self, callback):
-        """Return if the transport is rolling (1) or not (0)."""        
+        """Return if the transport is rolling (1) or not (0)."""
         state = get_jack_data(True)['rolling']
         if state in [0, 1]:
             callback(True, int(state))
