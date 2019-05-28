@@ -175,7 +175,7 @@ class Host(object):
         self.audioportsIn = []
         self.audioportsOut = []
         self.midiports = [] # [symbol, alias, pending-connections]
-        self.midi_aggregated_mode = False
+        self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
         self.hasMidiMergerOut = False
@@ -2017,7 +2017,7 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        self.midi_aggregated_mode = pb.get('midi_aggregated_mode', False)
+        self.midi_aggregated_mode = pb.get('midi_aggregated_mode', True)
 
         # MIDI Devices might change port names at anytime
         # To properly restore MIDI HW connections we need to map the "old" port names (from project)
@@ -2182,7 +2182,7 @@ class Host(object):
             self.pedalboard_name     = ""
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
-            self.midi_aggregated_mode = False
+            self.midi_aggregated_mode = True
             #save_last_bank_and_pedalboard(0, "")
         else:
             self.pedalboard_empty    = False
