@@ -29,7 +29,7 @@ function shouldSkipPort(port) {
     if (port.designation == "http://lv2plug.in/ns/lv2core#enabled" ||
         port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling" ||
         port.designation == "http://lv2plug.in/ns/ext/time#beatsPerBar" ||
-        // port.designation == "http://lv2plug.in/ns/ext/time#beatsPerMinute" ||
+        port.designation == "http://lv2plug.in/ns/ext/time#beatsPerMinute" ||
         port.designation == "http://lv2plug.in/ns/ext/time#speed") {
         return true
     }
