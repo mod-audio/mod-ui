@@ -1936,12 +1936,16 @@ function enable_dev_mode(skipSaveConfig) {
 
     // adjust position
     $('#mod-devices').statusTooltip('updatePosition')
+    $('#mod-settings').statusTooltip('updatePosition')
 
     // xrun counter
     $('#mod-xruns').show()
 
     // buffer size button
     $('#mod-buffersize').show()
+
+    // CPU speed and temperature
+    $('#mod-cpu-stats').show()
 
     // transport parameters
     $('#mod-transport-window').css({
@@ -1967,12 +1971,16 @@ function disable_dev_mode() {
 
     // adjust position
     $('#mod-devices').statusTooltip('updatePosition')
+    $('#mod-settings').statusTooltip('updatePosition')
 
     // xrun counter
     $('#mod-xruns').hide()
 
     // buffer size button
     $('#mod-buffersize').hide()
+
+    // CPU speed and temperature
+    $('#mod-cpu-stats').hide()
 
     // transport parameters
     $('#mod-transport-window').css({

@@ -76,10 +76,19 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "mem_load") {
-            var value = parseFloat(data.substr(cmd.length+1))
-            $("#ram-bar").css("width", (100.0-value).toFixed().toString()+"%")
-            $("#ram-bar-text").text("RAM "+value.toString()+"%")
+        if (cmd == "sys_stats") {
+            data        = data.substr(cmd.length+1).split(" ",3)
+            var memload = parseFloat(data[0])
+            var cpufreq = data[1]
+            var cputemp = data[2]
+            $("#ram-bar").css("width", (100.0-memload).toFixed().toString()+"%")
+            $("#ram-bar-text").text("RAM "+memload.toString()+"%")
+
+            if (cpufreq !== "0" && cpufreq !== "0") {
+                $("#mod-cpu-stats").html(sprintf("%.1f GHz / %d &deg;C",
+                                                 parseInt(cpufreq)/1000000,
+                                                 parseInt(cputemp)/1000))
+            }
             return
         }
 

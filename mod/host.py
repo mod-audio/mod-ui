@@ -35,7 +35,7 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging, copy
 
-from mod import safe_json_load, symbolify, TextFileFlusher
+from mod import read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.protocol import Protocol, ProtocolError, process_resp
@@ -246,6 +246,16 @@ class Host(object):
                                                   self.memfseek_reclaim):
                 self.memtimer = ioloop.PeriodicCallback(self.memtimer_callback, 5000)
 
+                if os.path.exists("/sys/class/thermal/thermal_zone0/temp"):
+                    self.thermalfile = open("/sys/class/thermal/thermal_zone0/temp", 'r')
+                else:
+                    self.thermalfile = None
+
+                if os.path.exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"):
+                    self.cpufreqfile = open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", 'r')
+                else:
+                    self.cpufreqfile = None
+
         else:
             self.memtimer = None
 
@@ -337,8 +347,6 @@ class Host(object):
         Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
-
-
 
     def __del__(self):
         self.msg_callback("stop")
@@ -1175,7 +1183,7 @@ class Host(object):
             return
 
         data = get_jack_data(False)
-        websocket.write_message("mem_load " + self.get_free_memory_value())
+        websocket.write_message(self.get_system_stats_message())
         websocket.write_message("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
         websocket.write_message("transport %i %f %f %s" % (self.transport_rolling,
                                                            self.transport_bpb,
@@ -3107,8 +3115,14 @@ _:b%i
 
         return "%0.1f" % ((self.memtotal-memfree-float(memcached))/self.memtotal*100.0)
 
+    def get_system_stats_message(self):
+        memload = self.get_free_memory_value()
+        cpufreq = read_file_contents(self.cpufreqfile, "0")
+        cputemp = read_file_contents(self.thermalfile, "0")
+        return "sys_stats %s %s %s" % (memload, cpufreq, cputemp)
+
     def memtimer_callback(self):
-        self.msg_callback("mem_load " + self.get_free_memory_value())
+        self.msg_callback(self.get_system_stats_message())
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing (public stuff)

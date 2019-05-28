@@ -139,6 +139,13 @@ def get_hardware_actuators():
     return get_hardware_descriptor().get('actuators', [])
 
 
+def read_file_contents(fh, fallback):
+    if fh is None:
+        return fallback
+    fh.seek(0)
+    return fh.read().strip() or fallback
+
+
 class TextFileFlusher(object):
     def __init__(self, filename):
         self.filename = filename
