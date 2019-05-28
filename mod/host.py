@@ -818,7 +818,6 @@ class Host(object):
             cb = footswitch_callback if self.profile.get_footswitch_navigation("bank") else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
-        logging.info("[host] JUST A TEST")
         self.setNavigateWithFootswitches(False, initial_state_callback)
 
     def start_session(self, callback):
