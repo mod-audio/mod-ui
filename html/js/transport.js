@@ -282,13 +282,13 @@ function TransportControls(options) {
 
     this.setControlEnabled = function (portSymbol, enabled) {
         if (portSymbol == ":bpb") {
-            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
-            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', enabled)
+            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'address')
+            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', true)
         } else if (portSymbol == ":bpm") {
-            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
-            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', enabled)
+            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'address')
+            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', true)
         } else if (portSymbol == ":rolling") {
-            self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'disable')
+            self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'address')
         }
     }
 
@@ -307,6 +307,11 @@ function TransportControls(options) {
 
         if (set_control) {
             self.rollingPort.widget.controlWidget('setValue', value, true)
+        }
+        portSymbol = '/pedalboard/:rolling'
+        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+            paramchange = (portSymbol + '/' + value)
+            desktop.ParameterSet(paramchange)
         }
 
         if (playing) {
@@ -331,8 +336,13 @@ function TransportControls(options) {
         if (set_control) {
             self.beatsPerBarPort.widget.controlWidget('setValue', bpb, true)
         }
+        portSymbol = '/pedalboard/:bpb'
+        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+            paramchange = (portSymbol + '/' + bpb)
+            desktop.ParameterSet(paramchange)
+        }
 
-        options.transportBPB.find(".mod-knob-current-value").html(text)
+      options.transportBPB.find(".mod-knob-current-value").html(text)
     }
 
     this.setBeatsPerMinuteValue = function (bpm, set_control) {
@@ -348,6 +358,11 @@ function TransportControls(options) {
 
         if (set_control) {
             self.beatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
+        }
+        portSymbol = '/pedalboard/:bpm'
+        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+            paramchange = (portSymbol + '/' + bpm)
+            desktop.ParameterSet(paramchange)
         }
 
         options.transportButton.find('span').html(text)

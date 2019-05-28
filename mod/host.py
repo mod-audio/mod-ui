@@ -1416,6 +1416,51 @@ class Host(object):
         self.init_plugins_data()
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
+    def paramhmi_set(self, instance, portsymbol, value, callback):
+        if (instance == 'pedalboard'):
+            test = '/' + instance
+        elif (instance.startswith('/graph')):
+            test = instance
+        else:
+            test =  '/graph/' + instance
+        instance_id = self.mapper.get_id_without_creating(test)
+        plugin_data  = self.plugins.get(instance_id, None)
+
+        if plugin_data is None:
+            print("ERROR: Trying to set param for non-existing plugin instance %i: '%s'" % (instance_id, instance))
+            if callback is not None:
+                callback(False)
+            return
+
+        current_addressing = plugin_data['addressings'].get(portsymbol, None)
+        # Not addressed, not need to send control_set to the HMI
+        if current_addressing is None:
+            if callback is not None:
+                callback(True)
+            return
+
+        actuator_uri = current_addressing['actuator_uri']
+        actuator_type = self.addressings.get_actuator_type(actuator_uri)
+        if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+            addressings = self.addressings.hmi_addressings[actuator_uri]
+            addressings_addrs = addressings['addrs']
+
+            current_index = addressings['idx']
+            current_port_index = addressings_addrs.index(current_addressing)
+
+            # If currently displayed on HMI screen, then we need to set the new value on the screen
+            if current_index == current_port_index:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                self.hmi.control_set(hw_id, float(value), callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
+        else:
+            if callback is not None:
+                callback(True)
+            return
+
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
 
@@ -1903,6 +1948,7 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
+        self.paramhmi_set('pedalboard', ':presets', idx, None)
         self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
