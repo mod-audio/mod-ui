@@ -1046,22 +1046,26 @@ class Host(object):
                 ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
 
         elif cmd == "set_midi_program_change_pedalboard_bank_channel":
+            # TODO: Is this triggered by mod-host?
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
             logging.info("[host.py] received bank: {0} {1}".format(enable, channel))
             if enable == 1:
-                self.profile.set_midi_prgch_channel("pedalboard", channel)
+                # The range in mod-host is [-1, 15]
+                self.profile.set_midi_prgch_channel("pedalboard", channel+1)
             else:
                 self.profile.set_midi_prgch_channel("pedalboard", 0) # off
 
         elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
+            # TODO: Is this triggered by mod-host?
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
             logging.info("[host.py] received snapshot: {0} {1}".format(enable, channel))
             if enable == 1:
-                self.profile.set_midi_prgch_channel("snapshot", channel)
+                # The range in mod-host is [-1, 15]
+                self.profile.set_midi_prgch_channel("snapshot", channel+1)
             else:
                 self.profile.set_midi_prgch_channel("snapshot", 0) # off
 
@@ -3717,6 +3721,7 @@ _:b%i
         logging.info("hmi set snapshot channel {0}".format(channel))
 
         if self.profile.set_midi_prgch_channel("snapshot", channel):
+            # The range in mod-host is [-1, 15]
             self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % (channel-1))
             callback(True)
         else:
@@ -3734,6 +3739,7 @@ _:b%i
         logging.info("hmi set pedalboard channel {0}".format(channel))
 
         if self.profile.set_midi_prgch_channel("pedalboard", channel):
+            # The range in mod-host is [-1, 15]
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % (channel-1))
             callback(True)
         else:
