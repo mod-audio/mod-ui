@@ -3624,7 +3624,9 @@ _:b%i
         logging.info("hmi get snapshot channel")
 
         channel = self.profile.get_midi_prgch_channel("snapshot")
-        # NOTE: Assume this value is always the same as in mod-host.
+        # NOTE: Assume this value is always the same as in mod-host,
+        # because `hmi_set_snapshot_prgch` is the only function that
+        # changes it.
 
         callback(True, int(channel))
 
@@ -3633,7 +3635,7 @@ _:b%i
         logging.info("hmi set snapshot channel {0}".format(channel))
 
         if self.profile.set_midi_prgch_channel("snapshot", channel):
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
+            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % (channel-1))
             callback(True)
         else:
             callback(False)
@@ -3650,7 +3652,7 @@ _:b%i
         logging.info("hmi set pedalboard channel {0}".format(channel))
 
         if self.profile.set_midi_prgch_channel("pedalboard", channel):
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % (channel-1))
             callback(True)
         else:
             callback(False)
