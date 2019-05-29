@@ -777,21 +777,12 @@ class Host(object):
             bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
 
-            # navigateFootswitches = bank['navigateFootswitches']
-            # if "navigateChannel" in bank.keys() and not navigateFootswitches:
-            #     bankNavigateChannel = int(bank['navigateChannel'])-1
-            # else:
-            #     bankNavigateChannel = 15
-
         else:
             if self.allpedalboards is None:
                 self.allpedalboards = get_all_good_pedalboards()
             bank_id = 0
             pedalboard = DEFAULT_PEDALBOARD
             pedalboards = self.allpedalboards
-
-            # navigateFootswitches = False
-            # bankNavigateChannel = 15
 
         num = 0
         for pb in pedalboards:
@@ -1040,19 +1031,21 @@ class Host(object):
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
+            logging.info("[host.py] received bank: {0} {1}".format(enable, channel))
             if enable == 1:
                 self.profile.set_midi_prgch_channel("pedalboard", channel)
             else:
-                self.profile.set_midi_prgch_channel("pedalboard", -1) # off
+                self.profile.set_midi_prgch_channel("pedalboard", 0) # off
 
         elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             enable = int(msg_data[0])
             channel  = int(msg_data[1])
+            logging.info("[host.py] received snapshot: {0} {1}".format(enable, channel))
             if enable == 1:
                 self.profile.set_midi_prgch_channel("snapshot", channel)
             else:
-                self.profile.set_midi_prgch_channel("snapshot", -1) # off
+                self.profile.set_midi_prgch_channel("snapshot", 0) # off
 
         else:
             logging.error("[host] unrecognized command: %s" % cmd)
@@ -3261,17 +3254,9 @@ _:b%i
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
-            #navigateFootswitches = False
-            #bankNavigateChannel      = 15
         else:
             bank        = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
-            #navigateFootswitches = bank['navigateFootswitches']
-
-            # if "navigateChannel" in bank.keys() and not navigateFootswitches:
-            #     bankNavigateChannel = int(bank['navigateChannel'])-1
-            # else:
-            #     bankNavigateChannel = 15
 
         if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
             print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
@@ -3312,7 +3297,6 @@ _:b%i
                                                                                              self.profile.get_midi_prgch_channel("bank")), loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
-            #self.setNavigateWithFootswitches(navigateFootswitches, load_callback)
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
 
         def hmi_clear_callback(ok):
@@ -3624,9 +3608,7 @@ _:b%i
         logging.info("hmi get snapshot channel")
 
         channel = self.profile.get_midi_prgch_channel("snapshot")
-        # NOTE: Assume this value is always the same as in mod-host,
-        # because `hmi_set_snapshot_prgch` is the only function that
-        # changes it.
+        # NOTE: Assume this value is always the same as in mod-host
 
         callback(True, int(channel))
 
