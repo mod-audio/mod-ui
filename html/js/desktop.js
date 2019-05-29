@@ -70,6 +70,7 @@ function Desktop(elements) {
         bypassRightButton: $('<div>'),
         bufferSizeButton: $('<div>'),
         xrunsButton: $('<div>'),
+        cpuStatsButton: $('<div>'),
     }, elements)
 
     this.installationQueue = new InstallationQueue()
@@ -1048,6 +1049,21 @@ function Desktop(elements) {
                     $("#mod-xruns").text("0 Xruns")
                 }
             }
+        })
+    })
+    elements.cpuStatsButton.click(function () {
+        $.ajax({
+            url: '/switch_cpu_freq/',
+            method: 'POST',
+            cache: false,
+            success: function (ok) {
+                if (! ok) {
+                    new Bug("Couldn't set new cpu frequency")
+                }
+            },
+            error: function () {
+                new Bug("Communication failure")
+            },
         })
     })
 

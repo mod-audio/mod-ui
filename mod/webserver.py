@@ -1594,6 +1594,24 @@ class ResetXruns(JsonRequestHandler):
         reset_xruns()
         self.write(True)
 
+class SwitchCpuFreq(JsonRequestHandler):
+    def post(self):
+        with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies", 'r') as fh:
+            freqs = fh.read().strip().split(" ")
+        with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", 'r') as fh:
+            cur_freq = fh.read().strip()
+        if len(freqs) == 0 or cur_freq not in freqs:
+            return self.write(False)
+        index = freqs.index(cur_freq) + 1
+        if index >= len(freqs):
+            index = 0
+        with open("/sys/devices/system/cpu/online", 'r') as fh:
+            num_start, num_end = tuple(int(i) for i in fh.read().strip().split("-"))
+        for num in range(num_start, num_end+1):
+            with open("/sys/devices/system/cpu/cpu%d/cpufreq/scaling_setspeed" % num, 'w') as fh:
+                fh.write(freqs[index])
+        self.write(True)
+
 class SaveSingleConfigValue(JsonRequestHandler):
     def post(self):
         key   = self.get_argument("key")
@@ -1881,6 +1899,7 @@ application = web.Application(
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/set_buffersize/(128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
+            (r"/switch_cpu_freq/", SwitchCpuFreq),
 
             (r"/save_user_id/", SaveUserId),
 
