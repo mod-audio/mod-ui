@@ -482,7 +482,6 @@ class Addressings(object):
             'unit'        : unit,
             'options'     : options,
             'tempo'       : tempo,
-            # 'divider'     : float(dividers["value"]) if dividers["value"] is not None else None
             'dividers'     : dividers
         }
 
@@ -522,8 +521,11 @@ class Addressings(object):
             addressing_data['hmitype'] = hmitype
 
             addressings = self.hmi_addressings[actuator_uri]
+            # if old_hmi_index is False:
             addressings['idx'] = len(addressings['addrs'])
             addressings['addrs'].append(addressing_data)
+            # else:
+            #     addressings['addrs'].insert(old_hmi_index, addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_BPM:
             addressings = self.virtual_addressings[actuator_uri]
@@ -562,7 +564,7 @@ class Addressings(object):
 
         return addressing_data
 
-    def load_addr(self, actuator_uri, addressing_data, callback):
+    def load_addr(self, actuator_uri, addressing_data, callback, not_param_set=False):
         addressing_data = addressing_data.copy()
 
         actuator_hw   = actuator_uri
@@ -582,7 +584,7 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback)
+        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, not_param_set)
 
     @gen.coroutine
     def load_current(self, actuator_uris, skippedPort):
@@ -622,7 +624,6 @@ class Addressings(object):
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             addressings       = self.hmi_addressings[actuator_uri]
             addressings_addrs = addressings['addrs']
-
             index = addressings_addrs.index(addressing_data)
             addressings_addrs.pop(index)
 

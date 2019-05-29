@@ -1444,7 +1444,7 @@ JqueryClass('pedalboard', {
             if (enabled) {
                 gui.enable(symbol)
             } else {
-                gui.disable(symbol)
+                gui.addressPort(symbol)
             }
 
         } else {
@@ -1457,7 +1457,7 @@ JqueryClass('pedalboard', {
                 if (enabled) {
                     gui.enable(symbol)
                 } else {
-                    gui.disable(symbol)
+                    gui.addressPort(symbol)
                 }
             }
 

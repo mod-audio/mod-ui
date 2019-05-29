@@ -70,6 +70,7 @@ function Desktop(elements) {
         bypassRightButton: $('<div>'),
         bufferSizeButton: $('<div>'),
         xrunsButton: $('<div>'),
+        cpuStatsButton: $('<div>'),
     }, elements)
 
     this.installationQueue = new InstallationQueue()
@@ -243,6 +244,25 @@ function Desktop(elements) {
     })
 
     this.titleBox = elements.titleBox
+
+    this.ParameterSet = function (paramchange){
+        $.ajax({
+            url: '/effect/parameter/set/' ,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(paramchange),
+            success: function (resp) {
+                if (!resp) {
+                    new Bug("Couldn't address parameter, not allowed")
+                }
+            },
+            error: function () {
+                new Bug ("Couldn't address parameter, server error")
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    }
 
     this.cloudPluginListFunction = function (callback) {
         $.ajax({
@@ -1029,6 +1049,21 @@ function Desktop(elements) {
                     $("#mod-xruns").text("0 Xruns")
                 }
             }
+        })
+    })
+    elements.cpuStatsButton.click(function () {
+        $.ajax({
+            url: '/switch_cpu_freq/',
+            method: 'POST',
+            cache: false,
+            success: function (ok) {
+                if (! ok) {
+                    new Bug("Couldn't set new cpu frequency")
+                }
+            },
+            error: function () {
+                new Bug("Communication failure")
+            },
         })
     })
 
@@ -1917,12 +1952,16 @@ function enable_dev_mode(skipSaveConfig) {
 
     // adjust position
     $('#mod-devices').statusTooltip('updatePosition')
+    $('#mod-settings').statusTooltip('updatePosition')
 
     // xrun counter
     $('#mod-xruns').show()
 
     // buffer size button
     $('#mod-buffersize').show()
+
+    // CPU speed and temperature
+    $('#mod-cpu-stats').show()
 
     // transport parameters
     $('#mod-transport-window').css({
@@ -1948,12 +1987,16 @@ function disable_dev_mode() {
 
     // adjust position
     $('#mod-devices').statusTooltip('updatePosition')
+    $('#mod-settings').statusTooltip('updatePosition')
 
     // xrun counter
     $('#mod-xruns').hide()
 
     // buffer size button
     $('#mod-buffersize').hide()
+
+    // CPU speed and temperature
+    $('#mod-cpu-stats').hide()
 
     // transport parameters
     $('#mod-transport-window').css({

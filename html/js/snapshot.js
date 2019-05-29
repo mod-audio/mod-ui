@@ -220,11 +220,6 @@ function SnapshotsManager(options) {
         var selectId = $(this).val()
         var prtitle  = $(this).html()
 
-        if (options.currentlyAddressed) {
-            options.pedalPresetsList.find('option:selected').removeProp('selected')
-            return self.prevent(e)
-        }
-
         $.ajax({
             url: '/snapshot/load',
             type: 'GET',

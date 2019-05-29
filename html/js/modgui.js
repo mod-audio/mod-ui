@@ -29,7 +29,7 @@ function shouldSkipPort(port) {
     if (port.designation == "http://lv2plug.in/ns/lv2core#enabled" ||
         port.designation == "http://lv2plug.in/ns/lv2core#freeWheeling" ||
         port.designation == "http://lv2plug.in/ns/ext/time#beatsPerBar" ||
-        // port.designation == "http://lv2plug.in/ns/ext/time#beatsPerMinute" ||
+        port.designation == "http://lv2plug.in/ns/ext/time#beatsPerMinute" ||
         port.designation == "http://lv2plug.in/ns/ext/time#speed") {
         return true
     }
@@ -306,6 +306,10 @@ function GUI(effect, options) {
 
         // let the host know about this change
         options.change(mod_port, value)
+
+        //let the HMI know about this change
+        paramchange = (self.instance + '/' + symbol + '/' + value)
+        desktop.ParameterSet(paramchange)
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
@@ -394,6 +398,16 @@ function GUI(effect, options) {
             presetElem.find('.preset-btn-delete').addClass("disabled")
             presetElem.find('.preset-btn-assign-sel').addClass("disabled")
         }
+    }
+
+    this.addressPort = function (symbol) {
+      var port = self.controls[symbol]
+      if (symbol !== ":presets") {
+        // add "addressed" class to all related widgets
+        for (var i in port.widgets) {
+            port.widgets[i].controlWidget('address')
+        }
+      }
     }
 
     this.disable = function (symbol) {
@@ -1275,7 +1289,10 @@ var baseWidget = {
         $(this).addClass('disabled').data('enabled', false)
     },
     enable: function () {
-        $(this).removeClass('disabled').data('enabled', true)
+        $(this).removeClass('addressed').data('enabled', true)
+    },
+    address: function () {
+        $(this).addClass('addressed').data('enabled', true)
     },
 
     valueFromSteps: function (steps) {
