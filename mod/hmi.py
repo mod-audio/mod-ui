@@ -121,11 +121,11 @@ class HMI(object):
                     def _callback(resp, resp_args=None):
                         if resp_args is None:
                             self.send("resp %d" % (0 if resp else -1))
-                            if LOG: logging.debug('[hmi]     sent "resp {0}"'.format(resp))
+                            logging.debug('[hmi]     sent "resp %s"', resp)
 
                         else:
                             self.send("resp %d %s" % (0 if resp else -1, resp_args))
-                            if LOG: logging.debug('[hmi]     sent "resp {0} {1}"'.format(resp, resp_args))
+                            logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
         try:
