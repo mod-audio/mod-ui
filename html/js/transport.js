@@ -57,7 +57,7 @@ function TransportControls(options) {
         change: function (e, value) {
             var rolling = (value > 0.5)
             ws.send("transport-rolling " + (rolling ? "1" : "0"))
-            self.setPlaybackState(rolling, false)
+            self.setPlaybackState(rolling, false, true)
         }
     })
     options.transportPlay.find(".mod-address").click(function (e) {
@@ -88,7 +88,7 @@ function TransportControls(options) {
         port: self.beatsPerBarPort,
         change: function (e, value) {
             ws.send("transport-bpb " + value)
-            self.setBeatsPerBarValue(value, false)
+            self.setBeatsPerBarValue(value, false, true)
         }
     })
     options.transportBPB.find(".mod-address").click(function (e) {
@@ -97,7 +97,7 @@ function TransportControls(options) {
     options.transportBPB.find(".mod-knob-current-value")
     .attr('contenteditable', true)
     .focus(function () {
-        self.setBeatsPerBarValue(self.beatsPerBarPort.value, false)
+        self.setBeatsPerBarValue(self.beatsPerBarPort.value, false, false)
     })
     .keydown(function (e) {
         // enter
@@ -134,7 +134,7 @@ function TransportControls(options) {
             value = self.beatsPerBarPort.ranges.maximum
         }
         ws.send("transport-bpb " + value)
-        self.setBeatsPerBarValue(value, true)
+        self.setBeatsPerBarValue(value, true, true)
     })
 
     this.beatsPerMinutePort = {
@@ -163,7 +163,7 @@ function TransportControls(options) {
         port: self.beatsPerMinutePort,
         change: function (e, value) {
             ws.send("transport-bpm " + value)
-            self.setBeatsPerMinuteValue(value, false)
+            self.setBeatsPerMinuteValue(value, false, true)
         }
     })
     options.transportBPM.find(".mod-address").click(function (e) {
@@ -193,7 +193,7 @@ function TransportControls(options) {
     options.transportBPM.find(".mod-knob-current-value")
     .attr('contenteditable', true)
     .focus(function () {
-        self.setBeatsPerMinuteValue(self.beatsPerMinutePort.value, false)
+        self.setBeatsPerMinuteValue(self.beatsPerMinutePort.value, false, false)
     })
     .keydown(function (e) {
         // enter
@@ -230,7 +230,7 @@ function TransportControls(options) {
             value = self.beatsPerMinutePort.ranges.maximum
         }
         ws.send("transport-bpm " + value)
-        self.setBeatsPerMinuteValue(value, true)
+        self.setBeatsPerMinuteValue(value, true, true)
     })
 
     var syncMode,
@@ -246,7 +246,7 @@ function TransportControls(options) {
                     }
                     ws.send("midi_clock_slave_enable 0")
                     ws.send("link_enable 1")
-                    
+
                     self.setControlEnabled(":bpm", true)
                     self.setSyncMode(newSyncMode)
                 })
@@ -298,7 +298,7 @@ function TransportControls(options) {
         self.setControlEnabled(":rolling", true)
     }
 
-    this.setPlaybackState = function (playing, set_control) {
+    this.setPlaybackState = function (playing, set_control, set_hmi) {
         var value = playing ? 1.0 : 0.0
         if (self.rollingPort.value == value) {
             return
@@ -308,10 +308,12 @@ function TransportControls(options) {
         if (set_control) {
             self.rollingPort.widget.controlWidget('setValue', value, true)
         }
-        portSymbol = '/pedalboard/:rolling'
-        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
-            paramchange = (portSymbol + '/' + value)
-            desktop.ParameterSet(paramchange)
+        if (set_hmi) {
+          portSymbol = '/pedalboard/:rolling'
+          if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+              paramchange = (portSymbol + '/' + value)
+              desktop.ParameterSet(paramchange)
+          }
         }
 
         if (playing) {
@@ -321,7 +323,7 @@ function TransportControls(options) {
         }
     }
 
-    this.setBeatsPerBarValue = function (bpb, set_control) {
+    this.setBeatsPerBarValue = function (bpb, set_control, set_hmi) {
         if (self.beatsPerBarPort.value == bpb) {
             return
         }
@@ -336,16 +338,18 @@ function TransportControls(options) {
         if (set_control) {
             self.beatsPerBarPort.widget.controlWidget('setValue', bpb, true)
         }
-        portSymbol = '/pedalboard/:bpb'
-        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
-            paramchange = (portSymbol + '/' + bpb)
-            desktop.ParameterSet(paramchange)
+        if (set_hmi) {
+          portSymbol = '/pedalboard/:bpb'
+          if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+              paramchange = (portSymbol + '/' + bpb)
+              desktop.ParameterSet(paramchange)
+          }
         }
 
       options.transportBPB.find(".mod-knob-current-value").html(text)
     }
 
-    this.setBeatsPerMinuteValue = function (bpm, set_control) {
+    this.setBeatsPerMinuteValue = function (bpm, set_control, set_hmi) {
         if (self.beatsPerMinutePort.value == bpm) {
             return
         }
@@ -359,10 +363,12 @@ function TransportControls(options) {
         if (set_control) {
             self.beatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
         }
-        portSymbol = '/pedalboard/:bpm'
-        if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
-            paramchange = (portSymbol + '/' + bpm)
-            desktop.ParameterSet(paramchange)
+        if (set_hmi) {
+          portSymbol = '/pedalboard/:bpm'
+          if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+              paramchange = (portSymbol + '/' + bpm)
+              desktop.ParameterSet(paramchange)
+          }
         }
 
         options.transportButton.find('span').html(text)
@@ -393,9 +399,9 @@ function TransportControls(options) {
     }
 
     this.setValues = function (playing, bpb, bpm, newSyncMode) {
-        self.setPlaybackState(playing, true)
-        self.setBeatsPerBarValue(bpb, true)
-        self.setBeatsPerMinuteValue(bpm, true)
+        self.setPlaybackState(playing, true, false)
+        self.setBeatsPerBarValue(bpb, true, false)
+        self.setBeatsPerMinuteValue(bpm, true, false)
         self.setSyncMode(newSyncMode)
     }
 }

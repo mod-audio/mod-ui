@@ -17,8 +17,8 @@ def index_to_filepath(index):
 class Profile:
     """User profile of environmental context."""
 
-    __intermediate_profile_index = "Changed"
-    __last_stored_profile_index = "0"
+    __intermediate_profile_index = "5"
+    __last_stored_profile_index = "1"
     __state_changed = False
 
     def __changed(self):
@@ -26,14 +26,14 @@ class Profile:
         self.store_intermediate()
         return True
     
-    # MIDI channels. Range in [0,15] -1 when off.
+    # MIDI channels. Range in [1,16] and 0 when "off".
     __midi_prgch_channel = dict()
-    __midi_prgch_channel["pedalboard"] = 15
-    __midi_prgch_channel["snapshot"] = 14
+    __midi_prgch_channel["pedalboard"] = 16
+    __midi_prgch_channel["snapshot"] = 15
 
     def set_midi_prgch_channel(self, what, value):
         result = False
-        if -1 <= value and value <= 15 and what in ["snapshot", "pedalboard"]:
+        if 0 <= value and value <= 16 and what in ["snapshot", "pedalboard"]:
             if value != self.__midi_prgch_channel[what]:
                 self.__midi_prgch_channel[what] = value
                 result = self.__changed()
