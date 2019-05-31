@@ -26,7 +26,8 @@ from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
-from mod.settings import (DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
+from mod.settings import (LOG,
+                          DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA,
                           PREFERENCES_JSON_FILE)
 
@@ -123,7 +124,7 @@ class Session(object):
 
     @gen.coroutine
     def hmi_initialized_cb(self):
-        logging.info("hmi initialized")
+        if LOG: logging.info("hmi initialized")
         self.hmi.initialized = True
         uiConnected = bool(len(self.websockets) > 0)
         yield gen.Task(self.host.initialize_hmi, uiConnected)
@@ -304,7 +305,7 @@ class Session(object):
         return title
 
     def reset(self, callback):
-        logging.info("SESSION RESET")
+        if LOG: logging.info("SESSION RESET")
         self.host.send_notmodified("feature_enable processing 0")
 
         def host_callback(resp):
