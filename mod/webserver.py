@@ -1970,9 +1970,6 @@ def prepare(isModApp = False):
         set_process_name("mod-ui")
 
     application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-    if LOG:
-        from tornado.log import enable_pretty_logging
-        enable_pretty_logging()
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:
