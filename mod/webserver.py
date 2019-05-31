@@ -32,7 +32,7 @@ from tornado.template import Loader
 from tornado.util import unicode_type
 from uuid import uuid4
 
-from mod.settings import (APP, LOG,
+from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
@@ -1458,6 +1458,7 @@ class TemplateHandler(TimelessRequestHandler):
             'size': json.dumps(SESSION.host.pedalboard_size),
             'fulltitle':  xhtml_escape(fullpbname),
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
+            'dev_api_class': 'dev_api' if DEV_API else '',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY or DEV_HOST else 'false',
             'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),

@@ -28,7 +28,7 @@ $('document').ready(function() {
         modified = false
 
     ws.onclose = function (evt) {
-        desktop.blockUI()
+        desktop && desktop.blockUI()
     }
 
     ws.onmessage = function (evt) {

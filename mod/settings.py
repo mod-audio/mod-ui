@@ -23,7 +23,7 @@ DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
 DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 
 # If on, use dev cloud API environment
-DEV_API = bool(int(os.environ.get('MOD_DEV_API', True)))
+DEV_API = bool(int(os.environ.get('MOD_DEV_API', False)))
 
 APP = bool(int(os.environ.get('MOD_APP', False)))
 LOG = bool(int(os.environ.get('MOD_LOG', False)))

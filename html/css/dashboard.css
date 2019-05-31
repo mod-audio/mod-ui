@@ -18,6 +18,15 @@
     right: 0;
 }
 
+#pedalboard-dashboard.dev_api:after {
+    content: "DEV API enabled";
+    color: #555;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 50px;
+}
+
 #zoom-controllers {
     position:absolute;
     right:0px;
