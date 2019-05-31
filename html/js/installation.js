@@ -38,9 +38,10 @@ function InstallationQueue() {
         $.ajax({
             url: SITEURL + '/lv2/bundles/' + bundleId,
             success: function (data) {
-                var targetfiles = null
+                var bincompat, targetfiles = null
                 for (var i in data.files) {
-                    if (data.files[i].bin_compat.toUpperCase() == BIN_COMPAT.toUpperCase()) {
+                    bin_compat = data.files[i].bin_compat
+                    if (bin_compat !== undefined && bin_compat.toUpperCase() == BIN_COMPAT.toUpperCase()) {
                         targetfiles = data.files[i];
                         break;
                     }

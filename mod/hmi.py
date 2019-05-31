@@ -20,8 +20,9 @@ from datetime import timedelta
 from tornado.iostream import BaseIOStream
 from tornado import ioloop
 
-from mod.protocol import Protocol, ProtocolError
 from mod import get_hardware_actuators, get_hardware_descriptor
+from mod.protocol import Protocol, ProtocolError
+from mod.settings import LOG
 
 import serial, logging
 import time
@@ -55,7 +56,6 @@ class SerialIOStream(BaseIOStream):
 
 class HMI(object):
     def __init__(self, port, baud_rate, callback):
-        logging.basicConfig(level=logging.DEBUG)
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
@@ -70,7 +70,6 @@ class HMI(object):
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
         try:
-            print("{0}, {1}".format(self.port, self.baud_rate))
             sp = None
             try:
                 sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
@@ -99,12 +98,12 @@ class HMI(object):
 
     def checker(self, data=None):
         if data is not None:
-            logging.info('[hmi] received <- %s' % repr(data))
+            logging.debug('[hmi] received <- %s', repr(data))
             try:
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
-                logging.error('[hmi] error parsing msg %s' % repr(data))
-                logging.error('[hmi]   error code %s' % e.error_code())
+                logging.error('[hmi] error parsing msg %s', repr(data))
+                logging.error('[hmi]   error code %s', e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:
                 if msg.is_resp():
@@ -115,23 +114,24 @@ class HMI(object):
                         logging.error("[hmi] NOT SYNCED")
                     else:
                         if callback is not None:
-                            logging.info("[hmi] calling callback for %s" % original_msg)
+                            logging.debug("[hmi] calling callback for %s", original_msg)
                             callback(msg.process_resp(datatype))
                         self.process_queue()
                 else:
                     def _callback(resp, resp_args=None):
                         if resp_args is None:
-                            logging.info('[hmi]     sent "resp {0}"'.format(resp))
                             self.send("resp %d" % (0 if resp else -1))
+                            logging.debug('[hmi]     sent "resp %s"', resp)
+
                         else:
-                            logging.info('[hmi]     sent "resp {0} {1}"'.format(resp, resp_args))
                             self.send("resp %d %s" % (0 if resp else -1, resp_args))
+                            logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
         try:
             self.sp.read_until(b'\0', self.checker)
         except serial.SerialException as e:
-            logging.error("[hmi] error while reading %s" % e)
+            logging.error("[hmi] error while reading %s", e)
 
     def process_queue(self):
         if self.sp is None:
@@ -139,12 +139,12 @@ class HMI(object):
 
         try:
             msg, callback, datatype = self.queue[0] # fist msg on the queue
-            logging.info("[hmi] popped from queue: %s" % msg)
+            logging.debug("[hmi] popped from queue: %s", msg)
             self.sp.write(bytes(msg, 'utf-8') + b"\0")
-            logging.info("[hmi] sending -> %s" % msg)
+            logging.debug("[hmi] sending -> %s", msg)
             self.queue_idle = False
         except IndexError:
-            logging.info("[hmi] queue is empty, nothing to do")
+            logging.debug("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
 
     def reply_protocol_error(self, error):
@@ -157,7 +157,7 @@ class HMI(object):
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             self.queue.append((msg, callback, datatype))
-            logging.info("[hmi] scheduling -> %s" % str(msg))
+            logging.debug("[hmi] scheduling -> %s", str(msg))
             if self.queue_idle:
                 self.process_queue()
             return
