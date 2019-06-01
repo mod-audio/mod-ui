@@ -355,14 +355,13 @@ class Host(object):
         isOutput = bool(isOutput)
 
         if name.startswith(self.jack_slave_prefix+":"):
-            name  = name.replace(self.jack_slave_prefix+":","")
+            name = name.replace(self.jack_slave_prefix+":","")
             if name.startswith("midi_"):
                 ptype = "midi"
+            elif name.startswith("cv_"):
+                ptype = "cv"
             else:
-                if name.startswith("cv_"):
-                    ptype = "cv"
-                else:
-                    ptype = "audio"
+                ptype = "audio"
 
             index = 100 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
@@ -385,14 +384,13 @@ class Host(object):
                 if len(split) == 1:
                     oldnode = "/graph/" + port_symbol.split(":",1)[-1]
                     port_symbol = name
+                elif isOutput:
+                    oldnode = "/graph/" + split[1].split(":",1)[-1]
+                    split[1] = name
                 else:
-                    if isOutput:
-                        oldnode = "/graph/" + split[1].split(":",1)[-1]
-                        split[1] = name
-                    else:
-                        oldnode = "/graph/" + split[0].split(":",1)[-1]
-                        split[0] = name
-                    port_symbol = ";".join(split)
+                    oldnode = "/graph/" + split[0].split(":",1)[-1]
+                    split[0] = name
+                port_symbol = ";".join(split)
 
                 self.midiports[i][0] = port_symbol
                 break
