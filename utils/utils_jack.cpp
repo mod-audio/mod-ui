@@ -469,8 +469,7 @@ bool has_midi_merger_output_port(void)
     if (gClient == nullptr)
         return false;
 
-    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr) ||
-      (jack_port_by_name(gClient, "midi-merger:out") != nullptr);
+    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr);
 }
 
 /**
@@ -481,8 +480,7 @@ bool has_midi_broadcaster_input_port(void)
     if (gClient == nullptr)
         return false;
 
-    return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr) ||
-      (jack_port_by_name(gClient, "midi-broadcaster:in") != nullptr);
+    return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr);
 }
 
 
