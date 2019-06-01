@@ -368,6 +368,10 @@ class Host(object):
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
             return
 
+        if self.midi_aggregated_mode:
+            # new ports are ignored under midi aggregated mode
+            return
+
         alias = get_jack_port_alias(name)
         if not alias:
             return
@@ -1211,9 +1215,9 @@ class Host(object):
             else:
                 midiports.append(port_id)
 
-        self.hasSerialMidiIn  = has_serial_midi_input_port()
+        self.hasSerialMidiIn = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
-        self.hasMidiMergerOut  = has_midi_merger_output_port()
+        self.hasMidiMergerOut = has_midi_merger_output_port()
         self.hasMidiBroadcasterIn = has_midi_broadcaster_input_port()
 
         # Control Voltage or Audio In
@@ -1233,7 +1237,6 @@ class Host(object):
                 websocket.write_message("add_hw_port /graph/%s cv 1 %s %i" % (name, title, i+1))
             else:
                 websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
-
 
         # MIDI In
         if self.midi_aggregated_mode:
