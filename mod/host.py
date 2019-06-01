@@ -1993,8 +1993,15 @@ class Host(object):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
                     return self.jack_hwin_prefix + num
-            if data[2].startswith(("audio_from_slave_", "audio_to_slave_", "midi_from_slave_", "midi_to_slave_")):
+
+            if data[2].startswith(("audio_from_slave_",
+                                   "audio_to_slave_",
+                                   "midi_from_slave_",
+                                   "midi_to_slave_",
+                                   "USB_Audio_Capture_",
+                                   "USB_Audio_Playback_")):
                 return "%s:%s" % (self.jack_slave_prefix, data[2])
+
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
