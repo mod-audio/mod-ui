@@ -2,6 +2,8 @@
 
 import json
 import os
+
+from mod import TextFileFlusher
 from mod.settings import DATA_DIR
 
 def index_to_filepath(index):
@@ -169,7 +171,7 @@ class Profile:
     def get_configurable_output_mode(self):
         return self.__configurable_output_mode
 
-    __master_volume_channel_mode = 0 # 0 for master linked to out 1
+    __master_volume_channel_mode = 2 # 0 for master linked to out 1
                                      # 1 for master linked to out 2
                                      # 2 for master linked to both out 1 and out 2.
 
@@ -260,14 +262,14 @@ class Profile:
             "control_voltage_bias": self.__control_voltage_bias,
             "expression_pedal_mode": self.__exp_mode,
         }
-        result = False
+
         try:
-            with open(index_to_filepath(index), 'w+') as outfile:
-                json.dump(data, outfile)
-            result = True
+            with TextFileFlusher(index_to_filepath(index)) as fh:
+                json.dump(data, fh)
         except FileNotFoundError as e:
-            pass
-        return result
+            return False
+
+        return True
 
     def retrieve(self, index):
         """Deserialize the profile from JSON stored on harddisk."""
