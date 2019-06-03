@@ -3,7 +3,7 @@
 import json
 import os
 
-from mod import TextFileFlusher
+from mod import TextFileFlusher, safe_json_load
 from mod.settings import DATA_DIR
 
 def index_to_filepath(index):
@@ -22,6 +22,7 @@ class Profile:
 
     __intermediate_profile_index = "5"
     __last_stored_profile_index = "1"
+    __index = 5
     __state_changed = False
 
     def __changed(self):
@@ -273,37 +274,28 @@ class Profile:
 
     def retrieve(self, index):
         """Deserialize the profile from JSON stored on harddisk."""
-        data = None
-        result = False
-        try:
-            with open(index_to_filepath(index), 'r') as infile:
-                data = json.load(infile)
+        data = safe_json_load(index_to_filepath(index), dict)
 
-            self.__index = data["index"]
-            self.__headphone_volume = data["headphone_volume"]
-            self.__midi_prgch_channel["pedalboard"] = data["midi_prgch_pedalboard_channel"]
-            self.__midi_prgch_channel["snapshot"] = data["midi_prgch_snapshot_channel"]
-            self.__footswitch_navigation["bank"] = data["bank_footswitch_navigation"]
-            self.__footswitch_navigation["snapshot"] = data["snapshot_footswitch_navigation"]
-            self.__stereo_link["input"] = data["input_stereo_link"]
-            self.__stereo_link["output"] = data["output_stereo_link"]
-            self.__send_midi_beat_clock = data["send_midi_beat_clock"]
-            self.__sync_mode = data["sync_mode"]
-            self.__gain["input"][0] = data["gain_in_1"]
-            self.__gain["input"][1] = data["gain_in_2"]
-            self.__gain["output"][0] = data["gain_out_1"]
-            self.__gain["output"][1] = data["gain_out_2"]
-            self.__headphone_volume = data["headphone_volume"]
-            self.__configurable_input_mode = data["configurable_input_mode"]
-            self.__configurable_output_mode = data["configurable_output_mode"]
-            self.__quick_bypass_mode = data["quick_bypass_mode"]
-            self.__control_voltage_bias = data["control_voltage_bias"]
-            self.__exp_mode = data["expression_pedal_mode"]
+        # FIXME put default values in a static dict, and call update() on the data or something
+        self.__index = data.get("index", 5)
+        self.__headphone_volume = data.get("headphone_volume", 0)
+        self.__midi_prgch_channel["pedalboard"] = data.get("midi_prgch_pedalboard_channel", 16)
+        self.__midi_prgch_channel["snapshot"] = data.get("midi_prgch_snapshot_channel", 15)
+        self.__footswitch_navigation["bank"] = data.get("bank_footswitch_navigation", False)
+        self.__footswitch_navigation["snapshot"] = data.get("snapshot_footswitch_navigation", False)
+        self.__stereo_link["input"] = data.get("input_stereo_link", False)
+        self.__stereo_link["output"] = data.get("output_stereo_link", False)
+        self.__send_midi_beat_clock = data.get("send_midi_beat_clock", 0)
+        self.__sync_mode = data.get("sync_mode", 0)
+        self.__gain["input"][0] = data.get("gain_in_1", 0)
+        self.__gain["input"][1] = data.get("gain_in_2", 0)
+        self.__gain["output"][0] = data.get("gain_out_1", 0)
+        self.__gain["output"][1] = data.get("gain_out_2", 0)
+        self.__configurable_input_mode = data.get("configurable_input_mode", 0)
+        self.__configurable_output_mode = data.get("configurable_output_mode", 0)
+        self.__quick_bypass_mode = data.get("quick_bypass_mode", 0)
+        self.__control_voltage_bias = data.get("control_voltage_bias", 0)
+        self.__exp_mode = data.get("expression_pedal_mode", 0)
+        self.__state_changed = False
 
-            self.__state_changed == False
-            result = True
-
-        except FileNotFoundError as e:
-            pass
-
-        return result
+        return True
