@@ -369,6 +369,7 @@ MOD_API void reset_xruns(void);
 MOD_API void init_bypass(void);
 MOD_API bool get_truebypass_value(bool right);
 MOD_API bool set_truebypass_value(bool right, bool bypassed);
+MOD_API float get_master_volume(bool right);
 
 // callbacks
 MOD_API void set_util_callbacks(JackBufSizeChanged bufSizeChanged,

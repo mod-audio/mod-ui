@@ -548,6 +548,9 @@ utils.get_truebypass_value.restype  = c_bool
 utils.set_truebypass_value.argtypes = [c_bool, c_bool]
 utils.set_truebypass_value.restype  = c_bool
 
+utils.get_master_volume.argtypes = [c_bool]
+utils.get_master_volume.restype  = c_float
+
 utils.set_util_callbacks.argtypes = [JackBufSizeChanged, JackPortAppeared, JackPortDeleted, TrueBypassStateChanged]
 utils.set_util_callbacks.restype  = None
 
@@ -752,6 +755,9 @@ def get_truebypass_value(right):
 
 def set_truebypass_value(right, bypassed):
     return bool(utils.set_truebypass_value(right, bypassed))
+
+def get_master_volume(right):
+    return float(utils.get_master_volume(right))
 
 # ------------------------------------------------------------------------------------------------------------
 # callbacks
