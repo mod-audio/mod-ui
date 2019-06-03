@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 from mod.settings import DATA_DIR
 
 def index_to_filepath(index):
-    return DATA_DIR + "/profile{0}.json".format(index)
+    return os.path.join(DATA_DIR, "profile{0}.json".format(index))
 
 # The user profile models environmental context. That is all settings that
 # are related to the physical hookup of the device. For example the
@@ -27,9 +28,10 @@ class Profile:
         return True
 
     # MIDI channels. Range in [1,16] and 0 when "off".
-    __midi_prgch_channel = dict()
-    __midi_prgch_channel["pedalboard"] = 16
-    __midi_prgch_channel["snapshot"] = 15
+    __midi_prgch_channel = {
+        "pedalboard": 16,
+        "snapshot": 15,
+    }
 
     def set_midi_prgch_channel(self, what, value):
         result = False
@@ -45,10 +47,10 @@ class Profile:
             result = self.__midi_prgch_channel[what]
         return result
 
-
-    __footswitch_navigation = dict()
-    __footswitch_navigation["bank"] = False
-    __footswitch_navigation["snapshot"] = False
+    __footswitch_navigation = {
+        "bank": False,
+        "snapshot": False,
+    }
 
     def set_footswitch_navigation(self, what, value):
         result = False
@@ -64,9 +66,10 @@ class Profile:
             result = self.__footswitch_navigation[what]
         return result
 
-    __stereo_link = dict()
-    __stereo_link["input"] = False
-    __stereo_link["output"] = False
+    __stereo_link = {
+        "input": False,
+        "output": False,
+    }
 
     def set_stereo_link(self, port_type, value):
         result = False
@@ -109,9 +112,10 @@ class Profile:
     # so we can store just the value form the user domain.
     #
     # 0: "0dB", 1: "6dB", 2: "15dB", 3: "20dB"
-    __gain = dict()
-    __gain["input"] = [0, 0]
-    __gain["output"] = [0, 0]
+    __gain = {
+        "input": [0, 0],
+        "output": [0, 0],
+    }
 
     def set_gain(self, port_type, channel, value):
         result = False
@@ -165,10 +169,9 @@ class Profile:
     def get_configurable_output_mode(self):
         return self.__configurable_output_mode
 
-    __master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
-                                     # for master linked to out 2; 2 for
-                                     # master linked to both out 1 and
-                                     # out 2.
+    __master_volume_channel_mode = 0 # 0 for master linked to out 1
+                                     # 1 for master linked to out 2
+                                     # 2 for master linked to both out 1 and out 2.
 
     def set_master_volume_channel_mode(self, value):
         result = False
@@ -181,8 +184,9 @@ class Profile:
     def get_master_volume_channel_mode(self):
         return self.__master_volume_channel_mode
 
-    __quick_bypass_mode = 0 # 0 for "change both 1&2", 1 for "change
-                            # channel 1" and 2 for "change channel 2".
+    __quick_bypass_mode = 0 # 0 for "change both 1&2"
+                            # 1 for "change channel 1"
+                            # 2 for "change channel 2"
 
     def set_quick_bypass_mode(self, value):
         result = False
