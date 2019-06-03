@@ -46,7 +46,7 @@ class Addressings(object):
     ADDRESSING_TYPE_HMI  = 1
     ADDRESSING_TYPE_CC   = 2
     ADDRESSING_TYPE_MIDI = 3
-    ADDRESSING_TYPE_BPM = 4
+    ADDRESSING_TYPE_BPM  = 4
 
     def __init__(self):
         self.init()

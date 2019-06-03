@@ -89,7 +89,7 @@ class Protocol(object):
         "banks": [],
         "pedalboards": [int],
         "pedalboard": [int, str],
-        
+
         "hw_con": [int, int],
         "hw_dis": [int, int],
         "control_set": [int, float],
@@ -103,7 +103,7 @@ class Protocol(object):
         # Quick Bypass Mode
         "get_q_bypass": [],
         "set_q_bypass": [int],
-        
+
         # Beats per minute
         "get_tempo_bpm": [],
         "set_tempo_bpm": [float],
@@ -112,7 +112,7 @@ class Protocol(object):
         "set_tempo_bpb": [float],
 
         "tuner": [str],
-        "tuner_input": [int],        
+        "tuner_input": [int],
         "get_tuner_mute": [],
         "set_tuner_mute": [int],
 
@@ -124,7 +124,7 @@ class Protocol(object):
         # Master volume channel mode
         "get_mv_channel": [],
         "set_mv_channel": [int],
-        
+
         # Stereo Link for inputs and outputs
         "get_in_chan_link": [],
         "set_in_chan_link": [int],
@@ -156,15 +156,15 @@ class Protocol(object):
         # MIDI program change channel for switching pedalboards in a bank
         "get_pb_prgch": [],
         "set_pb_prgch": [int],
-        
+
         "get_play_status": [],
         "set_play_status": [int],
         # Display brightness
         "get_display_brightness": [],
         "set_display_brightness": [int],
-        
+
         "get_pb_name": [],
-        
+
         "jack_cpu_load": [],
     }
 
