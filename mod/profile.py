@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
+
+from mod import TextFileFlusher, safe_json_load
 from mod.settings import DATA_DIR
 
 def index_to_filepath(index):
-    return DATA_DIR + "/profile{0}.json".format(index)
+    return os.path.join(DATA_DIR, "profile{0}.json".format(index))
 
 # The user profile models environmental context. That is all settings that
 # are related to the physical hookup of the device. For example the
@@ -19,6 +22,7 @@ class Profile:
 
     __intermediate_profile_index = "5"
     __last_stored_profile_index = "1"
+    __index = 5
     __state_changed = False
 
     def __changed(self):
@@ -27,9 +31,10 @@ class Profile:
         return True
 
     # MIDI channels. Range in [1,16] and 0 when "off".
-    __midi_prgch_channel = dict()
-    __midi_prgch_channel["pedalboard"] = 16
-    __midi_prgch_channel["snapshot"] = 15
+    __midi_prgch_channel = {
+        "pedalboard": 16,
+        "snapshot": 15,
+    }
 
     def set_midi_prgch_channel(self, what, value):
         result = False
@@ -45,10 +50,10 @@ class Profile:
             result = self.__midi_prgch_channel[what]
         return result
 
-
-    __footswitch_navigation = dict()
-    __footswitch_navigation["bank"] = False
-    __footswitch_navigation["snapshot"] = False
+    __footswitch_navigation = {
+        "bank": False,
+        "snapshot": False,
+    }
 
     def set_footswitch_navigation(self, what, value):
         result = False
@@ -64,9 +69,10 @@ class Profile:
             result = self.__footswitch_navigation[what]
         return result
 
-    __stereo_link = dict()
-    __stereo_link["input"] = False
-    __stereo_link["output"] = False
+    __stereo_link = {
+        "input": False,
+        "output": False,
+    }
 
     def set_stereo_link(self, port_type, value):
         result = False
@@ -109,9 +115,10 @@ class Profile:
     # so we can store just the value form the user domain.
     #
     # 0: "0dB", 1: "6dB", 2: "15dB", 3: "20dB"
-    __gain = dict()
-    __gain["input"] = [0, 0]
-    __gain["output"] = [0, 0]
+    __gain = {
+        "input": [0, 0],
+        "output": [0, 0],
+    }
 
     def set_gain(self, port_type, channel, value):
         result = False
@@ -165,10 +172,9 @@ class Profile:
     def get_configurable_output_mode(self):
         return self.__configurable_output_mode
 
-    __master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
-                                     # for master linked to out 2; 2 for
-                                     # master linked to both out 1 and
-                                     # out 2.
+    __master_volume_channel_mode = 2 # 0 for master linked to out 1
+                                     # 1 for master linked to out 2
+                                     # 2 for master linked to both out 1 and out 2.
 
     def set_master_volume_channel_mode(self, value):
         result = False
@@ -181,8 +187,9 @@ class Profile:
     def get_master_volume_channel_mode(self):
         return self.__master_volume_channel_mode
 
-    __quick_bypass_mode = 0 # 0 for "change both 1&2", 1 for "change
-                            # channel 1" and 2 for "change channel 2".
+    __quick_bypass_mode = 0 # 0 for "change both 1&2"
+                            # 1 for "change channel 1"
+                            # 2 for "change channel 2"
 
     def set_quick_bypass_mode(self, value):
         result = False
@@ -256,48 +263,39 @@ class Profile:
             "control_voltage_bias": self.__control_voltage_bias,
             "expression_pedal_mode": self.__exp_mode,
         }
-        result = False
+
         try:
-            with open(index_to_filepath(index), 'w+') as outfile:
-                json.dump(data, outfile)
-            result = True
+            with TextFileFlusher(index_to_filepath(index)) as fh:
+                json.dump(data, fh)
         except FileNotFoundError as e:
-            pass
-        return result
+            return False
+
+        return True
 
     def retrieve(self, index):
         """Deserialize the profile from JSON stored on harddisk."""
-        data = None
-        result = False
-        try:
-            with open(index_to_filepath(index), 'r') as infile:
-                data = json.load(infile)
+        data = safe_json_load(index_to_filepath(index), dict)
 
-            self.__index = data["index"]
-            self.__headphone_volume = data["headphone_volume"]
-            self.__midi_prgch_channel["pedalboard"] = data["midi_prgch_pedalboard_channel"]
-            self.__midi_prgch_channel["snapshot"] = data["midi_prgch_snapshot_channel"]
-            self.__footswitch_navigation["bank"] = data["bank_footswitch_navigation"]
-            self.__footswitch_navigation["snapshot"] = data["snapshot_footswitch_navigation"]
-            self.__stereo_link["input"] = data["input_stereo_link"]
-            self.__stereo_link["output"] = data["output_stereo_link"]
-            self.__send_midi_beat_clock = data["send_midi_beat_clock"]
-            self.__sync_mode = data["sync_mode"]
-            self.__gain["input"][0] = data["gain_in_1"]
-            self.__gain["input"][1] = data["gain_in_2"]
-            self.__gain["output"][0] = data["gain_out_1"]
-            self.__gain["output"][1] = data["gain_out_2"]
-            self.__headphone_volume = data["headphone_volume"]
-            self.__configurable_input_mode = data["configurable_input_mode"]
-            self.__configurable_output_mode = data["configurable_output_mode"]
-            self.__quick_bypass_mode = data["quick_bypass_mode"]
-            self.__control_voltage_bias = data["control_voltage_bias"]
-            self.__exp_mode = data["expression_pedal_mode"]
+        # FIXME put default values in a static dict, and call update() on the data or something
+        self.__index = data.get("index", 5)
+        self.__headphone_volume = data.get("headphone_volume", 0)
+        self.__midi_prgch_channel["pedalboard"] = data.get("midi_prgch_pedalboard_channel", 16)
+        self.__midi_prgch_channel["snapshot"] = data.get("midi_prgch_snapshot_channel", 15)
+        self.__footswitch_navigation["bank"] = data.get("bank_footswitch_navigation", False)
+        self.__footswitch_navigation["snapshot"] = data.get("snapshot_footswitch_navigation", False)
+        self.__stereo_link["input"] = data.get("input_stereo_link", False)
+        self.__stereo_link["output"] = data.get("output_stereo_link", False)
+        self.__send_midi_beat_clock = data.get("send_midi_beat_clock", 0)
+        self.__sync_mode = data.get("sync_mode", 0)
+        self.__gain["input"][0] = data.get("gain_in_1", 0)
+        self.__gain["input"][1] = data.get("gain_in_2", 0)
+        self.__gain["output"][0] = data.get("gain_out_1", 0)
+        self.__gain["output"][1] = data.get("gain_out_2", 0)
+        self.__configurable_input_mode = data.get("configurable_input_mode", 0)
+        self.__configurable_output_mode = data.get("configurable_output_mode", 0)
+        self.__quick_bypass_mode = data.get("quick_bypass_mode", 0)
+        self.__control_voltage_bias = data.get("control_voltage_bias", 0)
+        self.__exp_mode = data.get("expression_pedal_mode", 0)
+        self.__state_changed = False
 
-            self.__state_changed == False
-            result = True
-
-        except FileNotFoundError as e:
-            pass
-
-        return result
+        return True

@@ -41,11 +41,18 @@ from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_an
 from mod.profile import Profile
 from mod.protocol import Protocol, ProtocolError, process_resp
 from modtools.utils import (
-    charPtrToString, is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
+    charPtrToString,
+    is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
     get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
-    list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values, init_jack, close_jack, get_jack_data,
-    init_bypass, get_jack_port_alias, get_jack_hardware_ports, has_midi_beat_clock_sender_port, has_serial_midi_input_port, has_serial_midi_output_port, has_midi_merger_output_port, has_midi_broadcaster_input_port,
-    connect_jack_ports, disconnect_jack_ports, get_truebypass_value, set_truebypass_value, set_util_callbacks, kPedalboardTimeAvailableBPB,
+    list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values,
+    init_jack, close_jack, get_jack_data,
+    init_bypass, get_jack_port_alias, get_jack_hardware_ports,
+    has_serial_midi_input_port, has_serial_midi_output_port,
+    has_midi_merger_output_port, has_midi_broadcaster_input_port,
+    has_midi_beat_clock_sender_port,
+    connect_jack_ports, disconnect_jack_ports,
+    get_truebypass_value, set_truebypass_value, get_master_volume,
+    set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from modtools.tempo import (
@@ -674,11 +681,11 @@ class Host(object):
 
         # After all is set, update the HMI
         display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
-        pb_name = self.pedalboard_name
-        if pb_name == "":
-            pb_name = "UNTITLED" # NOTE: In MOD UI this is grayed out but visible
-        self.hmi.send("boot {0} {1} {2}".format(display_brightness,
-                                                self.profile.get_master_volume_channel_mode(),
+        master_chan_mode = self.profile.get_master_volume_channel_mode()
+        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+        self.hmi.send("boot {} {} {} {}".format(display_brightness,
+                                                master_chan_mode,
+                                                get_master_volume(master_chan_mode == 2),
                                                 pb_name))
 
         # All set, disable HW bypass now

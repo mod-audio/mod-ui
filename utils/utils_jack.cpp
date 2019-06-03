@@ -28,11 +28,12 @@
 #include <string>
 #include <vector>
 
-#define ALSA_SOUNDCARD_DEFAULT_ID "MODDUO"
-#define ALSA_CONTROL_BYPASS_LEFT  "Left True-Bypass"
-#define ALSA_CONTROL_BYPASS_RIGHT "Right True-Bypass"
-#define ALSA_CONTROL_LOOPBACK1    "LOOPBACK"
-#define ALSA_CONTROL_LOOPBACK2    "Loopback Switch"
+#define ALSA_SOUNDCARD_DEFAULT_ID  "MODDUO"
+#define ALSA_CONTROL_BYPASS_LEFT   "Left True-Bypass"
+#define ALSA_CONTROL_BYPASS_RIGHT  "Right True-Bypass"
+#define ALSA_CONTROL_LOOPBACK1     "LOOPBACK"
+#define ALSA_CONTROL_LOOPBACK2     "Loopback Switch"
+#define ALSA_CONTROL_MASTER_VOLUME "DAC"
 
 #define JACK_SLAVE_PREFIX     "mod-slave"
 #define JACK_SLAVE_PREFIX_LEN 9
@@ -582,6 +583,37 @@ bool set_truebypass_value(bool right, bool bypassed)
     }
 
     return false;
+}
+
+float get_master_volume(bool right)
+{
+    if (gAlsaMixer == nullptr)
+        return -127.5f;
+
+    snd_mixer_selem_id_t* sid;
+
+    if (snd_mixer_selem_id_malloc(&sid) != 0)
+        return -127.5f;
+
+    snd_mixer_selem_id_set_index(sid, 0);
+    snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_MASTER_VOLUME);
+
+    float val = -127.5f;
+
+    if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+    {
+        long aval = 0;
+        snd_mixer_selem_get_playback_volume(elem,
+                                            right ? SND_MIXER_SCHN_FRONT_RIGHT : SND_MIXER_SCHN_FRONT_LEFT,
+                                            &aval);
+
+        const float a = 127.5f / 255.f;
+        const float b = - a * 255.f;
+        val = a * aval + b;
+    }
+
+    snd_mixer_selem_id_free(sid);
+    return val;
 }
 
 // --------------------------------------------------------------------------------------------------------
