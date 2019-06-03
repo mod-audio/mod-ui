@@ -25,7 +25,7 @@ class Profile:
         self.__state_changed = True
         self.store_intermediate()
         return True
-    
+
     # MIDI channels. Range in [1,16] and 0 when "off".
     __midi_prgch_channel = dict()
     __midi_prgch_channel["pedalboard"] = 16
@@ -44,8 +44,8 @@ class Profile:
         if what in ["snapshot", "pedalboard"]:
             result = self.__midi_prgch_channel[what]
         return result
-    
-    
+
+
     __footswitch_navigation = dict()
     __footswitch_navigation["bank"] = False
     __footswitch_navigation["snapshot"] = False
@@ -63,7 +63,7 @@ class Profile:
         if what in ["bank", "snapshot"]:
             result = self.__footswitch_navigation[what]
         return result
-    
+
     __stereo_link = dict()
     __stereo_link["input"] = False
     __stereo_link["output"] = False
@@ -89,7 +89,7 @@ class Profile:
                 self.__send_midi_beat_clock = value
                 result = self.__changed()
         return result
-    
+
     __sync_mode = 0 # 0=internal, 1=MBC slave, 2=Ableton Link
 
     def set_sync_mode(self, value):
@@ -102,7 +102,7 @@ class Profile:
 
     def get_sync_mode(self):
         return self.__sync_mode
-    
+
     # In hardware we have a gain stage and fine level parameters. For
     # the user it should be just one continuous value range.  The
     # function to translate between the two domains must be bijective,
@@ -125,7 +125,7 @@ class Profile:
         result = False
         if port_type in ["input", "output"] and channel in [0, 1]:
             return self.__gain[port_type][channel]
-    
+
     __headphone_volume = 0 # percentage 0-100
 
     def set_headphone_volume(self, value):
@@ -138,7 +138,7 @@ class Profile:
 
     def get_headphone_volume(self):
         return self.__headphone_volume
-    
+
     __configurable_input_mode = 0 # 0 expression pedal, 1 control voltage input
 
     def set_configurable_input_mode(self, value):
@@ -160,11 +160,11 @@ class Profile:
             if value != self.__configurable_output_mode:
                 self.__configurable_output_mode = value
                 result = self.__changed()
-        return result                            
+        return result
 
     def get_configurable_output_mode(self):
         return self.__configurable_output_mode
-    
+
     __master_volume_channel_mode = 0 # 0 for master linked to out 1; 1
                                      # for master linked to out 2; 2 for
                                      # master linked to both out 1 and
@@ -176,25 +176,25 @@ class Profile:
             if value != self.__master_volume_channel_mode:
                 self.__master_volume_channel_mode = value
                 result = self.__changed()
-        return result                                     
+        return result
 
     def get_master_volume_channel_mode(self):
-        return self.__master_volume_channel_mode               
-    
+        return self.__master_volume_channel_mode
+
     __quick_bypass_mode = 0 # 0 for "change both 1&2", 1 for "change
                             # channel 1" and 2 for "change channel 2".
-                                
+
     def set_quick_bypass_mode(self, value):
         result = False
         if value in [0, 1, 2]:
             if value != self.__quick_bypass_mode:
                 self.__quick_bypass_mode = value
-                result = self.__changed()     
-        return result                            
+                result = self.__changed()
+        return result
 
     def get_quick_bypass_mode(self):
         return self.__quick_bypass_mode
-    
+
     __control_voltage_bias = 0 # 0="0 to 5 volts", 1="-2.5 to 2.5 volts"
 
     def set_control_voltage_bias(self, value):
@@ -202,7 +202,7 @@ class Profile:
         if value in [0, 1]:
             if value != self.__control_voltage_bias:
                 self.__control_voltage_bias = value
-                result = self.__changed()     
+                result = self.__changed()
         return result
 
     def get_control_voltage_bias(self):
@@ -218,8 +218,8 @@ class Profile:
         return result
 
     def get_exp_mode(self):
-        return self.__exp_mode    
-    
+        return self.__exp_mode
+
     def get_last_stored_profile_index(self):
         """Return the profile index that was stored latest and if it was changed since."""
         return self.__last_stored_profile_index, self.__state_changed
@@ -230,8 +230,8 @@ class Profile:
 
     def store(self, index):
         self.__state_changed == False
-        return self.__store(index)        
-        
+        return self.__store(index)
+
     def __store(self, index):
         """Serialize the profile to JSON and store it on harddisk."""
         data = {
@@ -260,7 +260,7 @@ class Profile:
         try:
             with open(index_to_filepath(index), 'w+') as outfile:
                 json.dump(data, outfile)
-            result = True                
+            result = True
         except FileNotFoundError as e:
             pass
         return result
@@ -296,8 +296,8 @@ class Profile:
 
             self.__state_changed == False
             result = True
-            
+
         except FileNotFoundError as e:
             pass
-        
+
         return result
