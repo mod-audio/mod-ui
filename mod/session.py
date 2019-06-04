@@ -163,8 +163,7 @@ class Session(object):
         self.pedalboard_changed_callback(True, bundlepath, title)
 
         # Update the title in HMI
-        #self.hmi.send("set_pb_name {0}".format(title))
-        self.hmi.send("set_pb_name {0}".format("Test01"))
+        self.hmi.send("set_pb_name {0}".format(title))
         
         self.screenshot_generator.schedule_screenshot(bundlepath)
         return bundlepath
@@ -309,8 +308,7 @@ class Session(object):
             title = ""
 
         # Update the title in HMI
-        #self.hmi.send("set_pb_name {0}".format(title))
-        self.hmi.send("set_pb_name {0}".format("Test02"))
+        self.hmi.send("set_pb_name {0}".format(title))
             
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
