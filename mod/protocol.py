@@ -106,10 +106,10 @@ class Protocol(object):
 
         # Beats per minute
         "get_tempo_bpm": [],
-        "set_tempo_bpm": [float],
+        "set_tempo_bpm": [int],
         # Beats per bar
         "get_tempo_bpb": [],
-        "set_tempo_bpb": [float],
+        "set_tempo_bpb": [int],
 
         "tuner": [str],
         "tuner_input": [int],
