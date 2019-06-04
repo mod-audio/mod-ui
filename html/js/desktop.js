@@ -1888,7 +1888,14 @@ JqueryClass('statusTooltip', {
                     $(this).hide()
                 })
         })
-        tooltip.css('right', $(window).width() - self.position().left - self.width())
+
+        // Special case for bottom left mod-plugins icon
+        // arrow should be on the left, not on the right
+        if (self.attr('id') === "mod-plugins") {
+          var arrow = tooltip.data('arrow');
+          arrow.css('left', 14);
+        }
+
         return self
     },
 
@@ -1918,11 +1925,10 @@ JqueryClass('statusTooltip', {
         tooltip.show().stop().animate({
             opacity: 1
         }, 200)
-        if (tooltip.position().left < 0) {
-            var arrow = tooltip.data('arrow');
-            arrow.css('left', arrow.position().left + tooltip.position().left);
-            tooltip.css('right', $(window).width() - self.position().left - self.width() + tooltip.position().left);
-        }
+
+        // Adjust tooltip position in case window has been resized
+        self.statusTooltip('updatePosition')
+
         if (timeout) {
             setTimeout(function () {
                 tooltip.stop().animate({
@@ -1939,6 +1945,11 @@ JqueryClass('statusTooltip', {
         var self = $(this)
         var tooltip = self.data('tooltip')
         tooltip.css('right', $(window).width() - self.position().left - self.width())
+
+        // Special case for bottom left mod-plugins icon
+        if (self.attr('id') === "mod-plugins") {
+            tooltip.css('right', $(window).width() - self.position().left - self.width() + tooltip.position().left);
+        }
     }
 })
 
