@@ -161,6 +161,11 @@ class Session(object):
     def web_save_pedalboard(self, title, asNew):
         bundlepath = self.host.save(title, asNew)
         self.pedalboard_changed_callback(True, bundlepath, title)
+
+        # Update the title in HMI
+        #self.hmi.send("set_pb_name {0}".format(title))
+        self.hmi.send("set_pb_name {0}".format("Test01"))
+        
         self.screenshot_generator.schedule_screenshot(bundlepath)
         return bundlepath
 
@@ -302,6 +307,11 @@ class Session(object):
         if isDefault:
             bundlepath = ""
             title = ""
+
+        # Update the title in HMI
+        #self.hmi.send("set_pb_name {0}".format(title))
+        self.hmi.send("set_pb_name {0}".format("Test02"))
+            
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
 
