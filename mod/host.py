@@ -3691,30 +3691,30 @@ _:b%i
 
     def hmi_get_tempo_bpm(self, callback):
         """Get the Jack BPM."""
-        bpm = get_jack_data(True)['bpm']
-        logging.debug("hmi get tempo bpm: %f", bpm)
-        callback(True, float(bpm))
+        bpm = int(get_jack_data(True)['bpm'])
+        logging.debug("hmi get tempo bpm: %d", bpm)
+        callback(True, bpm)
 
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
-        logging.debug("hmi tempo bpm set to %f", bpm)
+        logging.debug("hmi tempo bpm set to %f", float(bpm))
 
         # Forward to mod-host. It will check assertions.
-        self.send_notmodified("set_bpm {:f}".format(bpm))
+        self.send_notmodified("set_bpm {:f}".format(float(bpm)))
         callback(True)
 
     def hmi_get_tempo_bpb(self, callback):
         """Get the Jack Beats Per Bar."""
         logging.debug("hmi tempo bpb get")
-        bpb = get_jack_data(True)['bpb']
-        callback(True, float(bpb))
+        bpb = int(get_jack_data(True)['bpb'])
+        callback(True, bpb)
 
     def hmi_set_tempo_bpb(self, bpb, callback):
         """Set the Jack Beats Per Bar."""
-        logging.debug("hmi tempo bpb set to %f", bpb)
+        logging.debug("hmi tempo bpb set to %f", float(bpb))
 
         # Forward to mod-host. It will check assertions.
-        self.send_notmodified("set_bpb {:f}".format(bpb))
+        self.send_notmodified("set_bpb {:f}".format(float(bpb)))
         callback(True)
 
     def hmi_get_snapshot_prgch(self, callback):
