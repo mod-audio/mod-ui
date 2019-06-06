@@ -3970,6 +3970,9 @@ _:b%i
             value = "false"
             if mute == 1:
                 value = "true"
+                self.mute()
+            else:
+                self.unmute()
             self.prefs.setAndSave("tuner-mutes-outputs", value)
             callback(True)
         else:
