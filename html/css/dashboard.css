@@ -717,6 +717,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     text-transform:uppercase;
 }
 
+
 .save-popup .actions {
     border-color:#ddd;
     border-style:solid;
@@ -860,7 +861,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	width: 100%;
 }
 
-#share-window label {
+.save-popup#share-window label {
 	width: 585px;
 }
 
