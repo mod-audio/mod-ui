@@ -165,6 +165,9 @@ class Protocol(object):
 
         "get_pb_name": [],
 
+        "snapshot_load": [int],
+        "snapshot_save": [int],
+
         "jack_cpu_load": [],
     }
 

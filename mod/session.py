@@ -20,7 +20,7 @@ import os, time, logging, json
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
-from mod import safe_json_load
+from mod import safe_json_load, TextFileFlusher
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
@@ -50,7 +50,7 @@ class UserPreferences(object):
         self.save()
 
     def save(self):
-        with open(PREFERENCES_JSON_FILE, 'w') as fh:
+        with TextFileFlusher(PREFERENCES_JSON_FILE) as fh:
             json.dump(self.prefs, fh)
 
 class Session(object):
@@ -164,7 +164,7 @@ class Session(object):
 
         # Update the title in HMI
         self.hmi.send("set_pb_name {0}".format(title))
-        
+
         self.screenshot_generator.schedule_screenshot(bundlepath)
         return bundlepath
 
@@ -309,7 +309,7 @@ class Session(object):
 
         # Update the title in HMI
         self.hmi.send("set_pb_name {0}".format(title))
-            
+
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
 
