@@ -149,6 +149,11 @@ class Host(object):
     DESIGNATIONS_INDEX_BPM       = 3
     DESIGNATIONS_INDEX_SPEED     = 4
 
+    # HMI snapshots, reusing the same code for pedalboard snapshots but with reserved negative numbers
+    HMI_SNAPSHOTS_OFFSET = 100
+    HMI_SNAPSHOTS_LEFT   = 0 - (HMI_SNAPSHOTS_OFFSET + 0)
+    HMI_SNAPSHOTS_RIGHT  = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
+
     def __init__(self, hmi, prefs, msg_callback):
         if False:
             from mod.hmi import HMI
@@ -190,6 +195,7 @@ class Host(object):
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots  = []
         self.next_hmi_pedalboard = None
+        self.hmi_snapshots = [None, None]
         self.transport_rolling   = False
         self.transport_bpb       = 4.0
         self.transport_bpm       = 120.0
@@ -347,6 +353,9 @@ class Host(object):
         Protocol.register_cmd_callback("set_tuner_mute", self.hmi_set_tuner_mute)
 
         Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
+
+        Protocol.register_cmd_callback("snapshot_load", self.hmi_snapshot_load)
+        Protocol.register_cmd_callback("snapshot_save", self.hmi_snapshot_save)
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -1903,18 +1912,24 @@ class Host(object):
 
     @gen.coroutine
     def snapshot_load(self, idx, callback=lambda r:None):
-        if idx < 0 or idx >= len(self.pedalboard_snapshots):
-            callback(False)
-            return
+        if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
+            snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
+            is_hmi_snapshot = True
 
-        snapshot = self.pedalboard_snapshots[idx]
+        else:
+            if idx < 0 or idx >= len(self.pedalboard_snapshots):
+                callback(False)
+                return
 
-        if snapshot is None:
-            print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
-            callback(False)
-            return
+            snapshot = self.pedalboard_snapshots[idx]
+            is_hmi_snapshot = False
 
-        self.current_pedalboard_snapshot_id = idx
+            if snapshot is None:
+                print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
+                callback(False)
+                return
+
+            self.current_pedalboard_snapshot_id = idx
 
         used_actuators = []
 
@@ -1968,12 +1983,15 @@ class Host(object):
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 self.bypass(instance, False, None)
 
-        self.paramhmi_set('pedalboard', ':presets', idx, None)
+        if not is_hmi_snapshot:
+            self.paramhmi_set('pedalboard', ':presets', idx, None)
+
         self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
         callback(True)
 
-        # TODO: change to pedal_snapshot?
-        self.msg_callback("pedal_preset %d" % idx)
+        if not is_hmi_snapshot:
+            # TODO: change to pedal_snapshot?
+            self.msg_callback("pedal_preset %d" % idx)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - connections
@@ -3092,8 +3110,6 @@ _:b%i
         if self.profile.set_midi_prgch_channel("snapshot", channel):
             self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
 
-
-
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
 
@@ -3817,7 +3833,8 @@ _:b%i
             else:
                 set_send_midi_clk_on_callback(False)
 
-        self.send_notmodified("add %s %d" % (MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID), midi_beat_clock_sender_added)
+        self.send_notmodified("add %s %d" % (MIDI_BEAT_CLOCK_SENDER_URI,
+                                             MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID), midi_beat_clock_sender_added)
 
     def hmi_set_send_midi_clk_off(self, set_send_midi_clk_off_callback):
         logging.debug("hmi set midi beat clock OFF")
@@ -3997,6 +4014,17 @@ _:b%i
         """Set the setting of the control voltage bias."""
         result = self.profile.set_control_voltage_bias(bias_mode)
         callback(result)
+
+    def hmi_snapshot_save(self, idx, callback):
+        if idx not in (0, 1):
+            return callback(False)
+
+        self.hmi_snapshots[idx] = self.snapshot_make("HMI")
+        callback(True)
+
+    def hmi_snapshot_load(self, idx, callback):
+        # Use negative numbers for HMI snapshots
+        self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
