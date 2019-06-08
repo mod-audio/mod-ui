@@ -308,7 +308,7 @@ class Session(object):
             title = ""
 
         # Update the title in HMI
-        self.hmi.send("set_pb_name {0}".format(title))
+        self.hmi.send("set_pb_name {0}".format(title or "Untitled"))
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
@@ -332,7 +332,7 @@ class Session(object):
             reset_host(True)
 
         # Update the title in HMI
-        self.hmi.send("set_pb_name {0}".format("Untitled"))
+        self.hmi.send("set_pb_name Untitled")
         self.pedalboard_changed_callback(True, "", "")
 
     # host commands
