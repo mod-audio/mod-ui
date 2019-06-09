@@ -72,17 +72,6 @@ class Profile:
     __send_midi_beat_clock = MIDI_BEAT_CLOCK_OFF
     __sync_mode = TRANSPORT_SYNC_INTERNAL
 
-    # In hardware we have a gain stage and fine level parameters. For
-    # the user it should be just one continuous value range.  The
-    # function to translate between the two domains must be bijective,
-    # so we can store just the value form the user domain.
-    #
-    # 0: "0dB", 1: "6dB", 2: "15dB", 3: "20dB"
-    __gain = {
-        "input": [0, 0],
-        "output": [0, 0],
-    }
-
     __headphone_volume = 0 # percentage 0-100
     __configurable_input_mode = INPUT_MODE_EXP_PEDAL
     __configurable_output_mode = OUTPUT_MODE_HEADPHONE
@@ -141,15 +130,6 @@ class Profile:
 
     def get_sync_mode(self):
         return self.__sync_mode
-
-    def set_gain(self, port_type, channel, value):
-        if value >= 0 and value <= 3 and port_type in ["input", "output"] and channel in [0, 1] and value != self.__gain[port_type][channel]:
-            self.__gain[port_type][channel] = value
-            return self.__changed()
-        return False
-
-    def get_gain(self, port_type, channel):
-        return self.__gain.get(port_type, []).get(channel, False)
 
     def set_headphone_volume(self, value):
         if value != self.__headphone_volume and value >= 0 and value <= 100:
@@ -248,10 +228,6 @@ class Profile:
             "output_stereo_link": self.__stereo_link["output"],
             "send_midi_beat_clock": self.__send_midi_beat_clock,
             "sync_mode": self.__sync_mode,
-            "gain_in_1": self.__gain["input"][0],
-            "gain_in_2": self.__gain["input"][1],
-            "gain_out_1": self.__gain["output"][0],
-            "gain_out_2": self.__gain["output"][1],
             "headphone_volume": self.__headphone_volume,
             "configurable_input_mode": self.__configurable_input_mode,
             "configurable_output_mode": self.__configurable_output_mode,
@@ -279,10 +255,6 @@ class Profile:
         self.__stereo_link["output"] = data.get("output_stereo_link", False)
         self.__send_midi_beat_clock = data.get("send_midi_beat_clock", self.MIDI_BEAT_CLOCK_OFF)
         self.__sync_mode = data.get("sync_mode", self.TRANSPORT_SYNC_INTERNAL)
-        self.__gain["input"][0] = data.get("gain_in_1", 0)
-        self.__gain["input"][1] = data.get("gain_in_2", 0)
-        self.__gain["output"][0] = data.get("gain_out_1", 0)
-        self.__gain["output"][1] = data.get("gain_out_2", 0)
         self.__configurable_input_mode = data.get("configurable_input_mode", self.INPUT_MODE_EXP_PEDAL)
         self.__configurable_output_mode = data.get("configurable_output_mode", self.OUTPUT_MODE_HEADPHONE)
         self.__master_volume_channel_mode = data.get("master_volume_channel_mode", self.MASTER_VOLUME_CHANNEL_MODE_BOTH)
