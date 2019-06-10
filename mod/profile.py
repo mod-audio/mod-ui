@@ -92,7 +92,7 @@ class Profile:
         return False
 
     def get_midi_prgch_channel(self, what):
-        return self.__midi_prgch_channel.get(what, None)
+        return self.__midi_prgch_channel.get(what, 16)
 
     def set_footswitch_navigation(self, what, value):
         if what in ("bank", "snapshot") and isinstance(value, bool) and value != self.__footswitch_navigation[what]:
@@ -101,7 +101,7 @@ class Profile:
         return False
 
     def get_footswitch_navigation(self, what):
-        return self.__footswitch_navigation.get(what, None)
+        return self.__footswitch_navigation.get(what, 15)
 
     def set_stereo_link(self, port_type, value):
         if value in (0, 1, 2) and port_type in ["input", "output"] and value != self.__stereo_link[port_type]:
@@ -110,7 +110,7 @@ class Profile:
         return False
 
     def get_stereo_link(self, port_type):
-        return self.__stereo_link.get(port_type, None)
+        return self.__stereo_link.get(port_type, False)
 
     def set_send_midi_beat_clock(self, value):
         if value != self.__send_midi_beat_clock and value in (self.MIDI_BEAT_CLOCK_OFF,
