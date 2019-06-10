@@ -3418,7 +3418,8 @@ _:b%i
             self.bank_id = bank_id
             self.load(bundlepath)
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             self.profile.get_midi_prgch_channel("bank")), loaded_callback, datatype='boolean')
+                                                                                             self.profile.get_midi_prgch_channel("bank")),
+                                 loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)

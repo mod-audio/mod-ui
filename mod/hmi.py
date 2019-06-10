@@ -339,4 +339,7 @@ class HMI(object):
     # new messages
 
     def clear(self, callback):
-        self.control_rm(self.hw_ids, callback)
+        def clear2():
+            self.control_rm(self.hw_ids, callback)
+
+        self.send("snapshots_clear", clear2)
