@@ -197,7 +197,7 @@ class HMI(object):
         if pedalboardsData is None:
             pedalboardsData = ""
 
-        self.send("initial_state %d %d %s" % (bank_id, pedalboard_id, pedalboardsData), callback)
+        self.send("is %d %d %s" % (bank_id, pedalboard_id, pedalboardsData), callback)
 
     def ui_con(self, callback):
         self.send("ui_con", callback, datatype='boolean')
@@ -267,7 +267,7 @@ class HMI(object):
         if not actuator_uri.startswith("/hmi/footswitch") and platform == 'duo':
             cb = control_add_callback
 
-        self.send('control_add %d %s %d %s %f %f %f %d %s' %
+        self.send('a %d %s %d %s %f %f %f %d %s' %
                   ( hw_id,
                     label,
                     var_type,
@@ -281,12 +281,12 @@ class HMI(object):
                   cb, datatype='boolean')
 
     def control_set_index(self, hw_id, index, n_controllers, callback):
-        self.send('control_set_index %d %d %d' % (hw_id, index, n_controllers), callback, datatype='boolean')
+        self.send('si %d %d %d' % (hw_id, index, n_controllers), callback, datatype='boolean')
 
     def control_set(self, hw_id, value, callback):
         """Set a plug-in's control port value on the HMI."""
         # control_set <hw_id> <value>"""
-        self.send('control_set %d %f' %
+        self.send('s %d %f' %
                   (hw_id, value),
                   callback, datatype='boolean')
 
@@ -313,13 +313,13 @@ class HMI(object):
 
         ids = "%s" % (" ".join(idsData))
         ids = ids.strip()
-        self.send('control_rm %s' % (ids), callback, datatype='boolean')
+        self.send('rm %s' % (ids), callback, datatype='boolean')
 
     def ping(self, callback):
         self.send('ping', callback, datatype='boolean')
 
     def tuner(self, freq, note, cents, callback):
-        self.send('tuner %f %s %f' % (freq, note, cents), callback)
+        self.send('tu %f %s %f' % (freq, note, cents), callback)
 
     def xrun(self, callback):
         self.send('xrun', callback)
@@ -339,7 +339,7 @@ class HMI(object):
     # new messages
 
     def clear(self, callback):
-        def clear2():
+        def clear2(ok):
             self.control_rm(self.hw_ids, callback)
 
-        self.send("snapshots_clear", clear2)
+        self.send("ss_c", clear2)
