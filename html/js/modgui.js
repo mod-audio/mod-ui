@@ -1289,7 +1289,7 @@ var baseWidget = {
         $(this).addClass('disabled').data('enabled', false)
     },
     enable: function () {
-        $(this).removeClass('addressed').data('enabled', true)
+        $(this).removeClass('addressed').removeClass('disabled').data('enabled', true)
     },
     address: function () {
         $(this).addClass('addressed').data('enabled', true)
@@ -1684,18 +1684,6 @@ JqueryClass('selectWidget', baseWidget, {
             self.trigger('valuechange', parseFloat(self.val()))
         })
         return self
-    },
-
-    disable: function () {
-        var self = $(this)
-        self.attr('disabled', true)
-        self.data('enabled', false)
-    },
-
-    enable: function () {
-        var self = $(this)
-        self.attr('disabled', false)
-        self.data('enabled', true)
     },
 
     setValue: function (value, only_gui) {

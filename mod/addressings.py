@@ -126,6 +126,7 @@ class Addressings(object):
                 'modes': data['modes'],
                 'steps': data['steps'],
                 'max_assigns': data['max_assigns'],
+                'feedback'   : data['feedback'],
             })
 
         return actuators
@@ -144,7 +145,7 @@ class Addressings(object):
                     'label'      : addr['label'],
                     'minimum'    : addr['minimum'],
                     'maximum'    : addr['maximum'],
-                    'steps'      : addr['steps']
+                    'steps'      : addr['steps'],
                 })
             addressings[uri] = addrs2
 
@@ -368,39 +369,41 @@ class Addressings(object):
         # HMI
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
-                dividers = "%s" % addr.get('dividers', "{}")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s" % (instances[addr['instance_id']],
-                                                              addr['port'],
-                                                              uri,
-                                                              addr['minimum'],
-                                                              addr['maximum'],
-                                                              addr['steps'],
-                                                              addr['label'].replace(" ","_"),
-                                                              addr.get('tempo'),
-                                                              dividers.replace(" ", "").replace("None", "null")))
+                dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s 1" % (instances[addr['instance_id']],
+                                                                      addr['port'],
+                                                                      uri,
+                                                                      addr['minimum'],
+                                                                      addr['maximum'],
+                                                                      addr['steps'],
+                                                                      addr['label'].replace(" ","_"),
+                                                                      addr.get('tempo'),
+                                                                      dividers))
+
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
-                dividers = "%s" % addr.get('dividers', "{}")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s" % (instances[addr['instance_id']],
-                                                              addr['port'],
-                                                              uri,
-                                                              addr['minimum'],
-                                                              addr['maximum'],
-                                                              addr['steps'],
-                                                              addr['label'].replace(" ","_"),
-                                                              addr.get('tempo'),
-                                                              dividers.replace(" ", "").replace("None", "null")))
+                dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s 1" % (instances[addr['instance_id']],
+                                                                      addr['port'],
+                                                                      uri,
+                                                                      addr['minimum'],
+                                                                      addr['maximum'],
+                                                                      addr['steps'],
+                                                                      addr['label'].replace(" ","_"),
+                                                                      addr.get('tempo'),
+                                                                      dividers))
+
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
             for addr in addrs:
-                msg_callback("hw_map %s %s %s %f %f %d %s" % (instances[addr['instance_id']],
-                                                              addr['port'],
-                                                              uri,
-                                                              addr['minimum'],
-                                                              addr['maximum'],
-                                                              addr['steps'],
-                                                              addr['label'].replace(" ","_")))
+                msg_callback("hw_map %s %s %s %f %f %d %s False null 0" % (instances[addr['instance_id']],
+                                                                           addr['port'],
+                                                                           uri,
+                                                                           addr['minimum'],
+                                                                           addr['maximum'],
+                                                                           addr['steps'],
+                                                                           addr['label'].replace(" ","_")))
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():

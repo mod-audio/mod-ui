@@ -24,6 +24,7 @@ function SnapshotsManager(options) {
         pedalPresetsOverlay: $('<div>'),
         renamedCallback: function (name) {},
         hardwareManager: null,
+        canFeedback: true,
         currentlyAddressed: false,
         editingElem: null,
         presetCount: 0,
@@ -147,11 +148,12 @@ function SnapshotsManager(options) {
         return false
     })
 
-    this.start = function (currentId, currentlyAddressed) {
+    this.start = function (currentId, currentlyAddressed, canFeedback) {
         // clear old entries
         options.pedalPresetsList.find('option').remove()
 
         // save state
+        options.canFeedback = canFeedback
         options.currentlyAddressed = currentlyAddressed
 
         self.getPedalPresetList(function (presets) {
@@ -219,6 +221,11 @@ function SnapshotsManager(options) {
 
         var selectId = $(this).val()
         var prtitle  = $(this).html()
+
+        if (options.currentlyAddressed && !options.canFeedback) {
+            options.pedalPresetsList.find('option:selected').removeProp('selected')
+            return self.prevent(e)
+        }
 
         $.ajax({
             url: '/snapshot/load',

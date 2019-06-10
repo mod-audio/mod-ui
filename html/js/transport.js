@@ -259,7 +259,7 @@ function TransportControls(options) {
                     ws.send("link_enable 0")
                     ws.send("midi_clock_slave_enable 1")
                     // Disable BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
-                    self.setControlEnabled(":bpm", false)
+                    self.setControlEnabled(":bpm", false, false)
                     // Set new sync mode to disable addressing from mod-ui
                     self.setSyncMode(newSyncMode)
                 })
@@ -280,15 +280,16 @@ function TransportControls(options) {
         }
     })
 
-    this.setControlEnabled = function (portSymbol, enabled) {
+    this.setControlEnabled = function (portSymbol, enabled, feedback) {
+        var disableClassname = feedback ? 'address' : 'disable'
         if (portSymbol == ":bpb") {
-            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'address')
-            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', true)
+            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : disableClassname)
+            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', enabled || feedback)
         } else if (portSymbol == ":bpm") {
-            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'address')
-            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', true)
+            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : disableClassname)
+            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', enabled || feedback)
         } else if (portSymbol == ":rolling") {
-            self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'address')
+            self.rollingPort.widget.controlWidget(enabled ? 'enable' : disableClassname)
         }
     }
 

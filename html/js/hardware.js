@@ -47,7 +47,7 @@ function HardwareManager(options) {
         address: function (instanceAndSymbol, addressing, callback) { callback(true) },
 
         // Callback to enable or disable a control in GUI
-        setEnabled: function (instance, portSymbol, enabled) {},
+        setEnabled: function (instance, portSymbol, enabled, feedback) {},
 
         // Renders the address html template
         renderForm: function (instance, port) {},
@@ -415,7 +415,8 @@ function HardwareManager(options) {
             dividers: {
               value: dividerValue,
               options: portValuesWithDividerLabels
-            }
+            },
+            feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
         }
 
         options.address(instanceAndSymbol, addressing, function (ok) {
@@ -435,7 +436,7 @@ function HardwareManager(options) {
             }
 
             // We're addressing
-            if (actuator.uri && actuator.uri != kNullAddressURI )
+            if (actuator.uri && actuator.uri != kNullAddressURI)
             {
                 var actuator_uri = actuator.uri
                 if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
@@ -456,7 +457,8 @@ function HardwareManager(options) {
                 self.addressingsData        [instanceAndSymbol] = addressing
 
                 // disable this control
-                options.setEnabled(instance, port.symbol, false)
+                var feedback = actuator.feedback === false ? false : true // backwards compat, true by default
+                options.setEnabled(instance, port.symbol, false, feedback)
             }
             // We're unaddressing
             else if (unaddressing)
@@ -562,7 +564,9 @@ function HardwareManager(options) {
         }
     }
 
-    this.addHardwareMapping = function (instance, portSymbol, actuator_uri, label, minimum, maximum, steps, tempo, dividers) {
+    this.addHardwareMapping = function (instance, portSymbol, actuator_uri,
+                                        label, minimum, maximum, steps,
+                                        tempo, dividers, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -573,11 +577,12 @@ function HardwareManager(options) {
             maximum : maximum,
             steps   : steps,
             tempo   : tempo,
-            dividers: dividers
+            dividers: dividers,
+            feedback: feedback,
         }
 
         // disable this control
-        options.setEnabled(instance, portSymbol, false)
+        options.setEnabled(instance, portSymbol, false, feedback)
     }
 
     this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
@@ -592,15 +597,16 @@ function HardwareManager(options) {
         self.addressingsByActuator  [kMidiLearnURI].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
         self.addressingsData        [instanceAndSymbol] = {
-            uri    : actuator_uri,
-            label  : null,
-            minimum: minimum,
-            maximum: maximum,
-            steps  : null,
+            uri     : actuator_uri,
+            label   : null,
+            minimum : minimum,
+            maximum : maximum,
+            steps   : null,
+            feedback: true,
         }
 
         // disable this control
-        options.setEnabled(instance, portSymbol, false)
+        options.setEnabled(instance, portSymbol, false, true)
     }
 
     this.addActuator = function (actuator) {
