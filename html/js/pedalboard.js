@@ -1449,7 +1449,7 @@ JqueryClass('pedalboard', {
         return Object.keys(uris)
     },
 
-    setPortEnabled: function (instance, symbol, enabled) {
+    setPortEnabled: function (instance, symbol, enabled, feedback) {
         var self = $(this)
         var targetname1, targetname2
         var callbackId  = instance+'/'+symbol+":enabled"
@@ -1466,6 +1466,8 @@ JqueryClass('pedalboard', {
         if (gui && ($(targetname1).length || $(targetname2).length)) {
             if (enabled) {
                 gui.enable(symbol)
+            } else if (!feedback) {
+                gui.disable(symbol)
             } else {
                 gui.addressPort(symbol)
             }
@@ -1479,6 +1481,8 @@ JqueryClass('pedalboard', {
                 var gui = self.pedalboard('getGui', instance)
                 if (enabled) {
                     gui.enable(symbol)
+                } else if (!feedback) {
+                    gui.disable(symbol)
                 } else {
                     gui.addressPort(symbol)
                 }

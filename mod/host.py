@@ -291,71 +291,73 @@ class Host(object):
         Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
         Protocol.register_cmd_callback("banks", self.hmi_list_banks)
         Protocol.register_cmd_callback("pedalboards", self.hmi_list_bank_pedalboards)
-        Protocol.register_cmd_callback("pedalboard", self.hmi_load_bank_pedalboard)
-        Protocol.register_cmd_callback("control_get", self.hmi_parameter_get)
-        Protocol.register_cmd_callback("control_set", self.hmi_parameter_set)
-        Protocol.register_cmd_callback("control_next", self.hmi_parameter_addressing_next)
-        Protocol.register_cmd_callback("pedalboard_save", self.hmi_save_current_pedalboard)
-        Protocol.register_cmd_callback("pedalboard_reset", self.hmi_reset_current_pedalboard)
-        Protocol.register_cmd_callback("tuner", self.hmi_tuner)
-        Protocol.register_cmd_callback("tuner_input", self.hmi_tuner_input)
+        Protocol.register_cmd_callback("pb", self.hmi_load_bank_pedalboard)
+        Protocol.register_cmd_callback("g", self.hmi_parameter_get)
+        Protocol.register_cmd_callback("s", self.hmi_parameter_set)
+        Protocol.register_cmd_callback("n", self.hmi_parameter_addressing_next)
+        Protocol.register_cmd_callback("pbs", self.hmi_save_current_pedalboard)
+        Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
+        Protocol.register_cmd_callback("tu", self.hmi_tuner)
+        Protocol.register_cmd_callback("tu_i", self.hmi_tuner_input)
 
-        Protocol.register_cmd_callback("get_truebypass_value", self.hmi_get_truebypass_value)
-        Protocol.register_cmd_callback("set_truebypass_value", self.hmi_set_truebypass_value)
-        Protocol.register_cmd_callback("get_q_bypass", self.hmi_get_quick_bypass_mode)
-        Protocol.register_cmd_callback("set_q_bypass", self.hmi_set_quick_bypass_mode)
+        Protocol.register_cmd_callback("g_bp", self.hmi_get_truebypass_value)
+        Protocol.register_cmd_callback("s_bp", self.hmi_set_truebypass_value)
+        Protocol.register_cmd_callback("g_qbp", self.hmi_get_quick_bypass_mode)
+        Protocol.register_cmd_callback("s_qbp", self.hmi_set_quick_bypass_mode)
 
-        Protocol.register_cmd_callback("get_tempo_bpm", self.hmi_get_tempo_bpm)
-        Protocol.register_cmd_callback("set_tempo_bpm", self.hmi_set_tempo_bpm)
-        Protocol.register_cmd_callback("get_tempo_bpb", self.hmi_get_tempo_bpb)
-        Protocol.register_cmd_callback("set_tempo_bpb", self.hmi_set_tempo_bpb)
+        Protocol.register_cmd_callback("g_bpm", self.hmi_get_tempo_bpm)
+        Protocol.register_cmd_callback("s_bpm", self.hmi_set_tempo_bpm)
+        Protocol.register_cmd_callback("g_bpb", self.hmi_get_tempo_bpb)
+        Protocol.register_cmd_callback("s_bpb", self.hmi_set_tempo_bpb)
 
-        Protocol.register_cmd_callback("get_snapshot_prgch", self.hmi_get_snapshot_prgch)
-        Protocol.register_cmd_callback("set_snapshot_prgch", self.hmi_set_snapshot_prgch)
-        Protocol.register_cmd_callback("get_pb_prgch", self.hmi_get_pedalboard_prgch)
-        Protocol.register_cmd_callback("set_pb_prgch", self.hmi_set_pedalboard_prgch)
+        Protocol.register_cmd_callback("g_ssc", self.hmi_get_snapshot_prgch)
+        Protocol.register_cmd_callback("s_ssc", self.hmi_set_snapshot_prgch)
+        Protocol.register_cmd_callback("g_pbc", self.hmi_get_pedalboard_prgch)
+        Protocol.register_cmd_callback("s_pbc", self.hmi_set_pedalboard_prgch)
 
-        Protocol.register_cmd_callback("get_clk_src", self.hmi_get_clk_src)
-        Protocol.register_cmd_callback("set_clk_src", self.hmi_set_clk_src)
+        Protocol.register_cmd_callback("g_cls", self.hmi_get_clk_src)
+        Protocol.register_cmd_callback("s_cls", self.hmi_set_clk_src)
 
-        Protocol.register_cmd_callback("get_send_midi_clk", self.hmi_get_send_midi_clk)
-        Protocol.register_cmd_callback("set_send_midi_clk", self.hmi_set_send_midi_clk)
+        Protocol.register_cmd_callback("g_mclk", self.hmi_get_send_midi_clk)
+        Protocol.register_cmd_callback("s_mclk", self.hmi_set_send_midi_clk)
 
-        Protocol.register_cmd_callback("get_current_profile", self.hmi_get_current_profile)
-        Protocol.register_cmd_callback("retrieve_profile", self.hmi_retrieve_profile)
-        Protocol.register_cmd_callback("store_profile", self.hmi_store_profile)
+        Protocol.register_cmd_callback("g_p", self.hmi_get_current_profile)
+        Protocol.register_cmd_callback("r_p", self.hmi_retrieve_profile)
+        Protocol.register_cmd_callback("s_p", self.hmi_store_profile)
 
-        Protocol.register_cmd_callback("get_exp_cv", self.hmi_get_exp_cv)
-        Protocol.register_cmd_callback("set_exp_cv", self.hmi_set_exp_cv)
-        Protocol.register_cmd_callback("get_hp_cv", self.hmi_get_hp_cv)
-        Protocol.register_cmd_callback("set_hp_cv", self.hmi_set_hp_cv)
+        Protocol.register_cmd_callback("g_ex", self.hmi_get_exp_cv)
+        Protocol.register_cmd_callback("s_ex", self.hmi_set_exp_cv)
+        Protocol.register_cmd_callback("g_hp", self.hmi_get_hp_cv)
+        Protocol.register_cmd_callback("s_hp", self.hmi_set_hp_cv)
 
-        Protocol.register_cmd_callback("get_exp_mode", self.hmi_get_exp_mode)
-        Protocol.register_cmd_callback("set_exp_mode", self.hmi_set_exp_mode)
-        Protocol.register_cmd_callback("get_cv_bias", self.hmi_get_control_voltage_bias)
-        Protocol.register_cmd_callback("set_cv_bias", self.hmi_set_control_voltage_bias)
+        Protocol.register_cmd_callback("g_ex_m", self.hmi_get_exp_mode)
+        Protocol.register_cmd_callback("s_ex_m", self.hmi_set_exp_mode)
+        Protocol.register_cmd_callback("g_cvb", self.hmi_get_control_voltage_bias)
+        Protocol.register_cmd_callback("s_cvb", self.hmi_set_control_voltage_bias)
 
-        Protocol.register_cmd_callback("get_in_chan_link", self.hmi_get_in_chan_link)
-        Protocol.register_cmd_callback("set_in_chan_link", self.hmi_set_in_chan_link)
-        Protocol.register_cmd_callback("get_out_chan_link", self.hmi_get_out_chan_link)
-        Protocol.register_cmd_callback("set_out_chan_link", self.hmi_set_out_chan_link)
+        Protocol.register_cmd_callback("g_il", self.hmi_get_in_chan_link)
+        Protocol.register_cmd_callback("s_il", self.hmi_set_in_chan_link)
+        Protocol.register_cmd_callback("g_ol", self.hmi_get_out_chan_link)
+        Protocol.register_cmd_callback("s_ol", self.hmi_set_out_chan_link)
 
-        Protocol.register_cmd_callback("get_display_brightness", self.hmi_get_display_brightness)
-        Protocol.register_cmd_callback("set_display_brightness", self.hmi_set_display_brightness)
+        Protocol.register_cmd_callback("g_br", self.hmi_get_display_brightness)
+        Protocol.register_cmd_callback("s_br", self.hmi_set_display_brightness)
 
-        Protocol.register_cmd_callback("get_mv_channel", self.hmi_get_master_volume_channel_mode)
-        Protocol.register_cmd_callback("set_mv_channel", self.hmi_set_master_volume_channel_mode)
+        Protocol.register_cmd_callback("g_mv_c", self.hmi_get_master_volume_channel_mode)
+        Protocol.register_cmd_callback("s_mv_c", self.hmi_set_master_volume_channel_mode)
 
-        Protocol.register_cmd_callback("get_play_status", self.hmi_get_play_status)
-        Protocol.register_cmd_callback("set_play_status", self.hmi_set_play_status)
+        Protocol.register_cmd_callback("g_p", self.hmi_get_play_status)
+        Protocol.register_cmd_callback("s_p", self.hmi_set_play_status)
 
-        Protocol.register_cmd_callback("get_tuner_mute", self.hmi_get_tuner_mute)
-        Protocol.register_cmd_callback("set_tuner_mute", self.hmi_set_tuner_mute)
+        Protocol.register_cmd_callback("g_tum", self.hmi_get_tuner_mute)
+        Protocol.register_cmd_callback("s_tum", self.hmi_set_tuner_mute)
 
-        Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
+        Protocol.register_cmd_callback("sl", self.hmi_snapshot_load)
+        Protocol.register_cmd_callback("ss", self.hmi_snapshot_save)
+        Protocol.register_cmd_callback("p", self.hmi_page_load)
 
-        Protocol.register_cmd_callback("snapshot_load", self.hmi_snapshot_load)
-        Protocol.register_cmd_callback("snapshot_save", self.hmi_snapshot_save)
+        # not used
+        #Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
 
         ioloop.IOLoop.instance().add_callback(self.init_host)
 
@@ -3440,7 +3442,8 @@ _:b%i
             self.bank_id = bank_id
             self.load(bundlepath)
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             self.profile.get_midi_prgch_channel("bank")), loaded_callback, datatype='boolean')
+                                                                                             self.profile.get_midi_prgch_channel("bank")),
+                                 loaded_callback, datatype='boolean')
 
         def footswitch_callback(ok):
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
@@ -3942,9 +3945,9 @@ _:b%i
         callback(True, int(result))
 
 
-    def hmi_set_out_chan_link(self, link, callback):
+    def hmi_set_out_chan_link(self, link_mode, callback):
         """Set the link state of the output channel pair."""
-        result = self.profile.get_stereo_link("output")
+        result = self.profile.set_stereo_link("output", link_mode)
         callback(result)
 
     def hmi_get_display_brightness(self, callback):
@@ -4050,6 +4053,10 @@ _:b%i
     def hmi_snapshot_load(self, idx, callback):
         # Use negative numbers for HMI snapshots
         self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
+
+    def hmi_page_load(self, idx, callback):
+        print("hmi_page_load called", idx)
+        callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

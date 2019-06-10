@@ -88,87 +88,94 @@ class Protocol(object):
     COMMANDS = {
         "banks": [],
         "pedalboards": [int],
-        "pedalboard": [int, str],
+        "pb": [int, str],
 
         "hw_con": [int, int],
         "hw_dis": [int, int],
-        "control_set": [int, float],
-        "control_get": [int],
-        "control_next": [int],
-        "pedalboard_save": [],
-        "pedalboard_reset": [],
 
-        "get_truebypass_value": [int],
-        "set_truebypass_value": [int, int],
+        "s": [int, float], # control_set
+        "g": [int], # control_get
+        "n": [int], # control_next
+
+        "pbs": [], # pedalboard_save
+        "pbr": [], # pedalboard_reset
+
+        "g_bp": [int],      # get_truebypass_value
+        "s_bp": [int, int], # set_truebypass_value
+
         # Quick Bypass Mode
-        "get_q_bypass": [],
-        "set_q_bypass": [int],
+        "g_qbp": [],    # get_q_bypass
+        "s_qbp": [int], # set_q_bypass
 
         # Beats per minute
-        "get_tempo_bpm": [],
-        "set_tempo_bpm": [int],
-        # Beats per bar
-        "get_tempo_bpb": [],
-        "set_tempo_bpb": [int],
+        "g_bpm": [],    # get_tempo_bpm
+        "s_bpm": [int], # set_tempo_bpm
 
-        "tuner": [str],
-        "tuner_input": [int],
-        "get_tuner_mute": [],
-        "set_tuner_mute": [int],
+        # Beats per bar
+        "g_bpb": [],    # get_tempo_bpb
+        "s_bpb": [int], # set_tempo_bpb
+
+        "tu": [str],    # tuner
+        "tu_i": [int],  # tuner_input
+        "g_tum": [],    # get_tuner_mute
+        "s_tum": [int], # set_tuner_mute
 
         # User Profile handling
-        "get_current_profile": [],
-        "retrieve_profile": [str],
-        "store_profile": [str],
+        "g_p": [],    # get_current_profile
+        "r_p": [str], # retrieve_profile
+        "s_p": [str], # store_profile
 
         # Master volume channel mode
-        "get_mv_channel": [],
-        "set_mv_channel": [int],
+        "g_mv_c": [],    # get_mv_channel
+        "s_mv_c": [int], # set_mv_channel
 
         # Stereo Link for inputs and outputs
-        "get_in_chan_link": [],
-        "set_in_chan_link": [int],
-        "get_out_chan_link": [],
-        "set_out_chan_link": [int],
+        "g_il": [],    # get_in_chan_link
+        "s_il": [int], # set_in_chan_link
+        "g_ol": [],    # get_out_chan_link
+        "s_ol": [int], # set_out_chan_link
 
         # Configurable in- and output
-        "get_exp_cv": [],
-        "set_exp_cv": [int],
-        "get_hp_cv": [],
-        "set_hp_cv": [int],
-        "get_exp_mode": [],
-        "set_exp_mode": [int],
-        "get_cv_bias": [],
-        "set_cv_bias": [int],
+        "g_ex": [],      # get_exp_cv
+        "s_ex": [int],   # set_exp_cv
+        "g_hp": [],      # get_hp_cv
+        "s_hp": [int],   # set_hp_cv
+        "g_ex_m": [],    # get_exp_mode
+        "s_ex_m": [int], # set_exp_mode
+        "g_cvb": [],     # get_cv_bias
+        "s_cvb": [int],  # set_cv_bias
 
         # Transport and tempo sync mode
-        "get_clk_src": [],
-        "set_clk_src": [int],
+        "g_cls": [],    # get_clk_src
+        "s_cls": [int], # set_clk_src
 
         # MIDI program change channel for switching snapshots
-        "get_snapshot_prgch": [],
-        "set_snapshot_prgch": [int],
+        "g_ssc": [],    # get_snapshot_prgch
+        "s_ssc": [int], # set_snapshot_prgch
 
         # MIDI Beat Clock sending
-        "get_send_midi_clk": [],
-        "set_send_midi_clk": [int],
+        "g_mclk": [],    # get_send_midi_clk
+        "s_mclk": [int], # set_send_midi_clk
 
         # MIDI program change channel for switching pedalboards in a bank
-        "get_pb_prgch": [],
-        "set_pb_prgch": [int],
+        "g_pbc": [],    # get_pb_prgch
+        "s_pbc": [int], # set_pb_prgch
 
-        "get_play_status": [],
-        "set_play_status": [int],
+        # Transport play status
+        "g_p": [],    # get_play_status
+        "s_p": [int], # set_play_status
+
         # Display brightness
-        "get_display_brightness": [],
-        "set_display_brightness": [int],
+        "g_br": [],    # get_display_brightness
+        "s_br": [int], # set_display_brightness
 
+        "sl": [int], # snapshot_load
+        "ss": [int], # snapshot_save
+
+        "p": [int], # page_load
+
+        # unused
         "get_pb_name": [],
-
-        "snapshot_load": [int],
-        "snapshot_save": [int],
-
-        "jack_cpu_load": [],
     }
 
     COMMANDS_FUNC = {}

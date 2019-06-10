@@ -164,12 +164,16 @@ function Desktop(elements) {
                 dataType: 'json'
             })
         },
-        setEnabled: function (instance, portSymbol, enabled) {
+        setEnabled: function (instance, portSymbol, enabled, feedback) {
+            if (!enabled && feedback === undefined) {
+                console.warn("ERROR setEnabled called as false, but with undefined feedback")
+                feedback = true
+            }
             if (instance == "/pedalboard") {
-                self.transportControls.setControlEnabled(portSymbol, enabled)
+                self.transportControls.setControlEnabled(portSymbol, enabled, feedback)
                 return
             }
-            self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled)
+            self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled, feedback)
         },
         renderForm: function (instance, port) {
             var label
@@ -1014,7 +1018,14 @@ function Desktop(elements) {
         }
 
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
-        self.pedalPresets.start(self.pedalboardPresetId, addressed)
+        var feedback = true
+
+        if (addressed) {
+            console.log(self.hardwareManager.addressingsData['/pedalboard/:presets'])
+            feedback = self.hardwareManager.addressingsData['/pedalboard/:presets'].feedback
+        }
+
+        self.pedalPresets.start(self.pedalboardPresetId, addressed, feedback)
     })
 
     elements.bypassLeftButton.click(function () {

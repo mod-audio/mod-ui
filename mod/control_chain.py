@@ -257,7 +257,8 @@ class ControlChainDeviceListener(object):
                     'name' : "%s%s:%s" % (dev['label'], dev_label_suffix, actuator['name']),
                     'modes': modes_str,
                     'steps': [],
-                    'max_assigns': actuator['max_assignments']
+                    'feedback': False,
+                    'max_assigns': actuator['max_assignments'],
                 }
                 self.act_added_cb(dev_id, actuator['id'], metadata)
 
