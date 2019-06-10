@@ -98,11 +98,11 @@ class HMI(object):
 
     def checker(self, data=None):
         if data is not None:
-            logging.debug('[hmi] received <- %s', repr(data))
+            logging.debug('[hmi] received <- %s', data)
             try:
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
-                logging.error('[hmi] error parsing msg %s', repr(data))
+                logging.error('[hmi] error parsing msg %s', data)
                 logging.error('[hmi]   error code %s', e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:

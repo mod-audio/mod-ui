@@ -3920,9 +3920,9 @@ _:b%i
         callback(True, int(result))
 
 
-    def hmi_set_out_chan_link(self, link, callback):
+    def hmi_set_out_chan_link(self, link_mode, callback):
         """Set the link state of the output channel pair."""
-        result = self.profile.get_stereo_link("output")
+        result = self.profile.set_stereo_link("output", link_mode)
         callback(result)
 
     def hmi_get_display_brightness(self, callback):
