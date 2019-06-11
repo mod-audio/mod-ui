@@ -875,7 +875,7 @@ class EffectPresetLoad(JsonRequestHandler):
         data = SESSION.host.addressings.get_presets_as_options(instance_id)
         value, maximum, options, spreset = data
 
-        ok  = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value) 
+        ok  = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value)
         self.write(ok)
 
 class EffectParameterSet(JsonRequestHandler):
@@ -1452,6 +1452,8 @@ class TemplateHandler(TimelessRequestHandler):
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
             'bin_compat': get_hardware_descriptor().get('bin-compat', 'Unknown'),
+            'pages_nb': get_hardware_descriptor().get('pages_nb', 0),
+            'pages_cb': get_hardware_descriptor().get('pages_cb', False),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),
