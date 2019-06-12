@@ -451,12 +451,6 @@ $('document').ready(function() {
     refresh_sysinfo()
     refresh_sysprefs()
 
-    if (PREFERENCES['transport-rolling-at-boot'] == "true") {
-        $("#prefs-prefs-autostart-playback").prop("checked", true)
-    }
-    if (PREFERENCES['prefs-prefs-autostart-link'] == "true") {
-        $("#prefs-prefs-autostart-link").prop("checked", true)
-    }
     if (PREFERENCES['tuner-mutes-outputs'] != "false") {
         $("#prefs-prefs-muted-tuner").prop("checked", true)
     }
@@ -539,14 +533,6 @@ $('document').ready(function() {
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Preferences
-
-    $("#prefs-prefs-autostart-playback").click(function () {
-        config_set("transport-rolling-at-boot", bool2str($(this).prop("checked")))
-    })
-
-    $("#prefs-prefs-autostart-link").click(function () {
-        config_set("link-enabled-at-boot", bool2str($(this).prop("checked")))
-    })
 
     $("#prefs-prefs-muted-tuner").click(function () {
         config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
@@ -787,18 +773,6 @@ $('document').ready(function() {
 
                 <h1>Preferences</h1>
                 <form class="form">
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-playback">
-                            Always start with playback/transport rolling
-                        </input>
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-link">
-                            Always start with Link support enabled
-                        </input>
-                    </label>
-                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
                             Mute audio outputs when Tuner is enabled

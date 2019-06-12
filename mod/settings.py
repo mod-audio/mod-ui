@@ -82,7 +82,6 @@ DEFAULT_ICON_IMAGE = {
     'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
 }
 
-
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.moddevices.com/v2")
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.moddevices.com/plugins")
@@ -116,6 +115,3 @@ PLAYBACK_PATH='/tmp/playback.ogg'
 UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
-
-# This is used if the key value pair does not exist in the preference JSON file
-DEFAULT_DISPLAY_BRIGHTNESS=3

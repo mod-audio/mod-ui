@@ -42,8 +42,16 @@ class UserPreferences(object):
     def __init__(self):
         self.prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
-    def get(self, key, default):
-        return self.prefs.get(key, default)
+    def get(self, key, default, type_ = None):
+        value = self.prefs.get(key, default)
+
+        if type_ is not None and not isinstance(value, type_):
+            try:
+                value = type_(value)
+            except:
+                value = default
+
+        return value
 
     def setAndSave(self, key, value):
         self.prefs[key] = value
