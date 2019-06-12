@@ -3010,6 +3010,7 @@ _:b%i
 
     def set_transport_bpb(self, bpb, sendMsg, callback=None, datatype='int'):
         self.transport_bpb = bpb
+        self.profile.set_tempo_bpb(bpb)
 
         if sendMsg:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
@@ -3063,6 +3064,7 @@ _:b%i
 
     def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
         self.transport_bpm = bpm
+        self.profile.set_tempo_bpm(bpm)
 
         if sendMsg:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
@@ -3646,8 +3648,8 @@ _:b%i
 
             callback(True)
 
-        def tuner_added(ok):
-            if not ok:
+        def tuner_added(resp):
+            if resp not in (0, -2, TUNER_INSTANCE_ID): # -2 means already loaded
                 callback(False)
                 return
             self.send_notmodified("monitor_output %d %s" % (TUNER_INSTANCE_ID, TUNER_MONITOR_PORT), monitor_added)
@@ -3727,9 +3729,7 @@ _:b%i
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
         logging.debug("hmi tempo bpm set to %f", float(bpm))
-
-        # Forward to mod-host. It will check assertions.
-        self.send_notmodified("set_bpm {:f}".format(float(bpm)), callback, 'boolean')
+        self.set_transport_bpm(bpm, True, callback, 'boolean')
 
     def hmi_get_tempo_bpb(self, callback):
         """Get the Jack Beats Per Bar."""
@@ -3740,9 +3740,7 @@ _:b%i
     def hmi_set_tempo_bpb(self, bpb, callback):
         """Set the Jack Beats Per Bar."""
         logging.debug("hmi tempo bpb set to %f", float(bpb))
-
-        # Forward to mod-host. It will check assertions.
-        self.send_notmodified("set_bpb {:f}".format(float(bpb)), callback, 'boolean')
+        self.set_transport_bpb(bpb, True, callback, 'boolean')
 
     def hmi_get_snapshot_prgch(self, callback):
         """Query the MIDI channel for selecting a snapshot via Program Change."""
@@ -3882,6 +3880,9 @@ _:b%i
         logging.debug("hmi retrieve profile")
         result = self.profile.retrieve(index)
         callback(result)
+
+        # apply all values now
+        self.profile_apply(self.profile.values, False)
 
     def hmi_store_profile(self, index, callback):
         """Trigger storing current profile to `index`."""
@@ -4204,6 +4205,38 @@ _:b%i
     # Profile stuff
 
     def profile_apply(self, values, isIntermediate):
-        print(values, isIntermediate)
+        self.set_transport_bpb(values['transportBPB'], True)
+        self.set_transport_bpm(values['transportBPM'], True)
+
+        if values['transportSource'] == Profile.TRANSPORT_SOURCE_INTERNAL:
+            self.transport_sync = "none"
+            self.send_notmodified("feature_enable link 0")
+            self.send_notmodified("feature_enable midi_clock_slave 0")
+
+        elif values['transportSource'] == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
+            self.transport_sync = "midi_clock_slave"
+            self.send_notmodified("feature_enable link 0")
+            self.send_notmodified("feature_enable midi_clock_slave 1")
+
+        elif values['transportSource'] == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+            self.transport_sync = "link"
+            self.send_notmodified("feature_enable midi_clock_slave 0")
+            self.send_notmodified("feature_enable link 1")
+
+        self.hmi_set_send_midi_clk(values['midiClockSend'], lambda r:None)
+
+        # skip alsamixer related things on intermediate/boot
+        if not isIntermediate:
+            pass
+            # TODO
+            #'cvBias': CONTROL_VOLTAGE_BIAS_0_to_5,
+            #'expressionPedalMode': EXPRESSION_PEDAL_MODE_TIP,
+            #'headphoneVolume': 0.0, # TODO
+            #'input1gain': 0.0, # TODO
+            #'input2gain': 0.0, # TODO
+            #'output1volume': 78, # TODO
+            #'output2volume': 78, # TODO
+            #'inputMode': INPUT_MODE_EXP_PEDAL,
+            #'outputMode': OUTPUT_MODE_HEADPHONE,
 
     # -----------------------------------------------------------------------------------------------------------------

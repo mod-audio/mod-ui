@@ -2,6 +2,7 @@
 
 import json
 import os
+from tornado import ioloop
 
 from mod import TextFileFlusher, safe_json_load
 from mod.settings import DATA_DIR
@@ -84,10 +85,13 @@ class Profile(object):
             with TextFileFlusher(self.INTERMEDIATE_PROFILE_PATH) as fh:
                 json.dump(self.values, fh)
 
-        self.apply(True)
+        ioloop.IOLoop.instance().add_callback(self.apply_first)
 
     # -----------------------------------------------------------------------------------------------------------------
     # tools
+
+    def apply_first(self):
+        self.apply(True)
 
     def apply(self, isIntermediate):
         self.applyFn(self.values, isIntermediate)
@@ -236,6 +240,12 @@ class Profile(object):
             print("set_sync_mode invalid")
             return False
         return self._compare_and_set_value('transportSource', value)
+
+    def set_tempo_bpb(self, bpb):
+        return self._compare_and_set_value('transportBPB', bpb)
+
+    def set_tempo_bpm(self, bpm):
+        return self._compare_and_set_value('transportBPM', bpm)
 
     # -----------------------------------------------------------------------------------------------------------------
     # persistent state
