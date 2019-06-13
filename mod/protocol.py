@@ -122,8 +122,8 @@ class Protocol(object):
 
         # User Profile handling
         "g_p": [],    # get_current_profile
-        "r_p": [str], # retrieve_profile
-        "s_p": [str], # store_profile
+        "r_p": [int], # retrieve_profile
+        "s_p": [int], # store_profile
 
         # Master volume channel mode
         "g_mv_c": [],    # get_mv_channel
@@ -162,8 +162,8 @@ class Protocol(object):
         "s_pbc": [int], # set_pb_prgch
 
         # Transport play status
-        "g_p": [],    # get_play_status
-        "s_p": [int], # set_play_status
+        "g_ps": [],    # get_play_status
+        "s_ps": [int], # set_play_status
 
         # Display brightness
         "g_br": [],    # get_display_brightness

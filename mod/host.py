@@ -358,8 +358,8 @@ class Host(object):
         Protocol.register_cmd_callback("g_mv_c", self.hmi_get_master_volume_channel_mode)
         Protocol.register_cmd_callback("s_mv_c", self.hmi_set_master_volume_channel_mode)
 
-        Protocol.register_cmd_callback("g_p", self.hmi_get_play_status)
-        Protocol.register_cmd_callback("s_p", self.hmi_set_play_status)
+        Protocol.register_cmd_callback("g_ps", self.hmi_get_play_status)
+        Protocol.register_cmd_callback("s_ps", self.hmi_set_play_status)
 
         Protocol.register_cmd_callback("g_tum", self.hmi_get_tuner_mute)
         Protocol.register_cmd_callback("s_tum", self.hmi_set_tuner_mute)
@@ -3881,9 +3881,6 @@ _:b%i
         result = self.profile.retrieve(index)
         callback(result)
 
-        # apply all values now
-        self.profile_apply(self.profile.values, False)
-
     def hmi_store_profile(self, index, callback):
         """Trigger storing current profile to `index`."""
         logging.debug("hmi store profile")
@@ -4226,17 +4223,19 @@ _:b%i
         self.hmi_set_send_midi_clk(values['midiClockSend'], lambda r:None)
 
         # skip alsamixer related things on intermediate/boot
-        if not isIntermediate:
-            pass
-            # TODO
-            #'cvBias': CONTROL_VOLTAGE_BIAS_0_to_5,
-            #'expressionPedalMode': EXPRESSION_PEDAL_MODE_TIP,
-            #'headphoneVolume': 0.0, # TODO
-            #'input1gain': 0.0, # TODO
-            #'input2gain': 0.0, # TODO
-            #'output1volume': 78, # TODO
-            #'output2volume': 78, # TODO
-            #'inputMode': INPUT_MODE_EXP_PEDAL,
-            #'outputMode': OUTPUT_MODE_HEADPHONE,
+        if isIntermediate:
+            return
+
+        os.system("mod-amixer in 1 xvol %f" % values['input1volume'])
+        os.system("mod-amixer in 2 xvol %f" % values['input2volume'])
+        os.system("mod-amixer out 1 xvol %f" % values['output1volume'])
+        os.system("mod-amixer out 2 xvol %f" % values['output2volume'])
+        os.system("mod-amixer hp xvol %f" % values['headphoneVolume'])
+
+        # TODO
+        #'cvBias'
+        #'expressionPedalMode'
+        #'inputMode' (exp, cv)
+        #'outputMode' (hp, cv)
 
     # -----------------------------------------------------------------------------------------------------------------
