@@ -26,6 +26,10 @@ var kMidiCustomPrefixURI = "/midi-custom_" // to show current one, ignored on sa
 // URI for BPM sync (for non-addressed control ports)
 var kBpmURI ="/bpm"
 
+// Grouped options
+var deviceOption = "/hmi"
+var ccOption = "/cc"
+
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 
@@ -250,6 +254,23 @@ function HardwareManager(options) {
       form.find('input[name=max]').prop('disabled', disabled)
     }
 
+    // Show dynamic field content based on selected type of addressing
+    this.showDynamicField = function (form, typeInput) {
+      // Hide all then show the relevant content
+      form.find('.dynamic-field').hide()
+      switch (typeInput.val()) {
+        case kMidiLearnURI:
+          form.find('.midi-learn-hint').show()
+          break
+        case deviceOption:
+          form.find('.device-table').show()
+          break
+        case ccOption:
+          form.find('.cc-select').show()
+          break
+      }
+    }
+
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
         var instanceAndSymbol = instance+"/"+port.symbol
@@ -258,9 +279,45 @@ function HardwareManager(options) {
         // Renders the window
         var form = $(options.renderForm(instance, port))
 
+        var typeSelect = form.find('select[name=type]')
+        var typeInput = form.find('input[name=type]')
+
+        if (currentAddressing.uri) {
+          if (currentAddressing.uri == kMidiLearnURI) {
+            typeInput.val(kMidiLearnURI)
+          } else if (currentAddressing.uri.startsWith("/hmi")) {
+            typeInput.val(deviceOption)
+          } else {
+            typeInput.val(ccOption)
+          }
+        } else {
+          typeInput.val(kNullAddressURI)
+        }
+        self.showDynamicField(form, typeInput)
+
+        var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
+        var i = 0
+        typeSelect.find('option').unwrap().each(function() {
+            var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>');
+            if($(btn).attr('data-value') == typeInput.val()) {
+              btn.addClass('selected');
+            }
+            $(this).replaceWith(btn);
+            i++;
+        });
+
+        form.find('.js-type').click(function () {
+          $('.js-type').removeClass('selected');
+          $(this).addClass('selected');
+          typeInput.val($(this).attr('data-value'))
+          self.showDynamicField(form, typeInput)
+        })
+
         var actuators = self.availableActuators(instance, port)
-        var actuatorSelect = form.find('select[name=actuator]')
         var midiLearnHint = form.find('.midi-learn-hint');
+
+        var actuatorSelect = form.find('select[name=actuator]')
+
         actuatorSelect.on('change', function() {
             midiLearnHint.toggle(actuatorSelect.val() === '/midi-learn');
         });
@@ -336,7 +393,7 @@ function HardwareManager(options) {
             max.attr("step", step)
 
             // Hide sensibility and tempo options for MIDI
-            var act = actuatorSelect.val()
+            /*var act = actuatorSelect.val()
             if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 form.find('.sensibility').css({visibility:"hidden"})
                 form.find('.tempo').css({display:"none"})
@@ -358,7 +415,7 @@ function HardwareManager(options) {
                     //   self.disableMinMaxSteps(form, true)
                     // }
                 }
-            })
+            })*/
         }
 
         var sensibility = form.find('select[name=steps]')

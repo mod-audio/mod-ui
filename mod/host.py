@@ -295,7 +295,7 @@ class Host(object):
         Protocol.register_cmd_callback("g", self.hmi_parameter_get)
         Protocol.register_cmd_callback("s", self.hmi_parameter_set)
         Protocol.register_cmd_callback("n", self.hmi_parameter_addressing_next)
-        Protocol.register_cmd_callback("p", self.hmi_page_addressing_next)
+        Protocol.register_cmd_callback("p", self.hmi_page_addressing_set)
         Protocol.register_cmd_callback("pbs", self.hmi_save_current_pedalboard)
         Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback("tu", self.hmi_tuner)
@@ -3550,7 +3550,7 @@ _:b%i
         logging.debug("hmi parameter addressing next")
         self.addressings.hmi_load_next_hw(hw_id, callback)
 
-    def hmi_page_addressing_next(self, page_to_load, callback):
+    def hmi_page_addressing_set(self, page_to_load, callback):
         logging.debug("hmi addressing next page")
 
         if not self.pages_cb:
@@ -3562,27 +3562,26 @@ _:b%i
         for uri, addressings in self.addressings.hmi_addressings.items():
             hw_id = self.addressings.hmi_uri2hw_map(uri)
             addrs = addressings['addrs']
-            idx = addressings['idx']
-            # Nothing assigned to current actuator on any pages
-            if idx < 0:
+
+            # Nothing assigned to current actuator on any pages, nothing to do
+            if len(addrs) == 0:
                 continue
 
-            addressing_data = addrs[idx].copy()
-            addressings['idx'] = idx + 1
+            page_to_load_assigned = self.addressings.is_page_assigned(addrs, page_to_load)
             # Nothing assigned to current actuator on page to load
-            if len(addrs) < page_to_load or (len(addrs) >= page_to_load and not any(addrs[page_to_load - 1])):
+            if not page_to_load_assigned:
                 # Send control_rm if current actuator was addressed on current page
-                if any(addressing_data):
+                current_page_assigned = self.addressings.is_page_assigned(addrs, self.addressings.current_page)
+                if current_page_assigned:
                     hw_ids_to_rm.append(hw_id)
             # Else, send control_add with new data
             else:
-                next_addressing_data = addrs[page_to_load - 1]
+                next_addressing_data = self.addressings.get_addressing_for_page(addrs, page_to_load)
                 yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
 
         if len(hw_ids_to_rm) > 0:
             yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
 
-        # TODO midi/cc addressings
         callback(True)
 
     def hmi_save_current_pedalboard(self, callback):

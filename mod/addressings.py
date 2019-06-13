@@ -79,6 +79,7 @@ class Addressings(object):
         self.hw_actuators = get_hardware_actuators()
         self.pages_nb = get_hardware_descriptor().get('pages_nb', 0)
         self.pages_cb = get_hardware_descriptor().get('pages_cb', False)
+        self.current_page = 0
 
         # 'hmi_addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [...], 'idx': 0}
@@ -648,6 +649,12 @@ class Addressings(object):
             addressings = self.virtual_addressings[actuator_uri]
             addressings.remove(addressing_data)
 
+    def is_page_assigned(self, addrs, page):
+        return any('page' in a and a['page'] == page for a in addrs)
+
+    def get_addressing_for_page(self, addrs, page):
+        # Assumes is_page_assigned(addrs, page) has returned True
+        return next(a for a in addrs if 'page' in a and a['page'] == page)
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
@@ -655,34 +662,50 @@ class Addressings(object):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
-        addressings_idx   = addressings['idx']
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
             callback(False)
             return
 
-        if addressings_len == addressings_idx:
-            canSkipAddressing = False
-            addressings['idx'] = addressings_idx = addressings_len - 1
+        if self.pages_cb: # device supports pages
+            current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
+            if not current_page_assigned:
+                # control_rm or cb false?
+                callback(False)
+                return
+            else:
+                if (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
+                    print("skippedPort", skippedPort)
+                    callback(True)
+                    return
+
+                addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page)
+                addressing_data['value'] = self._task_get_port_value(addressing['instance_id'], addressing['port'])
+
         else:
-            canSkipAddressing = True
+            addressings_idx = addressings['idx']
+            if addressings_len == addressings_idx:
+                canSkipAddressing = False
+                addressings['idx'] = addressings_idx = addressings_len - 1
+            else:
+                canSkipAddressing = True
 
-        # current addressing data
-        addressing_data = addressings_addrs[addressings_idx].copy()
+            # current addressing data
+            addressing_data = addressings_addrs[addressings_idx].copy()
 
-        if canSkipAddressing and (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
-            print("skippedPort", skippedPort)
-            callback(True)
-            return
+            if canSkipAddressing and (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
+                print("skippedPort", skippedPort)
+                callback(True)
+                return
 
-        # needed fields for addressing task
-        addressing_data['addrs_idx'] = addressings_idx+1
-        addressing_data['addrs_max'] = addressings_len
+            # needed fields for addressing task
+            addressing_data['addrs_idx'] = addressings_idx+1
+            addressing_data['addrs_max'] = addressings_len
 
-        # reload value
-        addressing = addressings_addrs[addressings_idx]
-        addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
+            # reload value
+            addressing = addressings_addrs[addressings_idx]
+            addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
                                                                                    addressing['port'])
 
         self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
@@ -701,8 +724,9 @@ class Addressings(object):
             callback(False)
             return
 
-        # jump to first addressing
+        # jump to first addressing or page
         addressings['idx'] = 0
+        self.current_page = 0
 
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
