@@ -987,15 +987,15 @@ class ServerWebSocket(websocket.WebSocketHandler):
 
         elif cmd == "transport-bpb":
             bpb = float(data[1])
-            SESSION.host.set_transport_bpb(bpb, True)
+            SESSION.host.set_transport_bpb(bpb, True, True, False)
 
         elif cmd == "transport-bpm":
             bpm = float(data[1])
-            SESSION.host.set_transport_bpm(bpm, True)
+            SESSION.host.set_transport_bpm(bpm, True, True, False)
 
         elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
-            SESSION.host.set_transport_rolling(rolling, True)
+            SESSION.host.set_transport_rolling(rolling, True, True, False)
 
         elif cmd == "set_midi_program_change_pedalboard_bank_channel":
             channel = int(data[2])

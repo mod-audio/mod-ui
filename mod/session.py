@@ -63,6 +63,7 @@ class UserPreferences(object):
 
 class Session(object):
     def __init__(self):
+        logging.basicConfig(level=(logging.DEBUG if LOG else logging.WARNING))
         self.ioloop = ioloop.IOLoop.instance()
 
         self.prefs = UserPreferences()

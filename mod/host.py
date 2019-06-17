@@ -38,6 +38,7 @@ import os, json, socket, time, logging, copy
 from mod import read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
+from mod.hmi import Menu
 from mod.profile import Profile
 from mod.protocol import Protocol, ProtocolError, process_resp
 from modtools.utils import (
@@ -180,6 +181,7 @@ class Host(object):
         self.connected = False
         self._queue = []
         self._idle = True
+        self.profile_applied = False
 
         self.addressings = Addressings()
         self.mapper = InstanceIdMapper()
@@ -481,6 +483,8 @@ class Host(object):
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
+        self.hmi.set_profile_value(Menu.BYPASS1_ID, int(left))
+        self.hmi.set_profile_value(Menu.BYPASS2_ID, int(right))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
@@ -653,6 +657,25 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
+    def wait_hmi_initialized(self, callback):
+        if self.hmi.initialized and self.profile_applied:
+            print("HMI initialized right away")
+            callback(True)
+            return
+
+        def retry():
+            if (self.hmi.initialized and self.profile_applied) or self._attemptNumber >= 20:
+                print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
+                del self._attemptNumber
+                callback(self.hmi.initialized)
+            else:
+                self._attemptNumber += 1
+                ioloop.IOLoop.instance().call_later(0.1, retry)
+                print("HMI initialized waiting", self._attemptNumber)
+
+        self._attemptNumber = 0
+        retry()
+
     @gen.coroutine
     def init_host(self):
         self.init_jack()
@@ -676,7 +699,8 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
-        # FIXME: ensure HMI is initialized by now
+        # ensure HMI is initialized by now
+        yield gen.Task(self.wait_hmi_initialized)
 
         if pedalboard and os.path.exists(pedalboard):
             self.bank_id = bank_id
@@ -696,14 +720,15 @@ class Host(object):
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
 
         # After all is set, update the HMI
-        display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
-        master_chan_mode = self.profile.get_master_volume_channel_mode()
-        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
-        self.hmi.send("boot {} {} {} {}".format(display_brightness,
-                                                master_chan_mode,
-                                                get_master_volume(master_chan_is_mode_2),
-                                                pb_name))
+        if self.hmi.initialized:
+            display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
+            master_chan_mode = self.profile.get_master_volume_channel_mode()
+            master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+            pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+            self.hmi.send("boot {} {} {} {}".format(display_brightness,
+                                                    master_chan_mode,
+                                                    get_master_volume(master_chan_is_mode_2),
+                                                    pb_name))
 
         # All set, disable HW bypass now
         init_bypass()
@@ -1005,7 +1030,7 @@ class Host(object):
             channel  = int(msg_data[1])
 
             if channel == self.profile.get_midi_prgch_channel("pedalboard"):
-                bank_id  = self.bank_id
+                bank_id = self.bank_id
                 if self.bank_id > 0 and self.bank_id <= len(self.banks):
                     pedalboards = self.banks[self.bank_id-1]['pedalboards']
                 else:
@@ -1023,7 +1048,8 @@ class Host(object):
                     def hmi_clear_callback(ok):
                         self.hmi.clear(load_callback)
 
-                    self.reset(hmi_clear_callback)
+                    self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
+
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 yield gen.Task(self.snapshot_load, program)
 
@@ -2221,7 +2247,7 @@ class Host(object):
                                                                                   ccData['channel'],
                                                                                   ccData['control'],
                                                                                   minimum, maximum)
-                self.set_transport_bpb(pb['timeInfo']['bpb'], False)
+                self.set_transport_bpb(pb['timeInfo']['bpb'], False, True, False)
 
             if timeAvailable & kPedalboardTimeAvailableBPM:
                 ccData = pb['timeInfo']['bpmCC']
@@ -2238,7 +2264,7 @@ class Host(object):
                                                                                   ccData['channel'],
                                                                                   ccData['control'],
                                                                                   minimum, maximum)
-                self.set_transport_bpm(pb['timeInfo']['bpm'], False)
+                self.set_transport_bpm(pb['timeInfo']['bpm'], False, True, False)
 
             if timeAvailable & kPedalboardTimeAvailableRolling:
                 ccData = pb['timeInfo']['rollingCC']
@@ -2249,7 +2275,7 @@ class Host(object):
                                                                                       ccData['channel'],
                                                                                       ccData['control'],
                                                                                       0.0, 1.0)
-                self.set_transport_rolling(pb['timeInfo']['rolling'], False)
+                self.set_transport_rolling(pb['timeInfo']['rolling'], False, True, False)
 
         self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
                                                       self.transport_bpb,
@@ -2994,6 +3020,58 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
+    # Readdress control ports synced to bpm after bpm changed
+    def readdress(self, addr, bpm, callback):
+        if not addr.get('tempo', False):
+            callback(False)
+            return
+
+        instance_id = addr['instance_id']
+        pluginData  = self.plugins.get(instance_id, None)
+
+        if pluginData is None:
+            callback(False)
+            return
+
+        pluginInfo = get_plugin_info(pluginData['uri'])
+
+        if not pluginInfo:
+            callback(False)
+            return
+
+        portsymbol   = addr['port']
+        controlPorts = pluginInfo['ports']['control']['input']
+        ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
+
+        if not ports:
+            callback(False)
+            return
+
+        instance = self.mapper.get_instance(instance_id)
+        actuator_uri = addr['actuator_uri']
+        label = addr['label']
+        minimum = addr['minimum']
+        maximum = addr['maximum']
+        steps = addr['steps']
+        tempo = addr['tempo']
+
+        port = ports[0]
+        # value = convert_seconds_to_port_value_equivalent(
+        #     get_port_value(bpm, float(addr['dividers']['value'])),
+        #     port['units']['symbol']
+        # )
+        dividerOptions = get_options_port_values(
+            port['units']['symbol'],
+            bpm,
+            get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+        )
+        value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
+        dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
+
+        # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
+        self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
+
+    @gen.coroutine
     def set_link_enabled(self, enabled, saveConfig = False):
         if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: link enabled while BPM is still addressed")
@@ -3001,6 +3079,7 @@ _:b%i
         self.transport_sync = "link" if enabled else "none"
         self.send_notmodified("feature_enable link %i" % int(enabled))
 
+    @gen.coroutine
     def set_midi_clock_slave_enabled(self, enabled):
         if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: MIDI Clock Slave enabled while BPM is still addressed")
@@ -3008,11 +3087,12 @@ _:b%i
         self.transport_sync = "midi_clock_slave" if enabled else "none"
         self.send_notmodified("feature_enable midi_clock_slave %i" % int(enabled))
 
-    def set_transport_bpb(self, bpb, sendMsg, callback=None, datatype='int'):
+    @gen.coroutine
+    def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
         self.transport_bpb = bpb
         self.profile.set_tempo_bpb(bpb)
 
-        if sendMsg:
+        if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
@@ -3022,77 +3102,60 @@ _:b%i
 
             if bpb_symbol is not None:
                 pluginData['ports'][bpb_symbol] = bpb
-                if sendMsg:
+                if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
-    # Readdress control ports synced to bpm after bpm changed
-    def readdress(self, addr, bpm, callback):
-        if addr.get('tempo', False):
-            instance_id = addr['instance_id']
-            instance = self.mapper.get_instance(instance_id)
-            portsymbol = addr['port']
-            actuator_uri = addr['actuator_uri']
-            label = addr['label']
-            minimum = addr['minimum']
-            maximum = addr['maximum']
-            steps = addr['steps']
-            tempo = addr['tempo']
+        if sendHMI and self.hmi.initialized:
+            yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, bpb)
 
-            pluginData  = self.plugins.get(instance_id, None)
+        if sendWeb:
+            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                         self.transport_bpb,
+                                                         self.transport_bpm,
+                                                         self.transport_sync))
 
-            if pluginData:
-                pluginInfo = get_plugin_info(pluginData['uri'])
-                controlPorts = pluginInfo['ports']['control']['input']
-                ports = [p for p in controlPorts if p['symbol'] == portsymbol]
-
-                if ports:
-                    port = ports[0]
-                    # value = convert_seconds_to_port_value_equivalent(
-                    #     get_port_value(bpm, float(addr['dividers']['value'])),
-                    #     port['units']['symbol']
-                    # )
-                    dividerOptions = get_options_port_values(
-                        port['units']['symbol'],
-                        bpm,
-                        get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-                    )
-                    value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
-                    dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
-
-                    # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
-
-    def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
+    @gen.coroutine
+    def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
         self.transport_bpm = bpm
         self.profile.set_tempo_bpm(bpm)
-
-        if sendMsg:
-            self.send_modified("transport %i %f %f" % (self.transport_rolling,
-                                                       self.transport_bpb,
-                                                       self.transport_bpm), callback, datatype)
 
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
-                self.readdress(addr, bpm, callback)
+                yield gen.Task(self.readdress, addr, bpm)
 
         for actuator_uri in self.addressings.hmi_addressings:
             addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
             for addr in addrs:
-                self.readdress(addr, bpm, callback)
+                yield gen.Task(self.readdress, addr, bpm)
+
+        if sendHost:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
 
         for pluginData in self.plugins.values():
             bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
 
             if bpm_symbol is not None:
                 pluginData['ports'][bpm_symbol] = bpm
-                if sendMsg:
+                if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
-    def set_transport_rolling(self, rolling, sendMsg, callback=None, datatype='int'):
+        if sendHMI and self.hmi.initialized:
+            yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+
+        if sendWeb:
+            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                         self.transport_bpb,
+                                                         self.transport_bpm,
+                                                         self.transport_sync))
+
+    @gen.coroutine
+    def set_transport_rolling(self, rolling, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
         self.transport_rolling = rolling
 
-        if sendMsg:
+        if sendHost:
             self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
                                                           self.transport_bpb,
                                                           self.transport_bpm), callback, datatype)
@@ -3104,8 +3167,17 @@ _:b%i
 
             if speed_symbol is not None:
                 pluginData['ports'][speed_symbol] = speed
-                if sendMsg:
+                if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
+
+        if sendHMI and self.hmi.initialized:
+            yield gen.Task(self.hmi.set_profile_value, Menu.PLAY_STATUS_ID, int(rolling))
+
+        if sendWeb:
+            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                         self.transport_bpb,
+                                                         self.transport_bpm,
+                                                         self.transport_sync))
 
     def set_midi_program_change_pedalboard_bank_channel(self, channel):
         if self.profile.set_midi_prgch_channel("bank", channel):
@@ -3501,21 +3573,16 @@ _:b%i
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             if portsymbol == ":bpb":
-                self.set_transport_bpb(value, True, callback)
+                self.set_transport_bpb(value, True, False, True, callback)
             elif portsymbol == ":bpm":
-                self.set_transport_bpm(value, True, callback)
+                self.set_transport_bpm(value, True, False, True, callback)
             elif portsymbol == ":rolling":
                 rolling = bool(value > 0.5)
-                self.set_transport_rolling(rolling, True, callback)
+                self.set_transport_rolling(rolling, True, False, True, callback)
             else:
                 print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
                 callback(False)
                 return
-
-            self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
-                                                         self.transport_bpb,
-                                                         self.transport_bpm,
-                                                         self.transport_sync))
 
         else:
             oldvalue = pluginData['ports'].get(portsymbol, None)
@@ -3690,17 +3757,26 @@ _:b%i
         freq, note, cents = find_freqnotecents(value)
         yield gen.Task(self.hmi.tuner, freq, note, cents)
 
-    def hmi_get_truebypass_value(self, right, callback):
+    def hmi_get_truebypass_value(self, value, callback):
         """Query the True Bypass setting of the given channel."""
-        logging.debug("hmi true bypass get (%i)", right)
+        logging.debug("hmi true bypass get (%i)", value)
 
-        bypassed = get_truebypass_value(right)
+        bypassed = get_truebypass_value(value == QUICK_BYPASS_MODE_2)
         callback(True, int(bypassed))
 
-    def hmi_set_truebypass_value(self, right, bypassed, callback):
+    def hmi_set_truebypass_value(self, value, bypassed, callback):
         """Change the True Bypass setting of the given channel."""
-        logging.debug("hmi true bypass set to (%i, %i)", right, bypassed)
-        set_truebypass_value(right, bypassed)
+        logging.debug("hmi true bypass set to (%i, %i)", value, bypassed)
+        if value == QUICK_BYPASS_MODE_1:
+            set_truebypass_value(False, bypassed)
+
+        elif value == QUICK_BYPASS_MODE_2:
+            set_truebypass_value(True, bypassed)
+
+        elif value == QUICK_BYPASS_MODE_BOTH:
+            set_truebypass_value(False, bypassed)
+            set_truebypass_value(True, bypassed)
+
         callback(True)
 
     def hmi_get_quick_bypass_mode(self, callback):
@@ -3729,7 +3805,7 @@ _:b%i
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
         logging.debug("hmi tempo bpm set to %f", float(bpm))
-        self.set_transport_bpm(bpm, True, callback, 'boolean')
+        self.set_transport_bpm(bpm, True, False, True, callback)
 
     def hmi_get_tempo_bpb(self, callback):
         """Get the Jack Beats Per Bar."""
@@ -3740,7 +3816,7 @@ _:b%i
     def hmi_set_tempo_bpb(self, bpb, callback):
         """Set the Jack Beats Per Bar."""
         logging.debug("hmi tempo bpb set to %f", float(bpb))
-        self.set_transport_bpb(bpb, True, callback, 'boolean')
+        self.set_transport_bpb(bpb, True, False, True, callback)
 
     def hmi_get_snapshot_prgch(self, callback):
         """Query the MIDI channel for selecting a snapshot via Program Change."""
@@ -3756,8 +3832,7 @@ _:b%i
 
         if self.profile.set_midi_prgch_channel("snapshot", channel):
             # The range in mod-host is [-1, 15]
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % (channel-1),
-                                  callback, 'boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % (channel-1), callback)
         else:
             callback(False)
 
@@ -3774,8 +3849,7 @@ _:b%i
 
         if self.profile.set_midi_prgch_channel("pedalboard", channel):
             # The range in mod-host is [-1, 15]
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % (channel-1),
-                                  callback, 'boolean')
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % (channel-1), callback)
         else:
             callback(False)
 
@@ -3800,11 +3874,11 @@ _:b%i
             if not ok:
                 callback(False)
             elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-                self.send_notmodified("feature_enable midi_clock_slave 0", callback, 'boolean')
+                self.send_notmodified("feature_enable midi_clock_slave 0", callback)
             elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-                self.send_notmodified("feature_enable midi_clock_slave 1", callback, 'boolean')
+                self.send_notmodified("feature_enable midi_clock_slave 1", callback)
             elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-                self.send_notmodified("feature_enable link 1", callback, 'boolean')
+                self.send_notmodified("feature_enable link 1", callback)
             else:
                 callback(False)
 
@@ -3812,11 +3886,11 @@ _:b%i
         # Note: _First_ disable all unchoosen options.
         # FIXME do not require disabling options first!
         if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-            self.send_notmodified("feature_enable link 0", step2, 'boolean')
+            self.send_notmodified("feature_enable link 0", step2)
         elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-            self.send_notmodified("feature_enable link 0", step2, 'boolean')
+            self.send_notmodified("feature_enable link 0", step2)
         elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-            self.send_notmodified("feature_enable midi_clock_slave 0", step2, 'boolean')
+            self.send_notmodified("feature_enable midi_clock_slave 0", step2)
         else:
             callback(False)
 
@@ -3855,7 +3929,7 @@ _:b%i
     def hmi_set_send_midi_clk_off(self, callback):
         logging.debug("hmi set midi beat clock OFF")
         # Just remove the plug-in without disconnecting gracefully
-        self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, callback, 'boolean')
+        self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, callback)
 
     def hmi_set_send_midi_clk(self, onoff, callback):
         """Query the status of sending MIDI Beat Clock."""
@@ -3970,10 +4044,7 @@ _:b%i
 
     def hmi_set_play_status(self, play_status, callback):
         """Set the transport state."""
-        self.transport_rolling = bool(play_status)
-        self.send_notmodified(
-            "transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm),
-            callback, 'boolean')
+        self.set_transport_rolling(bool(play_status), True, False, True, callback)
 
     def hmi_get_tuner_mute(self, callback):
         """Return if the tuner lets audio through or not."""
@@ -4201,9 +4272,10 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff
 
+    @gen.coroutine
     def profile_apply(self, values, isIntermediate):
-        self.set_transport_bpb(values['transportBPB'], True)
-        self.set_transport_bpm(values['transportBPM'], True)
+        yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, True, True)
+        yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, True, True)
 
         if values['transportSource'] == Profile.TRANSPORT_SOURCE_INTERNAL:
             self.transport_sync = "none"
@@ -4223,19 +4295,20 @@ _:b%i
         self.hmi_set_send_midi_clk(values['midiClockSend'], lambda r:None)
 
         # skip alsamixer related things on intermediate/boot
-        if isIntermediate:
-            return
+        if not isIntermediate:
+            os.system("mod-amixer in 1 xvol %f" % values['input1volume'])
+            os.system("mod-amixer in 2 xvol %f" % values['input2volume'])
+            os.system("mod-amixer out 1 xvol %f" % values['output1volume'])
+            os.system("mod-amixer out 2 xvol %f" % values['output2volume'])
+            os.system("mod-amixer hp xvol %f" % values['headphoneVolume'])
+            # TODO
+            #'cvBias'
+            #'expressionPedalMode'
+            #'inputMode' (exp, cv)
+            #'outputMode' (hp, cv)
 
-        os.system("mod-amixer in 1 xvol %f" % values['input1volume'])
-        os.system("mod-amixer in 2 xvol %f" % values['input2volume'])
-        os.system("mod-amixer out 1 xvol %f" % values['output1volume'])
-        os.system("mod-amixer out 2 xvol %f" % values['output2volume'])
-        os.system("mod-amixer hp xvol %f" % values['headphoneVolume'])
+        yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
 
-        # TODO
-        #'cvBias'
-        #'expressionPedalMode'
-        #'inputMode' (exp, cv)
-        #'outputMode' (hp, cv)
+        self.profile_applied = True
 
     # -----------------------------------------------------------------------------------------------------------------
