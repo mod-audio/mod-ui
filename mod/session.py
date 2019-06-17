@@ -59,7 +59,7 @@ class UserPreferences(object):
 
     def save(self):
         with TextFileFlusher(PREFERENCES_JSON_FILE) as fh:
-            json.dump(self.prefs, fh)
+            json.dump(self.prefs, fh, indent=4)
 
 class Session(object):
     def __init__(self):

@@ -289,7 +289,7 @@ class Profile(object):
 
     def store(self, index):
         """Serialize the profile to JSON and store it on harddisk."""
-        if index < 0 or index > 4:
+        if index < 1 or index > 4:
             return False
 
         self.values['index'] = index
@@ -311,7 +311,7 @@ class Profile(object):
 
     def retrieve(self, index):
         """Deserialize the profile from JSON stored on harddisk."""
-        if index < 0 or index > 4:
+        if index < 1 or index > 4:
             return False
 
         # load state

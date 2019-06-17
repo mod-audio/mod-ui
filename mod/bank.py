@@ -69,7 +69,7 @@ def list_banks(brokenpedals = []):
 # save banks to disk
 def save_banks(banks):
     with TextFileFlusher(BANKS_JSON_FILE) as fh:
-        json.dump(banks, fh)
+        json.dump(banks, fh, indent=4)
 
 # save last bank id and pedalboard path to disk
 def save_last_bank_and_pedalboard(bank, pedalboard):
