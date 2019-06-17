@@ -875,7 +875,7 @@ class EffectPresetLoad(JsonRequestHandler):
         data = SESSION.host.addressings.get_presets_as_options(instance_id)
         value, maximum, options, spreset = data
 
-        ok  = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value) 
+        ok  = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value)
         self.write(ok)
 
 class EffectParameterSet(JsonRequestHandler):
@@ -1629,7 +1629,7 @@ class SaveUserId(JsonRequestHandler):
             json.dump({
                 "name" : name,
                 "email": email,
-            }, fh)
+            }, fh, indent=4)
         self.write(True)
 
 class JackGetMidiDevices(JsonRequestHandler):

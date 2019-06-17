@@ -59,11 +59,10 @@ class UserPreferences(object):
 
     def save(self):
         with TextFileFlusher(PREFERENCES_JSON_FILE) as fh:
-            json.dump(self.prefs, fh)
+            json.dump(self.prefs, fh, indent=4)
 
 class Session(object):
     def __init__(self):
-        logging.basicConfig(level=(logging.DEBUG if LOG else logging.WARNING))
         self.ioloop = ioloop.IOLoop.instance()
 
         self.prefs = UserPreferences()

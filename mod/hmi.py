@@ -205,7 +205,6 @@ class HMI(object):
     def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-
     def control_add(self, data, hw_id, actuator_uri, callback):
         # instance_id = data['instance_id']
         # port = data['port']
