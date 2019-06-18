@@ -18,7 +18,14 @@
               <input type="hidden" name="hmi-page" type="number">
               <input type="hidden" name="hmi-uri">
             </div>
-            <span class="dynamic-field midi-learn-hint" style="display: none;">To continue click "save" then move any controller in your MIDI device</span>
+            <span class="dynamic-field midi-learn-hint" style="display: none;">
+              To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.
+            </span>
+            <span class="dynamic-field midi-learn-custom" style="display: none;">
+              This parameter is currently mapped to <span class="midi-custom-uri"></span>.
+              In order to map this parameter to a different MIDI control, press "save" and move the desired control on your MIDI device.
+              Press "cancel" to retain the current mapping.
+            </span>
             <div class="dynamic-field cc-select form-group clearfix" style="display: none;">
               <div class="mod-controls">
                   <select class="form-control" name="actuator"></select>

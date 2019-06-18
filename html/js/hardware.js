@@ -255,22 +255,34 @@ function HardwareManager(options) {
     }
 
     // Show dynamic field content based on selected type of addressing
-    this.showDynamicField = function (form, typeInputVal) {
+    this.showDynamicField = function (form, typeInputVal, currentAddressing) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
-      if (typeInputVal == kMidiLearnURI || typeInputVal.startsWith(kMidiCustomPrefixURI)) {
+      if (typeInputVal == kMidiLearnURI) {
         form.find('.midi-learn-hint').show()
+      } else if (typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+        form.find('.midi-learn-custom').show()
+        var midiCustomLabel = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
+        form.find('.midi-custom-uri').text(midiCustomLabel)
       } else if (typeInputVal == deviceOption) {
         form.find('.device-table').show()
       } else if (typeInputVal == ccOption) {
         form.find('.cc-select').show()
+      }
+
+      // Hide/show extended specific content
+      if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+        form.find('.sensibility').css({visibility:"hidden"})
+        form.find('.tempo').css({display:"none"})
+        self.disableMinMaxSteps(form, false)
+      } else {
+        form.find('.sensibility').css({visibility:"visible"})
       }
     }
 
     this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput) {
       var table = $('<table/>').addClass('hmi-table')
       var row, cell
-
       if (PAGES_CB && PAGES_NB > 0) {
         // build header row
         var headerRow = $('<tr/>')
@@ -352,24 +364,9 @@ function HardwareManager(options) {
         var hmiUriInput = form.find('input[name=hmi-uri]')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
-
-        // TODO display below MIDI button
-        // if (currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
-        //     var label = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
-        //     $('<option value="'+currentAddressing.uri+'">').text(label).appendTo(actuatorSelect)
-        //     actuatorSelect.val(currentAddressing.uri)
-        //     actuators[currentAddressing.uri] = {
-        //         uri  : currentAddressing.uri,
-        //         name : label,
-        //         modes: ":float:trigger:bypass:integer:toggled:",
-        //         steps: [],
-        //         max_assigns: 99
-        //     }
-        // }
-
         var typeInputVal = kNullAddressURI
         if (currentAddressing && currentAddressing.uri) {
-          if (currentAddressing.uri == kMidiLearnURI) {
+          if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
             typeInputVal = kMidiLearnURI
           } else if (currentAddressing.uri.startsWith("/hmi")) {
             typeInputVal = deviceOption
@@ -379,7 +376,7 @@ function HardwareManager(options) {
         }
         typeInput.val(typeInputVal)
 
-        self.showDynamicField(form, typeInputVal)
+        self.showDynamicField(form, typeInputVal, currentAddressing)
 
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
         var i = 0
