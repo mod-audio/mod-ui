@@ -172,7 +172,7 @@ class Protocol(object):
         "sl": [int], # snapshot_load
         "ss": [int], # snapshot_save
 
-        "p": [int], # page_load
+        "lp": [int], # page_load
 
         # unused
         "get_pb_name": [],

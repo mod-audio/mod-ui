@@ -78,7 +78,7 @@ class Addressings(object):
     def init(self):
         self.hw_actuators = get_hardware_actuators()
         self.pages_nb = get_hardware_descriptor().get('pages_nb', 0)
-        self.pages_cb = get_hardware_descriptor().get('pages_cb', False)
+        self.pages_cb = get_hardware_descriptor().get('pages_cb', 0)
         self.current_page = 0
 
         # 'hmi_addressings' uses a structure like this:
@@ -583,16 +583,23 @@ class Addressings(object):
         actuator_hw   = actuator_uri
         actuator_type = self.get_actuator_type(actuator_uri)
 
+
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             try:
                 actuator_hw = self.hmi_uri2hw_map[actuator_uri]
             except KeyError:
                 print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
-
-            # HMI specific
-            addressings = self.hmi_addressings[actuator_uri]
-            addressing_data['addrs_idx'] = addressings['idx']+1
-            addressing_data['addrs_max'] = len(addressings['addrs'])
+            if self.pages_cb:
+                # if new addressing page is not the same as the currently displayed page
+                if self.current_page != addressing_data['page']:
+                    # then no need to send control_add to hmi
+                    callback(True)
+                    return
+            else:
+                # HMI specific
+                addressings = self.hmi_addressings[actuator_uri]
+                addressing_data['addrs_idx'] = addressings['idx']+1
+                addressing_data['addrs_max'] = len(addressings['addrs'])
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']

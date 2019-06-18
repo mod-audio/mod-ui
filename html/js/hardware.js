@@ -258,15 +258,17 @@ function HardwareManager(options) {
     this.showDynamicField = function (form, typeInputVal, currentAddressing) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
-      if (typeInputVal == kMidiLearnURI) {
+      if (typeInputVal === kMidiLearnURI) {
         form.find('.midi-learn-hint').show()
-      } else if (typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-        form.find('.midi-learn-custom').show()
-        var midiCustomLabel = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
-        form.find('.midi-custom-uri').text(midiCustomLabel)
-      } else if (typeInputVal == deviceOption) {
+        if (currentAddressing && currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+          form.find('.midi-learn-hint').hide()
+          var midiCustomLabel = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
+          form.find('.midi-custom-uri').text(midiCustomLabel)
+          form.find('.midi-learn-custom').show()
+        }
+      } else if (typeInputVal === deviceOption) {
         form.find('.device-table').show()
-      } else if (typeInputVal == ccOption) {
+      } else if (typeInputVal === ccOption) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
           ccActuatorSelect.show()
@@ -402,7 +404,7 @@ function HardwareManager(options) {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
           typeInput.val($(this).attr('data-value'))
-          self.showDynamicField(form, typeInput.val())
+          self.showDynamicField(form, typeInput.val(), currentAddressing)
         })
 
         // Add options to control chain actuators select
@@ -421,7 +423,9 @@ function HardwareManager(options) {
         }
         if (ccActuators.length === 0) {
           ccActuatorSelect.hide()
-          form.find('.no-cc').show()
+          if (typeInput.val() === ccOption) {
+            form.find('.no-cc').show()
+          }
         }
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
