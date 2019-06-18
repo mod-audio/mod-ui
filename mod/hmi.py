@@ -27,6 +27,26 @@ from mod.settings import LOG
 import serial, logging
 import time
 
+class Menu(object):
+    # implemented
+    STEREOLINK_INP_ID     = 13
+    STEREOLINK_OUTP_ID    = 23
+    MASTER_VOL_PORT_ID    = 24
+    PLAY_STATUS_ID        = 180
+    TEMPO_BPM_ID          = 181
+    TEMPO_BPB_ID          = 182
+    SYS_CLK_SOURCE_ID     = 202
+    MIDI_CLK_SEND_ID      = 203
+    SNAPSHOT_PRGCHGE_ID   = 204
+    PB_PRGCHNGE_ID        = 205
+
+    # TODO
+    TUNER_MUTE_ID         = 30
+    BYPASS1_ID            = 171
+    BYPASS2_ID            = 172
+    QUICK_BYPASS_ID       = 174
+    DISPLAY_BRIGHTNESS_ID = 160
+
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
         self.sp = sp
@@ -205,7 +225,6 @@ class HMI(object):
     def ui_dis(self, callback):
         self.send("ui_dis", callback, datatype='boolean')
 
-
     def control_add(self, data, hw_id, actuator_uri, callback):
         # instance_id = data['instance_id']
         # port = data['port']
@@ -319,7 +338,7 @@ class HMI(object):
         self.send('ping', callback, datatype='boolean')
 
     def tuner(self, freq, note, cents, callback):
-        self.send('tu %f %s %f' % (freq, note, cents), callback)
+        self.send('tu_v %f %s %f' % (freq, note, cents), callback)
 
     def xrun(self, callback):
         self.send('xrun', callback)
@@ -339,7 +358,19 @@ class HMI(object):
     # new messages
 
     def clear(self, callback):
-        def clear2(ok):
-            self.control_rm(self.hw_ids, callback)
+        self.send("pb_cl", callback)
 
-        self.send("ss_c", clear2)
+    def set_profile_value(self, key, value, callback=None):
+        self.send("mc %i %i" % (key, int(value)), callback)
+
+    def set_profile_values(self, playback_rolling, values, callback):
+        msg  = "mc"
+        msg += " %i %i" % (Menu.PLAY_STATUS_ID, int(playback_rolling))
+        msg += " %i %i" % (Menu.STEREOLINK_INP_ID, int(values['inputStereoLink']))
+        msg += " %i %i" % (Menu.STEREOLINK_OUTP_ID, int(values['outputStereoLink']))
+        msg += " %i %i" % (Menu.MASTER_VOL_PORT_ID, int(values['masterVolumeChannelMode']))
+        msg += " %i %i" % (Menu.SYS_CLK_SOURCE_ID, values['transportSource'])
+        msg += " %i %i" % (Menu.MIDI_CLK_SEND_ID, int(values['midiClockSend']))
+        msg += " %i %i" % (Menu.SNAPSHOT_PRGCHGE_ID, values['midiChannelForSnapshotsNavigation'])
+        msg += " %i %i" % (Menu.PB_PRGCHNGE_ID, values['midiChannelForPedalboardsNavigation'])
+        self.send(msg, callback)

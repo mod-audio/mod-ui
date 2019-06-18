@@ -233,6 +233,7 @@ class Addressings(object):
         # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
             if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
+                print("loading for", actuator_uri)
                 yield gen.Task(self.hmi_load_first, actuator_uri)
             elif self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and cc_initialized:
                 self.cc_load_all(actuator_uri)
@@ -673,6 +674,7 @@ class Addressings(object):
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
+            print("T2 addressings_len == 0")
             callback(False)
             return
 
@@ -729,6 +731,7 @@ class Addressings(object):
         addressings_len = len(addressings['addrs'])
 
         if addressings_len == 0:
+            print("addressings_len == 0")
             callback(False)
             return
 
