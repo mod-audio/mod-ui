@@ -269,6 +269,8 @@ function HardwareManager(options) {
 
     this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput) {
       var table = $('<table/>').addClass('hmi-table')
+      var row, cell
+
       if (PAGES_CB && PAGES_NB > 0) {
         // build header row
         var headerRow = $('<tr/>')
@@ -278,12 +280,11 @@ function HardwareManager(options) {
         table.append(headerRow)
         var usedAddressings, addressing
         for (var actuatorUri in actuators) {
-          var row = $('<tr/>')
-          var cell
+          row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
           for (i = 0; i < PAGES_NB; i++) {
             if (actuatorUri.startsWith('/hmi')) {
-              cell = $('<th data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</th>')
+              cell = $('<td data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
               if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == i) {
                 hmiPageInput.val(currentAddressing.page)
                 hmiUriInput.val(currentAddressing.uri)
@@ -292,7 +293,7 @@ function HardwareManager(options) {
                 // Check if page+uri already assigned, then disable cell
                 for (var instance of Object.values(usedAddressings)) {
                   addressing = self.addressingsData[instance]
-                  if (addressing.page && addressing.page === i) {
+                  if (addressing.page == i) {
                     cell.addClass('disabled')
                   }
                 }
@@ -304,11 +305,23 @@ function HardwareManager(options) {
           table.append(row)
         }
       } else {
-        // TODO build normal table
+        for (var actuatorUri in actuators) {
+          row = $('<tr/>')
+          if (actuatorUri.startsWith('/hmi')) {
+            cell = $('<td data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
+            if (currentAddressing && currentAddressing.uri == actuatorUri) {
+              hmiUriInput.val(currentAddressing.uri)
+              cell.addClass('selected')
+            }
+            row.append(cell)
+          }
+          table.append(row)
+        }
       }
+
       deviceTable.append(table)
 
-      deviceTable.find('th').click(function () {
+      deviceTable.find('td').click(function () {
         if ($(this).hasClass('disabled')) {
           return
         }
@@ -320,7 +333,7 @@ function HardwareManager(options) {
         hmiUriInput.val(actuatorUri)
 
         // Remove 'selected' class to all cells then add it to the clicked one
-        deviceTable.find('th').removeClass('selected')
+        deviceTable.find('td').removeClass('selected')
         $(this).addClass('selected')
       })
     }
