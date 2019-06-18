@@ -378,25 +378,28 @@ function HardwareManager(options) {
 
         self.showDynamicField(form, typeInputVal, currentAddressing)
 
+        var actuators = self.availableActuators(instance, port)
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
         var i = 0
         typeSelect.find('option').unwrap().each(function() {
-            var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>');
+            var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>')
             if($(btn).attr('data-value') == typeInput.val()) {
-              btn.addClass('selected');
+              btn.addClass('selected')
             }
-            $(this).replaceWith(btn);
-            i++;
-        });
+            if ($(btn).attr('data-value') === kMidiLearnURI && !actuators[kMidiLearnURI]) {
+              $(btn).hide()
+            }
+            $(this).replaceWith(btn)
+            i++
+        })
 
         form.find('.js-type').click(function () {
-          form.find('.js-type').removeClass('selected');
-          $(this).addClass('selected');
+          form.find('.js-type').removeClass('selected')
+          $(this).addClass('selected')
           typeInput.val($(this).attr('data-value'))
           self.showDynamicField(form, typeInput.val())
         })
 
-        var actuators = self.availableActuators(instance, port)
         // var actuatorSelect = form.find('select[name=actuator]')
         // $('<option value="'+kNullAddressURI+'">').text('None').appendTo(actuatorSelect)
         //
