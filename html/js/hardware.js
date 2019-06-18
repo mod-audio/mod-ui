@@ -267,7 +267,12 @@ function HardwareManager(options) {
       } else if (typeInputVal == deviceOption) {
         form.find('.device-table').show()
       } else if (typeInputVal == ccOption) {
-        form.find('.cc-select').show()
+        var ccActuatorSelect = form.find('select[name=cc-actuator]')
+        if (ccActuatorSelect.children('option').length) {
+          ccActuatorSelect.show()
+        } else {
+          form.find('.no-cc').show()
+        }
       }
 
       // Hide/show extended specific content
@@ -295,7 +300,7 @@ function HardwareManager(options) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
           for (i = 0; i < PAGES_NB; i++) {
-            if (actuatorUri.startsWith('/hmi')) {
+            if (actuatorUri.startsWith(deviceOption)) {
               cell = $('<td data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
               if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == i) {
                 hmiPageInput.val(currentAddressing.page)
@@ -319,7 +324,7 @@ function HardwareManager(options) {
       } else {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
-          if (actuatorUri.startsWith('/hmi')) {
+          if (actuatorUri.startsWith(deviceOption)) {
             cell = $('<td data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
             if (currentAddressing && currentAddressing.uri == actuatorUri) {
               hmiUriInput.val(currentAddressing.uri)
@@ -368,7 +373,7 @@ function HardwareManager(options) {
         if (currentAddressing && currentAddressing.uri) {
           if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
             typeInputVal = kMidiLearnURI
-          } else if (currentAddressing.uri.startsWith("/hmi")) {
+          } else if (currentAddressing.uri.startsWith(deviceOption)) {
             typeInputVal = deviceOption
           } else {
             typeInputVal = ccOption
@@ -400,17 +405,24 @@ function HardwareManager(options) {
           self.showDynamicField(form, typeInput.val())
         })
 
-        // var actuatorSelect = form.find('select[name=actuator]')
-        // $('<option value="'+kNullAddressURI+'">').text('None').appendTo(actuatorSelect)
-        //
-        // var actuator
-        // for (var i in actuators) {
-        //     actuator = actuators[i]
-        //     $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(actuatorSelect)
-        //     if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
-        //         actuatorSelect.val(currentAddressing.uri)
-        //     }
-        // }
+        // Add options to control chain actuators select
+        var ccActuatorSelect = form.find('select[name=cc-actuator]')
+        var actuator
+        var ccActuators = []
+        for (var i in actuators) {
+          if (!i.startsWith(deviceOption) && i != kMidiLearnURI) {
+            actuator = actuators[i]
+            ccActuatorSelect.push(actuator)
+            $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
+            if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
+                ccActuatorSelect.val(currentAddressing.uri)
+            }
+          }
+        }
+        if (ccActuators.length === 0) {
+          ccActuatorSelect.hide()
+          form.find('.no-cc').show()
+        }
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
@@ -474,7 +486,7 @@ function HardwareManager(options) {
         self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput)
 
         form.find('.js-save').click(function () {
-            self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
+            self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
         })
 
         form.find('.js-close').click(function () {
@@ -491,7 +503,7 @@ function HardwareManager(options) {
         })
         form.keydown(function (e) {
             if (e.keyCode == 13) {
-                self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
+                self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
                 return false
             }
         })
@@ -585,21 +597,22 @@ function HardwareManager(options) {
         })
     }
 
-    this.saveAddressing = function (instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form) {
+    this.saveAddressing = function (instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form) {
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
         var page = hmiPageInput.val()
         var typeInputVal = typeInput.val()
         var uri = kNullAddressURI
-        if (typeInputVal === deviceOption && hmiUriInput) {
+        if (typeInputVal === deviceOption && hmiUriInput.val()) {
           uri = hmiUriInput.val()
-        } else if(typeInputVal === ccOption) {
-          // TODO add ccUri param
+        } else if(typeInputVal === ccOption && ccActuatorSelect.val()) {
+          uri = ccActuatorSelect.val()
         } else if (typeInputVal === kMidiLearnURI) {
           uri = kMidiLearnURI
         }
         var actuator = actuators[uri] || {}
+        console.log(actuator)
 
         var tempoValue = tempo.prop("checked")
         // Sync port value to bpm with virtual bpm actuator

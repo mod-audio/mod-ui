@@ -36,9 +36,13 @@
               In order to map this parameter to a different MIDI control, press "save" and move the desired control on your MIDI device.
               Press "cancel" to retain the current mapping.
             </span>
+            <span class="dynamic-field no-cc" style="display: none;">
+              No Control Chain device detected,
+              please make sure that the cable is firmly seated and connected to the "MAIN" port on the Control Chain device.
+            </span>
             <div class="dynamic-field cc-select form-group clearfix" style="display: none;">
               <div class="mod-controls">
-                  <select class="form-control" name="actuator"></select>
+                  <select class="form-control" name="cc-actuator"></select>
               </div>
             </div>
             <label class="label-toggle" for="toggle-address"><a>Extended</a></label>
