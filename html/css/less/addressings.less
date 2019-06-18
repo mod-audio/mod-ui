@@ -4,10 +4,27 @@
 
     .btn.js-type {
       border: solid @gray-dark 1px;
-      
+
       &.selected {
         background-color: @gray-dark;
         color: white;
+      }
+    }
+
+    .hmi-table {
+      cursor: pointer;
+
+      th {
+        &.selected {
+          background-color: @brand-primary;
+          color: white;
+        }
+
+        &.disabled {
+          cursor: auto;
+          color: @gray-light;
+        }
+        
       }
     }
   }

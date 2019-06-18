@@ -858,8 +858,13 @@ class EffectParameterAddress(JsonRequestHandler):
         steps   = int(data.get('steps', 33))
         tempo   = data.get('tempo', False)
         dividers = data.get('dividers', None)
+        page = data.get('page', None)
+        print("PAGE")
+        print(page)
+        if page is not None:
+            page = int(page)
 
-        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers)
+        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers, page)
 
         self.write(ok)
 

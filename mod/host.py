@@ -1874,7 +1874,7 @@ class Host(object):
     def snapshot_disable(self, callback):
         self.snapshot_clear()
         self.pedalboard_modified = True
-        self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, callback)
+        self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, None, callback)
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -3036,6 +3036,7 @@ _:b%i
             maximum = addr['maximum']
             steps = addr['steps']
             tempo = addr['tempo']
+            page = addr.get('page', None)
 
             pluginData  = self.plugins.get(instance_id, None)
 
@@ -3059,7 +3060,7 @@ _:b%i
                     dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 
                     # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback)
 
     def set_transport_bpm(self, bpm, sendMsg, callback=None, datatype='int'):
         self.transport_bpm = bpm
@@ -3154,7 +3155,7 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
@@ -3273,7 +3274,7 @@ _:b%i
             maximum = max(options_list)
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value, tempo, dividers)
+                                          label, minimum, maximum, steps, value, tempo, dividers, page)
 
         if addressing is None:
             callback(False)
@@ -3540,7 +3541,8 @@ _:b%i
                     steps = port_addressing['steps']
                     tempo = port_addressing['tempo']
                     dividers = port_addressing['dividers']
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, True)
+                    page = port_addressing.get('page', None)
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, True)
 
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')

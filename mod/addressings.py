@@ -216,7 +216,8 @@ class Addressings(object):
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
-                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue, addr.get('tempo'), addr.get('dividers'))
+                                    addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
+                                    addr.get('tempo'), addr.get('dividers'), addr.get('page'))
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
@@ -328,7 +329,8 @@ class Addressings(object):
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
                     'tempo'   : addr.get('tempo'),
-                    'dividers': addr.get('dividers')
+                    'dividers': addr.get('dividers'),
+                    'page'    : addr.get('page')
                 })
             addressings[uri] = addrs2
 
@@ -358,7 +360,8 @@ class Addressings(object):
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
                     'tempo'   : addr.get('tempo'),
-                    'dividers': addr.get('dividers')
+                    'dividers': addr.get('dividers'),
+                    'page'    : addr.get('page')
                 })
             addressings[uri] = addrs2
 
@@ -371,7 +374,8 @@ class Addressings(object):
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s 1" % (instances[addr['instance_id']],
+                page = "{0}".format(addr.get('page', "null")).replace("None", "null")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
                                                                       addr['port'],
                                                                       uri,
                                                                       addr['minimum'],
@@ -379,13 +383,15 @@ class Addressings(object):
                                                                       addr['steps'],
                                                                       addr['label'].replace(" ","_"),
                                                                       addr.get('tempo'),
-                                                                      dividers))
+                                                                      dividers,
+                                                                      page))
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s 1" % (instances[addr['instance_id']],
+                page = "{0}".format(addr.get('page', "null")).replace("None", "null")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
                                                                       addr['port'],
                                                                       uri,
                                                                       addr['minimum'],
@@ -393,7 +399,8 @@ class Addressings(object):
                                                                       addr['steps'],
                                                                       addr['label'].replace(" ","_"),
                                                                       addr.get('tempo'),
-                                                                      dividers))
+                                                                      dividers,
+                                                                      page))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
@@ -418,7 +425,7 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo, dividers):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
@@ -486,7 +493,8 @@ class Addressings(object):
             'unit'        : unit,
             'options'     : options,
             'tempo'       : tempo,
-            'dividers'     : dividers
+            'dividers'    : dividers,
+            'page'        : page
         }
 
         # -------------------------------------------------------------------------------------------------------------
@@ -675,13 +683,13 @@ class Addressings(object):
                 callback(False)
                 return
             else:
+                addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page)
                 if (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
                     print("skippedPort", skippedPort)
                     callback(True)
                     return
 
-                addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page)
-                addressing_data['value'] = self._task_get_port_value(addressing['instance_id'], addressing['port'])
+                addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'], addressing_data['port'])
 
         else:
             addressings_idx = addressings['idx']

@@ -5,10 +5,24 @@
         <hr style="margin-top:0px" />
         <form class="bottom form">
             <div class="mod form-group clearfix">
-                <label>Actuator</label>
-                <div class="mod-controls">
-                    <select class="form-control" name="actuator"></select>
-                </div>
+              <label>Assign to</label>
+              <select name="type">
+                 <option>None</option>
+                 <option>Device</option>
+                 <option>MIDI</option>
+                 <option>Control Chain</option>
+              </select>
+              <input type="hidden" name="type">
+            </div>
+            <div class="dynamic-field device-table form-group clearfix" style="display: none;">
+              <input type="hidden" name="hmi-page" type="number">
+              <input type="hidden" name="hmi-uri">
+            </div>
+            <span class="dynamic-field midi-learn-hint" style="display: none;">To continue click "save" then move any controller in your MIDI device</span>
+            <div class="dynamic-field cc-select form-group clearfix" style="display: none;">
+              <div class="mod-controls">
+                  <select class="form-control" name="actuator"></select>
+              </div>
             </div>
             <label class="label-toggle" for="toggle-address"><a>Extended</a></label>
             <div>
