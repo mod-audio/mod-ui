@@ -8,7 +8,7 @@ from subprocess import getoutput
 from tornado import ioloop
 
 from mod import TextFileFlusher, safe_json_load
-from mod.settings import DATA_DIR
+from mod.settings import APP, DATA_DIR
 
 def index_to_filepath(index):
     return os.path.join(DATA_DIR, "profile{0}.json".format(index))
@@ -19,6 +19,7 @@ def ensure_data_index_valid(data, fallback):
         data['index'] = fallback
 
 def fill_in_mixer_values(data):
+    if APP: return
     data['input1volume']    = float(getoutput("mod-amixer in 1 xvol").strip())
     data['input2volume']    = float(getoutput("mod-amixer in 2 xvol").strip())
     data['output1volume']   = float(getoutput("mod-amixer out 1 xvol").strip())
