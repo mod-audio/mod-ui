@@ -887,8 +887,12 @@ class EffectParameterAddress(JsonRequestHandler):
         steps   = int(data.get('steps', 33))
         tempo   = data.get('tempo', False)
         dividers = data.get('dividers', None)
+        page = data.get('page', None)
 
-        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers)
+        if page is not None:
+            page = int(page)
+
+        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers, page)
 
         self.write(ok)
 
@@ -1485,6 +1489,8 @@ class TemplateHandler(TimelessRequestHandler):
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
             'bin_compat': get_hardware_descriptor().get('bin-compat', 'Unknown'),
+            'pages_nb': get_hardware_descriptor().get('pages_nb', 0),
+            'pages_cb': get_hardware_descriptor().get('pages_cb', 0),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),

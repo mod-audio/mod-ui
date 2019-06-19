@@ -368,7 +368,7 @@ class Host(object):
 
         Protocol.register_cmd_callback("sl", self.hmi_snapshot_load)
         Protocol.register_cmd_callback("ss", self.hmi_snapshot_save)
-        Protocol.register_cmd_callback("p", self.hmi_page_load)
+        Protocol.register_cmd_callback("lp", self.hmi_page_load)
 
         # not used
         #Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
@@ -1927,7 +1927,7 @@ class Host(object):
     def snapshot_disable(self, callback):
         self.snapshot_clear()
         self.pedalboard_modified = True
-        self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, callback)
+        self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, None, callback)
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -2049,6 +2049,39 @@ class Host(object):
             # TODO: change to pedal_snapshot?
             self.msg_callback("pedal_preset %d" % idx)
 
+    @gen.coroutine
+    def page_load(self, idx, callback=lambda r:None):
+        if not self.addressings.pages_cb:
+            print("ERROR: hmi next page not supported")
+            callback(False)
+            return
+
+        hw_ids_to_rm = []
+        for uri, addressings in self.addressings.hmi_addressings.items():
+            hw_id = self.addressings.hmi_uri2hw_map[uri]
+            addrs = addressings['addrs']
+
+            # Nothing assigned to current actuator on any pages, nothing to do
+            if len(addrs) == 0:
+                continue
+
+            page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx)
+            # Nothing assigned to current actuator on page to load
+            if not page_to_load_assigned:
+                # Send control_rm if current actuator was addressed on current page
+                current_page_assigned = self.addressings.is_page_assigned(addrs, self.addressings.current_page)
+                if current_page_assigned:
+                    hw_ids_to_rm.append(hw_id)
+            # Else, send control_add with new data
+            else:
+                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
+                yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
+
+        if len(hw_ids_to_rm) > 0:
+            yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
+
+        self.addressings.current_page = (self.addressings.current_page + 1)%self.addressings.pages_nb
+        callback(True)
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - connections
 
@@ -3250,7 +3283,7 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, not_param_set=False):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
@@ -3369,8 +3402,7 @@ _:b%i
             maximum = max(options_list)
 
         addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value, tempo, dividers)
-
+                                          label, minimum, maximum, steps, value, tempo, dividers, page)
         if addressing is None:
             callback(False)
             return
@@ -3378,7 +3410,6 @@ _:b%i
         if needsValueChange:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
             yield gen.Task(self.hmi_parameter_set, hw_id, value)
-
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
@@ -3634,7 +3665,8 @@ _:b%i
                     steps = port_addressing['steps']
                     tempo = port_addressing['tempo']
                     dividers = port_addressing['dividers']
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback, True)
+                    page = port_addressing.get('page', None)
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, True)
 
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
@@ -4118,7 +4150,7 @@ _:b%i
 
     def hmi_page_load(self, idx, callback):
         print("hmi_page_load called", idx)
-        callback(True)
+        self.page_load(idx, callback)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

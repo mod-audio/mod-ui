@@ -164,7 +164,8 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_map") {
-            data         = data.substr(cmd.length+1).split(" ", 10)
+            data         = data.substr(cmd.length+1).split(" ", 11)
+
             var instance = data[0]
             var symbol   = data[1]
             var actuator = data[2]
@@ -174,7 +175,11 @@ $('document').ready(function() {
             var label    = data[6].replace(/_/g," ")
             var tempo    = data[7] === "True" ? true : false
             var dividers = JSON.parse(data[8].replace(/'/g, '"'))
-            var feedback = parseInt(data[9]) == 1
+            var page     = data[9]
+            if (page != null) {
+              page = parseInt(page)
+            }
+            var feedback = parseInt(data[10]) == 1
 
             desktop.hardwareManager.addHardwareMapping(instance,
                                                        symbol,
@@ -185,6 +190,7 @@ $('document').ready(function() {
                                                        steps,
                                                        tempo,
                                                        dividers,
+                                                       page,
                                                        feedback)
             return
         }

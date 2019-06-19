@@ -1,0 +1,35 @@
+.mod-pedal-settings-address {
+
+  .mod-box {
+
+    .btn.js-type {
+      border: solid @gray-dark 1px;
+
+      &.selected {
+        background-color: @gray-dark;
+        color: white;
+      }
+    }
+
+    .hmi-table {
+      cursor: pointer;
+
+      td {
+        &.selected {
+          background-color: @brand-primary;
+          color: white;
+        }
+
+        &.disabled {
+          cursor: auto;
+          color: @gray-light;
+        }
+
+      }
+    }
+
+    .midi-custom-uri {
+      color: @brand-primary;
+    }
+  }
+}

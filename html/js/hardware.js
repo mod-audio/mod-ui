@@ -26,6 +26,10 @@ var kMidiCustomPrefixURI = "/midi-custom_" // to show current one, ignored on sa
 // URI for BPM sync (for non-addressed control ports)
 var kBpmURI ="/bpm"
 
+// Grouped options
+var deviceOption = "/hmi"
+var ccOption = "/cc"
+
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 
@@ -147,7 +151,7 @@ function HardwareManager(options) {
                 modes    = actuator.modes
 
                 usedAddressings = self.addressingsByActuator[actuator.uri]
-                if (usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
+                if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
                     continue
                 }
 
@@ -250,6 +254,109 @@ function HardwareManager(options) {
       form.find('input[name=max]').prop('disabled', disabled)
     }
 
+    // Show dynamic field content based on selected type of addressing
+    this.showDynamicField = function (form, typeInputVal, currentAddressing) {
+      // Hide all then show the relevant content
+      form.find('.dynamic-field').hide()
+      if (typeInputVal === kMidiLearnURI) {
+        form.find('.midi-learn-hint').show()
+        if (currentAddressing && currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+          form.find('.midi-learn-hint').hide()
+          var midiCustomLabel = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
+          form.find('.midi-custom-uri').text(midiCustomLabel)
+          form.find('.midi-learn-custom').show()
+        }
+      } else if (typeInputVal === deviceOption) {
+        form.find('.device-table').show()
+      } else if (typeInputVal === ccOption) {
+        var ccActuatorSelect = form.find('select[name=cc-actuator]')
+        if (ccActuatorSelect.children('option').length) {
+          ccActuatorSelect.show()
+        } else {
+          form.find('.no-cc').show()
+        }
+      }
+
+      // Hide/show extended specific content
+      if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+        form.find('.sensibility').css({visibility:"hidden"})
+        form.find('.tempo').css({display:"none"})
+        self.disableMinMaxSteps(form, false)
+      } else {
+        form.find('.sensibility').css({visibility:"visible"})
+      }
+    }
+
+    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput) {
+      var table = $('<table/>').addClass('hmi-table')
+      var row, cell
+      if (PAGES_CB && PAGES_NB > 0) {
+        // build header row
+        var headerRow = $('<tr/>')
+        for (i = 1; i <= PAGES_NB; i++) {
+          headerRow.append($('<th>Page '+i+'</th>'))
+        }
+        table.append(headerRow)
+        var usedAddressings, addressing
+        for (var actuatorUri in actuators) {
+          row = $('<tr/>')
+          usedAddressings = self.addressingsByActuator[actuatorUri]
+          for (i = 0; i < PAGES_NB; i++) {
+            if (actuatorUri.startsWith(deviceOption)) {
+              cell = $('<td data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
+              if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == i) {
+                hmiPageInput.val(currentAddressing.page)
+                hmiUriInput.val(currentAddressing.uri)
+                cell.addClass('selected')
+              } else {
+                // Check if page+uri already assigned, then disable cell
+                for (var instance of Object.values(usedAddressings)) {
+                  addressing = self.addressingsData[instance]
+                  if (addressing.page == i) {
+                    cell.addClass('disabled')
+                  }
+                }
+              }
+
+              row.append(cell)
+            }
+          }
+          table.append(row)
+        }
+      } else {
+        for (var actuatorUri in actuators) {
+          row = $('<tr/>')
+          if (actuatorUri.startsWith(deviceOption)) {
+            cell = $('<td data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
+            if (currentAddressing && currentAddressing.uri == actuatorUri) {
+              hmiUriInput.val(currentAddressing.uri)
+              cell.addClass('selected')
+            }
+            row.append(cell)
+          }
+          table.append(row)
+        }
+      }
+
+      deviceTable.append(table)
+
+      deviceTable.find('td').click(function () {
+        if ($(this).hasClass('disabled')) {
+          return
+        }
+        var actuatorUri = $(this).attr('data-uri')
+        var page = $(this).attr('data-page')
+
+        // Update hidden inputs value
+        hmiPageInput.val(page)
+        hmiUriInput.val(actuatorUri)
+
+        // Remove 'selected' class to all cells then add it to the clicked one
+        deviceTable.find('td').removeClass('selected')
+        $(this).addClass('selected')
+      })
+    }
+
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
         var instanceAndSymbol = instance+"/"+port.symbol
@@ -258,34 +365,67 @@ function HardwareManager(options) {
         // Renders the window
         var form = $(options.renderForm(instance, port))
 
-        var actuators = self.availableActuators(instance, port)
-        var actuatorSelect = form.find('select[name=actuator]')
-        var midiLearnHint = form.find('.midi-learn-hint');
-        actuatorSelect.on('change', function() {
-            midiLearnHint.toggle(actuatorSelect.val() === '/midi-learn');
-        });
-        $('<option value="'+kNullAddressURI+'">').text('None').appendTo(actuatorSelect)
+        var typeSelect = form.find('select[name=type]')
+        var typeInput = form.find('input[name=type]')
+        var hmiPageInput = form.find('input[name=hmi-page]')
+        var hmiUriInput = form.find('input[name=hmi-uri]')
 
-        var actuator
-        for (var i in actuators) {
-            actuator = actuators[i]
-            $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(actuatorSelect)
-            if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
-                actuatorSelect.val(currentAddressing.uri)
-            }
+        // Create selectable buttons to choose addressings type and show relevant dynamic content
+        var typeInputVal = kNullAddressURI
+        if (currentAddressing && currentAddressing.uri) {
+          if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+            typeInputVal = kMidiLearnURI
+          } else if (currentAddressing.uri.startsWith(deviceOption)) {
+            typeInputVal = deviceOption
+          } else {
+            typeInputVal = ccOption
+          }
         }
+        typeInput.val(typeInputVal)
 
-        if (currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
-            var label = "MIDI " + currentAddressing.uri.replace(kMidiCustomPrefixURI,"").replace(/_/g," ")
-            $('<option value="'+currentAddressing.uri+'">').text(label).appendTo(actuatorSelect)
-            actuatorSelect.val(currentAddressing.uri)
-            actuators[currentAddressing.uri] = {
-                uri  : currentAddressing.uri,
-                name : label,
-                modes: ":float:trigger:bypass:integer:toggled:",
-                steps: [],
-                max_assigns: 99
+        self.showDynamicField(form, typeInputVal, currentAddressing)
+
+        var actuators = self.availableActuators(instance, port)
+        var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
+        var i = 0
+        typeSelect.find('option').unwrap().each(function() {
+            var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>')
+            if($(btn).attr('data-value') == typeInput.val()) {
+              btn.addClass('selected')
             }
+            if ($(btn).attr('data-value') === kMidiLearnURI && !actuators[kMidiLearnURI]) {
+              $(btn).hide()
+            }
+            $(this).replaceWith(btn)
+            i++
+        })
+
+        form.find('.js-type').click(function () {
+          form.find('.js-type').removeClass('selected')
+          $(this).addClass('selected')
+          typeInput.val($(this).attr('data-value'))
+          self.showDynamicField(form, typeInput.val(), currentAddressing)
+        })
+
+        // Add options to control chain actuators select
+        var ccActuatorSelect = form.find('select[name=cc-actuator]')
+        var actuator
+        var ccActuators = []
+        for (var i in actuators) {
+          if (!i.startsWith(deviceOption) && i != kMidiLearnURI) {
+            actuator = actuators[i]
+            ccActuatorSelect.push(actuator)
+            $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
+            if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
+                ccActuatorSelect.val(currentAddressing.uri)
+            }
+          }
+        }
+        if (ccActuators.length === 0) {
+          ccActuatorSelect.hide()
+          if (typeInput.val() === ccOption) {
+            form.find('.no-cc').show()
+          }
         }
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
@@ -336,36 +476,21 @@ function HardwareManager(options) {
             max.attr("step", step)
 
             // Hide sensibility and tempo options for MIDI
-            var act = actuatorSelect.val()
+            var act = typeInput.val()
             if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 form.find('.sensibility').css({visibility:"hidden"})
                 form.find('.tempo').css({display:"none"})
             }
-
-            actuatorSelect.bind('change keyup', function () {
-                var act = $(this).val()
-                if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
-                    form.find('.sensibility').css({visibility:"hidden"})
-                    form.find('.tempo').css({display:"none"})
-                    self.disableMinMaxSteps(form, false)
-                } else {
-                    form.find('.sensibility').css({visibility:"visible"})
-                    // Feature disabled for 1.7 initial release
-                    // if (hasTempoRelatedDynamicScalePoints(port)) {
-                    //   form.find('.tempo').css({display:"block"})
-                    // }
-                    // if(tempo.prop("checked")) {
-                    //   self.disableMinMaxSteps(form, true)
-                    // }
-                }
-            })
         }
 
         var sensibility = form.find('select[name=steps]')
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
+        var deviceTable = form.find('.device-table')
+        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput)
+
         form.find('.js-save').click(function () {
-            self.saveAddressing(instance, port, actuators, actuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
+            self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
         })
 
         form.find('.js-close').click(function () {
@@ -382,7 +507,7 @@ function HardwareManager(options) {
         })
         form.keydown(function (e) {
             if (e.keyCode == 13) {
-                self.saveAddressing(instance, port, actuators, actuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
+                self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
                 return false
             }
         })
@@ -390,10 +515,9 @@ function HardwareManager(options) {
         form.appendTo($('body'))
 
         form.focus()
-        actuatorSelect.focus()
     }
 
-    this.addressNow = function (instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, form) {
+    this.addressNow = function (instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, page, form) {
         var instanceAndSymbol = instance+"/"+port.symbol;
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
@@ -417,6 +541,7 @@ function HardwareManager(options) {
               options: portValuesWithDividerLabels
             },
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
+            page: page || null,
         }
 
         options.address(instanceAndSymbol, addressing, function (ok) {
@@ -424,7 +549,6 @@ function HardwareManager(options) {
                 console.log("Addressing failed for port " + port.symbol);
                 return;
             }
-
             // remove old one first
             var unaddressing = false
             if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI) {
@@ -477,14 +601,26 @@ function HardwareManager(options) {
         })
     }
 
-    this.saveAddressing = function (instance, port, actuators, actuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form) {
+    this.saveAddressing = function (instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form) {
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
-        var actuator = actuators[actuatorSelect.val()] || {}
+
+        var page = hmiPageInput.val()
+        var typeInputVal = typeInput.val()
+        var uri = kNullAddressURI
+        if (typeInputVal === deviceOption && hmiUriInput.val()) {
+          uri = hmiUriInput.val()
+        } else if(typeInputVal === ccOption && ccActuatorSelect.val()) {
+          uri = ccActuatorSelect.val()
+        } else if (typeInputVal === kMidiLearnURI) {
+          uri = kMidiLearnURI
+        }
+        var actuator = actuators[uri] || {}
+        console.log(actuator)
 
         var tempoValue = tempo.prop("checked")
         // Sync port value to bpm with virtual bpm actuator
-        if (tempoValue && actuatorSelect.val() === kNullAddressURI) {
+        if (tempoValue && uri === kNullAddressURI) {
           actuator = {
             uri  : kBpmURI,
             modes: ":float:integer:",
@@ -550,7 +686,7 @@ function HardwareManager(options) {
 
                 // now we can address if needed
                 if (actuator.uri) {
-                    self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, form)
+                    self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, page, form)
                 // if not, just close the form
                 } else if (form !== undefined) {
                     form.remove()
@@ -560,13 +696,13 @@ function HardwareManager(options) {
         }
         // otherwise just address it now
         else {
-            self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, form)
+            self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, page, form)
         }
     }
 
     this.addHardwareMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, steps,
-                                        tempo, dividers, feedback) {
+                                        tempo, dividers, page, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -579,6 +715,7 @@ function HardwareManager(options) {
             tempo   : tempo,
             dividers: dividers,
             feedback: feedback,
+            page    : page
         }
 
         // disable this control

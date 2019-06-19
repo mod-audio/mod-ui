@@ -5,7 +5,7 @@ import json, logging
 import os
 
 from tornado import gen
-from mod import get_hardware_actuators, safe_json_load, TextFileFlusher
+from mod import get_hardware_actuators, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
@@ -77,6 +77,9 @@ class Addressings(object):
     # initialize (clear) all addressings
     def init(self):
         self.hw_actuators = get_hardware_actuators()
+        self.pages_nb = get_hardware_descriptor().get('pages_nb', 0)
+        self.pages_cb = get_hardware_descriptor().get('pages_cb', 0)
+        self.current_page = 0
 
         # 'hmi_addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [...], 'idx': 0}
@@ -97,9 +100,7 @@ class Addressings(object):
         i = 0
         for actuator in self.hw_actuators:
             uri = actuator['uri']
-            # hw_id = i # XXX temporary work around, we should get id from /etc/mod-hardware-descriptor.json
             hw_id = actuator['id']
-            # actuator['id'] = hw_id # XXX remove
 
             self.hmi_hw2uri_map[hw_id] = uri
             self.hmi_uri2hw_map[uri] = hw_id
@@ -216,7 +217,7 @@ class Addressings(object):
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'))
+                                    addr.get('tempo'), addr.get('dividers'), addr.get('page'))
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
@@ -329,7 +330,8 @@ class Addressings(object):
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
                     'tempo'   : addr.get('tempo'),
-                    'dividers': addr.get('dividers')
+                    'dividers': addr.get('dividers'),
+                    'page'    : addr.get('page')
                 })
             addressings[uri] = addrs2
 
@@ -359,7 +361,8 @@ class Addressings(object):
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
                     'tempo'   : addr.get('tempo'),
-                    'dividers': addr.get('dividers')
+                    'dividers': addr.get('dividers'),
+                    'page'    : addr.get('page')
                 })
             addressings[uri] = addrs2
 
@@ -372,7 +375,8 @@ class Addressings(object):
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s 1" % (instances[addr['instance_id']],
+                page = "{0}".format(addr.get('page', "null")).replace("None", "null")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
                                                                       addr['port'],
                                                                       uri,
                                                                       addr['minimum'],
@@ -380,13 +384,15 @@ class Addressings(object):
                                                                       addr['steps'],
                                                                       addr['label'].replace(" ","_"),
                                                                       addr.get('tempo'),
-                                                                      dividers))
+                                                                      dividers,
+                                                                      page))
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s 1" % (instances[addr['instance_id']],
+                page = "{0}".format(addr.get('page', "null")).replace("None", "null")
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
                                                                       addr['port'],
                                                                       uri,
                                                                       addr['minimum'],
@@ -394,7 +400,8 @@ class Addressings(object):
                                                                       addr['steps'],
                                                                       addr['label'].replace(" ","_"),
                                                                       addr.get('tempo'),
-                                                                      dividers))
+                                                                      dividers,
+                                                                      page))
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
@@ -419,7 +426,7 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo, dividers):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
@@ -487,7 +494,8 @@ class Addressings(object):
             'unit'        : unit,
             'options'     : options,
             'tempo'       : tempo,
-            'dividers'     : dividers
+            'dividers'    : dividers,
+            'page'        : page
         }
 
         # -------------------------------------------------------------------------------------------------------------
@@ -575,16 +583,23 @@ class Addressings(object):
         actuator_hw   = actuator_uri
         actuator_type = self.get_actuator_type(actuator_uri)
 
+
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             try:
                 actuator_hw = self.hmi_uri2hw_map[actuator_uri]
             except KeyError:
                 print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
-
-            # HMI specific
-            addressings = self.hmi_addressings[actuator_uri]
-            addressing_data['addrs_idx'] = addressings['idx']+1
-            addressing_data['addrs_max'] = len(addressings['addrs'])
+            if self.pages_cb:
+                # if new addressing page is not the same as the currently displayed page
+                if self.current_page != addressing_data['page']:
+                    # then no need to send control_add to hmi
+                    callback(True)
+                    return
+            else:
+                # HMI specific
+                addressings = self.hmi_addressings[actuator_uri]
+                addressing_data['addrs_idx'] = addressings['idx']+1
+                addressing_data['addrs_max'] = len(addressings['addrs'])
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
@@ -650,6 +665,12 @@ class Addressings(object):
             addressings = self.virtual_addressings[actuator_uri]
             addressings.remove(addressing_data)
 
+    def is_page_assigned(self, addrs, page):
+        return any('page' in a and a['page'] == page for a in addrs)
+
+    def get_addressing_for_page(self, addrs, page):
+        # Assumes is_page_assigned(addrs, page) has returned True
+        return next(a for a in addrs if 'page' in a and a['page'] == page)
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
@@ -657,7 +678,6 @@ class Addressings(object):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
-        addressings_idx   = addressings['idx']
         addressings_len   = len(addressings['addrs'])
 
         if addressings_len == 0:
@@ -665,27 +685,44 @@ class Addressings(object):
             callback(False)
             return
 
-        if addressings_len == addressings_idx:
-            canSkipAddressing = False
-            addressings['idx'] = addressings_idx = addressings_len - 1
+        if self.pages_cb: # device supports pages
+            current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
+            if not current_page_assigned:
+                # control_rm or cb false?
+                callback(False)
+                return
+            else:
+                addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page)
+                if (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
+                    print("skippedPort", skippedPort)
+                    callback(True)
+                    return
+
+                addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'], addressing_data['port'])
+
         else:
-            canSkipAddressing = True
+            addressings_idx = addressings['idx']
+            if addressings_len == addressings_idx:
+                canSkipAddressing = False
+                addressings['idx'] = addressings_idx = addressings_len - 1
+            else:
+                canSkipAddressing = True
 
-        # current addressing data
-        addressing_data = addressings_addrs[addressings_idx].copy()
+            # current addressing data
+            addressing_data = addressings_addrs[addressings_idx].copy()
 
-        if canSkipAddressing and (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
-            print("skippedPort", skippedPort)
-            callback(True)
-            return
+            if canSkipAddressing and (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
+                print("skippedPort", skippedPort)
+                callback(True)
+                return
 
-        # needed fields for addressing task
-        addressing_data['addrs_idx'] = addressings_idx+1
-        addressing_data['addrs_max'] = addressings_len
+            # needed fields for addressing task
+            addressing_data['addrs_idx'] = addressings_idx+1
+            addressing_data['addrs_max'] = addressings_len
 
-        # reload value
-        addressing = addressings_addrs[addressings_idx]
-        addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
+            # reload value
+            addressing = addressings_addrs[addressings_idx]
+            addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
                                                                                    addressing['port'])
 
         self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
@@ -705,8 +742,9 @@ class Addressings(object):
             callback(False)
             return
 
-        # jump to first addressing
+        # jump to first addressing or page
         addressings['idx'] = 0
+        self.current_page = 0
 
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
@@ -725,6 +763,8 @@ class Addressings(object):
 
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
+
+    # def hmi_load_next_page(self, page_to_load, callback):
 
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions

@@ -152,9 +152,9 @@ class Session(object):
         self.host.remove_plugin(instance, callback)
 
     # Address a plugin parameter
-    def web_parameter_address(self, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback):
+    def web_parameter_address(self, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback):
         instance, portsymbol = port.rsplit("/",1)
-        self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
+        self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback)
 
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):

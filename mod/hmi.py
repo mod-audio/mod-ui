@@ -235,8 +235,6 @@ class HMI(object):
         min = data['minimum']
         max = data['maximum']
         steps = data['steps']
-        n_controllers = data['addrs_max']
-        index = data['addrs_idx']
         options = data['options']
 
         # hw_type = actuator[0]
@@ -278,6 +276,8 @@ class HMI(object):
         options = options.strip()
 
         def control_add_callback(ok):
+            n_controllers = data['addrs_max']
+            index = data['addrs_idx']
             self.control_set_index(hw_id, index, n_controllers, callback)
 
         cb = callback
