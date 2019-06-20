@@ -4,74 +4,78 @@
         <div class="clearfix"></div>
         <hr style="margin-top:0px" />
         <form class="bottom form">
-            <div class="tempo form-group clearfix mod-hidden"> <!-- Disabled for 1.7 initial release -->
-              <label>Tempo</label>
+            <div class="form-container">
               <div>
-                <input type="checkbox" name="tempo"> Translate value to musical tempo
-              </div>
-              <div>
-                <span>Note value:</span>
-                <select class="form-control" name="divider">
-                </select>
-              </div>
-            </div>
-
-            <div class="mod form-group clearfix">
-                <label>Assign to</label>
-                <select name="type">
-                   <option>None</option>
-                   <option>Device</option>
-                   <option>MIDI</option>
-                   <option>Control Chain</option>
-                </select>
-                <input type="hidden" name="type">
-            </div>
-            <div class="dynamic-field device-table form-group clearfix" style="display: none;">
-              <input type="hidden" name="hmi-page" type="number">
-              <input type="hidden" name="hmi-uri">
-            </div>
-            <span class="dynamic-field midi-learn-hint" style="display: none;">To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.</span>
-            <span class="dynamic-field midi-learn-custom" style="display: none;">
-              This parameter is currently mapped to <span class="midi-custom-uri"></span>.
-              In order to map this parameter to a different MIDI control, press "save" and move the desired control on your MIDI device.
-              Press "cancel" to retain the current mapping.
-            </span>
-            <span class="dynamic-field no-cc" style="display: none;">
-              No Control Chain device detected,
-              please make sure that the cable is firmly seated and connected to the "MAIN" port on the Control Chain device.
-            </span>
-            <div class="dynamic-field cc-select form-group clearfix" style="display: none;">
-              <div class="mod-controls">
-                  <select class="form-control" name="cc-actuator"></select>
-              </div>
-            </div>
-            <label class="label-toggle" for="toggle-address"><a>Extended</a></label>
-            <div>
-                <br /><br />
-                <input class="checkbox-toggle" type="checkbox" id="toggle-address" />
-                <div class="form-group clearfix">
-                    <label>Label</label>
+                <div class="main-form-container">
+                  <div class="tempo form-group clearfix mod-hidden"> <!-- Disabled for 1.7 initial release -->
+                    <label>Tempo</label>
+                    <div>
+                      <input type="checkbox" name="tempo"> Translate value to musical tempo
+                    </div>
+                    <div>
+                      <span>Note value:</span>
+                      <select class="form-control" name="divider">
+                      </select>
+                    </div>
+                  </div>
+                  <div class="mod form-group clearfix">
+                      <label>Assign to</label>
+                      <select name="type">
+                         <option>None</option>
+                         <option>Device</option>
+                         <option>MIDI</option>
+                         <option>Control Chain</option>
+                      </select>
+                      <input type="hidden" name="type">
+                  </div>
+                  <div class="dynamic-field device-table form-group clearfix" style="display: none;">
+                    <input type="hidden" name="hmi-page" type="number">
+                    <input type="hidden" name="hmi-uri">
+                  </div>
+                  <span class="dynamic-field midi-learn-hint" style="display: none;">To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.</span>
+                  <span class="dynamic-field midi-learn-custom" style="display: none;">
+                    This parameter is currently mapped to <span class="midi-custom-uri"></span>.
+                    In order to map this parameter to a different MIDI control, press "save" and move the desired control on your MIDI device.
+                    Press "cancel" to retain the current mapping.
+                  </span>
+                  <span class="dynamic-field no-cc" style="display: none;">
+                    No Control Chain device detected,
+                    please make sure that the cable is firmly seated and connected to the "MAIN" port on the Control Chain device.
+                  </span>
+                  <div class="dynamic-field cc-select form-group clearfix" style="display: none;">
                     <div class="mod-controls">
-                        <input class="form-control" name="label" type="text"/>
+                        <select class="form-control" name="cc-actuator"></select>
                     </div>
+                  </div>
                 </div>
-                <div class="range form-group clearfix">
-                    <label>Range</label>
-                    <div class="mod-controls mod-range">
-                        <input class="form-control" name="min" type="number"/><span>&ndash;</span><input class="form-control" name="max" type="number"/>
-                    </div>
+                <hr class="col-xs-12" style="padding:0" />
+                <div class="buttons-container textright clearfix">
+                    <span class="btn btn-danger js-close">Cancel</span>
+                    <span class="btn btn-success js-save">Save</span>
+                    <span class="btn advanced-toggle">Advanced</span>
                 </div>
-                <div class="sensibility form-group clearfix">
-                    <label>Sensitivity</label>
-                    <div class="mod-controls mod-range">
-                        <select class="form-control" name="steps"></select>
-                    </div>
-                </div>
-            </div>
-            <hr class="col-xs-12" style="padding:0" />
-            <div class="textright clearfix">
-                <span class="btn btn-danger js-close">Cancel</span>
-                <span class="btn btn-success js-save">Save</span>
+              </div>
+
+              <div class="advanced-container" style="display: none;">
+                  <div class="form-group clearfix">
+                      <label>Label</label>
+                      <div class="mod-controls">
+                          <input class="form-control" name="label" type="text"/>
+                      </div>
+                  </div>
+                  <div class="range form-group clearfix">
+                      <label>Range</label>
+                      <div class="mod-controls mod-range">
+                          <input class="form-control" name="min" type="number"/><span>&ndash;</span><input class="form-control" name="max" type="number"/>
+                      </div>
+                  </div>
+                  <div class="sensibility form-group clearfix">
+                      <label>Sensitivity</label>
+                      <div class="mod-controls mod-range">
+                          <select class="form-control" name="steps"></select>
+                      </div>
+                  </div>
+              </div>
             </div>
         </form>
     </div>
