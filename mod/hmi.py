@@ -40,13 +40,6 @@ class Menu(object):
     SNAPSHOT_PRGCHGE_ID   = 204
     PB_PRGCHNGE_ID        = 205
 
-    # TODO
-    TUNER_MUTE_ID         = 30
-    BYPASS1_ID            = 171
-    BYPASS2_ID            = 172
-    QUICK_BYPASS_ID       = 174
-    DISPLAY_BRIGHTNESS_ID = 160
-
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
         self.sp = sp
