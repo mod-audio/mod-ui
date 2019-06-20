@@ -2,34 +2,76 @@
 
   .mod-box {
 
-    .btn.js-type {
-      border: solid @gray-dark 1px;
+    .form-container {
+      display: flex;
 
-      &.selected {
-        background-color: @gray-dark;
-        color: white;
+      .btn.js-type, .btn.advanced-toggle {
+        border: solid @gray-dark 1px;
       }
-    }
 
-    .hmi-table {
-      cursor: pointer;
+      .main-form-container {
+        width: 414px;
+        padding-right: 25px;
 
-      td {
-        &.selected {
-          background-color: @brand-primary;
-          color: white;
+        .btn.js-type {
+
+          &.selected {
+            background-color: @gray-dark;
+            color: white;
+          }
         }
 
-        &.disabled {
-          cursor: auto;
-          color: @gray-light;
+        .hmi-table {
+
+          th:first-child {
+            background-color: @red;
+          }
+
+          th:nth-child(2) {
+            background-color: @yellow;
+          }
+
+          th:nth-child(3) {
+            background-color: @cyan;
+          }
+
+          th, td {
+            border: solid @gray-dark 1px;
+            text-align: center;
+          }
+
+          td {
+            padding: 5px;
+            cursor: pointer;
+
+            &.selected {
+              background-color: @brand-primary;
+              color: white;
+              box-shadow: 3px 3px 3px @gray-light;
+            }
+
+            &.disabled {
+              cursor: auto;
+              color: @gray-light;
+              background-color: @gray-mid-light;
+              box-shadow: inset 0 0 3px @gray;
+            }
+          }
         }
 
+        .midi-custom-uri {
+          color: @brand-primary;
+        }
       }
-    }
 
-    .midi-custom-uri {
-      color: @brand-primary;
+      .buttons-container {
+        padding-right: 25px;
+      }
+
+      .advanced-container {
+        border-left: 1px solid @gray-lighter;
+        padding-left: 25px;
+      }
     }
   }
 }
