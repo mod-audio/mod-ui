@@ -2053,6 +2053,7 @@ class Host(object):
             # Else, send control_add with new data
             else:
                 next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
+                next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'], next_addressing_data['port'])
                 yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
 
         if len(hw_ids_to_rm) > 0:
