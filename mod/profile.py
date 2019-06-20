@@ -19,12 +19,13 @@ def ensure_data_index_valid(data, fallback):
         data['index'] = fallback
 
 def fill_in_mixer_values(data):
-    if APP: return
-    data['input1volume']    = float(getoutput("mod-amixer in 1 xvol").strip())
-    data['input2volume']    = float(getoutput("mod-amixer in 2 xvol").strip())
-    data['output1volume']   = float(getoutput("mod-amixer out 1 xvol").strip())
-    data['output1volume']   = float(getoutput("mod-amixer out 2 xvol").strip())
-    data['headphoneVolume'] = float(getoutput("mod-amixer hp xvol").strip())
+    if not os.path.exists("/usr/bin/mod-amixer"):
+        return
+    data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 xvol").strip())
+    data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 xvol").strip())
+    data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 xvol").strip())
+    data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 2 xvol").strip())
+    data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp xvol").strip())
 
 # The user profile models environmental context.
 # That is all settings that are related to the physical hookup of the device.
@@ -91,13 +92,13 @@ class Profile(object):
         },
         2: {
             'index': 2,
-            'input1volume': 78 * 0.2, # 20%
-            'input2volume': 78 * 0.2,
+            'input1volume': 16.0, # 20%
+            'input2volume': 16.0,
         },
         3: {
             'index': 3,
-            'input1volume': 78 * 0.8, # 80%
-            'input2volume': 78 * 0.8,
+            'input1volume': 63.0, # 80%
+            'input2volume': 63.0,
         },
         4: {
             'index': 4,
@@ -130,6 +131,9 @@ class Profile(object):
 
     def apply(self, isIntermediate):
         self.applyFn(self.values, isIntermediate)
+
+    def get_index(self):
+        return self.values['index']
 
     def get_last_stored_profile_index(self):
         """Return the profile index that was stored latest and if it was changed since."""

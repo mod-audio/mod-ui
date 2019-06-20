@@ -498,6 +498,22 @@ function HardwareManager(options) {
             form = null
         })
 
+        form.find('.advanced-toggle').click(function() {
+            if (!form.find('.advanced-container').is(':visible')) {
+              $('.mod-pedal-settings-address').find('.mod-box').animate({
+                width: '640px'
+              }, 100, function() {
+                form.find('.advanced-container').toggle()
+              });
+            } else {
+              form.find('.advanced-container').toggle(0, function() {
+                $('.mod-pedal-settings-address').find('.mod-box').animate({
+                  width: '450px'
+                }, 100)
+              })
+            }
+        })
+
         $('body').keydown(function (e) {
             if (e.keyCode == 27 && form && form.is(':visible')) {
                 form.remove()

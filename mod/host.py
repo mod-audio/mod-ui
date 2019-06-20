@@ -189,7 +189,7 @@ class Host(object):
         self.banks = list_banks()
 
         self.current_tuner_port = 1
-        self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", "true", str) != "false"
+        self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", "false", str) == "true"
 
         self.allpedalboards = None
         self.bank_id = 0
@@ -721,14 +721,18 @@ class Host(object):
 
         # After all is set, update the HMI
         if self.hmi.initialized:
-            display_brightness = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS)
+            display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+            quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
             master_chan_mode = self.profile.get_master_volume_channel_mode()
             master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
             pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
-            self.hmi.send("boot {} {} {} {}".format(display_brightness,
-                                                    master_chan_mode,
-                                                    get_master_volume(master_chan_is_mode_2),
-                                                    pb_name))
+            self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
+                                                             quick_bypass_mode,
+                                                             int(self.current_tuner_mute),
+                                                             self.profile.get_index(),
+                                                             master_chan_mode,
+                                                             get_master_volume(master_chan_is_mode_2),
+                                                             pb_name))
 
         # All set, disable HW bypass now
         init_bypass()
@@ -3822,17 +3826,24 @@ _:b%i
     def hmi_set_truebypass_value(self, value, bypassed, callback):
         """Change the True Bypass setting of the given channel."""
         logging.debug("hmi true bypass set to (%i, %i)", value, bypassed)
+
         if value == QUICK_BYPASS_MODE_1:
+            supported = True
             set_truebypass_value(False, bypassed)
 
         elif value == QUICK_BYPASS_MODE_2:
+            supported = True
             set_truebypass_value(True, bypassed)
 
         elif value == QUICK_BYPASS_MODE_BOTH:
+            supported = True
             set_truebypass_value(False, bypassed)
             set_truebypass_value(True, bypassed)
 
-        callback(True)
+        else:
+            supported = False
+
+        callback(supported)
 
     def hmi_get_quick_bypass_mode(self, callback):
         """Query the Quick Bypass Mode setting."""
@@ -4063,7 +4074,7 @@ _:b%i
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.debug("hmi get display brightness")
-        result = self.prefs.get("display_brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+        result = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
         callback(True, result)
 
     def hmi_set_display_brightness(self, brightness, callback):
@@ -4074,7 +4085,7 @@ _:b%i
                           DISPLAY_BRIGHTNESS_50,
                           DISPLAY_BRIGHTNESS_75,
                           DISPLAY_BRIGHTNESS_100):
-            self.prefs.setAndSave("display_brightness", brightness)
+            self.prefs.setAndSave("display-brightness", brightness)
             callback(True)
         else:
             callback(False)
@@ -4150,7 +4161,6 @@ _:b%i
         self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
 
     def hmi_page_load(self, idx, callback):
-        print("hmi_page_load called", idx)
         self.page_load(idx, callback)
 
     # -----------------------------------------------------------------------------------------------------------------
