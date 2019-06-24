@@ -218,6 +218,7 @@ function Desktop(elements) {
     this.pedalboardEmpty  = true
     this.pedalboardModified = false
     this.pedalboardPresetId = -1
+    this.licenseManager = null
     this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
@@ -449,14 +450,15 @@ function Desktop(elements) {
                                                 headers: { 'Authorization' : 'MOD ' + resp.access_token }
                                             }
                                         }
-                                        self.licenseManager = new LicenseManager()
-                                        self.licenseManager.addLicenses(license_info, function(installed) {
-                                            if (installed > 0) {
-                                                var s = installed > 1 ? 's' : ''
-                                                new Notification('info', installed + ' plugin'+s+' licensed')
-                                            }
-                                        })
-
+                                        if (self.licenseManager === null) {
+                                            self.licenseManager = new LicenseManager()
+                                            self.licenseManager.addLicenses(license_info, function(installed) {
+                                                if (installed > 0) {
+                                                    var s = installed > 1 ? 's' : ''
+                                                    new Notification('info', installed + ' plugin'+s+' licensed')
+                                                }
+                                            })
+                                        }
                                         callback(true, opts);
                                     },
                                     error: function () {
@@ -1902,10 +1904,10 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                     msg = result.license_info.length + ' new plugin'+s+' purchased'
                     new Notification('info', msg);
                     var uris = result.license_info.map(function(l) { return l.plugin_uri });
-					if (self.cart) {
-						self.cart.empty()
-						self.cart.close()
-					}
+                    if (self.cart) {
+                        self.cart.empty()
+                        self.cart.close()
+                    }
                 })
             },
             error: function() {
