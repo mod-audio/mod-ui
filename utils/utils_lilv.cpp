@@ -3680,6 +3680,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     memset(&info, 0, sizeof(PedalboardInfo));
+    info.midi_legacy_mode = true;
 
     // define the needed stuff
     LilvNode* const ingen_arc       = lilv_new_uri(w, LILV_NS_INGEN "arc");

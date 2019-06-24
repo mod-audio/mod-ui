@@ -43,6 +43,12 @@ _:b2
     a lv2:AudioPort ,
         lv2:OutputPort .
 
+<midi_legacy_mode>
+    ingen:value 0 ;
+    lv2:index 4 ;
+    a atom:AtomPort ,
+        lv2:InputPort .
+
 <default.ttl>
     lv2:prototype ingen:GraphPrototype ;
     doap:name "Default" ;
