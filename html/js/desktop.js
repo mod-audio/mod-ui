@@ -655,7 +655,7 @@ function Desktop(elements) {
             }),
             success: function (resp) {
                 if (! resp.result) {
-					callback(false)
+                    callback(false)
                     return
                 }
                 callback(true)
@@ -1252,15 +1252,15 @@ function Desktop(elements) {
         }
     })
 
-	elements.settingsIcon.click(function() {
-		document.location.href = '/settings';
-	})
+    elements.settingsIcon.click(function() {
+        document.location.href = '/settings';
+    })
 
-	elements.settingsIcon.statusTooltip()
-	elements.pedalboardTrigger.statusTooltip()
-	elements.pedalboardBoxTrigger.statusTooltip()
-	elements.bankBoxTrigger.statusTooltip()
-	elements.cloudPluginBoxTrigger.statusTooltip()
+    elements.settingsIcon.statusTooltip()
+    elements.pedalboardTrigger.statusTooltip()
+    elements.pedalboardBoxTrigger.statusTooltip()
+    elements.bankBoxTrigger.statusTooltip()
+    elements.cloudPluginBoxTrigger.statusTooltip()
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
@@ -1895,13 +1895,13 @@ Desktop.prototype.waitForLicenses = function(deviceToken) {
                 'Authorization' : 'MOD ' + self.cloudAccessToken
             },
             success: function(result) {
-                if (!result.fulfilled) {
+                if (self.licenseManager === null || !result.fulfilled) {
                     setTimeout(poll, 5000);
                     return;
                 }
                 self.licenseManager.addLicenses(result.license_info, function() {
                     var s = result.license_info.length > 1 ? 's' : ''
-                    msg = result.license_info.length + ' new plugin'+s+' purchased'
+                    var msg = result.license_info.length + ' new plugin'+s+' purchased'
                     new Notification('info', msg);
                     var uris = result.license_info.map(function(l) { return l.plugin_uri });
                     if (self.cart) {
