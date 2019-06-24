@@ -1686,7 +1686,8 @@ class Host(object):
 
         value = 0.0 if bypassed else 1.0
         pluginData['ports'][enabled_symbol] = value
-        self.send_modified("param_set %d %s %f" % (instance_id, enabled_symbol, value), callback, datatype='boolean')
+        # mod-host is supposed to take care of this one
+        # self.send_notmodified("param_set %d %s %f" % (instance_id, enabled_symbol, value))
 
     def param_set(self, port, value, callback):
         instance, symbol = port.rsplit("/", 1)
@@ -1695,6 +1696,7 @@ class Host(object):
 
         if symbol in pluginData['designations']:
             print("ERROR: Trying to modify a specially designated port '%s', stop!" % symbol)
+            callback(False)
             return
 
         pluginData['ports'][symbol] = value
