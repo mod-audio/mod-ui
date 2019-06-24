@@ -2182,17 +2182,25 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', False)
+        # TODO make sure switching back and forth from aggregated to legacy mode works fine
+        # self.midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
 
-        # MIDI Devices might change port names at anytime
-        # To properly restore MIDI HW connections we need to map the "old" port names (from project)
-        mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
-        mappedOldMidiOuts  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
-        mappedOldMidiOuts2 = dict((p['name'], p['symbol']) for p in pb['hardware']['midi_outs'])
-        mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
-                                          p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
-        mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
-                                          p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
+        if not self.midi_aggregated_mode:
+            # MIDI Devices might change port names at anytime
+            # To properly restore MIDI HW connections we need to map the "old" port names (from project)
+            mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
+            mappedOldMidiOuts  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
+            mappedOldMidiOuts2 = dict((p['name'], p['symbol']) for p in pb['hardware']['midi_outs'])
+            mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+                                            p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
+            mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+                                            p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
+
+        else:
+            mappedOldMidiIns  = {}
+            mappedOldMidiOuts = {}
+            mappedNewMidiIns  = {}
+            mappedNewMidiOuts = {}
 
         curmidisymbols = []
         for port_symbol, port_alias, _ in self.midiports:
@@ -4252,7 +4260,7 @@ _:b%i
 
         # add
         for port_symbol in newDevs:
-            if not(self.midi_aggregated_mode and not(midi_aggregated_mode)) and port_symbol in midiportIds:
+            if not (self.midi_aggregated_mode and not midi_aggregated_mode) and port_symbol in midiportIds:
                 continue
 
             if ";" in port_symbol:
