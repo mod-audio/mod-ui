@@ -190,6 +190,10 @@ class Addressings(object):
                 if not cc_initialized:
                     continue
 
+            # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm or cc)
+            if actuator_uri not in tuple(actuator['uri'] for actuator in self.hw_actuators) and actuator_uri != "/bpm" and not is_cc:
+                continue
+
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
