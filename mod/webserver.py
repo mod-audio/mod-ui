@@ -244,7 +244,7 @@ class RemoteRequestHandler(JsonRequestHandler):
         protocol, domain = match.groups()
         if protocol not in ("http", "https"):
             return
-        if domain != "moddevices.com" and not domain.endswith(".moddevices.com"):
+        if not domain.endswith("moddevices.com"):
             return
         self.set_header("Access-Control-Allow-Origin", origin)
 
@@ -910,7 +910,10 @@ class EffectPresetSaveNew(JsonRequestHandler):
                 label = presets['label']
                 steps = presets['steps']
                 actuator_uri = presets['actuator_uri']
-                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps)
+                tempo = presets.get('tempo', False)
+                dividers = presets.get('dividers', None)
+                page = presets.get('page', None)
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page)
 
 
 class EffectPresetSaveReplace(JsonRequestHandler):
@@ -934,7 +937,10 @@ class EffectPresetSaveReplace(JsonRequestHandler):
                 label = presets['label']
                 steps = presets['steps']
                 actuator_uri = presets['actuator_uri']
-                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps)
+                tempo = presets.get('tempo', False)
+                dividers = presets.get('dividers', None)
+                page = presets.get('page', None)
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page)
 
 
 class EffectPresetDelete(JsonRequestHandler):
