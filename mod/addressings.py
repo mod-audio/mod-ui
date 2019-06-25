@@ -223,8 +223,6 @@ class Addressings(object):
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
                                     addr.get('tempo'), addr.get('dividers'), addr.get('page'))
-                print("addrdata")
-                print(addrdata)
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
