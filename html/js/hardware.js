@@ -271,7 +271,7 @@ function HardwareManager(options) {
       } else if (typeInputVal === ccOption) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
-          ccActuatorSelect.show()
+          form.find('.cc-select').show()
         } else {
           form.find('.no-cc').show()
         }
@@ -411,10 +411,10 @@ function HardwareManager(options) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         var actuator
         var ccActuators = []
-        for (var i in actuators) {
-          if (!i.startsWith(deviceOption) && i != kMidiLearnURI) {
-            actuator = actuators[i]
-            ccActuatorSelect.push(actuator)
+        for (var uri in actuators) {
+          if (!uri.startsWith(deviceOption) && uri != kMidiLearnURI && uri.lastIndexOf(kMidiCustomPrefixURI, 0) < 0) {
+            actuator = actuators[uri]
+            ccActuators.push(actuator)
             $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
             if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
                 ccActuatorSelect.val(currentAddressing.uri)
