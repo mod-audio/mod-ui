@@ -244,7 +244,7 @@ class RemoteRequestHandler(JsonRequestHandler):
         protocol, domain = match.groups()
         if protocol not in ("http", "https"):
             return
-        if not domain.endswith("moddevices.com"):
+        if domain != "moddevices.com" and not domain.endswith(".moddevices.com"):
             return
         self.set_header("Access-Control-Allow-Origin", origin)
 
