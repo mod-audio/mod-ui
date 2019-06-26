@@ -255,7 +255,7 @@ function HardwareManager(options) {
     }
 
     // Show dynamic field content based on selected type of addressing
-    this.showDynamicField = function (form, typeInputVal, currentAddressing) {
+    this.showDynamicField = function (form, typeInputVal, currentAddressing, hasCC) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
       if (typeInputVal === kMidiLearnURI) {
@@ -272,6 +272,8 @@ function HardwareManager(options) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
           form.find('.cc-select').show()
+        } else if (hasCC) {
+          form.find('.cc-in-use').show()
         } else {
           form.find('.no-cc').show()
         }
@@ -383,8 +385,6 @@ function HardwareManager(options) {
         }
         typeInput.val(typeInputVal)
 
-        self.showDynamicField(form, typeInputVal, currentAddressing)
-
         var actuators = self.availableActuators(instance, port)
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
         var i = 0
@@ -400,33 +400,37 @@ function HardwareManager(options) {
             i++
         })
 
-        form.find('.js-type').click(function () {
-          form.find('.js-type').removeClass('selected')
-          $(this).addClass('selected')
-          typeInput.val($(this).attr('data-value'))
-          self.showDynamicField(form, typeInput.val(), currentAddressing)
-        })
-
         // Add options to control chain actuators select
+        var actuator, addressings, addressedToMe
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
-        var actuator
         var ccActuators = []
         for (var uri in actuators) {
-          if (!uri.startsWith(deviceOption) && uri != kMidiLearnURI && uri.lastIndexOf(kMidiCustomPrefixURI, 0) < 0) {
-            actuator = actuators[uri]
-            ccActuators.push(actuator)
+          if (uri.startsWith(deviceOption) || uri == kMidiLearnURI || uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+            continue
+          }
+          actuator = actuators[uri]
+          addressings = self.addressingsByActuator[uri]
+          addressedToMe = currentAddressing.uri && currentAddressing.uri === actuator.uri
+          ccActuators.push(actuator)
+          if (addressings.length < actuator.max_assigns || addressedToMe) {
             $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
-            if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
+            if (addressedToMe) {
                 ccActuatorSelect.val(currentAddressing.uri)
             }
           }
         }
         if (ccActuators.length === 0) {
           ccActuatorSelect.hide()
-          if (typeInput.val() === ccOption) {
-            form.find('.no-cc').show()
-          }
         }
+
+        form.find('.js-type').click(function () {
+          form.find('.js-type').removeClass('selected')
+          $(this).addClass('selected')
+          typeInput.val($(this).attr('data-value'))
+          self.showDynamicField(form, typeInput.val(), currentAddressing, !!ccActuators.length)
+        })
+
+        self.showDynamicField(form, typeInputVal, currentAddressing, !!ccActuators.length)
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
@@ -529,7 +533,6 @@ function HardwareManager(options) {
         })
 
         form.appendTo($('body'))
-
         form.focus()
     }
 
@@ -632,7 +635,6 @@ function HardwareManager(options) {
           uri = kMidiLearnURI
         }
         var actuator = actuators[uri] || {}
-        console.log(actuator)
 
         var tempoValue = tempo.prop("checked")
         // Sync port value to bpm with virtual bpm actuator
