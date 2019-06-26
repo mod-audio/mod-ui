@@ -122,6 +122,7 @@ class HMI(object):
                 if msg.is_resp():
                     try:
                         original_msg, callback, datatype = self.queue.pop(0)
+                        logging.debug("[hmi] popped from queue: %s", original_msg)
                     except IndexError:
                         # something is wrong / not synced!!
                         logging.error("[hmi] NOT SYNCED")
@@ -152,13 +153,13 @@ class HMI(object):
 
         try:
             msg, callback, datatype = self.queue[0] # fist msg on the queue
-            logging.debug("[hmi] popped from queue: %s", msg)
-            self.sp.write(bytes(msg, 'utf-8') + b"\0")
-            logging.debug("[hmi] sending -> %s", msg)
-            self.queue_idle = False
         except IndexError:
             logging.debug("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
+        else:
+            logging.debug("[hmi] sending -> %s", msg)
+            self.sp.write(msg.encode('utf-8') + b'\0')
+            self.queue_idle = False
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
