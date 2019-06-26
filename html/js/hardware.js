@@ -40,6 +40,20 @@ function create_midi_cc_uri (channel, controller) {
     return sprintf("%sCh.%d_CC#%d", kMidiCustomPrefixURI, channel+1, controller)
 }
 
+function startsWith (value, pattern) {
+    return value.lastIndexOf(pattern) === 0;
+};
+
+function is_control_chain_uri (uri) {
+  if (startsWith(uri, deviceOption)) {
+    return false;
+  }
+  if (uri == kMidiLearnURI || startsWith(uri, kMidiCustomPrefixURI)) {
+    return false;
+  }
+  return true;
+}
+
 // Units supported for tap tempo (lowercase)
 var kTapTempoUnits = ['ms','s','hz','bpm']
 
@@ -272,6 +286,8 @@ function HardwareManager(options) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
           form.find('.cc-select').show()
+        } else if (self.hasControlChainDevice()) {
+          form.find('.cc-in-use').show()
         } else {
           form.find('.no-cc').show()
         }
@@ -302,7 +318,7 @@ function HardwareManager(options) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
           for (i = 0; i < PAGES_NB; i++) {
-            if (actuatorUri.startsWith(deviceOption)) {
+            if (startsWith(actuatorUri, deviceOption)) {
               cell = $('<td data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
               if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == i) {
                 hmiPageInput.val(currentAddressing.page)
@@ -326,7 +342,7 @@ function HardwareManager(options) {
       } else {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
-          if (actuatorUri.startsWith(deviceOption)) {
+          if (startsWith(actuatorUri, deviceOption)) {
             cell = $('<td data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
             if (currentAddressing && currentAddressing.uri == actuatorUri) {
               hmiUriInput.val(currentAddressing.uri)
@@ -375,15 +391,13 @@ function HardwareManager(options) {
         if (currentAddressing && currentAddressing.uri) {
           if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
             typeInputVal = kMidiLearnURI
-          } else if (currentAddressing.uri.startsWith(deviceOption)) {
+          } else if (startsWith(currentAddressing.uri, deviceOption)) {
             typeInputVal = deviceOption
           } else {
             typeInputVal = ccOption
           }
         }
         typeInput.val(typeInputVal)
-
-        self.showDynamicField(form, typeInputVal, currentAddressing)
 
         var actuators = self.availableActuators(instance, port)
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
@@ -400,6 +414,29 @@ function HardwareManager(options) {
             i++
         })
 
+        // Add options to control chain actuators select
+        var actuator, addressings, addressedToMe
+        var ccActuatorSelect = form.find('select[name=cc-actuator]')
+        var ccActuators = []
+        for (var uri in actuators) {
+          if (! is_control_chain_uri(uri)) {
+            continue
+          }
+          actuator = actuators[uri]
+          addressings = self.addressingsByActuator[uri]
+          addressedToMe = currentAddressing.uri && currentAddressing.uri === actuator.uri
+          ccActuators.push(actuator)
+          if (addressings.length < actuator.max_assigns || addressedToMe) {
+            $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
+            if (addressedToMe) {
+              ccActuatorSelect.val(currentAddressing.uri)
+            }
+          }
+        }
+        if (ccActuators.length === 0) {
+          ccActuatorSelect.hide()
+        }
+
         form.find('.js-type').click(function () {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
@@ -407,26 +444,7 @@ function HardwareManager(options) {
           self.showDynamicField(form, typeInput.val(), currentAddressing)
         })
 
-        // Add options to control chain actuators select
-        var ccActuatorSelect = form.find('select[name=cc-actuator]')
-        var actuator
-        var ccActuators = []
-        for (var uri in actuators) {
-          if (!uri.startsWith(deviceOption) && uri != kMidiLearnURI && uri.lastIndexOf(kMidiCustomPrefixURI, 0) < 0) {
-            actuator = actuators[uri]
-            ccActuators.push(actuator)
-            $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
-            if (currentAddressing.uri && currentAddressing.uri == actuator.uri) {
-                ccActuatorSelect.val(currentAddressing.uri)
-            }
-          }
-        }
-        if (ccActuators.length === 0) {
-          ccActuatorSelect.hide()
-          if (typeInput.val() === ccOption) {
-            form.find('.no-cc').show()
-          }
-        }
+        self.showDynamicField(form, typeInputVal, currentAddressing)
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
@@ -529,7 +547,6 @@ function HardwareManager(options) {
         })
 
         form.appendTo($('body'))
-
         form.focus()
     }
 
@@ -569,7 +586,7 @@ function HardwareManager(options) {
             var unaddressing = false
             if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI) {
                 unaddressing = true
-                if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                if (startsWith(currentAddressing.uri, kMidiCustomPrefixURI)) {
                     currentAddressing.uri = kMidiLearnURI
                 }
                 remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
@@ -579,7 +596,7 @@ function HardwareManager(options) {
             if (actuator.uri && actuator.uri != kNullAddressURI)
             {
                 var actuator_uri = actuator.uri
-                if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                if (startsWith(actuator_uri, kMidiCustomPrefixURI)) {
                     actuator_uri = kMidiLearnURI
                 }
                 // add new one, print and error if already there
@@ -632,7 +649,6 @@ function HardwareManager(options) {
           uri = kMidiLearnURI
         }
         var actuator = actuators[uri] || {}
-        console.log(actuator)
 
         var tempoValue = tempo.prop("checked")
         // Sync port value to bpm with virtual bpm actuator
@@ -765,6 +781,15 @@ function HardwareManager(options) {
     this.addActuator = function (actuator) {
         HARDWARE_PROFILE.push(actuator)
         self.addressingsByActuator[actuator.uri] = []
+    }
+
+    this.hasControlChainDevice = function (actuator) {
+        for (var i in HARDWARE_PROFILE) {
+            if (is_control_chain_uri(HARDWARE_PROFILE[i].uri)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     this.removeActuator = function (actuator_uri) {

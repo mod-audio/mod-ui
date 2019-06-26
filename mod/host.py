@@ -291,6 +291,7 @@ class Host(object):
         # Setup addressing callbacks
         self.addressings._task_addressing = self.addr_task_addressing
         self.addressings._task_unaddressing = self.addr_task_unaddressing
+        self.addressings._task_set_value = self.addr_task_set_value
         self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
         self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
@@ -589,6 +590,17 @@ class Host(object):
         print("ERROR: Invalid unaddressing requested")
         callback(False)
         return
+
+    def addr_task_set_value(self, atype, actuator, data, callback):
+        if atype == Addressings.ADDRESSING_TYPE_HMI:
+            return self.hmi.control_set(actuator, data['value'], callback)
+
+        if atype == Addressings.ADDRESSING_TYPE_CC:
+            # FIXME not supported yet, this line never gets reached
+            pass
+
+        # Everything else has nothing
+        callback(True)
 
     def addr_task_get_plugin_data(self, instance_id):
         return self.plugins[instance_id]
@@ -1737,6 +1749,8 @@ class Host(object):
     def preset_load(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         current_pedal = self.pedalboard_path
+        pluginData = self.plugins[instance_id]
+        pluginData['nextPreset'] = uri
 
         def preset_callback(state):
             if not state:
@@ -1746,8 +1760,10 @@ class Host(object):
                 print("WARNING: Pedalboard changed during preset_show request")
                 callback(False)
                 return
-
-            pluginData = self.plugins[instance_id]
+            if pluginData['nextPreset'] != uri:
+                print("WARNING: Preset changed during preset_load request")
+                callback(False)
+                return
 
             pluginData['preset'] = uri
             self.msg_callback("preset %s %s" % (instance, uri))
@@ -1768,7 +1784,7 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            self.addressings.load_current(used_actuators, (instance_id, ":presets"))
+            self.addressings.load_current(used_actuators, (instance_id, ":presets"), True)
             callback(True)
 
         def host_callback(ok):
@@ -1777,6 +1793,10 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_load request")
+                callback(False)
+                return
+            if pluginData['nextPreset'] != uri:
+                print("WARNING: Preset changed during preset_load request")
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2048,7 +2068,7 @@ class Host(object):
         if not is_hmi_snapshot:
             self.paramhmi_set('pedalboard', ':presets', idx, None)
 
-        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"))
+        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True)
         callback(True)
 
         if not is_hmi_snapshot:
@@ -2490,7 +2510,8 @@ class Host(object):
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : p['preset'],
-                "mapPresets"  : []
+                "mapPresets"  : [],
+                "nextPreset"  : "",
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -3363,7 +3384,7 @@ _:b%i
                                                             old_addressing['port'],
                                                             not_param_set=not_param_set,
                                                             hw_id=old_hw_id)
-                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
+                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, False)
             else:
                 yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                             old_addressing['instance_id'],
@@ -3759,7 +3780,7 @@ _:b%i
                 #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
 
         self.pedalboard_modified = False
-        self.addressings.load_current(used_actuators, (None, None))
+        self.addressings.load_current(used_actuators, (None, None), False)
 
     def hmi_tuner(self, status, callback):
         if status == "on":

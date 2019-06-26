@@ -52,6 +52,7 @@ class Addressings(object):
         self.init()
         self._task_addressing = None
         self._task_unaddressing = None
+        self._task_set_value = None
         self._task_get_plugin_data = None
         self._task_get_plugin_presets = None
         self._task_get_port_value = None
@@ -598,7 +599,6 @@ class Addressings(object):
         actuator_hw   = actuator_uri
         actuator_type = self.get_actuator_type(actuator_uri)
 
-
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             try:
                 actuator_hw = self.hmi_uri2hw_map[actuator_uri]
@@ -622,12 +622,12 @@ class Addressings(object):
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, not_param_set)
 
     @gen.coroutine
-    def load_current(self, actuator_uris, skippedPort):
+    def load_current(self, actuator_uris, skippedPort, updateValue):
         for actuator_uri in actuator_uris:
             actuator_type = self.get_actuator_type(actuator_uri)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort)
+                yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort, updateValue=updateValue)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 # FIXME: we need a way to change CC value, without re-addressing
@@ -686,10 +686,11 @@ class Addressings(object):
     def get_addressing_for_page(self, addrs, page):
         # Assumes is_page_assigned(addrs, page) has returned True
         return next(a for a in addrs if 'page' in a and a['page'] == page)
+
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
-    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None)):
+    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
@@ -713,7 +714,8 @@ class Addressings(object):
                     callback(True)
                     return
 
-                addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'], addressing_data['port'])
+                addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
+                                                                     addressing_data['port'])
 
         else:
             addressings_idx = addressings['idx']
@@ -738,9 +740,12 @@ class Addressings(object):
             # reload value
             addressing = addressings_addrs[addressings_idx]
             addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
-                                                                                   addressing['port'])
+                                                                                       addressing['port'])
 
-        self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
+        if updateValue:
+            self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
+        else:
+            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
 
     def hmi_load_footswitches(self, callback):
         def footswitch1_callback(ok):
