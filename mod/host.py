@@ -217,6 +217,7 @@ class Host(object):
         self.transport_bpm     = 120.0
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
+        self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.page_load_request_number = 0
         self.init_plugins_data()
@@ -1224,6 +1225,12 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff
 
+    def abort_previous_loading_progress(self):
+        p = self.abort_progress_catcher
+        self.abort_progress_catcher = {}
+        p['abort'] = True
+        return self.abort_progress_catcher
+
     def mute(self):
         disconnect_jack_ports(self.jack_hwout_prefix + "1", "system:playback_1")
         disconnect_jack_ports(self.jack_hwout_prefix + "2", "system:playback_2")
@@ -1749,6 +1756,7 @@ class Host(object):
         current_pedal = self.pedalboard_path
         pluginData = self.plugins[instance_id]
         pluginData['nextPreset'] = uri
+        abort_catcher = self.abort_previous_loading_progress()
 
         def preset_callback(state):
             if not state:
@@ -1760,6 +1768,10 @@ class Host(object):
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
+                callback(False)
+                return
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during preset_load request")
                 callback(False)
                 return
 
@@ -1795,6 +1807,10 @@ class Host(object):
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
+                callback(False)
+                return
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during preset_load request")
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2080,17 +2096,12 @@ class Host(object):
             callback(False)
             return
 
-        # Stop ourselves if another page is loaded too fast
-        self.page_load_request_number += 1
-        if self.page_load_request_number > 9000: # it is over 9000!
-            self.page_load_request_number = 0
-
         hw_ids_to_rm = []
-        page_to_load_req = self.page_load_request_number
+        abort_catcher = self.abort_previous_loading_progress()
 
         for uri, addressings in self.addressings.hmi_addressings.items():
-            if page_to_load_req != self.page_load_request_number:
-                print("WARNING: Page changed while still loading old one")
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during page_load request")
                 callback(False)
                 return
 
@@ -3623,8 +3634,11 @@ _:b%i
         self.reset(hmi_clear_callback)
 
     def get_addressed_port_info(self, hw_id):
-        actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
-        addressings = self.addressings.hmi_addressings[actuator_uri]
+        try:
+            actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
+            addressings = self.addressings.hmi_addressings[actuator_uri]
+        except KeyError:
+            return (None, None)
 
         addressings_addrs = addressings['addrs']
 
