@@ -4,7 +4,11 @@ import json
 import os
 import logging
 
-from subprocess import getoutput
+try:
+    from subprocess import getoutput
+except:
+    from commands import getoutput
+
 from tornado import ioloop
 
 from mod import TextFileFlusher, safe_json_load
@@ -117,8 +121,11 @@ class Profile(object):
             ensure_data_index_valid(data, 1)
             self.values.update(data)
         else:
-            with TextFileFlusher(self.INTERMEDIATE_PROFILE_PATH) as fh:
-                json.dump(self.values, fh, indent=4)
+            try:
+                with TextFileFlusher(self.INTERMEDIATE_PROFILE_PATH) as fh:
+                    json.dump(self.values, fh, indent=4)
+            except IOError:
+                pass
 
         fill_in_mixer_values(self.values)
         ioloop.IOLoop.instance().add_callback(self.apply_first)

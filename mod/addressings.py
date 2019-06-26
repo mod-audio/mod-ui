@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json, logging
+import json
 import os
 
 from tornado import gen
@@ -748,7 +748,7 @@ class Addressings(object):
             self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
 
     def hmi_load_footswitches(self, callback):
-        def footswitch1_callback(ok):
+        def footswitch1_callback(_):
             self.hmi_load_current("/hmi/footswitch2", callback)
 
         self.hmi_load_current("/hmi/footswitch1", footswitch1_callback)

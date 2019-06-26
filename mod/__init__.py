@@ -131,8 +131,7 @@ def symbolify(name):
 
 
 def get_hardware_descriptor():
-    mod_hw = safe_json_load(HARDWARE_DESC_FILE, dict)
-    return mod_hw
+    return safe_json_load(HARDWARE_DESC_FILE, dict)
 
 
 def get_hardware_actuators():
