@@ -2076,7 +2076,8 @@ class Host(object):
             # Else, send control_add with new data
             else:
                 next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
-                next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'], next_addressing_data['port'])
+                next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
+                                                                              next_addressing_data['port'])
                 yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
 
         if len(hw_ids_to_rm) > 0:
@@ -2084,6 +2085,7 @@ class Host(object):
 
         self.addressings.current_page = (self.addressings.current_page + 1)%self.addressings.pages_nb
         callback(True)
+
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - connections
 
@@ -3584,10 +3586,15 @@ _:b%i
     def get_addressed_port_info(self, hw_id):
         actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
         addressings = self.addressings.hmi_addressings[actuator_uri]
-        addressings_addrs = addressings['addrs']
-        addressings_idx   = addressings['idx']
 
-        addressing_data = addressings_addrs[addressings_idx]
+        addressings_addrs = addressings['addrs']
+
+        if self.addressings.pages_cb: # device supports pages
+            addressing_data = self.addressings.get_addressing_for_page(addressings_addrs,
+                                                                       self.addressings.current_page)
+        else:
+            addressing_data = addressings_addrs[addressings['idx']]
+
         instance_id = addressing_data['instance_id']
         portsymbol = addressing_data['port']
 
