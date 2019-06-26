@@ -218,6 +218,7 @@ class Host(object):
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
         self.processing_pending_flag = False
+        self.page_load_request_number = 0
         self.init_plugins_data()
 
         if APP and os.getenv("MOD_LIVE_ISO") is not None:
@@ -1490,6 +1491,7 @@ class Host(object):
 
         save_last_bank_and_pedalboard(0, "")
         self.init_plugins_data()
+        self.page_load_request_number = 0
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
@@ -2051,14 +2053,24 @@ class Host(object):
             self.msg_callback("pedal_preset %d" % idx)
 
     @gen.coroutine
-    def page_load(self, idx, callback=lambda r:None):
+    def page_load(self, idx, callback):
         if not self.addressings.pages_cb:
             print("ERROR: hmi next page not supported")
             callback(False)
             return
 
+        # Stop ourselves if another page is loaded too fast
+        self.page_load_request_number += 1
+
         hw_ids_to_rm = []
+        page_to_load_req = self.page_load_request_number
+
         for uri, addressings in self.addressings.hmi_addressings.items():
+            if page_to_load_req != self.page_load_request_number:
+                print("WARNING: Page changed while still loading old one")
+                callback(False)
+                return
+
             hw_id = self.addressings.hmi_uri2hw_map[uri]
             addrs = addressings['addrs']
 
@@ -2087,7 +2099,7 @@ class Host(object):
         if len(hw_ids_to_rm) > 0:
             yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
 
-        self.addressings.current_page = (self.addressings.current_page + 1)%self.addressings.pages_nb
+        self.addressings.current_page = idx % self.addressings.pages_nb
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
