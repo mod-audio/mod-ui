@@ -40,6 +40,16 @@ function create_midi_cc_uri (channel, controller) {
     return sprintf("%sCh.%d_CC#%d", kMidiCustomPrefixURI, channel+1, controller)
 }
 
+function is_control_chain_uri (uri) {
+  if (uri.startsWith(deviceOption)) {
+    return false;
+  }
+  if (uri == kMidiLearnURI || uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+    return false;
+  }
+  return true;
+}
+
 // Units supported for tap tempo (lowercase)
 var kTapTempoUnits = ['ms','s','hz','bpm']
 
@@ -255,7 +265,7 @@ function HardwareManager(options) {
     }
 
     // Show dynamic field content based on selected type of addressing
-    this.showDynamicField = function (form, typeInputVal, currentAddressing, hasCC) {
+    this.showDynamicField = function (form, typeInputVal, currentAddressing) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
       if (typeInputVal === kMidiLearnURI) {
@@ -272,7 +282,7 @@ function HardwareManager(options) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
           form.find('.cc-select').show()
-        } else if (hasCC) {
+        } else if (self.hasControlChainDevice()) {
           form.find('.cc-in-use').show()
         } else {
           form.find('.no-cc').show()
@@ -405,7 +415,7 @@ function HardwareManager(options) {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         var ccActuators = []
         for (var uri in actuators) {
-          if (uri.startsWith(deviceOption) || uri == kMidiLearnURI || uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+          if (! is_control_chain_uri(uri)) {
             continue
           }
           actuator = actuators[uri]
@@ -415,7 +425,7 @@ function HardwareManager(options) {
           if (addressings.length < actuator.max_assigns || addressedToMe) {
             $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
             if (addressedToMe) {
-                ccActuatorSelect.val(currentAddressing.uri)
+              ccActuatorSelect.val(currentAddressing.uri)
             }
           }
         }
@@ -427,10 +437,10 @@ function HardwareManager(options) {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
           typeInput.val($(this).attr('data-value'))
-          self.showDynamicField(form, typeInput.val(), currentAddressing, !!ccActuators.length)
+          self.showDynamicField(form, typeInput.val(), currentAddressing)
         })
 
-        self.showDynamicField(form, typeInputVal, currentAddressing, !!ccActuators.length)
+        self.showDynamicField(form, typeInputVal, currentAddressing)
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
@@ -767,6 +777,15 @@ function HardwareManager(options) {
     this.addActuator = function (actuator) {
         HARDWARE_PROFILE.push(actuator)
         self.addressingsByActuator[actuator.uri] = []
+    }
+
+    this.hasControlChainDevice = function (actuator) {
+        for (var i in HARDWARE_PROFILE) {
+            if (is_control_chain_uri(HARDWARE_PROFILE[i].uri)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     this.removeActuator = function (actuator_uri) {
