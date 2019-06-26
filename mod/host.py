@@ -1491,7 +1491,6 @@ class Host(object):
 
         save_last_bank_and_pedalboard(0, "")
         self.init_plugins_data()
-        self.page_load_request_number = 0
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
@@ -2083,6 +2082,8 @@ class Host(object):
 
         # Stop ourselves if another page is loaded too fast
         self.page_load_request_number += 1
+        if self.page_load_request_number > 9000: # it is over 9000!
+            self.page_load_request_number = 0
 
         hw_ids_to_rm = []
         page_to_load_req = self.page_load_request_number
