@@ -40,11 +40,15 @@ function create_midi_cc_uri (channel, controller) {
     return sprintf("%sCh.%d_CC#%d", kMidiCustomPrefixURI, channel+1, controller)
 }
 
+function startsWith (value, pattern) {
+    return value.lastIndexOf(pattern) === 0;
+};
+
 function is_control_chain_uri (uri) {
-  if (uri.startsWith(deviceOption)) {
+  if (startsWith(uri, deviceOption)) {
     return false;
   }
-  if (uri == kMidiLearnURI || uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+  if (uri == kMidiLearnURI || startsWith(uri, kMidiCustomPrefixURI)) {
     return false;
   }
   return true;
@@ -314,7 +318,7 @@ function HardwareManager(options) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
           for (i = 0; i < PAGES_NB; i++) {
-            if (actuatorUri.startsWith(deviceOption)) {
+            if (startsWith(actuatorUri, deviceOption)) {
               cell = $('<td data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
               if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == i) {
                 hmiPageInput.val(currentAddressing.page)
@@ -338,7 +342,7 @@ function HardwareManager(options) {
       } else {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
-          if (actuatorUri.startsWith(deviceOption)) {
+          if (startsWith(actuatorUri, deviceOption)) {
             cell = $('<td data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
             if (currentAddressing && currentAddressing.uri == actuatorUri) {
               hmiUriInput.val(currentAddressing.uri)
@@ -387,7 +391,7 @@ function HardwareManager(options) {
         if (currentAddressing && currentAddressing.uri) {
           if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
             typeInputVal = kMidiLearnURI
-          } else if (currentAddressing.uri.startsWith(deviceOption)) {
+          } else if (startsWith(currentAddressing.uri, deviceOption)) {
             typeInputVal = deviceOption
           } else {
             typeInputVal = ccOption
@@ -582,7 +586,7 @@ function HardwareManager(options) {
             var unaddressing = false
             if (currentAddressing.uri && currentAddressing.uri != kNullAddressURI) {
                 unaddressing = true
-                if (currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                if (startsWith(currentAddressing.uri, kMidiCustomPrefixURI)) {
                     currentAddressing.uri = kMidiLearnURI
                 }
                 remove_from_array(self.addressingsByActuator[currentAddressing.uri], instanceAndSymbol)
@@ -592,7 +596,7 @@ function HardwareManager(options) {
             if (actuator.uri && actuator.uri != kNullAddressURI)
             {
                 var actuator_uri = actuator.uri
-                if (actuator_uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) { // startsWith
+                if (startsWith(actuator_uri, kMidiCustomPrefixURI)) {
                     actuator_uri = kMidiLearnURI
                 }
                 // add new one, print and error if already there
