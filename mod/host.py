@@ -3612,8 +3612,11 @@ _:b%i
         self.reset(hmi_clear_callback)
 
     def get_addressed_port_info(self, hw_id):
-        actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
-        addressings = self.addressings.hmi_addressings[actuator_uri]
+        try:
+            actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
+            addressings = self.addressings.hmi_addressings[actuator_uri]
+        except KeyError:
+            return (None, None)
 
         addressings_addrs = addressings['addrs']
 
