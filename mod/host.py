@@ -33,7 +33,7 @@ from collections import OrderedDict
 from random import randint
 from shutil import rmtree
 from tornado import gen, iostream, ioloop
-import os, json, socket, time, logging, copy
+import os, json, socket, time, logging
 
 from mod import read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
@@ -173,6 +173,7 @@ class Host(object):
 
         self.hmi = hmi
         self.prefs = prefs
+        self.msg_callback = msg_callback
 
         self.addr = ("localhost", 5555)
         self.readsock = None
@@ -280,8 +281,6 @@ class Host(object):
 
         else:
             self.memtimer = None
-
-        self.msg_callback = msg_callback
 
         set_util_callbacks(self.jack_bufsize_changed,
                            self.jack_port_appeared,
@@ -484,8 +483,6 @@ class Host(object):
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
-        self.hmi.set_profile_value(Menu.BYPASS1_ID, int(left))
-        self.hmi.set_profile_value(Menu.BYPASS2_ID, int(right))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
@@ -835,7 +832,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     def setNavigateWithFootswitches(self, enabled, callback):
-        def foot2_callback(ok):
+        def foot2_callback(_):
             acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch2"]
             cfgact = BANK_CONFIG_PEDALBOARD_UP if enabled else BANK_CONFIG_NOTHING
             self.hmi.bank_config(acthw, cfgact, callback)
@@ -877,15 +874,15 @@ class Host(object):
             pedalboard = ""
             pedalboards = []
 
-        def footswitch_callback(ok):
+        def footswitch_callback(_):
             self.setNavigateWithFootswitches(True, callback)
 
-        def midi_prog_callback(ok):
+        def midi_prog_callback(_):
             logging.debug("[host] midi_prog_callback called")
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"),
                                   callback, datatype='boolean')
 
-        def initial_state_callback(ok):
+        def initial_state_callback(_):
             # TODO: not mutually exclusive.
             cb = footswitch_callback if self.profile.get_footswitch_navigation("bank") else midi_prog_callback
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
@@ -897,13 +894,13 @@ class Host(object):
             callback(True)
             return
 
-        def footswitch_addr2_callback(ok):
+        def footswitch_addr2_callback(_):
             self.addressings.hmi_load_first("/hmi/footswitch2", callback)
 
-        def footswitch_addr1_callback(ok):
+        def footswitch_addr1_callback(_):
             self.addressings.hmi_load_first("/hmi/footswitch1", footswitch_addr2_callback)
 
-        def footswitch_bank_callback(ok):
+        def footswitch_bank_callback(_):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
         # Does this take effect?
@@ -918,7 +915,7 @@ class Host(object):
             callback(True)
             return
 
-        def initialize_callback(ok):
+        def initialize_callback(_):
             self.initialize_hmi(False, callback)
 
         self.banks = list_banks()
@@ -1432,7 +1429,7 @@ class Host(object):
             callback((False, "Bundle already loaded"))
             return
 
-        def host_callback(ok):
+        def host_callback(_):
             plugins = add_bundle_to_lilv_world(bundlepath)
             callback((True, plugins))
 
@@ -1452,7 +1449,7 @@ class Host(object):
                     callback((False, "Plugin is currently in use, cannot remove"))
                     return
 
-        def host_callback(ok):
+        def host_callback(_):
             plugins = remove_bundle_from_lilv_world(bundlepath)
             callback((True, plugins))
 
@@ -1856,7 +1853,7 @@ class Host(object):
                 return
             self.add_bundle(bundlepath, add_bundle_callback)
 
-        def start(ok):
+        def start(_):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
@@ -1876,7 +1873,7 @@ class Host(object):
             callback(False)
             return
 
-        def start(ok):
+        def start(_):
             rmtree(bundlepath)
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
@@ -3309,7 +3306,8 @@ _:b%i
         # MIDI learn is not saved until a MIDI controller is moved.
         # So we need special casing for unlearn.
         if actuator_uri == kMidiUnlearnURI:
-            return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
 
@@ -3345,12 +3343,13 @@ _:b%i
                                                                                           channel, controller,
                                                                                           minimum, maximum)
 
-                        return self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
-                                                                                  portsymbol,
-                                                                                  channel,
-                                                                                  controller,
-                                                                                  minimum,
-                                                                                  maximum), callback, datatype='boolean')
+                        self.send_modified("midi_map %d %s %i %i %f %f" % (instance_id,
+                                                                           portsymbol,
+                                                                           channel,
+                                                                           controller,
+                                                                           minimum,
+                                                                           maximum), callback, datatype='boolean')
+                        return
 
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
@@ -3380,10 +3379,11 @@ _:b%i
 
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
-            return self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
-                                                                     portsymbol,
-                                                                     minimum,
-                                                                     maximum), callback, datatype='boolean')
+            self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
+                                                              portsymbol,
+                                                              minimum,
+                                                              maximum), callback, datatype='boolean')
+            return
 
         needsValueChange = False
         has_strict_bounds = True
@@ -3424,6 +3424,7 @@ _:b%i
         if needsValueChange:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
             yield gen.Task(self.hmi_parameter_set, hw_id, value)
+
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
@@ -3545,7 +3546,7 @@ _:b%i
             else:
                 print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard)
 
-        def loaded_callback(ok):
+        def loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
             # Check if there's a pending pedalboard to be loaded
@@ -3561,17 +3562,17 @@ _:b%i
                 # Update the title in HMI
                 self.hmi.send("s_pbn {0}".format(self.pedalboard_name))
 
-        def load_callback(ok):
+        def load_callback(_):
             self.bank_id = bank_id
             self.load(bundlepath)
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
                                                                                              self.profile.get_midi_prgch_channel("bank")),
                                  loaded_callback, datatype='boolean')
 
-        def footswitch_callback(ok):
+        def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
 
-        def hmi_clear_callback(ok):
+        def hmi_clear_callback(_):
             self.hmi.clear(footswitch_callback)
 
         if not self.processing_pending_flag:
@@ -3794,7 +3795,7 @@ _:b%i
     def hmi_tuner_off(self, callback):
         logging.debug("hmi tuner off")
 
-        def tuner_removed(ok):
+        def tuner_removed(_):
             if self.current_tuner_mute:
                 self.unmute()
             callback(True)

@@ -32,7 +32,7 @@ from mod.settings import (LOG,
                           PREFERENCES_JSON_FILE)
 
 if DEV_HOST:
-    from mod.development import FakeHost as Host
+    Host = FakeHost
 elif HOST_CARLA:
     from mod.host_carla import CarlaHost as Host
 else:
@@ -197,7 +197,7 @@ class Session(object):
     # A new webbrowser page has been open
     # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws, callback):
-        def ready(ok):
+        def ready(_):
             self.websockets.append(ws)
             self.host.open_connection_if_needed(ws)
             callback(True)
@@ -329,11 +329,11 @@ class Session(object):
             self.host.send_notmodified("feature_enable processing 1")
             callback(resp)
 
-        def reset_host(ok):
+        def reset_host(_):
             self.host.reset(host_callback)
 
         if self.hmi.initialized:
-            def clear_hmi(ok):
+            def clear_hmi(_):
                 self.hmi.clear(reset_host)
             self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:

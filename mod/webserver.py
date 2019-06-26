@@ -1753,11 +1753,11 @@ class RecordingPlay(JsonRequestHandler):
         raise web.HTTPError(404)
 
     @classmethod
-    def stop_callback(kls):
-        if kls.waiting_request is None:
+    def stop_callback(cls):
+        if cls.waiting_request is None:
             return
-        kls.waiting_request.write(True)
-        kls.waiting_request = None
+        cls.waiting_request.write(True)
+        cls.waiting_request = None
 
 class RecordingDownload(JsonRequestHandler):
     def get(self):
@@ -1942,7 +1942,7 @@ def signal_upgrade_check():
 
     SESSION.hmi.send("restore")
 
-def signal_recv(sig, frame=0):
+def signal_recv(sig, _=0):
     if sig == SIGUSR1:
         if os.path.exists(UPDATE_CC_FIRMWARE_FILE):
             func = signal_device_firmware_updated

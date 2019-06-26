@@ -24,8 +24,8 @@ from mod import get_hardware_actuators, get_hardware_descriptor
 from mod.protocol import Protocol, ProtocolError
 from mod.settings import LOG
 
-import serial, logging
-import time
+import serial
+import logging
 
 class Menu(object):
     # implemented
@@ -133,12 +133,13 @@ class HMI(object):
                         self.process_queue()
                 else:
                     def _callback(resp, resp_args=None):
+                        resp = 0 if resp else -1
                         if resp_args is None:
-                            self.send("resp %d" % (0 if resp else -1))
+                            self.send("resp %d" % resp)
                             logging.debug('[hmi]     sent "resp %s"', resp)
 
                         else:
-                            self.send("resp %d %s" % (0 if resp else -1, resp_args))
+                            self.send("resp %d %s" % (resp, resp_args))
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
@@ -270,6 +271,9 @@ class HMI(object):
         options = options.strip()
 
         def control_add_callback(ok):
+            if not ok:
+                callback(False)
+                return
             n_controllers = data['addrs_max']
             index = data['addrs_idx']
             self.control_set_index(hw_id, index, n_controllers, callback)

@@ -110,7 +110,7 @@ class ControlChainDeviceListener(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def process_read_queue(self, ignored=None):
+    def process_read_queue(self, _=None):
         self.socket.read_until(b"\0", self.check_read_response)
 
     @gen.coroutine

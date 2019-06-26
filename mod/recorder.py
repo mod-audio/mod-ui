@@ -49,7 +49,7 @@ class Player(object):
         self.stop_callback = stop_callback
         ioloop.IOLoop().instance().add_handler(self.proc.stdout.fileno(), self.end_callback, 16)
 
-    def end_callback(self, fileno, event):
+    def end_callback(self, fileno, _):
         self.proc.stdout.read() # just to flush memory
         if self.proc.poll() is None:
             return
