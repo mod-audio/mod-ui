@@ -114,6 +114,7 @@ class Addressings(object):
         self.cc_addressings   = dict((key, []) for key in self.cc_addressings.keys())
         self.virtual_addressings   = dict((key, []) for key in self.virtual_addressings.keys())
         self.midi_addressings = {}
+        self.current_page = 0
 
     # -----------------------------------------------------------------------------------------------------------------
 

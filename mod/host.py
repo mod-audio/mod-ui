@@ -218,6 +218,7 @@ class Host(object):
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
         self.processing_pending_flag = False
+        self.page_load_request_number = 0
         self.init_plugins_data()
 
         if APP and os.getenv("MOD_LIVE_ISO") is not None:
@@ -1490,6 +1491,7 @@ class Host(object):
 
         save_last_bank_and_pedalboard(0, "")
         self.init_plugins_data()
+        self.page_load_request_number = 0
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
@@ -2073,14 +2075,24 @@ class Host(object):
             self.msg_callback("pedal_preset %d" % idx)
 
     @gen.coroutine
-    def page_load(self, idx, callback=lambda r:None):
+    def page_load(self, idx, callback):
         if not self.addressings.pages_cb:
             print("ERROR: hmi next page not supported")
             callback(False)
             return
 
+        # Stop ourselves if another page is loaded too fast
+        self.page_load_request_number += 1
+
         hw_ids_to_rm = []
+        page_to_load_req = self.page_load_request_number
+
         for uri, addressings in self.addressings.hmi_addressings.items():
+            if page_to_load_req != self.page_load_request_number:
+                print("WARNING: Page changed while still loading old one")
+                callback(False)
+                return
+
             hw_id = self.addressings.hmi_uri2hw_map[uri]
             addrs = addressings['addrs']
 
@@ -2097,15 +2109,19 @@ class Host(object):
                     hw_ids_to_rm.append(hw_id)
             # Else, send control_add with new data
             else:
-                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
-                next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
-                                                                              next_addressing_data['port'])
-                yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
+                try:
+                    next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
+                except StopIteration:
+                    hw_ids_to_rm.append(hw_id)
+                else:
+                    next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
+                                                                                  next_addressing_data['port'])
+                    yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
 
         if len(hw_ids_to_rm) > 0:
             yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
 
-        self.addressings.current_page = (self.addressings.current_page + 1)%self.addressings.pages_nb
+        self.addressings.current_page = idx % self.addressings.pages_nb
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -3612,8 +3628,12 @@ _:b%i
         addressings_addrs = addressings['addrs']
 
         if self.addressings.pages_cb: # device supports pages
-            addressing_data = self.addressings.get_addressing_for_page(addressings_addrs,
-                                                                       self.addressings.current_page)
+            try:
+                addressing_data = self.addressings.get_addressing_for_page(addressings_addrs,
+                                                                           self.addressings.current_page)
+            except StopIteration:
+                return (None, None)
+
         else:
             addressing_data = addressings_addrs[addressings['idx']]
 
