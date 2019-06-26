@@ -205,6 +205,7 @@ class Addressings(object):
             if actuator_uri not in [actuator['uri'] for actuator in self.hw_actuators] and not is_cc:
                 continue
 
+            i = 0
             for addr in addrs:
                 instance   = addr['instance'].replace("/graph/","",1)
                 portsymbol = addr['port']
@@ -219,10 +220,18 @@ class Addressings(object):
                     print("NOTE: An incompatible addressing has been skipped, port:", instance, portsymbol)
                     continue
 
+                page = addr.get('page', None)
+                # Dealing with HMI addr from a pedalboard not supporting pages on a device supporting them
+                if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI and self.pages_cb and self.pages_nb and page is None:
+                    if i < self.pages_nb: # automatically assign the i-th assignment to page i
+                        page = i
+                    else: # cannot address more because we've reached the max nb of pages for current actuator
+                        break
+
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'), addr.get('page'))
+                                    addr.get('tempo'), addr.get('dividers'), page)
 
                 if addrdata is not None:
                     self._task_store_address_data(instance_id, portsymbol, addrdata)
@@ -234,6 +243,7 @@ class Addressings(object):
                     # Control Chain is initialized but addressing failed to load (likely due to missing hardware)
                     # Set this flag so we wait for devices later
                     retry_cc_addrs = True
+                i += 1
 
         # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
