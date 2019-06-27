@@ -3749,13 +3749,13 @@ _:b%i
                     self.snapshot_load(value, callback)
                 except Exception as e:
                     callback(False)
-                    logging.error(e)
+                    logging.exception(e)
             else:
                 try:
                     self.preset_load(instance, pluginData['mapPresets'][value], callback)
                 except Exception as e:
                     callback(False)
-                    logging.error(e)
+                    logging.exception(e)
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             # NOTE do not use try/except to send callback here, since the callback is not the last action
@@ -4294,14 +4294,14 @@ _:b%i
             self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
         except Exception as e:
             callback(False)
-            logging.error(e)
+            logging.exception(e)
 
     def hmi_page_load(self, idx, callback):
         try:
             self.page_load(idx, callback)
         except Exception as e:
             callback(False)
-            logging.error(e)
+            logging.exception(e)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
