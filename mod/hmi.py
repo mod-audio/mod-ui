@@ -17,7 +17,7 @@
 
 
 from datetime import timedelta
-from tornado.iostream import BaseIOStream
+from tornado.iostream import BaseIOStream, StreamClosedError
 from tornado import ioloop
 
 from mod import get_hardware_actuators, get_hardware_descriptor
@@ -159,7 +159,11 @@ class HMI(object):
             self.queue_idle = True
         else:
             logging.debug("[hmi] sending -> %s", msg)
-            self.sp.write(msg.encode('utf-8') + b'\0')
+            try:
+                self.sp.write(msg.encode('utf-8') + b'\0')
+            except StreamClosedError:
+                self.sp = None
+
             self.queue_idle = False
 
     def reply_protocol_error(self, error):
