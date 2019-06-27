@@ -1751,14 +1751,17 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_show request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
 
@@ -1792,14 +1795,17 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2096,6 +2102,7 @@ class Host(object):
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during page_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
 

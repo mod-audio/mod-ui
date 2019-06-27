@@ -75,6 +75,8 @@ class HMI(object):
         self.queue = []
         self.queue_idle = True
         self.initialized = False
+        self.need_flush = False
+        self.flush_io = None
         self.ioloop = ioloop.IOLoop.instance()
         hw_actuators = get_hardware_actuators()
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
@@ -143,10 +145,27 @@ class HMI(object):
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
+
+        if self.need_flush:
+            if self.flush_io is not None:
+                self.ioloop.remove_timeout(self.flush_io)
+            self.flush_io = self.ioloop.call_later(2, self.flush)
+
         try:
             self.sp.read_until(b'\0', self.checker)
         except serial.SerialException as e:
             logging.error("[hmi] error while reading %s", e)
+
+    def flush(self):
+        logging.warn("[hmi] flushing queue as workaround now")
+        self.need_flush = False
+        self.flush_io = None
+        self.sp.sp.flushInput()
+        self.sp.sp.flushOutput()
+
+        while len(self.queue) > 0:
+            msg, callback, datatype = self.queue.pop(0)
+            callback(False)
 
     def process_queue(self):
         if self.sp is None:
