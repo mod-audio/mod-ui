@@ -21,11 +21,12 @@ from tornado.iostream import BaseIOStream, StreamClosedError
 from tornado import ioloop
 
 from mod import get_hardware_actuators, get_hardware_descriptor
-from mod.protocol import Protocol, ProtocolError
+from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.settings import LOG
 
 import serial
 import logging
+import os
 
 class Menu(object):
     # implemented
@@ -68,7 +69,8 @@ class SerialIOStream(BaseIOStream):
         return r
 
 class HMI(object):
-    def __init__(self, port, baud_rate, callback):
+    def __init__(self, port, baud_rate, init_cb, reinit_cb):
+        hw_actuators = get_hardware_actuators()
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
@@ -78,9 +80,9 @@ class HMI(object):
         self.need_flush = False
         self.flush_io = None
         self.ioloop = ioloop.IOLoop.instance()
-        hw_actuators = get_hardware_actuators()
+        self.reinit_cb = reinit_cb
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
-        self.init(callback)
+        self.init(init_cb)
 
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
@@ -106,7 +108,7 @@ class HMI(object):
             if ok:
                 self.clear(clear_callback)
             else:
-                self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
+                self.ioloop.add_timeout(1, lambda:self.ping(ping_callback))
 
         self.ping(ping_callback)
         self.checker()
@@ -157,15 +159,34 @@ class HMI(object):
             logging.error("[hmi] error while reading %s", e)
 
     def flush(self):
-        logging.warn("[hmi] flushing queue as workaround now")
         self.need_flush = False
         self.flush_io = None
+
+        if len(self.queue) <= 5:
+            logging.debug("[hmi] flushing ignored")
+            return
+
+        # FUCK!
+        logging.warn("[hmi] flushing queue as workaround now: %d in queue", len(self.queue))
+        self.sp.sp.flush()
         self.sp.sp.flushInput()
         self.sp.sp.flushOutput()
+        self.sp.close()
+        self.sp = None
 
-        while len(self.queue) > 0:
+        while len(self.queue) > 1:
             msg, callback, datatype = self.queue.pop(0)
-            callback(False)
+
+            if any(msg.startswith(resp) for resp in Protocol.RESPONSES):
+                if callback is not None:
+                    callback(process_resp(None, datatype))
+            else:
+                if callback is not None:
+                    callback("-1003")
+
+        self.reinit_cb()
+
+        #os.system("touch /tmp/reset-hmi; kill -9 {}".format(os.getpid()))
 
     def process_queue(self):
         if self.sp is None:
@@ -180,7 +201,8 @@ class HMI(object):
             logging.debug("[hmi] sending -> %s", msg)
             try:
                 self.sp.write(msg.encode('utf-8') + b'\0')
-            except StreamClosedError:
+            except StreamClosedError as e:
+                logging.exception(e)
                 self.sp = None
 
             self.queue_idle = False
@@ -193,9 +215,18 @@ class HMI(object):
         if self.sp is None:
             return
 
+        if len(self.queue) > 30:
+            self.need_flush = True
+
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
+            # make an exception for control_set, calling callback right away without waiting
+            #if msg.startswith("s "):
+                #self.queue.append((msg, None, datatype))
+                #if callback is not None:
+                    #callback(True)
+            #else:
             self.queue.append((msg, callback, datatype))
-            logging.debug("[hmi] scheduling -> %s", str(msg))
+            logging.debug("[hmi] scheduling -> %s", msg)
             if self.queue_idle:
                 self.process_queue()
             return

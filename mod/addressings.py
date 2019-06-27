@@ -5,7 +5,7 @@ import json
 import os
 
 from tornado import gen
-from mod import get_hardware_actuators, safe_json_load, TextFileFlusher, get_hardware_descriptor
+from mod import safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
@@ -77,9 +77,10 @@ class Addressings(object):
 
     # initialize (clear) all addressings
     def init(self):
-        self.hw_actuators = get_hardware_actuators()
-        self.pages_nb = get_hardware_descriptor().get('pages_nb', 0)
-        self.pages_cb = get_hardware_descriptor().get('pages_cb', 0)
+        desc = get_hardware_descriptor()
+        self.hw_actuators = desc.get('actuators', [])
+        self.pages_nb = desc.get('pages_nb', 0)
+        self.pages_cb = desc.get('pages_cb', 0)
         self.current_page = 0
 
         # 'hmi_addressings' uses a structure like this:

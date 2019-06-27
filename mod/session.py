@@ -81,13 +81,13 @@ class Session(object):
         hmiOpened = False
 
         if not DEV_HMI:
-            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
+            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb, self.hmi_reinit_cb)
             hmiOpened = self.hmi.sp is not None
 
         #print("Using HMI =>", hmiOpened)
 
         if not hmiOpened:
-            self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
+            self.hmi = FakeHMI(self.hmi_initialized_cb)
             print("Using FakeHMI =>", self.hmi)
 
         self.host = Host(self.hmi, self.prefs, self.msg_callback)
@@ -133,10 +133,17 @@ class Session(object):
 
     @gen.coroutine
     def hmi_initialized_cb(self):
-        logging.debug("hmi initialized")
         self.hmi.initialized = True
         uiConnected = bool(len(self.websockets) > 0)
         yield gen.Task(self.host.initialize_hmi, uiConnected)
+
+    # This is very nasty, sorry
+    def hmi_reinit_cb(self):
+        if not os.path.exists("/usr/bin/hmi-reset"):
+            return
+        os.system("/usr/bin/hmi-reset; /usr/bin/sleep 2")
+        self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb, self.hmi_reinit_cb)
+        self.host.reconnect_hmi(self.hmi)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
