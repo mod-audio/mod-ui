@@ -35,7 +35,7 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
-from mod import read_file_contents, safe_json_load, symbolify, TextFileFlusher
+from mod import get_hardware_actuators, read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu
@@ -830,6 +830,29 @@ class Host(object):
             self.memtimer.stop()
 
         self.msg_callback("stop")
+
+    @gen.coroutine
+    def reconnect_hmi(self, hmi):
+        self.hmi = hmi
+
+        # Wait for init
+        yield gen.Task(self.wait_hmi_initialized)
+
+        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
+        master_chan_mode = self.profile.get_master_volume_channel_mode()
+        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+        self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
+                                                          quick_bypass_mode,
+                                                          int(self.current_tuner_mute),
+                                                          self.profile.get_index(),
+                                                          master_chan_mode,
+                                                          get_master_volume(master_chan_is_mode_2),
+                                                          pb_name))
+
+        actuators = [actuator['uri'] for actuator in get_hardware_actuators()]
+        self.addressings.load_current(actuators, (None, None), False)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -1773,14 +1796,17 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_show request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
 
@@ -1814,14 +1840,17 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during preset_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2118,6 +2147,7 @@ class Host(object):
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during page_load request")
+                self.hmi.need_flush = True
                 callback(False)
                 return
 
