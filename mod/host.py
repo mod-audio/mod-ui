@@ -3413,7 +3413,7 @@ _:b%i
                                                             old_addressing['port'],
                                                             not_param_set=not_param_set,
                                                             hw_id=old_hw_id)
-                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, False)
+                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
             else:
                 yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                             old_addressing['instance_id'],
