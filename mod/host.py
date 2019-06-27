@@ -959,11 +959,14 @@ class Host(object):
                     if value < 0 or value >= len(pluginData['mapPresets']):
                         return
 
-                    if instance_id == PEDALBOARD_INSTANCE_ID:
-                        value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                        yield gen.Task(self.snapshot_load, value)
-                    else:
-                        yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value])
+                    try:
+                        if instance_id == PEDALBOARD_INSTANCE_ID:
+                            value = int(pluginData['mapPresets'][value].replace("file:///",""))
+                            yield gen.Task(self.snapshot_load, value)
+                        else:
+                            yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value])
+                    except Exception as e:
+                        logging.exception(e)
 
                 else:
                     pluginData['ports'][portsymbol] = value
@@ -1066,7 +1069,10 @@ class Host(object):
                     self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
-                yield gen.Task(self.snapshot_load, program)
+                try:
+                    yield gen.Task(self.snapshot_load, program)
+                except Exception as e:
+                    logging.exception(e)
 
         elif cmd == "transport":
             msg_data = msg[len(cmd)+1:].split(" ",3)
@@ -1658,9 +1664,12 @@ class Host(object):
                     used_hw_ids.append(hw_id)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
-                yield gen.Task(self.addr_task_unaddressing, actuator_type,
-                                                            addressing['instance_id'],
-                                                            addressing['port'])
+                try:
+                    yield gen.Task(self.addr_task_unaddressing, actuator_type,
+                                                                addressing['instance_id'],
+                                                                addressing['port'])
+                except Exception as e:
+                    logging.exception(e)
 
         def host_callback(ok):
             callback(ok)
@@ -1795,6 +1804,8 @@ class Host(object):
                         used_actuators.append(addressing['actuator_uri'])
 
             self.addressings.load_current(used_actuators, (instance_id, ":presets"), True)
+
+            # callback must be last action
             callback(True)
 
         def host_callback(ok):
@@ -2053,7 +2064,10 @@ class Host(object):
 
             if data['preset'] and data['preset'] != pluginData['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
-                yield gen.Task(self.preset_load, instance, data['preset'])
+                try:
+                    yield gen.Task(self.preset_load, instance, data['preset'])
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(":presets", None)
                 if addressing is not None:
@@ -2083,11 +2097,13 @@ class Host(object):
             self.paramhmi_set('pedalboard', ':presets', idx, None)
 
         self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True)
-        callback(True)
 
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
             self.msg_callback("pedal_preset %d" % idx)
+
+        # callback must be last action
+        callback(True)
 
     @gen.coroutine
     def page_load(self, idx, callback):
@@ -2128,12 +2144,21 @@ class Host(object):
                 else:
                     next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
                                                                                   next_addressing_data['port'])
-                    yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
+
+                    try:
+                        yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
+                    except Exception as e:
+                        logging.exception(e)
 
         if len(hw_ids_to_rm) > 0:
-            yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
+            try:
+                yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
+            except Exception as e:
+                logging.exception(e)
 
         self.addressings.current_page = idx % self.addressings.pages_nb
+
+        # callback must be last action
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -3224,7 +3249,10 @@ _:b%i
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
         if sendHMI and self.hmi.initialized:
-            yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, bpb)
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, bpb)
+            except Exception as e:
+                logging.exception(e)
 
         if sendWeb:
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
@@ -3240,12 +3268,18 @@ _:b%i
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
-                yield gen.Task(self.readdress, addr, bpm)
+                try:
+                    yield gen.Task(self.readdress, addr, bpm)
+                except Exception as e:
+                    logging.exception(e)
 
         for actuator_uri in self.addressings.hmi_addressings:
             addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
             for addr in addrs:
-                yield gen.Task(self.readdress, addr, bpm)
+                try:
+                    yield gen.Task(self.readdress, addr, bpm)
+                except Exception as e:
+                    logging.exception(e)
 
         if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
@@ -3261,7 +3295,10 @@ _:b%i
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
         if sendHMI and self.hmi.initialized:
-            yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+            except Exception as e:
+                logging.exception(e)
 
         if sendWeb:
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
@@ -3289,7 +3326,10 @@ _:b%i
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
         if sendHMI and self.hmi.initialized:
-            yield gen.Task(self.hmi.set_profile_value, Menu.PLAY_STATUS_ID, int(rolling))
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.PLAY_STATUS_ID, int(rolling))
+            except Exception as e:
+                logging.exception(e)
 
         if sendWeb:
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
@@ -3406,19 +3446,22 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
-            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                old_hw_id = self.addressings.hmi_uri2hw_map[old_actuator_uri]
-                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                            old_addressing['instance_id'],
-                                                            old_addressing['port'],
-                                                            not_param_set=not_param_set,
-                                                            hw_id=old_hw_id)
-                yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
-            else:
-                yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                            old_addressing['instance_id'],
-                                                            old_addressing['port'],
-                                                            not_param_set=not_param_set)
+            try:
+                if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                    old_hw_id = self.addressings.hmi_uri2hw_map[old_actuator_uri]
+                    yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                                old_addressing['instance_id'],
+                                                                old_addressing['port'],
+                                                                not_param_set=not_param_set,
+                                                                hw_id=old_hw_id)
+                    yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
+                else:
+                    yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                                old_addressing['instance_id'],
+                                                                old_addressing['port'],
+                                                                not_param_set=not_param_set)
+            except Exception as e:
+                logging.exception(e)
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -3475,7 +3518,10 @@ _:b%i
 
         if needsValueChange:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-            yield gen.Task(self.hmi_parameter_set, hw_id, value)
+            try:
+                yield gen.Task(self.hmi_parameter_set, hw_id, value)
+            except Exception as e:
+                logging.exception(e)
 
         pluginData['addressings'][portsymbol] = addressing
 
@@ -3699,11 +3745,20 @@ _:b%i
                 return
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                self.snapshot_load(value, callback)
+                try:
+                    self.snapshot_load(value, callback)
+                except Exception as e:
+                    callback(False)
+                    logging.error(e)
             else:
-                self.preset_load(instance, pluginData['mapPresets'][value], callback)
+                try:
+                    self.preset_load(instance, pluginData['mapPresets'][value], callback)
+                except Exception as e:
+                    callback(False)
+                    logging.error(e)
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
+            # NOTE do not use try/except to send callback here, since the callback is not the last action
             if portsymbol == ":bpb":
                 self.set_transport_bpb(value, True, False, True, callback)
             elif portsymbol == ":bpm":
@@ -3888,7 +3943,10 @@ _:b%i
             return
 
         freq, note, cents = find_freqnotecents(value)
-        yield gen.Task(self.hmi.tuner, freq, note, cents)
+        try:
+            yield gen.Task(self.hmi.tuner, freq, note, cents)
+        except Exception as e:
+            logging.exception(e)
 
     def hmi_get_truebypass_value(self, value, callback):
         """Query the True Bypass setting of the given channel."""
@@ -4232,10 +4290,18 @@ _:b%i
 
     def hmi_snapshot_load(self, idx, callback):
         # Use negative numbers for HMI snapshots
-        self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
+        try:
+            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
+        except Exception as e:
+            callback(False)
+            logging.error(e)
 
     def hmi_page_load(self, idx, callback):
-        self.page_load(idx, callback)
+        try:
+            self.page_load(idx, callback)
+        except Exception as e:
+            callback(False)
+            logging.error(e)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
@@ -4413,8 +4479,11 @@ _:b%i
 
     @gen.coroutine
     def profile_apply(self, values, isIntermediate):
-        yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, True, True)
-        yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, True, True)
+        try:
+            yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, True, True)
+            yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, True, True)
+        except Exception as e:
+            logging.exception(e)
 
         if values['transportSource'] == Profile.TRANSPORT_SOURCE_INTERNAL:
             self.transport_sync = "none"
@@ -4446,7 +4515,10 @@ _:b%i
             #'inputMode' (exp, cv)
             #'outputMode' (hp, cv)
 
-        yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
+        try:
+            yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
+        except Exception as e:
+            logging.exception(e)
 
         self.profile_applied = True
 
