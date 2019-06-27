@@ -467,7 +467,7 @@ class Addressings(object):
                 unit = "/4"
 
             elif portsymbol == ":bpm":
-                pprops = ["tapTempo"]
+                pprops = ["integer", "tapTempo"]
                 unit = "BPM"
 
             elif portsymbol == ":rolling":
@@ -517,6 +517,7 @@ class Addressings(object):
 
         # -------------------------------------------------------------------------------------------------------------
         if actuator_type == self.ADDRESSING_TYPE_HMI:
+
             if portsymbol == ":bypass":
                 hmitype = HMI_ADDRESSING_TYPE_BYPASS
 
