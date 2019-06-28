@@ -141,7 +141,7 @@ class Session(object):
     def hmi_reinit_cb(self):
         if not os.path.exists("/usr/bin/hmi-reset"):
             return
-        os.system("/usr/bin/hmi-reset; /usr/bin/sleep 2")
+        os.system("/usr/bin/hmi-reset; /usr/bin/sleep 3")
         self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb, self.hmi_reinit_cb)
         self.host.reconnect_hmi(self.hmi)
 
