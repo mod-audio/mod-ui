@@ -77,7 +77,7 @@ class HMI(object):
         self.queue = []
         self.queue_idle = True
         self.initialized = False
-        self.need_flush = False
+        self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
         self.ioloop = ioloop.IOLoop.instance()
         self.reinit_cb = reinit_cb
@@ -148,7 +148,7 @@ class HMI(object):
 
                     msg.run_cmd(_callback)
 
-        if self.need_flush:
+        if self.need_flush != 0:
             if self.flush_io is not None:
                 self.ioloop.remove_timeout(self.flush_io)
             self.flush_io = self.ioloop.call_later(2, self.flush)
@@ -159,10 +159,11 @@ class HMI(object):
             logging.error("[hmi] error while reading %s", e)
 
     def flush(self):
-        self.need_flush = False
+        prev_queue = self.need_flush
+        self.need_flush = 0
         self.flush_io = None
 
-        if len(self.queue) <= 5:
+        if len(self.queue) < max(5, prev_queue):
             logging.debug("[hmi] flushing ignored")
             return
 
@@ -216,7 +217,7 @@ class HMI(object):
             return
 
         if len(self.queue) > 30:
-            self.need_flush = True
+            self.need_flush = len(self.queue)
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             # make an exception for control_set, calling callback right away without waiting
