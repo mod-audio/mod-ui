@@ -24,9 +24,9 @@ from mod import get_hardware_actuators, get_hardware_descriptor
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.settings import LOG
 
-import serial
 import logging
-import os
+import serial
+import time
 
 class Menu(object):
     # implemented
@@ -79,6 +79,7 @@ class HMI(object):
         self.initialized = False
         self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
+        self.last_write_time = 0
         self.ioloop = ioloop.IOLoop.instance()
         self.reinit_cb = reinit_cb
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
@@ -115,6 +116,7 @@ class HMI(object):
 
     def checker(self, data=None):
         if data is not None:
+            self.last_write_time = 0
             logging.debug('[hmi] received <- %s', data)
             try:
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
@@ -158,12 +160,12 @@ class HMI(object):
         except serial.SerialException as e:
             logging.error("[hmi] error while reading %s", e)
 
-    def flush(self):
+    def flush(self, forced = False):
         prev_queue = self.need_flush
         self.need_flush = 0
         self.flush_io = None
 
-        if len(self.queue) < max(5, prev_queue):
+        if len(self.queue) < max(5, prev_queue) and not forced:
             logging.debug("[hmi] flushing ignored")
             return
 
@@ -198,6 +200,7 @@ class HMI(object):
         except IndexError:
             logging.debug("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
+            self.last_write_time = 0
         else:
             logging.debug("[hmi] sending -> %s", msg)
             try:
@@ -207,6 +210,7 @@ class HMI(object):
                 self.sp = None
 
             self.queue_idle = False
+            self.last_write_time = time.time()
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
@@ -218,6 +222,12 @@ class HMI(object):
 
         if len(self.queue) > 30:
             self.need_flush = len(self.queue)
+
+        elif self.last_write_time != 0 and time.time() - self.last_write_time > 5:
+            logging.warn("[hmi] no response for 5s, giving up")
+            if self.flush_io is not None:
+                self.ioloop.remove_timeout(self.flush_io)
+            self.flush(True)
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             # make an exception for control_set, calling callback right away without waiting
