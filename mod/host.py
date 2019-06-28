@@ -35,7 +35,7 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
-from mod import get_hardware_actuators, read_file_contents, safe_json_load, symbolify, TextFileFlusher
+from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu
@@ -188,6 +188,7 @@ class Host(object):
         self.mapper = InstanceIdMapper()
         self.profile = Profile(self.profile_apply)
         self.banks = list_banks()
+        self.descriptor = get_hardware_descriptor()
 
         self.current_tuner_port = 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", "false", str) == "true"
@@ -851,7 +852,7 @@ class Host(object):
                                                           get_master_volume(master_chan_is_mode_2),
                                                           pb_name))
 
-        actuators = [actuator['uri'] for actuator in get_hardware_actuators()]
+        actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.load_current(actuators, (None, None), False)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -3125,13 +3126,19 @@ _:b%i
 %s%s%s
 <>
     doap:name "%s" ;
+    pedal:unitName "%s" ;
+    pedal:unitModel "%s" ;
     pedal:width %i ;
     pedal:height %i ;
     pedal:addressings <addressings.json> ;
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
     ingen:polyphony 1 ;
-""" % (arcs, blocks, ports, title.replace('"','\\"'), self.pedalboard_size[0], self.pedalboard_size[1])
+""" % (arcs, blocks, ports,
+       title.replace('"','\\"'),
+       self.descriptor.get('name', 'Unknown').replace('"','\\"'),
+       self.descriptor.get('model', 'Unknown').replace('"','\\"'),
+       self.pedalboard_size[0], self.pedalboard_size[1])
 
         # Arcs (connections)
         if len(self.connections) > 0:
