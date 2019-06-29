@@ -2280,7 +2280,23 @@ class Host(object):
     # Host stuff - load & save
 
     def load(self, bundlepath, isDefault=False):
-        pb = get_pedalboard_info(bundlepath)
+        try:
+            pb = get_pedalboard_info(bundlepath)
+        except:
+            self.bank_id = 0
+            try:
+                pb = get_pedalboard_info(DEFAULT_PEDALBOARD)
+            except:
+                pb = {
+                    'width': 0,
+                    'height': 0,
+                    'midi_legacy_mode': False,
+                    'connections': [],
+                    'plugins': [],
+                    'timeInfo': {
+                        'available': False,
+                    },
+                }
 
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
