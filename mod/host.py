@@ -853,6 +853,7 @@ class Host(object):
                                                           pb_name))
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
+        self.addressings.current_page = 0
         self.addressings.load_current(actuators, (None, None), False)
 
     # -----------------------------------------------------------------------------------------------------------------
