@@ -1532,9 +1532,9 @@ class Host(object):
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
-        if (instance == 'pedalboard'):
+        if instance == 'pedalboard':
             test = '/' + instance
-        elif (instance.startswith('/graph')):
+        elif instance.startswith('/graph'):
             test = instance
         else:
             test =  '/graph/' + instance
@@ -1555,11 +1555,23 @@ class Host(object):
             return
 
         actuator_uri = current_addressing['actuator_uri']
-        actuator_type = self.addressings.get_actuator_type(actuator_uri)
-        if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-            addressings = self.addressings.hmi_addressings[actuator_uri]
-            addressings_addrs = addressings['addrs']
+        if self.addressings.get_actuator_type(actuator_uri) != Addressings.ADDRESSING_TYPE_HMI:
+            if callback is not None:
+                callback(True)
+            return
 
+        addressings = self.addressings.hmi_addressings[actuator_uri]
+        addressings_addrs = addressings['addrs']
+
+        if self.addressings.pages_cb:
+            if current_addressing.get('page', None) == self.addressings.current_page:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                self.hmi.control_set(hw_id, float(value), callback)
+
+            elif callback is not None:
+                callback(True)
+
+        else:
             current_index = addressings['idx']
             current_port_index = addressings_addrs.index(current_addressing)
 
@@ -1567,14 +1579,9 @@ class Host(object):
             if current_index == current_port_index:
                 hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
                 self.hmi.control_set(hw_id, float(value), callback)
-            else:
-                if callback is not None:
-                    callback(True)
-                return
-        else:
-            if callback is not None:
+
+            elif callback is not None:
                 callback(True)
-            return
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
