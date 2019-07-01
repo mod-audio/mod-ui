@@ -145,17 +145,31 @@ def read_file_contents(fh, fallback):
     return fh.read().strip() or fallback
 
 
+class DummyFile(object):
+    def write(self, _):
+        return
+    def flush(self):
+        return
+    def close(self):
+        return
+
+
 class TextFileFlusher(object):
     def __init__(self, filename):
         self.filename = filename
         self.filehandle = None
 
     def __enter__(self):
-        self.filehandle = open(self.filename+".tmp", 'w', 1)
+        try:
+            self.filehandle = open(self.filename+".tmp", 'w', 1)
+        except OSError:
+            print("ERROR: failed to open", self.filename)
+            self.filehandle = DummyFile()
+
         return self.filehandle
 
     def __exit__(self, typ, val, tb):
-        if self.filehandle is None:
+        if self.filehandle is None or isinstance(self.filehandle, DummyFile):
             return
         self.filehandle.flush()
         os.fsync(self.filehandle)
