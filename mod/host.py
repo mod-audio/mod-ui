@@ -1088,12 +1088,12 @@ class Host(object):
                     bundlepath = pedalboards[program]['bundle']
                     self.send_notmodified("feature_enable processing 0")
 
-                    def load_callback(ok):
+                    def load_callback(_):
                         self.bank_id = bank_id
                         self.load(bundlepath)
                         self.send_notmodified("feature_enable processing 1")
 
-                    def hmi_clear_callback(ok):
+                    def hmi_clear_callback(_):
                         self.hmi.clear(load_callback)
 
                     self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
@@ -1709,7 +1709,6 @@ class Host(object):
                     logging.exception(e)
 
         def host_callback(ok):
-            callback(ok)
             removed_connections = []
             for ports in self.connections:
                 if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
@@ -1719,11 +1718,12 @@ class Host(object):
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
             self.msg_callback("remove %s" % (instance))
+            callback(ok)
 
-        def hmi_callback(ok):
+        def hmi_callback(_):
             self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
-        def hmi_control_rm_callback(ok):
+        def hmi_control_rm_callback(_):
             for actuator_uri in used_hmi_actuators:
                 self.addressings.hmi_load_current(actuator_uri, hmi_callback)
 
