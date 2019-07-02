@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import os
 
 from tornado import gen
@@ -251,7 +252,10 @@ class Addressings(object):
         # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
             if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
-                print("loading for", actuator_uri)
+                try:
+                    yield gen.Task(self.hmi_load_first, actuator_uri)
+                except Exception as e:
+                    logging.exception(e)
                 yield gen.Task(self.hmi_load_first, actuator_uri)
             elif self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and cc_initialized:
                 self.cc_load_all(actuator_uri)
@@ -282,7 +286,10 @@ class Addressings(object):
             # Control Chain was not initialized yet by this point, wait for it
             # 'wait_initialized' will time-out in 10s if nothing happens
             print("NOTE: Waiting for Control Chain to initialize")
-            yield gen.Task(self.cchain.wait_initialized)
+            try:
+                yield gen.Task(self.cchain.wait_initialized)
+            except Exception as e:
+                logging.exception(e)
 
         self.waiting_for_cc = False
 
@@ -629,7 +636,10 @@ class Addressings(object):
             actuator_type = self.get_actuator_type(actuator_uri)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort, updateValue=updateValue)
+                try:
+                    yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort, updateValue=updateValue)
+                except Exception as e:
+                    logging.exception(e)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 # FIXME: we need a way to change CC value, without re-addressing
@@ -650,8 +660,11 @@ class Addressings(object):
                         'unit'       : addressing['unit'],
                         'options'    : addressing['options'],
                     }
-                    yield gen.Task(self._task_unaddressing, self.ADDRESSING_TYPE_CC, data['instance_id'], data['port'])
-                    yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
+                    try:
+                        yield gen.Task(self._task_unaddressing, self.ADDRESSING_TYPE_CC, data['instance_id'], data['port'])
+                        yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
+                    except Exception as e:
+                        logging.exception(e)
 
     # NOTE: make sure to call hmi_load_current() afterwards if removing HMI addressings
     def remove(self, addressing_data):
@@ -836,7 +849,10 @@ class Addressings(object):
                 'unit'       : addressing['unit'],
                 'options'    : addressing['options'],
             }
-            yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
+            try:
+                yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
+            except Exception as e:
+                logging.exception(e)
 
     def wait_for_cc_if_needed(self, callback):
         if not self.waiting_for_cc:
@@ -862,7 +878,10 @@ class Addressings(object):
                     'midichannel': addressing['midichannel'],
                     'midicontrol': addressing['midicontrol'],
                 }
-                yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_MIDI, actuator_uri, data)
+                try:
+                    yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_MIDI, actuator_uri, data)
+                except Exception as e:
+                    logging.exception(e)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Utilities
