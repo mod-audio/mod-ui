@@ -133,7 +133,7 @@ class Session(object):
 
     @gen.coroutine
     def hmi_initialized_cb(self):
-        self.hmi.initialized = True
+        self.hmi.initialized = not self.hmi.isFake()
         uiConnected = bool(len(self.websockets) > 0)
         yield gen.Task(self.host.initialize_hmi, uiConnected)
 
