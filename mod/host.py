@@ -669,16 +669,21 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
+    def ping_hmi(self):
+        ioloop.IOLoop.instance().call_later(2, self.ping_hmi)
+        self.hmi.ping(None)
+
     def wait_hmi_initialized(self, callback):
-        if self.hmi.initialized and self.profile_applied:
+        if (self.hmi.initialized or self.hmi.isFake()) and self.profile_applied:
             print("HMI initialized right away")
             callback(True)
             return
 
         def retry():
-            if (self.hmi.initialized and self.profile_applied) or self._attemptNumber >= 20:
+            if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
+                ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
