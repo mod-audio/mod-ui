@@ -2164,8 +2164,6 @@ class Host(object):
             callback(False)
             return
 
-        hw_ids_to_rm = []
-
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
@@ -2181,30 +2179,22 @@ class Host(object):
                 continue
 
             page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx)
+
             # Nothing assigned to current actuator on page to load
             if not page_to_load_assigned:
-                # Send control_rm if current actuator was addressed on current page
-                current_page_assigned = self.addressings.is_page_assigned(addrs, self.addressings.current_page)
-                if current_page_assigned:
-                    hw_ids_to_rm.append(hw_id)
+                continue
+
             # Else, send control_add with new data
-            else:
-                try:
-                    next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
-                except StopIteration:
-                    hw_ids_to_rm.append(hw_id)
-                else:
-                    next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
-                                                                                  next_addressing_data['port'])
-
-                    try:
-                        yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
-                    except Exception as e:
-                        logging.exception(e)
-
-        if len(hw_ids_to_rm) > 0:
             try:
-                yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
+                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
+            except StopIteration:
+                continue
+
+            next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
+                                                                          next_addressing_data['port'])
+
+            try:
+                yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
             except Exception as e:
                 logging.exception(e)
 
