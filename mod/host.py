@@ -1723,9 +1723,14 @@ class Host(object):
         def hmi_callback(_):
             self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
+        @gen.coroutine
         def hmi_control_rm_callback(_):
             for actuator_uri in used_hmi_actuators:
-                self.addressings.hmi_load_current(actuator_uri, hmi_callback)
+                try:
+                    yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
+                except Exception as e:
+                    logging.exception(e)
+            hmi_callback(True)
 
         if self.hmi.initialized and len(used_hw_ids) > 0:
             # Remove active addressed port from HMI
