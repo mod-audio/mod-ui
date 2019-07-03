@@ -907,20 +907,24 @@ class Host(object):
             pedalboard = ""
             pedalboards = []
 
-        def footswitch_callback(_):
-            self.setNavigateWithFootswitches(True, callback)
-
-        def midi_prog_callback(_):
-            logging.debug("[host] midi_prog_callback called")
+        def cb_migi_prgch(_):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"),
                                   callback, datatype='boolean')
 
-        def initial_state_callback(_):
-            # TODO: not mutually exclusive.
-            cb = footswitch_callback if self.profile.get_footswitch_navigation("bank") else midi_prog_callback
+        def cb_footswitches(_):
+            self.setNavigateWithFootswitches(True, cb_migi_prgch)
+
+        def cb_set_initial_state(_):
+            if self.profile.get_footswitch_navigation("bank") and not self.addressings.pages_cb:
+                cb = cb_footswitches 
+            else:
+                cb = cb_migi_prgch
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
-        self.setNavigateWithFootswitches(False, initial_state_callback)
+        if self.hmi.initialized:
+            self.setNavigateWithFootswitches(False, cb_set_initial_state)
+        else:
+            cb_migi_prgch(True)
 
     def start_session(self, callback):
         # Does this take effect?
