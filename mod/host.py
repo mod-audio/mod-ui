@@ -730,8 +730,8 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.get_midi_prgch_channel("pedalboard")))
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.get_midi_prgch_channel("snapshot")))
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"))
+        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % self.profile.get_midi_prgch_channel("snapshot"))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -844,6 +844,11 @@ class Host(object):
 
         # Wait for init
         yield gen.Task(self.wait_hmi_initialized)
+
+        if not self.hmi.initialized:
+            return
+
+        self.profile.apply_first()
 
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
@@ -1802,17 +1807,14 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_show request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
-                self.hmi.need_flush = True
                 callback(False)
                 return
 
@@ -1846,17 +1848,14 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_load request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
-                self.hmi.need_flush = True
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2078,7 +2077,6 @@ class Host(object):
         for instance, data in snapshot['data'].items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during snapshot_load request, caller:", abort_catcher['caller'])
-                self.hmi.need_flush = True
                 callback(False)
                 return
 
@@ -2144,7 +2142,6 @@ class Host(object):
                     logging.exception(e)
 
         if abort_catcher.get('abort', False):
-            self.hmi.need_flush = True
             callback(False)
             return
 
@@ -2173,7 +2170,6 @@ class Host(object):
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
-                self.hmi.need_flush = True
                 callback(False)
                 return
 
@@ -3734,7 +3730,7 @@ _:b%i
             self.bank_id = bank_id
             self.load(bundlepath)
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             self.profile.get_midi_prgch_channel("bank")),
+                                                                                             self.profile.get_midi_prgch_channel("pedalboard")),
                                  loaded_callback, datatype='boolean')
 
         def footswitch_callback(_):
@@ -3890,13 +3886,25 @@ _:b%i
 
     def hmi_reset_current_pedalboard(self, callback):
         logging.debug("hmi reset current pedalboard")
+        try:
+            yield gen.Task(self.hmi_reset_current_pedalboard_real)
+        except Exception as e:
+            callback(False)
+            logging.exception(e)
+
+    @gen.coroutine
+    def hmi_reset_current_pedalboard_real(self, callback):
         abort_catcher = self.abort_previous_loading_progress("hmi_reset_current_pedalboard")
         pb_values = get_pedalboard_plugin_values(self.pedalboard_path)
-        callback(True)
 
         used_actuators = []
 
         for p in pb_values:
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during reset_current_pedalboard request, caller:", abort_catcher['caller'])
+                callback(False)
+                return
+
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
             pluginData  = self.plugins[instance_id]
@@ -3913,13 +3921,19 @@ _:b%i
 
             # if bypassed, do it now
             if diffBypass and bypassed:
-                self.bypass(instance, True, None)
                 #self.msg_callback("param_set %s :bypass 1.0" % (instance,))
+                try:
+                    yield gen.Task(self.bypass, instance, True)
+                except Exception as e:
+                    logging.exception(e)
 
             if p['preset'] and pluginData['preset'] != p['preset']:
                 pluginData['preset'] = p['preset']
-                self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
                 #self.msg_callback("preset %s %s" % (instance, p['preset']))
+                try:
+                    yield gen.Task(self.send_notmodified, "preset_load %d %s" % (instance_id, p['preset']))
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(":presets", None)
                 if addressing is not None:
@@ -3935,8 +3949,11 @@ _:b%i
                     continue
 
                 pluginData['ports'][symbol] = value
-                self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
                 #self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                try:
+                    yield gen.Task(self.send_notmodified, "param_set %d %s %f" % (instance_id, symbol, value))
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
@@ -3946,11 +3963,15 @@ _:b%i
 
             # if not bypassed (enabled), do it at the end
             if diffBypass and not bypassed:
-                self.bypass(instance, False, None)
                 #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
+                try:
+                    yield gen.Task(self.bypass, instance, False)
+                except Exception as e:
+                    logging.exception(e)
 
         self.pedalboard_modified = False
         self.addressings.load_current(used_actuators, (None, None), False, abort_catcher)
+        callback(True)
 
     def hmi_tuner(self, status, callback):
         if status == "on":
