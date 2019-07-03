@@ -860,7 +860,7 @@ class Host(object):
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
-        self.addressings.load_current(actuators, (None, None), False)
+        self.addressings.load_current(actuators, (None, None), False, abort_catcher)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -986,6 +986,7 @@ class Host(object):
 
                 elif portsymbol == ":presets":
                     print("presets changed by backend", value)
+                    abort_catcher = self.abort_previous_loading_progress("process_read_message_body")
                     value = int(value)
                     if value < 0 or value >= len(pluginData['mapPresets']):
                         return
@@ -993,9 +994,9 @@ class Host(object):
                     try:
                         if instance_id == PEDALBOARD_INSTANCE_ID:
                             value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                            yield gen.Task(self.snapshot_load, value)
+                            yield gen.Task(self.snapshot_load, value, abort_catcher)
                         else:
-                            yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value])
+                            yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value], abort_catcher)
                     except Exception as e:
                         logging.exception(e)
 
@@ -1100,8 +1101,9 @@ class Host(object):
                     self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
+                abort_catcher = self.abort_previous_loading_progress("midi_program_change")
                 try:
-                    yield gen.Task(self.snapshot_load, program)
+                    yield gen.Task(self.snapshot_load, program, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -1546,7 +1548,7 @@ class Host(object):
         else:
             test =  '/graph/' + instance
         instance_id = self.mapper.get_id_without_creating(test)
-        plugin_data  = self.plugins.get(instance_id, None)
+        plugin_data = self.plugins.get(instance_id, None)
 
         if plugin_data is None:
             print("ERROR: Trying to set param for non-existing plugin instance %i: '%s'" % (instance_id, instance))
@@ -1782,12 +1784,11 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
 
-    def preset_load(self, instance, uri, callback):
+    def preset_load(self, instance, uri, abort_catcher, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         current_pedal = self.pedalboard_path
         pluginData = self.plugins[instance_id]
         pluginData['nextPreset'] = uri
-        abort_catcher = self.abort_previous_loading_progress("preset_load")
 
         def preset_callback(state):
             if not state:
@@ -1828,7 +1829,7 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            self.addressings.load_current(used_actuators, (instance_id, ":presets"), True)
+            self.addressings.load_current(used_actuators, (instance_id, ":presets"), True, abort_catcher)
 
             # callback must be last action
             callback(True)
@@ -2046,7 +2047,7 @@ class Host(object):
         return True
 
     @gen.coroutine
-    def snapshot_load(self, idx, callback=lambda r:None):
+    def snapshot_load(self, idx, abort_catcher, callback=lambda r:None):
         if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
             snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
             is_hmi_snapshot = True
@@ -2069,6 +2070,12 @@ class Host(object):
         used_actuators = []
 
         for instance, data in snapshot['data'].items():
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during snapshot_load request, caller:", abort_catcher['caller'])
+                self.hmi.need_flush = True
+                callback(False)
+                return
+
             instance = "/graph/%s" % instance
 
             if instance in self.plugins_removed:
@@ -2088,12 +2095,15 @@ class Host(object):
             # if bypassed, do it now
             if diffBypass and data['bypassed']:
                 self.msg_callback("param_set %s :bypass 1.0" % (instance,))
-                self.bypass(instance, True, None)
+                try:
+                    yield gen.Task(self.bypass, instance, True)
+                except Exception as e:
+                    logging.exception(e)
 
             if data['preset'] and data['preset'] != pluginData['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
                 try:
-                    yield gen.Task(self.preset_load, instance, data['preset'])
+                    yield gen.Task(self.preset_load, instance, data['preset'], abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -2108,7 +2118,10 @@ class Host(object):
                     continue
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
-                self.param_set("%s/%s" % (instance, symbol), value, None)
+                try:
+                    yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
@@ -2119,12 +2132,23 @@ class Host(object):
             # if not bypassed (enabled), do it at the end
             if diffBypass and not data['bypassed']:
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
-                self.bypass(instance, False, None)
+                try:
+                    yield gen.Task(self.bypass, instance, False)
+                except Exception as e:
+                    logging.exception(e)
+
+        if abort_catcher.get('abort', False):
+            self.hmi.need_flush = True
+            callback(False)
+            return
 
         if not is_hmi_snapshot:
-            self.paramhmi_set('pedalboard', ':presets', idx, None)
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ':presets', idx)
+            except Exception as e:
+                logging.exception(e)
 
-        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True)
+        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True, abort_catcher)
 
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
@@ -2134,14 +2158,13 @@ class Host(object):
         callback(True)
 
     @gen.coroutine
-    def page_load(self, idx, callback):
+    def page_load(self, idx, abort_catcher, callback):
         if not self.addressings.pages_cb:
             print("ERROR: hmi next page not supported")
             callback(False)
             return
 
         hw_ids_to_rm = []
-        abort_catcher = self.abort_previous_loading_progress("page_load")
 
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
@@ -3762,6 +3785,7 @@ _:b%i
     # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+        abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
 
@@ -3797,13 +3821,13 @@ _:b%i
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 try:
-                    self.snapshot_load(value, callback)
+                    self.snapshot_load(value, abort_catcher, callback)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
             else:
                 try:
-                    self.preset_load(instance, pluginData['mapPresets'][value], callback)
+                    self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -3850,7 +3874,7 @@ _:b%i
                     steps = port_addressing['steps']
                     tempo = port_addressing['tempo']
                     dividers = port_addressing['dividers']
-                    page = port_addressing.get('page', None)
+                    # FIXME remove callback from here
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, True)
 
             pluginData['ports'][portsymbol] = value
@@ -3870,6 +3894,7 @@ _:b%i
 
     def hmi_reset_current_pedalboard(self, callback):
         logging.debug("hmi reset current pedalboard")
+        abort_catcher = self.abort_previous_loading_progress("hmi_reset_current_pedalboard")
         pb_values = get_pedalboard_plugin_values(self.pedalboard_path)
         callback(True)
 
@@ -3929,7 +3954,7 @@ _:b%i
                 #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
 
         self.pedalboard_modified = False
-        self.addressings.load_current(used_actuators, (None, None), False)
+        self.addressings.load_current(used_actuators, (None, None), False, abort_catcher)
 
     def hmi_tuner(self, status, callback):
         if status == "on":
@@ -4340,16 +4365,18 @@ _:b%i
         callback(True)
 
     def hmi_snapshot_load(self, idx, callback):
+        abort_catcher = self.abort_previous_loading_progress("hmi_snapshot_load")
         # Use negative numbers for HMI snapshots
         try:
-            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
+            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), abort_catcher, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
 
     def hmi_page_load(self, idx, callback):
+        abort_catcher = self.abort_previous_loading_progress("hmi_page_load")
         try:
-            self.page_load(idx, callback)
+            self.page_load(idx, abort_catcher, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)

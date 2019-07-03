@@ -631,8 +631,12 @@ class Addressings(object):
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, not_param_set)
 
     @gen.coroutine
-    def load_current(self, actuator_uris, skippedPort, updateValue):
+    def load_current(self, actuator_uris, skippedPort, updateValue, abort_catcher):
         for actuator_uri in actuator_uris:
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during load_current request, caller:", abort_catcher['caller'])
+                return
+
             actuator_type = self.get_actuator_type(actuator_uri)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
