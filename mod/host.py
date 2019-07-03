@@ -923,6 +923,12 @@ class Host(object):
         self.setNavigateWithFootswitches(False, initial_state_callback)
 
     def start_session(self, callback):
+        # Does this take effect?
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
+
+        self.banks = []
+        self.allpedalboards = []
+
         if not self.hmi.initialized:
             callback(True)
             return
@@ -936,14 +942,12 @@ class Host(object):
         def footswitch_bank_callback(_):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        # Does this take effect?
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
-
-        self.banks = []
-        self.allpedalboards = []
         self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
+        self.banks = list_banks()
+        self.allpedalboards = get_all_good_pedalboards()
+
         if not self.hmi.initialized:
             callback(True)
             return
@@ -951,8 +955,6 @@ class Host(object):
         def initialize_callback(_):
             self.initialize_hmi(False, callback)
 
-        self.banks = list_banks()
-        self.allpedalboards = get_all_good_pedalboards()
         self.hmi.ui_dis(initialize_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
