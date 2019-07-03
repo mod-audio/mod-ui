@@ -1088,7 +1088,7 @@ class Host(object):
         elif cmd == "midi_program_change":
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             program  = int(msg_data[0])
-            channel  = int(msg_data[1])
+            channel  = int(msg_data[1])+1
 
             if channel == self.profile.get_midi_prgch_channel("pedalboard"):
                 bank_id = self.bank_id
