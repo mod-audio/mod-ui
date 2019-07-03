@@ -839,6 +839,7 @@ class Host(object):
 
     @gen.coroutine
     def reconnect_hmi(self, hmi):
+        abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
 
         # Wait for init
@@ -1261,10 +1262,11 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff
 
-    def abort_previous_loading_progress(self):
+    def abort_previous_loading_progress(self, caller):
         p = self.abort_progress_catcher
         self.abort_progress_catcher = {}
         p['abort'] = True
+        p['caller'] = caller
         return self.abort_progress_catcher
 
     def mute(self):
@@ -1785,7 +1787,7 @@ class Host(object):
         current_pedal = self.pedalboard_path
         pluginData = self.plugins[instance_id]
         pluginData['nextPreset'] = uri
-        abort_catcher = self.abort_previous_loading_progress()
+        abort_catcher = self.abort_previous_loading_progress("preset_load")
 
         def preset_callback(state):
             if not state:
@@ -1802,7 +1804,7 @@ class Host(object):
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during preset_load request")
+                print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
                 self.hmi.need_flush = True
                 callback(False)
                 return
@@ -1846,7 +1848,7 @@ class Host(object):
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during preset_load request")
+                print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
                 self.hmi.need_flush = True
                 callback(False)
                 return
@@ -2139,11 +2141,11 @@ class Host(object):
             return
 
         hw_ids_to_rm = []
-        abort_catcher = self.abort_previous_loading_progress()
+        abort_catcher = self.abort_previous_loading_progress("page_load")
 
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during page_load request")
+                print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
                 self.hmi.need_flush = True
                 callback(False)
                 return
