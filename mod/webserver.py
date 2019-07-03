@@ -902,13 +902,18 @@ class EffectPresetLoad(JsonRequestHandler):
     def get(self, instance):
         uri = self.get_argument('uri')
 
-        ok  = yield gen.Task(SESSION.host.preset_load, instance, uri)
+        abort_catcher = SESSION.host.abort_previous_loading_progress("web EffectPresetLoad")
+        ok = yield gen.Task(SESSION.host.preset_load, instance, uri, abort_catcher)
+
+        if not ok:
+            self.write(False)
+            return
 
         instance_id = SESSION.host.mapper.get_id_without_creating(instance)
         data = SESSION.host.addressings.get_presets_as_options(instance_id)
         value, maximum, options, spreset = data
 
-        ok  = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value)
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value)
         self.write(ok)
 
 class EffectParameterSet(JsonRequestHandler):
@@ -1360,8 +1365,8 @@ class SnapshotLoad(JsonRequestHandler):
     @gen.engine
     def get(self):
         idx = int(self.get_argument('id'))
-        # FIXME: callback invalid?
-        ok  = yield gen.Task(SESSION.host.snapshot_load, idx)
+        abort_catcher = SESSION.host.abort_previous_loading_progress("web SnapshotLoad")
+        ok = yield gen.Task(SESSION.host.snapshot_load, idx, abort_catcher)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):

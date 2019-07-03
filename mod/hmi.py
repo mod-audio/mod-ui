@@ -85,6 +85,9 @@ class HMI(object):
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
         self.init(init_cb)
 
+    def isFake(self):
+        return False
+
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
         try:

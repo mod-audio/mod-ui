@@ -669,16 +669,21 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
+    def ping_hmi(self):
+        ioloop.IOLoop.instance().call_later(2, self.ping_hmi)
+        self.hmi.ping(None)
+
     def wait_hmi_initialized(self, callback):
-        if self.hmi.initialized and self.profile_applied:
+        if (self.hmi.initialized or self.hmi.isFake()) and self.profile_applied:
             print("HMI initialized right away")
             callback(True)
             return
 
         def retry():
-            if (self.hmi.initialized and self.profile_applied) or self._attemptNumber >= 20:
+            if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
+                ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
@@ -725,8 +730,8 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (1, self.profile.get_midi_prgch_channel("pedalboard")))
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel %d %d" % (1, self.profile.get_midi_prgch_channel("snapshot")))
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"))
+        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % self.profile.get_midi_prgch_channel("snapshot"))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -834,10 +839,16 @@ class Host(object):
 
     @gen.coroutine
     def reconnect_hmi(self, hmi):
+        abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
 
         # Wait for init
         yield gen.Task(self.wait_hmi_initialized)
+
+        if not self.hmi.initialized:
+            return
+
+        self.profile.apply_first()
 
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
@@ -854,7 +865,7 @@ class Host(object):
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
-        self.addressings.load_current(actuators, (None, None), False)
+        self.addressings.load_current(actuators, (None, None), False, abort_catcher)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -901,22 +912,32 @@ class Host(object):
             pedalboard = ""
             pedalboards = []
 
-        def footswitch_callback(_):
-            self.setNavigateWithFootswitches(True, callback)
-
-        def midi_prog_callback(_):
-            logging.debug("[host] midi_prog_callback called")
+        def cb_migi_prgch(_):
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"),
                                   callback, datatype='boolean')
 
-        def initial_state_callback(_):
-            # TODO: not mutually exclusive.
-            cb = footswitch_callback if self.profile.get_footswitch_navigation("bank") else midi_prog_callback
+        def cb_footswitches(_):
+            self.setNavigateWithFootswitches(True, cb_migi_prgch)
+
+        def cb_set_initial_state(_):
+            if self.profile.get_footswitch_navigation("bank") and not self.addressings.pages_cb:
+                cb = cb_footswitches 
+            else:
+                cb = cb_migi_prgch
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
-        self.setNavigateWithFootswitches(False, initial_state_callback)
+        if self.hmi.initialized:
+            self.setNavigateWithFootswitches(False, cb_set_initial_state)
+        else:
+            cb_migi_prgch(True)
 
     def start_session(self, callback):
+        # Does this take effect?
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
+
+        self.banks = []
+        self.allpedalboards = []
+
         if not self.hmi.initialized:
             callback(True)
             return
@@ -930,14 +951,12 @@ class Host(object):
         def footswitch_bank_callback(_):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        # Does this take effect?
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
-
-        self.banks = []
-        self.allpedalboards = []
         self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
+        self.banks = list_banks()
+        self.allpedalboards = get_all_good_pedalboards()
+
         if not self.hmi.initialized:
             callback(True)
             return
@@ -945,8 +964,6 @@ class Host(object):
         def initialize_callback(_):
             self.initialize_hmi(False, callback)
 
-        self.banks = list_banks()
-        self.allpedalboards = get_all_good_pedalboards()
         self.hmi.ui_dis(initialize_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -980,6 +997,7 @@ class Host(object):
 
                 elif portsymbol == ":presets":
                     print("presets changed by backend", value)
+                    abort_catcher = self.abort_previous_loading_progress("process_read_message_body")
                     value = int(value)
                     if value < 0 or value >= len(pluginData['mapPresets']):
                         return
@@ -987,9 +1005,9 @@ class Host(object):
                     try:
                         if instance_id == PEDALBOARD_INSTANCE_ID:
                             value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                            yield gen.Task(self.snapshot_load, value)
+                            yield gen.Task(self.snapshot_load, value, abort_catcher)
                         else:
-                            yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value])
+                            yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value], abort_catcher)
                     except Exception as e:
                         logging.exception(e)
 
@@ -1070,7 +1088,7 @@ class Host(object):
         elif cmd == "midi_program_change":
             msg_data = msg[len(cmd)+1:].split(" ", 2)
             program  = int(msg_data[0])
-            channel  = int(msg_data[1])
+            channel  = int(msg_data[1])+1
 
             if channel == self.profile.get_midi_prgch_channel("pedalboard"):
                 bank_id = self.bank_id
@@ -1083,19 +1101,20 @@ class Host(object):
                     bundlepath = pedalboards[program]['bundle']
                     self.send_notmodified("feature_enable processing 0")
 
-                    def load_callback(ok):
+                    def load_callback(_):
                         self.bank_id = bank_id
                         self.load(bundlepath)
                         self.send_notmodified("feature_enable processing 1")
 
-                    def hmi_clear_callback(ok):
+                    def hmi_clear_callback(_):
                         self.hmi.clear(load_callback)
 
                     self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
+                abort_catcher = self.abort_previous_loading_progress("midi_program_change")
                 try:
-                    yield gen.Task(self.snapshot_load, program)
+                    yield gen.Task(self.snapshot_load, program, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -1256,10 +1275,11 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff
 
-    def abort_previous_loading_progress(self):
+    def abort_previous_loading_progress(self, caller):
         p = self.abort_progress_catcher
         self.abort_progress_catcher = {}
         p['abort'] = True
+        p['caller'] = caller
         return self.abort_progress_catcher
 
     def mute(self):
@@ -1539,7 +1559,7 @@ class Host(object):
         else:
             test =  '/graph/' + instance
         instance_id = self.mapper.get_id_without_creating(test)
-        plugin_data  = self.plugins.get(instance_id, None)
+        plugin_data = self.plugins.get(instance_id, None)
 
         if plugin_data is None:
             print("ERROR: Trying to set param for non-existing plugin instance %i: '%s'" % (instance_id, instance))
@@ -1704,7 +1724,6 @@ class Host(object):
                     logging.exception(e)
 
         def host_callback(ok):
-            callback(ok)
             removed_connections = []
             for ports in self.connections:
                 if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
@@ -1714,13 +1733,19 @@ class Host(object):
                 self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
 
             self.msg_callback("remove %s" % (instance))
+            callback(ok)
 
-        def hmi_callback(ok):
+        def hmi_callback(_):
             self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
 
-        def hmi_control_rm_callback(ok):
+        @gen.coroutine
+        def hmi_control_rm_callback(_):
             for actuator_uri in used_hmi_actuators:
-                self.addressings.hmi_load_current(actuator_uri, hmi_callback)
+                try:
+                    yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
+                except Exception as e:
+                    logging.exception(e)
+            hmi_callback(True)
 
         if self.hmi.initialized and len(used_hw_ids) > 0:
             # Remove active addressed port from HMI
@@ -1792,12 +1817,11 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
 
-    def preset_load(self, instance, uri, callback):
+    def preset_load(self, instance, uri, abort_catcher, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         current_pedal = self.pedalboard_path
         pluginData = self.plugins[instance_id]
         pluginData['nextPreset'] = uri
-        abort_catcher = self.abort_previous_loading_progress()
 
         def preset_callback(state):
             if not state:
@@ -1805,17 +1829,14 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_show request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during preset_load request")
-                self.hmi.need_flush = True
+                print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
                 callback(False)
                 return
 
@@ -1838,7 +1859,7 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            self.addressings.load_current(used_actuators, (instance_id, ":presets"), True)
+            self.addressings.load_current(used_actuators, (instance_id, ":presets"), True, abort_catcher)
 
             # callback must be last action
             callback(True)
@@ -1849,17 +1870,14 @@ class Host(object):
                 return
             if self.pedalboard_path != current_pedal:
                 print("WARNING: Pedalboard changed during preset_load request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if pluginData['nextPreset'] != uri:
                 print("WARNING: Preset changed during preset_load request")
-                self.hmi.need_flush = True
                 callback(False)
                 return
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during preset_load request")
-                self.hmi.need_flush = True
+                print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
                 callback(False)
                 return
             self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
@@ -2056,7 +2074,7 @@ class Host(object):
         return True
 
     @gen.coroutine
-    def snapshot_load(self, idx, callback=lambda r:None):
+    def snapshot_load(self, idx, abort_catcher, callback=lambda r:None):
         if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
             snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
             is_hmi_snapshot = True
@@ -2079,6 +2097,11 @@ class Host(object):
         used_actuators = []
 
         for instance, data in snapshot['data'].items():
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during snapshot_load request, caller:", abort_catcher['caller'])
+                callback(False)
+                return
+
             instance = "/graph/%s" % instance
 
             if instance in self.plugins_removed:
@@ -2098,12 +2121,15 @@ class Host(object):
             # if bypassed, do it now
             if diffBypass and data['bypassed']:
                 self.msg_callback("param_set %s :bypass 1.0" % (instance,))
-                self.bypass(instance, True, None)
+                try:
+                    yield gen.Task(self.bypass, instance, True)
+                except Exception as e:
+                    logging.exception(e)
 
             if data['preset'] and data['preset'] != pluginData['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
                 try:
-                    yield gen.Task(self.preset_load, instance, data['preset'])
+                    yield gen.Task(self.preset_load, instance, data['preset'], abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -2118,7 +2144,10 @@ class Host(object):
                     continue
 
                 self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
-                self.param_set("%s/%s" % (instance, symbol), value, None)
+                try:
+                    yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
@@ -2129,12 +2158,22 @@ class Host(object):
             # if not bypassed (enabled), do it at the end
             if diffBypass and not data['bypassed']:
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
-                self.bypass(instance, False, None)
+                try:
+                    yield gen.Task(self.bypass, instance, False)
+                except Exception as e:
+                    logging.exception(e)
+
+        if abort_catcher.get('abort', False):
+            callback(False)
+            return
 
         if not is_hmi_snapshot:
-            self.paramhmi_set('pedalboard', ':presets', idx, None)
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ':presets', idx)
+            except Exception as e:
+                logging.exception(e)
 
-        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True)
+        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True, abort_catcher)
 
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
@@ -2144,19 +2183,15 @@ class Host(object):
         callback(True)
 
     @gen.coroutine
-    def page_load(self, idx, callback):
+    def page_load(self, idx, abort_catcher, callback):
         if not self.addressings.pages_cb:
             print("ERROR: hmi next page not supported")
             callback(False)
             return
 
-        hw_ids_to_rm = []
-        abort_catcher = self.abort_previous_loading_progress()
-
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during page_load request")
-                self.hmi.need_flush = True
+                print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
                 callback(False)
                 return
 
@@ -2168,30 +2203,22 @@ class Host(object):
                 continue
 
             page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx)
+
             # Nothing assigned to current actuator on page to load
             if not page_to_load_assigned:
-                # Send control_rm if current actuator was addressed on current page
-                current_page_assigned = self.addressings.is_page_assigned(addrs, self.addressings.current_page)
-                if current_page_assigned:
-                    hw_ids_to_rm.append(hw_id)
+                continue
+
             # Else, send control_add with new data
-            else:
-                try:
-                    next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
-                except StopIteration:
-                    hw_ids_to_rm.append(hw_id)
-                else:
-                    next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
-                                                                                  next_addressing_data['port'])
-
-                    try:
-                        yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
-                    except Exception as e:
-                        logging.exception(e)
-
-        if len(hw_ids_to_rm) > 0:
             try:
-                yield gen.Task(self.hmi.control_rm, hw_ids_to_rm)
+                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
+            except StopIteration:
+                continue
+
+            next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
+                                                                          next_addressing_data['port'])
+
+            try:
+                yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
             except Exception as e:
                 logging.exception(e)
 
@@ -3725,7 +3752,7 @@ _:b%i
             self.bank_id = bank_id
             self.load(bundlepath)
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             self.profile.get_midi_prgch_channel("bank")),
+                                                                                             self.profile.get_midi_prgch_channel("pedalboard")),
                                  loaded_callback, datatype='boolean')
 
         def footswitch_callback(_):
@@ -3772,6 +3799,7 @@ _:b%i
     # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+        abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
 
@@ -3807,13 +3835,13 @@ _:b%i
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 try:
-                    self.snapshot_load(value, callback)
+                    self.snapshot_load(value, abort_catcher, callback)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
             else:
                 try:
-                    self.preset_load(instance, pluginData['mapPresets'][value], callback)
+                    self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -3860,7 +3888,7 @@ _:b%i
                     steps = port_addressing['steps']
                     tempo = port_addressing['tempo']
                     dividers = port_addressing['dividers']
-                    page = port_addressing.get('page', None)
+                    # FIXME remove callback from here
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, True)
 
             pluginData['ports'][portsymbol] = value
@@ -3880,12 +3908,25 @@ _:b%i
 
     def hmi_reset_current_pedalboard(self, callback):
         logging.debug("hmi reset current pedalboard")
+        try:
+            yield gen.Task(self.hmi_reset_current_pedalboard_real)
+        except Exception as e:
+            callback(False)
+            logging.exception(e)
+
+    @gen.coroutine
+    def hmi_reset_current_pedalboard_real(self, callback):
+        abort_catcher = self.abort_previous_loading_progress("hmi_reset_current_pedalboard")
         pb_values = get_pedalboard_plugin_values(self.pedalboard_path)
-        callback(True)
 
         used_actuators = []
 
         for p in pb_values:
+            if abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during reset_current_pedalboard request, caller:", abort_catcher['caller'])
+                callback(False)
+                return
+
             instance    = "/graph/%s" % p['instance']
             instance_id = self.mapper.get_id(instance)
             pluginData  = self.plugins[instance_id]
@@ -3902,13 +3943,19 @@ _:b%i
 
             # if bypassed, do it now
             if diffBypass and bypassed:
-                self.bypass(instance, True, None)
                 #self.msg_callback("param_set %s :bypass 1.0" % (instance,))
+                try:
+                    yield gen.Task(self.bypass, instance, True)
+                except Exception as e:
+                    logging.exception(e)
 
             if p['preset'] and pluginData['preset'] != p['preset']:
                 pluginData['preset'] = p['preset']
-                self.send_notmodified("preset_load %d %s" % (instance_id, p['preset']))
                 #self.msg_callback("preset %s %s" % (instance, p['preset']))
+                try:
+                    yield gen.Task(self.send_notmodified, "preset_load %d %s" % (instance_id, p['preset']))
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(":presets", None)
                 if addressing is not None:
@@ -3924,8 +3971,11 @@ _:b%i
                     continue
 
                 pluginData['ports'][symbol] = value
-                self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
                 #self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                try:
+                    yield gen.Task(self.send_notmodified, "param_set %d %s %f" % (instance_id, symbol, value))
+                except Exception as e:
+                    logging.exception(e)
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
@@ -3935,11 +3985,15 @@ _:b%i
 
             # if not bypassed (enabled), do it at the end
             if diffBypass and not bypassed:
-                self.bypass(instance, False, None)
                 #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
+                try:
+                    yield gen.Task(self.bypass, instance, False)
+                except Exception as e:
+                    logging.exception(e)
 
         self.pedalboard_modified = False
-        self.addressings.load_current(used_actuators, (None, None), False)
+        self.addressings.load_current(used_actuators, (None, None), False, abort_catcher)
+        callback(True)
 
     def hmi_tuner(self, status, callback):
         if status == "on":
@@ -4350,16 +4404,18 @@ _:b%i
         callback(True)
 
     def hmi_snapshot_load(self, idx, callback):
+        abort_catcher = self.abort_previous_loading_progress("hmi_snapshot_load")
         # Use negative numbers for HMI snapshots
         try:
-            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), callback)
+            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), abort_catcher, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
 
     def hmi_page_load(self, idx, callback):
+        abort_catcher = self.abort_previous_loading_progress("hmi_page_load")
         try:
-            self.page_load(idx, callback)
+            self.page_load(idx, abort_catcher, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
