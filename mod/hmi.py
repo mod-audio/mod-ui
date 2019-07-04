@@ -347,9 +347,9 @@ class HMI(object):
             self.control_set_index(hw_id, index, n_controllers, callback)
 
         cb = callback
-        hmi_si = get_hardware_descriptor().get('hmi_si', 0)
+        hmi_set_index = get_hardware_descriptor().get('hmi_set_index', 0)
 
-        if not actuator_uri.startswith("/hmi/footswitch") and hmi_si:
+        if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
             cb = control_add_callback
 
         self.send('a %d %s %d %s %f %f %f %d %s' %
