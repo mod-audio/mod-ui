@@ -4183,15 +4183,28 @@ _:b%i
             callback(False)
             return
 
+        def step3(ok):
+            if not ok:
+                callback(False)
+            else:
+                self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                             self.transport_bpb,
+                                                             self.transport_bpm,
+                                                             self.transport_sync))
+                callback(True)
+
         def step2(ok):
             if not ok:
                 callback(False)
             elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-                self.send_notmodified("feature_enable midi_clock_slave 0", callback)
+                self.transport_sync = "none"
+                self.send_notmodified("feature_enable midi_clock_slave 0", step3, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-                self.send_notmodified("feature_enable midi_clock_slave 1", callback)
+                self.transport_sync = "midi_clock_slave"
+                self.send_notmodified("feature_enable midi_clock_slave 1", step3, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-                self.send_notmodified("feature_enable link 1", callback)
+                self.transport_sync = "link"
+                self.send_notmodified("feature_enable link 1", step3, datatype='boolean')
             else:
                 callback(False)
 
@@ -4199,11 +4212,11 @@ _:b%i
         # Note: _First_ disable all unchoosen options.
         # FIXME do not require disabling options first!
         if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-            self.send_notmodified("feature_enable link 0", step2)
+            self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
         elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-            self.send_notmodified("feature_enable link 0", step2)
+            self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
         elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-            self.send_notmodified("feature_enable midi_clock_slave 0", step2)
+            self.send_notmodified("feature_enable midi_clock_slave 0", step2, datatype='boolean')
         else:
             callback(False)
 
