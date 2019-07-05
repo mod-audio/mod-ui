@@ -730,8 +730,10 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"))
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % self.profile.get_midi_prgch_channel("snapshot"))
+        midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")-1
+        midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")-1
+        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % midi_pb_prgch)
+        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % midi_ss_prgch)
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -912,28 +914,34 @@ class Host(object):
             pedalboard = ""
             pedalboards = []
 
-        def cb_migi_prgch(_):
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"),
+        def cb_migi_ss_prgch(_):
+            midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")-1
+            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % midi_ss_prgch,
                                   callback, datatype='boolean')
 
+        def cb_migi_pb_prgch(_):
+            midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")-1
+            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % midi_pb_prgch,
+                                  cb_migi_ss_prgch, datatype='boolean')
+
         def cb_footswitches(_):
-            self.setNavigateWithFootswitches(True, cb_migi_prgch)
+            self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
 
         def cb_set_initial_state(_):
             if self.profile.get_footswitch_navigation("bank") and not self.addressings.pages_cb:
-                cb = cb_footswitches 
+                cb = cb_footswitches
             else:
-                cb = cb_migi_prgch
+                cb = cb_migi_pb_prgch
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         if self.hmi.initialized:
             self.setNavigateWithFootswitches(False, cb_set_initial_state)
         else:
-            cb_migi_prgch(True)
+            cb_migi_pb_prgch(True)
 
     def start_session(self, callback):
-        # Does this take effect?
         self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
+        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 0 -1")
 
         self.banks = []
         self.allpedalboards = []
@@ -1098,18 +1106,10 @@ class Host(object):
                     pedalboards = self.allpedalboards
 
                 if program >= 0 and program < len(pedalboards):
-                    bundlepath = pedalboards[program]['bundle']
-                    self.send_notmodified("feature_enable processing 0")
-
-                    def load_callback(_):
-                        self.bank_id = bank_id
-                        self.load(bundlepath)
-                        self.send_notmodified("feature_enable processing 1")
-
-                    def hmi_clear_callback(_):
-                        self.hmi.clear(load_callback)
-
-                    self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
+                    try:
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
+                    except Exception as e:
+                        logging.exception(e)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 abort_catcher = self.abort_previous_loading_progress("midi_program_change")
@@ -1163,11 +1163,11 @@ class Host(object):
             enable = int(msg_data[0])
             channel = int(msg_data[1])
             logging.debug("[host] received bank: %i %i", enable, channel)
-            if enable == 1:
-                # The range in mod-host is [-1, 15]
-                self.profile.set_midi_prgch_channel("pedalboard", channel+1)
-            else:
-                self.profile.set_midi_prgch_channel("pedalboard", 0) # off
+            #if enable == 1:
+                ## The range in mod-host is [-1, 15]
+                #self.profile.set_midi_prgch_channel("pedalboard", channel+1)
+            #else:
+                #self.profile.set_midi_prgch_channel("pedalboard", Profile.MIDI_CHANNEL_NAVIGATION_OFF)
 
         elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
             # TODO: Is this triggered by mod-host?
@@ -1175,11 +1175,11 @@ class Host(object):
             enable = int(msg_data[0])
             channel = int(msg_data[1])
             logging.debug("[host] received snapshot: %i %i", enable, channel)
-            if enable == 1:
-                # The range in mod-host is [-1, 15]
-                self.profile.set_midi_prgch_channel("snapshot", channel+1)
-            else:
-                self.profile.set_midi_prgch_channel("snapshot", 0) # off
+            #if enable == 1:
+                ## The range in mod-host is [-1, 15]
+                #self.profile.set_midi_prgch_channel("snapshot", channel+1)
+            #else:
+                #self.profile.set_midi_prgch_channel("snapshot", Profile.MIDI_CHANNEL_NAVIGATION_OFF)
 
         else:
             logging.error("[host] unrecognized command: %s", cmd)
@@ -3729,8 +3729,10 @@ _:b%i
         def load_callback(_):
             self.bank_id = bank_id
             self.load(bundlepath)
+
+            midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")-1
             self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             self.profile.get_midi_prgch_channel("pedalboard")),
+                                                                                             midi_pb_prgch),
                                  loaded_callback, datatype='boolean')
 
         def footswitch_callback(_):
