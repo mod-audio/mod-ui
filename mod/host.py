@@ -730,10 +730,11 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")-1
-        midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")-1
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % midi_pb_prgch)
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % midi_ss_prgch)
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+        if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1))
+        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -915,14 +916,20 @@ class Host(object):
             pedalboards = []
 
         def cb_migi_ss_prgch(_):
-            midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")-1
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % midi_ss_prgch,
-                                  callback, datatype='boolean')
+            midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")
+            if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1),
+                                      callback, datatype='boolean')
+            else:
+                callback(True)
 
         def cb_migi_pb_prgch(_):
-            midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")-1
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % midi_pb_prgch,
-                                  cb_migi_ss_prgch, datatype='boolean')
+            midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
+            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
+                                      cb_migi_ss_prgch, datatype='boolean')
+            else:
+                cb_migi_ss_prgch(True)
 
         def cb_footswitches(_):
             self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
@@ -940,8 +947,11 @@ class Host(object):
             cb_migi_pb_prgch(True)
 
     def start_session(self, callback):
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 0 -1")
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+        if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
+        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 0" % (midi_ss_prgch-1))
 
         self.banks = []
         self.allpedalboards = []
@@ -1156,30 +1166,6 @@ class Host(object):
             else:
                 diff = (0.5-diff)/0.5*0.064
                 ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
-
-        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
-            # TODO: Is this triggered by mod-host?
-            msg_data = msg[len(cmd)+1:].split(" ", 2)
-            enable = int(msg_data[0])
-            channel = int(msg_data[1])
-            logging.debug("[host] received bank: %i %i", enable, channel)
-            #if enable == 1:
-                ## The range in mod-host is [-1, 15]
-                #self.profile.set_midi_prgch_channel("pedalboard", channel+1)
-            #else:
-                #self.profile.set_midi_prgch_channel("pedalboard", Profile.MIDI_CHANNEL_NAVIGATION_OFF)
-
-        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
-            # TODO: Is this triggered by mod-host?
-            msg_data = msg[len(cmd)+1:].split(" ", 2)
-            enable = int(msg_data[0])
-            channel = int(msg_data[1])
-            logging.debug("[host] received snapshot: %i %i", enable, channel)
-            #if enable == 1:
-                ## The range in mod-host is [-1, 15]
-                #self.profile.set_midi_prgch_channel("snapshot", channel+1)
-            #else:
-                #self.profile.set_midi_prgch_channel("snapshot", Profile.MIDI_CHANNEL_NAVIGATION_OFF)
 
         else:
             logging.error("[host] unrecognized command: %s", cmd)
@@ -3403,13 +3389,13 @@ _:b%i
                                                          self.transport_bpm,
                                                          self.transport_sync))
 
-    def set_midi_program_change_pedalboard_bank_channel(self, channel):
-        if self.profile.set_midi_prgch_channel("bank", channel):
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
+    #def set_midi_program_change_pedalboard_bank_channel(self, channel):
+        #if self.profile.set_midi_prgch_channel("bank", channel):
+            #self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
 
-    def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
-        if self.profile.set_midi_prgch_channel("snapshot", channel):
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
+    #def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
+        #if self.profile.set_midi_prgch_channel("snapshot", channel):
+            #self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
@@ -3730,10 +3716,8 @@ _:b%i
             self.bank_id = bank_id
             self.load(bundlepath)
 
-            midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")-1
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             midi_pb_prgch),
-                                 loaded_callback, datatype='boolean')
+            # Dummy host call, just to receive callback when all other messages finish
+            self.send_notmodified("cpu_load", loaded_callback, datatype='boolean')
 
         def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
@@ -4119,15 +4103,32 @@ _:b%i
         result = self.profile.get_midi_prgch_channel("snapshot")
         callback(True, result)
 
+    @gen.coroutine
     def hmi_set_snapshot_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a snapshot via Program Change."""
         logging.debug("hmi set snapshot channel %i", channel)
 
-        if self.profile.set_midi_prgch_channel("snapshot", channel):
-            # The range in mod-host is [-1, 15]
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % (channel-1), callback)
-        else:
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+
+        if midi_ss_prgch == channel:
+            callback(True)
+            return
+
+        if not self.profile.set_midi_prgch_channel("snapshot", channel):
             callback(False)
+            return
+
+        # NOTE: The range in mod-host is [0, 15]
+
+        # if nothing is using old snapshot channel, disable monitoring
+        if midi_pb_prgch != channel and midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            yield gen.Task(self.send_notmodified, "monitor_midi_program %d 1" % (midi_ss_prgch-1))
+
+        # enable monitoring for this channel
+        if channel >= 1 and channel <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (channel-1), callback)
+        else:
+            callback(True)
 
     def hmi_get_pedalboard_prgch(self, callback):
         """Query the MIDI channel for selecting a pedalboard in a bank via Program Change."""
@@ -4136,15 +4137,32 @@ _:b%i
         result = self.profile.get_midi_prgch_channel("pedalboard")
         callback(True, result)
 
+    @gen.coroutine
     def hmi_set_pedalboard_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a pedalboard in a bank via Program Change."""
         logging.debug("hmi set pedalboard channel %i", channel)
 
-        if self.profile.set_midi_prgch_channel("pedalboard", channel):
-            # The range in mod-host is [-1, 15]
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % (channel-1), callback)
-        else:
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+
+        if midi_pb_prgch == channel:
+            callback(True)
+            return
+
+        if not self.profile.set_midi_prgch_channel("pedalboard", channel):
             callback(False)
+            return
+
+        # NOTE: The range in mod-host is [0, 15]
+
+        # if nothing is using old pedalboard channel, disable monitoring
+        if midi_ss_prgch != channel and midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            yield gen.Task(self.send_notmodified, "monitor_midi_program %d 1" % (midi_pb_prgch-1))
+
+        # enable monitoring for this channel
+        if channel >= 1 and channel <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (channel-1), callback)
+        else:
+            callback(True)
 
     def hmi_get_clk_src(self, callback):
         """Query the tempo and transport sync mode."""
