@@ -2175,6 +2175,10 @@ class Host(object):
             callback(False)
             return
 
+        # If a pedalboard is loading (via MIDI program messsage), wait for it to finish
+        while self.next_hmi_pedalboard is not None:
+            yield gen.sleep(0.5)
+
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
