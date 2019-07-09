@@ -1033,7 +1033,7 @@ class Host(object):
                     try:
                         if instance_id == PEDALBOARD_INSTANCE_ID:
                             value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                            yield gen.Task(self.snapshot_load, value, abort_catcher)
+                            yield gen.Task(self.snapshot_load_gen_helper, value, False, abort_catcher)
                         else:
                             yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value], abort_catcher)
                     except Exception as e:
@@ -1134,7 +1134,7 @@ class Host(object):
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 abort_catcher = self.abort_previous_loading_progress("midi_program_change")
                 try:
-                    yield gen.Task(self.snapshot_load, program, abort_catcher)
+                    yield gen.Task(self.snapshot_load_gen_helper, program, False, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -2069,8 +2069,12 @@ class Host(object):
         self.pedalboard_snapshots[idx] = None
         return True
 
+    # helper function for gen.Task, which has troubles calling into a coroutine directly
+    def snapshot_load_gen_helper(self, idx, from_hmi, abort_catcher, callback):
+        self.snapshot_load(idx, from_hmi, abort_catcher, callback)
+
     @gen.coroutine
-    def snapshot_load(self, idx, abort_catcher, callback=lambda r:None):
+    def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
         if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
             snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
             is_hmi_snapshot = True
@@ -2089,6 +2093,7 @@ class Host(object):
                 return
 
             self.current_pedalboard_snapshot_id = idx
+            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % idx
 
         used_actuators = []
 
@@ -2163,13 +2168,11 @@ class Host(object):
             callback(False)
             return
 
-        if not is_hmi_snapshot:
-            try:
-                yield gen.Task(self.paramhmi_set, 'pedalboard', ':presets', idx)
-            except Exception as e:
-                logging.exception(e)
-
-        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True, abort_catcher)
+        if is_hmi_snapshot or not from_hmi:
+            skippedPort = (None, None)
+        else:
+            skippedPort = (PEDALBOARD_INSTANCE_ID, ":presets")
+        self.addressings.load_current(used_actuators, skippedPort, True, abort_catcher)
 
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
@@ -3867,7 +3870,7 @@ _:b%i
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 try:
-                    self.snapshot_load(value, abort_catcher, callback)
+                    self.snapshot_load(value, True, abort_catcher, callback)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -4486,7 +4489,7 @@ _:b%i
         abort_catcher = self.abort_previous_loading_progress("hmi_snapshot_load")
         # Use negative numbers for HMI snapshots
         try:
-            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), abort_catcher, callback)
+            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), True, abort_catcher, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
