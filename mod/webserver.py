@@ -993,12 +993,15 @@ class ServerWebSocket(websocket.WebSocketHandler):
             SESSION.ws_pedalboard_size(width, height)
 
         elif cmd == "link_enable":
-            on = bool(int(data[1]))
-            SESSION.host.set_link_enabled(on, True)
+            # on = bool(int(data[1]))
+            SESSION.host.set_link_enabled()
 
         elif cmd == "midi_clock_slave_enable":
-            on = bool(int(data[1]))
-            SESSION.host.set_midi_clock_slave_enabled(on)
+            # on = bool(int(data[1]))
+            SESSION.host.set_midi_clock_slave_enabled()
+
+        elif cmd == "set_internal_transport_source":
+            SESSION.host.set_internal_transport_source()
 
         elif cmd == "transport-bpb":
             bpb = float(data[1])
