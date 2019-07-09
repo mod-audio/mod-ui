@@ -1320,9 +1320,9 @@ class Host(object):
             self.addressings.cchain.restart_if_crashed()
 
             if self.transport_sync == "link":
-                self.set_link_enabled(True)
+                self.set_link_enabled()
             elif self.transport_sync == "midi_clock_slave":
-                self.set_midi_clock_slave_enabled(True)
+                self.set_midi_clock_slave_enabled()
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -3303,20 +3303,52 @@ _:b%i
         self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
     @gen.coroutine
-    def set_link_enabled(self, enabled, saveConfig = False):
-        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+    def set_link_enabled(self):
+        if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: link enabled while BPM is still addressed")
 
-        self.transport_sync = "link" if enabled else "none"
-        self.send_notmodified("feature_enable link %i" % int(enabled))
+        self.send_notmodified("feature_enable midi_clock_slave 0")
+        self.send_notmodified("feature_enable link 1")
+
+        self.transport_sync = "link"
+        self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_ABLETON_LINK)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_ABLETON_LINK)
+            except Exception as e:
+                logging.exception(e)
 
     @gen.coroutine
-    def set_midi_clock_slave_enabled(self, enabled):
-        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+    def set_midi_clock_slave_enabled(self):
+        if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: MIDI Clock Slave enabled while BPM is still addressed")
 
-        self.transport_sync = "midi_clock_slave" if enabled else "none"
-        self.send_notmodified("feature_enable midi_clock_slave %i" % int(enabled))
+        self.send_notmodified("feature_enable link 0")
+        self.send_notmodified("feature_enable midi_clock_slave 1")
+
+        self.transport_sync = "midi_clock_slave"
+        self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
+            except Exception as e:
+                logging.exception(e)
+
+    @gen.coroutine
+    def set_internal_transport_source(self):
+        self.send_notmodified("feature_enable link 0")
+        self.send_notmodified("feature_enable midi_clock_slave 0")
+
+        self.transport_sync = "none"
+        self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_INTERNAL)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_INTERNAL)
+            except Exception as e:
+                logging.exception(e)
 
     @gen.coroutine
     def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
