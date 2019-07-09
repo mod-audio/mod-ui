@@ -1228,7 +1228,7 @@ class Host(object):
                 if datatype == 'string':
                     r = resp
                 elif not resp.startswith("resp"):
-                    logging.error("[host] protocol error: %s", ProtocolError(resp))
+                    logging.error("[host] protocol error: %s (for msg: '%s')", ProtocolError(resp), msg)
                     r = None
                 else:
                     r = resp.replace("resp ", "").replace("\0", "").strip()
