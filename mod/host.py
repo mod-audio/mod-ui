@@ -785,6 +785,7 @@ class Host(object):
                     ":rolling": (-1,-1,0.0,1.0),
                 },
                 "ports"       : {},
+                "ranges"      : {},
                 "designations": (None,None,None,None,None),
                 "preset"      : "",
                 "mapPresets"  : []
@@ -1601,6 +1602,7 @@ class Host(object):
             allports = get_plugin_control_inputs_and_monitored_outputs(uri)
             badports = []
             valports = {}
+            ranges = {}
 
             enabled_symbol = None
             freewheel_symbol = None
@@ -1611,6 +1613,7 @@ class Host(object):
             for port in allports['inputs']:
                 symbol = port['symbol']
                 valports[symbol] = port['ranges']['default']
+                ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
@@ -1652,6 +1655,7 @@ class Host(object):
                 "addressings" : {}, # symbol: addressing
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
+                "ranges"      : ranges,
                 "badports"    : badports,
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
@@ -1812,6 +1816,14 @@ class Host(object):
             for symbol, value in get_state_port_values(state).items():
                 if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
                     continue
+
+                minimum, maximum = pluginData['ranges'][symbol]
+                if value < minimum:
+                    print("ERROR: preset_load with value below minimum: symbol '%s', value %f" % (symbol, value))
+                    value = minimum
+                elif value > maximum:
+                    print("ERROR: preset_load with value above maximum: symbol '%s', value %f" % (symbol, value))
+                    value = maximum
 
                 pluginData['ports'][symbol] = value
 
@@ -2608,6 +2620,7 @@ class Host(object):
                 "addressings" : {}, # symbol: addressing
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
+                "ranges"      : ranges,
                 "badports"    : badports,
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
