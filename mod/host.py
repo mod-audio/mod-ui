@@ -3743,7 +3743,7 @@ _:b%i
             self.load(bundlepath)
 
             # Dummy host call, just to receive callback when all other messages finish
-            self.send_notmodified("cpu_load", loaded_callback, datatype='boolean')
+            self.send_notmodified("cpu_load", loaded_callback, datatype='float_structure')
 
         def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
