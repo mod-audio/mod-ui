@@ -36,7 +36,7 @@ from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
 from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
-from mod.addressings import Addressings
+from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu
 from mod.profile import Profile
@@ -593,7 +593,17 @@ class Host(object):
 
     def addr_task_set_value(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            return self.hmi.control_set(actuator, data['value'], callback)
+            if data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
+                options = tuple(o[0] for o in data['options'])
+                try:
+                    value = options.index(data['value'])
+                except ValueError:
+                    logging.error("[host] address set value not in list %f", data['value'])
+                    callback(False)
+                    return
+            else:
+                value = data['value']
+            return self.hmi.control_set(actuator, value, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             # FIXME not supported yet, this line never gets reached
