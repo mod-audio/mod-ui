@@ -3893,7 +3893,7 @@ _:b%i
             port_addressing = pluginData['addressings'].get(portsymbol, None)
             # readdress with new divider value
             if port_addressing:
-                if port_addressing.get('tempo', None):
+                if port_addressing.get('tempo', None) and False:
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
                     new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
 
