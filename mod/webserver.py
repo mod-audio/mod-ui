@@ -1336,7 +1336,7 @@ class SnapshotLoad(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
         abort_catcher = SESSION.host.abort_previous_loading_progress("web SnapshotLoad")
-        ok = yield gen.Task(SESSION.host.snapshot_load, idx, abort_catcher)
+        ok = yield gen.Task(SESSION.host.snapshot_load_gen_helper, idx, False, abort_catcher)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
