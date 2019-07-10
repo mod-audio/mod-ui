@@ -1167,6 +1167,12 @@ class Host(object):
 
             self.msg_callback("transport %i %f %f %s" % (rolling, bpb, bpm, self.transport_sync))
 
+            if self.hmi.initialized:
+                try:
+                    yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+                except Exception as e:
+                    logging.exception(e)
+
         elif cmd == "data_finish":
             now  = time.clock()
             diff = now-self.last_data_finish_msg
