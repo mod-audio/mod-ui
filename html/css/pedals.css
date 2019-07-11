@@ -395,11 +395,6 @@ body > .mod-settings.mod-window-visible {
     opacity:.3;
 }
 
-.mod-pedal-settings .mod-knob .mod-knob-image.addressed {
-    background-color: #883996;
-    border-radius: 50%;
-}
-
 /* = ENUMERATED
 ================================================ */
 .mod-pedal-settings .mod-enumerated {
