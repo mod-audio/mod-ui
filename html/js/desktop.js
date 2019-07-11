@@ -529,7 +529,7 @@ function Desktop(elements) {
         setNewBeatsPerMinuteValue: function (bpm) {
           self.hardwareManager.setBeatsPerMinuteValue(bpm)
         },
-        unaddressPort: function (portSymbol, callback) {
+        unaddressPort: function (portSymbol, syncMode, callback) {
             var addressing = {
                 uri    : kNullAddressURI,
                 label  : "",
@@ -547,7 +547,8 @@ function Desktop(elements) {
                 success: function (resp) {
                     if (resp) {
                         if (self.hardwareManager.removeHardwareMappping(instanceAndSymbol)) {
-                            new Notification('info', 'BPM addressing removed, incompatible with Link sync mode', 8000)
+                            var source = syncMode === "link" ? "Ableton Link" : "MIDI"
+                            new Notification('info', 'BPM addressing removed, incompatible with ' + source + ' sync mode', 8000)
                         }
                         self.pedalboardModified = true
                         callback(true)
