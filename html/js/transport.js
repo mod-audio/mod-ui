@@ -27,7 +27,7 @@ function TransportControls(options) {
         transportSyncMode: $('<div>'),
         openAddressingDialog: function (port, label) {
         },
-        unaddressPort: function (portSymbol, callback) {
+        unaddressPort: function (portSymbol, syncMode, callback) {
             callback()
         },
     }, options)
@@ -240,7 +240,7 @@ function TransportControls(options) {
         opt.click(function (e) {
             var newSyncMode = opt.attr('mod-sync-mode')
             if (newSyncMode === "link") {
-                options.unaddressPort(":bpm", function (ok) {
+                options.unaddressPort(":bpm", newSyncMode, function (ok) {
                     if (! ok) {
                         return
                     }
@@ -250,7 +250,7 @@ function TransportControls(options) {
                     self.setSyncMode(newSyncMode)
                 })
             } else if (newSyncMode === "midi_clock_slave") {
-                options.unaddressPort(":bpm", function (ok) {
+                options.unaddressPort(":bpm", newSyncMode, function (ok) {
                     if (! ok) {
                         return
                     }
