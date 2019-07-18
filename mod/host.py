@@ -3359,7 +3359,7 @@ _:b%i
                 return
 
         # First, unadress BPM port if switching to Link or MIDI sync mode
-        if mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE or mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+        if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
             self.address("/pedalboard", ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, step1)
         else:
             step1(True)
