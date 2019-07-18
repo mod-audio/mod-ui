@@ -30,6 +30,10 @@ function TransportControls(options) {
         unaddressPort: function (portSymbol, syncMode, callback) {
             callback()
         },
+        setSyncMode: function (syncMode, callback) {
+          callback()
+        },
+        removeBPMHardwareMapping: function (syncMode) {}
     }, options)
 
     this.rollingPort = {
@@ -239,32 +243,12 @@ function TransportControls(options) {
         var opt = $(this)
         opt.click(function (e) {
             var newSyncMode = opt.attr('mod-sync-mode')
-            if (newSyncMode === "link") {
-                options.unaddressPort(":bpm", newSyncMode, function (ok) {
-                    if (! ok) {
-                        return
-                    }
-                    ws.send("link_enable")
-
-                    self.setControlEnabled(":bpm", true)
-                    self.setSyncMode(newSyncMode)
-                })
-            } else if (newSyncMode === "midi_clock_slave") {
-                options.unaddressPort(":bpm", newSyncMode, function (ok) {
-                    if (! ok) {
-                        return
-                    }
-                    ws.send("midi_clock_slave_enable")
-                    // Disable BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
-                    self.setControlEnabled(":bpm", false, false)
-                    // Set new sync mode to disable addressing from mod-ui
-                    self.setSyncMode(newSyncMode)
-                })
-            } else {
-                ws.send("set_internal_transport_source")
-                self.setControlEnabled(":bpm", true)
-                self.setSyncMode(newSyncMode)
-            }
+            options.setSyncMode(newSyncMode, function (ok) {
+              if (!ok) {
+                return
+              }
+              self.setSyncMode(newSyncMode)
+            })
         })
     })
 
@@ -398,16 +382,24 @@ function TransportControls(options) {
         options.transportSyncMode.find('[mod-sync-mode="'+newSyncMode+'"]').addClass('selected')
 
         if (newSyncMode == "link") {
-            // TODO: remove addressings
+            options.removeBPMHardwareMapping(newSyncMode)
+            self.setControlEnabled(":bpm", true)
             options.transportBPM.find(".mod-address").addClass('link-enabled')
         } else {
             options.transportBPM.find(".mod-address").removeClass('link-enabled')
         }
 
         if (newSyncMode == "midi_clock_slave") {
+          // Disable BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
+          options.removeBPMHardwareMapping(newSyncMode)
+          self.setControlEnabled(":bpm", false, false)
           options.transportBPM.find(".mod-address").addClass('midi-clock-slave-enabled')
         } else {
           options.transportBPM.find(".mod-address").removeClass('midi-clock-slave-enabled')
+        }
+
+        if (newSyncMode !== "link" && newSyncMode !== "midi_clock_slave") {
+          self.setControlEnabled(":bpm", true)
         }
     }
 

@@ -3302,6 +3302,68 @@ _:b%i
         # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
         self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
+    def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
+        if setProfile:
+            if not self.profile.set_sync_mode(mode):
+                print("not")
+                callback(False)
+                return
+
+        def step3(ok):
+            if not ok:
+                callback(False)
+                return
+            else:
+                if sendWeb:
+                    self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                                 self.transport_bpb,
+                                                                 self.transport_bpm,
+                                                                 self.transport_sync))
+                if sendHMI and self.hmi.initialized:
+                    try:
+                        self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source())
+                    except Exception as e:
+                        logging.exception(e)
+                callback(True)
+
+        def step2(ok):
+            if not ok:
+                callback(False)
+                return
+            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+                self.transport_sync = "none"
+                self.send_notmodified("feature_enable midi_clock_slave 0", step3, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
+                self.transport_sync = "midi_clock_slave"
+                self.send_notmodified("feature_enable midi_clock_slave 1", step3, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+                self.transport_sync = "link"
+                self.send_notmodified("feature_enable link 1", step3, datatype='boolean')
+            else:
+                callback(False)
+                return
+
+        def step1(ok):
+            # Then set new sync mode and send to host
+            if not ok:
+                callback(False)
+                return
+            if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+                self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
+                self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+                self.send_notmodified("feature_enable midi_clock_slave 0", step2, datatype='boolean')
+            else:
+                callback(False)
+                return
+
+        # First, unadress BPM port if switching to Link or MIDI sync mode
+        if mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE or mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+            self.address("/pedalboard", ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, step1)
+        else:
+            step1(True)
+
     @gen.coroutine
     def set_link_enabled(self):
         if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
@@ -4245,46 +4307,7 @@ _:b%i
         """Set the tempo and transport sync mode."""
         logging.debug("hmi set clock source %i", mode)
 
-        if not self.profile.set_sync_mode(mode):
-            callback(False)
-            return
-
-        def step3(ok):
-            if not ok:
-                callback(False)
-            else:
-                self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
-                                                             self.transport_bpb,
-                                                             self.transport_bpm,
-                                                             self.transport_sync))
-                callback(True)
-
-        def step2(ok):
-            if not ok:
-                callback(False)
-            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-                self.transport_sync = "none"
-                self.send_notmodified("feature_enable midi_clock_slave 0", step3, datatype='boolean')
-            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-                self.transport_sync = "midi_clock_slave"
-                self.send_notmodified("feature_enable midi_clock_slave 1", step3, datatype='boolean')
-            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-                self.transport_sync = "link"
-                self.send_notmodified("feature_enable link 1", step3, datatype='boolean')
-            else:
-                callback(False)
-
-        # Communicate with mod host.
-        # Note: _First_ disable all unchoosen options.
-        # FIXME do not require disabling options first!
-        if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-            self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
-        elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-            self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
-        elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-            self.send_notmodified("feature_enable midi_clock_slave 0", step2, datatype='boolean')
-        else:
-            callback(False)
+        self.set_sync_mode(mode, False, True, True, callback)
 
     # There is a plug-in for that. But Jesse does not find it usable.
     def hmi_get_send_midi_clk(self, callback):
@@ -4681,20 +4704,7 @@ _:b%i
         except Exception as e:
             logging.exception(e)
 
-        if values['transportSource'] == Profile.TRANSPORT_SOURCE_INTERNAL:
-            self.transport_sync = "none"
-            self.send_notmodified("feature_enable link 0")
-            self.send_notmodified("feature_enable midi_clock_slave 0")
-
-        elif values['transportSource'] == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-            self.transport_sync = "midi_clock_slave"
-            self.send_notmodified("feature_enable link 0")
-            self.send_notmodified("feature_enable midi_clock_slave 1")
-
-        elif values['transportSource'] == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-            self.transport_sync = "link"
-            self.send_notmodified("feature_enable midi_clock_slave 0")
-            self.send_notmodified("feature_enable link 1")
+        self.set_sync_mode(values['transportSource'], True, True, False, lambda r:None)
 
         self.hmi_set_send_midi_clk(values['midiClockSend'], lambda r:None)
 

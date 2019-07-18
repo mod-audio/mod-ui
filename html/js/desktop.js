@@ -529,6 +529,34 @@ function Desktop(elements) {
         setNewBeatsPerMinuteValue: function (bpm) {
           self.hardwareManager.setBeatsPerMinuteValue(bpm)
         },
+        removeBPMHardwareMapping: function(syncMode) {
+          var instanceAndSymbol = "/pedalboard/:bpm"
+          if (self.hardwareManager.removeHardwareMappping(instanceAndSymbol)) {
+              var source = syncMode === "link" ? "Ableton Link" : "MIDI"
+              new Notification('info', 'BPM addressing removed, incompatible with ' + source + ' sync mode', 8000)
+          }
+          self.pedalboardModified = true
+        },
+        setSyncMode: function(syncMode, callback) {
+          $.ajax({
+              url: '/pedalboard/transport/set_sync_mode/' + syncMode,
+              type: 'POST',
+              success: function (resp) {
+                  if (resp) {
+                      callback(true)
+                  } else {
+                      new Bug("Couldn't set new sync mode")
+                      callback(false)
+                  }
+              },
+              error: function () {
+                  new Bug("Couldn't set new sync mode, server error")
+                  callback(false)
+              },
+              cache: false,
+              dataType: 'json'
+          })
+        },
         unaddressPort: function (portSymbol, syncMode, callback) {
             var addressing = {
                 uri    : kNullAddressURI,
