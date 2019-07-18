@@ -989,7 +989,7 @@ JqueryClass('pedalboard', {
         var viewHeight = self.parent().height()
         var newScale = viewWidth / w
 
-        self.data('minScale', Math.min(self.data('minScale'), newScale))
+        self.data('minScale', newScale)
 
         self.animate({
             scale: newScale,
