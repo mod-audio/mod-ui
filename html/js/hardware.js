@@ -159,15 +159,15 @@ function HardwareManager(options) {
         var available = {}
 
         if (HARDWARE_PROFILE) {
-            var actuator, modes, usedAddressings
+            var actuator, modes
             for (var i in HARDWARE_PROFILE) {
                 actuator = HARDWARE_PROFILE[i]
                 modes    = actuator.modes
 
-                usedAddressings = self.addressingsByActuator[actuator.uri]
-                if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
-                    continue
-                }
+                // usedAddressings = self.addressingsByActuator[actuator.uri]
+                // if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
+                //     continue
+                // }
 
                 if (
                     (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
@@ -305,7 +305,8 @@ function HardwareManager(options) {
 
     this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput) {
       var table = $('<table/>').addClass('hmi-table')
-      var row, cell
+      var groupTable = $('<table/>').addClass('hmi-table')
+      var row, cell, uri, uriAddressings, usedAddressings, addressing, groupActuator, groupAddressings
       if (PAGES_CB && PAGES_NB > 0) {
         // build header row
         var headerRow = $('<tr/>')
@@ -313,48 +314,118 @@ function HardwareManager(options) {
           headerRow.append($('<th>Page '+i+'</th>'))
         }
         table.append(headerRow)
-        var usedAddressings, addressing
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
-          for (i = 0; i < PAGES_NB; i++) {
+          for (page = 0; page < PAGES_NB; page++) {
             if (startsWith(actuatorUri, deviceOption)) {
-              cell = $('<td data-page="'+ i +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
-              if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == i) {
+              cell = $('<td data-page="'+ page +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
+              if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == page) {
                 hmiPageInput.val(currentAddressing.page)
                 hmiUriInput.val(currentAddressing.uri)
                 cell.addClass('selected')
               } else {
+                // Only allow actuator groups to be used when all their “child” actuators are not in use on current page
+                if (actuators[actuatorUri].group) {
+                  for (i = 0; i < actuators[actuatorUri].group.length; i++) {
+                    uri = actuators[actuatorUri].group[i]
+                    uriAddressings = self.addressingsByActuator[uri]
+                    for (var j in uriAddressings) {
+                      instance = uriAddressings[j]
+                      addressing = self.addressingsData[instance]
+                      if (addressing.page == page) {
+                        cell.addClass('disabled')
+                      }
+                    }
+                  }
+                }
                 // Check if page+uri already assigned, then disable cell
-                for (var instance of Object.values(usedAddressings)) {
+                for (var i in usedAddressings) {
+                  instance = usedAddressings[i]
                   addressing = self.addressingsData[instance]
-                  if (addressing.page == i) {
+                  if (addressing.page == page) {
                     cell.addClass('disabled')
                   }
                 }
-              }
 
+              }
               row.append(cell)
             }
           }
-          table.append(row)
+
+          if (actuators[actuatorUri].group) {
+            groupTable.append(row)
+          } else {
+            table.append(row)
+          }
+        }
+
+        // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else,
+        // except on different pages
+        for (var i in HARDWARE_PROFILE) {
+          if (HARDWARE_PROFILE[i].group) {
+            groupActuator = HARDWARE_PROFILE[i]
+            for (var j in self.addressingsByActuator[groupActuator.uri]) {
+              instance = self.addressingsByActuator[groupActuator.uri][j]
+              groupAddressings = self.addressingsData[instance]
+              for (var k in groupActuator.group) {
+                table.find('[data-uri="' + groupActuator.group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+              }
+            }
+          }
         }
       } else {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
+          usedAddressings = self.addressingsByActuator[actuatorUri]
           if (startsWith(actuatorUri, deviceOption)) {
             cell = $('<td data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
             if (currentAddressing && currentAddressing.uri == actuatorUri) {
               hmiUriInput.val(currentAddressing.uri)
               cell.addClass('selected')
+            } else {
+              // Only allow actuator groups to be used when all their “child” actuators are not in use
+              if (actuators[actuatorUri].group) {
+                for (i = 0; i < actuators[actuatorUri].group.length; i++) {
+                  uri = actuators[actuatorUri].group[i]
+                  uriAddressings = self.addressingsByActuator[uri]
+                  if (uriAddressings.length) {
+                    cell.addClass('disabled')
+                  }
+                }
+              }
+              if (usedAddressings.length >= actuators[actuatorUri].max_assigns) {
+                cell.addClass('disabled')
+              }
             }
+
             row.append(cell)
           }
-          table.append(row)
+          if (actuators[actuatorUri].group) {
+            groupTable.append(row)
+          } else {
+            table.append(row)
+          }
+        }
+
+        // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else
+        for (var i in HARDWARE_PROFILE) {
+          if (HARDWARE_PROFILE[i].group) {
+            groupActuator = HARDWARE_PROFILE[i]
+            if (self.addressingsByActuator[groupActuator.uri].length) {
+              for (var j in groupActuator.group) {
+                table.find('[data-uri="' + groupActuator.group[j] + '"]').addClass('disabled')
+              }
+            }
+          }
         }
       }
 
       deviceTable.append(table)
+      if (groupTable.children().length) {
+        deviceTable.append($('<div class="group-strike">Group</div>'))
+        deviceTable.append(groupTable)
+      }
 
       deviceTable.find('td').click(function () {
         if ($(this).hasClass('disabled')) {
