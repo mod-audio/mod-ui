@@ -32,6 +32,7 @@ from tornado.template import Loader
 from tornado.util import unicode_type
 from uuid import uuid4
 
+from mod.profile import Profile
 from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
@@ -1022,12 +1023,13 @@ class ServerWebSocket(websocket.WebSocketHandler):
             SESSION.ws_pedalboard_size(width, height)
 
         elif cmd == "link_enable":
-            on = bool(int(data[1]))
-            SESSION.host.set_link_enabled(on, True)
+            SESSION.host.set_link_enabled()
 
         elif cmd == "midi_clock_slave_enable":
-            on = bool(int(data[1]))
-            SESSION.host.set_midi_clock_slave_enabled(on)
+            SESSION.host.set_midi_clock_slave_enabled()
+
+        elif cmd == "set_internal_transport_source":
+            SESSION.host.set_internal_transport_source()
 
         elif cmd == "transport-bpb":
             bpb = float(data[1])
@@ -1041,13 +1043,13 @@ class ServerWebSocket(websocket.WebSocketHandler):
             rolling = bool(int(data[1]))
             SESSION.host.set_transport_rolling(rolling, True, True, False)
 
-        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
-            channel = int(data[2])
-            SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
+        #elif cmd == "set_midi_program_change_pedalboard_bank_channel":
+            #channel = int(data[2])
+            #SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
 
-        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
-            channel = int(data[2])
-            SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
+        #elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
+            #channel = int(data[2])
+            #SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
 
         else:
             print("Unexpected command received over websocket")
@@ -1305,6 +1307,23 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
+class PedalboardTransportSetSyncMode(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self, mode):
+        print("PedalboardTransportSetSyncMode")
+        print(mode)
+        if mode == "/none":
+            transport_sync = Profile.TRANSPORT_SOURCE_INTERNAL
+        elif mode == "/midi_clock_slave":
+            transport_sync = Profile.TRANSPORT_SOURCE_MIDI_SLAVE
+        elif mode == "/link":
+            transport_sync = Profile.TRANSPORT_SOURCE_ABLETON_LINK
+        else:
+            return self.write(False)
+        ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
+        self.write(ok)
+
 class SnapshotEnable(JsonRequestHandler):
     def post(self):
         SESSION.host.snapshot_init()
@@ -1366,7 +1385,7 @@ class SnapshotLoad(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
         abort_catcher = SESSION.host.abort_previous_loading_progress("web SnapshotLoad")
-        ok = yield gen.Task(SESSION.host.snapshot_load, idx, abort_catcher)
+        ok = yield gen.Task(SESSION.host.snapshot_load_gen_helper, idx, False, abort_catcher)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
@@ -1907,6 +1926,7 @@ application = web.Application(
             (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/check", PedalboardImageCheck),
             (r"/pedalboard/image/wait", PedalboardImageWait),
+            (r"/pedalboard/transport/set_sync_mode/*(/[A-Za-z0-9_:/]+[^/])/?", PedalboardTransportSetSyncMode),
 
             # Pedalboard Snapshot handling
             (r"/snapshot/enable", SnapshotEnable),

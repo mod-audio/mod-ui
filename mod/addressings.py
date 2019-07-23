@@ -11,15 +11,15 @@ from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
 
-HMI_ADDRESSING_TYPE_LINEAR       = 0
-HMI_ADDRESSING_TYPE_BYPASS       = 1
-HMI_ADDRESSING_TYPE_TAP_TEMPO    = 2
-HMI_ADDRESSING_TYPE_ENUMERATION  = 4 | 8  # implies scalepoints
-HMI_ADDRESSING_TYPE_SCALE_POINTS = 8
-HMI_ADDRESSING_TYPE_TRIGGER      = 16
-HMI_ADDRESSING_TYPE_TOGGLED      = 32
-HMI_ADDRESSING_TYPE_LOGARITHMIC  = 64
-HMI_ADDRESSING_TYPE_INTEGER      = 128
+HMI_ADDRESSING_TYPE_LINEAR       = 0x00
+HMI_ADDRESSING_TYPE_BYPASS       = 0x01
+HMI_ADDRESSING_TYPE_TAP_TEMPO    = 0x02
+HMI_ADDRESSING_TYPE_ENUMERATION  = 0x04 | 0x08 # implies scalepoints
+HMI_ADDRESSING_TYPE_SCALE_POINTS = 0x08
+HMI_ADDRESSING_TYPE_TRIGGER      = 0x10
+HMI_ADDRESSING_TYPE_TOGGLED      = 0x20
+HMI_ADDRESSING_TYPE_LOGARITHMIC  = 0x40
+HMI_ADDRESSING_TYPE_INTEGER      = 0x80
 
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
@@ -393,7 +393,7 @@ class Addressings(object):
 
         # Write addressings to disk
         with TextFileFlusher(os.path.join(bundlepath, "addressings.json")) as fh:
-            json.dump(addressings, fh)
+            json.dump(addressings, fh, indent=4)
 
     def registerMappings(self, msg_callback, instances):
         # HMI
@@ -475,7 +475,7 @@ class Addressings(object):
                 unit = "/4"
 
             elif portsymbol == ":bpm":
-                pprops = ["tapTempo"]
+                pprops = ["integer", "tapTempo"]
                 unit = "BPM"
 
             elif portsymbol == ":rolling":
@@ -525,6 +525,7 @@ class Addressings(object):
 
         # -------------------------------------------------------------------------------------------------------------
         if actuator_type == self.ADDRESSING_TYPE_HMI:
+
             if portsymbol == ":bypass":
                 hmitype = HMI_ADDRESSING_TYPE_BYPASS
 

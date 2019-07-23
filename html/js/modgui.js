@@ -404,9 +404,16 @@ function GUI(effect, options) {
       var port = self.controls[symbol]
       if (symbol !== ":presets") {
         // add "addressed" class to all related widgets
+        if (symbol == ":bypass") {
+          self.settings.find('.mod-address[mod-role="bypass-address"]').addClass('addressed')
+        } else {
+          self.settings.find('.mod-address[mod-port-symbol="'+symbol+'"]').addClass('addressed')
+        }
         for (var i in port.widgets) {
             port.widgets[i].controlWidget('address')
         }
+      } else {
+        self.settings.find('[mod-role=presets-address]').addClass('addressed')
       }
     }
 
@@ -445,8 +452,14 @@ function GUI(effect, options) {
         if (symbol == ":presets") {
             self.icon.find('[mod-role=presets]').controlWidget('enable')
             self.settings.find('.mod-presets').data('enabled', true)
+            self.settings.find('[mod-role=presets-address]').removeClass('addressed')
             self.selectPreset(self.currentPreset)
         } else {
+            if (symbol == ":bypass") {
+              self.settings.find('.mod-address[mod-role="bypass-address"]').removeClass('addressed')
+            } else {
+              self.settings.find('.mod-address[mod-port-symbol="'+symbol+'"]').removeClass('addressed')
+            }
             // enable all related widgets
             for (var i in port.widgets) {
                 port.widgets[i].controlWidget('enable')
@@ -1292,7 +1305,7 @@ var baseWidget = {
         $(this).removeClass('addressed').removeClass('disabled').data('enabled', true)
     },
     address: function () {
-        $(this).addClass('addressed').data('enabled', true)
+        $(this).data('enabled', true)
     },
 
     valueFromSteps: function (steps) {

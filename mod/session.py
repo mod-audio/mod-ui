@@ -163,6 +163,9 @@ class Session(object):
         instance, portsymbol = port.rsplit("/",1)
         self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback)
 
+    def web_set_sync_mode(self, mode, callback):
+        self.host.set_sync_mode(mode, True, False, True, callback)
+
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
         self.host.connect(port_from, port_to, callback)

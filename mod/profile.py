@@ -191,6 +191,9 @@ class Profile(object):
         logging.error("[profile] get_midi_prgch_channel called with invalid arg %s", what)
         return self.MIDI_CHANNEL_NAVIGATION_OFF
 
+    def get_midi_prgch_channels(self):
+        return (self.values['midiChannelForPedalboardsNavigation'], self.values['midiChannelForSnapshotsNavigation'])
+
     def get_stereo_link(self, port_type):
         if port_type == 'input':
             return self.values['inputStereoLink']

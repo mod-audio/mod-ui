@@ -36,7 +36,7 @@ from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
 from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
-from mod.addressings import Addressings
+from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu
 from mod.profile import Profile
@@ -593,7 +593,17 @@ class Host(object):
 
     def addr_task_set_value(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            return self.hmi.control_set(actuator, data['value'], callback)
+            if data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
+                options = tuple(o[0] for o in data['options'])
+                try:
+                    value = options.index(data['value'])
+                except ValueError:
+                    logging.error("[host] address set value not in list %f", data['value'])
+                    callback(False)
+                    return
+            else:
+                value = data['value']
+            return self.hmi.control_set(actuator, value, callback)
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             # FIXME not supported yet, this line never gets reached
@@ -730,8 +740,11 @@ class Host(object):
                 self.load(DEFAULT_PEDALBOARD, True)
 
         # Setup MIDI program navigation
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"))
-        self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % self.profile.get_midi_prgch_channel("snapshot"))
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+        if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1))
+        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1))
 
         # Wait for all mod-host messages to be processed
         yield gen.Task(self.send_notmodified, "feature_enable processing 2", datatype='boolean')
@@ -782,6 +795,7 @@ class Host(object):
                     ":rolling": (-1,-1,0.0,1.0),
                 },
                 "ports"       : {},
+                "ranges"      : {},
                 "designations": (None,None,None,None,None),
                 "preset"      : "",
                 "mapPresets"  : []
@@ -912,28 +926,43 @@ class Host(object):
             pedalboard = ""
             pedalboards = []
 
-        def cb_migi_prgch(_):
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % self.profile.get_midi_prgch_channel("pedalboard"),
-                                  callback, datatype='boolean')
+        def cb_migi_ss_prgch(_):
+            midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")
+            if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1),
+                                      callback, datatype='boolean')
+            else:
+                callback(True)
+
+        def cb_migi_pb_prgch(_):
+            midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
+            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
+                                      cb_migi_ss_prgch, datatype='boolean')
+            else:
+                cb_migi_ss_prgch(True)
 
         def cb_footswitches(_):
-            self.setNavigateWithFootswitches(True, cb_migi_prgch)
+            self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
 
         def cb_set_initial_state(_):
             if self.profile.get_footswitch_navigation("bank") and not self.addressings.pages_cb:
-                cb = cb_footswitches 
+                cb = cb_footswitches
             else:
-                cb = cb_migi_prgch
+                cb = cb_migi_pb_prgch
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         if self.hmi.initialized:
             self.setNavigateWithFootswitches(False, cb_set_initial_state)
         else:
-            cb_migi_prgch(True)
+            cb_migi_pb_prgch(True)
 
     def start_session(self, callback):
-        # Does this take effect?
-        self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 0 -1")
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+        if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
+        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            self.send_notmodified("monitor_midi_program %d 0" % (midi_ss_prgch-1))
 
         self.banks = []
         self.allpedalboards = []
@@ -1005,7 +1034,7 @@ class Host(object):
                     try:
                         if instance_id == PEDALBOARD_INSTANCE_ID:
                             value = int(pluginData['mapPresets'][value].replace("file:///",""))
-                            yield gen.Task(self.snapshot_load, value, abort_catcher)
+                            yield gen.Task(self.snapshot_load_gen_helper, value, False, abort_catcher)
                         else:
                             yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value], abort_catcher)
                     except Exception as e:
@@ -1098,23 +1127,15 @@ class Host(object):
                     pedalboards = self.allpedalboards
 
                 if program >= 0 and program < len(pedalboards):
-                    bundlepath = pedalboards[program]['bundle']
-                    self.send_notmodified("feature_enable processing 0")
-
-                    def load_callback(_):
-                        self.bank_id = bank_id
-                        self.load(bundlepath)
-                        self.send_notmodified("feature_enable processing 1")
-
-                    def hmi_clear_callback(_):
-                        self.hmi.clear(load_callback)
-
-                    self.reset(hmi_clear_callback if self.hmi.initialized else load_callback)
+                    try:
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
+                    except Exception as e:
+                        logging.exception(e)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 abort_catcher = self.abort_previous_loading_progress("midi_program_change")
                 try:
-                    yield gen.Task(self.snapshot_load, program, abort_catcher)
+                    yield gen.Task(self.snapshot_load_gen_helper, program, False, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -1146,6 +1167,12 @@ class Host(object):
 
             self.msg_callback("transport %i %f %f %s" % (rolling, bpb, bpm, self.transport_sync))
 
+            if self.hmi.initialized:
+                try:
+                    yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+                except Exception as e:
+                    logging.exception(e)
+
         elif cmd == "data_finish":
             now  = time.clock()
             diff = now-self.last_data_finish_msg
@@ -1156,30 +1183,6 @@ class Host(object):
             else:
                 diff = (0.5-diff)/0.5*0.064
                 ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
-
-        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
-            # TODO: Is this triggered by mod-host?
-            msg_data = msg[len(cmd)+1:].split(" ", 2)
-            enable = int(msg_data[0])
-            channel = int(msg_data[1])
-            logging.debug("[host] received bank: %i %i", enable, channel)
-            if enable == 1:
-                # The range in mod-host is [-1, 15]
-                self.profile.set_midi_prgch_channel("pedalboard", channel+1)
-            else:
-                self.profile.set_midi_prgch_channel("pedalboard", 0) # off
-
-        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
-            # TODO: Is this triggered by mod-host?
-            msg_data = msg[len(cmd)+1:].split(" ", 2)
-            enable = int(msg_data[0])
-            channel = int(msg_data[1])
-            logging.debug("[host] received snapshot: %i %i", enable, channel)
-            if enable == 1:
-                # The range in mod-host is [-1, 15]
-                self.profile.set_midi_prgch_channel("snapshot", channel+1)
-            else:
-                self.profile.set_midi_prgch_channel("snapshot", 0) # off
 
         else:
             logging.error("[host] unrecognized command: %s", cmd)
@@ -1242,7 +1245,7 @@ class Host(object):
                 if datatype == 'string':
                     r = resp
                 elif not resp.startswith("resp"):
-                    logging.error("[host] protocol error: %s", ProtocolError(resp))
+                    logging.error("[host] protocol error: %s (for msg: '%s')", ProtocolError(resp), msg)
                     r = None
                 else:
                     r = resp.replace("resp ", "").replace("\0", "").strip()
@@ -1324,9 +1327,9 @@ class Host(object):
             self.addressings.cchain.restart_if_crashed()
 
             if self.transport_sync == "link":
-                self.set_link_enabled(True)
+                self.set_link_enabled()
             elif self.transport_sync == "midi_clock_slave":
-                self.set_midi_clock_slave_enabled(True)
+                self.set_midi_clock_slave_enabled()
 
         midiports = []
         for port_id, port_alias, _ in self.midiports:
@@ -1615,6 +1618,7 @@ class Host(object):
             allports = get_plugin_control_inputs_and_monitored_outputs(uri)
             badports = []
             valports = {}
+            ranges = {}
 
             enabled_symbol = None
             freewheel_symbol = None
@@ -1625,6 +1629,7 @@ class Host(object):
             for port in allports['inputs']:
                 symbol = port['symbol']
                 valports[symbol] = port['ranges']['default']
+                ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
@@ -1666,6 +1671,7 @@ class Host(object):
                 "addressings" : {}, # symbol: addressing
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
+                "ranges"      : ranges,
                 "badports"    : badports,
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
@@ -1848,6 +1854,14 @@ class Host(object):
             for symbol, value in get_state_port_values(state).items():
                 if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
                     continue
+
+                minimum, maximum = pluginData['ranges'][symbol]
+                if value < minimum:
+                    print("ERROR: preset_load with value below minimum: symbol '%s', value %f" % (symbol, value))
+                    value = minimum
+                elif value > maximum:
+                    print("ERROR: preset_load with value above maximum: symbol '%s', value %f" % (symbol, value))
+                    value = maximum
 
                 pluginData['ports'][symbol] = value
 
@@ -2073,8 +2087,12 @@ class Host(object):
         self.pedalboard_snapshots[idx] = None
         return True
 
+    # helper function for gen.Task, which has troubles calling into a coroutine directly
+    def snapshot_load_gen_helper(self, idx, from_hmi, abort_catcher, callback):
+        self.snapshot_load(idx, from_hmi, abort_catcher, callback)
+
     @gen.coroutine
-    def snapshot_load(self, idx, abort_catcher, callback=lambda r:None):
+    def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
         if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
             snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
             is_hmi_snapshot = True
@@ -2093,6 +2111,7 @@ class Host(object):
                 return
 
             self.current_pedalboard_snapshot_id = idx
+            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % idx
 
         used_actuators = []
 
@@ -2167,13 +2186,11 @@ class Host(object):
             callback(False)
             return
 
-        if not is_hmi_snapshot:
-            try:
-                yield gen.Task(self.paramhmi_set, 'pedalboard', ':presets', idx)
-            except Exception as e:
-                logging.exception(e)
-
-        self.addressings.load_current(used_actuators, (PEDALBOARD_INSTANCE_ID, ":presets"), True, abort_catcher)
+        if is_hmi_snapshot or not from_hmi:
+            skippedPort = (None, None)
+        else:
+            skippedPort = (PEDALBOARD_INSTANCE_ID, ":presets")
+        self.addressings.load_current(used_actuators, skippedPort, True, abort_catcher)
 
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
@@ -2188,6 +2205,10 @@ class Host(object):
             print("ERROR: hmi next page not supported")
             callback(False)
             return
+
+        # If a pedalboard is loading (via MIDI program messsage), wait for it to finish
+        while self.next_hmi_pedalboard is not None:
+            yield gen.sleep(0.5)
 
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
@@ -2640,6 +2661,7 @@ class Host(object):
                 "addressings" : {}, # symbol: addressing
                 "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
                 "ports"       : valports,
+                "ranges"      : ranges,
                 "badports"    : badports,
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
@@ -3302,21 +3324,115 @@ _:b%i
         # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
         self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
 
+    def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
+        if setProfile:
+            if not self.profile.set_sync_mode(mode):
+                print("not")
+                callback(False)
+                return
+
+        def step3(ok):
+            if not ok:
+                callback(False)
+                return
+            else:
+                if sendWeb:
+                    self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                                 self.transport_bpb,
+                                                                 self.transport_bpm,
+                                                                 self.transport_sync))
+                if sendHMI and self.hmi.initialized:
+                    try:
+                        self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source())
+                    except Exception as e:
+                        logging.exception(e)
+                callback(True)
+
+        def step2(ok):
+            if not ok:
+                callback(False)
+                return
+            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+                self.transport_sync = "none"
+                self.send_notmodified("feature_enable midi_clock_slave 0", step3, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
+                self.transport_sync = "midi_clock_slave"
+                self.send_notmodified("feature_enable midi_clock_slave 1", step3, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+                self.transport_sync = "link"
+                self.send_notmodified("feature_enable link 1", step3, datatype='boolean')
+            else:
+                callback(False)
+                return
+
+        def step1(ok):
+            # Then set new sync mode and send to host
+            if not ok:
+                callback(False)
+                return
+            if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+                self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
+                self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
+            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
+                self.send_notmodified("feature_enable midi_clock_slave 0", step2, datatype='boolean')
+            else:
+                callback(False)
+                return
+
+        # First, unadress BPM port if switching to Link or MIDI sync mode
+        if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
+            self.address("/pedalboard", ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, step1)
+        else:
+            step1(True)
+
     @gen.coroutine
-    def set_link_enabled(self, enabled, saveConfig = False):
-        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+    def set_link_enabled(self):
+        if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: link enabled while BPM is still addressed")
 
-        self.transport_sync = "link" if enabled else "none"
-        self.send_notmodified("feature_enable link %i" % int(enabled))
+        self.send_notmodified("feature_enable midi_clock_slave 0")
+        self.send_notmodified("feature_enable link 1")
+
+        self.transport_sync = "link"
+        self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_ABLETON_LINK)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_ABLETON_LINK)
+            except Exception as e:
+                logging.exception(e)
 
     @gen.coroutine
-    def set_midi_clock_slave_enabled(self, enabled):
-        if enabled and self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
+    def set_midi_clock_slave_enabled(self):
+        if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: MIDI Clock Slave enabled while BPM is still addressed")
 
-        self.transport_sync = "midi_clock_slave" if enabled else "none"
-        self.send_notmodified("feature_enable midi_clock_slave %i" % int(enabled))
+        self.send_notmodified("feature_enable link 0")
+        self.send_notmodified("feature_enable midi_clock_slave 1")
+
+        self.transport_sync = "midi_clock_slave"
+        self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
+            except Exception as e:
+                logging.exception(e)
+
+    @gen.coroutine
+    def set_internal_transport_source(self):
+        self.send_notmodified("feature_enable link 0")
+        self.send_notmodified("feature_enable midi_clock_slave 0")
+
+        self.transport_sync = "none"
+        self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_INTERNAL)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_INTERNAL)
+            except Exception as e:
+                logging.exception(e)
 
     @gen.coroutine
     def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
@@ -3425,13 +3541,13 @@ _:b%i
                                                          self.transport_bpm,
                                                          self.transport_sync))
 
-    def set_midi_program_change_pedalboard_bank_channel(self, channel):
-        if self.profile.set_midi_prgch_channel("bank", channel):
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
+    #def set_midi_program_change_pedalboard_bank_channel(self, channel):
+        #if self.profile.set_midi_prgch_channel("bank", channel):
+            #self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % channel)
 
-    def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
-        if self.profile.set_midi_prgch_channel("snapshot", channel):
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
+    #def set_midi_program_change_pedalboard_snapshot_channel(self, channel):
+        #if self.profile.set_midi_prgch_channel("snapshot", channel):
+            #self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % channel)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - timers
@@ -3751,9 +3867,9 @@ _:b%i
         def load_callback(_):
             self.bank_id = bank_id
             self.load(bundlepath)
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel %d %d" % (int(not self.profile.get_footswitch_navigation("bank")),
-                                                                                             self.profile.get_midi_prgch_channel("pedalboard")),
-                                 loaded_callback, datatype='boolean')
+
+            # Dummy host call, just to receive callback when all other messages finish
+            self.send_notmodified("cpu_load", loaded_callback, datatype='float_structure')
 
         def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
@@ -3835,7 +3951,7 @@ _:b%i
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 try:
-                    self.snapshot_load(value, abort_catcher, callback)
+                    self.snapshot_load(value, True, abort_catcher, callback)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -3870,7 +3986,7 @@ _:b%i
             port_addressing = pluginData['addressings'].get(portsymbol, None)
             # readdress with new divider value
             if port_addressing:
-                if port_addressing.get('tempo', None):
+                if port_addressing.get('tempo', None) and False:
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
                     new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
 
@@ -4139,15 +4255,32 @@ _:b%i
         result = self.profile.get_midi_prgch_channel("snapshot")
         callback(True, result)
 
+    @gen.coroutine
     def hmi_set_snapshot_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a snapshot via Program Change."""
         logging.debug("hmi set snapshot channel %i", channel)
 
-        if self.profile.set_midi_prgch_channel("snapshot", channel):
-            # The range in mod-host is [-1, 15]
-            self.send_notmodified("set_midi_program_change_pedalboard_snapshot_channel 1 %d" % (channel-1), callback)
-        else:
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+
+        if midi_ss_prgch == channel:
+            callback(True)
+            return
+
+        if not self.profile.set_midi_prgch_channel("snapshot", channel):
             callback(False)
+            return
+
+        # NOTE: The range in mod-host is [0, 15]
+
+        # if nothing is using old snapshot channel, disable monitoring
+        if midi_pb_prgch != channel and midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            yield gen.Task(self.send_notmodified, "monitor_midi_program %d 1" % (midi_ss_prgch-1))
+
+        # enable monitoring for this channel
+        if channel >= 1 and channel <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (channel-1), callback)
+        else:
+            callback(True)
 
     def hmi_get_pedalboard_prgch(self, callback):
         """Query the MIDI channel for selecting a pedalboard in a bank via Program Change."""
@@ -4156,15 +4289,32 @@ _:b%i
         result = self.profile.get_midi_prgch_channel("pedalboard")
         callback(True, result)
 
+    @gen.coroutine
     def hmi_set_pedalboard_prgch(self, channel, callback):
         """Set the MIDI channel for selecting a pedalboard in a bank via Program Change."""
         logging.debug("hmi set pedalboard channel %i", channel)
 
-        if self.profile.set_midi_prgch_channel("pedalboard", channel):
-            # The range in mod-host is [-1, 15]
-            self.send_notmodified("set_midi_program_change_pedalboard_bank_channel 1 %d" % (channel-1), callback)
-        else:
+        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+
+        if midi_pb_prgch == channel:
+            callback(True)
+            return
+
+        if not self.profile.set_midi_prgch_channel("pedalboard", channel):
             callback(False)
+            return
+
+        # NOTE: The range in mod-host is [0, 15]
+
+        # if nothing is using old pedalboard channel, disable monitoring
+        if midi_ss_prgch != channel and midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            yield gen.Task(self.send_notmodified, "monitor_midi_program %d 1" % (midi_pb_prgch-1))
+
+        # enable monitoring for this channel
+        if channel >= 1 and channel <= 16:
+            self.send_notmodified("monitor_midi_program %d 1" % (channel-1), callback)
+        else:
+            callback(True)
 
     def hmi_get_clk_src(self, callback):
         """Query the tempo and transport sync mode."""
@@ -4179,46 +4329,7 @@ _:b%i
         """Set the tempo and transport sync mode."""
         logging.debug("hmi set clock source %i", mode)
 
-        if not self.profile.set_sync_mode(mode):
-            callback(False)
-            return
-
-        def step3(ok):
-            if not ok:
-                callback(False)
-            else:
-                self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
-                                                             self.transport_bpb,
-                                                             self.transport_bpm,
-                                                             self.transport_sync))
-                callback(True)
-
-        def step2(ok):
-            if not ok:
-                callback(False)
-            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-                self.transport_sync = "none"
-                self.send_notmodified("feature_enable midi_clock_slave 0", step3, datatype='boolean')
-            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-                self.transport_sync = "midi_clock_slave"
-                self.send_notmodified("feature_enable midi_clock_slave 1", step3, datatype='boolean')
-            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-                self.transport_sync = "link"
-                self.send_notmodified("feature_enable link 1", step3, datatype='boolean')
-            else:
-                callback(False)
-
-        # Communicate with mod host.
-        # Note: _First_ disable all unchoosen options.
-        # FIXME do not require disabling options first!
-        if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-            self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
-        elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-            self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
-        elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-            self.send_notmodified("feature_enable midi_clock_slave 0", step2, datatype='boolean')
-        else:
-            callback(False)
+        self.set_sync_mode(mode, False, True, True, callback)
 
     # There is a plug-in for that. But Jesse does not find it usable.
     def hmi_get_send_midi_clk(self, callback):
@@ -4420,7 +4531,7 @@ _:b%i
         abort_catcher = self.abort_previous_loading_progress("hmi_snapshot_load")
         # Use negative numbers for HMI snapshots
         try:
-            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), abort_catcher, callback)
+            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), True, abort_catcher, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
@@ -4615,20 +4726,7 @@ _:b%i
         except Exception as e:
             logging.exception(e)
 
-        if values['transportSource'] == Profile.TRANSPORT_SOURCE_INTERNAL:
-            self.transport_sync = "none"
-            self.send_notmodified("feature_enable link 0")
-            self.send_notmodified("feature_enable midi_clock_slave 0")
-
-        elif values['transportSource'] == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-            self.transport_sync = "midi_clock_slave"
-            self.send_notmodified("feature_enable link 0")
-            self.send_notmodified("feature_enable midi_clock_slave 1")
-
-        elif values['transportSource'] == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-            self.transport_sync = "link"
-            self.send_notmodified("feature_enable midi_clock_slave 0")
-            self.send_notmodified("feature_enable link 1")
+        self.set_sync_mode(values['transportSource'], True, True, False, lambda r:None)
 
         self.hmi_set_send_midi_clk(values['midiClockSend'], lambda r:None)
 

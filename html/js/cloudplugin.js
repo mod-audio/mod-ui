@@ -606,6 +606,7 @@ JqueryClass('cloudPluginBox', {
         var category   = {}
         var categories = {
             'All': plugins.length,
+            'ControlVoltage': 0,
             'Delay': 0,
             'Distortion': 0,
             'Dynamics': 0,
