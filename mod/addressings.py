@@ -393,7 +393,7 @@ class Addressings(object):
 
         # Write addressings to disk
         with TextFileFlusher(os.path.join(bundlepath, "addressings.json")) as fh:
-            json.dump(addressings, fh)
+            json.dump(addressings, fh, indent=4)
 
     def registerMappings(self, msg_callback, instances):
         # HMI
