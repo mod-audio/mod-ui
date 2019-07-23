@@ -321,10 +321,10 @@ class HMI(object):
                     rmax = currentNum
                     break
 
-                data    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                dataLen = len(data)
+                xdata    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
+                xdataLen = len(xdata)
 
-                if numBytesFree-dataLen-2 < 0:
+                if numBytesFree-xdataLen-2 < 0:
                     print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
                     if value >= currentNum:
                         value = 0.0
@@ -332,8 +332,8 @@ class HMI(object):
                     break
 
                 currentNum += 1
-                numBytesFree -= dataLen+1
-                optionsData.append(data)
+                numBytesFree -= xdataLen+1
+                optionsData.append(xdata)
 
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
