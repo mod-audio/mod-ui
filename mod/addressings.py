@@ -672,22 +672,35 @@ class Addressings(object):
                     except Exception as e:
                         logging.exception(e)
 
+    def remove_hmi(self, addressing_data, actuator_uri):
+        addressings       = self.hmi_addressings[actuator_uri]
+        addressings_addrs = addressings['addrs']
+        index = addressings_addrs.index(addressing_data)
+        addressings_addrs.pop(index)
+
+        old_idx = addressings['idx']
+        # if addressings['idx'] == index:
+        if old_idx != 0 or (old_idx == 0 and not len(addressings_addrs)):
+            addressings['idx'] -= 1
+        return old_idx == index
+
     # NOTE: make sure to call hmi_load_current() afterwards if removing HMI addressings
     def remove(self, addressing_data):
         actuator_uri  = addressing_data['actuator_uri']
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
-            addressings       = self.hmi_addressings[actuator_uri]
-            addressings_addrs = addressings['addrs']
-            index = addressings_addrs.index(addressing_data)
-            addressings_addrs.pop(index)
+            group_actuators = self.get_group_actuators(actuator_uri)
+            if group_actuators:
+                for i in range(len(group_actuators)):
+                    group_actuator_uri = group_actuators[i]
+                    group_addressing_data = addressing_data.copy()
+                    group_addressing_data['actuator_uri'] = group_actuator_uri
+                    if i == 0: # first actuator has reverse enum hmi type
+                        group_addressing_data['hmitype'] = HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    self.remove_hmi(group_addressing_data, group_actuator_uri)
 
-            old_idx = addressings['idx']
-            # if addressings['idx'] == index:
-            if old_idx != 0 or (old_idx == 0 and not len(addressings_addrs)):
-                addressings['idx'] -= 1
-            return old_idx == index
+            return self.remove_hmi(addressing_data, actuator_uri)
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]
@@ -725,7 +738,6 @@ class Addressings(object):
         if self.pages_cb: # device supports pages
             current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
             if not current_page_assigned:
-                # control_rm or cb false?
                 callback(False)
                 return
             else:
@@ -921,6 +933,16 @@ class Addressings(object):
         if actuator_uri == kBpmURI:
             return self.ADDRESSING_TYPE_BPM
         return self.ADDRESSING_TYPE_CC
+
+    def get_group_actuators(self, actuator_uri):
+        if not self.is_hmi_actuator(actuator_uri) or actuator_uri not in [a['uri'] for a in self.hw_actuators]:
+            return False
+
+        actuator = next(a for a in self.hw_actuators if a['uri'] == actuator_uri)
+        group_actuators = actuator.get('group', None)
+        if group_actuators is None:
+            return False
+        return group_actuators
 
     def get_presets_as_options(self, instance_id):
         pluginData = self._task_get_plugin_data(instance_id)

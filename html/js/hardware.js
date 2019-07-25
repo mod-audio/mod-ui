@@ -314,6 +314,7 @@ function HardwareManager(options) {
           headerRow.append($('<th>Page '+i+'</th>'))
         }
         table.append(headerRow)
+
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
@@ -362,6 +363,7 @@ function HardwareManager(options) {
 
         // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else,
         // except on different pages
+        // TODO remove
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].group) {
             groupActuator = HARDWARE_PROFILE[i]
@@ -409,6 +411,7 @@ function HardwareManager(options) {
         }
 
         // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else
+        // TODO remove
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].group) {
             groupActuator = HARDWARE_PROFILE[i]
