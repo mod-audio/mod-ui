@@ -316,6 +316,7 @@ class Host(object):
         Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback("tu", self.hmi_tuner)
         Protocol.register_cmd_callback("tu_i", self.hmi_tuner_input)
+        Protocol.register_cmd_callback("fn", self.hmi_footswitch_navigation)
 
         Protocol.register_cmd_callback("g_bp", self.hmi_get_truebypass_value)
         Protocol.register_cmd_callback("s_bp", self.hmi_set_truebypass_value)
@@ -751,18 +752,7 @@ class Host(object):
 
         # After all is set, update the HMI
         if self.hmi.initialized:
-            display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
-            quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
-            master_chan_mode = self.profile.get_master_volume_channel_mode()
-            master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-            pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
-            self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
-                                                             quick_bypass_mode,
-                                                             int(self.current_tuner_mute),
-                                                             self.profile.get_index(),
-                                                             master_chan_mode,
-                                                             get_master_volume(master_chan_is_mode_2),
-                                                             pb_name))
+            self.send_hmi_boot()
 
         # All set, disable HW bypass now
         init_bypass()
@@ -851,6 +841,22 @@ class Host(object):
 
         self.msg_callback("stop")
 
+    def send_hmi_boot(self):
+        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
+        master_chan_mode = self.profile.get_master_volume_channel_mode()
+        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+        if self.isBankFootswitchNavigationOn():
+            self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID))
+        self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
+                                                          quick_bypass_mode,
+                                                          int(self.current_tuner_mute),
+                                                          self.profile.get_index(),
+                                                          master_chan_mode,
+                                                          get_master_volume(master_chan_is_mode_2),
+                                                          pb_name))
+
     @gen.coroutine
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
@@ -863,25 +869,19 @@ class Host(object):
             return
 
         self.profile.apply_first()
-
-        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
-        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
-        master_chan_mode = self.profile.get_master_volume_channel_mode()
-        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
-        self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
-                                                          quick_bypass_mode,
-                                                          int(self.current_tuner_mute),
-                                                          self.profile.get_index(),
-                                                          master_chan_mode,
-                                                          get_master_volume(master_chan_is_mode_2),
-                                                          pb_name))
+        self.send_hmi_boot()
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
         self.addressings.load_current(actuators, (None, None), False, abort_catcher)
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    def isBankFootswitchNavigationOn(self):
+        return (
+            self.descriptor.get("hmi_bank_navigation", False) and
+            self.prefs.get("bank-footswitch-navigation", False)
+        )
 
     def setNavigateWithFootswitches(self, enabled, callback):
         def foot2_callback(_):
@@ -946,10 +946,7 @@ class Host(object):
             self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
 
         def cb_set_initial_state(_):
-            if self.profile.get_footswitch_navigation("bank") and not self.addressings.pages_cb:
-                cb = cb_footswitches
-            else:
-                cb = cb_migi_pb_prgch
+            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_migi_pb_prgch
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         if self.hmi.initialized:
@@ -3850,7 +3847,7 @@ _:b%i
             self.send_notmodified("cpu_load", loaded_callback, datatype='float_structure')
 
         def footswitch_callback(_):
-            self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
+            self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)
 
         def hmi_clear_callback(_):
             self.hmi.clear(footswitch_callback)
@@ -4154,6 +4151,30 @@ _:b%i
         freq, note, cents = find_freqnotecents(value)
         try:
             yield gen.Task(self.hmi.tuner, freq, note, cents)
+        except Exception as e:
+            logging.exception(e)
+
+    @gen.coroutine
+    def hmi_footswitch_navigation(self, value, callback):
+        enabled = bool(value)
+        self.prefs.setAndSave("bank-footswitch-navigation", enabled)
+        callback(True)
+
+        try:
+            yield gen.Task(self.setNavigateWithFootswitches, enabled)
+        except Exception as e:
+            logging.exception(e)
+
+        if enabled:
+            return
+
+        try:
+            yield gen.Task(self.addressings.hmi_load_current, "/hmi/footswitch1")
+        except Exception as e:
+            logging.exception(e)
+
+        try:
+            yield gen.Task(self.addressings.hmi_load_current, "/hmi/footswitch2")
         except Exception as e:
             logging.exception(e)
 
