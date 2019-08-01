@@ -28,8 +28,8 @@ from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
 from mod.settings import (LOG,
                           DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA,
-                          PREFERENCES_JSON_FILE)
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT,
+                          HOST_CARLA, PREFERENCES_JSON_FILE)
 
 if DEV_HOST:
     Host = FakeHost
@@ -81,7 +81,7 @@ class Session(object):
         hmiOpened = False
 
         if not DEV_HMI:
-            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb, self.hmi_reinit_cb)
+            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT, self.hmi_initialized_cb, self.hmi_reinit_cb)
             hmiOpened = self.hmi.sp is not None
 
         #print("Using HMI =>", hmiOpened)
@@ -142,7 +142,7 @@ class Session(object):
         if not os.path.exists("/usr/bin/hmi-reset"):
             return
         os.system("/usr/bin/hmi-reset; /usr/bin/sleep 3")
-        self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb, self.hmi_reinit_cb)
+        self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT, self.hmi_initialized_cb, self.hmi_reinit_cb)
         self.host.reconnect_hmi(self.hmi)
 
     # -----------------------------------------------------------------------------------------------------------------
