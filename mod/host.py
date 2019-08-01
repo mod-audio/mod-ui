@@ -909,7 +909,6 @@ class Host(object):
             if self.allpedalboards is None:
                 self.allpedalboards = get_all_good_pedalboards()
             bank_id = 0
-            pedalboard = DEFAULT_PEDALBOARD
             pedalboards = self.allpedalboards
 
         num = 0
