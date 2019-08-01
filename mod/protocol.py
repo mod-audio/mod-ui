@@ -131,6 +131,8 @@ class Protocol(object):
         "g_tum": [],    # get_tuner_mute
         "s_tum": [int], # set_tuner_mute
 
+        "fn": [int], # footswitch_navigation
+
         # User Profile handling
         "g_p": [],    # get_current_profile
         "r_p": [int], # retrieve_profile
