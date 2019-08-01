@@ -70,7 +70,7 @@ class SerialIOStream(BaseIOStream):
         return r
 
 class HMI(object):
-    def __init__(self, port, baud_rate, init_cb, reinit_cb):
+    def __init__(self, port, baud_rate, timeout, init_cb, reinit_cb):
         hw_actuators = get_hardware_actuators()
         self.sp = None
         self.port = port
@@ -81,6 +81,7 @@ class HMI(object):
         self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
         self.last_write_time = 0
+        self.timeout = timeout # in seconds
         self.ioloop = ioloop.IOLoop.instance()
         self.reinit_cb = reinit_cb
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
@@ -227,8 +228,8 @@ class HMI(object):
         if len(self.queue) > 30:
             self.need_flush = len(self.queue)
 
-        elif self.last_write_time != 0 and time.time() - self.last_write_time > 5:
-            logging.warn("[hmi] no response for 5s, giving up")
+        elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
+            logging.warn("[hmi] no response for %ds, giving up", self.timeout)
             if self.flush_io is not None:
                 self.ioloop.remove_timeout(self.flush_io)
             self.flush(True)
