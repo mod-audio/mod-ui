@@ -1589,7 +1589,7 @@ class TemplateLoader(TimelessRequestHandler):
 
 class BulkTemplateLoader(TimelessRequestHandler):
     def get(self):
-        self.set_header("Content-Type", "text/plain; charset=UTF-8")
+        self.set_header("Content-Type", "text/javascript; charset=UTF-8")
         basedir = os.path.join(HTML_DIR, 'include')
         for template in os.listdir(basedir):
             if not re.match('^[a-z_]+\.html$', template):
