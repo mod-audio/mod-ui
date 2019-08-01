@@ -1260,12 +1260,21 @@ class Host(object):
     # send data to host, set modified flag to true
     def send_modified(self, msg, callback=None, datatype='int'):
         self.pedalboard_modified = True
+
+        if self.crashed:
+            callback(process_resp(None, datatype))
+            return
+
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()
 
     # send data to host, don't change modified flag
     def send_notmodified(self, msg, callback=None, datatype='int'):
+        if self.crashed:
+            callback(process_resp(None, datatype))
+            return
+
         self._queue.append((msg, callback, datatype))
         logging.debug("[host] idle? -> %i", self._idle)
         if self._idle:
