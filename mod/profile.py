@@ -67,8 +67,6 @@ class Profile(object):
     DEFAULTS = {
         'cvBias': CONTROL_VOLTAGE_BIAS_0_to_5,
         'expressionPedalMode': EXPRESSION_PEDAL_MODE_TIP,
-        'footswitchesNavigateBank': False,
-        'footswitchesNavigateSnapshots': False,
         'headphoneVolume': -6.0, # 60%
         'inputMode': INPUT_MODE_EXP_PEDAL,
         'inputStereoLink': True,
@@ -172,14 +170,6 @@ class Profile(object):
     def get_exp_mode(self):
         return self.values['expressionPedalMode']
 
-    def get_footswitch_navigation(self, what):
-        if what == 'bank':
-            return self.values['footswitchesNavigateBank']
-        if what == 'snapshot':
-            return self.values['footswitchesNavigateSnapshots']
-        logging.error("[profile] get_footswitch_navigation called with invalid arg %s", what)
-        return False
-
     def get_master_volume_channel_mode(self):
         return self.values['masterVolumeChannelMode']
 
@@ -231,17 +221,6 @@ class Profile(object):
             logging.error("[profile] set_exp_mode called with invalid value %s", value)
             return False
         return self._compare_and_set_value('expressionPedalMode', value)
-
-    def set_footswitch_navigation(self, what, value):
-        if not isinstance(value, bool):
-            logging.error("[profile] set_footswitch_navigation called with non-boolean value")
-            return False
-        if what == 'bank':
-            return self._compare_and_set_value('footswitchesNavigateBank', value)
-        if what == 'snapshot':
-            return self._compare_and_set_value('footswitchesNavigateSnapshots', value)
-        logging.error("[profile] set_footswitch_navigation called with invalid arg %s", what)
-        return False
 
     def set_headphone_volume(self, value):
         if value < 0 or value > 100:

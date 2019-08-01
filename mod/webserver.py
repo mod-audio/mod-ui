@@ -1311,8 +1311,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self, mode):
-        print("PedalboardTransportSetSyncMode")
-        print(mode)
         if mode == "/none":
             transport_sync = Profile.TRANSPORT_SOURCE_INTERNAL
         elif mode == "/midi_clock_slave":
