@@ -164,6 +164,7 @@ function refresh_sysprefs() {
                 $("#prefs-bluetooth-name").prop("disabled", true)
             }
 
+            $("#prefs-prefs-disable-peakmeter").prop("checked", resp.disable_peakmeter)
             $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
@@ -292,11 +293,12 @@ function system_exechange(data, callback) {
     })
 }
 
-function enable_service(name, enable) {
+function enable_service(name, enable, inverted) {
     system_exechange({
-        'type'  : 'service',
-        'name'  : name,
-        'enable': enable ? 1 : 0,
+        'type'    : 'service',
+        'name'    : name,
+        'enable'  : enable ? 1 : 0,
+        'inverted': inverted ? 1 : 0,
     })
 }
 
@@ -451,10 +453,6 @@ $('document').ready(function() {
     refresh_sysinfo()
     refresh_sysprefs()
 
-    if (PREFERENCES['tuner-mutes-outputs'] != "false") {
-        $("#prefs-prefs-muted-tuner").prop("checked", true)
-    }
-    
     if (PREFERENCES['dev-mode'] == "on") {
         $("#prefs-ui-developer-mode").prop("checked", true)
     }
@@ -534,8 +532,8 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Preferences
 
-    $("#prefs-prefs-muted-tuner").click(function () {
-        config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
+    $("#prefs-prefs-disable-peakmeter").click(function () {
+        enable_service("mod-peakmeter", $(this).prop("checked"), true)
     })
     
     // ----------------------------------------------------------------------------------------------------------------
@@ -773,9 +771,13 @@ $('document').ready(function() {
 
                 <h1>Preferences</h1>
                 <form class="form">
+                    <p>
+                        If you are experiencing issues because of the peak meters, you can disable them here.<br/>
+                        This is a temporary countermeasure against issues in a few Duo X units.
+                    </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
-                            Mute audio outputs when Tuner is enabled
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-disable-peakmeter">
+                            Disable audio peak meters
                         </input>
                     </label>
                 </form>
@@ -918,8 +920,8 @@ $('document').ready(function() {
                     </label>
                     <p>
                         Show option to list 'beta' plugins in the Plugin Store.<br/>
-                        Note that beta plugins can be unstable and cause crashes. If you share a pedalboard containing beta plugins, it will only
-						be available to users that explicitly accept pedalboards with beta plugins.<br/>
+                        Note that beta plugins can be unstable and cause crashes.
+                        If you share a pedalboard containing beta plugins, it will only be available to users that explicitly accept pedalboards with beta plugins.<br/>
                         Just remember: things can break!
                     </p>
                 </form>
