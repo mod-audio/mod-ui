@@ -769,19 +769,6 @@ $('document').ready(function() {
                     </label>
                 </form>
 
-                <h1>Preferences</h1>
-                <form class="form">
-                    <p>
-                        If you are experiencing issues because of the peak meters, you can disable them here.<br/>
-                        This is a temporary countermeasure against issues in a few Duo X units.
-                    </p>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-disable-peakmeter">
-                            Disable audio peak meters
-                        </input>
-                    </label>
-                </form>
-
                 <h1>Backup &amp; Restore</h1>
                 <form class="form">
                     <p>
@@ -861,6 +848,16 @@ $('document').ready(function() {
                     </p>
                     -->
                     <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-prefs-disable-peakmeter">
+                            Disable audio peak meters
+                        </input>
+                    </label>
+                    <p>
+                        If you are experiencing issues because of the peak meters, you can disable them here.<br/>
+                        This is a temporary countermeasure against issues in a few Duo X units.
+                    </p>
+
+                    <label>
                         <input type="checkbox" autocomplete="off" id="prefs-audio-mono-copy">
                             Copy mono output buffer to unused channel
                         </input>
@@ -870,6 +867,7 @@ $('document').ready(function() {
                         With this enabled, the 2 outputs will receive the same data if one of them is unconnected.<br/>
                         Note that changing this option requires a reboot for changes to take effect.
                     </p>
+
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
                             Use 256 frames as Buffer Size
