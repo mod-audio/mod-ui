@@ -1262,7 +1262,8 @@ class Host(object):
         self.pedalboard_modified = True
 
         if self.crashed:
-            callback(process_resp(None, datatype))
+            if callback is not None:
+                callback(process_resp(None, datatype))
             return
 
         self._queue.append((msg, callback, datatype))
@@ -1272,7 +1273,8 @@ class Host(object):
     # send data to host, don't change modified flag
     def send_notmodified(self, msg, callback=None, datatype='int'):
         if self.crashed:
-            callback(process_resp(None, datatype))
+            if callback is not None:
+                callback(process_resp(None, datatype))
             return
 
         self._queue.append((msg, callback, datatype))
