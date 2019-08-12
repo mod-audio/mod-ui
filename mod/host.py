@@ -940,12 +940,15 @@ class Host(object):
             else:
                 cb_migi_ss_prgch(True)
 
-        def cb_footswitches(_):
-            self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
+        def cb_footswitches_off(_):
+            self.setNavigateWithFootswitches(False, cb_migi_pb_prgch)
+
+        def cb_footswitches_on(_):
+            cb = cb_migi_pb_prgch if self.isBankFootswitchNavigationOn() else cb_footswitches_off
+            self.setNavigateWithFootswitches(True, cb)
 
         def cb_set_initial_state(_):
-            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_migi_pb_prgch
-            self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
+            self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb_footswitches_on)
 
         if self.hmi.initialized:
             self.setNavigateWithFootswitches(False, cb_set_initial_state)
