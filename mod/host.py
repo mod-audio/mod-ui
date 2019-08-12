@@ -848,7 +848,7 @@ class Host(object):
         master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
         pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
 
-        def send_boot(ok):
+        def send_boot(_):
             self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
                                                               quick_bypass_mode,
                                                               int(self.current_tuner_mute),
@@ -859,7 +859,7 @@ class Host(object):
         if self.isBankFootswitchNavigationOn():
             self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
         else:
-            send_boot()
+            send_boot(True)
 
     @gen.coroutine
     def reconnect_hmi(self, hmi):
