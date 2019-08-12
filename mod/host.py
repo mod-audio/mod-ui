@@ -2355,6 +2355,7 @@ class Host(object):
                 pb = get_pedalboard_info(DEFAULT_PEDALBOARD)
             except:
                 pb = {
+                    'title': "",
                     'width': 0,
                     'height': 0,
                     'midi_legacy_mode': False,
