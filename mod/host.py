@@ -752,7 +752,7 @@ class Host(object):
 
         # After all is set, update the HMI
         if self.hmi.initialized:
-            self.send_hmi_boot()
+            yield gen.Task(self.send_hmi_boot)
 
         # All set, disable HW bypass now
         init_bypass()
@@ -841,21 +841,25 @@ class Host(object):
 
         self.msg_callback("stop")
 
-    def send_hmi_boot(self):
+    def send_hmi_boot(self, callback):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
         master_chan_mode = self.profile.get_master_volume_channel_mode()
         master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
         pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+
+        def send_boot(ok):
+            self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
+                                                              quick_bypass_mode,
+                                                              int(self.current_tuner_mute),
+                                                              self.profile.get_index(),
+                                                              master_chan_mode,
+                                                              get_master_volume(master_chan_is_mode_2),
+                                                              pb_name), callback)
         if self.isBankFootswitchNavigationOn():
-            self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID))
-        self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
-                                                          quick_bypass_mode,
-                                                          int(self.current_tuner_mute),
-                                                          self.profile.get_index(),
-                                                          master_chan_mode,
-                                                          get_master_volume(master_chan_is_mode_2),
-                                                          pb_name))
+            self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
+        else:
+            send_boot()
 
     @gen.coroutine
     def reconnect_hmi(self, hmi):
@@ -3320,17 +3324,15 @@ _:b%i
             if not ok:
                 callback(False)
                 return
+
+            if sendWeb:
+                self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                             self.transport_bpb,
+                                                             self.transport_bpm,
+                                                             self.transport_sync))
+            if sendHMI and self.hmi.initialized:
+                self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source(), callback)
             else:
-                if sendWeb:
-                    self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
-                                                                 self.transport_bpb,
-                                                                 self.transport_bpm,
-                                                                 self.transport_sync))
-                if sendHMI and self.hmi.initialized:
-                    try:
-                        self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source())
-                    except Exception as e:
-                        logging.exception(e)
                 callback(True)
 
         def step2(ok):
@@ -3355,7 +3357,7 @@ _:b%i
             if not ok:
                 callback(False)
                 return
-            if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
                 self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
                 self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
@@ -3824,7 +3826,7 @@ _:b%i
 
         bundlepath = pedalboards[pedalboard_id]['bundle']
 
-        def loaded2_callback(ok):
+        def load_different_callback(ok):
             if self.next_hmi_pedalboard is None:
                 print("ERROR: Delayed loading is in corrupted state")
                 return
@@ -3833,7 +3835,7 @@ _:b%i
             else:
                 print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard)
 
-        def loaded_callback(_):
+        def hmi_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
             # Check if there's a pending pedalboard to be loaded
@@ -3841,20 +3843,21 @@ _:b%i
             self.next_hmi_pedalboard = None
 
             if next_pedalboard != (bank_id, pedalboard_id):
-                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], loaded2_callback)
+                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], load_different_callback)
             else:
                 self.processing_pending_flag = False
                 self.send_notmodified("feature_enable processing 1")
 
-                # Update the title in HMI
-                self.hmi.send("s_pbn {0}".format(self.pedalboard_name))
+        def host_loaded_callback(_):
+            # Update the title in HMI
+            self.hmi.send("s_pbn {0}".format(self.pedalboard_name), hmi_loaded_callback)
 
         def load_callback(_):
             self.bank_id = bank_id
             self.load(bundlepath)
 
-            # Dummy host call, just to receive callback when all other messages finish
-            self.send_notmodified("cpu_load", loaded_callback, datatype='float_structure')
+            # Dummy host call, just to receive callback when all other host messages finish
+            self.send_notmodified("cpu_load", host_loaded_callback, datatype='float_structure')
 
         def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)

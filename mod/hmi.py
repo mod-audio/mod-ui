@@ -146,11 +146,11 @@ class HMI(object):
                     def _callback(resp, resp_args=None):
                         resp = 0 if resp else -1
                         if resp_args is None:
-                            self.send("resp %d" % resp)
+                            self.send("resp %d" % resp, None)
                             logging.debug('[hmi]     sent "resp %s"', resp)
 
                         else:
-                            self.send("resp %d %s" % (resp, resp_args))
+                            self.send("resp %d %s" % (resp, resp_args), None)
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
@@ -219,9 +219,9 @@ class HMI(object):
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
-        self.send("resp -1")
+        self.send("resp -1", None)
 
-    def send(self, msg, callback=None, datatype='int'):
+    def send(self, msg, callback, datatype='int'):
         if self.sp is None:
             return
 
@@ -426,7 +426,7 @@ class HMI(object):
     def clear(self, callback):
         self.send("pb_cl", callback)
 
-    def set_profile_value(self, key, value, callback=None):
+    def set_profile_value(self, key, value, callback):
         self.send("mc %i %i" % (key, int(value)), callback)
 
     def set_profile_values(self, playback_rolling, values, callback):
