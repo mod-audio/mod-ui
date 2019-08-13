@@ -33,6 +33,7 @@ class Menu(object):
     STEREOLINK_INP_ID     = 13
     STEREOLINK_OUTP_ID    = 23
     MASTER_VOL_PORT_ID    = 24
+    FOOTSWITCH_NAVEG_ID   = 150
     PLAY_STATUS_ID        = 180
     TEMPO_BPM_ID          = 181
     TEMPO_BPB_ID          = 182
@@ -69,7 +70,7 @@ class SerialIOStream(BaseIOStream):
         return r
 
 class HMI(object):
-    def __init__(self, port, baud_rate, init_cb, reinit_cb):
+    def __init__(self, port, baud_rate, timeout, init_cb, reinit_cb):
         hw_actuators = get_hardware_actuators()
         self.sp = None
         self.port = port
@@ -80,6 +81,7 @@ class HMI(object):
         self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
         self.last_write_time = 0
+        self.timeout = timeout # in seconds
         self.ioloop = ioloop.IOLoop.instance()
         self.reinit_cb = reinit_cb
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
@@ -144,11 +146,11 @@ class HMI(object):
                     def _callback(resp, resp_args=None):
                         resp = 0 if resp else -1
                         if resp_args is None:
-                            self.send("resp %d" % resp)
+                            self.send("resp %d" % resp, None)
                             logging.debug('[hmi]     sent "resp %s"', resp)
 
                         else:
-                            self.send("resp %d %s" % (resp, resp_args))
+                            self.send("resp %d %s" % (resp, resp_args), None)
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
@@ -217,17 +219,17 @@ class HMI(object):
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
-        self.send("resp -1")
+        self.send("resp -1", None)
 
-    def send(self, msg, callback=None, datatype='int'):
+    def send(self, msg, callback, datatype='int'):
         if self.sp is None:
             return
 
         if len(self.queue) > 30:
             self.need_flush = len(self.queue)
 
-        elif self.last_write_time != 0 and time.time() - self.last_write_time > 5:
-            logging.warn("[hmi] no response for 5s, giving up")
+        elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
+            logging.warn("[hmi] no response for %ds, giving up", self.timeout)
             if self.flush_io is not None:
                 self.ioloop.remove_timeout(self.flush_io)
             self.flush(True)
@@ -321,10 +323,10 @@ class HMI(object):
                     rmax = currentNum
                     break
 
-                data    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                dataLen = len(data)
+                xdata    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
+                xdataLen = len(xdata)
 
-                if numBytesFree-dataLen-2 < 0:
+                if numBytesFree-xdataLen-2 < 0:
                     print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
                     if value >= currentNum:
                         value = 0.0
@@ -332,8 +334,8 @@ class HMI(object):
                     break
 
                 currentNum += 1
-                numBytesFree -= dataLen+1
-                optionsData.append(data)
+                numBytesFree -= xdataLen+1
+                optionsData.append(xdata)
 
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
@@ -424,7 +426,7 @@ class HMI(object):
     def clear(self, callback):
         self.send("pb_cl", callback)
 
-    def set_profile_value(self, key, value, callback=None):
+    def set_profile_value(self, key, value, callback):
         self.send("mc %i %i" % (key, int(value)), callback)
 
     def set_profile_values(self, playback_rolling, values, callback):

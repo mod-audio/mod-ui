@@ -316,6 +316,7 @@ class Host(object):
         Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback("tu", self.hmi_tuner)
         Protocol.register_cmd_callback("tu_i", self.hmi_tuner_input)
+        Protocol.register_cmd_callback("fn", self.hmi_footswitch_navigation)
 
         Protocol.register_cmd_callback("g_bp", self.hmi_get_truebypass_value)
         Protocol.register_cmd_callback("s_bp", self.hmi_set_truebypass_value)
@@ -751,18 +752,7 @@ class Host(object):
 
         # After all is set, update the HMI
         if self.hmi.initialized:
-            display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
-            quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
-            master_chan_mode = self.profile.get_master_volume_channel_mode()
-            master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-            pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
-            self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
-                                                             quick_bypass_mode,
-                                                             int(self.current_tuner_mute),
-                                                             self.profile.get_index(),
-                                                             master_chan_mode,
-                                                             get_master_volume(master_chan_is_mode_2),
-                                                             pb_name))
+            yield gen.Task(self.send_hmi_boot)
 
         # All set, disable HW bypass now
         init_bypass()
@@ -851,6 +841,26 @@ class Host(object):
 
         self.msg_callback("stop")
 
+    def send_hmi_boot(self, callback):
+        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
+        master_chan_mode = self.profile.get_master_volume_channel_mode()
+        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+
+        def send_boot(_):
+            self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
+                                                              quick_bypass_mode,
+                                                              int(self.current_tuner_mute),
+                                                              self.profile.get_index(),
+                                                              master_chan_mode,
+                                                              get_master_volume(master_chan_is_mode_2),
+                                                              pb_name), callback)
+        if self.isBankFootswitchNavigationOn():
+            self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
+        else:
+            send_boot(True)
+
     @gen.coroutine
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
@@ -863,25 +873,19 @@ class Host(object):
             return
 
         self.profile.apply_first()
-
-        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
-        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
-        master_chan_mode = self.profile.get_master_volume_channel_mode()
-        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
-        self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
-                                                          quick_bypass_mode,
-                                                          int(self.current_tuner_mute),
-                                                          self.profile.get_index(),
-                                                          master_chan_mode,
-                                                          get_master_volume(master_chan_is_mode_2),
-                                                          pb_name))
+        self.send_hmi_boot()
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
         self.addressings.load_current(actuators, (None, None), False, abort_catcher)
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    def isBankFootswitchNavigationOn(self):
+        return (
+            self.descriptor.get("hmi_bank_navigation", False) and
+            self.prefs.get("bank-footswitch-navigation", False)
+        )
 
     def setNavigateWithFootswitches(self, enabled, callback):
         def foot2_callback(_):
@@ -910,7 +914,6 @@ class Host(object):
             if self.allpedalboards is None:
                 self.allpedalboards = get_all_good_pedalboards()
             bank_id = 0
-            pedalboard = DEFAULT_PEDALBOARD
             pedalboards = self.allpedalboards
 
         num = 0
@@ -946,10 +949,7 @@ class Host(object):
             self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
 
         def cb_set_initial_state(_):
-            if self.profile.get_footswitch_navigation("bank") and not self.addressings.pages_cb:
-                cb = cb_footswitches
-            else:
-                cb = cb_migi_pb_prgch
+            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_migi_pb_prgch
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         if self.hmi.initialized:
@@ -1264,12 +1264,23 @@ class Host(object):
     # send data to host, set modified flag to true
     def send_modified(self, msg, callback=None, datatype='int'):
         self.pedalboard_modified = True
+
+        if self.crashed:
+            if callback is not None:
+                callback(process_resp(None, datatype))
+            return
+
         self._queue.append((msg, callback, datatype))
         if self._idle:
             self.process_write_queue()
 
     # send data to host, don't change modified flag
     def send_notmodified(self, msg, callback=None, datatype='int'):
+        if self.crashed:
+            if callback is not None:
+                callback(process_resp(None, datatype))
+            return
+
         self._queue.append((msg, callback, datatype))
         logging.debug("[host] idle? -> %i", self._idle)
         if self._idle:
@@ -2344,6 +2355,7 @@ class Host(object):
                 pb = get_pedalboard_info(DEFAULT_PEDALBOARD)
             except:
                 pb = {
+                    'title': "",
                     'width': 0,
                     'height': 0,
                     'midi_legacy_mode': False,
@@ -3313,17 +3325,15 @@ _:b%i
             if not ok:
                 callback(False)
                 return
+
+            if sendWeb:
+                self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
+                                                             self.transport_bpb,
+                                                             self.transport_bpm,
+                                                             self.transport_sync))
+            if sendHMI and self.hmi.initialized:
+                self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source(), callback)
             else:
-                if sendWeb:
-                    self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
-                                                                 self.transport_bpb,
-                                                                 self.transport_bpm,
-                                                                 self.transport_sync))
-                if sendHMI and self.hmi.initialized:
-                    try:
-                        self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source())
-                    except Exception as e:
-                        logging.exception(e)
                 callback(True)
 
         def step2(ok):
@@ -3348,7 +3358,7 @@ _:b%i
             if not ok:
                 callback(False)
                 return
-            if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
                 self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
                 self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
@@ -3851,7 +3861,7 @@ _:b%i
 
         bundlepath = pedalboards[pedalboard_id]['bundle']
 
-        def loaded2_callback(ok):
+        def load_different_callback(ok):
             if self.next_hmi_pedalboard is None:
                 print("ERROR: Delayed loading is in corrupted state")
                 return
@@ -3860,7 +3870,7 @@ _:b%i
             else:
                 print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard)
 
-        def loaded_callback(_):
+        def hmi_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
             # Check if there's a pending pedalboard to be loaded
@@ -3868,23 +3878,24 @@ _:b%i
             self.next_hmi_pedalboard = None
 
             if next_pedalboard != (bank_id, pedalboard_id):
-                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], loaded2_callback)
+                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], load_different_callback)
             else:
                 self.processing_pending_flag = False
                 self.send_notmodified("feature_enable processing 1")
 
-                # Update the title in HMI
-                self.hmi.send("s_pbn {0}".format(self.pedalboard_name))
+        def host_loaded_callback(_):
+            # Update the title in HMI
+            self.hmi.send("s_pbn {0}".format(self.pedalboard_name), hmi_loaded_callback)
 
         def load_callback(_):
             self.bank_id = bank_id
             self.load(bundlepath)
 
-            # Dummy host call, just to receive callback when all other messages finish
-            self.send_notmodified("cpu_load", loaded_callback, datatype='float_structure')
+            # Dummy host call, just to receive callback when all other host messages finish
+            self.send_notmodified("cpu_load", host_loaded_callback, datatype='float_structure')
 
         def footswitch_callback(_):
-            self.setNavigateWithFootswitches(self.profile.get_footswitch_navigation("bank"), load_callback)
+            self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)
 
         def hmi_clear_callback(_):
             self.hmi.clear(footswitch_callback)
@@ -4198,6 +4209,30 @@ _:b%i
         freq, note, cents = find_freqnotecents(value)
         try:
             yield gen.Task(self.hmi.tuner, freq, note, cents)
+        except Exception as e:
+            logging.exception(e)
+
+    @gen.coroutine
+    def hmi_footswitch_navigation(self, value, callback):
+        enabled = bool(value)
+        self.prefs.setAndSave("bank-footswitch-navigation", enabled)
+        callback(True)
+
+        try:
+            yield gen.Task(self.setNavigateWithFootswitches, enabled)
+        except Exception as e:
+            logging.exception(e)
+
+        if enabled:
+            return
+
+        try:
+            yield gen.Task(self.addressings.hmi_load_current, "/hmi/footswitch1")
+        except Exception as e:
+            logging.exception(e)
+
+        try:
+            yield gen.Task(self.addressings.hmi_load_current, "/hmi/footswitch2")
         except Exception as e:
             logging.exception(e)
 

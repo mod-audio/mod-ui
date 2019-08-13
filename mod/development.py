@@ -22,7 +22,7 @@ from mod.host import Host
 
 class FakeHMI(HMI):
     def __init__(self, init_cb):
-        HMI.__init__(self, 0, 0, init_cb, None)
+        HMI.__init__(self, 0, 0, 0, init_cb, None)
 
     def isFake(self):
         return True

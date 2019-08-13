@@ -60,6 +60,7 @@ LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', "/dev/ttyUSB0")
+HMI_TIMEOUT = int(os.environ.get('MOD_HMI_TIMEOUT', 5))
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
@@ -84,7 +85,7 @@ CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
 MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort
-    
+
 TUNER = os.environ.get('MOD_TUNER_PLUGIN', "gxtuner")
 TUNER_INSTANCE_ID = 9994
 

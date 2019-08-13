@@ -370,8 +370,9 @@ class SystemPreferences(JsonRequestHandler):
         self.prefs = []
 
         self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
-        self.make_pref("jack_mono_copy",  self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
-        self.make_pref("jack_sync_mode",  self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
+        self.make_pref("disable_peakmeter", self.OPTION_FILE_EXISTS, "/data/disable-mod-peakmeter")
+        self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
+        self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
         self.make_pref("jack_256_frames",  self.OPTION_FILE_EXISTS, "/data/using-256-frames")
 
         # Optional services
@@ -475,7 +476,7 @@ class SystemExeChange(JsonRequestHandler):
             path   = self.get_argument('path')
             create = bool(int(self.get_argument('create')))
 
-            if path not in ("jack-mono-copy", "jack-sync-mode", "using-256-frames"):
+            if path not in ("disable-peakmeter", "jack-mono-copy", "jack-sync-mode", "using-256-frames"):
                 self.write(False)
                 return
 
@@ -510,27 +511,37 @@ class SystemExeChange(JsonRequestHandler):
                 os.remove(filename)
 
         elif etype == "service":
-            name   = self.get_argument('name')
-            enable = bool(int(self.get_argument('enable')))
+            name     = self.get_argument('name')
+            enable   = bool(int(self.get_argument('enable')))
+            inverted = bool(int(self.get_argument('inverted')))
 
-            if name not in ("mixserver", "netmanager", "mod-sdk"):
+            if name not in ("mixserver", "mod-peakmeter", "netmanager", "mod-sdk"):
                 self.write(False)
                 return
 
-            checkname   = "/data/enable-" + name
-            servicename = name
+            if inverted:
+                checkname = "/data/disable-" + name
+            else:
+                checkname = "/data/enable-" + name
 
-            if servicename == "netmanager":
+            if name == "netmanager":
                 servicename = "jack-netmanager"
+            else:
+                servicename = name
 
             if enable:
                 with open(checkname, 'wb') as fh:
                     fh.write(b"")
-                yield gen.Task(run_command, ["systemctl", "start", servicename], None)
-
             else:
                 if os.path.exists(checkname):
                     os.remove(checkname)
+
+            if inverted:
+                enable = not enable
+
+            if enable:
+                yield gen.Task(run_command, ["systemctl", "start", servicename], None)
+            else:
                 yield gen.Task(run_command, ["systemctl", "stop", servicename], None)
 
         os.sync()
@@ -1278,8 +1289,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self, mode):
-        print("PedalboardTransportSetSyncMode")
-        print(mode)
         if mode == "/none":
             transport_sync = Profile.TRANSPORT_SOURCE_INTERNAL
         elif mode == "/midi_clock_slave":
@@ -1558,7 +1567,7 @@ class TemplateLoader(TimelessRequestHandler):
 
 class BulkTemplateLoader(TimelessRequestHandler):
     def get(self):
-        self.set_header("Content-Type", "text/plain; charset=UTF-8")
+        self.set_header("Content-Type", "text/javascript; charset=UTF-8")
         basedir = os.path.join(HTML_DIR, 'include')
         for template in os.listdir(basedir):
             if not re.match('^[a-z_]+\.html$', template):
