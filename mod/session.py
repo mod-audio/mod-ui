@@ -29,7 +29,7 @@ from mod.screenshot import ScreenshotGenerator
 from mod.settings import (LOG,
                           DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT,
-                          HOST_CARLA, PREFERENCES_JSON_FILE)
+                          HOST_CARLA, PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
 
 if DEV_HOST:
     Host = FakeHost
@@ -330,7 +330,7 @@ class Session(object):
             title = ""
 
         if self.hmi.initialized:
-            self.set_hmi_pb_title(title or "Untitled")
+            self.set_hmi_pb_title(title or UNTITLED_PEDALBOARD_NAME)
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
@@ -348,7 +348,7 @@ class Session(object):
 
         if self.hmi.initialized:
             def set_pb_title(_):
-                self.hmi.send("s_pbn Untitled", reset_host)
+                self.hmi.send("s_pbn {}".format(UNTITLED_PEDALBOARD_NAME), reset_host)
             def clear_hmi(_):
                 self.hmi.clear(set_pb_title)
             self.host.setNavigateWithFootswitches(False, clear_hmi)

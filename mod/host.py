@@ -66,7 +66,7 @@ from modtools.tempo import (
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, UNTITLED_PEDALBOARD_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
 )
 from mod.tuner import find_freqnotecents
@@ -846,7 +846,7 @@ class Host(object):
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
         master_chan_mode = self.profile.get_master_volume_channel_mode()
         master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-        pb_name = self.pedalboard_name or "Untitled" # NOTE: In the web-interface, "Untitled" is grayed out
+        pb_name = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
 
         def send_boot(_):
             self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,

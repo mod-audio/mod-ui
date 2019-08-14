@@ -40,7 +40,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME)
 
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -1480,7 +1480,7 @@ class TemplateHandler(TimelessRequestHandler):
         pbname = SESSION.host.pedalboard_name
         prname = SESSION.host.snapshot_name()
 
-        fullpbname = pbname or "Untitled"
+        fullpbname = pbname or UNTITLED_PEDALBOARD_NAME
         if prname:
             fullpbname += " - " + prname
 
