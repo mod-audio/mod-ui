@@ -310,7 +310,7 @@ function HardwareManager(options) {
       if (PAGES_CB && PAGES_NB > 0) {
         // build header row
         var headerRow = $('<tr/>')
-        for (i = 1; i <= PAGES_NB; i++) {
+        for (var i = 1; i <= PAGES_NB; i++) {
           headerRow.append($('<th>Page '+i+'</th>'))
         }
         table.append(headerRow)
@@ -318,7 +318,7 @@ function HardwareManager(options) {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
-          for (page = 0; page < PAGES_NB; page++) {
+          for (var page = 0; page < PAGES_NB; page++) {
             if (startsWith(actuatorUri, deviceOption)) {
               cell = $('<td data-page="'+ page +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
               if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == page) {
@@ -328,7 +328,7 @@ function HardwareManager(options) {
               } else {
                 // Only allow actuator groups to be used when all their “child” actuators are not in use on current page
                 if (actuators[actuatorUri].group) {
-                  for (i = 0; i < actuators[actuatorUri].group.length; i++) {
+                  for (var i = 0; i < actuators[actuatorUri].group.length; i++) {
                     uri = actuators[actuatorUri].group[i]
                     uriAddressings = self.addressingsByActuator[uri]
                     for (var j in uriAddressings) {
