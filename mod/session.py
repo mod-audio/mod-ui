@@ -180,8 +180,8 @@ class Session(object):
         bundlepath = self.host.save(title, asNew)
         self.pedalboard_changed_callback(True, bundlepath, title)
 
-        # Update the title in HMI
-        self.hmi.send("s_pbn {0}".format(title))
+        if self.hmi.initialized:
+            self.set_hmi_pb_title(title)
 
         self.screenshot_generator.schedule_screenshot(bundlepath)
         return bundlepath
@@ -317,6 +317,10 @@ class Session(object):
             if ws == ws2: continue
             ws.write_message(msg)
 
+    @gen.coroutine
+    def set_hmi_pb_title(self, title):
+        yield gen.Task(self.hmi.send, "s_pbn {0}".format(title))
+
     def load_pedalboard(self, bundlepath, isDefault):
         self.host.send_notmodified("feature_enable processing 0")
         title = self.host.load(bundlepath, isDefault)
@@ -325,8 +329,8 @@ class Session(object):
             bundlepath = ""
             title = ""
 
-        # Update the title in HMI
-        self.hmi.send("s_pbn {0}".format(title or "Untitled"))
+        if self.hmi.initialized:
+            self.set_hmi_pb_title(title or "Untitled")
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
@@ -343,14 +347,15 @@ class Session(object):
             self.host.reset(host_callback)
 
         if self.hmi.initialized:
+            def set_pb_title(_):
+                self.hmi.send("s_pbn Untitled", reset_host)
             def clear_hmi(_):
-                self.hmi.clear(reset_host)
+                self.hmi.clear(set_pb_title)
             self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:
             reset_host(True)
 
         # Update the title in HMI
-        self.hmi.send("s_pbn Untitled")
         self.pedalboard_changed_callback(True, "", "")
 
     # host commands
