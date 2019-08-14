@@ -808,7 +808,7 @@ function HardwareManager(options) {
 
     this.addHardwareMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, steps,
-                                        tempo, dividers, page, feedback) {
+                                        tempo, dividers, page, group, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -821,9 +821,9 @@ function HardwareManager(options) {
             tempo   : tempo,
             dividers: dividers,
             feedback: feedback,
-            page    : page
+            page    : page,
+            group   : group
         }
-
         // disable this control
         options.setEnabled(instance, portSymbol, false, feedback)
     }

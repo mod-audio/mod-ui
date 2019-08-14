@@ -1701,6 +1701,11 @@ class Host(object):
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
+    def add_used_actuators(self, actuator_uri, used_hmi_actuators, used_hw_ids):
+        used_hmi_actuators.append(actuator_uri)
+        hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+        used_hw_ids.append(hw_id)
+
     @gen.coroutine
     def remove_plugin(self, instance, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -1723,14 +1728,15 @@ class Host(object):
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
-
             was_active = self.addressings.remove(addressing)
-
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
-                    used_hmi_actuators.append(actuator_uri)
-                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                    used_hw_ids.append(hw_id)
+                    group_actuators = self.addressings.get_group_actuators(actuator_uri)
+                    if group_actuators:
+                        for i in range(len(group_actuators)):
+                            self.add_used_actuators(group_actuators[i], used_hmi_actuators, used_hw_ids)
+                    else:
+                        self.add_used_actuators(actuator_uri, used_hmi_actuators, used_hw_ids)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 try:
@@ -3581,7 +3587,6 @@ _:b%i
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
-
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -3712,14 +3717,12 @@ _:b%i
         if group_actuators:
             for i in range(len(group_actuators)):
                 group_actuator_uri = group_actuators[i]
-                addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
-                                              label, minimum, maximum, steps, value, tempo, dividers, page)
+                group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
+                                              label, minimum, maximum, steps, value, tempo, dividers, page, actuator_uri)
                                               # group=[a for a in group_actuators if a != group_actuator_uri])
-                if addressing is None:
+                if group_addressing is None:
                     callback(False)
                     return
-                if i == 0: # first actuator should have reverse enum hmi type
-                    addressing['hmitype'] = HMI_ADDRESSING_TYPE_REVERSE_ENUM
 
                 if needsValueChange:
                     hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
@@ -3728,28 +3731,30 @@ _:b%i
                     except Exception as e:
                         logging.exception(e)
                 try:
-                    yield gen.Task(self.addressings.load_addr, group_actuator_uri, addressing, not_param_set=not_param_set)
+                    yield gen.Task(self.addressings.load_addr, group_actuator_uri, group_addressing, not_param_set=not_param_set)
                 except Exception as e:
                     logging.exception(e)
+            addressing = group_addressing.copy()
+            addressing['actuator_uri'] = actuator_uri
+        else:
+            addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
+                                              label, minimum, maximum, steps, value, tempo, dividers, page)
 
-        addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value, tempo, dividers, page)
+            if addressing is None:
+                callback(False)
+                return
 
-        if addressing is None:
-            callback(False)
-            return
-
-        if not group_actuators and needsValueChange:
-            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-            try:
-                yield gen.Task(self.hmi_parameter_set, hw_id, value)
-            except Exception as e:
-                logging.exception(e)
+            if needsValueChange:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                try:
+                    yield gen.Task(self.hmi_parameter_set, hw_id, value)
+                except Exception as e:
+                    logging.exception(e)
 
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        if not group_actuators: # group actuators addressings have already been loaded previously
+        if not group_actuators: # group actuator addressing has already been loaded previously
             self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
         else:
             callback(True)
@@ -3936,13 +3941,11 @@ _:b%i
         callback(self.addr_task_get_port_value(instance_id, portsymbol))
 
     # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
-    @gen.coroutine
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
         abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
-
         try:
             instance = self.mapper.get_instance(instance_id)
         except KeyError:
@@ -3951,7 +3954,6 @@ _:b%i
             return
 
         pluginData = self.plugins[instance_id]
-
         if portsymbol == ":bypass":
             bypassed = bool(value)
             pluginData['bypassed'] = bypassed
@@ -3980,8 +3982,21 @@ _:b%i
                     callback(False)
                     logging.exception(e)
             else:
+                port_addressing = pluginData['addressings'].get(portsymbol, None)
                 try:
-                    self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
+                    if port_addressing:
+                        group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
+                        if group_actuators:
+                            def group_callback(ok):
+                                if not ok:
+                                    callback(False)
+                                    return
+                                self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
+                            # Update value on the HMI for the other actuator in the group
+                            self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
+                        else:
+                            self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
+
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -4011,14 +4026,17 @@ _:b%i
             if port_addressing:
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
                 if group_actuators:
-                    try:
-                        for group_actuator_uri in group_actuators:
-                            group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
-                            if group_hw_id != hw_id:
-                                yield gen.Task(self.hmi.control_set, group_hw_id, float(value))
-                    except Exception as e:
-                        logging.exception(e)
-                # readdress with new divider value
+                    def group_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
+                    return
+
                 if port_addressing.get('tempo', None) and False:
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
                     new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
@@ -4043,6 +4061,14 @@ _:b%i
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+    def control_set_other_group_actuator(self, group_actuators, hw_id, value, callback):
+        for group_actuator_uri in group_actuators:
+            group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
+            if group_hw_id != hw_id:
+                self.hmi.control_set(group_hw_id, float(value), callback)
+                return
+        callback(True)
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
