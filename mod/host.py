@@ -3683,7 +3683,7 @@ _:b%i
             callback(True, "")
             return
 
-        banks = "All 0"
+        banks = '"All Pedalboards" 0'
 
         if len(self.banks) > 0:
             banks += " "
