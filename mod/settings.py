@@ -110,6 +110,8 @@ PEDALBOARD_INSTANCE = "/pedalboard"
 PEDALBOARD_INSTANCE_ID = 9995
 PEDALBOARD_URI = "urn:mod:pedalboard"
 
+UNTITLED_PEDALBOARD_NAME="Untitled Pedalboard"
+
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
