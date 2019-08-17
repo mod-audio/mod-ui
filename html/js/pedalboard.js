@@ -239,7 +239,7 @@ JqueryClass('pedalboard', {
         }});
 
         // Dragging the pedalboard move the view area
-        self.mousedown(function (e) {
+        self.bind('mousedown touchstart', function (e) {
             self.pedalboard('drag', e)
         })
 
@@ -726,6 +726,18 @@ JqueryClass('pedalboard', {
 
         var scale = self.data('scale')
 
+        // pure side effects - update the event if touch
+        function patchTouchEvent(e) {
+            if (e.type.indexOf('touch') == 0) {
+                var touch = e.originalEvent.touches[0]
+                e.pageX = touch.pageX
+                e.pageY = touch.pageY
+            }
+            return e
+        }
+
+        start = patchTouchEvent(start)
+
         var canvasX = (start.pageX - self.offset().left) / scale
         var canvasY = (start.pageY - self.offset().top) / scale
         var screenX = start.pageX - self.parent().offset().left
@@ -735,6 +747,8 @@ JqueryClass('pedalboard', {
             if (self.data('preventDrag'))
                 return
 
+            e = patchTouchEvent(e)
+
             self.pedalboard('zoom', scale, canvasX, canvasY,
                 screenX + e.pageX - start.pageX,
                 screenY + e.pageY - start.pageY,
@@ -742,12 +756,12 @@ JqueryClass('pedalboard', {
         }
 
         var upHandler = function (e) {
-            $(document).unbind('mouseup', upHandler)
-            $(document).unbind('mousemove', moveHandler)
+            $(document).unbind('mouseup touchend', upHandler)
+            $(document).unbind('mousemove touchmove', moveHandler)
         }
 
-        $(document).bind('mousemove', moveHandler)
-        $(document).bind('mouseup', upHandler)
+        $(document).bind('mousemove touchmove', moveHandler)
+        $(document).bind('mouseup touchend', upHandler)
     },
 
     // Changes the viewing scale of the pedalboard and position it in a way that
@@ -1352,13 +1366,13 @@ JqueryClass('pedalboard', {
                 }
             }
 
-            icon.mousedown(function () {
+            icon.bind('mousedown touchstart', function () {
                 self.pedalboard('preventDrag', true)
                 var upHandler = function () {
                     self.pedalboard('preventDrag', false)
-                    $('body').unbind('mouseup', upHandler)
+                    $('body').unbind('mouseup touchend', upHandler)
                 }
-                $('body').bind('mouseup', upHandler)
+                $('body').bind('mouseup touchend', upHandler)
             })
 
             var actions = $('<div>').addClass('mod-actions').appendTo(icon)
@@ -1462,7 +1476,7 @@ JqueryClass('pedalboard', {
                     gui.disable(symbol)
                 } else {
                     gui.addressPort(symbol)
-                }
+                 }
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
