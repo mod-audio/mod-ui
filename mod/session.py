@@ -42,14 +42,17 @@ class UserPreferences(object):
     def __init__(self):
         self.prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
-    def get(self, key, default, type_ = None):
+    def get(self, key, default, type_ = None, values = None):
         value = self.prefs.get(key, default)
 
         if type_ is not None and not isinstance(value, type_):
             try:
                 value = type_(value)
             except:
-                value = default
+                return default
+
+        if values is not None and value not in values:
+            return default
 
         return value
 
