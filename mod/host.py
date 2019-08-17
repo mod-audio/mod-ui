@@ -81,10 +81,20 @@ DISPLAY_BRIGHTNESS_25  = 1
 DISPLAY_BRIGHTNESS_50  = 2
 DISPLAY_BRIGHTNESS_75  = 3
 DISPLAY_BRIGHTNESS_100 = 4
+DISPLAY_BRIGHTNESS_VALUES = (
+    DISPLAY_BRIGHTNESS_0,
+    DISPLAY_BRIGHTNESS_25,
+    DISPLAY_BRIGHTNESS_50,
+    DISPLAY_BRIGHTNESS_75,
+    DISPLAY_BRIGHTNESS_100)
 
 QUICK_BYPASS_MODE_1    = 0
 QUICK_BYPASS_MODE_2    = 1
 QUICK_BYPASS_MODE_BOTH = 2
+QUICK_BYPASS_MODE_VALUES = (
+    QUICK_BYPASS_MODE_1,
+    QUICK_BYPASS_MODE_2,
+    QUICK_BYPASS_MODE_BOTH)
 
 DEFAULT_DISPLAY_BRIGHTNESS = DISPLAY_BRIGHTNESS_50
 DEFAULT_QUICK_BYPASS_MODE  = QUICK_BYPASS_MODE_BOTH
@@ -191,7 +201,7 @@ class Host(object):
         self.descriptor = get_hardware_descriptor()
 
         self.current_tuner_port = 1
-        self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", "false", str) == "true"
+        self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
         self.allpedalboards = None
         self.bank_id = 0
@@ -842,8 +852,8 @@ class Host(object):
         self.msg_callback("stop")
 
     def send_hmi_boot(self, callback):
-        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
-        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
+        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
+        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
         master_chan_mode = self.profile.get_master_volume_channel_mode()
         master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
         pb_name = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
@@ -4225,16 +4235,16 @@ _:b%i
         """Query the Quick Bypass Mode setting."""
         logging.debug("hmi quick bypass mode get")
 
-        result = self.prefs.get("quick-bypass-mode", QUICK_BYPASS_MODE_BOTH, int)
+        result = self.prefs.get("quick-bypass-mode", QUICK_BYPASS_MODE_BOTH, int, QUICK_BYPASS_MODE_VALUES)
         callback(True, result)
 
     def hmi_set_quick_bypass_mode(self, mode, callback):
         """Change the Quick Bypass Mode setting to `mode`."""
         logging.debug("hmi quick bypass mode set to `%i`", mode)
 
-        if mode in (QUICK_BYPASS_MODE_1, QUICK_BYPASS_MODE_2, QUICK_BYPASS_MODE_BOTH):
-            result = self.prefs.setAndSave("quick-bypass-mode", mode)
-            callback(result)
+        if mode in QUICK_BYPASS_MODE_VALUES:
+            self.prefs.setAndSave("quick-bypass-mode", mode)
+            callback(True)
         else:
             callback(False)
 
@@ -4458,17 +4468,13 @@ _:b%i
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.debug("hmi get display brightness")
-        result = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+        result = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         callback(True, result)
 
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.debug("hmi set display brightness to %i", brightness)
-        if brightness in (DISPLAY_BRIGHTNESS_0,
-                          DISPLAY_BRIGHTNESS_25,
-                          DISPLAY_BRIGHTNESS_50,
-                          DISPLAY_BRIGHTNESS_75,
-                          DISPLAY_BRIGHTNESS_100):
+        if brightness in DISPLAY_BRIGHTNESS_VALUES:
             self.prefs.setAndSave("display-brightness", brightness)
             callback(True)
         else:
@@ -4507,6 +4513,7 @@ _:b%i
         else:
             self.unmute()
         self.current_tuner_mute = mute
+        self.prefs.setAndSave("tuner-mutes-outputs", bool(mute))
         callback(True)
 
     def hmi_get_pb_name(self, callback):
