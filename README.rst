@@ -42,13 +42,9 @@ Before running the server, you need to activate your virtualenv
 
     $ source modui-env/bin/activate
 
-mod-ui depends on mod-host and the JACK server running in order to make sound. So run::
+mod-ui depends on mod-host and the JACK server running in order to make sound. So after you have JACK setup and running, in another terminal do::
 
-    $ jack_control start  # or your prefered way to get JACK running
- 
-Then in another terminal::
-
-    $ ./mod-host -n -p 5555 -f 5556
+    $ mod-host -n -p 5555 -f 5556
 
 If you do not have mod-host, you can tell mod-ui to fake the connection to the audio backend.
 You will not get any audio, but you will be able to load plugins, make connections, save pedalboards and all that. For this, run::
