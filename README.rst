@@ -12,7 +12,9 @@ It will work in x86, other Linux distributions and Mac, but you might need to ad
 
 The following packages will be required::
 
-    $ sudo apt-get install python-virtualenv python3-pip python3-dev git build-essential liblilv-dev
+    $ sudo apt-get install virtualenv python3-pip python3-dev git build-essential libjack-jackd2-dev liblilv-dev
+
+NOTE: libjack-jackd2-dev can be replaced by libjack-dev if you are using JACK1
 
 Start by cloning the repository::
 
@@ -30,9 +32,7 @@ Install python requirements::
 
 Compile libmod_utils::
 
-    $ cd utils
-    $ make
-    $ cd ..
+    $ make -C utils
 
 Run
 ---
@@ -42,18 +42,23 @@ Before running the server, you need to activate your virtualenv
 
     $ source modui-env/bin/activate
 
-Mod-ui depends on mod-host and the JACK server running. So run::
-  
+mod-ui depends on mod-host and the JACK server running in order to make sound. So run::
+
     $ jack_control start  # or your prefered way to get JACK running
  
 Then in another terminal::
- 
+
     $ ./mod-host -n -p 5555 -f 5556
 
-And now you are ready to start the webserver:
-  
-    $ MOD_APP=1 MOD_LIVE_ISO=1 MOD_DEV_ENVIRONMENT=0 ./server.py
+If you do not have mod-host, you can tell mod-ui to fake the connection to the audio backend.
+You will not get any audio, but you will be able to load plugins, make connections, save pedalboards and all that. For this, run::
+
+    $ export MOD_DEV_HOST=1
+
+And now you are ready to start the webserver::
+
+    $ export MOD_DEV_ENVIRONMENT=0
+    $ python3 ./server.py
 
 Setting the environment variables is needed when developing on a PC.
-Open your webkit based browser (I use Chromium) and point to
-http://localhost:8888.
+Open your browser and point to http://localhost:8888/.
