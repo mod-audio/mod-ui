@@ -3327,11 +3327,10 @@ _:b%i
     def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
         if setProfile:
             if not self.profile.set_sync_mode(mode):
-                print("not")
                 callback(False)
                 return
 
-        def step3(ok):
+        def host_callback(ok):
             if not ok:
                 callback(False)
                 return
@@ -3346,51 +3345,36 @@ _:b%i
             else:
                 callback(True)
 
-        def step2(ok):
-            if not ok:
-                callback(False)
-                return
-            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-                self.transport_sync = "none"
-                self.send_notmodified("feature_enable midi_clock_slave 0", step3, datatype='boolean')
-            elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-                self.transport_sync = "midi_clock_slave"
-                self.send_notmodified("feature_enable midi_clock_slave 1", step3, datatype='boolean')
-            elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-                self.transport_sync = "link"
-                self.send_notmodified("feature_enable link 1", step3, datatype='boolean')
-            else:
-                callback(False)
-                return
-
-        def step1(ok):
+        def unaddress_bpm_callback(ok):
             # Then set new sync mode and send to host
             if not ok:
                 callback(False)
                 return
             elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
-                self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
+                self.transport_sync = "none"
+                self.send_notmodified("transport_sync none", host_callback, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
-                self.send_notmodified("feature_enable link 0", step2, datatype='boolean')
+                self.transport_sync = "midi_clock_slave"
+                self.send_notmodified("transport_sync midi", host_callback, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_ABLETON_LINK:
-                self.send_notmodified("feature_enable midi_clock_slave 0", step2, datatype='boolean')
+                self.transport_sync = "link"
+                self.send_notmodified("transport_sync link", host_callback, datatype='boolean')
             else:
                 callback(False)
                 return
 
         # First, unadress BPM port if switching to Link or MIDI sync mode
         if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
-            self.address("/pedalboard", ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, step1)
+            self.address("/pedalboard", ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, unaddress_bpm_callback)
         else:
-            step1(True)
+            unaddress_bpm_callback(True)
 
     @gen.coroutine
     def set_link_enabled(self):
         if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: link enabled while BPM is still addressed")
 
-        self.send_notmodified("feature_enable midi_clock_slave 0")
-        self.send_notmodified("feature_enable link 1")
+        self.send_notmodified("transport_sync link")
 
         self.transport_sync = "link"
         self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_ABLETON_LINK)
@@ -3406,8 +3390,7 @@ _:b%i
         if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
             print("ERROR: MIDI Clock Slave enabled while BPM is still addressed")
 
-        self.send_notmodified("feature_enable link 0")
-        self.send_notmodified("feature_enable midi_clock_slave 1")
+        self.send_notmodified("transport_sync midi")
 
         self.transport_sync = "midi_clock_slave"
         self.profile.set_sync_mode(Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
