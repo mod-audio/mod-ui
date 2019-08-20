@@ -280,7 +280,7 @@ function TransportControls(options) {
     }
 
     this.setControlEnabled = function (portSymbol, enabled, feedback, forceAddress) {
-        var controlWidget = enabled || feedback ? 'enable' : 'disable'
+        var controlWidget = (enabled || feedback) ? 'enable' : 'disable'
         if (portSymbol == ":bpb") {
             self.address(options.transportBPB, enabled, feedback, forceAddress)
             self.beatsPerBarPort.widget.controlWidget(controlWidget)
