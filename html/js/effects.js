@@ -362,7 +362,7 @@ JqueryClass('effectBox', {
             brand : plugin.brand || "&nbsp;",
             label : plugin.label,
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                          ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
+                          ? sprintf("%s:%d/effect/image/thumbnail.png?uri=%s&v=%s", window.location.origin, getNextHTTPPort(), uri, ver)
                           :  "/resources/pedals/default-thumbnail.png",
             demo: plugin.licensed < 0
         }

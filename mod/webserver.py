@@ -249,6 +249,13 @@ class RemoteRequestHandler(JsonRequestHandler):
             return
         self.set_header("Access-Control-Allow-Origin", origin)
 
+class JsonRequestHandlerWithCORS(JsonRequestHandler):
+    def set_default_headers(self):
+        if 'Origin' not in self.request.headers.keys():
+            return
+        origin = self.request.headers['Origin']
+        self.set_header("Access-Control-Allow-Origin", origin)
+
 class SimpleFileReceiver(JsonRequestHandler):
     @property
     def destination_dir(self):
@@ -796,6 +803,12 @@ class EffectFile(TimelessStaticFileHandler):
         if self.custom_type is not None:
             return self.custom_type
         return TimelessStaticFileHandler.get_content_type(self)
+
+    def set_default_headers(self):
+        if 'Origin' not in self.request.headers.keys():
+            return
+        origin = self.request.headers['Origin']
+        self.set_header("Access-Control-Allow-Origin", origin)
 
 class EffectAdd(JsonRequestHandler):
     @web.asynchronous
@@ -1581,7 +1594,7 @@ class BulkTemplateLoader(TimelessRequestHandler):
                        )
         self.finish()
 
-class Ping(JsonRequestHandler):
+class Ping(JsonRequestHandlerWithCORS):
     @web.asynchronous
     @gen.engine
     def get(self):
@@ -2016,6 +2029,12 @@ def prepare(isModApp = False):
         set_process_name("mod-ui")
 
     application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
+    application.listen(8081, address="0.0.0.0")
+    application.listen(8082, address="0.0.0.0")
+    application.listen(8083, address="0.0.0.0")
+    application.listen(8084, address="0.0.0.0")
+    application.listen(8085, address="0.0.0.0")
+    application.listen(8086, address="0.0.0.0")
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:

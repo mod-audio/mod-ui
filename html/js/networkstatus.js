@@ -33,8 +33,10 @@ function NetworkStatus(options) {
 
     this.ping = function () {
         var start = Date.now()
+        var url = sprintf('%s:8081/ping?v=%s', window.location.origin, VERSION)
         $.ajax({
-            url: '/ping',
+            url: url,
+            port: 8081,
             cache: false,
             global: false,
             success: function (resp) {

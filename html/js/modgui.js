@@ -20,6 +20,7 @@ var loadedSettings = {}
 var loadedCSSs = {}
 var loadedJSs = {}
 var isSDK = false
+var lastPort = 8082
 
 function shouldSkipPort(port) {
     // skip notOnGUI controls
@@ -37,6 +38,15 @@ function shouldSkipPort(port) {
     return false;
 }
 
+function getNextHTTPPort() {
+    if (lastPort == 8086) {
+        lastPort = 8082
+    } else {
+        ++lastPort
+    }
+    return lastPort
+}
+
 function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
     var settingsLoaded = true
@@ -51,8 +61,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
 
     var baseUrl = ''
     if (effect.source) {
-        baseUrl += effect.source
+        baseUrl = effect.source
         baseUrl.replace(/\/?$/, '')
+    } else if (! isSDK) {
+        baseUrl = sprintf('%s:%d', window.location.origin, getNextHTTPPort())
     }
 
     var version    = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
