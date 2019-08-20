@@ -36,7 +36,7 @@ from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
 from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
-from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION
+from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu
 from mod.profile import Profile
@@ -81,10 +81,20 @@ DISPLAY_BRIGHTNESS_25  = 1
 DISPLAY_BRIGHTNESS_50  = 2
 DISPLAY_BRIGHTNESS_75  = 3
 DISPLAY_BRIGHTNESS_100 = 4
+DISPLAY_BRIGHTNESS_VALUES = (
+    DISPLAY_BRIGHTNESS_0,
+    DISPLAY_BRIGHTNESS_25,
+    DISPLAY_BRIGHTNESS_50,
+    DISPLAY_BRIGHTNESS_75,
+    DISPLAY_BRIGHTNESS_100)
 
 QUICK_BYPASS_MODE_1    = 0
 QUICK_BYPASS_MODE_2    = 1
 QUICK_BYPASS_MODE_BOTH = 2
+QUICK_BYPASS_MODE_VALUES = (
+    QUICK_BYPASS_MODE_1,
+    QUICK_BYPASS_MODE_2,
+    QUICK_BYPASS_MODE_BOTH)
 
 DEFAULT_DISPLAY_BRIGHTNESS = DISPLAY_BRIGHTNESS_50
 DEFAULT_QUICK_BYPASS_MODE  = QUICK_BYPASS_MODE_BOTH
@@ -191,7 +201,7 @@ class Host(object):
         self.descriptor = get_hardware_descriptor()
 
         self.current_tuner_port = 1
-        self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", "false", str) == "true"
+        self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
         self.allpedalboards = None
         self.bank_id = 0
@@ -567,11 +577,11 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, not_param_set=False, hw_id=None):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, not_param_set=False, hw_ids=None):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if not not_param_set:
-                return self.hmi.control_rm([hw_id], callback)
+                return self.hmi.control_rm(hw_ids, callback)
             else:
                 if callback is not None:
                     callback(True)
@@ -842,8 +852,8 @@ class Host(object):
         self.msg_callback("stop")
 
     def send_hmi_boot(self, callback):
-        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
-        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int)
+        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
+        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
         master_chan_mode = self.profile.get_master_volume_channel_mode()
         master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
         pb_name = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
@@ -1701,6 +1711,11 @@ class Host(object):
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
+    def add_used_actuators(self, actuator_uri, used_hmi_actuators, used_hw_ids):
+        used_hmi_actuators.append(actuator_uri)
+        hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+        used_hw_ids.append(hw_id)
+
     @gen.coroutine
     def remove_plugin(self, instance, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -1723,14 +1738,15 @@ class Host(object):
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
-
             was_active = self.addressings.remove(addressing)
-
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
-                    used_hmi_actuators.append(actuator_uri)
-                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                    used_hw_ids.append(hw_id)
+                    group_actuators = self.addressings.get_group_actuators(actuator_uri)
+                    if group_actuators:
+                        for i in range(len(group_actuators)):
+                            self.add_used_actuators(group_actuators[i], used_hmi_actuators, used_hw_ids)
+                    else:
+                        self.add_used_actuators(actuator_uri, used_hmi_actuators, used_hw_ids)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 try:
@@ -3603,7 +3619,6 @@ _:b%i
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
-
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -3662,12 +3677,18 @@ _:b%i
 
             try:
                 if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                    old_hw_id = self.addressings.hmi_uri2hw_map[old_actuator_uri]
+                    old_hw_ids = []
+                    old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)
+                    # Unadress all actuators in group
+                    if old_group_actuators:
+                        old_hw_ids = [self.addressings.hmi_uri2hw_map[actuator_uri] for actuator_uri in old_group_actuators]
+                    else:
+                        old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
                                                                 not_param_set=not_param_set,
-                                                                hw_id=old_hw_id)
+                                                                hw_ids=old_hw_ids)
                     yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
                 else:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
@@ -3724,23 +3745,51 @@ _:b%i
             minimum = min(options_list)
             maximum = max(options_list)
 
-        addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                          label, minimum, maximum, steps, value, tempo, dividers, page)
-        if addressing is None:
-            callback(False)
-            return
+        group_actuators = self.addressings.get_group_actuators(actuator_uri)
+        if group_actuators:
+            for i in range(len(group_actuators)):
+                group_actuator_uri = group_actuators[i]
+                group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
+                                              label, minimum, maximum, steps, value, tempo, dividers, page, actuator_uri)
+                                              # group=[a for a in group_actuators if a != group_actuator_uri])
+                if group_addressing is None:
+                    callback(False)
+                    return
 
-        if needsValueChange:
-            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-            try:
-                yield gen.Task(self.hmi_parameter_set, hw_id, value)
-            except Exception as e:
-                logging.exception(e)
+                if needsValueChange:
+                    hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
+                    try:
+                        yield gen.Task(self.hmi_parameter_set, hw_id, value)
+                    except Exception as e:
+                        logging.exception(e)
+                try:
+                    yield gen.Task(self.addressings.load_addr, group_actuator_uri, group_addressing, not_param_set=not_param_set)
+                except Exception as e:
+                    logging.exception(e)
+            addressing = group_addressing.copy()
+            addressing['actuator_uri'] = actuator_uri
+        else:
+            addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
+                                              label, minimum, maximum, steps, value, tempo, dividers, page)
+
+            if addressing is None:
+                callback(False)
+                return
+
+            if needsValueChange:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                try:
+                    yield gen.Task(self.hmi_parameter_set, hw_id, value)
+                except Exception as e:
+                    logging.exception(e)
 
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
+        if not group_actuators: # group actuator addressing has already been loaded previously
+            self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
+        else:
+            callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
@@ -3929,7 +3978,6 @@ _:b%i
         abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
-
         try:
             instance = self.mapper.get_instance(instance_id)
         except KeyError:
@@ -3938,7 +3986,6 @@ _:b%i
             return
 
         pluginData = self.plugins[instance_id]
-
         if portsymbol == ":bypass":
             bypassed = bool(value)
             pluginData['bypassed'] = bypassed
@@ -3967,8 +4014,21 @@ _:b%i
                     callback(False)
                     logging.exception(e)
             else:
+                port_addressing = pluginData['addressings'].get(portsymbol, None)
                 try:
-                    self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
+                    if port_addressing:
+                        group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
+                        if group_actuators:
+                            def group_callback(ok):
+                                if not ok:
+                                    callback(False)
+                                    return
+                                self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
+                            # Update value on the HMI for the other actuator in the group
+                            self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
+                        else:
+                            self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, callback)
+
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -3995,8 +4055,20 @@ _:b%i
                 return
 
             port_addressing = pluginData['addressings'].get(portsymbol, None)
-            # readdress with new divider value
             if port_addressing:
+                group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
+                if group_actuators:
+                    def group_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
+                    return
+
                 if port_addressing.get('tempo', None) and False:
                     value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
                     new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
@@ -4021,6 +4093,14 @@ _:b%i
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+
+    def control_set_other_group_actuator(self, group_actuators, hw_id, value, callback):
+        for group_actuator_uri in group_actuators:
+            group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
+            if group_hw_id != hw_id:
+                self.hmi.control_set(group_hw_id, float(value), callback)
+                return
+        callback(True)
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
@@ -4247,16 +4327,16 @@ _:b%i
         """Query the Quick Bypass Mode setting."""
         logging.debug("hmi quick bypass mode get")
 
-        result = self.prefs.get("quick-bypass-mode", QUICK_BYPASS_MODE_BOTH, int)
+        result = self.prefs.get("quick-bypass-mode", QUICK_BYPASS_MODE_BOTH, int, QUICK_BYPASS_MODE_VALUES)
         callback(True, result)
 
     def hmi_set_quick_bypass_mode(self, mode, callback):
         """Change the Quick Bypass Mode setting to `mode`."""
         logging.debug("hmi quick bypass mode set to `%i`", mode)
 
-        if mode in (QUICK_BYPASS_MODE_1, QUICK_BYPASS_MODE_2, QUICK_BYPASS_MODE_BOTH):
-            result = self.prefs.setAndSave("quick-bypass-mode", mode)
-            callback(result)
+        if mode in QUICK_BYPASS_MODE_VALUES:
+            self.prefs.setAndSave("quick-bypass-mode", mode)
+            callback(True)
         else:
             callback(False)
 
@@ -4480,17 +4560,13 @@ _:b%i
     def hmi_get_display_brightness(self, callback):
         """Get the brightness of the display."""
         logging.debug("hmi get display brightness")
-        result = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int)
+        result = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         callback(True, result)
 
     def hmi_set_display_brightness(self, brightness, callback):
         """Set the display_brightness."""
         logging.debug("hmi set display brightness to %i", brightness)
-        if brightness in (DISPLAY_BRIGHTNESS_0,
-                          DISPLAY_BRIGHTNESS_25,
-                          DISPLAY_BRIGHTNESS_50,
-                          DISPLAY_BRIGHTNESS_75,
-                          DISPLAY_BRIGHTNESS_100):
+        if brightness in DISPLAY_BRIGHTNESS_VALUES:
             self.prefs.setAndSave("display-brightness", brightness)
             callback(True)
         else:
@@ -4529,6 +4605,7 @@ _:b%i
         else:
             self.unmute()
         self.current_tuner_mute = mute
+        self.prefs.setAndSave("tuner-mutes-outputs", bool(mute))
         callback(True)
 
     def hmi_get_pb_name(self, callback):

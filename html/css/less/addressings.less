@@ -35,6 +35,29 @@
           }
         }
 
+        .group-strike {
+          display: flex;
+          flex-basis: 100%;
+          align-items: center;
+          color: black;
+          margin: 6px 0px;
+
+          &:before, &:after {
+            content: "";
+            flex-grow: 1;
+            background: black;
+            height: 3px;
+            font-size: 0;
+            line-height: 0;
+          }
+          &:before {
+            margin-right: 8px;
+          }
+          &:after {
+            margin-left: 8px;
+          }
+        }
+
         .hmi-table {
           width: 100%;
 
