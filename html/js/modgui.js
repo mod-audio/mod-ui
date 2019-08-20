@@ -400,7 +400,7 @@ function GUI(effect, options) {
         }
     }
 
-    this.addressPort = function (symbol) {
+    this.addressPort = function (symbol, feedback) {
       var port = self.controls[symbol]
       if (symbol !== ":presets") {
         // add "addressed" class to all related widgets
@@ -409,8 +409,11 @@ function GUI(effect, options) {
         } else {
           self.settings.find('.mod-address[mod-port-symbol="'+symbol+'"]').addClass('addressed')
         }
-        for (var i in port.widgets) {
-            port.widgets[i].controlWidget('address')
+        // allow feedback when interacting with widget
+        if (feedback) {
+          for (var i in port.widgets) {
+              port.widgets[i].controlWidget('address')
+          }
         }
       } else {
         self.settings.find('[mod-role=presets-address]').addClass('addressed')

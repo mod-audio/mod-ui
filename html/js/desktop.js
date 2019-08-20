@@ -164,16 +164,16 @@ function Desktop(elements) {
                 dataType: 'json'
             })
         },
-        setEnabled: function (instance, portSymbol, enabled, feedback) {
+        setEnabled: function (instance, portSymbol, enabled, feedback, forceAddress) {
             if (!enabled && feedback === undefined) {
                 console.warn("ERROR setEnabled called as false, but with undefined feedback")
                 feedback = true
             }
             if (instance == "/pedalboard") {
-                self.transportControls.setControlEnabled(portSymbol, enabled, feedback)
+                self.transportControls.setControlEnabled(portSymbol, enabled, feedback, forceAddress)
                 return
             }
-            self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled, feedback)
+            self.pedalboard.pedalboard('setPortEnabled', instance, portSymbol, enabled, feedback, forceAddress)
         },
         renderForm: function (instance, port) {
             var label
