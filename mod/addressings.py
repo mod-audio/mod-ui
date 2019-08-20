@@ -20,6 +20,7 @@ HMI_ADDRESSING_TYPE_TRIGGER      = 0x10
 HMI_ADDRESSING_TYPE_TOGGLED      = 0x20
 HMI_ADDRESSING_TYPE_LOGARITHMIC  = 0x40
 HMI_ADDRESSING_TYPE_INTEGER      = 0x80
+HMI_ADDRESSING_TYPE_REVERSE_ENUM = 0x100
 
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
@@ -233,12 +234,16 @@ class Addressings(object):
                         break
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
+                group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'), page)
+                                    addr.get('tempo'), addr.get('dividers'), page, group)
 
                 if addrdata is not None:
-                    self._task_store_address_data(instance_id, portsymbol, addrdata)
+                    stored_addrdata = addrdata.copy()
+                    if group is not None: # if addressing is grouped, then store address data using group actuator uri
+                        stored_addrdata['actuator_uri'] = group
+                    self._task_store_address_data(instance_id, portsymbol, stored_addrdata)
 
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
@@ -356,7 +361,8 @@ class Addressings(object):
                     'steps'   : addr['steps'],
                     'tempo'   : addr.get('tempo'),
                     'dividers': addr.get('dividers'),
-                    'page'    : addr.get('page')
+                    'page'    : addr.get('page'),
+                    'group'   : addr.get('group')
                 })
             addressings[uri] = addrs2
 
@@ -397,20 +403,32 @@ class Addressings(object):
 
     def registerMappings(self, msg_callback, instances):
         # HMI
+        group_mappings = [] #{} if self.pages_cb else []
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
+                addr_uri = uri
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
-                                                                      addr['port'],
-                                                                      uri,
-                                                                      addr['minimum'],
-                                                                      addr['maximum'],
-                                                                      addr['steps'],
-                                                                      addr['label'].replace(" ","_"),
-                                                                      addr.get('tempo'),
-                                                                      dividers,
-                                                                      page))
+                group = "{0}".format(addr.get('group', "null")).replace("None", "null")
+                send_hw_map = True
+                if addr.get('group') is not None:
+                    addr_uri = group
+                    group_mapping = {'uri': group, 'page': addr.get('page')}
+                    if group_mapping not in group_mappings:
+                        group_mappings.append({'uri': group, 'page': addr.get('page')})
+                        send_hw_map = False # Register harware group mapping only once
+                if addr.get('group') is None or send_hw_map:
+                    msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s 1" % (instances[addr['instance_id']],
+                                                                          addr['port'],
+                                                                          addr_uri,
+                                                                          addr['minimum'],
+                                                                          addr['maximum'],
+                                                                          addr['steps'],
+                                                                          addr['label'].replace(" ","_"),
+                                                                          addr.get('tempo'),
+                                                                          dividers,
+                                                                          page,
+                                                                          group))
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
@@ -451,7 +469,7 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None, group=None):
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
@@ -520,7 +538,8 @@ class Addressings(object):
             'options'     : options,
             'tempo'       : tempo,
             'dividers'    : dividers,
-            'page'        : page
+            'page'        : page,
+            'group'       : group
         }
 
         # -------------------------------------------------------------------------------------------------------------
@@ -550,6 +569,12 @@ class Addressings(object):
 
                 if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                     hmitype |= HMI_ADDRESSING_TYPE_ENUMERATION
+
+            # first actuator in group should have reverse enum hmi type
+            if group is not None:
+                group_actuator = next((act for act in self.hw_actuators if act['uri'] == group), None)
+                if group_actuator is not None and group_actuator['group'].index(actuator_uri) == 0:
+                    hmitype = HMI_ADDRESSING_TYPE_REVERSE_ENUM
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
                 if value not in [o[0] for o in options]:
@@ -671,22 +696,37 @@ class Addressings(object):
                     except Exception as e:
                         logging.exception(e)
 
+    def remove_hmi(self, addressing_data, actuator_uri):
+        addressings       = self.hmi_addressings[actuator_uri]
+        addressings_addrs = addressings['addrs']
+        index = addressings_addrs.index(addressing_data)
+        addressings_addrs.pop(index)
+
+        old_idx = addressings['idx']
+        # if addressings['idx'] == index:
+        if old_idx != 0 or (old_idx == 0 and not len(addressings_addrs)):
+            addressings['idx'] -= 1
+        return old_idx == index
+
     # NOTE: make sure to call hmi_load_current() afterwards if removing HMI addressings
     def remove(self, addressing_data):
         actuator_uri  = addressing_data['actuator_uri']
         actuator_type = self.get_actuator_type(actuator_uri)
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
-            addressings       = self.hmi_addressings[actuator_uri]
-            addressings_addrs = addressings['addrs']
-            index = addressings_addrs.index(addressing_data)
-            addressings_addrs.pop(index)
+            group_actuators = self.get_group_actuators(actuator_uri)
+            if group_actuators:
+                for i in range(len(group_actuators)):
+                    group_actuator_uri = group_actuators[i]
+                    group_addressing_data = addressing_data.copy()
+                    group_addressing_data['actuator_uri'] = group_actuator_uri
+                    if i == 0: # first actuator has reverse enum hmi type
+                        group_addressing_data['hmitype'] = HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    was_active = self.remove_hmi(group_addressing_data, group_actuator_uri)
+                return was_active
 
-            old_idx = addressings['idx']
-            # if addressings['idx'] == index:
-            if old_idx != 0 or (old_idx == 0 and not len(addressings_addrs)):
-                addressings['idx'] -= 1
-            return old_idx == index
+            else:
+                return self.remove_hmi(addressing_data, actuator_uri)
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             addressings = self.cc_addressings[actuator_uri]
@@ -724,7 +764,6 @@ class Addressings(object):
         if self.pages_cb: # device supports pages
             current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
             if not current_page_assigned:
-                # control_rm or cb false?
                 callback(False)
                 return
             else:
@@ -920,6 +959,16 @@ class Addressings(object):
         if actuator_uri == kBpmURI:
             return self.ADDRESSING_TYPE_BPM
         return self.ADDRESSING_TYPE_CC
+
+    def get_group_actuators(self, actuator_uri):
+        if not self.is_hmi_actuator(actuator_uri) or actuator_uri not in [a['uri'] for a in self.hw_actuators]:
+            return False
+
+        actuator = next(a for a in self.hw_actuators if a['uri'] == actuator_uri)
+        group_actuators = actuator.get('group', None)
+        if group_actuators is None:
+            return False
+        return group_actuators
 
     def get_presets_as_options(self, instance_id):
         pluginData = self._task_get_plugin_data(instance_id)
