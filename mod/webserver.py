@@ -48,7 +48,7 @@ from mod.session import SESSION
 from modtools.utils import (
     init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
-    set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
+    reset_get_all_pedalboards_cache, set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
 
 try:
@@ -1104,6 +1104,9 @@ class PedalboardSave(JsonRequestHandler):
 
         bundlepath = SESSION.web_save_pedalboard(title, asNew)
 
+        if asNew:
+            reset_get_all_pedalboards_cache()
+
         self.write({
             'ok': bundlepath is not None,
             'bundlepath': bundlepath
@@ -1252,6 +1255,7 @@ class PedalboardRemove(JsonRequestHandler):
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
+        reset_get_all_pedalboards_cache()
         self.write(True)
 
 class PedalboardImage(TimelessStaticFileHandler):

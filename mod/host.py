@@ -907,6 +907,8 @@ class Host(object):
         cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
         self.hmi.bank_config(acthw, cfgact, foot2_callback)
 
+    # -----------------------------------------------------------------------------------------------------------------
+
     def initialize_hmi(self, uiConnected, callback):
         # If UI is already connected, do nothing
         if uiConnected:

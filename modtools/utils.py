@@ -629,9 +629,19 @@ def rescan_plugin_presets(uri):
 
 # ------------------------------------------------------------------------------------------------------------
 
+_allpedalboards = None
+
 # get all available pedalboards (ie, plugins with pedalboard type)
 def get_all_pedalboards():
-    return structPtrPtrToList(utils.get_all_pedalboards())
+    global _allpedalboards
+    if _allpedalboards is None:
+        _allpedalboards = structPtrPtrToList(utils.get_all_pedalboards())
+    return _allpedalboards
+
+# handy function to reset our last call value
+def reset_get_all_pedalboards_cache():
+    global _allpedalboards
+    _allpedalboards = None
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():
