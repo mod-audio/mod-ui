@@ -187,20 +187,22 @@ class TimelessRequestHandler(web.RequestHandler):
         return False
 
 class TimelessStaticFileHandler(web.StaticFileHandler):
+    def compute_etag(self):
+        return None
+
+    def set_default_headers(self):
+        self._headers.pop("Date")
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
+
+    def should_return_304(self):
+        return False
+
     def get_cache_time(self, path, modified, mime_type):
         return 0
 
     def get_modified_time(self):
         return None
-
-    def set_default_headers(self):
-        self._headers.pop("Date")
-
-    def set_extra_headers(self, path):
-        self.set_header("Cache-Control", "public, max-age=31536000")
-
-    def should_return_304(self):
-        return self.check_etag_header()
 
 class JsonRequestHandler(TimelessRequestHandler):
     def write(self, data):
@@ -233,6 +235,12 @@ class JsonRequestHandler(TimelessRequestHandler):
 
         TimelessRequestHandler.write(self, data)
         self.finish()
+
+class CachedJsonRequestHandler(JsonRequestHandler):
+    def set_default_headers(self):
+        TimelessStaticFileHandler.set_default_headers(self)
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
 
 class RemoteRequestHandler(JsonRequestHandler):
     def set_default_headers(self):
@@ -826,7 +834,7 @@ class EffectRemove(JsonRequestHandler):
         ok = yield gen.Task(SESSION.web_remove, instance)
         self.write(ok)
 
-class EffectGet(JsonRequestHandler):
+class EffectGet(CachedJsonRequestHandler):
     def get(self):
         uri = self.get_argument('uri')
 
