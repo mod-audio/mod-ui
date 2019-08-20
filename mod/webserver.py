@@ -1277,7 +1277,7 @@ class PedalboardImageGenerate(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
-class PedalboardImageCheck(JsonRequestHandler):
+class PedalboardImageCheck(CachedJsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         ret, ctime = SESSION.screenshot_generator.check_screenshot(bundlepath)

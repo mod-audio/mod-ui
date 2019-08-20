@@ -857,8 +857,11 @@ function Desktop(elements) {
 
     this.waitForScreenshot = function (generate, callback) {
         if (generate) {
+            var bundlepath = self.pedalboardBundle
+            pending_pedalboard_screenshots.push(bundlepath)
+            console.log("added", bundlepath)
             $.ajax({
-                url: "/pedalboard/image/generate?bundlepath="+escape(self.pedalboardBundle),
+                url: "/pedalboard/image/generate?bundlepath="+escape(bundlepath),
                 success: function (resp) {
                     callback(resp.ok)
                 },
