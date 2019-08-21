@@ -219,6 +219,7 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
+        self.pedalboard_version  = 0
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots  = []
         self.next_hmi_pedalboard = None
@@ -704,7 +705,7 @@ class Host(object):
             if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
-                ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
+                #ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
@@ -1572,6 +1573,7 @@ class Host(object):
         self.pedalboard_name     = ""
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
+        self.pedalboard_version  = 0
 
         save_last_bank_and_pedalboard(0, "")
         self.init_plugins_data()
@@ -2404,6 +2406,7 @@ class Host(object):
                     'timeInfo': {
                         'available': False,
                     },
+                    'version': 0,
                 }
 
         self.msg_callback("loading_start %i 0" % int(isDefault))
@@ -2577,6 +2580,7 @@ class Host(object):
             self.pedalboard_name     = ""
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
+            self.pedalboard_version  = 0
             self.midi_aggregated_mode = True
             #save_last_bank_and_pedalboard(0, "")
         else:
@@ -2585,6 +2589,7 @@ class Host(object):
             self.pedalboard_name     = pb['title']
             self.pedalboard_path     = bundlepath
             self.pedalboard_size     = [pb['width'],pb['height']]
+            self.pedalboard_version  = pb['version']
 
             if bundlepath.startswith(LV2_PEDALBOARDS_DIR):
                 save_last_bank_and_pedalboard(self.bank_id, bundlepath)
@@ -2905,6 +2910,8 @@ class Host(object):
         self.plugins_removed = []
 
     def save_state_mainfile(self, bundlepath, title, titlesym):
+        self.pedalboard_version += 1
+
         # Create list of midi in/out ports
         midiportsIn   = []
         midiportsOut  = []
@@ -3258,12 +3265,13 @@ _:b%i
     pedal:addressings <addressings.json> ;
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
+    pedal:version %i ;
     ingen:polyphony 1 ;
 """ % (arcs, blocks, ports,
        title.replace('"','\\"'),
        self.descriptor.get('name', 'Unknown').replace('"','\\"'),
        self.descriptor.get('model', 'Unknown').replace('"','\\"'),
-       self.pedalboard_size[0], self.pedalboard_size[1])
+       self.pedalboard_size[0], self.pedalboard_size[1], self.pedalboard_version)
 
         # Arcs (connections)
         if len(self.connections) > 0:

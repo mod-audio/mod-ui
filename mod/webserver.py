@@ -49,7 +49,8 @@ from mod.licensing import check_missing_licenses, save_license, get_new_licenses
 from modtools.utils import (
     init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
-    reset_get_all_pedalboards_cache, set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
+    reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
+    set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
 
 try:
@@ -1137,8 +1138,11 @@ class PedalboardSave(JsonRequestHandler):
 
         bundlepath = SESSION.web_save_pedalboard(title, asNew)
 
-        if asNew:
-            reset_get_all_pedalboards_cache()
+        if bundlepath is not None:
+            if asNew:
+                reset_get_all_pedalboards_cache()
+            else:
+                update_cached_pedalboard_version(bundlepath)
 
         self.write({
             'ok': bundlepath is not None,
@@ -1310,7 +1314,7 @@ class PedalboardImageGenerate(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
-class PedalboardImageCheck(JsonRequestHandler):
+class PedalboardImageCheck(CachedJsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         ret, ctime = SESSION.screenshot_generator.check_screenshot(bundlepath)

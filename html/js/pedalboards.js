@@ -215,13 +215,13 @@ JqueryClass('pedalboardBox', {
 
         canvas.append(rendered)
 
-        wait_for_pedalboard_screenshot(pedalboard.bundle, function (resp) {
+        wait_for_pedalboard_screenshot(pedalboard.bundle, pedalboard.version, function (resp) {
             var img = rendered.find('.img');
 
             if (resp.ok)
             {
                 img.css({backgroundImage: "url(/pedalboard/image/thumbnail.png?bundlepath="+
-                                            escape(pedalboard.bundle)+"&tstamp="+resp.ctime+")"});
+                                            escape(pedalboard.bundle)+"&tstamp="+resp.ctime+"&v="+pedalboard.version+")"});
                 img.addClass("loaded");
             }
             else

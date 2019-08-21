@@ -2259,6 +2259,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
 const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
                                                      LilvWorld* const w,
+                                                     const LilvNode* const versiontypenode,
                                                      const LilvNode* const rdftypenode,
                                                      const LilvNode* const ingenblocknode,
                                                      const LilvNode* const lv2protonode)
@@ -2351,6 +2352,16 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
         }
 
         lilv_nodes_free(blocks);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // version
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, versiontypenode))
+    {
+        info.version = lilv_node_as_int(lilv_nodes_get_first(nodes));
+
+        lilv_nodes_free(nodes);
     }
 
     info.valid = true;
@@ -3502,6 +3513,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     else
         unsetenv("LV2_PATH");
 
+    LilvNode* const versiontypenode = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
     LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
     LilvNode* const ingenblocknode = lilv_new_uri(w, LILV_NS_INGEN "block");
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
@@ -3512,7 +3524,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
         // get new info
-        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, w, rdftypenode, ingenblocknode, lv2protonode);
+        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, w, versiontypenode, rdftypenode, ingenblocknode, lv2protonode);
 
         if (! info.valid)
             continue;
@@ -3523,6 +3535,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         allpedals.push_back(infop);
     }
 
+    lilv_free(versiontypenode);
     lilv_free(rdftypenode);
     lilv_free(ingenblocknode);
     lilv_free(lv2protonode);
@@ -3702,6 +3715,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const modpedal_preset = lilv_new_uri(w, LILV_NS_MODPEDAL "preset");
     LilvNode* const modpedal_width  = lilv_new_uri(w, LILV_NS_MODPEDAL "width");
     LilvNode* const modpedal_height = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
+    LilvNode* const modpedal_version = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
 
     // --------------------------------------------------------------------------------------------------------
     // uri node (ie, "this")
@@ -4201,6 +4215,16 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // version
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, modpedal_version))
+    {
+        info.version = lilv_node_as_int(lilv_nodes_get_first(nodes));
+
+        lilv_nodes_free(nodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
 
     lilv_node_free(ingen_arc);
     lilv_node_free(ingen_block);
@@ -4221,6 +4245,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(modpedal_preset);
     lilv_node_free(modpedal_width);
     lilv_node_free(modpedal_height);
+    lilv_node_free(modpedal_version);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 
