@@ -366,6 +366,7 @@ class PedalboardInfo(Structure):
         ("connections", POINTER(PedalboardConnection)),
         ("hardware", PedalboardHardware),
         ("timeInfo", PedalboardTimeInfo),
+        ("version", c_uint),
     ]
 
 class PedalboardInfo_Mini(Structure):
@@ -375,6 +376,7 @@ class PedalboardInfo_Mini(Structure):
         ("uri", c_char_p),
         ("bundle", c_char_p),
         ("title", c_char_p),
+        ("version", c_uint),
     ]
 
 class StatePortValue(Structure):
@@ -642,6 +644,17 @@ def get_all_pedalboards():
 def reset_get_all_pedalboards_cache():
     global _allpedalboards
     _allpedalboards = None
+
+# handy function to update cached pedalboard version
+def update_cached_pedalboard_version(bundle):
+    global _allpedalboards
+    if _allpedalboards is None:
+        return
+    for pedalboard in _allpedalboards:
+        if pedalboard['bundle'] == bundle:
+            pedalboard['version'] += 1
+            return
+    print("ERROR: update_cached_pedalboard_version() failed", bundle)
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():
