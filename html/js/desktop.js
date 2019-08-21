@@ -856,10 +856,10 @@ function Desktop(elements) {
     },
 
     this.waitForScreenshot = function (generate, callback) {
+        var bundlepath = self.pedalboardBundle
+        pending_pedalboard_screenshots.push(bundlepath)
+
         if (generate) {
-            var bundlepath = self.pedalboardBundle
-            pending_pedalboard_screenshots.push(bundlepath)
-            console.log("added", bundlepath)
             $.ajax({
                 url: "/pedalboard/image/generate?bundlepath="+escape(bundlepath),
                 success: function (resp) {
@@ -873,7 +873,7 @@ function Desktop(elements) {
             })
         } else {
             $.ajax({
-                url: "/pedalboard/image/wait?bundlepath="+escape(self.pedalboardBundle),
+                url: "/pedalboard/image/wait?bundlepath="+escape(bundlepath),
                 success: function (resp) {
                     callback(resp.ok)
                 },
@@ -1799,6 +1799,16 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.pedalboardBundle = errorOrPath
             self.pedalboardEmpty = false
             self.pedalboardModified = false
+
+            if (self.previousPedalboardList != null) {
+                for (var i=0; i<self.previousPedalboardList.length; i++) {
+                    var pedal = self.previousPedalboardList[i]
+                    if (pedal.bundle == self.pedalboardBundle) {
+                        pedal.version += 1
+                        break
+                    }
+                }
+            }
 
             new Notification("info", sprintf('Pedalboard "%s" saved', title), 2000)
 

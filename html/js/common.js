@@ -167,14 +167,13 @@ function remove_from_array(array, element) {
 
 var pending_pedalboard_screenshots = []
 
-function wait_for_pedalboard_screenshot(bundlepath, callback) {
+function wait_for_pedalboard_screenshot(bundlepath, version, callback) {
     // allow to cache request if no screenshot is being currently generated
     var cache = pending_pedalboard_screenshots.indexOf(bundlepath) < 0;
 
     $.ajax({
-        url: "/pedalboard/image/check?bundlepath="+escape(bundlepath),
+        url: "/pedalboard/image/check?bundlepath="+escape(bundlepath)+'&v='+version.toString(),
         success: function (resp) {
-            console.log(pending_pedalboard_screenshots, bundlepath)
             if (resp.status == 1) {
                 // success
                 remove_from_array(pending_pedalboard_screenshots, bundlepath)
@@ -185,13 +184,12 @@ function wait_for_pedalboard_screenshot(bundlepath, callback) {
             if (resp.status == 0) {
                 // pending
                 setTimeout(function() {
-                    wait_for_pedalboard_screenshot(bundlepath, callback)
+                    wait_for_pedalboard_screenshot(bundlepath, version, callback)
                 }, 1000)
                 return
             }
 
             // error
-            remove_from_array(pending_pedalboard_screenshots, bundlepath)
             callback({'ok':false})
 
         },

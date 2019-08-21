@@ -240,6 +240,7 @@ typedef struct {
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
     PedalboardTimeInfo timeInfo;
+    unsigned int version;
 } PedalboardInfo;
 
 typedef struct {
@@ -248,6 +249,7 @@ typedef struct {
     const char* uri;
     const char* bundle;
     const char* title;
+    unsigned int version;
 } PedalboardInfo_Mini;
 
 typedef struct {

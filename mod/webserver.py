@@ -48,7 +48,8 @@ from mod.session import SESSION
 from modtools.utils import (
     init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
-    reset_get_all_pedalboards_cache, set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
+    reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
+    set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
 
 try:
@@ -1104,8 +1105,11 @@ class PedalboardSave(JsonRequestHandler):
 
         bundlepath = SESSION.web_save_pedalboard(title, asNew)
 
-        if asNew:
-            reset_get_all_pedalboards_cache()
+        if bundlepath is not None:
+            if asNew:
+                reset_get_all_pedalboards_cache()
+            else:
+                update_cached_pedalboard_version(bundlepath)
 
         self.write({
             'ok': bundlepath is not None,
