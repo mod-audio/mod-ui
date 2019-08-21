@@ -18,13 +18,13 @@
 var ws
 var cached_cpuLoad = null,
     cached_xruns   = null,
-    timeout_xruns  = null
+    timeout_xruns  = null,
+    pb_loading     = true
 
 $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
-    var loading  = false,
-        empty    = false,
+    var empty    = false,
         modified = false
 
     ws.onclose = function (evt) {
@@ -225,7 +225,7 @@ $('document').ready(function() {
                 var targetport = '[mod-port="' + target.replace(/\//g, "\\/") + '"]'
 
                 var output       = $(sourceport)
-                var skipModified = loading
+                var skipModified = pb_loading
 
                 if (output.length) {
                     var input = $(targetport)
@@ -290,7 +290,7 @@ $('document').ready(function() {
             var y        = parseFloat(data[3])
             var bypassed = parseInt(data[4]) != 0
             var plugins  = desktop.pedalboard.data('plugins')
-            var skipModified = loading
+            var skipModified = pb_loading
 
             if (plugins[instance] == null) {
                 plugins[instance] = {} // register plugin
@@ -312,7 +312,7 @@ $('document').ready(function() {
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
                     },
-                    cache: false,
+                    cache: true,
                     dataType: 'json'
                 })
             }
@@ -346,7 +346,7 @@ $('document').ready(function() {
                 desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)
             }
 
-            if (! loading) {
+            if (! pb_loading) {
                 desktop.pedalboard.pedalboard('positionHardwarePorts')
             }
             return
@@ -394,7 +394,7 @@ $('document').ready(function() {
             data     = data.substr(cmd.length+1).split(" ",2)
             empty    = parseInt(data[0]) != 0
             modified = parseInt(data[1]) != 0
-            loading  = true
+            pb_loading = true
             desktop.pedalboard.data('wait').start('Loading pedalboard...')
             return
         }
@@ -423,7 +423,7 @@ $('document').ready(function() {
                         }
                     }
 
-                    loading = false
+                    pb_loading = false
                     desktop.init();
                 },
                 cache: false,

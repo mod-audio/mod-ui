@@ -689,7 +689,7 @@ function HardwareManager(options) {
 
                 // disable this control
                 var feedback = actuator.feedback === false ? false : true // backwards compat, true by default
-                options.setEnabled(instance, port.symbol, false, feedback)
+                options.setEnabled(instance, port.symbol, false, feedback, true)
             }
             // We're unaddressing
             else if (unaddressing)
@@ -825,7 +825,7 @@ function HardwareManager(options) {
             group   : group
         }
         // disable this control
-        options.setEnabled(instance, portSymbol, false, feedback)
+        options.setEnabled(instance, portSymbol, false, feedback, true)
     }
 
     this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {

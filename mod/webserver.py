@@ -49,7 +49,7 @@ from mod.licensing import check_missing_licenses, save_license, get_new_licenses
 from modtools.utils import (
     init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
-    set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
+    reset_get_all_pedalboards_cache, set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
 
 try:
@@ -188,20 +188,22 @@ class TimelessRequestHandler(web.RequestHandler):
         return False
 
 class TimelessStaticFileHandler(web.StaticFileHandler):
+    def compute_etag(self):
+        return None
+
+    def set_default_headers(self):
+        self._headers.pop("Date")
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
+
+    def should_return_304(self):
+        return False
+
     def get_cache_time(self, path, modified, mime_type):
         return 0
 
     def get_modified_time(self):
         return None
-
-    def set_default_headers(self):
-        self._headers.pop("Date")
-
-    def set_extra_headers(self, path):
-        self.set_header("Cache-Control", "public, max-age=31536000")
-
-    def should_return_304(self):
-        return self.check_etag_header()
 
 class JsonRequestHandler(TimelessRequestHandler):
     def write(self, data):
@@ -234,6 +236,12 @@ class JsonRequestHandler(TimelessRequestHandler):
 
         TimelessRequestHandler.write(self, data)
         self.finish()
+
+class CachedJsonRequestHandler(JsonRequestHandler):
+    def set_default_headers(self):
+        TimelessStaticFileHandler.set_default_headers(self)
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
 
 class RemoteRequestHandler(JsonRequestHandler):
     def set_default_headers(self):
@@ -855,7 +863,7 @@ class EffectRemove(JsonRequestHandler):
         ok = yield gen.Task(SESSION.web_remove, instance)
         self.write(ok)
 
-class EffectGet(JsonRequestHandler):
+class EffectGet(CachedJsonRequestHandler):
     def get(self):
         uri = self.get_argument('uri')
 
@@ -1129,6 +1137,9 @@ class PedalboardSave(JsonRequestHandler):
 
         bundlepath = SESSION.web_save_pedalboard(title, asNew)
 
+        if asNew:
+            reset_get_all_pedalboards_cache()
+
         self.write({
             'ok': bundlepath is not None,
             'bundlepath': bundlepath
@@ -1277,6 +1288,7 @@ class PedalboardRemove(JsonRequestHandler):
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
+        reset_get_all_pedalboards_cache()
         self.write(True)
 
 class PedalboardImage(TimelessStaticFileHandler):

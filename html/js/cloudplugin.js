@@ -1047,7 +1047,7 @@ JqueryClass('cloudPluginBox', {
                     localChecked = true
                     showInfo()
                 },
-                cache: false,
+                cache: true,
                 dataType: 'json'
             })
         }

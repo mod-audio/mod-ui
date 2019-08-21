@@ -553,7 +553,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
-                cache: false,
+                cache: true,
                 dataType: 'json'
             })
         }
