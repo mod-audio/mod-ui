@@ -704,7 +704,7 @@ class Host(object):
             if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
-                ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
+                #ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
