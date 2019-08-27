@@ -187,7 +187,6 @@ function convertEquivalent(value, conversionFactor, portUnitSymbol) {
 function convertSecondsToPortValueEquivalent(value, portUnitSymbol) {
   var unit = unitConversionFactors[portUnitSymbol]
   if (unit === undefined) {
-    // TODO handle error
     return;
   }
   var conversionFactor = unit.from;
@@ -204,7 +203,6 @@ function convertSecondsToPortValueEquivalent(value, portUnitSymbol) {
 function convertPortValueToSecondsEquivalent(value, portUnitSymbol) {
   var unit = unitConversionFactors[portUnitSymbol]
   if (unit === undefined) {
-    // TODO handle error
     return;
   }
   var conversionFactor = unit.to;

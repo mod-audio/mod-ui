@@ -10,7 +10,7 @@ from mod import safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
-from modtools.tempo import dividers as tempo_dividers
+from modtools.tempo import get_divider_options
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0x00
 HMI_ADDRESSING_TYPE_BYPASS       = 0x01
@@ -208,7 +208,7 @@ class Addressings(object):
                     continue
 
             # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm or cc)
-            if actuator_uri not in [actuator['uri'] for actuator in self.hw_actuators] and not is_cc:
+            if actuator_uri not in [actuator['uri'] for actuator in self.hw_actuators] and not is_cc and actuator_uri != kBpmURI:
                 continue
 
             i = 0
@@ -408,7 +408,7 @@ class Addressings(object):
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
                 addr_uri = uri
-                dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
+                # dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
                 group = "{0}".format(addr.get('group', "null")).replace("None", "null")
                 send_hw_map = True
@@ -427,14 +427,13 @@ class Addressings(object):
                                                                           addr['steps'],
                                                                           addr['label'].replace(" ","_"),
                                                                           addr.get('tempo'),
-                                                                          dividers,
+                                                                          addr.get('dividers'),
                                                                           page,
                                                                           group))
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
-                dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
                 msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
                                                                       addr['port'],
@@ -444,7 +443,7 @@ class Addressings(object):
                                                                       addr['steps'],
                                                                       addr['label'].replace(" ","_"),
                                                                       addr.get('tempo'),
-                                                                      dividers,
+                                                                      addr.get('dividers'),
                                                                       page))
 
         # Control Chain
@@ -522,7 +521,8 @@ class Addressings(object):
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
             if tempo:
-                options = [(o["value"], o["label"]) for o in tempo_dividers]
+                divider_options = get_divider_options(port_info, 20.0, 280.0) # XXX min and max bpm hardcoded
+                options = [(o["value"], o["label"]) for o in divider_options]
 
         # TODO do something with spreset
 
@@ -700,8 +700,6 @@ class Addressings(object):
     def remove_hmi(self, addressing_data, actuator_uri):
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
-        print("addressings_addrs")
-        print(addressings_addrs)
         index = addressings_addrs.index(addressing_data)
         addressings_addrs.pop(index)
 

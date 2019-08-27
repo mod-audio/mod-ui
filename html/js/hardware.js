@@ -632,7 +632,6 @@ function HardwareManager(options) {
         // Sync port value to bpm
         if (tempoValue && dividerValue && port.units && port.units.symbol) {
           port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol);
-          // portValuesWithDividerLabels = getOptionsPortValues(port.units.symbol, self.beatsPerMinutePort.value, dividerOptions);
         }
 
         var addressing = {
@@ -643,15 +642,10 @@ function HardwareManager(options) {
             value  : port.value,
             steps  : sensibilityValue,
             tempo  : tempoValue,
-            // dividers: {
-            //   value: dividerValue,
-            //   options: portValuesWithDividerLabels
-            // },
             dividers: dividerValue,
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
             page: page || null,
         }
-        console.log(addressing)
 
         options.address(instanceAndSymbol, addressing, function (ok) {
             if (!ok) {
@@ -824,6 +818,7 @@ function HardwareManager(options) {
             page    : page,
             group   : group
         }
+        console.log(self.addressingsData        [instanceAndSymbol])
         // disable this control
         options.setEnabled(instance, portSymbol, false, feedback, true)
     }
