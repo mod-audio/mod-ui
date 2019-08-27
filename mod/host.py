@@ -58,11 +58,13 @@ from modtools.utils import (
 )
 from modtools.tempo import (
     convert_port_value_to_seconds_equivalent,
+    convert_seconds_to_port_value_equivalent,
     get_options_port_values,
     get_divider_options,
     get_divider_value,
     get_value_from_options,
-    dividers as all_dividers
+    get_port_value
+    # dividers as all_dividers
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
@@ -581,7 +583,7 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, send_hmi=False, hw_ids=None):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, send_hmi=True, hw_ids=None):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if send_hmi:
@@ -3292,57 +3294,75 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
-    # Readdress control ports synced to bpm after bpm changed
-    def readdress(self, addr, bpm, callback):
+    # Set new param value after bpm change
+    def set_param_from_bpm(self, addr, bpm, callback):
         if not addr.get('tempo', False):
             callback(False)
             return
 
-        instance_id = addr['instance_id']
-        pluginData  = self.plugins.get(instance_id, None)
+        # compute new port value based on new bpm
+        port_value_sec = get_port_value(bpm, addr['dividers'])
+        port_value = convert_seconds_to_port_value_equivalent(port_value_sec, addr['unit'])
 
+        instance_id = addr['instance_id']
+        portsymbol   = addr['port']
+        instance = self.mapper.get_instance(instance_id)
+        pluginData  = self.plugins.get(instance_id, None)
         if pluginData is None:
             callback(False)
             return
 
-        pluginInfo = get_plugin_info(pluginData['uri'])
+        def paramhmi_set_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            pluginData['ports'][portsymbol] = port_value
+            self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
+            self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
 
-        if not pluginInfo:
-            callback(False)
-            return
+        self.paramhmi_set(instance, portsymbol, port_value, paramhmi_set_callback)
 
-        portsymbol   = addr['port']
-        controlPorts = pluginInfo['ports']['control']['input']
-        ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
+        # if pluginData is None:
+        #     callback(False)
+        #     return
+        #
+        # pluginInfo = get_plugin_info(pluginData['uri'])
+        #
+        # if not pluginInfo:
+        #     callback(False)
+        #     return
+        #
+        # portsymbol   = addr['port']
+        # controlPorts = pluginInfo['ports']['control']['input']
+        # ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
+        #
+        # if not ports:
+        #     callback(False)
+        #     return
 
-        if not ports:
-            callback(False)
-            return
-
-        instance = self.mapper.get_instance(instance_id)
-        actuator_uri = addr['actuator_uri']
-        label = addr['label']
-        minimum = addr['minimum']
-        maximum = addr['maximum']
-        steps = addr['steps']
-        tempo = addr['tempo']
-        page = addr['page']
-
-        port = ports[0]
+        # instance = self.mapper.get_instance(instance_id)
+        # actuator_uri = addr['actuator_uri']
+        # label = addr['label']
+        # minimum = addr['minimum']
+        # maximum = addr['maximum']
+        # steps = addr['steps']
+        # tempo = addr['tempo']
+        # page = addr['page']
+        #
+        # port = ports[0]
         # value = convert_seconds_to_port_value_equivalent(
         #     get_port_value(bpm, float(addr['dividers']['value'])),
         #     port['units']['symbol']
         # )
-        dividerOptions = get_options_port_values(
-            port['units']['symbol'],
-            bpm,
-            get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-        )
-        value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
-        dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
+        # dividerOptions = get_options_port_values(
+        #     port['units']['symbol'],
+        #     bpm,
+        #     get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+        # )
+        # value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
+        # dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
 
-        # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
-        self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback)
+        # self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback)
 
     def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
         if setProfile:
@@ -3474,7 +3494,7 @@ _:b%i
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
                 try:
-                    yield gen.Task(self.readdress, addr, bpm)
+                    yield gen.Task(self.set_param_from_bpm, addr, bpm)
                 except Exception as e:
                     logging.exception(e)
 
@@ -3482,7 +3502,7 @@ _:b%i
             addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
             for addr in addrs:
                 try:
-                    yield gen.Task(self.readdress, addr, bpm)
+                    yield gen.Task(self.set_param_from_bpm, addr, bpm)
                 except Exception as e:
                     logging.exception(e)
 
@@ -3677,10 +3697,10 @@ _:b%i
             callback(True)
             return
 
-        if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
-            print("WARNING: Cannot address to HMI at this point")
-            callback(False)
-            return
+        # if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
+        #     print("WARNING: Cannot address to HMI at this point")
+        #     callback(False)
+        #     return
 
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
@@ -3703,6 +3723,20 @@ _:b%i
                     port = ports[0]
                     has_strict_bounds = "hasStrictBounds" in port['properties']
 
+                    # Set min and max to min and max value among dividers
+                    if tempo and not has_strict_bounds:
+                        divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+                        print("divider_options")
+                        print(divider_options)
+                        options_port_values = get_options_port_values(port['units']['symbol'], self.transport_bpm, divider_options)
+                        options_list = [opt['value'] for opt in options_port_values]
+                        print("options_port_values")
+                        print(options_port_values)
+                        print("options_list")
+                        print(options_list)
+                        minimum = min(options_list)
+                        maximum = max(options_list)
+
         if not tempo and has_strict_bounds:
             if value < minimum:
                 value = minimum
@@ -3714,11 +3748,6 @@ _:b%i
         if tempo and not not_param_set:
             needsValueChange = True
 
-        # Set min and max to min and max value among dividers
-        if tempo and not has_strict_bounds:
-            options_list = [opt['value'] for opt in dividers['options']]
-            minimum = min(options_list)
-            maximum = max(options_list)
 
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
         if group_actuators:
@@ -3950,7 +3979,6 @@ _:b%i
     # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
-        print(value)
         abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
@@ -4032,29 +4060,54 @@ _:b%i
 
             port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing:
-                def param_set_callback(ok):
-                    if not ok:
-                        callback(False)
-                        return
-                    pluginData['ports'][portsymbol] = value
-                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
                 if group_actuators:
-                    self.control_set_other_group_actuator(group_actuators, hw_id, value, param_set_callback)
+                    def group_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
                     return
 
                 if port_addressing.get('tempo', None):
-                    value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
-                    new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
+                    print("port_addressing")
+                    print(port_addressing)
+                    # compute new port value based on received divider value
+                    pluginInfo = get_plugin_info(pluginData['uri'])
+
+                    if not pluginInfo:
+                        callback(False)
+                        return
+
+                    controlPorts = pluginInfo['ports']['control']['input']
+                    ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
+
+                    if not ports:
+                        callback(False)
+                        return
+                    port = ports[0]
+                    port_value_sec = get_port_value(self.transport_bpm, value)
+                    port_value = convert_seconds_to_port_value_equivalent(port_value_sec, port['units']['symbol'])
+
+                    # value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
+                    # new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
 
                     # make sure new_divider is in our list of supported dividers (in case of calculation precision issue)
-                    all_dividers_values = [d['value'] for d in all_dividers]
-                    if new_divider not in all_dividers_values:
-                        new_divider = min(all_dividers_values, key=lambda x:abs(x-new_divider))
+                    # all_dividers_values = [d['value'] for d in all_dividers]
+                    # if new_divider not in all_dividers_values:
+                    #     new_divider = min(all_dividers_values, key=lambda x:abs(x-new_divider))
 
-                    port_addressing['dividers']['value'] = new_divider
+                    def address_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = port_value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4062,9 +4115,9 @@ _:b%i
                     maximum = port_addressing['maximum']
                     steps = port_addressing['steps']
                     tempo = port_addressing['tempo']
-                    dividers = port_addressing['dividers']
+                    dividers = value
                     page = port_addressing['page']
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, param_set_callback, not_param_set=True, send_hmi=False)
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps, tempo, dividers, page, address_callback, not_param_set=True, send_hmi=False)
                     return
 
             pluginData['ports'][portsymbol] = value

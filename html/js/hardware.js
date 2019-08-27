@@ -213,7 +213,7 @@ function HardwareManager(options) {
 
         // Select previously saved divider or set first divider as default
         if (filteredDividers.length > 0) {
-          var def = (curDividers !== null && curDividers !== undefined) ? curDividers.value : filteredDividers[0].value
+          var def = (curDividers !== null && curDividers !== undefined) ? curDividers : filteredDividers[0].value
           select.val(def)
         }
 
@@ -632,7 +632,7 @@ function HardwareManager(options) {
         // Sync port value to bpm
         if (tempoValue && dividerValue && port.units && port.units.symbol) {
           port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol);
-          portValuesWithDividerLabels = getOptionsPortValues(port.units.symbol, self.beatsPerMinutePort.value, dividerOptions);
+          // portValuesWithDividerLabels = getOptionsPortValues(port.units.symbol, self.beatsPerMinutePort.value, dividerOptions);
         }
 
         var addressing = {
@@ -643,13 +643,15 @@ function HardwareManager(options) {
             value  : port.value,
             steps  : sensibilityValue,
             tempo  : tempoValue,
-            dividers: {
-              value: dividerValue,
-              options: portValuesWithDividerLabels
-            },
+            // dividers: {
+            //   value: dividerValue,
+            //   options: portValuesWithDividerLabels
+            // },
+            dividers: dividerValue,
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
             page: page || null,
         }
+        console.log(addressing)
 
         options.address(instanceAndSymbol, addressing, function (ok) {
             if (!ok) {
@@ -761,7 +763,7 @@ function HardwareManager(options) {
 
         var labelValue = label.val() || pname
         var sensibilityValue = sensibility.val()
-        var dividerValue = divider.val()
+        var dividerValue = divider.val() ? parseFloat(divider.val()): divider.val()
 
         // if changing from midi-learn, unlearn first
         if (currentAddressing.uri == kMidiLearnURI) {
@@ -772,8 +774,6 @@ function HardwareManager(options) {
                 maximum: maxv,
                 value  : port.value,
                 steps  : sensibilityValue,
-                // tempo  : tempo.prop("checked"),
-                // divider: divider.val()
             }
             options.address(instanceAndSymbol, addressing, function (ok) {
                 if (!ok) {

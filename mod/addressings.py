@@ -10,6 +10,7 @@ from mod import safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
+from modtools.tempo import dividers as tempo_dividers
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0x00
 HMI_ADDRESSING_TYPE_BYPASS       = 0x01
@@ -521,7 +522,7 @@ class Addressings(object):
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
             if tempo:
-                options = [(o["value"], o["label"]) for o in dividers["options"]]
+                options = [(o["value"], o["label"]) for o in tempo_dividers]
 
         # TODO do something with spreset
 
@@ -577,7 +578,7 @@ class Addressings(object):
                     hmitype = HMI_ADDRESSING_TYPE_REVERSE_ENUM
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
-                if value not in [o[0] for o in options]:
+                if not tempo and value not in [o[0] for o in options]:
                     print("ERROR: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
                     addressing_data['value'] = float(options[0][0])
 
@@ -699,6 +700,8 @@ class Addressings(object):
     def remove_hmi(self, addressing_data, actuator_uri):
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
+        print("addressings_addrs")
+        print(addressings_addrs)
         index = addressings_addrs.index(addressing_data)
         addressings_addrs.pop(index)
 
@@ -751,7 +754,6 @@ class Addressings(object):
     # HMI specific functions
 
     def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False, send_hmi = True):
-        print("HMI LOAD CURRENT")
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
