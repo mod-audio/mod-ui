@@ -818,7 +818,6 @@ function HardwareManager(options) {
             page    : page,
             group   : group
         }
-        console.log(self.addressingsData        [instanceAndSymbol])
         // disable this control
         options.setEnabled(instance, portSymbol, false, feedback, true)
     }
