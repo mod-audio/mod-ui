@@ -189,6 +189,7 @@ class Protocol(object):
 
         # unused
         "get_pb_name": [],
+        "encoder_clicked": [int],
     }
 
     COMMANDS_FUNC = {}
