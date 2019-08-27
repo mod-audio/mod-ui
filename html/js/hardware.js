@@ -467,7 +467,7 @@ function HardwareManager(options) {
             typeInputVal = kMidiLearnURI
           } else if (startsWith(currentAddressing.uri, deviceOption)) {
             typeInputVal = deviceOption
-          } else {
+          } else if (currentAddressing.uri !== kBpmURI){
             typeInputVal = ccOption
           }
         }

@@ -628,7 +628,7 @@ class Addressings(object):
 
         return addressing_data
 
-    def load_addr(self, actuator_uri, addressing_data, callback, not_param_set=False):
+    def load_addr(self, actuator_uri, addressing_data, callback, send_hmi=True):
         addressing_data = addressing_data.copy()
 
         actuator_hw   = actuator_uri
@@ -654,7 +654,7 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, not_param_set)
+        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
 
     @gen.coroutine
     def load_current(self, actuator_uris, skippedPort, updateValue, abort_catcher):
@@ -750,7 +750,8 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
-    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False):
+    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False, send_hmi = True):
+        print("HMI LOAD CURRENT")
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
@@ -804,7 +805,7 @@ class Addressings(object):
         if updateValue:
             self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
         else:
-            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
+            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
 
     def hmi_load_footswitches(self, callback):
         def footswitch1_callback(_):

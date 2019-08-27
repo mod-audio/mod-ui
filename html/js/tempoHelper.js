@@ -275,7 +275,6 @@ function getDividerOptions(port, minBpm, maxBpm) {
  */
 function hasTempoRelatedDynamicScalePoints(port) {
   return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1
-  // return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
 }
 
 /**
