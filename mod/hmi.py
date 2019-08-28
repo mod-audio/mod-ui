@@ -297,48 +297,34 @@ class HMI(object):
         var_type = data['hmitype']
         unit = data['unit']
         value = data['value']
-        min = data['minimum']
-        max = data['maximum']
+        xmin = data['minimum']
+        xmax = data['maximum']
         steps = data['steps']
         options = data['options']
 
-        # hw_type = actuator[0]
-        # hw_id = actuator[1]
-        # actuator_type = actuator[2]
-        # actuator_id = actuator[3]
-
         label = '"%s"' % label.upper().replace('"', "")
         unit = '"%s"' % unit.replace('"', '')
-        optionsData = []
 
-        rmax = max
         if options:
-            currentNum = 0
-            numBytesFree = 1024-128
+            optionsData = []
 
-            for o in options:
-                if currentNum > 50:
-                    if value >= currentNum:
-                        value = 0
-                    rmax = currentNum
-                    break
+            if len(options) <= 5 or value <= 2:
+                startIndex = 0
+            elif value+2 >= len(options):
+                startIndex = len(options)-5
+            else:
+                startIndex = value - 2
 
-                xdata    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                xdataLen = len(xdata)
-
-                if numBytesFree-xdataLen-2 < 0:
-                    print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
-                    if value >= currentNum:
-                        value = 0.0
-                    rmax = currentNum
-                    break
-
-                currentNum += 1
-                numBytesFree -= xdataLen+1
+            for i in range(startIndex, min(startIndex+5, len(options))):
+                option = options[i]
+                xdata  = '"%s" %f' % (option[1].replace('"', '').upper(), float(option[0]))
                 optionsData.append(xdata)
 
-        options = "%d %s" % (len(optionsData), " ".join(optionsData))
-        options = options.strip()
+            options = "%d %d %s" % (len(optionsData), startIndex, " ".join(optionsData))
+            options = options.strip()
+
+        else:
+            options = "0"
 
         def control_add_callback(ok):
             if not ok:
@@ -360,8 +346,8 @@ class HMI(object):
                     var_type,
                     unit,
                     value,
-                    rmax,
-                    min,
+                    xmax,
+                    xmin,
                     steps,
                     options,
                   ),

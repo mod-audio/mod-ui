@@ -97,8 +97,8 @@ def process_resp(resp, datatype):
 class Protocol(object):
     # Make sure this is free of duplicates!
     COMMANDS = {
-        "banks": [],
-        "pedalboards": [int],
+        "banks": [int],
+        "pedalboards": [int, int],
         "pb": [int, str],
 
         "hw_con": [int, int],
@@ -107,6 +107,7 @@ class Protocol(object):
         "s": [int, float], # control_set
         "g": [int], # control_get
         "n": [int], # control_next
+        "ncp": [int, int], # next_control_page
 
         "pbs": [], # pedalboard_save
         "pbr": [], # pedalboard_reset

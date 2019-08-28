@@ -323,6 +323,7 @@ class Host(object):
         Protocol.register_cmd_callback("g", self.hmi_parameter_get)
         Protocol.register_cmd_callback("s", self.hmi_parameter_set)
         Protocol.register_cmd_callback("n", self.hmi_parameter_addressing_next)
+        Protocol.register_cmd_callback("ncp", self.hmi_next_control_page)
         Protocol.register_cmd_callback("pbs", self.hmi_save_current_pedalboard)
         Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback("tu", self.hmi_tuner)
@@ -3773,8 +3774,9 @@ _:b%i
         logging.debug("hmi hardware disconnected")
         callback(True)
 
-    def hmi_list_banks(self, callback):
-        logging.debug("hmi list banks")
+    def hmi_list_banks(self, page, callback):
+        logging.error("hmi list banks with page %d", page)
+        # TODO: do something with page parameter
 
         if len(self.allpedalboards) == 0:
             callback(True, "")
@@ -3788,8 +3790,9 @@ _:b%i
 
         callback(True, banks)
 
-    def hmi_list_bank_pedalboards(self, bank_id, callback):
-        logging.debug("hmi list bank pedalboards")
+    def hmi_list_bank_pedalboards(self, bank_id, page, callback):
+        logging.error("hmi list bank pedalboards %d %d", bank_id, page)
+        # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
             print("ERROR: Trying to list pedalboards using out of bounds bank id %i" % (bank_id))
@@ -4076,6 +4079,44 @@ _:b%i
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
         self.addressings.hmi_load_next_hw(hw_id, callback)
+
+    def hmi_next_control_page(self, hw_id, value, callback):
+        logging.error("hmi next control page %d %d", hw_id, value)
+        data = self.addressings.hmi_get_addr_data(hw_id)
+
+        if data is None:
+            callback(False, "")
+            return
+
+        # note: the code below matches hmi.py control_add
+        options = data['options']
+        optionsData = []
+
+        if len(options) <= 5 or value <= 2:
+            startIndex = 0
+        elif value+2 >= len(options):
+            startIndex = len(options)-5
+        else:
+            startIndex = value - 2
+
+        for i in range(startIndex, min(startIndex+5, len(options))):
+            option = options[i]
+            xdata  = '"%s" %f' % (option[1].replace('"', '').upper(), float(option[0]))
+            optionsData.append(xdata)
+
+        options = "%d %d %s" % (len(optionsData), startIndex, " ".join(optionsData))
+        options = options.strip()
+
+        callback(True, '%s %d %s %f %f %f %d %s' %
+                  ( '"%s"' % data['label'].upper().replace('"', ""),
+                    data['hmitype'],
+                    '"%s"' % data['unit'].replace('"', ''),
+                    value,
+                    data['maximum'],
+                    data['minimum'],
+                    data['steps'],
+                    options,
+                  ))
 
     def hmi_save_current_pedalboard(self, callback):
         logging.debug("hmi save current pedalboard")
