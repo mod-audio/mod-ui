@@ -3791,33 +3791,38 @@ _:b%i
             value  = 0
         else:
             value  = self.current_hmi_bank_hover
-            value += 1 if dir_up else -1
+            value += 8 if dir_up else -8
 
-        numBanks = len(self.banks)
+        # FIXME
+        banks  = [{'title':"All Pedalboards"}]
+        banks += self.banks
+        numBanks = len(banks)
 
-        if value < 0 or value > numBanks:
+        if value < 0 or value >= numBanks:
             callback(True, "")
             return
 
         self.current_hmi_bank_hover = value
 
-        if numBanks <= 5 or value <= 2:
+        if numBanks < 8: # or value <= 2:
             startIndex = 0
-        elif value+2 >= numBanks:
-            startIndex = numBanks - 5
+        #elif value+4 >= numBanks:
+            #startIndex = numBanks - 5
         else:
-            startIndex = value - 2
+            startIndex = value
+        endIndex = min(startIndex+8, numBanks)
+        banksData = '%d %d' % (startIndex, endIndex)
 
-        if startIndex == 0:
-            endIndex = min(startIndex+5, numBanks)
-            banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
-        else:
-            startIndex -= 1
-            endIndex = min(startIndex+5, numBanks)
-            banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+        #if startIndex == 0:
+            #endIndex = min(startIndex+5, numBanks)
+            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+        #else:
+            #startIndex -= 1
+            #endIndex = min(startIndex+5, numBanks)
+            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            banksData += ' "%s" %d' % (self.banks[i]['title'].replace('"', '')[:31], i+1)
+            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31], i+1)
 
         callback(True, banksData)
 
@@ -3834,7 +3839,7 @@ _:b%i
             value  = 0
         else:
             value  = self.current_hmi_pedalboard_hover
-            value += 1 if dir_up else -1
+            value += 5 if dir_up else -5
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
