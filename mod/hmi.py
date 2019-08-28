@@ -302,25 +302,27 @@ class HMI(object):
         steps = data['steps']
         options = data['options']
 
-        label = '"%s"' % label.upper().replace('"', "")
-        unit = '"%s"' % unit.replace('"', '')
+        label = '"%s"' % label.replace('"', "")[:31].upper()
+        unit = '"%s"' % unit.replace('"', '')[:7]
 
         if options:
+            numOpts = len(options)
+            ivalue  = int(value)
             optionsData = []
 
-            if len(options) <= 5 or value <= 2:
+            if numOpts <= 5 or ivalue <= 2:
                 startIndex = 0
-            elif value+2 >= len(options):
-                startIndex = len(options)-5
+            elif ivalue+2 >= numOpts:
+                startIndex = numOpts-5
             else:
-                startIndex = value - 2
+                startIndex = ivalue - 2
 
-            for i in range(startIndex, min(startIndex+5, len(options))):
+            for i in range(startIndex, min(startIndex+5, numOpts)):
                 option = options[i]
-                xdata  = '"%s" %f' % (option[1].replace('"', '').upper(), float(option[0]))
+                xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
                 optionsData.append(xdata)
 
-            options = "%d %d %s" % (len(optionsData), startIndex, " ".join(optionsData))
+            options = "%d %s" % (len(optionsData), " ".join(optionsData))
             options = options.strip()
 
         else:

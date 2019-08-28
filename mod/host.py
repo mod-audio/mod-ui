@@ -99,6 +99,9 @@ QUICK_BYPASS_MODE_VALUES = (
 DEFAULT_DISPLAY_BRIGHTNESS = DISPLAY_BRIGHTNESS_50
 DEFAULT_QUICK_BYPASS_MODE  = QUICK_BYPASS_MODE_BOTH
 
+HMI_LIST_PAGE_UP     = 1 << 1
+HMI_LIST_WRAP_AROUND = 1 << 2
+
 # Special URI for non-addressed controls
 kNullAddressURI = "null"
 
@@ -4080,43 +4083,78 @@ _:b%i
         logging.debug("hmi parameter addressing next")
         self.addressings.hmi_load_next_hw(hw_id, callback)
 
-    def hmi_next_control_page(self, hw_id, value, callback):
-        logging.error("hmi next control page %d %d", hw_id, value)
+    def hmi_next_control_page(self, hw_id, props, callback):
+        logging.error("hmi next control page %d %d", hw_id, props)
+        try:
+            self.hmi_next_control_page_real(hw_id, props, callback)
+        except Exception as e:
+            callback(False, "")
+            logging.exception(e)
+
+    @gen.coroutine
+    def hmi_next_control_page_real(self, hw_id, props, callback):
         data = self.addressings.hmi_get_addr_data(hw_id)
 
         if data is None:
             callback(False, "")
             return
 
-        # note: the code below matches hmi.py control_add
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
+        if instance_id is None:
+            callback(False, "")
+            return
+
+        dir_up = props & HMI_LIST_PAGE_UP
+        wrap   = props & HMI_LIST_WRAP_AROUND
+
         options = data['options']
+        numOpts = len(options)
+        value   = int(self.addr_task_get_port_value(instance_id, portsymbol))
+        value  += 1 if dir_up != 0 else -1
+
+        if value < 0 or value >= numOpts:
+            if not wrap:
+                callback(True, "")
+                return
+            # wrap around mode, neat
+            if value < 0:
+                value = numOpts - 1
+            else:
+                value = 0
+
+        # note: the code below matches hmi.py control_add
         optionsData = []
 
-        if len(options) <= 5 or value <= 2:
+        if numOpts <= 5 or value <= 2:
             startIndex = 0
-        elif value+2 >= len(options):
-            startIndex = len(options)-5
+        elif value+2 >= numOpts:
+            startIndex = numOpts-5
         else:
             startIndex = value - 2
 
-        for i in range(startIndex, min(startIndex+5, len(options))):
+        for i in range(startIndex, min(startIndex+5, numOpts)):
             option = options[i]
-            xdata  = '"%s" %f' % (option[1].replace('"', '').upper(), float(option[0]))
+            xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
 
-        options = "%d %d %s" % (len(optionsData), startIndex, " ".join(optionsData))
+        options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
 
         callback(True, '%s %d %s %f %f %f %d %s' %
-                  ( '"%s"' % data['label'].upper().replace('"', ""),
+                  ( '"%s"' % data['label'].replace('"', "")[:31].upper(),
                     data['hmitype'],
-                    '"%s"' % data['unit'].replace('"', ''),
+                    '"%s"' % data['unit'].replace('"', '')[:7],
                     value,
                     data['maximum'],
                     data['minimum'],
                     data['steps'],
                     options,
                   ))
+
+        try:
+            yield gen.Task(self.hmi_parameter_set, hw_id, value)
+        except Exception as e:
+            logging.exception(e)
 
     def hmi_save_current_pedalboard(self, callback):
         logging.debug("hmi save current pedalboard")
