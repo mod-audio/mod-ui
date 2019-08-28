@@ -206,6 +206,9 @@ class Host(object):
         self.current_tuner_port = 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
+        self.current_hmi_bank_hover = -1
+        self.current_hmi_pedalboard_hover = -1
+
         self.allpedalboards = None
         self.bank_id = 0
         self.connections = []
@@ -3777,24 +3780,49 @@ _:b%i
         logging.debug("hmi hardware disconnected")
         callback(True)
 
-    def hmi_list_banks(self, page, callback):
-        logging.error("hmi list banks with page %d", page)
-        # TODO: do something with page parameter
+    def hmi_list_banks(self, dir_up, callback):
+        logging.error("hmi list banks with page %d", dir_up)
 
         if len(self.allpedalboards) == 0:
             callback(True, "")
             return
 
-        banks = '"All Pedalboards" 0'
+        if self.current_hmi_bank_hover == -1:
+            value  = 0
+        else:
+            value  = self.current_hmi_bank_hover
+            value += 1 if dir_up else -1
 
-        if len(self.banks) > 0:
-            banks += " "
-            banks += " ".join('"%s" %d' % (bank['title'], i+1) for i, bank in enumerate(self.banks))
+        numBanks = len(self.banks)
 
-        callback(True, banks)
+        if value < 0 or value > numBanks:
+            callback(True, "")
+            return
 
-    def hmi_list_bank_pedalboards(self, bank_id, page, callback):
-        logging.error("hmi list bank pedalboards %d %d", bank_id, page)
+        self.current_hmi_bank_hover = value
+
+        if numBanks <= 5 or value <= 2:
+            startIndex = 0
+        elif value+2 >= numBanks:
+            startIndex = numBanks - 5
+        else:
+            startIndex = value - 2
+
+        if startIndex == 0:
+            endIndex = min(startIndex+5, numBanks)
+            banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+        else:
+            startIndex -= 1
+            endIndex = min(startIndex+5, numBanks)
+            banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+
+        for i in range(startIndex, endIndex):
+            banksData += ' "%s" %d' % (self.banks[i]['title'].replace('"', '')[:31], i+1)
+
+        callback(True, banksData)
+
+    def hmi_list_bank_pedalboards(self, bank_id, dir_up, callback):
+        logging.error("hmi list bank pedalboards %d %d", bank_id, dir_up)
         # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
@@ -3802,39 +3830,37 @@ _:b%i
             callback(False, "")
             return
 
+        if self.current_hmi_pedalboard_hover == -1:
+            value  = 0
+        else:
+            value  = self.current_hmi_pedalboard_hover
+            value += 1 if dir_up else -1
+
         if bank_id == 0:
             pedalboards = self.allpedalboards
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
-        numBytesFree = 1024-64
-        pedalboardsData = None
+        numPedals = len(pedalboards)
 
-        num = 0
-        for pb in pedalboards:
-            if num > 50:
-                break
+        if value < 0 or value > numPedals:
+            callback(True, "")
+            return
 
-            title   = pb['title'].replace('"', '').upper()[:31]
-            data    = '"%s" %i' % (title, num)
-            dataLen = len(data)
+        self.current_hmi_pedalboard_hover = value
 
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when listing pedalboards (stopping at %i)" % num)
-                break
+        if numPedals <= 5 or value <= 2:
+            startIndex = 0
+        elif value+2 >= numPedals:
+            startIndex = numPedals - 5
+        else:
+            startIndex = value - 2
 
-            num += 1
+        endIndex = min(startIndex+5, numPedals)
+        pedalboardsData = '%d %d' % (startIndex, endIndex)
 
-            if pedalboardsData is None:
-                pedalboardsData = ""
-            else:
-                pedalboardsData += " "
-
-            numBytesFree -= dataLen+1
-            pedalboardsData += data
-
-        if pedalboardsData is None:
-            pedalboardsData = ""
+        for i in range(startIndex, endIndex):
+            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31], i+1)
 
         callback(True, pedalboardsData)
 
