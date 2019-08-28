@@ -4140,8 +4140,9 @@ _:b%i
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
 
-        callback(True, '%s %d %s %f %f %f %d %s' %
-                  ( '"%s"' % data['label'].replace('"', "")[:31].upper(),
+        callback(True, '%d %s %d %s %f %f %f %d %s' %
+                  ( hw_id,
+                    '"%s"' % data['label'].replace('"', "")[:31].upper(),
                     data['hmitype'],
                     '"%s"' % data['unit'].replace('"', '')[:7],
                     value,

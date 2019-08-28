@@ -368,23 +368,9 @@ class HMI(object):
         removes an addressing
         """
 
-        idsData = []
-        currentNum = 0
-        numBytesFree = 1024-128
+        idsStr = tuple(str(i) for i in hw_ids)
 
-        for id in hw_ids:
-            data    = '%d' % (id)
-            dataLen = len(data)
-
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when sending hw_ids (stopped at %i)" % currentNum)
-                break
-
-            currentNum += 1
-            numBytesFree -= dataLen+1
-            idsData.append(data)
-
-        ids = "%s" % (" ".join(idsData))
+        ids = "%s" % (" ".join(idsStr))
         ids = ids.strip()
         self.send('rm %s' % (ids), callback, datatype='boolean')
 
