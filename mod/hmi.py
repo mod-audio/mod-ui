@@ -336,7 +336,6 @@ class HMI(object):
                 currentNum += 1
                 numBytesFree -= xdataLen+1
                 optionsData.append(xdata)
-        options = data['options']
 
         options = "%d %s" % (len(optionsData), " ".join(optionsData))
         options = options.strip()
