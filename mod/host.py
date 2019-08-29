@@ -98,6 +98,7 @@ DEFAULT_QUICK_BYPASS_MODE  = QUICK_BYPASS_MODE_BOTH
 
 HMI_LIST_PAGE_UP     = 1 << 1
 HMI_LIST_WRAP_AROUND = 1 << 2
+HMI_LIST_INITIAL     = 1 << 3
 
 # Special URI for non-addressed controls
 kNullAddressURI = "null"
@@ -3801,8 +3802,8 @@ _:b%i
 
         callback(True, banksData)
 
-    def hmi_list_bank_pedalboards(self, dir_up, pedalboard_id, bank_id, callback):
-        logging.error("hmi list bank pedalboards %d %d %d", dir_up, pedalboard_id, bank_id)
+    def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
+        logging.error("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
         # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
@@ -3810,7 +3811,11 @@ _:b%i
             callback(False, "")
             return
 
-        if dir_up in (0, 1):
+        dir_up  = props & HMI_LIST_PAGE_UP
+        wrap    = props & HMI_LIST_WRAP_AROUND
+        initial = props & HMI_LIST_INITIAL
+
+        if not initial:
             pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
@@ -3820,9 +3825,19 @@ _:b%i
 
         numPedals = len(pedalboards)
 
-        if pedalboard_id < 0 or pedalboard_id > numPedals:
-            callback(True, "")
-            return
+        if pedalboard_id < 0 or pedalboard_id >= numPedals:
+            if not wrap:
+                callback(True, "")
+                return
+            # wrap around mode, neat
+            if pedalboard_id < 0:
+                pedalboard_id = numPedals - 1
+            else:
+                pedalboard_id = 0
+
+        #if pedalboard_id < 0 or pedalboard_id > numPedals:
+            #callback(True, "")
+            #return
 
         if numPedals <= 9 or pedalboard_id < 4:
             startIndex = 0
