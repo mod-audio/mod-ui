@@ -51,10 +51,6 @@ function MidiPortsWindow(options) {
         options.midiPortsList.find('span').remove()
 
         self.getDeviceList(function (devsInUse, devList, names, midiAggregatedMode) {
-            if (devList.length == 0) {
-                return new Notification("info", "No MIDI devices available")
-            }
-
             // add new ones
             for (var i in devList) {
                 var dev  = devList[i]
@@ -70,7 +66,7 @@ function MidiPortsWindow(options) {
             if(midiAggregatedMode) {
                 midiModeRadios.filter('[value=aggregated]').prop('checked', true);
             } else {
-              midiModeRadios.filter('[value=legacy]').prop('checked', true);
+                midiModeRadios.filter('[value=legacy]').prop('checked', true);
             }
 
             options.midiPortsWindow.show()
