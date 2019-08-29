@@ -269,7 +269,7 @@ function HardwareManager(options) {
     }
 
     // Show dynamic field content based on selected type of addressing
-    this.showDynamicField = function (form, typeInputVal, currentAddressing) {
+    this.showDynamicField = function (form, typeInputVal, currentAddressing, port) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
       if (typeInputVal === kMidiLearnURI) {
@@ -303,7 +303,7 @@ function HardwareManager(options) {
 
       if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal == ccOption) {
         form.find('.tempo').css({display:"none"})
-      } else {
+      } else if (hasTempoRelatedDynamicScalePoints(port)) {
         form.find('.tempo').css({display:"block"})
         if (form.find('input[name=tempo]').prop("checked")) {
           self.disableMinMaxSteps(form, true)
@@ -523,10 +523,10 @@ function HardwareManager(options) {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
           typeInput.val($(this).attr('data-value'))
-          self.showDynamicField(form, typeInput.val(), currentAddressing)
+          self.showDynamicField(form, typeInput.val(), currentAddressing, port)
         })
 
-        self.showDynamicField(form, typeInputVal, currentAddressing)
+        self.showDynamicField(form, typeInputVal, currentAddressing, port)
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
