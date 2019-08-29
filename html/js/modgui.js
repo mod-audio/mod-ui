@@ -307,7 +307,7 @@ function GUI(effect, options) {
         // let the host know about this change
         options.change(mod_port, value)
 
-        //let the HMI know about this change
+        // let the HMI know about this change
         paramchange = (self.instance + '/' + symbol + '/' + value)
         desktop.ParameterSet(paramchange)
     }
