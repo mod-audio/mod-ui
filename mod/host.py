@@ -212,8 +212,6 @@ class Host(object):
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
-        self.hasMidiMergerOut = False
-        self.hasMidiBroadcasterIn = False
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
@@ -476,6 +474,19 @@ class Host(object):
 
     def jack_port_deleted(self, name):
         name = charPtrToString(name)
+        removed_conns = self.remove_port_from_connections(name)
+
+        for port_symbol, port_alias, port_conns in self.midiports:
+            if name == port_symbol or (";" in port_symbol and name in port_symbol.split(";",1)):
+                port_conns += removed_conns
+                break
+
+        self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
+
+    def true_bypass_changed(self, left, right):
+        self.msg_callback("truebypass %i %i" % (left, right))
+
+    def remove_port_from_connections(self, name):
         removed_conns = []
 
         for ports in self.connections:
@@ -489,15 +500,7 @@ class Host(object):
             self.connections.remove(ports)
             disconnect_jack_ports(ports[0], ports[1])
 
-        for port_symbol, port_alias, port_conns in self.midiports:
-            if name == port_symbol or (";" in port_symbol and name in port_symbol.split(";",1)):
-                port_conns += removed_conns
-                break
-
-        self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
-
-    def true_bypass_changed(self, left, right):
-        self.msg_callback("truebypass %i %i" % (left, right))
+        return removed_conns
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
@@ -732,6 +735,9 @@ class Host(object):
         self.transport_bpm     = data['bpm']
         self.transport_bpb     = data['bpb']
 
+        # current aggregated mode
+        self.midi_aggregated_mode = has_midi_broadcaster_input_port() and has_midi_merger_output_port()
+
         # load everything
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
@@ -773,6 +779,8 @@ class Host(object):
         self.audioportsOut = []
 
         if not init_jack():
+            self.hasSerialMidiIn = False
+            self.hasSerialMidiOut = False
             return
 
         for port in get_jack_hardware_ports(True, False):
@@ -780,6 +788,9 @@ class Host(object):
 
         for port in get_jack_hardware_ports(True, True):
             self.audioportsOut.append(port.split(":",1)[-1])
+
+        self.hasSerialMidiIn = has_serial_midi_input_port()
+        self.hasSerialMidiOut = has_serial_midi_output_port()
 
     def close_jack(self):
         close_jack()
@@ -1364,11 +1375,6 @@ class Host(object):
             else:
                 midiports.append(port_id)
 
-        self.hasSerialMidiIn = has_serial_midi_input_port()
-        self.hasSerialMidiOut = has_serial_midi_output_port()
-        self.hasMidiMergerOut = has_midi_merger_output_port()
-        self.hasMidiBroadcasterIn = has_midi_broadcaster_input_port()
-
         # Control Voltage or Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
@@ -1389,16 +1395,8 @@ class Host(object):
 
         # MIDI In
         if self.midi_aggregated_mode:
-            if self.hasMidiMergerOut:
-                # Explained:             add_hw_port instance              type isOutput name    index
+            if has_midi_merger_output_port():
                 websocket.write_message("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-                # TODO: Is that instance name special or random?
-                #   2018-10-31, Jakob thinks: random but has to match
-                #   in function _fix_host_connection_port()
-                # TODO: Is that name special or used at all?
-                #   2018-10-31, Jakob thinks: used in <div/>.
-
-            # NOTE: The midi-merger automatically connects to available hardware ports.
 
         else: # 'legacy' mode until version 1.6
             if self.hasSerialMidiIn:
@@ -1420,9 +1418,8 @@ class Host(object):
 
         # MIDI Out
         if self.midi_aggregated_mode:
-            if self.hasMidiBroadcasterIn:
+            if has_midi_broadcaster_input_port():
                 websocket.write_message("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-            pass
 
         else:
             if self.hasSerialMidiOut:
@@ -2390,8 +2387,11 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        # TODO make sure switching back and forth from aggregated to legacy mode works fine
-        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
+        midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
+
+        if self.midi_aggregated_mode != midi_aggregated_mode:
+            self.send_notmodified("feature_enable aggregated-midi {}".format(int(midi_aggregated_mode)))
+            self.set_midi_devices_change_mode(midi_aggregated_mode)
 
         if not self.midi_aggregated_mode:
             # MIDI Devices might change port names at anytime
@@ -4693,9 +4693,72 @@ _:b%i
 
         return portname.split(":",1)[-1].title()
 
-    # Set the selected MIDI devices
-    # Will remove or add new JACK ports (in mod-ui) as needed
+    # Set the selected MIDI devices and aggregated mode
+    @gen.coroutine
     def set_midi_devices(self, newDevs, midi_aggregated_mode):
+        # Change modes first
+        if self.midi_aggregated_mode != midi_aggregated_mode:
+            try:
+                yield gen.Task(self.send_notmodified,
+                               "feature_enable aggregated-midi {}".format(int(midi_aggregated_mode)))
+            except Exception as e:
+                raise e
+            self.set_midi_devices_change_mode(midi_aggregated_mode)
+
+        # If MIDI aggregated mode is off, we can handle device changes
+        if not midi_aggregated_mode:
+            self.set_midi_devices_legacy(newDevs)
+
+    def set_midi_devices_change_mode(self, midi_aggregated_mode):
+        # from legacy to aggregated mode
+        if midi_aggregated_mode:
+            # Remove Serial MIDI ports
+            if self.hasSerialMidiIn:
+                self.remove_port_from_connections("ttymidi:MIDI_in")
+                self.msg_callback("remove_hw_port /graph/serial_midi_in")
+            if self.hasSerialMidiOut:
+                self.remove_port_from_connections("ttymidi:MIDI_out")
+                self.msg_callback("remove_hw_port /graph/serial_midi_out")
+
+            # Remove USB MIDI ports
+            for port_symbol, port_alias, port_conns in self.midiports:
+                self.remove_port_from_connections(port_symbol)
+
+                if ";" in port_symbol:
+                    inp, outp = port_symbol.split(";",1)
+                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
+                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
+                else:
+                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
+
+            self.midiports = []
+
+            # Add "All MIDI In/Out" ports
+            #if has_midi_broadcaster_input_port():
+            self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+            #if has_midi_merger_output_port():
+            self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+
+        # from aggregated to legacy mode
+        else:
+            # Remove "All MIDI In/Out" ports
+            #if has_midi_broadcaster_input_port():
+            self.remove_port_from_connections("mod-midi-broadcaster:in")
+            self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
+            #if has_midi_merger_output_port():
+            self.remove_port_from_connections("mod-midi-merger:out")
+            self.msg_callback("remove_hw_port /graph/midi_merger_out")
+
+            # Add Serial MIDI ports
+            if self.hasSerialMidiIn:
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+            if self.hasSerialMidiOut:
+                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+
+        self.midi_aggregated_mode = midi_aggregated_mode
+
+    # Will remove or add new JACK ports (in mod-ui) as needed
+    def set_midi_devices_legacy(self, newDevs):
         def add_port(name, title, isOutput):
             index = int(name[-1])
             title = title.replace("-","_").replace(" ","_")
@@ -4740,7 +4803,7 @@ _:b%i
 
         # add
         for port_symbol in newDevs:
-            if not (self.midi_aggregated_mode and not midi_aggregated_mode) and port_symbol in midiportIds:
+            if port_symbol in midiportIds:
                 continue
 
             if ";" in port_symbol:
@@ -4748,62 +4811,14 @@ _:b%i
                 title_in  = self.get_port_name_alias(inp)
                 title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
-                if not midi_aggregated_mode:
-                    add_port(inp, title_in, False)
-                    add_port(outp, title_out, True)
+                add_port(inp, title_in, False)
+                add_port(outp, title_out, True)
+
             else:
                 title = self.get_port_name_alias(port_symbol)
-                if not midi_aggregated_mode:
-                    add_port(port_symbol, title, False)
+                add_port(port_symbol, title, False)
 
             self.midiports.append([port_symbol, title, []])
-
-        # MIDI mode
-        if self.midi_aggregated_mode == midi_aggregated_mode:
-            return
-        else: # remove all midi connections to and from external gear when switching between modes
-            aggregated = 1 if midi_aggregated_mode else 0
-            self.send_notmodified("feature_enable aggregated-midi %d" % (aggregated), lambda r:None, datatype='boolean')
-
-        # from legacy to aggregated mode
-        if midi_aggregated_mode:
-            # Add "All MIDI In/Out" ports
-            if self.hasMidiMergerOut:
-                self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-            if self.hasMidiBroadcasterIn:
-                self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-
-            # Remove Serial MIDI ports
-            self.msg_callback("remove_hw_port /graph/serial_midi_in")
-            self.msg_callback("remove_hw_port /graph/serial_midi_out")
-
-            # Remove USB MIDI ports
-            for i in reversed(range(len(self.midiports))):
-                port_symbol, port_alias, _ = self.midiports[i]
-
-                if ";" in port_symbol:
-                    inp, outp = port_symbol.split(";",1)
-                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
-                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
-                else:
-                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
-
-
-        # from aggregated to legacy mode
-        else:
-            # Remove "All MIDI In/Out" ports
-            if self.hasMidiMergerOut:
-                self.msg_callback("remove_hw_port /graph/midi_merger_out")
-            if self.hasMidiBroadcasterIn:
-                self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
-
-            # Add Serial MIDI ports
-            if self.hasSerialMidiIn:
-                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
-            if self.hasSerialMidiOut:
-                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
-
-        self.midi_aggregated_mode = midi_aggregated_mode
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff
