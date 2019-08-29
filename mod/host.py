@@ -3678,9 +3678,21 @@ _:b%i
             except Exception as e:
                 logging.exception(e)
 
+            # Find out if old addressing page should not be available anymore:
+            send_hmi_available_pages = False
+            if self.addressings.pages_cb and old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                send_hmi_available_pages = self.check_available_pages(old_addressing['page'])
+
         if not actuator_uri or actuator_uri == kNullAddressURI:
-            callback(True)
-            return
+            if send_hmi_available_pages: # while unaddressing, one page has become unavailable (without any addressings)
+                try:
+                    yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
+                except Exception as e:
+                    logging.exception(e)
+                return
+            else:
+                callback(True)
+                return
 
         if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
             print("WARNING: Cannot address to HMI at this point")
@@ -3763,7 +3775,18 @@ _:b%i
                 except Exception as e:
                     logging.exception(e)
 
+
         pluginData['addressings'][portsymbol] = addressing
+
+        # Find out if new addressing page should become available
+        send_hmi_available_pages = False
+        if self.addressings.pages_cb and self.addressings.is_hmi_actuator(actuator_uri):
+            send_hmi_available_pages = self.check_available_pages(page)
+            if send_hmi_available_pages: # while unaddressing, one page has become unavailable (without any addressings)
+                try:
+                    yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
+                except Exception as e:
+                    logging.exception(e)
 
         self.pedalboard_modified = True
         if not group_actuators: # group actuator addressing has already been loaded previously
@@ -3771,6 +3794,23 @@ _:b%i
         else:
             callback(True)
 
+    def check_available_pages(self, page):
+        send_hmi_available_pages = False
+        available_pages = self.addressings.available_pages.copy()
+        available_pages[page] = 1 if page == 0 else 0
+        for uri, addrs in self.addressings.hmi_addressings.items():
+            def loop_addr():
+                for addr in addrs['addrs']:
+                    if addr['page'] == page:
+                        available_pages[page] = 1
+                        return
+            loop_addr()
+
+        if self.addressings.available_pages != available_pages:
+            send_hmi_available_pages = True
+            self.addressings.available_pages = available_pages
+
+        return send_hmi_available_pages
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 

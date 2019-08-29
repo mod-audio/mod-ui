@@ -273,25 +273,25 @@ class Addressings(object):
 
         # Send available pages (ie with addressings) to hmi
         if self.pages_cb:
-            available_pages = []
+            self.available_pages = []
             for i in range(self.pages_nb):
                 # Build default available_pages list
                 if i == 0: # For the moment we always boot/load a pedalboard with first page
-                    available_pages.append(1) # so it should always be available
+                    self.available_pages.append(1) # so it should always be available
                 else:
-                    available_pages.append(0)
+                    self.available_pages.append(0)
 
                 # Loop through HMI addressings
                 def loop_addressings():
                     for uri, addrs in self.hmi_addressings.items():
                         for addr in addrs['addrs']:
                             if addr['page'] == i:
-                                available_pages[i] = 1
+                                self.available_pages[i] = 1
                                 return
 
                 loop_addressings()
             try:
-                yield gen.Task(self._task_set_available_pages, available_pages)
+                yield gen.Task(self._task_set_available_pages, self.available_pages)
             except Exception as e:
                 logging.exception(e)
 
