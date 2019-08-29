@@ -2780,6 +2780,7 @@ class Host(object):
         if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and \
             self.pedalboard_path.startswith(LV2_PEDALBOARDS_DIR) and not asNew:
             bundlepath = self.pedalboard_path
+            newPedalboard = False
 
         # Save new
         else:
@@ -2805,6 +2806,7 @@ class Host(object):
 
             os.mkdir(bundlepath)
             self.pedalboard_path = bundlepath
+            newPedalboard = True
 
         # save
         self.pedalboard_name     = title
@@ -2815,7 +2817,7 @@ class Host(object):
         save_last_bank_and_pedalboard(0, bundlepath)
         os.sync()
 
-        return bundlepath
+        return bundlepath, newPedalboard
 
     def save_state_to_ttl(self, bundlepath, title, titlesym):
         self.save_state_manifest(bundlepath, titlesym)
