@@ -1767,6 +1767,17 @@ class Host(object):
                 except Exception as e:
                     logging.exception(e)
 
+        # Send new available pages to hmi if needed
+        if self.addressings.pages_cb:
+            send_hmi_available_pages = False
+            for page in range(self.addressings.pages_nb):
+                send_hmi_available_pages |= self.check_available_pages(page)
+            if send_hmi_available_pages:
+                try:
+                    yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
+                except Exception as e:
+                    logging.exception(e)
+
         def host_callback(ok):
             removed_connections = []
             for ports in self.connections:
@@ -3809,7 +3820,8 @@ _:b%i
         if self.addressings.available_pages != available_pages:
             send_hmi_available_pages = True
             self.addressings.available_pages = available_pages
-
+        print("available_pages")
+        print(available_pages)
         return send_hmi_available_pages
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
