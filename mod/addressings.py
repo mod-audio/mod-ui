@@ -63,6 +63,7 @@ class Addressings(object):
         self._task_hw_removed  = None
         self._task_act_added   = None
         self._task_act_removed = None
+        self._task_set_available_pages = None
 
         # First addressings/pedalboard load flag
         self.first_load = True
@@ -270,6 +271,30 @@ class Addressings(object):
         #       They must be loaded by calling 'add_midi' before calling this function.
         self.midi_load_everything()
 
+        # Send available pages (ie with addressings) to hmi
+        if self.pages_cb:
+            available_pages = []
+            for i in range(self.pages_nb):
+                # Build default available_pages list
+                if i == 0: # For the moment we always boot/load a pedalboard with first page
+                    available_pages.append(1) # so it should always be available
+                else:
+                    available_pages.append(0)
+
+                # Loop through HMI addressings
+                def loop_addressings():
+                    for uri, addrs in self.hmi_addressings.items():
+                        for addr in addrs['addrs']:
+                            if addr['page'] == i:
+                                available_pages[i] = 1
+                                return
+
+                loop_addressings()
+            try:
+                yield gen.Task(self._task_set_available_pages, available_pages)
+            except Exception as e:
+                logging.exception(e)
+
         # Unset retry flag if at least 1 Control Chain device is connected
         if retry_cc_addrs and len(self.cc_metadata) > 0:
             retry_cc_addrs = False
@@ -344,6 +369,7 @@ class Addressings(object):
 
         for actuator_uri in used_actuators:
             self.cc_load_all(actuator_uri)
+
 
     def save(self, bundlepath, instances):
         addressings = {}

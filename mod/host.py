@@ -313,6 +313,7 @@ class Host(object):
         self.addressings._task_hw_removed = self.addr_task_hw_removed
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
+        self.addressings._task_set_available_pages = self.addr_task_set_available_pages
 
         # Register HMI protocol callbacks (they are without arguments here)
         Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
@@ -688,6 +689,12 @@ class Host(object):
 
         self.msg_callback("act_del %s" % uri)
 
+    def addr_task_set_available_pages(self, pages, callback):
+        if self.hmi.initialized:
+            return self.hmi.set_available_pages(pages, callback)
+        print("WARNING: Trying to send available pages, HMI not initialized")
+        callback(False)
+        return
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
