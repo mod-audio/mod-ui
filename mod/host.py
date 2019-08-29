@@ -3816,7 +3816,7 @@ _:b%i
             #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31], i+1)
+            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31].upper(), i+1)
 
         callback(True, banksData)
 
@@ -3853,7 +3853,7 @@ _:b%i
         pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31], i+1)
+            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
 
         callback(True, pedalboardsData)
 

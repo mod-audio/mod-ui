@@ -251,38 +251,23 @@ class HMI(object):
         self.sp.write(msg.encode('utf-8') + b'\0')
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        numBytesFree = 1024-64
-        pedalboardsData = None
+        numPedals = len(pedalboards)
 
-        num = 0
-        for pb in pedalboards:
-            if num > 50:
-                break
+        if numPedals <= 8 or bank_id <= 4:
+            startIndex = 0
+        elif bank_id+4 >= numPedals:
+            startIndex = numPedals - 8
+        else:
+            startIndex = bank_id - 4
 
-            title   = pb['title'].replace('"', '').upper()[:31]
-            data    = '"%s" %i' % (title, num)
-            dataLen = len(data)
+        endIndex = min(startIndex+8, numPedals)
 
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when sending initial state (stopped at %i)" % num)
-                if pedalboard_id >= num:
-                    pedalboard_id = 0
-                break
+        data = 'is %d %d %d %d %d' % (numPedals, startIndex, endIndex, bank_id, pedalboard_id)
 
-            num += 1
+        for i in range(startIndex, endIndex):
+            data += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
 
-            if pedalboardsData is None:
-                pedalboardsData = ""
-            else:
-                pedalboardsData += " "
-
-            numBytesFree -= dataLen+1
-            pedalboardsData += data
-
-        if pedalboardsData is None:
-            pedalboardsData = ""
-
-        self.send("is %d %d %s" % (bank_id, pedalboard_id, pedalboardsData), callback)
+        self.send(data, callback)
 
     def ui_con(self, callback):
         self.send("ui_con", callback, datatype='boolean')
