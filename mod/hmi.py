@@ -296,7 +296,7 @@ class HMI(object):
         label = data['label']
         var_type = data['hmitype']
         unit = data['unit']
-        value = data['value']
+        value = data['dividers'] if data.get('tempo') else data['value']
         min = data['minimum']
         max = data['maximum']
         steps = data['steps']

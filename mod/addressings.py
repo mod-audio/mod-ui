@@ -10,6 +10,7 @@ from mod import safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
+from modtools.tempo import get_divider_options
 
 HMI_ADDRESSING_TYPE_LINEAR       = 0x00
 HMI_ADDRESSING_TYPE_BYPASS       = 0x01
@@ -208,7 +209,7 @@ class Addressings(object):
                     continue
 
             # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm or cc)
-            if actuator_uri not in [actuator['uri'] for actuator in self.hw_actuators] and not is_cc:
+            if actuator_uri not in [actuator['uri'] for actuator in self.hw_actuators] and not is_cc and actuator_uri != kBpmURI:
                 continue
 
             i = 0
@@ -547,7 +548,8 @@ class Addressings(object):
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
             if tempo:
-                options = [(o["value"], o["label"]) for o in dividers["options"]]
+                divider_options = get_divider_options(port_info, 20.0, 280.0) # XXX min and max bpm hardcoded
+                options = [(o["value"], o["label"]) for o in divider_options]
 
         # TODO do something with spreset
 
@@ -603,7 +605,7 @@ class Addressings(object):
                     hmitype = HMI_ADDRESSING_TYPE_REVERSE_ENUM
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
-                if value not in [o[0] for o in options]:
+                if not tempo and value not in [o[0] for o in options]:
                     print("ERROR: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
                     addressing_data['value'] = float(options[0][0])
 
@@ -654,7 +656,7 @@ class Addressings(object):
 
         return addressing_data
 
-    def load_addr(self, actuator_uri, addressing_data, callback, not_param_set=False):
+    def load_addr(self, actuator_uri, addressing_data, callback, send_hmi=True):
         addressing_data = addressing_data.copy()
 
         actuator_hw   = actuator_uri
@@ -680,7 +682,7 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, not_param_set)
+        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
 
     @gen.coroutine
     def load_current(self, actuator_uris, skippedPort, updateValue, abort_catcher):
@@ -776,7 +778,7 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
-    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False):
+    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False, send_hmi = True):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
@@ -830,7 +832,7 @@ class Addressings(object):
         if updateValue:
             self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
         else:
-            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
+            self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
 
     def hmi_load_footswitches(self, callback):
         def footswitch1_callback(_):

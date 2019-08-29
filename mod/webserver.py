@@ -1703,11 +1703,13 @@ class JackGetMidiDevices(JsonRequestHandler):
         })
 
 class JackSetMidiDevices(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         devs = data['devs']
-        midi_aggregated_mode = data['midiAggregatedMode']
-        SESSION.web_set_midi_devices(devs, midi_aggregated_mode)
+        mode = data['midiAggregatedMode']
+        SESSION.web_set_midi_devices(devs, mode)
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):

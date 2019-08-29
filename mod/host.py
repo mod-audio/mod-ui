@@ -57,12 +57,9 @@ from modtools.utils import (
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from modtools.tempo import (
-    convert_port_value_to_seconds_equivalent,
-    get_options_port_values,
+    convert_seconds_to_port_value_equivalent,
     get_divider_options,
-    get_divider_value,
-    get_value_from_options,
-    dividers as all_dividers
+    get_port_value
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
@@ -106,6 +103,9 @@ kNullAddressURI = "null"
 kMidiLearnURI = "/midi-learn"
 kMidiUnlearnURI = "/midi-unlearn"
 kMidiCustomPrefixURI = "/midi-custom_" # to show current one
+
+# URI for BPM sync (for non-addressed control ports)
+kBpmURI ="/bpm"
 
 # Limits
 kMaxAddressableScalepoints = 50
@@ -212,8 +212,6 @@ class Host(object):
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
-        self.hasMidiMergerOut = False
-        self.hasMidiBroadcasterIn = False
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
@@ -477,6 +475,19 @@ class Host(object):
 
     def jack_port_deleted(self, name):
         name = charPtrToString(name)
+        removed_conns = self.remove_port_from_connections(name)
+
+        for port_symbol, port_alias, port_conns in self.midiports:
+            if name == port_symbol or (";" in port_symbol and name in port_symbol.split(";",1)):
+                port_conns += removed_conns
+                break
+
+        self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
+
+    def true_bypass_changed(self, left, right):
+        self.msg_callback("truebypass %i %i" % (left, right))
+
+    def remove_port_from_connections(self, name):
         removed_conns = []
 
         for ports in self.connections:
@@ -490,22 +501,14 @@ class Host(object):
             self.connections.remove(ports)
             disconnect_jack_ports(ports[0], ports[1])
 
-        for port_symbol, port_alias, port_conns in self.midiports:
-            if name == port_symbol or (";" in port_symbol and name in port_symbol.split(";",1)):
-                port_conns += removed_conns
-                break
-
-        self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
-
-    def true_bypass_changed(self, left, right):
-        self.msg_callback("truebypass %i %i" % (left, right))
+        return removed_conns
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
-    def addr_task_addressing(self, atype, actuator, data, callback, not_param_set=False):
+    def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            if not not_param_set:
+            if send_hmi:
                 actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
                 return self.hmi.control_add(data, actuator, actuator_uri, callback)
             else:
@@ -579,10 +582,10 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, not_param_set=False, hw_ids=None):
+    def addr_task_unaddressing(self, atype, instance_id, portsymbol, callback, send_hmi=True, hw_ids=None):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
-            if not not_param_set:
+            if send_hmi:
                 return self.hmi.control_rm(hw_ids, callback)
             else:
                 if callback is not None:
@@ -739,6 +742,9 @@ class Host(object):
         self.transport_bpm     = data['bpm']
         self.transport_bpb     = data['bpb']
 
+        # current aggregated mode
+        self.midi_aggregated_mode = has_midi_broadcaster_input_port() and has_midi_merger_output_port()
+
         # load everything
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
@@ -780,6 +786,8 @@ class Host(object):
         self.audioportsOut = []
 
         if not init_jack():
+            self.hasSerialMidiIn = False
+            self.hasSerialMidiOut = False
             return
 
         for port in get_jack_hardware_ports(True, False):
@@ -787,6 +795,9 @@ class Host(object):
 
         for port in get_jack_hardware_ports(True, True):
             self.audioportsOut.append(port.split(":",1)[-1])
+
+        self.hasSerialMidiIn = has_serial_midi_input_port()
+        self.hasSerialMidiOut = has_serial_midi_output_port()
 
     def close_jack(self):
         close_jack()
@@ -1371,11 +1382,6 @@ class Host(object):
             else:
                 midiports.append(port_id)
 
-        self.hasSerialMidiIn = has_serial_midi_input_port()
-        self.hasSerialMidiOut = has_serial_midi_output_port()
-        self.hasMidiMergerOut = has_midi_merger_output_port()
-        self.hasMidiBroadcasterIn = has_midi_broadcaster_input_port()
-
         # Control Voltage or Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
@@ -1396,16 +1402,8 @@ class Host(object):
 
         # MIDI In
         if self.midi_aggregated_mode:
-            if self.hasMidiMergerOut:
-                # Explained:             add_hw_port instance              type isOutput name    index
+            if has_midi_merger_output_port():
                 websocket.write_message("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-                # TODO: Is that instance name special or random?
-                #   2018-10-31, Jakob thinks: random but has to match
-                #   in function _fix_host_connection_port()
-                # TODO: Is that name special or used at all?
-                #   2018-10-31, Jakob thinks: used in <div/>.
-
-            # NOTE: The midi-merger automatically connects to available hardware ports.
 
         else: # 'legacy' mode until version 1.6
             if self.hasSerialMidiIn:
@@ -1427,9 +1425,8 @@ class Host(object):
 
         # MIDI Out
         if self.midi_aggregated_mode:
-            if self.hasMidiBroadcasterIn:
+            if has_midi_broadcaster_input_port():
                 websocket.write_message("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-            pass
 
         else:
             if self.hasSerialMidiOut:
@@ -2408,8 +2405,11 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        # TODO make sure switching back and forth from aggregated to legacy mode works fine
-        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
+        midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
+
+        if self.midi_aggregated_mode != midi_aggregated_mode:
+            self.send_notmodified("feature_enable aggregated-midi {}".format(int(midi_aggregated_mode)))
+            self.set_midi_devices_change_mode(midi_aggregated_mode)
 
         if not self.midi_aggregated_mode:
             # MIDI Devices might change port names at anytime
@@ -3309,56 +3309,25 @@ _:b%i
     def set_pedalboard_size(self, width, height):
         self.pedalboard_size = [width, height]
 
-    # Readdress control ports synced to bpm after bpm changed
-    def readdress(self, addr, bpm, callback):
+    # Set new param value after bpm change
+    def set_param_from_bpm(self, addr, bpm, callback):
         if not addr.get('tempo', False):
             callback(False)
             return
 
-        instance_id = addr['instance_id']
-        pluginData  = self.plugins.get(instance_id, None)
+        # compute new port value based on new bpm
+        port_value_sec = get_port_value(bpm, addr['dividers'])
+        port_value = convert_seconds_to_port_value_equivalent(port_value_sec, addr['unit'])
 
+        instance_id = addr['instance_id']
+        portsymbol   = addr['port']
+        instance = self.mapper.get_instance(instance_id)
+        pluginData  = self.plugins.get(instance_id, None)
         if pluginData is None:
             callback(False)
             return
 
-        pluginInfo = get_plugin_info(pluginData['uri'])
-
-        if not pluginInfo:
-            callback(False)
-            return
-
-        portsymbol   = addr['port']
-        controlPorts = pluginInfo['ports']['control']['input']
-        ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
-
-        if not ports:
-            callback(False)
-            return
-
-        instance = self.mapper.get_instance(instance_id)
-        actuator_uri = addr['actuator_uri']
-        label = addr['label']
-        minimum = addr['minimum']
-        maximum = addr['maximum']
-        steps = addr['steps']
-        tempo = addr['tempo']
-
-        port = ports[0]
-        # value = convert_seconds_to_port_value_equivalent(
-        #     get_port_value(bpm, float(addr['dividers']['value'])),
-        #     port['units']['symbol']
-        # )
-        dividerOptions = get_options_port_values(
-            port['units']['symbol'],
-            bpm,
-            get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-        )
-        value = get_value_from_options(dividerOptions, float(addr['dividers']['value']))
-        dividers = {'value': addr['dividers']['value'], 'options': dividerOptions}
-
-        # TODO fix issues when port synced to bpm and bpm port assigned to same knob on hmi
-        self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, callback)
+        self.host_and_web_parameter_set(pluginData, instance, instance_id, port_value, portsymbol, callback)
 
     def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
         if setProfile:
@@ -3490,7 +3459,7 @@ _:b%i
             addrs = self.addressings.virtual_addressings[actuator_uri]
             for addr in addrs:
                 try:
-                    yield gen.Task(self.readdress, addr, bpm)
+                    yield gen.Task(self.set_param_from_bpm, addr, bpm)
                 except Exception as e:
                     logging.exception(e)
 
@@ -3498,7 +3467,7 @@ _:b%i
             addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
             for addr in addrs:
                 try:
-                    yield gen.Task(self.readdress, addr, bpm)
+                    yield gen.Task(self.set_param_from_bpm, addr, bpm)
                 except Exception as e:
                     logging.exception(e)
 
@@ -3607,9 +3576,10 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False, send_hmi=True):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
+
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -3622,6 +3592,7 @@ _:b%i
             return
 
         old_addressing = pluginData['addressings'].pop(portsymbol, None)
+        send_hmi_available_pages = False
 
         if old_addressing is not None:
             # Need to remove old addressings for that port first
@@ -3678,19 +3649,18 @@ _:b%i
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
-                                                                not_param_set=not_param_set,
+                                                                send_hmi=send_hmi,
                                                                 hw_ids=old_hw_ids)
-                    yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri)
+                    yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
                 else:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
-                                                                not_param_set=not_param_set)
+                                                                send_hmi=send_hmi)
             except Exception as e:
                 logging.exception(e)
 
             # Find out if old addressing page should not be available anymore:
-            send_hmi_available_pages = False
             if self.addressings.pages_cb and old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 send_hmi_available_pages = self.check_available_pages(old_addressing['page'])
 
@@ -3730,6 +3700,12 @@ _:b%i
                 if ports:
                     port = ports[0]
                     has_strict_bounds = "hasStrictBounds" in port['properties']
+                    # Set min and max to min and max value among dividers
+                    if tempo:
+                        divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+                        options_list = [opt['value'] for opt in divider_options]
+                        minimum = min(options_list)
+                        maximum = max(options_list)
 
         if not tempo and has_strict_bounds:
             if value < minimum:
@@ -3741,12 +3717,6 @@ _:b%i
 
         if tempo and not not_param_set:
             needsValueChange = True
-
-        # Set min and max to min and max value among dividers
-        if tempo and not has_strict_bounds:
-            options_list = [opt['value'] for opt in dividers['options']]
-            minimum = min(options_list)
-            maximum = max(options_list)
 
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
         if group_actuators:
@@ -3766,7 +3736,7 @@ _:b%i
                     except Exception as e:
                         logging.exception(e)
                 try:
-                    yield gen.Task(self.addressings.load_addr, group_actuator_uri, group_addressing, not_param_set=not_param_set)
+                    yield gen.Task(self.addressings.load_addr, group_actuator_uri, group_addressing, send_hmi=send_hmi)
                 except Exception as e:
                     logging.exception(e)
             addressing = group_addressing.copy()
@@ -3778,13 +3748,18 @@ _:b%i
             if addressing is None:
                 callback(False)
                 return
-
             if needsValueChange:
-                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                try:
-                    yield gen.Task(self.hmi_parameter_set, hw_id, value)
-                except Exception as e:
-                    logging.exception(e)
+                if actuator_uri != kBpmURI:
+                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                    try:
+                        yield gen.Task(self.hmi_parameter_set, hw_id, value)
+                    except Exception as e:
+                        logging.exception(e)
+                elif tempo:
+                    try:
+                        yield gen.Task(self.host_and_web_parameter_set, pluginData, instance, instance_id, value, portsymbol)
+                    except Exception as e:
+                        logging.exception(e)
 
 
         pluginData['addressings'][portsymbol] = addressing
@@ -3801,7 +3776,7 @@ _:b%i
 
         self.pedalboard_modified = True
         if not group_actuators: # group actuator addressing has already been loaded previously
-            self.addressings.load_addr(actuator_uri, addressing, callback, not_param_set)
+            self.addressings.load_addr(actuator_uri, addressing, callback, send_hmi=send_hmi)
         else:
             callback(True)
 
@@ -3820,9 +3795,13 @@ _:b%i
         if self.addressings.available_pages != available_pages:
             send_hmi_available_pages = True
             self.addressings.available_pages = available_pages
-        print("available_pages")
-        print(available_pages)
+
         return send_hmi_available_pages
+
+    def host_and_web_parameter_set(self, pluginData, instance, instance_id, port_value, portsymbol, callback):
+        pluginData['ports'][portsymbol] = port_value
+        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
+        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
@@ -4088,6 +4067,7 @@ _:b%i
 
             port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing:
+
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
                 if group_actuators:
                     def group_callback(ok):
@@ -4097,20 +4077,34 @@ _:b%i
                         pluginData['ports'][portsymbol] = value
                         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
                         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-
                     self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
                     return
 
-                if port_addressing.get('tempo', None) and False:
-                    value_secs = convert_port_value_to_seconds_equivalent(value, port_addressing['unit'])
-                    new_divider = round(get_divider_value(self.transport_bpm, value_secs), 3)
+                if port_addressing.get('tempo', None):
+                    # compute new port value based on received divider value
+                    pluginInfo = get_plugin_info(pluginData['uri'])
 
-                    # make sure new_divider is in our list of supported dividers (in case of calculation precision issue)
-                    all_dividers_values = [d['value'] for d in all_dividers]
-                    if new_divider not in all_dividers_values:
-                        new_divider = min(all_dividers_values, key=lambda x:abs(x-new_divider))
+                    if not pluginInfo:
+                        callback(False)
+                        return
 
-                    port_addressing['dividers']['value'] = new_divider
+                    controlPorts = pluginInfo['ports']['control']['input']
+                    ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
+
+                    if not ports:
+                        callback(False)
+                        return
+                    port = ports[0]
+                    port_value_sec = get_port_value(self.transport_bpm, value)
+                    port_value = convert_seconds_to_port_value_equivalent(port_value_sec, port['units']['symbol'])
+
+                    def address_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = port_value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4118,9 +4112,10 @@ _:b%i
                     maximum = port_addressing['maximum']
                     steps = port_addressing['steps']
                     tempo = port_addressing['tempo']
-                    dividers = port_addressing['dividers']
-                    # FIXME remove callback from here
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, True)
+                    dividers = value
+                    page = port_addressing['page']
+                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps, tempo, dividers, page, address_callback, not_param_set=True, send_hmi=False)
+                    return
 
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
@@ -4752,9 +4747,72 @@ _:b%i
 
         return portname.split(":",1)[-1].title()
 
-    # Set the selected MIDI devices
-    # Will remove or add new JACK ports (in mod-ui) as needed
+    # Set the selected MIDI devices and aggregated mode
+    @gen.coroutine
     def set_midi_devices(self, newDevs, midi_aggregated_mode):
+        # Change modes first
+        if self.midi_aggregated_mode != midi_aggregated_mode:
+            try:
+                yield gen.Task(self.send_notmodified,
+                               "feature_enable aggregated-midi {}".format(int(midi_aggregated_mode)))
+            except Exception as e:
+                raise e
+            self.set_midi_devices_change_mode(midi_aggregated_mode)
+
+        # If MIDI aggregated mode is off, we can handle device changes
+        if not midi_aggregated_mode:
+            self.set_midi_devices_legacy(newDevs)
+
+    def set_midi_devices_change_mode(self, midi_aggregated_mode):
+        # from legacy to aggregated mode
+        if midi_aggregated_mode:
+            # Remove Serial MIDI ports
+            if self.hasSerialMidiIn:
+                self.remove_port_from_connections("ttymidi:MIDI_in")
+                self.msg_callback("remove_hw_port /graph/serial_midi_in")
+            if self.hasSerialMidiOut:
+                self.remove_port_from_connections("ttymidi:MIDI_out")
+                self.msg_callback("remove_hw_port /graph/serial_midi_out")
+
+            # Remove USB MIDI ports
+            for port_symbol, port_alias, port_conns in self.midiports:
+                self.remove_port_from_connections(port_symbol)
+
+                if ";" in port_symbol:
+                    inp, outp = port_symbol.split(";",1)
+                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
+                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
+                else:
+                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
+
+            self.midiports = []
+
+            # Add "All MIDI In/Out" ports
+            #if has_midi_broadcaster_input_port():
+            self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
+            #if has_midi_merger_output_port():
+            self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
+
+        # from aggregated to legacy mode
+        else:
+            # Remove "All MIDI In/Out" ports
+            #if has_midi_broadcaster_input_port():
+            self.remove_port_from_connections("mod-midi-broadcaster:in")
+            self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
+            #if has_midi_merger_output_port():
+            self.remove_port_from_connections("mod-midi-merger:out")
+            self.msg_callback("remove_hw_port /graph/midi_merger_out")
+
+            # Add Serial MIDI ports
+            if self.hasSerialMidiIn:
+                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
+            if self.hasSerialMidiOut:
+                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
+
+        self.midi_aggregated_mode = midi_aggregated_mode
+
+    # Will remove or add new JACK ports (in mod-ui) as needed
+    def set_midi_devices_legacy(self, newDevs):
         def add_port(name, title, isOutput):
             index = int(name[-1])
             title = title.replace("-","_").replace(" ","_")
@@ -4799,7 +4857,7 @@ _:b%i
 
         # add
         for port_symbol in newDevs:
-            if not (self.midi_aggregated_mode and not midi_aggregated_mode) and port_symbol in midiportIds:
+            if port_symbol in midiportIds:
                 continue
 
             if ";" in port_symbol:
@@ -4807,62 +4865,14 @@ _:b%i
                 title_in  = self.get_port_name_alias(inp)
                 title_out = self.get_port_name_alias(outp)
                 title     = title_in + ";" + title_out
-                if not midi_aggregated_mode:
-                    add_port(inp, title_in, False)
-                    add_port(outp, title_out, True)
+                add_port(inp, title_in, False)
+                add_port(outp, title_out, True)
+
             else:
                 title = self.get_port_name_alias(port_symbol)
-                if not midi_aggregated_mode:
-                    add_port(port_symbol, title, False)
+                add_port(port_symbol, title, False)
 
             self.midiports.append([port_symbol, title, []])
-
-        # MIDI mode
-        if self.midi_aggregated_mode == midi_aggregated_mode:
-            return
-        else: # remove all midi connections to and from external gear when switching between modes
-            aggregated = 1 if midi_aggregated_mode else 0
-            self.send_notmodified("feature_enable aggregated-midi %d" % (aggregated), lambda r:None, datatype='boolean')
-
-        # from legacy to aggregated mode
-        if midi_aggregated_mode:
-            # Add "All MIDI In/Out" ports
-            if self.hasMidiMergerOut:
-                self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
-            if self.hasMidiBroadcasterIn:
-                self.msg_callback("add_hw_port /graph/midi_broadcaster_in midi 1 All_MIDI_Out 1")
-
-            # Remove Serial MIDI ports
-            self.msg_callback("remove_hw_port /graph/serial_midi_in")
-            self.msg_callback("remove_hw_port /graph/serial_midi_out")
-
-            # Remove USB MIDI ports
-            for i in reversed(range(len(self.midiports))):
-                port_symbol, port_alias, _ = self.midiports[i]
-
-                if ";" in port_symbol:
-                    inp, outp = port_symbol.split(";",1)
-                    self.msg_callback("remove_hw_port /graph/%s" % (inp.split(":",1)[-1]))
-                    self.msg_callback("remove_hw_port /graph/%s" % (outp.split(":",1)[-1]))
-                else:
-                    self.msg_callback("remove_hw_port /graph/%s" % (port_symbol.split(":",1)[-1]))
-
-
-        # from aggregated to legacy mode
-        else:
-            # Remove "All MIDI In/Out" ports
-            if self.hasMidiMergerOut:
-                self.msg_callback("remove_hw_port /graph/midi_merger_out")
-            if self.hasMidiBroadcasterIn:
-                self.msg_callback("remove_hw_port /graph/midi_broadcaster_in")
-
-            # Add Serial MIDI ports
-            if self.hasSerialMidiIn:
-                self.msg_callback("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
-            if self.hasSerialMidiOut:
-                self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
-
-        self.midi_aggregated_mode = midi_aggregated_mode
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff
