@@ -253,14 +253,14 @@ class HMI(object):
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
         numPedals = len(pedalboards)
 
-        if numPedals <= 8 or bank_id <= 4:
+        if numPedals <= 9 or bank_id < 4:
             startIndex = 0
         elif bank_id+4 >= numPedals:
-            startIndex = numPedals - 8
+            startIndex = numPedals - 9
         else:
             startIndex = bank_id - 4
 
-        endIndex = min(startIndex+8, numPedals)
+        endIndex = min(startIndex+9, numPedals)
 
         data = 'is %d %d %d %d %d' % (numPedals, startIndex, endIndex, bank_id, pedalboard_id)
 

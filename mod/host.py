@@ -3778,14 +3778,14 @@ _:b%i
             callback(True, "")
             return
 
-        if numBanks <= 8 or bank_id <= 4:
+        if numBanks <= 9 or bank_id < 4:
             startIndex = 0
         elif bank_id+4 >= numBanks:
-            startIndex = numBanks - 8
+            startIndex = numBanks - 9
         else:
             startIndex = bank_id - 4
 
-        endIndex = min(startIndex+8, numBanks)
+        endIndex = min(startIndex+9, numBanks)
         banksData = '%d %d %d' % (numBanks, startIndex, endIndex)
 
         #if startIndex == 0:
@@ -3824,14 +3824,14 @@ _:b%i
             callback(True, "")
             return
 
-        if numPedals <= 8 or pedalboard_id <= 4:
+        if numPedals <= 9 or pedalboard_id < 4:
             startIndex = 0
         elif pedalboard_id+4 >= numPedals:
-            startIndex = numPedals - 8
+            startIndex = numPedals - 9
         else:
             startIndex = pedalboard_id - 4
 
-        endIndex = min(startIndex+8, numPedals)
+        endIndex = min(startIndex+9, numPedals)
         pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
