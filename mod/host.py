@@ -58,7 +58,6 @@ from modtools.utils import (
 )
 from modtools.tempo import (
     convert_seconds_to_port_value_equivalent,
-    get_options_port_values,
     get_divider_options,
     get_port_value
 )
@@ -3308,15 +3307,7 @@ _:b%i
             callback(False)
             return
 
-        def paramhmi_set_callback(ok):
-            if not ok:
-                callback(False)
-                return
-            pluginData['ports'][portsymbol] = port_value
-            self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
-            self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
-
-        self.paramhmi_set(instance, portsymbol, port_value, paramhmi_set_callback)
+        self.host_and_web_parameter_set(pluginData, instance, instance_id, port_value, portsymbol, callback)
 
     def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
         if setProfile:
@@ -3568,6 +3559,7 @@ _:b%i
     def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False, send_hmi=True):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
+
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -3676,12 +3668,10 @@ _:b%i
                 if ports:
                     port = ports[0]
                     has_strict_bounds = "hasStrictBounds" in port['properties']
-
                     # Set min and max to min and max value among dividers
-                    if tempo and not has_strict_bounds:
+                    if tempo:
                         divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-                        options_port_values = get_options_port_values(port['units']['symbol'], self.transport_bpm, divider_options)
-                        options_list = [opt['value'] for opt in options_port_values]
+                        options_list = [opt['value'] for opt in divider_options]
                         minimum = min(options_list)
                         maximum = max(options_list)
 
