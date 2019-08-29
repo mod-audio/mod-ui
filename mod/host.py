@@ -3786,7 +3786,8 @@ _:b%i
             callback(True, "")
             return
 
-        bank_id += 1 if dir_up else -1
+        if dir_up not in (0, 1):
+            bank_id += 1 if dir_up else -1
 
         # FIXME
         banks  = [{'title':"All Pedalboards"}]
@@ -3829,7 +3830,8 @@ _:b%i
             callback(False, "")
             return
 
-        pedalboard_id += 1 if dir_up else -1
+        if dir_up not in (0, 1):
+            pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
