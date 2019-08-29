@@ -206,9 +206,6 @@ class Host(object):
         self.current_tuner_port = 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
-        self.current_hmi_bank_hover = -1
-        self.current_hmi_pedalboard_hover = -1
-
         self.allpedalboards = None
         self.bank_id = 0
         self.connections = []
@@ -3782,38 +3779,33 @@ _:b%i
         logging.debug("hmi hardware disconnected")
         callback(True)
 
-    def hmi_list_banks(self, dir_up, callback):
-        logging.error("hmi list banks with page %d", dir_up)
+    def hmi_list_banks(self, dir_up, bank_id, callback):
+        logging.error("hmi list banks %d %d", dir_up, bank_id)
 
         if len(self.allpedalboards) == 0:
             callback(True, "")
             return
 
-        if self.current_hmi_bank_hover == -1:
-            value  = 0
-        else:
-            value  = self.current_hmi_bank_hover
-            value += 8 if dir_up else -8
+        bank_id += 1 if dir_up else -1
 
         # FIXME
         banks  = [{'title':"All Pedalboards"}]
         banks += self.banks
         numBanks = len(banks)
 
-        if value < 0 or value >= numBanks:
+        if bank_id < 0 or bank_id >= numBanks:
             callback(True, "")
             return
 
-        self.current_hmi_bank_hover = value
-
-        if numBanks < 8: # or value <= 2:
+        if numBanks <= 8 or bank_id <= 4:
             startIndex = 0
-        #elif value+4 >= numBanks:
-            #startIndex = numBanks - 5
+        elif bank_id+4 >= numBanks:
+            startIndex = numBanks - 8
         else:
-            startIndex = value
+            startIndex = bank_id - 4
+
         endIndex = min(startIndex+8, numBanks)
-        banksData = '%d %d' % (startIndex, endIndex)
+        banksData = '%d %d %d' % (numBanks, startIndex, endIndex)
 
         #if startIndex == 0:
             #endIndex = min(startIndex+5, numBanks)
@@ -3828,20 +3820,16 @@ _:b%i
 
         callback(True, banksData)
 
-    def hmi_list_bank_pedalboards(self, bank_id, dir_up, callback):
-        logging.error("hmi list bank pedalboards %d %d", bank_id, dir_up)
+    def hmi_list_bank_pedalboards(self, dir_up, pedalboard_id, bank_id, callback):
+        logging.error("hmi list bank pedalboards %d %d %d", dir_up, pedalboard_id, bank_id)
         # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
-            print("ERROR: Trying to list pedalboards using out of bounds bank id %i" % (bank_id))
+            logging.error("Trying to list pedalboards using out of bounds bank id %d", bank_id)
             callback(False, "")
             return
 
-        if self.current_hmi_pedalboard_hover == -1:
-            value  = 0
-        else:
-            value  = self.current_hmi_pedalboard_hover
-            value += 5 if dir_up else -5
+        pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
@@ -3850,21 +3838,19 @@ _:b%i
 
         numPedals = len(pedalboards)
 
-        if value < 0 or value > numPedals:
+        if pedalboard_id < 0 or pedalboard_id > numPedals:
             callback(True, "")
             return
 
-        self.current_hmi_pedalboard_hover = value
-
-        if numPedals <= 5 or value <= 2:
+        if numPedals <= 8 or pedalboard_id <= 4:
             startIndex = 0
-        elif value+2 >= numPedals:
-            startIndex = numPedals - 5
+        elif pedalboard_id+4 >= numPedals:
+            startIndex = numPedals - 8
         else:
-            startIndex = value - 2
+            startIndex = pedalboard_id - 4
 
-        endIndex = min(startIndex+5, numPedals)
-        pedalboardsData = '%d %d' % (startIndex, endIndex)
+        endIndex = min(startIndex+8, numPedals)
+        pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
             pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31], i+1)
