@@ -2391,7 +2391,7 @@ class Host(object):
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
         # TODO make sure switching back and forth from aggregated to legacy mode works fine
-        # self.midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
+        self.midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
 
         if not self.midi_aggregated_mode:
             # MIDI Devices might change port names at anytime
@@ -4437,9 +4437,11 @@ _:b%i
                 return
 
             # Connect the plug-in to the MIDI output.
-            # TODO: In legacy mode this would be "ttymidi:MIDI_in" or any USB MIDI device
             source_port = "effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT)
-            target_port = "mod-midi-broadcaster:in"
+            if self.midi_aggregated_mode:
+                target_port = "mod-midi-broadcaster:in"
+            else: # TODO: connect to USB MIDI device as well
+                target_port = "ttymidi:MIDI_in"
             if not connect_jack_ports(source_port, target_port):
                 self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, operation_failed)
                 return
@@ -4757,6 +4759,9 @@ _:b%i
         # MIDI mode
         if self.midi_aggregated_mode == midi_aggregated_mode:
             return
+        else: # remove all midi connections to and from external gear when switching between modes
+            aggregated = 1 if midi_aggregated_mode else 0
+            self.send_notmodified("feature_enable aggregated-midi %d" % (aggregated), lambda r:None, datatype='boolean')
 
         # from legacy to aggregated mode
         if midi_aggregated_mode:
