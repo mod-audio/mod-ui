@@ -173,8 +173,7 @@ $('document').ready(function() {
             var steps    = parseInt(data[5])
             var label    = data[6].replace(/_/g," ")
             var tempo    = data[7] === "True" ? true : false
-            // var dividers = JSON.parse(data[8].replace(/'/g, '"'))
-            var dividers = data[8] ? parseFloat(data[8]) : data[8]
+            var dividers = JSON.parse(data[8].replace(/'/g, '"'))
             var page     = data[9]
             if (page != null) {
               page = parseInt(page)

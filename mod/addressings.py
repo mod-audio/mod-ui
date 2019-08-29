@@ -408,7 +408,7 @@ class Addressings(object):
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
                 addr_uri = uri
-                # dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
+                dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
                 group = "{0}".format(addr.get('group', "null")).replace("None", "null")
                 send_hw_map = True
@@ -427,13 +427,14 @@ class Addressings(object):
                                                                           addr['steps'],
                                                                           addr['label'].replace(" ","_"),
                                                                           addr.get('tempo'),
-                                                                          addr.get('dividers'),
+                                                                          dividers,
                                                                           page,
                                                                           group))
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
+                dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
                 msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
                                                                       addr['port'],
@@ -443,7 +444,7 @@ class Addressings(object):
                                                                       addr['steps'],
                                                                       addr['label'].replace(" ","_"),
                                                                       addr.get('tempo'),
-                                                                      addr.get('dividers'),
+                                                                      dividers,
                                                                       page))
 
         # Control Chain
