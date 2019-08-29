@@ -1103,13 +1103,12 @@ class PedalboardSave(JsonRequestHandler):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
 
-        bundlepath = SESSION.web_save_pedalboard(title, asNew)
+        bundlepath, newPB = SESSION.web_save_pedalboard(title, asNew)
 
-        if bundlepath is not None:
-            if asNew:
-                reset_get_all_pedalboards_cache()
-            else:
-                update_cached_pedalboard_version(bundlepath)
+        if newPB:
+            reset_get_all_pedalboards_cache()
+        else:
+            update_cached_pedalboard_version(bundlepath)
 
         self.write({
             'ok': bundlepath is not None,
@@ -1704,11 +1703,13 @@ class JackGetMidiDevices(JsonRequestHandler):
         })
 
 class JackSetMidiDevices(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         devs = data['devs']
-        midi_aggregated_mode = data['midiAggregatedMode']
-        SESSION.web_set_midi_devices(devs, midi_aggregated_mode)
+        mode = data['midiAggregatedMode']
+        SESSION.web_set_midi_devices(devs, mode)
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):

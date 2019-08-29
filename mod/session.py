@@ -180,14 +180,14 @@ class Session(object):
     # Save the current pedalboard
     # returns saved bundle path
     def web_save_pedalboard(self, title, asNew):
-        bundlepath = self.host.save(title, asNew)
+        bundlepath, newPB = self.host.save(title, asNew)
         self.pedalboard_changed_callback(True, bundlepath, title)
 
         if self.hmi.initialized:
             self.set_hmi_pb_title(title)
 
         self.screenshot_generator.schedule_screenshot(bundlepath)
-        return bundlepath
+        return bundlepath, newPB
 
     # Get list of Hardware MIDI devices
     # returns (devsInUse, devList, names, midi_aggregated_mode)
