@@ -296,10 +296,18 @@ function HardwareManager(options) {
       // Hide/show extended specific content
       if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
         form.find('.sensibility').css({visibility:"hidden"})
-        form.find('.tempo').css({display:"none"})
         self.disableMinMaxSteps(form, false)
       } else {
         form.find('.sensibility').css({visibility:"visible"})
+      }
+
+      if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal == ccOption) {
+        form.find('.tempo').css({display:"none"})
+      } else {
+        form.find('.tempo').css({display:"block"})
+        if (form.find('input[name=tempo]').prop("checked")) {
+          self.disableMinMaxSteps(form, true)
+        }
       }
     }
 
@@ -572,6 +580,10 @@ function HardwareManager(options) {
             if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
                 form.find('.sensibility').css({visibility:"hidden"})
                 form.find('.tempo').css({display:"none"})
+            }
+            // Hide tempo option for CC
+            if (act === ccOption) {
+              form.find('.tempo').css({display:"none"})
             }
         }
 
