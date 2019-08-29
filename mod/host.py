@@ -3786,7 +3786,7 @@ _:b%i
             callback(True, "")
             return
 
-        if dir_up not in (0, 1):
+        if dir_up in (0, 1):
             bank_id += 1 if dir_up else -1
 
         # FIXME
@@ -3830,7 +3830,7 @@ _:b%i
             callback(False, "")
             return
 
-        if dir_up not in (0, 1):
+        if dir_up in (0, 1):
             pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
