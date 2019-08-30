@@ -900,7 +900,7 @@ class Host(object):
             return
 
         self.profile.apply_first()
-        self.send_hmi_boot()
+        yield gen.Task(self.send_hmi_boot)
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
