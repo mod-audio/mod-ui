@@ -96,6 +96,10 @@ QUICK_BYPASS_MODE_VALUES = (
 DEFAULT_DISPLAY_BRIGHTNESS = DISPLAY_BRIGHTNESS_50
 DEFAULT_QUICK_BYPASS_MODE  = QUICK_BYPASS_MODE_BOTH
 
+HMI_LIST_PAGE_UP     = 1 << 1
+HMI_LIST_WRAP_AROUND = 1 << 2
+HMI_LIST_INITIAL     = 1 << 3
+
 # Special URI for non-addressed controls
 kNullAddressURI = "null"
 
@@ -321,6 +325,7 @@ class Host(object):
         Protocol.register_cmd_callback("g", self.hmi_parameter_get)
         Protocol.register_cmd_callback("s", self.hmi_parameter_set)
         Protocol.register_cmd_callback("n", self.hmi_parameter_addressing_next)
+        Protocol.register_cmd_callback("ncp", self.hmi_next_control_page)
         Protocol.register_cmd_callback("pbs", self.hmi_save_current_pedalboard)
         Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback("tu", self.hmi_tuner)
@@ -3777,62 +3782,97 @@ _:b%i
         logging.debug("hmi hardware disconnected")
         callback(True)
 
-    def hmi_list_banks(self, callback):
-        logging.debug("hmi list banks")
+    def hmi_list_banks(self, dir_up, bank_id, callback):
+        logging.error("hmi list banks %d %d", dir_up, bank_id)
 
         if len(self.allpedalboards) == 0:
             callback(True, "")
             return
 
-        banks = '"All Pedalboards" 0'
+        if dir_up in (0, 1):
+            bank_id += 1 if dir_up else -1
 
-        if len(self.banks) > 0:
-            banks += " "
-            banks += " ".join('"%s" %d' % (bank['title'], i+1) for i, bank in enumerate(self.banks))
+        # FIXME
+        banks  = [{'title':"All Pedalboards"}]
+        banks += self.banks
+        numBanks = len(banks)
 
-        callback(True, banks)
+        if bank_id < 0 or bank_id >= numBanks:
+            callback(True, "")
+            return
 
-    def hmi_list_bank_pedalboards(self, bank_id, callback):
-        logging.debug("hmi list bank pedalboards")
+        if numBanks <= 9 or bank_id < 4:
+            startIndex = 0
+        elif bank_id+4 >= numBanks:
+            startIndex = numBanks - 9
+        else:
+            startIndex = bank_id - 4
+
+        endIndex = min(startIndex+9, numBanks)
+        banksData = '%d %d %d' % (numBanks, startIndex, endIndex)
+
+        #if startIndex == 0:
+            #endIndex = min(startIndex+5, numBanks)
+            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+        #else:
+            #startIndex -= 1
+            #endIndex = min(startIndex+5, numBanks)
+            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+
+        for i in range(startIndex, endIndex):
+            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31].upper(), i) # note use +1 for !all
+
+        callback(True, banksData)
+
+    def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
+        logging.error("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
+        # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
-            print("ERROR: Trying to list pedalboards using out of bounds bank id %i" % (bank_id))
+            logging.error("Trying to list pedalboards using out of bounds bank id %d", bank_id)
             callback(False, "")
             return
+
+        dir_up  = props & HMI_LIST_PAGE_UP
+        wrap    = props & HMI_LIST_WRAP_AROUND
+        initial = props & HMI_LIST_INITIAL
+
+        if not initial:
+            pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
-        numBytesFree = 1024-64
-        pedalboardsData = None
+        numPedals = len(pedalboards)
 
-        num = 0
-        for pb in pedalboards:
-            if num > 50:
-                break
-
-            title   = pb['title'].replace('"', '').upper()[:31]
-            data    = '"%s" %i' % (title, num)
-            dataLen = len(data)
-
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when listing pedalboards (stopping at %i)" % num)
-                break
-
-            num += 1
-
-            if pedalboardsData is None:
-                pedalboardsData = ""
+        if pedalboard_id < 0 or pedalboard_id >= numPedals:
+            if not wrap:
+                callback(True, "")
+                return
+            # wrap around mode, neat
+            if pedalboard_id < 0:
+                pedalboard_id = numPedals - 1
             else:
-                pedalboardsData += " "
+                pedalboard_id = 0
 
-            numBytesFree -= dataLen+1
-            pedalboardsData += data
+        #if pedalboard_id < 0 or pedalboard_id > numPedals:
+            #callback(True, "")
+            #return
 
-        if pedalboardsData is None:
-            pedalboardsData = ""
+        if numPedals <= 9 or pedalboard_id < 4:
+            startIndex = 0
+        elif pedalboard_id+4 >= numPedals:
+            startIndex = numPedals - 9
+        else:
+            startIndex = pedalboard_id - 4
+
+        endIndex = min(startIndex+9, numPedals)
+        pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
+
+        for i in range(startIndex, endIndex):
+            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
 
         callback(True, pedalboardsData)
 
@@ -4096,6 +4136,80 @@ _:b%i
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
         self.addressings.hmi_load_next_hw(hw_id, callback)
+
+    def hmi_next_control_page(self, hw_id, props, callback):
+        logging.error("hmi next control page %d %d", hw_id, props)
+        try:
+            self.hmi_next_control_page_real(hw_id, props, callback)
+        except Exception as e:
+            callback(False, "")
+            logging.exception(e)
+
+    @gen.coroutine
+    def hmi_next_control_page_real(self, hw_id, props, callback):
+        data = self.addressings.hmi_get_addr_data(hw_id)
+
+        if data is None:
+            callback(False, "")
+            return
+
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
+        if instance_id is None:
+            callback(False, "")
+            return
+
+        dir_up = props & HMI_LIST_PAGE_UP
+        wrap   = props & HMI_LIST_WRAP_AROUND
+
+        options = data['options']
+        numOpts = len(options)
+        value   = int(self.addr_task_get_port_value(instance_id, portsymbol))
+        value  += 1 if dir_up != 0 else -1
+
+        if value < 0 or value >= numOpts:
+            if not wrap:
+                callback(True, "")
+                return
+            # wrap around mode, neat
+            if value < 0:
+                value = numOpts - 1
+            else:
+                value = 0
+
+        # note: the code below matches hmi.py control_add
+        optionsData = []
+
+        if numOpts <= 5 or value <= 2:
+            startIndex = 0
+        elif value+2 >= numOpts:
+            startIndex = numOpts-5
+        else:
+            startIndex = value - 2
+
+        for i in range(startIndex, min(startIndex+5, numOpts)):
+            option = options[i]
+            xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
+            optionsData.append(xdata)
+
+        options = "%d %s" % (len(optionsData), " ".join(optionsData))
+        options = options.strip()
+
+        callback(True, '%d %s %d %s %f %f %f %d %s' %
+                  ( hw_id,
+                    '"%s"' % data['label'].replace('"', "")[:31].upper(),
+                    data['hmitype'],
+                    '"%s"' % data['unit'].replace('"', '')[:7],
+                    value,
+                    data['maximum'],
+                    data['minimum'],
+                    data['steps'],
+                    options,
+                  ))
+
+        try:
+            yield gen.Task(self.hmi_parameter_set, hw_id, value)
+        except Exception as e:
+            logging.exception(e)
 
     def hmi_save_current_pedalboard(self, callback):
         logging.debug("hmi save current pedalboard")

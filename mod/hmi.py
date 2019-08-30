@@ -251,38 +251,23 @@ class HMI(object):
         self.sp.write(msg.encode('utf-8') + b'\0')
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        numBytesFree = 1024-64
-        pedalboardsData = None
+        numPedals = len(pedalboards)
 
-        num = 0
-        for pb in pedalboards:
-            if num > 50:
-                break
+        if numPedals <= 9 or bank_id < 4:
+            startIndex = 0
+        elif bank_id+4 >= numPedals:
+            startIndex = numPedals - 9
+        else:
+            startIndex = bank_id - 4
 
-            title   = pb['title'].replace('"', '').upper()[:31]
-            data    = '"%s" %i' % (title, num)
-            dataLen = len(data)
+        endIndex = min(startIndex+9, numPedals)
 
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when sending initial state (stopped at %i)" % num)
-                if pedalboard_id >= num:
-                    pedalboard_id = 0
-                break
+        data = 'is %d %d %d %d %d' % (numPedals, startIndex, endIndex, bank_id, pedalboard_id)
 
-            num += 1
+        for i in range(startIndex, endIndex):
+            data += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
 
-            if pedalboardsData is None:
-                pedalboardsData = ""
-            else:
-                pedalboardsData += " "
-
-            numBytesFree -= dataLen+1
-            pedalboardsData += data
-
-        if pedalboardsData is None:
-            pedalboardsData = ""
-
-        self.send("is %d %d %s" % (bank_id, pedalboard_id, pedalboardsData), callback)
+        self.send(data, callback)
 
     def ui_con(self, callback):
         self.send("ui_con", callback, datatype='boolean')
@@ -297,48 +282,36 @@ class HMI(object):
         var_type = data['hmitype']
         unit = data['unit']
         value = data['dividers'] if data.get('tempo') else data['value']
-        min = data['minimum']
-        max = data['maximum']
+        xmin = data['minimum']
+        xmax = data['maximum']
         steps = data['steps']
         options = data['options']
 
-        # hw_type = actuator[0]
-        # hw_id = actuator[1]
-        # actuator_type = actuator[2]
-        # actuator_id = actuator[3]
+        label = '"%s"' % label.replace('"', "")[:31].upper()
+        unit = '"%s"' % unit.replace('"', '')[:7]
 
-        label = '"%s"' % label.upper().replace('"', "")
-        unit = '"%s"' % unit.replace('"', '')
-        optionsData = []
-
-        rmax = max
         if options:
-            currentNum = 0
-            numBytesFree = 1024-128
+            numOpts = len(options)
+            ivalue  = int(value)
+            optionsData = []
 
-            for o in options:
-                if currentNum > 50:
-                    if value >= currentNum:
-                        value = 0
-                    rmax = currentNum
-                    break
+            if numOpts <= 5 or ivalue <= 2:
+                startIndex = 0
+            elif ivalue+2 >= numOpts:
+                startIndex = numOpts-5
+            else:
+                startIndex = ivalue - 2
 
-                xdata    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                xdataLen = len(xdata)
-
-                if numBytesFree-xdataLen-2 < 0:
-                    print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
-                    if value >= currentNum:
-                        value = 0.0
-                    rmax = currentNum
-                    break
-
-                currentNum += 1
-                numBytesFree -= xdataLen+1
+            for i in range(startIndex, min(startIndex+5, numOpts)):
+                option = options[i]
+                xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
                 optionsData.append(xdata)
 
-        options = "%d %s" % (len(optionsData), " ".join(optionsData))
-        options = options.strip()
+            options = "%d %s" % (len(optionsData), " ".join(optionsData))
+            options = options.strip()
+
+        else:
+            options = "0"
 
         def control_add_callback(ok):
             if not ok:
@@ -360,8 +333,8 @@ class HMI(object):
                     var_type,
                     unit,
                     value,
-                    rmax,
-                    min,
+                    xmax,
+                    xmin,
                     steps,
                     options,
                   ),
@@ -380,23 +353,9 @@ class HMI(object):
         removes an addressing
         """
 
-        idsData = []
-        currentNum = 0
-        numBytesFree = 1024-128
+        idsStr = tuple(str(i) for i in hw_ids)
 
-        for id in hw_ids:
-            data    = '%d' % (id)
-            dataLen = len(data)
-
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when sending hw_ids (stopped at %i)" % currentNum)
-                break
-
-            currentNum += 1
-            numBytesFree -= dataLen+1
-            idsData.append(data)
-
-        ids = "%s" % (" ".join(idsData))
+        ids = "%s" % (" ".join(idsStr))
         ids = ids.strip()
         self.send('rm %s' % (ids), callback, datatype='boolean')
 

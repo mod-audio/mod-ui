@@ -845,6 +845,24 @@ class Addressings(object):
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
 
+    def hmi_get_addr_data(self, hw_id):
+        actuator_uri      = self.hmi_hw2uri_map[hw_id]
+        addressings       = self.hmi_addressings[actuator_uri]
+        addressings_addrs = addressings['addrs']
+        addressings_len   = len(addressings_addrs)
+
+        if addressings_len == 0:
+            print("ERROR: hmi_get_addr_data failed, empty list")
+            return None
+
+        if self.pages_cb: # device supports pages
+            if not self.is_page_assigned(addressings_addrs, self.current_page):
+                return None
+            return self.get_addressing_for_page(addressings_addrs, self.current_page)
+
+        else:
+            return addressings_addrs[addressings['idx']]
+
     # def hmi_load_next_page(self, page_to_load, callback):
 
     # -----------------------------------------------------------------------------------------------------------------
