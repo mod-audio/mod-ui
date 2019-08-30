@@ -934,29 +934,42 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
+        if self.allpedalboards is None:
+            self.allpedalboards = get_all_good_pedalboards()
+
         # report pedalboard and banks
-        if bank_id > 0 and pedalboard and bank_id <= len(self.banks):
+        if pedalboard and os.path.exists(pedalboard) and bank_id > 0 and bank_id <= len(self.banks):
             bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
 
         else:
-            if self.allpedalboards is None:
-                self.allpedalboards = get_all_good_pedalboards()
             bank_id = 0
             pedalboards = self.allpedalboards
 
-        num = 0
-        for pb in pedalboards:
-            if pb['bundle'] == pedalboard:
-                pedalboard_id = num
-                break
-            num += 1
+            if not (pedalboard and os.path.exists(pedalboard)):
+                pedalboard = DEFAULT_PEDALBOARD if os.path.exists(DEFAULT_PEDALBOARD) else ""
+
+        if pedalboard:
+            for num, pb in enumerate(pedalboards):
+                if pb['bundle'] == pedalboard:
+                    pedalboard_id = num
+                    break
+            else:
+                # we loaded a pedalboard that is not in the bank, try loading from "all pedalboards" bank
+                bank_id = 0
+                pedalboards = self.allpedalboards
+
+                for num, pb in enumerate(pedalboards):
+                    if pb['bundle'] == pedalboard:
+                        pedalboard_id = num
+                        break
+                else:
+                    # well, shit
+                    pedalboard_id = 0
+                    pedalboard = ""
 
         else:
-            bank_id = 0
             pedalboard_id = 0
-            pedalboard = ""
-            pedalboards = []
 
         def cb_migi_ss_prgch(_):
             midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")
