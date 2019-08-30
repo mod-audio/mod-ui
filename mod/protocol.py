@@ -196,7 +196,7 @@ class Protocol(object):
     COMMANDS_FUNC = {}
 
     RESPONSES = [
-        "resp", "few aguments", "many arguments", "not found"
+        "resp", "few arguments", "many arguments", "not found"
     ]
 
     @classmethod
