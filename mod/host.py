@@ -51,7 +51,7 @@ from modtools.utils import (
     has_serial_midi_input_port, has_serial_midi_output_port,
     has_midi_merger_output_port, has_midi_broadcaster_input_port,
     has_midi_beat_clock_sender_port,
-    connect_jack_ports, disconnect_jack_ports,
+    connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports,
     get_truebypass_value, set_truebypass_value, get_master_volume,
     set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
@@ -513,6 +513,12 @@ class Host(object):
     def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if send_hmi:
+                if data.get('group', None) is not None:
+                    if data['hmitype'] & HMI_ADDRESSING_TYPE_REVERSE_ENUM:
+                        prefix = "- "
+                    else:
+                        prefix = "+ "
+                    data['label'] = prefix + data['label']
                 actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
                 return self.hmi.control_add(data, actuator, actuator_uri, callback)
             else:
@@ -900,7 +906,7 @@ class Host(object):
             return
 
         self.profile.apply_first()
-        self.send_hmi_boot()
+        yield gen.Task(self.send_hmi_boot)
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
@@ -934,29 +940,42 @@ class Host(object):
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
+        if self.allpedalboards is None:
+            self.allpedalboards = get_all_good_pedalboards()
+
         # report pedalboard and banks
-        if bank_id > 0 and pedalboard and bank_id <= len(self.banks):
+        if pedalboard and os.path.exists(pedalboard) and bank_id > 0 and bank_id <= len(self.banks):
             bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
 
         else:
-            if self.allpedalboards is None:
-                self.allpedalboards = get_all_good_pedalboards()
             bank_id = 0
             pedalboards = self.allpedalboards
 
-        num = 0
-        for pb in pedalboards:
-            if pb['bundle'] == pedalboard:
-                pedalboard_id = num
-                break
-            num += 1
+            if not (pedalboard and os.path.exists(pedalboard)):
+                pedalboard = DEFAULT_PEDALBOARD if os.path.exists(DEFAULT_PEDALBOARD) else ""
+
+        if pedalboard:
+            for num, pb in enumerate(pedalboards):
+                if pb['bundle'] == pedalboard:
+                    pedalboard_id = num
+                    break
+            else:
+                # we loaded a pedalboard that is not in the bank, try loading from "all pedalboards" bank
+                bank_id = 0
+                pedalboards = self.allpedalboards
+
+                for num, pb in enumerate(pedalboards):
+                    if pb['bundle'] == pedalboard:
+                        pedalboard_id = num
+                        break
+                else:
+                    # well, shit
+                    pedalboard_id = 0
+                    pedalboard = ""
 
         else:
-            bank_id = 0
             pedalboard_id = 0
-            pedalboard = ""
-            pedalboards = []
 
         def cb_migi_ss_prgch(_):
             midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")
@@ -1610,28 +1629,43 @@ class Host(object):
                 callback(True)
             return
 
-        addressings = self.addressings.hmi_addressings[actuator_uri]
+        addressings       = self.addressings.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
+        group_actuators   = self.addressings.get_group_actuators(actuator_uri)
 
+        # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
-            if current_addressing.get('page', None) == self.addressings.current_page:
-                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                self.hmi.control_set(hw_id, float(value), callback)
+            if current_addressing.get('page', None) != self.addressings.current_page:
+                if callback is not None:
+                    callback(True)
+                return
 
-            elif callback is not None:
-                callback(True)
+        elif group_actuators is None:
+            current_index = addressings['idx']
+            if current_index != addressings_addrs.index(current_addressing):
+                if callback is not None:
+                    callback(True)
+                return
+
+        if group_actuators is not None:
+            if len(group_actuators) != 2:
+                logging.error("paramhmi_set has len(group_actuators) != 2")
+                callback(False)
+                return
+
+            def set_2nd_hmi_value(ok):
+                if not ok:
+                    callback(False)
+                    return
+                hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
+                self.hmi.control_set(hw_id2, float(value), callback)
+
+            hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
+            self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
 
         else:
-            current_index = addressings['idx']
-            current_port_index = addressings_addrs.index(current_addressing)
-
-            # If currently displayed on HMI screen, then we need to set the new value on the screen
-            if current_index == current_port_index:
-                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                self.hmi.control_set(hw_id, float(value), callback)
-
-            elif callback is not None:
-                callback(True)
+            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+            self.hmi.control_set(hw_id, float(value), callback)
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
@@ -1748,9 +1782,9 @@ class Host(object):
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
                     group_actuators = self.addressings.get_group_actuators(actuator_uri)
-                    if group_actuators:
-                        for i in range(len(group_actuators)):
-                            self.add_used_actuators(group_actuators[i], used_hmi_actuators, used_hw_ids)
+                    if group_actuators is not None:
+                        for real_actuator_uri in group_actuators:
+                            self.add_used_actuators(real_actuator_uri, used_hmi_actuators, used_hw_ids)
                     else:
                         self.add_used_actuators(actuator_uri, used_hmi_actuators, used_hw_ids)
 
@@ -3645,28 +3679,33 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
-            try:
-                if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                    old_hw_ids = []
-                    old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)
-                    # Unadress all actuators in group
-                    if old_group_actuators:
-                        old_hw_ids = [self.addressings.hmi_uri2hw_map[actuator_uri] for actuator_uri in old_group_actuators]
-                    else:
-                        old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                old_hw_ids = []
+                old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)
+                # Unadress all actuators in group
+                if old_group_actuators is not None:
+                    old_hw_ids = [self.addressings.hmi_uri2hw_map[actuator_uri] for actuator_uri in old_group_actuators]
+                else:
+                    old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
+
+                try:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
                                                                 send_hmi=send_hmi,
                                                                 hw_ids=old_hw_ids)
                     yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
-                else:
+                except Exception as e:
+                    logging.exception(e)
+
+            else:
+                try:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
                                                                 send_hmi=send_hmi)
-            except Exception as e:
-                logging.exception(e)
+                except Exception as e:
+                    logging.exception(e)
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -3716,11 +3755,11 @@ _:b%i
             needsValueChange = True
 
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
-        if group_actuators:
-            for i in range(len(group_actuators)):
-                group_actuator_uri = group_actuators[i]
+        if group_actuators is not None:
+            for group_actuator_uri in group_actuators:
                 group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
-                                              label, minimum, maximum, steps, value, tempo, dividers, page, actuator_uri)
+                                                        label, minimum, maximum, steps, value,
+                                                        tempo, dividers, page, actuator_uri)
                                               # group=[a for a in group_actuators if a != group_actuator_uri])
                 if group_addressing is None:
                     callback(False)
@@ -3761,9 +3800,11 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        if not group_actuators: # group actuator addressing has already been loaded previously
+
+        if group_actuators is None:
             self.addressings.load_addr(actuator_uri, addressing, callback, send_hmi=send_hmi)
         else:
+            # group actuator addressing has already been loaded previously
             callback(True)
 
     def host_and_web_parameter_set(self, pluginData, instance, instance_id, port_value, portsymbol, callback):
@@ -4033,7 +4074,7 @@ _:b%i
                 try:
                     if port_addressing:
                         group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-                        if group_actuators:
+                        if group_actuators is not None:
                             def group_callback(ok):
                                 if not ok:
                                     callback(False)
@@ -4073,7 +4114,7 @@ _:b%i
             if port_addressing:
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-                if group_actuators:
+                if group_actuators is not None:
                     def group_callback(ok):
                         if not ok:
                             callback(False)
@@ -4565,18 +4606,15 @@ _:b%i
         def operation_failed(ok):
             callback(False)
 
-        def midi_beat_clock_sender_added(ok):
-            if ok != MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID:
+        def midi_beat_clock_sender_added(resp):
+            if resp not in (0, -2, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID): # -2 means already loaded
                 callback(False)
                 return
 
             # Connect the plug-in to the MIDI output.
             source_port = "effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT)
-            if self.midi_aggregated_mode:
-                target_port = "mod-midi-broadcaster:in"
-            else: # TODO: connect to USB MIDI device as well
-                target_port = "ttymidi:MIDI_in"
-            if not connect_jack_ports(source_port, target_port):
+
+            if not connect_jack_midi_output_ports(source_port):
                 self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, operation_failed)
                 return
 

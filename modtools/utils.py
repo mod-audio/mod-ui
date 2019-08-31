@@ -535,6 +535,9 @@ utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
 utils.connect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.connect_jack_ports.restype  = c_bool
 
+utils.connect_jack_midi_output_ports.argtypes = [c_char_p]
+utils.connect_jack_midi_output_ports.restype  = c_bool
+
 utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.disconnect_jack_ports.restype  = c_bool
 
@@ -760,6 +763,9 @@ def get_jack_hardware_ports(isAudio, isOutput):
 
 def connect_jack_ports(port1, port2):
     return bool(utils.connect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
+
+def connect_jack_midi_output_ports(port):
+    return bool(utils.connect_jack_midi_output_ports(port.encode("utf-8")))
 
 def disconnect_jack_ports(port1, port2):
     return bool(utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
