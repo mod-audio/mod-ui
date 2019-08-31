@@ -248,10 +248,10 @@ function getDividerOptions(port, minBpm, maxBpm) {
   // var sMax = s1 < s2 ? s2 : s1
 
   // Then, compute min and max subdividers that will fit all bpms
-  var s1minBpm = getDividerValue(minBpm, min);
-  var s2minBpm = getDividerValue(minBpm, max);
-  var s1maxBpm = getDividerValue(maxBpm, min);
-  var s2maxBpm = getDividerValue(maxBpm, max);
+  var s1minBpm = Math.max(getDividerValue(minBpm, min), 1);
+  var s2minBpm = Math.max(getDividerValue(minBpm, max), 1);
+  var s1maxBpm = Math.max(getDividerValue(maxBpm, min), 1);
+  var s2maxBpm = Math.max(getDividerValue(maxBpm, max), 1);
 
   if (hasStrictBounds(port)) {
     var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm);
