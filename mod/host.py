@@ -51,7 +51,7 @@ from modtools.utils import (
     has_serial_midi_input_port, has_serial_midi_output_port,
     has_midi_merger_output_port, has_midi_broadcaster_input_port,
     has_midi_beat_clock_sender_port,
-    connect_jack_ports, disconnect_jack_ports,
+    connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports,
     get_truebypass_value, set_truebypass_value, get_master_volume,
     set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
@@ -4556,18 +4556,15 @@ _:b%i
         def operation_failed(ok):
             callback(False)
 
-        def midi_beat_clock_sender_added(ok):
-            if ok != MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID:
+        def midi_beat_clock_sender_added(resp):
+            if resp not in (0, -2, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID): # -2 means already loaded
                 callback(False)
                 return
 
             # Connect the plug-in to the MIDI output.
             source_port = "effect_%d:%s" % (MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT)
-            if self.midi_aggregated_mode:
-                target_port = "mod-midi-broadcaster:in"
-            else: # TODO: connect to USB MIDI device as well
-                target_port = "ttymidi:MIDI_in"
-            if not connect_jack_ports(source_port, target_port):
+
+            if not connect_jack_midi_output_ports(source_port):
                 self.send_notmodified("remove %d" % MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, operation_failed)
                 return
 

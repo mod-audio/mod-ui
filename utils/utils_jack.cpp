@@ -505,6 +505,33 @@ bool connect_jack_ports(const char* port1, const char* port2)
     return false;
 }
 
+bool connect_jack_midi_output_ports(const char* port)
+{
+    if (gClient == nullptr)
+        return false;
+
+    int ret;
+
+    if (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr)
+    {
+        ret = jack_connect(gClient, port, "mod-midi-broadcaster:in");
+        return (ret == 0 || ret == EEXIST);
+    }
+
+    if (const char** const ports = jack_get_ports(gClient, "",
+                                                  JACK_DEFAULT_MIDI_TYPE,
+                                                  JackPortIsPhysical | JackPortIsInput))
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+            jack_connect(gClient, port, ports[i]);
+
+        jack_free(ports);
+        return true;
+    }
+
+    return false;
+}
+
 bool disconnect_jack_ports(const char* port1, const char* port2)
 {
     if (gClient == nullptr)
