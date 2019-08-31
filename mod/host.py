@@ -1633,6 +1633,9 @@ class Host(object):
         addressings_addrs = addressings['addrs']
         group_actuators   = self.addressings.get_group_actuators(actuator_uri)
 
+        # update value
+        current_addressing['value'] = float(value)
+
         # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
             if current_addressing.get('page', None) != self.addressings.current_page:
@@ -1647,6 +1650,8 @@ class Host(object):
                     callback(True)
                 return
 
+        # FIXME the following code does a control_add instead of control_set in case of enums
+        # Making it work on HMI with pagination could be tricky, so work around this for now
         if group_actuators is not None:
             if len(group_actuators) != 2:
                 logging.error("paramhmi_set has len(group_actuators) != 2")
@@ -1658,14 +1663,19 @@ class Host(object):
                     callback(False)
                     return
                 hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
-                self.hmi.control_set(hw_id2, float(value), callback)
+                #self.hmi.control_set(hw_id2, float(value), callback)
+                self.hmi.control_add(current_addressing, hw_id2, group_actuators[1], callback)
 
             hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
-            self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
+            #self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
+            self.hmi.control_add(current_addressing, hw_id1, group_actuators[0], set_2nd_hmi_value)
 
         else:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-            self.hmi.control_set(hw_id, float(value), callback)
+            if current_addressing['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
+                self.hmi.control_add(current_addressing, hw_id, actuator_uri, callback)
+            else:
+                self.hmi.control_set(hw_id, float(value), callback)
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
