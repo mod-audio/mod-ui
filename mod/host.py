@@ -513,6 +513,12 @@ class Host(object):
     def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if send_hmi:
+                if data.get('group', None) is not None:
+                    if data['hmitype'] & HMI_ADDRESSING_TYPE_REVERSE_ENUM:
+                        prefix = "- "
+                    else:
+                        prefix = "+ "
+                    data['label'] = prefix + data['label']
                 actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
                 return self.hmi.control_add(data, actuator, actuator_uri, callback)
             else:
@@ -3636,28 +3642,33 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
-            try:
-                if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                    old_hw_ids = []
-                    old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)
-                    # Unadress all actuators in group
-                    if old_group_actuators is not None:
-                        old_hw_ids = [self.addressings.hmi_uri2hw_map[actuator_uri] for actuator_uri in old_group_actuators]
-                    else:
-                        old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
+            if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                old_hw_ids = []
+                old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)
+                # Unadress all actuators in group
+                if old_group_actuators is not None:
+                    old_hw_ids = [self.addressings.hmi_uri2hw_map[actuator_uri] for actuator_uri in old_group_actuators]
+                else:
+                    old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
+
+                try:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
                                                                 send_hmi=send_hmi,
                                                                 hw_ids=old_hw_ids)
                     yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
-                else:
+                except Exception as e:
+                    logging.exception(e)
+
+            else:
+                try:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                 old_addressing['instance_id'],
                                                                 old_addressing['port'],
                                                                 send_hmi=send_hmi)
-            except Exception as e:
-                logging.exception(e)
+                except Exception as e:
+                    logging.exception(e)
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
             callback(True)
@@ -3708,7 +3719,7 @@ _:b%i
 
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
         if group_actuators is not None:
-            for i, group_actuator_uri in enumerate(group_actuators):
+            for group_actuator_uri in group_actuators:
                 group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
                                                         label, minimum, maximum, steps, value,
                                                         tempo, dividers, page, actuator_uri)
@@ -3752,9 +3763,11 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         self.pedalboard_modified = True
-        if not group_actuators: # group actuator addressing has already been loaded previously
+
+        if group_actuators is None:
             self.addressings.load_addr(actuator_uri, addressing, callback, send_hmi=send_hmi)
         else:
+            # group actuator addressing has already been loaded previously
             callback(True)
 
     def host_and_web_parameter_set(self, pluginData, instance, instance_id, port_value, portsymbol, callback):
