@@ -113,6 +113,14 @@ var unitConversionFactors = {
   }
 };
 
+var tempoDividerUnits = [
+  "s",
+  "ms",
+  "min",
+  "Hz",
+  "MHz",
+  "kHz",
+];
 
 /**
  * Get list of filtered dividers s such as sMin <= s <= sMax
@@ -272,7 +280,8 @@ function getDividerOptions(port, minBpm, maxBpm) {
  * @return {Boolean}
  */
 function hasTempoRelatedDynamicScalePoints(port) {
-  return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1
+  return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1 &&
+         tempoDividerUnits.indexOf(port.units.symbol) > -1
 }
 
 /**
