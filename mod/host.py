@@ -1629,28 +1629,43 @@ class Host(object):
                 callback(True)
             return
 
-        addressings = self.addressings.hmi_addressings[actuator_uri]
+        addressings       = self.addressings.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
+        group_actuators   = self.addressings.get_group_actuators(actuator_uri)
 
+        # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
-            if current_addressing.get('page', None) == self.addressings.current_page:
-                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                self.hmi.control_set(hw_id, float(value), callback)
+            if current_addressing.get('page', None) != self.addressings.current_page:
+                if callback is not None:
+                    callback(True)
+                return
 
-            elif callback is not None:
-                callback(True)
+        elif group_actuators is None:
+            current_index = addressings['idx']
+            if current_index != addressings_addrs.index(current_addressing):
+                if callback is not None:
+                    callback(True)
+                return
+
+        if group_actuators is not None:
+            if len(group_actuators) != 2:
+                logging.error("paramhmi_set has len(group_actuators) != 2")
+                callback(False)
+                return
+
+            def set_2nd_hmi_value(ok):
+                if not ok:
+                    callback(False)
+                    return
+                hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
+                self.hmi.control_set(hw_id2, float(value), callback)
+
+            hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
+            self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
 
         else:
-            current_index = addressings['idx']
-            current_port_index = addressings_addrs.index(current_addressing)
-
-            # If currently displayed on HMI screen, then we need to set the new value on the screen
-            if current_index == current_port_index:
-                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-                self.hmi.control_set(hw_id, float(value), callback)
-
-            elif callback is not None:
-                callback(True)
+            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+            self.hmi.control_set(hw_id, float(value), callback)
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
@@ -1768,8 +1783,8 @@ class Host(object):
                 if actuator_uri not in used_hmi_actuators and was_active:
                     group_actuators = self.addressings.get_group_actuators(actuator_uri)
                     if group_actuators is not None:
-                        for i in range(len(group_actuators)):
-                            self.add_used_actuators(group_actuators[i], used_hmi_actuators, used_hw_ids)
+                        for real_actuator_uri in group_actuators:
+                            self.add_used_actuators(real_actuator_uri, used_hmi_actuators, used_hw_ids)
                     else:
                         self.add_used_actuators(actuator_uri, used_hmi_actuators, used_hw_ids)
 
